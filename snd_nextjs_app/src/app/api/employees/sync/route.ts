@@ -219,11 +219,21 @@ export async function POST(request: NextRequest) {
           });
 
           // Parse employee name using ERPNext fields
-          const firstName = erpEmployee.first_name || '';
-          const middleName = erpEmployee.middle_name || '';
-          const lastName = erpEmployee.last_name || '';
+          let firstName = (erpEmployee.first_name || '').trim();
+          let middleName = (erpEmployee.middle_name || '').trim();
+          let lastName = (erpEmployee.last_name || '').trim();
           const employeeName = erpEmployee.employee_name || '';
           const employeeArabicName = erpEmployee.custom_الاسم_الكامل || null;
+
+          // If first_name contains full name and last_name is empty, try to split it
+          if (firstName && !lastName && firstName.includes(' ')) {
+            const nameParts = firstName.split(' ').filter((part: string) => part.trim());
+            if (nameParts.length >= 2) {
+              firstName = nameParts[0];
+              lastName = nameParts[nameParts.length - 1];
+              middleName = nameParts.slice(1, -1).join(' ');
+            }
+          }
 
           // Get salary information
           const basicSalary = erpEmployee.ctc || erpEmployee.basic_salary || 0;

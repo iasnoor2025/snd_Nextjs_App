@@ -11,8 +11,8 @@ export async function GET(request: NextRequest) {
         unit: true
       },
       orderBy: [
-        { firstName: 'asc' },
-        { lastName: 'asc' }
+        { first_name: 'asc' },
+        { last_name: 'asc' }
       ]
     });
 

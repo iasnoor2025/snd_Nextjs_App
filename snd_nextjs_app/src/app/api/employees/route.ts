@@ -5,12 +5,13 @@ import { prisma } from '@/lib/db';
 function formatEmployeeForFrontend(employee: any) {
   return {
     id: employee.id,
+    employee_id: employee.employee_id,
     erpnext_id: employee.erpnext_id,
     file_number: employee.file_number,
     first_name: employee.first_name,
     middle_name: employee.middle_name,
     last_name: employee.last_name,
-    full_name: `${employee.first_name} ${employee.middle_name ? employee.middle_name + ' ' : ''}${employee.last_name}`,
+    full_name: `${employee.first_name || ''} ${employee.middle_name ? employee.middle_name + ' ' : ''}${employee.last_name || ''}`.trim(),
     email: employee.email,
     phone: employee.phone,
     address: employee.address,
@@ -112,35 +113,30 @@ export async function GET(request: NextRequest) {
 
     // Fetch employees from database
     const employees = await prisma.employee.findMany({
-      select: {
-        id: true,
-        first_name: true,
-        last_name: true,
-        email: true,
-        phone: true,
-        status: true,
-        file_number: true,
-        employee_id: true,
-        basic_salary: true,
-        hire_date: true,
-        department_id: true,
-        designation_id: true,
-      } as any,
+      include: {
+        department: true,
+        designation: true,
+        unit: true
+      },
       skip: offset,
       take: limit,
       orderBy: [
-        { id: 'asc' }
+        { first_name: 'asc' },
+        { last_name: 'asc' }
       ]
     });
 
     console.log(`Found ${employees.length} employees`);
+
+    // Format employees for frontend
+    const formattedEmployees = employees.map(employee => formatEmployeeForFrontend(employee));
 
     // Get total count for pagination
     const totalCount = await prisma.employee.count();
 
     return NextResponse.json({
       success: true,
-      data: employees,
+      data: formattedEmployees,
       pagination: {
         page,
         limit,
