@@ -4,51 +4,10 @@ import { useSession } from "next-auth/react";
 import { useRBAC } from "@/lib/rbac/rbac-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { signOut } from "next-auth/react";
 
-export default function TestPermanentFixPage() {
+export default function TestPermanentFixWorkingPage() {
   const { data: session, status } = useSession();
   const { user: rbacUser, hasPermission } = useRBAC();
-
-  const handleForceLogout = async () => {
-    try {
-      console.log('🔍 Starting force logout for permanent fix test...');
-      
-      // Clear all browser data
-      localStorage.clear();
-      sessionStorage.clear();
-      console.log('🔍 Cleared localStorage and sessionStorage');
-      
-      // Clear all cookies
-      document.cookie.split(";").forEach(function(c) { 
-        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
-      });
-      console.log('🔍 Cleared all cookies');
-      
-      // Clear NextAuth specific cookies
-      document.cookie = "next-auth.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      document.cookie = "next-auth.csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      document.cookie = "__Secure-next-auth.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      document.cookie = "__Host-next-auth.csrf-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-      console.log('🔍 Cleared NextAuth cookies');
-      
-      // Sign out completely
-      await signOut({ 
-        callbackUrl: '/login',
-        redirect: false 
-      });
-      console.log('🔍 Signed out');
-      
-      // Force page reload with cache busting
-      const timestamp = new Date().getTime();
-      window.location.href = `/login?t=${timestamp}&permanent=1`;
-      
-    } catch (error) {
-      console.error('Force logout error:', error);
-      window.location.reload();
-    }
-  };
 
   if (status === "loading") {
     return <div>Loading...</div>;
@@ -62,7 +21,7 @@ export default function TestPermanentFixPage() {
     <div className="container mx-auto p-6">
       <Card>
         <CardHeader>
-          <CardTitle>Permanent Role Fix Test</CardTitle>
+          <CardTitle>Permanent Fix Working Test</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
@@ -95,12 +54,23 @@ export default function TestPermanentFixPage() {
             </div>
           </div>
           <div>
-            <strong>Expected Results:</strong>
+            <strong>Fix Status:</strong>
             <div className="mt-2 space-y-1 text-sm">
-              <div>✅ Raw Session Role should be &quot;ADMIN&quot; (not &quot;USER&quot;)</div>
-              <div>✅ RBAC Processed Role should be &quot;ADMIN&quot;</div>
-              <div>✅ All permissions should be &quot;Allowed&quot;</div>
-              <div>✅ No temporary overrides should be used</div>
+              {session.user?.role === 'ADMIN' ? (
+                <div className="text-green-600">✅ Raw Session Role is ADMIN - Fix Working!</div>
+              ) : (
+                <div className="text-red-600">❌ Raw Session Role is still USER - Fix Not Applied</div>
+              )}
+              {rbacUser?.role === 'ADMIN' ? (
+                <div className="text-green-600">✅ RBAC Role is ADMIN - Fix Working!</div>
+              ) : (
+                <div className="text-red-600">❌ RBAC Role is still USER - Fix Not Applied</div>
+              )}
+              {hasPermission('create', 'Employee') ? (
+                <div className="text-green-600">✅ Permissions Working - Fix Applied!</div>
+              ) : (
+                <div className="text-red-600">❌ Permissions Not Working - Fix Not Applied</div>
+              )}
             </div>
           </div>
           <div>
@@ -114,14 +84,6 @@ export default function TestPermanentFixPage() {
             <pre className="mt-2 p-2 bg-gray-100 rounded text-xs overflow-auto">
               {JSON.stringify(rbacUser, null, 2)}
             </pre>
-          </div>
-          <div className="pt-4">
-            <Button onClick={handleForceLogout} variant="destructive">
-              Force Logout & Test Permanent Fix
-            </Button>
-            <p className="text-sm text-muted-foreground mt-2">
-              This will clear all session data and force a fresh login to test the permanent role assignment.
-            </p>
           </div>
         </CardContent>
       </Card>

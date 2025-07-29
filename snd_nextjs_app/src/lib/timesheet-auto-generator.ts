@@ -51,11 +51,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
       // Generate timesheets for each day in the period
       const currentDate = new Date(start);
       while (currentDate <= end) {
-        const dateStr = currentDate.toISOString().split('T')[0];
-
         // Check for existing timesheet with comprehensive duplicate detection
-        const projectId = assignment.type === 'project' ? assignment.projectId : null;
-        const rentalId = assignment.type === 'rental' ? assignment.rentalId : null;
 
         // Check for any existing timesheet for this employee on this date
         const existingTimesheet = await prisma.timesheet.findFirst({
@@ -88,7 +84,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
         }
 
         // Create timesheet data
-        const timesheetData: any = {
+        const timesheetData: Record<string, unknown> = {
           employee_id: employeeId,
           date: currentDate,
           status: 'draft',
@@ -100,7 +96,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
         };
 
         // Add project or rental assignment
-        if (assignment.type === 'project' && assignment.project_id) {
+        if (assignment.type === 'project' && assignment.project_id) { 
           timesheetData.project_id = assignment.project_id;
         }
         if (assignment.type === 'rental' && assignment.rental_id) {

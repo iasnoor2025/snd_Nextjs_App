@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ProtectedRoute } from '@/components/protected-route';
-import { Can, CanAny, RoleBased, AccessDenied } from '@/lib/rbac/rbac-components';
+import { Can, RoleBased } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,14 +25,6 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
 
 interface Employee {
   id: number;
@@ -88,7 +80,7 @@ export default function EmployeeManagementPage() {
     try {
       const response = await fetch('/api/employees');
       if (response.ok) {
-        const result = await response.json();
+        const result = await response.json() as { success: boolean; data?: Employee[] };
         if (result.success && Array.isArray(result.data)) {
           setEmployees(result.data);
           setFilteredEmployees(result.data);
@@ -102,7 +94,7 @@ export default function EmployeeManagementPage() {
         setFilteredEmployees([]);
         toast.error('Failed to fetch employees');
       }
-    } catch (error) {
+    } catch (_error) {
       setEmployees([]);
       setFilteredEmployees([]);
       toast.error('Failed to fetch employees');
@@ -126,7 +118,7 @@ export default function EmployeeManagementPage() {
       } else {
         toast.error('Failed to sync employees');
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to sync employees');
     } finally {
       setIsSyncing(false);
@@ -146,9 +138,9 @@ export default function EmployeeManagementPage() {
         toast.error(`ERPNext test failed: ${result.message}`);
         console.error('ERPNext test failed:', result);
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to test ERPNext connection');
-      console.error('ERPNext test error:', error);
+      console.error('ERPNext test error:', _error);
     } finally {
       setIsSyncing(false);
     }
@@ -166,21 +158,13 @@ export default function EmployeeManagementPage() {
         toast.error(`Environment check failed: ${result.message}`);
         console.error('Environment check failed:', result);
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to check environment');
-      console.error('Environment check error:', error);
+      console.error('Environment check error:', _error);
     }
   };
 
-  const handleViewEmployee = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    setIsViewModalOpen(true);
-  };
 
-  const handleEditEmployee = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    setIsEditModalOpen(true);
-  };
 
   const handleDeleteEmployee = async (employee: Employee) => {
     if (!confirm(`Are you sure you want to delete ${employee.full_name}?`)) {
@@ -200,7 +184,7 @@ export default function EmployeeManagementPage() {
         const error = await response.json();
         toast.error(error.message || 'Failed to delete employee');
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to delete employee');
     } finally {
       setIsDeleting(false);

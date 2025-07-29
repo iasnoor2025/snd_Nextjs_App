@@ -18,7 +18,7 @@ async function manageAssignmentStatuses(employeeId: string): Promise<void> {
       status: "active",
     },
     orderBy: [
-      { startDate: 'asc' },
+      { start_date: 'asc' },
       { id: 'asc' },
     ],
   });
@@ -31,7 +31,7 @@ async function manageAssignmentStatuses(employeeId: string): Promise<void> {
   // Find the current/latest assignment (the one with the latest start date)
   const currentAssignment = allAssignments.reduce((latest, current) => {
     if (!latest) return current;
-    return current.startDate > latest.startDate ? current : latest;
+    return current.start_date > latest.start_date ? current : latest;
   });
 
   console.log('Assignment status management', {
@@ -64,7 +64,7 @@ async function manageAssignmentStatuses(employeeId: string): Promise<void> {
       // Previous assignments should be completed and have an end date
       if (assignment.status !== 'completed' || assignment.endDate === null) {
         // Set end date to the day before the current assignment starts
-        const endDate = new Date(currentAssignment.startDate);
+        const endDate = new Date(currentAssignment.start_date);
         endDate.setDate(endDate.getDate() - 1);
 
         console.log('Updating previous assignment status', {

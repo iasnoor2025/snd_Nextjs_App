@@ -16,15 +16,7 @@ const routePermissions: Record<string, { action: string; subject: string; roles:
   '/reports': { action: 'read', subject: 'Report', roles: ['ADMIN', 'MANAGER', 'SUPERVISOR'] },
 };
 
-// Define role hierarchy
-const roleHierarchy: Record<string, number> = {
-  'SUPER_ADMIN': 6,
-  'ADMIN': 5,
-  'MANAGER': 4,
-  'SUPERVISOR': 3,
-  'OPERATOR': 2,
-  'USER': 1,
-};
+
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

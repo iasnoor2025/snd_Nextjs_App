@@ -53,23 +53,23 @@ export async function POST(request: NextRequest) {
             employee_id: employee.id,
             employee: {
               id: employee.id,
-              first_name: employee.firstName,
-              last_name: employee.lastName,
-              full_name: `${employee.firstName} ${employee.lastName}`,
-              file_number: employee.fileNumber,
-              basic_salary: parseFloat(employee.basicSalary?.toString() || '0'),
+              first_name: employee.first_name,
+              last_name: employee.last_name,
+              full_name: `${employee.first_name} ${employee.last_name}`,
+              file_number: employee.file_number,
+              basic_salary: parseFloat(employee.basic_salary?.toString() || '0'),
               department: employee.department?.name || 'General',
               designation: employee.designation?.name || 'Employee',
               status: employee.status
             },
             month: monthDate.getMonth() + 1,
             year: year,
-            base_salary: parseFloat(employee.basicSalary?.toString() || '0'),
+            base_salary: parseFloat(employee.basic_salary?.toString() || '0'),
             overtime_amount: Math.floor(Math.random() * 500),
             bonus_amount: Math.floor(Math.random() * 300),
             deduction_amount: Math.floor(Math.random() * 800),
             advance_deduction: 0,
-            final_amount: parseFloat(employee.basicSalary?.toString() || '0') + Math.floor(Math.random() * 500) - Math.floor(Math.random() * 800),
+            final_amount: parseFloat(employee.basic_salary?.toString() || '0') + Math.floor(Math.random() * 500) - Math.floor(Math.random() * 800),
             total_worked_hours: 160 + Math.floor(Math.random() * 20),
             overtime_hours: Math.floor(Math.random() * 10),
             status: 'pending',
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
                 payroll_id: Math.floor(Math.random() * 1000) + 100,
                 type: 'earnings',
                 description: 'Basic Salary',
-                amount: parseFloat(employee.basicSalary?.toString() || '0'),
+                amount: parseFloat(employee.basic_salary?.toString() || '0'),
                 is_taxable: true,
                 tax_rate: 15,
                 order: 1
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
           generatedPayrolls.push(payroll);
         }
       } catch (error) {
-        errors.push(`Error processing ${employee.firstName} ${employee.lastName}: ${error}`);
+        errors.push(`Error processing ${employee.first_name} ${employee.last_name}: ${error}`);
       }
     }
 

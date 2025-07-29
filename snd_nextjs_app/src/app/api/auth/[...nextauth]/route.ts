@@ -100,7 +100,7 @@ const authOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user: any }) {
+    async jwt({ token, user }: { token: JWT; user: Record<string, any> }) {
       if (user) {
         token.role = user.role;
         token.id = user.id;

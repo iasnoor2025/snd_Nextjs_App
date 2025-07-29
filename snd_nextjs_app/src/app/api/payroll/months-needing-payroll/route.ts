@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
       employee: {
         id: employee.id,
         name: employee.fullName,
-        employee_id: employee.fileNumber
+        employee_id: employee.file_number
       }
     });
   } catch (error) {

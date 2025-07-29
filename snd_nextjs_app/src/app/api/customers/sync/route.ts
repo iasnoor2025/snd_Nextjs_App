@@ -108,6 +108,8 @@ async function fetchAllCustomersFromERPNext(): Promise<any[]> {
     
     console.log(`Found ${customerList.length} customers in list`);
     
+    const customers: any[] = [];
+    
     // Process each customer
     for (const item of customerList) {
       console.log('Processing item:', item.name || item.customer_name);
@@ -289,6 +291,6 @@ export async function POST(request: NextRequest) {
 }
 
 // Helper function to check if value is empty
-function empty(value: any): boolean {
+function empty(value: unknown): boolean {
   return value === null || value === undefined || value === '';
 } 

@@ -78,7 +78,7 @@ export function ForceSessionRefresh() {
         <Alert>
           <AlertDescription>
             This will completely clear all session data and force a fresh login. 
-            Use this if the role is showing as "USER" instead of "ADMIN".
+            Use this if the role is showing as &quot;USER&quot; instead of &quot;ADMIN&quot;.
           </AlertDescription>
         </Alert>
         

@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
     console.log('Query parameters:', { search, status, page, limit });
 
     // Build where clause for filtering
-    const where: any = {};
+    const where: Record<string, any> = {};
     
     if (search) {
       where.OR = [

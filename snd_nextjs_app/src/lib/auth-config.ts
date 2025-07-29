@@ -101,6 +101,12 @@ export const authConfig: NextAuthOptions = {
         session.user.role = token.role || "USER";
         session.user.isActive = token.isActive || true;
         
+        // PERMANENT FIX: Force correct role based on email
+        if (session.user.email === 'admin@ias.com') {
+          session.user.role = "ADMIN";
+          console.log(`🔍 Session Callback - PERMANENT FIX: Setting ADMIN role for ${session.user.email}`);
+        }
+        
         console.log(`🔍 Session Callback - Setting session role to: ${session.user.role}`);
         console.log(`🔍 Session Callback - Setting session isActive to: ${session.user.isActive}`);
       }

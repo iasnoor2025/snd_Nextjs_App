@@ -9,7 +9,7 @@ import { toast } from "sonner";
 
 export default function AdminResetPage() {
   const [isResetting, setIsResetting] = useState(false);
-  const [resetResult, setResetResult] = useState<any>(null);
+  const [resetResult, setResetResult] = useState<Record<string, any> | null>(null);
 
   const handleResetDatabase = async () => {
     if (!confirm("⚠️ WARNING: This will delete ALL data from the database and create a fresh admin user. This action cannot be undone. Are you sure you want to continue?")) {

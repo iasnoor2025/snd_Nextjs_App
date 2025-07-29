@@ -212,8 +212,8 @@ export async function POST(request: NextRequest) {
           const existingEmployee = await prisma.employee.findFirst({
             where: {
               OR: [
-                { fileNumber: erpEmployee.employee_id },
-                { fileNumber: erpEmployee.name }
+                { file_number: erpEmployee.employee_id },
+                { file_number: erpEmployee.name }
               ]
             }
           });
@@ -266,13 +266,13 @@ export async function POST(request: NextRequest) {
                 data: {
                   name: designationName,
                   description: designationName,
-                  isActive: true
+                  is_active: true
                 }
               });
             } else {
               designation = await prisma.designation.update({
                 where: { id: designation.id },
-                data: { description: designationName, isActive: true }
+                data: { description: designationName, is_active: true }
               });
             }
             designationId = designation.id;
@@ -288,137 +288,137 @@ export async function POST(request: NextRequest) {
           }
 
                       const employeeData = {
-              firstName: firstName,
-              middleName: middleName,
-              lastName: lastName,
-              employeeId: employeeId,
-              fileNumber: fileNumber,
-              basicSalary: parseFloat(basicSalary.toString()) || 0,
+              first_name: firstName,
+              middle_name: middleName,
+              last_name: lastName,
+              employee_id: employeeId,
+              file_number: fileNumber,
+              basic_salary: parseFloat(basicSalary.toString()) || 0,
               status: status.toLowerCase(),
               email: email,
               phone: cellNumber,
-              hireDate: dateOfJoining ? new Date(dateOfJoining) : null,
-              dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null,
-              erpnextId: erpEmployee.name,
-              departmentId: departmentId,
-              designationId: designationId,
+              hire_date: dateOfJoining ? new Date(dateOfJoining) : null,
+              date_of_birth: dateOfBirth ? new Date(dateOfBirth) : null,
+              erpnext_id: erpEmployee.name,
+              department_id: departmentId,
+              designation_id: designationId,
               // Additional fields from ERPNext
-              iqamaNumber: iqama,
-              iqamaExpiry: iqamaExpiry ? new Date(iqamaExpiry) : null,
+              iqama_number: iqama,
+              iqama_expiry: iqamaExpiry ? new Date(iqamaExpiry) : null,
               // Address information
               address: erpEmployee.address || null,
               city: erpEmployee.city || null,
               state: erpEmployee.state || null,
               country: erpEmployee.country || null,
-              postalCode: erpEmployee.postal_code || null,
+              postal_code: erpEmployee.postal_code || null,
               nationality: erpEmployee.nationality || null,
               // Salary and benefits
-              foodAllowance: parseFloat(erpEmployee.food_allowance?.toString() || '0'),
-              housingAllowance: parseFloat(erpEmployee.housing_allowance?.toString() || '0'),
-              transportAllowance: parseFloat(erpEmployee.transport_allowance?.toString() || '0'),
-              absentDeductionRate: parseFloat(erpEmployee.absent_deduction_rate?.toString() || '0'),
-              overtimeRateMultiplier: parseFloat(erpEmployee.overtime_rate_multiplier?.toString() || '1.5'),
-              overtimeFixedRate: parseFloat(erpEmployee.overtime_fixed_rate?.toString() || '0'),
+              food_allowance: parseFloat(erpEmployee.food_allowance?.toString() || '0'),
+              housing_allowance: parseFloat(erpEmployee.housing_allowance?.toString() || '0'),
+              transport_allowance: parseFloat(erpEmployee.transport_allowance?.toString() || '0'),
+              absent_deduction_rate: parseFloat(erpEmployee.absent_deduction_rate?.toString() || '0'),
+              overtime_rate_multiplier: parseFloat(erpEmployee.overtime_rate_multiplier?.toString() || '1.5'),
+              overtime_fixed_rate: parseFloat(erpEmployee.overtime_fixed_rate?.toString() || '0'),
               // Banking information
-              bankName: erpEmployee.bank_name || null,
-              bankAccountNumber: erpEmployee.bank_account_number || null,
-              bankIban: erpEmployee.bank_iban || null,
+              bank_name: erpEmployee.bank_name || null,
+              bank_account_number: erpEmployee.bank_account_number || null,
+              bank_iban: erpEmployee.bank_iban || null,
               // Contract details
-              contractHoursPerDay: parseInt(erpEmployee.contract_hours_per_day?.toString() || '8'),
-              contractDaysPerMonth: parseInt(erpEmployee.contract_days_per_month?.toString() || '26'),
+              contract_hours_per_day: parseInt(erpEmployee.contract_hours_per_day?.toString() || '8'),
+              contract_days_per_month: parseInt(erpEmployee.contract_days_per_month?.toString() || '26'),
               // Emergency contacts
-              emergencyContactName: erpEmployee.emergency_contact_name || null,
-              emergencyContactPhone: erpEmployee.emergency_contact_phone || null,
-              emergencyContactRelationship: erpEmployee.emergency_contact_relationship || null,
+              emergency_contact_name: erpEmployee.emergency_contact_name || null,
+              emergency_contact_phone: erpEmployee.emergency_contact_phone || null,
+              emergency_contact_relationship: erpEmployee.emergency_contact_relationship || null,
               // Notes
               notes: erpEmployee.notes || bio || null,
               // Legal documents
-              passportNumber: erpEmployee.passport_number || null,
-              passportExpiry: erpEmployee.passport_expiry ? new Date(erpEmployee.passport_expiry) : null,
+              passport_number: erpEmployee.passport_number || null,
+              passport_expiry: erpEmployee.passport_expiry ? new Date(erpEmployee.passport_expiry) : null,
               // Licenses and certifications
-              drivingLicenseNumber: erpEmployee.driving_license_number || null,
-              drivingLicenseExpiry: erpEmployee.driving_license_expiry ? new Date(erpEmployee.driving_license_expiry) : null,
-              drivingLicenseCost: parseFloat(erpEmployee.driving_license_cost?.toString() || '0'),
-              operatorLicenseNumber: erpEmployee.operator_license_number || null,
-              operatorLicenseExpiry: erpEmployee.operator_license_expiry ? new Date(erpEmployee.operator_license_expiry) : null,
-              operatorLicenseCost: parseFloat(erpEmployee.operator_license_cost?.toString() || '0'),
-              tuvCertificationNumber: erpEmployee.tuv_certification_number || null,
-              tuvCertificationExpiry: erpEmployee.tuv_certification_expiry ? new Date(erpEmployee.tuv_certification_expiry) : null,
-              tuvCertificationCost: parseFloat(erpEmployee.tuv_certification_cost?.toString() || '0'),
-              spspLicenseNumber: erpEmployee.spsp_license_number || null,
-              spspLicenseExpiry: erpEmployee.spsp_license_expiry ? new Date(erpEmployee.spsp_license_expiry) : null,
-              spspLicenseCost: parseFloat(erpEmployee.spsp_license_cost?.toString() || '0'),
+              driving_license_number: erpEmployee.driving_license_number || null,
+              driving_license_expiry: erpEmployee.driving_license_expiry ? new Date(erpEmployee.driving_license_expiry) : null,
+              driving_license_cost: parseFloat(erpEmployee.driving_license_cost?.toString() || '0'),
+              operator_license_number: erpEmployee.operator_license_number || null,
+              operator_license_expiry: erpEmployee.operator_license_expiry ? new Date(erpEmployee.operator_license_expiry) : null,
+              operator_license_cost: parseFloat(erpEmployee.operator_license_cost?.toString() || '0'),
+              tuv_certification_number: erpEmployee.tuv_certification_number || null,
+              tuv_certification_expiry: erpEmployee.tuv_certification_expiry ? new Date(erpEmployee.tuv_certification_expiry) : null,
+              tuv_certification_cost: parseFloat(erpEmployee.tuv_certification_cost?.toString() || '0'),
+              spsp_license_number: erpEmployee.spsp_license_number || null,
+              spsp_license_expiry: erpEmployee.spsp_license_expiry ? new Date(erpEmployee.spsp_license_expiry) : null,
+              spsp_license_cost: parseFloat(erpEmployee.spsp_license_cost?.toString() || '0'),
               // File paths
-              drivingLicenseFile: erpEmployee.driving_license_file || null,
-              operatorLicenseFile: erpEmployee.operator_license_file || null,
-              tuvCertificationFile: erpEmployee.tuv_certification_file || null,
-              spspLicenseFile: erpEmployee.spsp_license_file || null,
-              passportFile: erpEmployee.passport_file || null,
-              iqamaFile: erpEmployee.iqama_file || null,
+              driving_license_file: erpEmployee.driving_license_file || null,
+              operator_license_file: erpEmployee.operator_license_file || null,
+              tuv_certification_file: erpEmployee.tuv_certification_file || null,
+              spsp_license_file: erpEmployee.spsp_license_file || null,
+              passport_file: erpEmployee.passport_file || null,
+              iqama_file: erpEmployee.iqama_file || null,
               // Custom certifications
-              customCertifications: erpEmployee.custom_certifications || null,
+              custom_certifications: erpEmployee.custom_certifications || null,
               // Operator status
-              isOperator: erpEmployee.is_operator || false,
+              is_operator: erpEmployee.is_operator || false,
               // Access control
-              accessRestrictedUntil: erpEmployee.access_restricted_until ? new Date(erpEmployee.access_restricted_until) : null,
-              accessStartDate: erpEmployee.access_start_date ? new Date(erpEmployee.access_start_date) : null,
-              accessEndDate: erpEmployee.access_end_date ? new Date(erpEmployee.access_end_date) : null,
-              accessRestrictionReason: erpEmployee.access_restriction_reason || null,
+              access_restricted_until: erpEmployee.access_restricted_until ? new Date(erpEmployee.access_restricted_until) : null,
+              access_start_date: erpEmployee.access_start_date ? new Date(erpEmployee.access_start_date) : null,
+              access_end_date: erpEmployee.access_end_date ? new Date(erpEmployee.access_end_date) : null,
+              access_restriction_reason: erpEmployee.access_restriction_reason || null,
               // Current location
-              currentLocation: erpEmployee.current_location || null,
+              current_location: erpEmployee.current_location || null,
               // Advance salary fields
-              advanceSalaryEligible: erpEmployee.advance_salary_eligible !== false,
-              advanceSalaryApprovedThisMonth: erpEmployee.advance_salary_approved_this_month || false,
+              advance_salary_eligible: erpEmployee.advance_salary_eligible !== false,
+              advance_salary_approved_this_month: erpEmployee.advance_salary_approved_this_month || false,
             };
 
           if (existingEmployee) {
             // Check if data has changed - comprehensive comparison
             const hasChanges =
-              existingEmployee.firstName !== firstName ||
-              existingEmployee.middleName !== middleName ||
-              existingEmployee.lastName !== lastName ||
-              existingEmployee.employeeId !== employeeId ||
-              existingEmployee.fileNumber !== fileNumber ||
-              existingEmployee.basicSalary.toString() !== parseFloat(basicSalary.toString()).toString() ||
+              existingEmployee.first_name !== firstName ||
+              existingEmployee.middle_name !== middleName ||
+              existingEmployee.last_name !== lastName ||
+              existingEmployee.employee_id !== employeeId ||
+              existingEmployee.file_number !== fileNumber ||
+              existingEmployee.basic_salary.toString() !== parseFloat(basicSalary.toString()).toString() ||
               existingEmployee.status !== status.toLowerCase() ||
               existingEmployee.email !== email ||
               existingEmployee.phone !== cellNumber ||
-              existingEmployee.dateOfBirth?.toISOString() !== (dateOfBirth ? new Date(dateOfBirth).toISOString() : null) ||
-              existingEmployee.hireDate?.toISOString() !== (dateOfJoining ? new Date(dateOfJoining).toISOString() : null) ||
-              existingEmployee.departmentId !== departmentId ||
-              existingEmployee.designationId !== designationId ||
-              existingEmployee.iqamaNumber !== iqama ||
-              existingEmployee.iqamaExpiry?.toISOString() !== (iqamaExpiry ? new Date(iqamaExpiry).toISOString() : null) ||
-              existingEmployee.foodAllowance.toString() !== parseFloat(erpEmployee.food_allowance?.toString() || '0').toString() ||
-              existingEmployee.housingAllowance.toString() !== parseFloat(erpEmployee.housing_allowance?.toString() || '0').toString() ||
-              existingEmployee.transportAllowance.toString() !== parseFloat(erpEmployee.transport_allowance?.toString() || '0').toString() ||
-              existingEmployee.bankName !== erpEmployee.bank_name ||
-              existingEmployee.bankAccountNumber !== erpEmployee.bank_account_number ||
-              existingEmployee.bankIban !== erpEmployee.bank_iban ||
-              existingEmployee.contractHoursPerDay !== parseInt(erpEmployee.contract_hours_per_day?.toString() || '8') ||
-              existingEmployee.contractDaysPerMonth !== parseInt(erpEmployee.contract_days_per_month?.toString() || '26') ||
-              existingEmployee.emergencyContactName !== erpEmployee.emergency_contact_name ||
-              existingEmployee.emergencyContactPhone !== erpEmployee.emergency_contact_phone ||
-              existingEmployee.emergencyContactRelationship !== erpEmployee.emergency_contact_relationship ||
+              existingEmployee.date_of_birth?.toISOString() !== (dateOfBirth ? new Date(dateOfBirth).toISOString() : null) ||
+              existingEmployee.hire_date?.toISOString() !== (dateOfJoining ? new Date(dateOfJoining).toISOString() : null) ||
+              existingEmployee.department_id !== departmentId ||
+              existingEmployee.designation_id !== designationId ||
+              existingEmployee.iqama_number !== iqama ||
+              existingEmployee.iqama_expiry?.toISOString() !== (iqamaExpiry ? new Date(iqamaExpiry).toISOString() : null) ||
+              existingEmployee.food_allowance.toString() !== parseFloat(erpEmployee.food_allowance?.toString() || '0').toString() ||
+              existingEmployee.housing_allowance.toString() !== parseFloat(erpEmployee.housing_allowance?.toString() || '0').toString() ||
+              existingEmployee.transport_allowance.toString() !== parseFloat(erpEmployee.transport_allowance?.toString() || '0').toString() ||
+              existingEmployee.bank_name !== erpEmployee.bank_name ||
+              existingEmployee.bank_account_number !== erpEmployee.bank_account_number ||
+              existingEmployee.bank_iban !== erpEmployee.bank_iban ||
+              existingEmployee.contract_hours_per_day !== parseInt(erpEmployee.contract_hours_per_day?.toString() || '8') ||
+              existingEmployee.contract_days_per_month !== parseInt(erpEmployee.contract_days_per_month?.toString() || '26') ||
+              existingEmployee.emergency_contact_name !== erpEmployee.emergency_contact_name ||
+              existingEmployee.emergency_contact_phone !== erpEmployee.emergency_contact_phone ||
+              existingEmployee.emergency_contact_relationship !== erpEmployee.emergency_contact_relationship ||
               existingEmployee.notes !== (erpEmployee.notes || bio) ||
-              existingEmployee.passportNumber !== erpEmployee.passport_number ||
-              existingEmployee.passportExpiry?.toISOString() !== (erpEmployee.passport_expiry ? new Date(erpEmployee.passport_expiry).toISOString() : null) ||
-              existingEmployee.drivingLicenseNumber !== erpEmployee.driving_license_number ||
-              existingEmployee.drivingLicenseExpiry?.toISOString() !== (erpEmployee.driving_license_expiry ? new Date(erpEmployee.driving_license_expiry).toISOString() : null) ||
-              (existingEmployee.drivingLicenseCost?.toString() || '0') !== parseFloat(erpEmployee.driving_license_cost?.toString() || '0').toString() ||
-              existingEmployee.operatorLicenseNumber !== erpEmployee.operator_license_number ||
-              existingEmployee.operatorLicenseExpiry?.toISOString() !== (erpEmployee.operator_license_expiry ? new Date(erpEmployee.operator_license_expiry).toISOString() : null) ||
-              (existingEmployee.operatorLicenseCost?.toString() || '0') !== parseFloat(erpEmployee.operator_license_cost?.toString() || '0').toString() ||
-              existingEmployee.tuvCertificationNumber !== erpEmployee.tuv_certification_number ||
-              existingEmployee.tuvCertificationExpiry?.toISOString() !== (erpEmployee.tuv_certification_expiry ? new Date(erpEmployee.tuv_certification_expiry).toISOString() : null) ||
-              (existingEmployee.tuvCertificationCost?.toString() || '0') !== parseFloat(erpEmployee.tuv_certification_cost?.toString() || '0').toString() ||
-              existingEmployee.spspLicenseNumber !== erpEmployee.spsp_license_number ||
-              existingEmployee.spspLicenseExpiry?.toISOString() !== (erpEmployee.spsp_license_expiry ? new Date(erpEmployee.spsp_license_expiry).toISOString() : null) ||
-              (existingEmployee.spspLicenseCost?.toString() || '0') !== parseFloat(erpEmployee.spsp_license_cost?.toString() || '0').toString() ||
-              existingEmployee.isOperator !== (erpEmployee.is_operator || false) ||
-              existingEmployee.currentLocation !== erpEmployee.current_location ||
-              existingEmployee.advanceSalaryEligible !== (erpEmployee.advance_salary_eligible !== false) ||
-              existingEmployee.advanceSalaryApprovedThisMonth !== (erpEmployee.advance_salary_approved_this_month || false);
+              existingEmployee.passport_number !== erpEmployee.passport_number ||
+              existingEmployee.passport_expiry?.toISOString() !== (erpEmployee.passport_expiry ? new Date(erpEmployee.passport_expiry).toISOString() : null) ||
+              existingEmployee.driving_license_number !== erpEmployee.driving_license_number ||
+              existingEmployee.driving_license_expiry?.toISOString() !== (erpEmployee.driving_license_expiry ? new Date(erpEmployee.driving_license_expiry).toISOString() : null) ||
+              (existingEmployee.driving_license_cost?.toString() || '0') !== parseFloat(erpEmployee.driving_license_cost?.toString() || '0').toString() ||
+              existingEmployee.operator_license_number !== erpEmployee.operator_license_number ||
+              existingEmployee.operator_license_expiry?.toISOString() !== (erpEmployee.operator_license_expiry ? new Date(erpEmployee.operator_license_expiry).toISOString() : null) ||
+              (existingEmployee.operator_license_cost?.toString() || '0') !== parseFloat(erpEmployee.operator_license_cost?.toString() || '0').toString() ||
+              existingEmployee.tuv_certification_number !== erpEmployee.tuv_certification_number ||
+              existingEmployee.tuv_certification_expiry?.toISOString() !== (erpEmployee.tuv_certification_expiry ? new Date(erpEmployee.tuv_certification_expiry).toISOString() : null) ||
+              (existingEmployee.tuv_certification_cost?.toString() || '0') !== parseFloat(erpEmployee.tuv_certification_cost?.toString() || '0').toString() ||
+              existingEmployee.spsp_license_number !== erpEmployee.spsp_license_number ||
+              existingEmployee.spsp_license_expiry?.toISOString() !== (erpEmployee.spsp_license_expiry ? new Date(erpEmployee.spsp_license_expiry).toISOString() : null) ||
+              (existingEmployee.spsp_license_cost?.toString() || '0') !== parseFloat(erpEmployee.spsp_license_cost?.toString() || '0').toString() ||
+              existingEmployee.is_operator !== (erpEmployee.is_operator || false) ||
+              existingEmployee.current_location !== erpEmployee.current_location ||
+              existingEmployee.advance_salary_eligible !== (erpEmployee.advance_salary_eligible !== false) ||
+              existingEmployee.advance_salary_approved_this_month !== (erpEmployee.advance_salary_approved_this_month || false);
 
             if (hasChanges) {
               console.log('Updating existing employee:', existingEmployee.id);
@@ -432,7 +432,7 @@ export async function POST(request: NextRequest) {
               return { type: 'unchanged', employee: existingEmployee };
             }
           } else {
-            console.log('Creating new employee:', employeeData.employeeId);
+            console.log('Creating new employee:', employeeData.employee_id);
             const newEmployee = await prisma.employee.create({
               data: employeeData,
             });

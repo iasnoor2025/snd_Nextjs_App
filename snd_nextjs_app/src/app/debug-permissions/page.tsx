@@ -67,7 +67,7 @@ export default function DebugPermissionsPage() {
             <p><strong>4. Database Test:</strong> Shows role should be ADMIN</p>
             <p className="text-muted-foreground mt-2">
               The database shows role_id: 1, which should give ADMIN role. 
-              If you still see USER, it's a session/JWT caching issue.
+              If you still see USER, it&apos;s a session/JWT caching issue.
             </p>
           </div>
         </CardContent>
