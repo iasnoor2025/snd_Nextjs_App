@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { erpnextData, existingCustomers } = body;
+    const { erpnextData } = body;
 
     if (!erpnextData || !erpnextData.erpnextCustomers) {
       return NextResponse.json(

@@ -39,7 +39,7 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
 /**
  * Map ERPNext customer fields to local fields
  */
-function mapERPNextToLocal(erpCustomer: any) {
+function mapERPNextToLocal(erpCustomer: Record<string, any>) {
   console.log('Mapping customer:', erpCustomer.name || erpCustomer.customer_name);
   
   // Extract address from primary_address if it's HTML
@@ -92,8 +92,6 @@ async function fetchAllCustomersFromERPNext(): Promise<any[]> {
       isArray: Array.isArray(response),
       responseKeys: Object.keys(response)
     });
-    
-    const customers = [];
     
     // Handle different response structures
     let customerList = [];
