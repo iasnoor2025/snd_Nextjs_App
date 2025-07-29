@@ -1,0 +1,36 @@
+{
+  "title": "Employee Management",
+  "subtitle": "Manage employee information and records",
+  "fields": {
+    "employeeId": "Employee ID",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "city": "City",
+    "country": "Country",
+    "hireDate": "Hire Date",
+    "department": "Department",
+    "designation": "Designation",
+    "status": "Status",
+    "basicSalary": "Basic Salary"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "terminated": "Terminated"
+  },
+  "actions": {
+    "addEmployee": "Add Employee",
+    "editEmployee": "Edit Employee",
+    "deleteEmployee": "Delete Employee",
+    "viewDetails": "View Details"
+  },
+  "messages": {
+    "employeeCreated": "Employee created successfully",
+    "employeeUpdated": "Employee updated successfully",
+    "employeeDeleted": "Employee deleted successfully",
+    "confirmDelete": "Are you sure you want to delete this employee?"
+  }
+}

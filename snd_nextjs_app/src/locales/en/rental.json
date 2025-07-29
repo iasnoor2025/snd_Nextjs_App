@@ -1,0 +1,38 @@
+{
+  "title": "Rental Management",
+  "subtitle": "Manage equipment rentals and customer orders",
+  "fields": {
+    "rentalNumber": "Rental Number",
+    "customerId": "Customer ID",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "totalAmount": "Total Amount",
+    "status": "Status",
+    "paymentStatus": "Payment Status",
+    "notes": "Notes"
+  },
+  "status": {
+    "pending": "Pending",
+    "active": "Active",
+    "completed": "Completed",
+    "cancelled": "Cancelled"
+  },
+  "paymentStatus": {
+    "pending": "Pending",
+    "paid": "Paid",
+    "partial": "Partial",
+    "overdue": "Overdue"
+  },
+  "actions": {
+    "newRental": "New Rental",
+    "editRental": "Edit Rental",
+    "deleteRental": "Delete Rental",
+    "viewDetails": "View Details"
+  },
+  "messages": {
+    "rentalCreated": "Rental created successfully",
+    "rentalUpdated": "Rental updated successfully",
+    "rentalDeleted": "Rental deleted successfully",
+    "confirmDelete": "Are you sure you want to delete this rental?"
+  }
+}

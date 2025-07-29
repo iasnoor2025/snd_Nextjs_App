@@ -1,0 +1,43 @@
+{
+  "title": "Equipment Management",
+  "subtitle": "Track and manage rental equipment inventory",
+  "fields": {
+    "name": "Equipment Name",
+    "description": "Description",
+    "manufacturer": "Manufacturer",
+    "modelNumber": "Model Number",
+    "serialNumber": "Serial Number",
+    "purchaseDate": "Purchase Date",
+    "purchasePrice": "Purchase Price",
+    "status": "Status",
+    "location": "Location",
+    "dailyRate": "Daily Rate",
+    "weeklyRate": "Weekly Rate",
+    "monthlyRate": "Monthly Rate"
+  },
+  "status": {
+    "available": "Available",
+    "in_use": "In Use",
+    "maintenance": "Maintenance",
+    "out_of_service": "Out of Service"
+  },
+  "actions": {
+    "addEquipment": "Add Equipment",
+    "editEquipment": "Edit Equipment",
+    "deleteEquipment": "Delete Equipment",
+    "viewDetails": "View Details",
+    "assignToProject": "Assign to Project"
+  },
+  "messages": {
+    "equipmentCreated": "Equipment created successfully",
+    "equipmentUpdated": "Equipment updated successfully",
+    "equipmentDeleted": "Equipment deleted successfully",
+    "confirmDelete": "Are you sure you want to delete this equipment?"
+  },
+  "filters": {
+    "all": "All Equipment",
+    "available": "Available",
+    "inUse": "In Use",
+    "maintenance": "Under Maintenance"
+  }
+}

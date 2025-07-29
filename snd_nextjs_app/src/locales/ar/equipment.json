@@ -1,0 +1,43 @@
+{
+  "title": "إدارة المعدات",
+  "subtitle": "تتبع وإدارة مخزون معدات الإيجار",
+  "fields": {
+    "name": "اسم المعدة",
+    "description": "الوصف",
+    "manufacturer": "الشركة المصنعة",
+    "modelNumber": "رقم الموديل",
+    "serialNumber": "الرقم التسلسلي",
+    "purchaseDate": "تاريخ الشراء",
+    "purchasePrice": "سعر الشراء",
+    "status": "الحالة",
+    "location": "الموقع",
+    "dailyRate": "المعدل اليومي",
+    "weeklyRate": "المعدل الأسبوعي",
+    "monthlyRate": "المعدل الشهري"
+  },
+  "status": {
+    "available": "متاح",
+    "in_use": "قيد الاستخدام",
+    "maintenance": "صيانة",
+    "out_of_service": "خارج الخدمة"
+  },
+  "actions": {
+    "addEquipment": "إضافة معدة",
+    "editEquipment": "تعديل المعدة",
+    "deleteEquipment": "حذف المعدة",
+    "viewDetails": "عرض التفاصيل",
+    "assignToProject": "تعيين للمشروع"
+  },
+  "messages": {
+    "equipmentCreated": "تم إنشاء المعدة بنجاح",
+    "equipmentUpdated": "تم تحديث المعدة بنجاح",
+    "equipmentDeleted": "تم حذف المعدة بنجاح",
+    "confirmDelete": "هل أنت متأكد من حذف هذه المعدة؟"
+  },
+  "filters": {
+    "all": "جميع المعدات",
+    "available": "متاح",
+    "inUse": "قيد الاستخدام",
+    "maintenance": "تحت الصيانة"
+  }
+}
