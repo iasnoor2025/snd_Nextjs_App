@@ -34,6 +34,7 @@ interface Customer {
   credit_limit: number;
   payment_terms: string;
   is_active: boolean;
+  erpnext_id?: string;
   created_at: string;
   updated_at: string;
 }
@@ -76,6 +77,7 @@ const mockCustomer: Customer = {
   credit_limit: 50000.00,
   payment_terms: "Net 30",
   is_active: true,
+  erpnext_id: "CUSTOMER-001",
   created_at: "2024-01-15T10:00:00Z",
   updated_at: "2024-01-15T10:00:00Z"
 };
@@ -303,6 +305,12 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
                   <label className="text-sm font-medium text-gray-500">Payment Terms</label>
                   <p className="text-lg">{customer.payment_terms}</p>
                 </div>
+                {customer.erpnext_id && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">ERPNext ID</label>
+                    <p className="text-lg font-mono text-blue-600">{customer.erpnext_id}</p>
+                  </div>
+                )}
               </div>
 
               <div>

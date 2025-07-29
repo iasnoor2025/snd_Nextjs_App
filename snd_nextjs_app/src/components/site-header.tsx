@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useSession, signOut } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
@@ -19,6 +20,20 @@ import { ThemeToggle } from "./theme-toggle"
 
 export function SiteHeader() {
   const { data: session, status } = useSession();
+  const router = useRouter();
+  
+  // Debug session state
+  console.log('SiteHeader - Session status:', status);
+  console.log('SiteHeader - Session data:', session);
+
+  const handleForceLogout = async () => {
+    await signOut({ redirect: false });
+    // Clear any local storage or session storage
+    localStorage.clear();
+    sessionStorage.clear();
+    // Force redirect to login
+    router.push('/login');
+  };
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background">
@@ -62,9 +77,13 @@ export function SiteHeader() {
                     <span>Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => signOut()}>
+                  <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/login' })}>
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleForceLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Force Log out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

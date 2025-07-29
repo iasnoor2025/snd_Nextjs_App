@@ -29,10 +29,22 @@ export class DatabaseService {
 
   static async createCustomer(data: {
     name: string
-    email: string
+    email?: string
     phone?: string
     address?: string
-    company?: string
+    company_name?: string
+    contact_person?: string
+    city?: string
+    state?: string
+    postal_code?: string
+    country?: string
+    website?: string
+    tax_number?: string
+    credit_limit?: number
+    payment_terms?: string
+    notes?: string
+    is_active?: boolean
+    erpnext_id?: string
   }) {
     return await prisma.customer.create({
       data
@@ -44,7 +56,19 @@ export class DatabaseService {
     email?: string
     phone?: string
     address?: string
-    company?: string
+    company_name?: string
+    contact_person?: string
+    city?: string
+    state?: string
+    postal_code?: string
+    country?: string
+    website?: string
+    tax_number?: string
+    credit_limit?: number
+    payment_terms?: string
+    notes?: string
+    is_active?: boolean
+    erpnext_id?: string
   }) {
     return await prisma.customer.update({
       where: { id },
@@ -55,6 +79,23 @@ export class DatabaseService {
   static async deleteCustomer(id: string) {
     return await prisma.customer.delete({
       where: { id }
+    })
+  }
+
+  static async syncCustomerFromERPNext(erpnextId: string, customerData: any) {
+    return await prisma.customer.upsert({
+      where: { erpnext_id: erpnextId },
+      update: customerData,
+      create: customerData,
+    })
+  }
+
+  static async getCustomerByERPNextId(erpnextId: string) {
+    return await prisma.customer.findUnique({
+      where: { erpnext_id: erpnextId },
+      include: {
+        rentals: true
+      }
     })
   }
 

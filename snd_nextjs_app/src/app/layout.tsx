@@ -3,12 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Toaster } from "sonner";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar";
+import { ConditionalLayout } from "@/components/conditional-layout"; 
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -38,27 +33,9 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <Providers>
-          <SidebarProvider
-            defaultOpen={true}
-            style={
-              {
-                "--sidebar-width": "16rem",
-                "--header-height": "4rem",
-              } as React.CSSProperties
-            }
-          >
-            <div className="flex h-screen w-full overflow-hidden bg-background">
-              <AppSidebar />
-              <SidebarInset className="flex-1 flex flex-col min-w-0 overflow-hidden peer">
-                <SiteHeader />
-                <main className="flex-1 overflow-auto p-6 transition-all duration-200 ease-linear">
-                  <div className="w-full h-full max-w-none">
-                    {children}
-                  </div>
-                </main>
-              </SidebarInset>
-            </div>
-          </SidebarProvider>
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
           <Toaster
             position="top-right"
             richColors

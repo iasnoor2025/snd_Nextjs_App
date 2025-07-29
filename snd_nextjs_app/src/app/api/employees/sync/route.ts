@@ -14,6 +14,15 @@ export async function POST(request: NextRequest) {
     const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY;
     const ERPNEXT_API_SECRET = process.env.NEXT_PUBLIC_ERPNEXT_API_SECRET;
 
+    console.log('ERPNext Configuration Check:', {
+      hasUrl: !!ERPNEXT_URL,
+      hasKey: !!ERPNEXT_API_KEY,
+      hasSecret: !!ERPNEXT_API_SECRET,
+      url: ERPNEXT_URL,
+      keyLength: ERPNEXT_API_KEY?.length || 0,
+      secretLength: ERPNEXT_API_SECRET?.length || 0
+    });
+
     if (!ERPNEXT_URL || !ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {
       console.log('ERPNext configuration missing:', {
         hasUrl: !!ERPNEXT_URL,
@@ -51,6 +60,8 @@ export async function POST(request: NextRequest) {
 
     // Fetch employees list from ERPnext
     console.log('Fetching employee list from ERPNext...');
+    console.log('ERPNext URL:', `${ERPNEXT_URL}/api/resource/Employee?limit_page_length=1000`);
+    
     const erpnextResponse = await fetch(`${ERPNEXT_URL}/api/resource/Employee?limit_page_length=1000`, {
       headers: {
         'Authorization': `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
@@ -59,22 +70,67 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log('ERPNext Response Status:', erpnextResponse.status);
+    console.log('ERPNext Response Headers:', Object.fromEntries(erpnextResponse.headers.entries()));
+
     if (!erpnextResponse.ok) {
-      throw new Error(`ERPNext API error: ${erpnextResponse.status} ${erpnextResponse.statusText}`);
+      const errorText = await erpnextResponse.text();
+      console.error('ERPNext API Error Response:', errorText);
+      throw new Error(`ERPNext API error: ${erpnextResponse.status} ${erpnextResponse.statusText} - ${errorText}`);
     }
 
     const erpnextData = await erpnextResponse.json();
+    console.log('ERPNext Raw Response:', JSON.stringify(erpnextData, null, 2));
     console.log(`Found ${erpnextData.data?.length || 0} employees in ERPNext`);
 
     if (!erpnextData.data || erpnextData.data.length === 0) {
+      console.log('No employees found in ERPNext response');
+      console.log('ERPNext response structure:', {
+        keys: Object.keys(erpnextData),
+        dataType: typeof erpnextData.data,
+        dataLength: erpnextData.data?.length || 0,
+        hasData: !!erpnextData.data,
+        responseKeys: Object.keys(erpnextData)
+      });
+      
+      // Check if there are any other keys that might contain employee data
+      const possibleDataKeys = ['results', 'employees', 'data', 'items'];
+      let alternativeData = null;
+      
+      for (const key of possibleDataKeys) {
+        if (erpnextData[key] && Array.isArray(erpnextData[key]) && erpnextData[key].length > 0) {
+          console.log(`Found alternative data in key: ${key}`, erpnextData[key].length);
+          alternativeData = erpnextData[key];
+          break;
+        }
+      }
+      
       return NextResponse.json({
         success: true,
-        message: 'No employees found in ERPNext',
+        message: alternativeData ? 
+          `Found ${alternativeData.length} employees in alternative data structure` : 
+          'No employees found in ERPNext',
         syncedCount: 0,
         newCount: 0,
         updatedCount: 0,
-        totalErpnextCount: 0,
+        totalErpnextCount: alternativeData?.length || 0,
         existingCount: existingEmployeeCount,
+        debug: {
+          erpnextUrl: ERPNEXT_URL,
+          responseKeys: Object.keys(erpnextData),
+          dataLength: erpnextData.data?.length || 0,
+          hasData: !!erpnextData.data,
+          alternativeDataFound: !!alternativeData,
+          alternativeDataLength: alternativeData?.length || 0,
+          sampleResponse: Object.keys(erpnextData).reduce((acc, key) => {
+            if (typeof erpnextData[key] === 'object' && erpnextData[key] !== null) {
+              acc[key] = Array.isArray(erpnextData[key]) ? 
+                `${erpnextData[key].length} items` : 
+                typeof erpnextData[key];
+            }
+            return acc;
+          }, {} as Record<string, string>)
+        }
       });
     }
 

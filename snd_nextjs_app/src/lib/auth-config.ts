@@ -10,11 +10,12 @@ export const authConfig: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (credentials?.email === "admin@snd.com" && credentials?.password === "password123") {
+        if (credentials?.email === "admin@ias.com" && credentials?.password === "password") {
           return {
             id: "1",
-            email: "admin@snd.com",
+            email: "admin@ias.com",
             name: "Admin User",
+            role: "ADMIN",
           };
         }
         return null;
@@ -23,5 +24,29 @@ export const authConfig: NextAuthOptions = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
   },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  pages: {
+    signIn: '/login',
+    signOut: '/login',
+    error: '/login',
+  },
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.role = user.role;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user.role = token.role || "USER";
+      }
+      return session;
+    },
+  },
+  secret: process.env.NEXTAUTH_SECRET,
 };

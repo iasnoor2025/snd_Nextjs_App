@@ -23,6 +23,7 @@ import {
   Loader2,
   AlertTriangle,
   Info,
+  Wifi,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -70,41 +71,59 @@ export default function ERPNextIntegrationPage() {
   }, []);
 
   const testConnection = async () => {
-    setConnectionStatus(prev => ({ ...prev, loading: true }));
-
+    setLoading(true);
     try {
       const response = await fetch('/api/erpnext/test-connection');
       const result = await response.json();
 
-      setConnectionStatus({
-        connected: result.success,
-        message: result.message,
-        loading: false,
-      });
-
       if (result.success) {
-        toast.success('ERPNext connection successful');
+        toast.success(`Connection successful! Found ${result.data.employeeCount} employees`);
+        console.log('Connection test result:', result);
       } else {
-        toast.error('ERPNext connection failed');
+        toast.error(`Connection failed: ${result.message}`);
+        console.error('Connection test failed:', result);
       }
     } catch (error) {
-      setConnectionStatus({
-        connected: false,
-        message: 'Connection test failed',
-        loading: false,
-      });
-      toast.error('Failed to test ERPNext connection');
+      toast.error('Error testing connection');
+      console.error('Connection test error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const loadSyncStatus = async () => {
-    // This would typically load from your backend
-    // For now, we'll use mock data
-    setSyncStatus({
-      customers: { count: 150, lastSync: '2024-01-15T10:30:00Z' },
-      employees: { count: 45, lastSync: '2024-01-14T15:45:00Z' },
-      items: { count: 89, lastSync: '2024-01-13T09:20:00Z' },
-    });
+    try {
+      // Fetch real sync status from backend
+      const response = await fetch('/api/erpnext/sync-status');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setSyncStatus(result.data);
+        } else {
+          // Set empty status if API fails
+          setSyncStatus({
+            customers: { count: 0, lastSync: null },
+            employees: { count: 0, lastSync: null },
+            items: { count: 0, lastSync: null },
+          });
+        }
+      } else {
+        // Set empty status if API fails
+        setSyncStatus({
+          customers: { count: 0, lastSync: null },
+          employees: { count: 0, lastSync: null },
+          items: { count: 0, lastSync: null },
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load sync status:', error);
+      // Set empty status on error
+      setSyncStatus({
+        customers: { count: 0, lastSync: null },
+        employees: { count: 0, lastSync: null },
+        items: { count: 0, lastSync: null },
+      });
+    }
   };
 
   const syncCustomers = async () => {
@@ -188,8 +207,8 @@ export default function ERPNextIntegrationPage() {
             Manage ERPNext integration settings and data synchronization
           </p>
         </div>
-        <Button onClick={testConnection} disabled={connectionStatus.loading}>
-          {connectionStatus.loading ? (
+        <Button onClick={testConnection} disabled={loading}>
+          {loading ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           ) : (
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -287,46 +306,40 @@ export default function ERPNextIntegrationPage() {
         </TabsList>
 
         {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Customers</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{syncStatus.customers.count}</div>
-                <p className="text-xs text-muted-foreground">
-                  Last sync: {formatDate(syncStatus.customers.lastSync)}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Employees</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{syncStatus.employees.count}</div>
-                <p className="text-xs text-muted-foreground">
-                  Last sync: {formatDate(syncStatus.employees.lastSync)}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Items/Equipment</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{syncStatus.items.count}</div>
-                <p className="text-xs text-muted-foreground">
-                  Last sync: {formatDate(syncStatus.items.lastSync)}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
+        <TabsContent value="overview" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>ERPNext Integration Status</CardTitle>
+              <CardDescription>
+                Monitor the status of your ERPNext integration
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Connection Status</p>
+                    <p className="text-sm text-muted-foreground">
+                      Test your ERPNext connection
+                    </p>
+                  </div>
+                  <Button onClick={testConnection} disabled={loading}>
+                    {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wifi className="h-4 w-4 mr-2" />}
+                    Test Connection
+                  </Button>
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Configuration</p>
+                  <div className="text-sm text-muted-foreground space-y-1">
+                    <p>URL: {config.url}</p>
+                    <p>API Key: {config.apiKey ? '***' + config.apiKey.slice(-4) : 'Not set'}</p>
+                    <p>API Secret: {config.apiSecret ? '***' + config.apiSecret.slice(-4) : 'Not set'}</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>

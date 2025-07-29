@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Eye, User, Building, Mail, Phone, Download, Upload } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, User, Building, Mail, Phone, Download, Upload, RefreshCw } from 'lucide-react';
 
 interface Customer {
   id: string;
@@ -28,6 +28,7 @@ interface Customer {
   companyName?: string;
   isActive: boolean;
   status: string;
+  erpnext_id?: string;
   createdAt: string;
 }
 
@@ -52,6 +53,7 @@ export default function CustomerManagementPage() {
     isActive: true,
     status: 'active'
   });
+  const [syncLoading, setSyncLoading] = useState(false);
 
   // Get allowed actions for customer management
   const allowedActions = getAllowedActions('Customer');
@@ -145,6 +147,40 @@ export default function CustomerManagementPage() {
     }
   };
 
+  // Sync customers from ERPNext
+  const syncCustomersFromERPNext = async () => {
+    console.log('Starting ERPNext sync...');
+    setSyncLoading(true);
+    try {
+      console.log('Making API request to /api/customers/sync');
+      const response = await fetch('/api/customers/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      console.log('Response status:', response.status);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Sync failed:', errorText);
+        throw new Error(`Failed to sync customers: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('Sync result:', result);
+      if (result.success) {
+        toast.success(`Synced ${result.data.processed} customers from ERPNext (${result.data.created} created, ${result.data.updated} updated)`);
+        fetchCustomers();
+      } else {
+        toast.error(result.message || 'Failed to sync customers');
+      }
+    } catch (err) {
+      console.error('Sync error:', err);
+      toast.error(`Failed to sync customers from ERPNext: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -181,6 +217,8 @@ export default function CustomerManagementPage() {
 
   useEffect(() => {
     fetchCustomers();
+    console.log('Customer Management page loaded');
+    console.log('Sync function available:', typeof syncCustomersFromERPNext);
   }, []);
 
   if (loading) {
@@ -212,7 +250,14 @@ export default function CustomerManagementPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">Customer Management</h1>
-            <p className="text-muted-foreground">Manage customer information and relationships</p>
+            <p className="text-muted-foreground">
+              Manage customer information and relationships
+              {customers.some(c => c.erpnext_id) && (
+                <span className="text-blue-600 ml-2">
+                  • {customers.filter(c => c.erpnext_id).length} synced from ERPNext
+                </span>
+              )}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <Can action="export" subject="Customer">
@@ -229,6 +274,17 @@ export default function CustomerManagementPage() {
               </Button>
             </Can>
 
+            {/* Sync button - visible to all users with read permission */}
+            <Button 
+              variant="outline" 
+              onClick={syncCustomersFromERPNext}
+              disabled={syncLoading}
+              className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${syncLoading ? 'animate-spin' : ''}`} />
+              {syncLoading ? 'Syncing...' : 'Sync from ERPNext'}
+            </Button>
+
             <Can action="create" subject="Customer">
               <Button onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -238,24 +294,65 @@ export default function CustomerManagementPage() {
           </div>
         </div>
 
+        {/* ERPNext Sync Section */}
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-800">
+              <RefreshCw className="h-5 w-5" />
+              ERPNext Integration
+            </CardTitle>
+            <CardDescription className="text-blue-700">
+              Sync customers from ERPNext system
+              {customers.some(c => c.erpnext_id) && (
+                <span className="text-blue-600 ml-2">
+                  • {customers.filter(c => c.erpnext_id).length} customers synced
+                </span>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <Button 
+                onClick={syncCustomersFromERPNext}
+                disabled={syncLoading}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${syncLoading ? 'animate-spin' : ''}`} />
+                {syncLoading ? 'Syncing...' : 'Sync from ERPNext'}
+              </Button>
+              <span className="text-sm text-blue-600">
+                {syncLoading ? 'Syncing customers from ERPNext...' : 'Click to sync latest customer data from ERPNext'}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>Customers</CardTitle>
-            <CardDescription>All customer records and their current status</CardDescription>
+            <CardDescription>
+              All customer records and their current status
+              {customers.some(c => c.erpnext_id) && (
+                <span className="text-blue-600 ml-2">
+                  • {customers.filter(c => c.erpnext_id).length} synced from ERPNext
+                </span>
+              )}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
+                                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Company</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Sync</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
               </TableHeader>
               <TableBody>
                 {customers.map((customer) => (
@@ -272,6 +369,17 @@ export default function CustomerManagementPage() {
                       <Badge variant={customer.isActive ? 'default' : 'secondary'}>
                         {customer.status}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {customer.erpnext_id ? (
+                        <Badge variant="outline" className="text-blue-600 border-blue-600">
+                          ERPNext
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-gray-500">
+                          Local
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">

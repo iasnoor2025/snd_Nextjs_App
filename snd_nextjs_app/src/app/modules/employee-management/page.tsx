@@ -116,6 +116,7 @@ export default function EmployeeManagementPage() {
       if (response.ok) {
         const result = await response.json();
         toast.success(result.message);
+        console.log('Sync result:', result);
         await fetchEmployees(); // Refresh the list
       } else {
         toast.error('Failed to sync employees');
@@ -124,6 +125,45 @@ export default function EmployeeManagementPage() {
       toast.error('Failed to sync employees');
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleTestERPNext = async () => {
+    setIsSyncing(true);
+    try {
+      const response = await fetch('/api/test-erpnext');
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('ERPNext test completed - check console for details');
+        console.log('ERPNext test results:', result);
+      } else {
+        toast.error(`ERPNext test failed: ${result.message}`);
+        console.error('ERPNext test failed:', result);
+      }
+    } catch (error) {
+      toast.error('Failed to test ERPNext connection');
+      console.error('ERPNext test error:', error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleCheckEnvironment = async () => {
+    try {
+      const response = await fetch('/api/debug/env');
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Environment check completed - check console for details');
+        console.log('Environment check:', result);
+      } else {
+        toast.error(`Environment check failed: ${result.message}`);
+        console.error('Environment check failed:', result);
+      }
+    } catch (error) {
+      toast.error('Failed to check environment');
+      console.error('Environment check error:', error);
     }
   };
 
@@ -310,6 +350,28 @@ export default function EmployeeManagementPage() {
               >
                 <Upload className="h-4 w-4 mr-2" />
                 {isSyncing ? 'Syncing...' : 'Sync with ERPNext'}
+              </Button>
+            </Can>
+
+            <Can action="sync" subject="Employee">
+              <Button
+                onClick={handleTestERPNext}
+                disabled={isSyncing}
+                variant="outline"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                {isSyncing ? 'Testing...' : 'Test ERPNext Connection'}
+              </Button>
+            </Can>
+
+            <Can action="sync" subject="Employee">
+              <Button
+                onClick={handleCheckEnvironment}
+                disabled={isSyncing}
+                variant="outline"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {isSyncing ? 'Checking...' : 'Check Environment'}
               </Button>
             </Can>
 

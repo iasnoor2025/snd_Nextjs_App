@@ -519,49 +519,42 @@ export default function PayrollManagementPage() {
                     Generate Monthly
                   </Button>
                 </DialogTrigger>
-          <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <CalendarDays className="h-4 w-4 mr-2" />
-                Generate Monthly
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Generate Monthly Payroll</DialogTitle>
-                <DialogDescription>
-                  Generate payroll for all employees for a specific month
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="generate-month">Select Month</Label>
-                  <Input
-                    id="generate-month"
-                    type="month"
-                    value={monthFilter ? monthFilter.toISOString().slice(0, 7) : ""}
-                    onChange={(e) => setMonthFilter(new Date(e.target.value))}
-                    className="mt-1"
-                  />
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Generate Monthly Payroll</DialogTitle>
+                  <DialogDescription>
+                    Generate payroll for all employees for a specific month
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="generate-month">Select Month</Label>
+                    <Input
+                      id="generate-month"
+                      type="month"
+                      value={monthFilter ? monthFilter.toISOString().slice(0, 7) : ""}
+                      onChange={(e) => setMonthFilter(new Date(e.target.value))}
+                      className="mt-1"
+                    />
+                  </div>
                 </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsGenerateDialogOpen(false)} disabled={generating}>
-                  Cancel
-                </Button>
-                <Button onClick={handleGenerate} disabled={generating}>
-                  {generating ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    "Generate Payroll"
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsGenerateDialogOpen(false)} disabled={generating}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleGenerate} disabled={generating}>
+                    {generating ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Generating...
+                      </>
+                    ) : (
+                      "Generate Payroll"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
           <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
             <DialogTrigger asChild>

@@ -5,14 +5,26 @@ import { DataTable } from "@/components/data-table-simple"
 import { SectionCards } from "@/components/section-cards"
 import { useSidebar } from "@/components/ui/sidebar"
 import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
+import { useEffect } from "react"
 
 import data from "./data.json"
 
 export default function Page() {
   const { state, open } = useSidebar()
+  const router = useRouter()
 
   // Ensure user is authenticated
   const { data: session, status } = useSession()
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (status === "loading") return;
+
+    if (!session) {
+      router.push('/login');
+    }
+  }, [session, status, router]);
 
   // Show loading while checking authentication
   if (status === "loading") {
@@ -24,6 +36,11 @@ export default function Page() {
         </div>
       </div>
     )
+  }
+
+  // Don't render if not authenticated
+  if (!session) {
+    return null;
   }
 
   return (

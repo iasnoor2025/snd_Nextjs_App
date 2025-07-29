@@ -4,6 +4,7 @@ import { getToken } from 'next-auth/jwt';
 
 // Define route permissions
 const routePermissions: Record<string, { action: string; subject: string; roles: string[] }> = {
+  '/dashboard': { action: 'read', subject: 'Dashboard', roles: ['ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'USER'] },
   '/modules/employee-management': { action: 'read', subject: 'Employee', roles: ['ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'USER'] },
   '/modules/customer-management': { action: 'read', subject: 'Customer', roles: ['ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'USER'] },
   '/modules/equipment-management': { action: 'read', subject: 'Equipment', roles: ['ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'USER'] },
