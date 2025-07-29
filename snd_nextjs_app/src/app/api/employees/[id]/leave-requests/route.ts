@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const employeeId = params.id;
+    const { id: employeeId } = await params;
 
     // For now, return empty data since we're not connected to Laravel backend
     // In the future, this would fetch from Laravel API

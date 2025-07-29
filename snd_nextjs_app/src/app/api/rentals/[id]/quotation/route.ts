@@ -4,11 +4,12 @@ import { prisma } from '@/lib/db';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('Generating quotation for rental:', params.id);
-    const rental = await DatabaseService.getRental(params.id);
+    const { id } = await params;
+    console.log('Generating quotation for rental:', id);
+    const rental = await DatabaseService.getRental(id);
 
     if (!rental) {
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
@@ -19,7 +20,7 @@ export async function POST(
 
     // Update rental with quotation information and create status log
     const updatedRental = await prisma.rental.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         quotationId: quotationNumber,
         status: 'quotation_generated',
@@ -49,10 +50,10 @@ export async function POST(
 
     return NextResponse.json({
       message: 'Quotation generated successfully',
-      quotation: {
-        id: quotationNumber,
-        rentalId: params.id,
-        quotationNumber,
+              quotation: {
+          id: quotationNumber,
+          rentalId: id,
+          quotationNumber,
         createdAt: new Date().toISOString(),
         rental: updatedRental
       }

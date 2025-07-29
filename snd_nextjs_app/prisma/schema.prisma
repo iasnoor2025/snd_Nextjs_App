@@ -14,6 +14,21 @@ datasource db {
 // CORE MODELS
 // ========================================
 
+model Company {
+  id             Int       @id @default(autoincrement())
+  name           String
+  address        String?
+  email          String?
+  phone          String?
+  logo           String?
+  legal_document String?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+  deleted_at     DateTime?
+
+  @@map("companies")
+}
+
 model User {
   id              Int       @id @default(autoincrement())
   name            String
@@ -721,7 +736,7 @@ model Customer {
   status        String    @default("active")
   notes         String?
   user_id       Int?
-  erpnext_id    String?
+  erpnext_id    String?   @unique
   company_name  String?
   created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
@@ -1120,4 +1135,25 @@ model UserPermission {
 
   @@id([permission_id, user_id])
   @@map("model_has_permissions")
+}
+
+// ========================================
+// ANALYTICS & REPORTING
+// ========================================
+
+model AnalyticsReport {
+  id             Int       @id @default(autoincrement())
+  name           String
+  type           String
+  description    String?
+  status         String    @default("active")
+  created_by     String?
+  schedule       String?
+  parameters     String?   // JSON string
+  is_active      Boolean   @default(true)
+  last_generated DateTime?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  @@map("analytics_reports")
 }

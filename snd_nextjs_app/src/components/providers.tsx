@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import { SessionProvider } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { RBACProvider } from "@/lib/rbac/rbac-context";
+import { SSEProvider } from "@/contexts/sse-context";
 import '@/lib/i18n'; // Initialize i18n
 
 interface ProvidersProps {
@@ -47,8 +48,10 @@ export function Providers({ children }: ProvidersProps) {
           disableTransitionOnChange
         >
           <QueryClientProvider client={queryClient}>
-            {children}
-            <ReactQueryDevtools initialIsOpen={false} />
+            <SSEProvider enabled={true} maxEvents={100} showToasts={true}>
+              {children}
+              <ReactQueryDevtools initialIsOpen={false} />
+            </SSEProvider>
           </QueryClientProvider>
         </ThemeProvider>
       </RBACProvider>

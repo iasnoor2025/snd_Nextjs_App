@@ -35,10 +35,11 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const invoiceId = params.id;
+    const { id } = await params;
+    const invoiceId = id;
     const data = await makeERPNextRequest(`/api/resource/Sales Invoice/${encodeURIComponent(invoiceId)}`);
 
     return NextResponse.json({

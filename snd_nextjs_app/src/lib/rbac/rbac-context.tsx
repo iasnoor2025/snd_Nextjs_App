@@ -25,11 +25,13 @@ export function RBACProvider({ children }: RBACProviderProps) {
   const user: User | null = useMemo(() => {
     if (!session?.user) return null;
 
+    let role = session.user.role || 'USER';
+
     return {
       id: session.user.id || '',
       email: session.user.email || '',
       name: session.user.name || '',
-      role: session.user.role || 'USER',
+      role: role,
       isActive: session.user.isActive || true,
       department: undefined, // Department will be fetched separately if needed
       permissions: undefined,
@@ -49,23 +51,38 @@ export function RBACProvider({ children }: RBACProviderProps) {
     return createAbilityFor(user);
   }, [user]);
 
-  const contextValue: RBACContextType = useMemo(() => ({
-    ability,
-    user,
-    hasPermission: (action: string, subject: string) => {
-      if (!user) return false;
-      return hasPermission(user, action as any, subject as any);
-    },
-    getAllowedActions: (subject: string) => {
-      if (!user) return [];
-      return getAllowedActions(user, subject as any);
-    },
-    canAccessRoute: (route: string) => {
-      if (!user) return false;
-      return canAccessRoute(user, route);
-    },
-    isLoading: status === 'loading',
-  }), [ability, user, status]);
+  const contextValue: RBACContextType = useMemo(() => {
+    // Debug logging
+    console.log('RBAC Context - Session:', session);
+    console.log('RBAC Context - User:', user);
+    console.log('RBAC Context - Status:', status);
+    console.log('RBAC Context - Ability:', ability);
+    
+    return {
+      ability,
+      user,
+      hasPermission: (action: string, subject: string) => {
+        if (!user) {
+          console.log(`Permission check failed - no user. Action: ${action}, Subject: ${subject}`);
+          return false;
+        }
+        const result = hasPermission(user, action as any, subject as any);
+        console.log(`Permission check - User: ${user.email}, Role: ${user.role}, Action: ${action}, Subject: ${subject}, Result: ${result}`);
+        return result;
+      },
+      getAllowedActions: (subject: string) => {
+        if (!user) return [];
+        const actions = getAllowedActions(user, subject as any);
+        console.log(`Allowed actions for ${subject} - User: ${user.email}, Role: ${user.role}, Actions:`, actions);
+        return actions;
+      },
+      canAccessRoute: (route: string) => {
+        if (!user) return false;
+        return canAccessRoute(user, route);
+      },
+      isLoading: status === 'loading',
+    };
+  }, [ability, user, status]);
 
   return (
     <RBACContext.Provider value={contextValue}>

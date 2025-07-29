@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // ERPNext configuration
 const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
-const ERPNEXT_API_KEY = process.env.ERPNEXT_API_KEY;
-const ERPNEXT_API_SECRET = process.env.ERPNEXT_API_SECRET;
+const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY;
+const ERPNEXT_API_SECRET = process.env.NEXT_PUBLIC_ERPNEXT_API_SECRET;
 
 async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   if (!ERPNEXT_URL || !ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {

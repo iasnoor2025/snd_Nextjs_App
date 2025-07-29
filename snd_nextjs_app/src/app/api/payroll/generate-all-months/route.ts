@@ -3,30 +3,35 @@ import { prisma } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { employee_id, start_month, end_month } = body;
+    const { start_month, end_month } = await request.json();
 
-    // Get all employees or specific employee
-    const employees = employee_id && employee_id !== 'all'
-      ? await prisma.employee.findMany({ where: { id: parseInt(employee_id) } })
-      : await prisma.employee.findMany();
+    if (!start_month || !end_month) {
+      return NextResponse.json(
+        { success: false, message: 'Start month and end month are required' },
+        { status: 400 }
+      );
+    }
 
-    // Determine date range
     const now = new Date();
-    const startDate = start_month ? new Date(start_month + '-01') : new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    const startDate = new Date(start_month + '-01');
     const endDate = end_month ? new Date(end_month + '-01') : new Date(now.getFullYear(), now.getMonth(), 1);
 
-    let processedEmployees = [];
-    let generatedPayrolls = [];
-    let errors = [];
+    const processedEmployees: string[] = [];
+    const generatedPayrolls: string[] = [];
+    const errors: string[] = [];
     let totalGenerated = 0;
     let totalSkipped = 0;
+
+    // Get all active employees
+    const employees = await prisma.employee.findMany({
+      where: { status: 'active' }
+    });
 
     // Process each employee
     for (const employee of employees) {
       try {
         // Generate payrolls for each month in the range
-        let current = new Date(startDate);
+        const current = new Date(startDate);
         while (current <= endDate) {
           const month = current.getMonth() + 1;
           const year = current.getFullYear();
@@ -127,7 +132,7 @@ export async function POST(request: NextRequest) {
                 payrollId: payroll.id,
                 type: 'deduction',
                 description: 'Tax Deduction',
-                amount: deductionAmount,
+                amount: -deductionAmount,
                 isTaxable: false,
                 taxRate: 0,
                 order: 4
@@ -135,18 +140,14 @@ export async function POST(request: NextRequest) {
             ]
           });
 
-          generatedPayrolls.push(payroll);
+          generatedPayrolls.push(payroll.id);
           totalGenerated++;
-
           current.setMonth(current.getMonth() + 1);
         }
 
-        if (!processedEmployees.includes(employee.fullName)) {
-          processedEmployees.push(employee.fullName);
-        }
-
+        processedEmployees.push(employee.id);
       } catch (error) {
-        errors.push(`Error processing ${employee.fullName}: ${error}`);
+        errors.push(`Employee ${employee.id}: ${(error as Error).message}`);
       }
     }
 

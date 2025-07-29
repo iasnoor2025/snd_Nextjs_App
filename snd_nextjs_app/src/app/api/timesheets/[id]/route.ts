@@ -3,11 +3,12 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const timesheet = await prisma.timesheet.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         employee: {
           include: {
@@ -41,12 +42,13 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // Check if timesheet exists
     const existingTimesheet = await prisma.timesheet.findUnique({
-      where: { id: params.id }
+      where: { id }
     });
 
     if (!existingTimesheet) {
@@ -69,7 +71,7 @@ export async function DELETE(
 
     // Delete the timesheet
     await prisma.timesheet.delete({
-      where: { id: params.id }
+      where: { id }
     });
 
     return NextResponse.json(

@@ -3,6 +3,7 @@
 import { ChartAreaSimple } from "@/components/chart-area-simple"
 import { DataTable } from "@/components/data-table-simple"
 import { SectionCards } from "@/components/section-cards"
+import { SSEStatusCompact } from "@/components/sse-status"
 import { useSidebar } from "@/components/ui/sidebar"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
@@ -47,12 +48,17 @@ export default function Page() {
     <div className="h-full w-full bg-background">
       <div className="w-full p-4">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Dashboard Overview
-          </h1>
-          <p className="text-muted-foreground">
-            Welcome back, {session?.user?.name || "User"}! Monitor your business performance and manage operations.
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                Dashboard Overview
+              </h1>
+              <p className="text-muted-foreground">
+                Welcome back, {session?.user?.name || "User"}! Monitor your business performance and manage operations.
+              </p>
+            </div>
+            <SSEStatusCompact />
+          </div>
           <div className="mt-4 p-4 bg-muted rounded-lg">
             <p className="text-sm font-medium">Sidebar State: <span className="text-primary">{state}</span></p>
             <p className="text-sm text-muted-foreground">Open: {open ? 'Yes' : 'No'}</p>

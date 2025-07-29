@@ -3,10 +3,11 @@ import { DatabaseService } from '@/lib/database'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const rental = await DatabaseService.getRental(params.id)
+    const { id } = await params;
+    const rental = await DatabaseService.getRental(id)
 
     if (!rental) {
       return NextResponse.json(
@@ -27,9 +28,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json()
 
     // Validate required fields
@@ -70,7 +72,7 @@ export async function PUT(
       rentalItems: body.rentalItems || [],
     }
 
-    const rental = await DatabaseService.updateRental(params.id, updateData)
+    const rental = await DatabaseService.updateRental(id, updateData)
 
     if (!rental) {
       return NextResponse.json(
@@ -91,10 +93,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const success = await DatabaseService.deleteRental(params.id)
+    const { id } = await params;
+    const success = await DatabaseService.deleteRental(id)
 
     if (!success) {
       return NextResponse.json(

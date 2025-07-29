@@ -4,13 +4,13 @@ import { useState, useEffect } from "react";
 import { ProtectedRoute } from '@/components/protected-route';
 import { Can, RoleBased } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+import { Pagination } from "@/components/ui/pagination";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
@@ -555,6 +555,7 @@ export default function PayrollManagementPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            </Can>
 
           <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
             <DialogTrigger asChild>
@@ -915,36 +916,13 @@ export default function PayrollManagementPage() {
               {/* Pagination */}
               {payrolls?.last_page > 1 && (
                 <div className="mt-4">
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                          className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                        />
-                      </PaginationItem>
-                      {Array.from({ length: Math.min(5, payrolls.last_page) }, (_, i) => {
-                        const page = i + 1;
-                        return (
-                          <PaginationItem key={page}>
-                            <PaginationLink
-                              onClick={() => setCurrentPage(page)}
-                              isActive={currentPage === page}
-                              className="cursor-pointer"
-                            >
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        );
-                      })}
-                      <PaginationItem>
-                        <PaginationNext
-                          onClick={() => setCurrentPage(Math.min(payrolls.last_page, currentPage + 1))}
-                          className={currentPage === payrolls.last_page ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={payrolls.last_page}
+                    totalItems={payrolls.total}
+                    itemsPerPage={payrolls.per_page}
+                    onPageChange={setCurrentPage}
+                  />
                 </div>
               )}
             </>

@@ -572,7 +572,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                         const dayDate = new Date(payroll.year, payroll.month - 1, day);
                         const dayName = dayDate.toString() !== 'Invalid Date' ? dayDate.toLocaleDateString('en-US', { weekday: 'short' }) : '';
                         const isFriday = dayName === 'Fri';
-                        let bgColor = isFriday ? 'bg-blue-100' : '';
+                        const bgColor = isFriday ? 'bg-blue-100' : '';
                         return (
                           <td key={`day-${day}`} className={`text-center ${bgColor} border p-1 text-xs`}>
                             <div className="text-xs text-gray-600">{dayName.substring(0, 1)}</div>
@@ -589,7 +589,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                         const isFriday = dayName === 'Fri';
                         let content = '';
                         let textColor = '';
-                        let bgColor = isFriday ? 'bg-blue-100' : '';
+                        const bgColor = isFriday ? 'bg-blue-100' : '';
 
                         if (dayData) {
                           const regularHours = dayData.hours || 0;
@@ -639,7 +639,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                         const isFriday = dayName === 'Fri';
                         let content = '0';
                         let textColor = '';
-                        let bgColor = isFriday ? 'bg-blue-100' : '';
+                        const bgColor = isFriday ? 'bg-blue-100' : '';
 
                         if (dayData) {
                           const overtimeHours = dayData.overtime || 0;

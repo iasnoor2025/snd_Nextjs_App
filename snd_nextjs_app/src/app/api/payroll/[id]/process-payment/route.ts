@@ -194,10 +194,11 @@ const mockPayrolls = [
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id: payrollId } = await params;
+    const id = parseInt(payrollId);
     const body = await request.json();
     const { payment_method, reference } = body;
 

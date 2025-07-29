@@ -14,8 +14,8 @@ async function manageAssignmentStatuses(employeeId: string): Promise<void> {
   // Get all assignments for this employee, ordered by start date and ID
   const allAssignments = await prisma.employeeAssignment.findMany({
     where: {
-      employeeId: employeeId,
-      deletedAt: null,
+      employee_id: parseInt(employeeId),
+      status: "active",
     },
     orderBy: [
       { startDate: 'asc' },
@@ -90,11 +90,10 @@ async function manageAssignmentStatuses(employeeId: string): Promise<void> {
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; assignmentId: string } }
+  { params }: { params: Promise<{ id: string; assignmentId: string }> }
 ) {
   try {
-    const employeeId = params.id;
-    const assignmentId = params.assignmentId;
+    const { id: employeeId, assignmentId } = await params;
     const body = await request.json();
     const { name, startDate, endDate, location, notes, projectId, rentalId } = body;
 
@@ -102,8 +101,8 @@ export async function PUT(
     const existingAssignment = await prisma.employeeAssignment.findFirst({
       where: {
         id: assignmentId,
-        employeeId: employeeId,
-        deletedAt: null,
+        employee_id: parseInt(employeeId),
+        status: "active",
       },
     });
 
@@ -172,18 +171,17 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; assignmentId: string } }
+  { params }: { params: Promise<{ id: string; assignmentId: string }> }
 ) {
   try {
-    const employeeId = params.id;
-    const assignmentId = params.assignmentId;
+    const { id: employeeId, assignmentId } = await params;
 
     // Check if assignment exists and belongs to this employee
     const existingAssignment = await prisma.employeeAssignment.findFirst({
       where: {
         id: assignmentId,
-        employeeId: employeeId,
-        deletedAt: null,
+        employee_id: parseInt(employeeId),
+        deleted_at: null,
       },
     });
 
@@ -198,7 +196,7 @@ export async function DELETE(
     await prisma.employeeAssignment.update({
       where: { id: assignmentId },
       data: {
-        deletedAt: new Date(),
+        status: "deleted",
       },
     });
 

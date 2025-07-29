@@ -3,6 +3,7 @@
 import { ProtectedRoute } from '@/components/protected-route';
 import { useTranslation } from 'react-i18next';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 
 export default function HomePage() {
   const { t } = useTranslation(['common']);
@@ -57,12 +58,12 @@ export default function HomePage() {
           </div>
 
           <div className="mt-8">
-            <a
+            <Link
               href="/modules/employee-management"
               className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
             >
               Go to Employee Management
-            </a>
+            </Link>
           </div>
 
           <div className="mt-8 p-4 bg-secondary rounded-lg">

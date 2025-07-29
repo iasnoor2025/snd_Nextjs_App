@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     console.log('🔄 Starting database reset via API...');
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
       adminUser: {
         id: adminUser.id,
         email: adminUser.email,
-        role: adminUser.role,
+        role_id: adminUser.role_id,
         isActive: adminUser.isActive,
       },
       credentials: {

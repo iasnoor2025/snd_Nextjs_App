@@ -3,10 +3,11 @@ import { DatabaseService } from '@/lib/database'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const equipment = await DatabaseService.getEquipmentById(params.id)
+    const { id } = await params;
+    const equipment = await DatabaseService.getEquipmentById(id)
     if (!equipment) {
       return NextResponse.json(
         { error: 'Equipment not found' },
@@ -24,11 +25,12 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json()
-    const equipment = await DatabaseService.updateEquipment(params.id, body)
+    const equipment = await DatabaseService.updateEquipment(id, body)
     return NextResponse.json(equipment)
   } catch (error) {
     return NextResponse.json(
@@ -40,10 +42,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await DatabaseService.deleteEquipment(params.id)
+    const { id } = await params;
+    await DatabaseService.deleteEquipment(id)
     return NextResponse.json({ message: 'Equipment deleted successfully' })
   } catch (error) {
     return NextResponse.json(

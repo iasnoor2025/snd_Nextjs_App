@@ -1,15 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ProtectedRoute } from '@/components/protected-route';
+import { Can, RoleBased } from '@/lib/rbac/rbac-components';
+import { useRBAC } from '@/lib/rbac/rbac-context';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Eye, Edit, Trash2, Plus, BarChart3, TrendingUp, PieChart, Activity } from "lucide-react";
+import { Eye, Edit, Trash2, Plus, BarChart3, TrendingUp, PieChart, Activity, Download, Settings } from "lucide-react";
 import { toast } from "sonner";
 
 interface AnalyticsReport {
@@ -154,6 +157,7 @@ const mockAnalyticsReports: AnalyticsReport[] = [
 ];
 
 export default function AnalyticsPage() {
+  const { user, hasPermission, getAllowedActions } = useRBAC();
   const [reports, setReports] = useState<AnalyticsReportResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -161,6 +165,9 @@ export default function AnalyticsPage() {
   const [type, setType] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage] = useState(10);
+
+  // Get allowed actions for analytics
+  const allowedActions = getAllowedActions('Report');
 
   useEffect(() => {
     const fetchAnalyticsReports = async () => {
@@ -335,19 +342,31 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <BarChart3 className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">Analytics Management</h1>
+    <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Report' }}>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <BarChart3 className="h-6 w-6" />
+            <h1 className="text-2xl font-bold">Analytics Management</h1>
+          </div>
+          <div className="flex space-x-2">
+            <Can action="export" subject="Report">
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </Can>
+
+            <Can action="create" subject="Report">
+              <Link href="/modules/analytics/create">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Report
+                </Button>
+              </Link>
+            </Can>
+          </div>
         </div>
-        <Link href="/modules/analytics/create">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Report
-          </Button>
-        </Link>
-      </div>
 
       <Card>
         <CardHeader>
@@ -430,31 +449,42 @@ export default function AnalyticsPage() {
                     <TableCell>{report.created_by}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
-                        <Link href={`/modules/analytics/${report.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
+                        <Can action="read" subject="Report">
+                          <Link href={`/modules/analytics/${report.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </Can>
+
+                        <Can action="manage" subject="Report">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleGenerate(report.id)}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            <Activity className="h-4 w-4" />
                           </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleGenerate(report.id)}
-                          className="text-blue-600 hover:text-blue-700"
-                        >
-                          <Activity className="h-4 w-4" />
-                        </Button>
-                        <Link href={`/modules/analytics/${report.id}/edit`}>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
+                        </Can>
+
+                        <Can action="update" subject="Report">
+                          <Link href={`/modules/analytics/${report.id}/edit`}>
+                            <Button variant="ghost" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </Can>
+
+                        <Can action="delete" subject="Report">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(report.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(report.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        </Can>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -517,6 +547,43 @@ export default function AnalyticsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Role-based content example */}
+      <RoleBased roles={['ADMIN', 'MANAGER']}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Analytics Administration</CardTitle>
+            <CardDescription>
+              Advanced analytics management features for administrators
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Can action="manage" subject="Report">
+                <Button variant="outline">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Analytics Settings
+                </Button>
+              </Can>
+
+              <Can action="export" subject="Report">
+                <Button variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Generate All Reports
+                </Button>
+              </Can>
+
+              <Can action="manage" subject="Report">
+                <Button variant="outline">
+                  <BarChart3 className="h-4 w-4 mr-2" />
+                  Schedule Reports
+                </Button>
+              </Can>
+            </div>
+          </CardContent>
+        </Card>
+      </RoleBased>
     </div>
+  </ProtectedRoute>
   );
 }

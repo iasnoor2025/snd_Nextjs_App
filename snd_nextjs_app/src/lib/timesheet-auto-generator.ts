@@ -17,7 +17,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
     // Get all employee assignments (all statuses, not just active)
     const assignments = await prisma.employeeAssignment.findMany({
       where: {
-        deletedAt: null,
+        status: "active",
         // Remove status filter to include all statuses: active, completed, pending, etc.
       },
       include: {
@@ -31,7 +31,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
     const errors: string[] = [];
 
     for (const assignment of assignments) {
-      const employeeId = assignment.employeeId;
+      const employeeId = assignment.employee_id;
 
       if (!assignment.startDate) {
         errors.push(`Assignment ${assignment.id}: missing start date`);
@@ -60,9 +60,9 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
         // Check for any existing timesheet for this employee on this date
         const existingTimesheet = await prisma.timesheet.findFirst({
           where: {
-            employeeId: employeeId,
+            employee_id: employeeId,
             date: currentDate,
-            deletedAt: null,
+            deleted_at: null,
           },
         });
 
@@ -89,22 +89,22 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
 
         // Create timesheet data
         const timesheetData: any = {
-          employeeId,
+          employee_id: employeeId,
           date: currentDate,
           status: 'draft',
-          hoursWorked,
-          overtimeHours,
-          startTime: '06:00',
-          endTime: '16:00',
-          assignmentId: assignment.id,
+          hours_worked: hoursWorked,
+          overtime_hours: overtimeHours,
+          start_time: new Date(currentDate.getTime() + 6 * 60 * 60 * 1000), // 6 AM
+          end_time: new Date(currentDate.getTime() + 16 * 60 * 60 * 1000), // 4 PM
+          assignment_id: assignment.id,
         };
 
         // Add project or rental assignment
-        if (assignment.type === 'project' && assignment.projectId) {
-          timesheetData.projectId = assignment.projectId;
+        if (assignment.type === 'project' && assignment.project_id) {
+          timesheetData.project_id = assignment.project_id;
         }
-        if (assignment.type === 'rental' && assignment.rentalId) {
-          timesheetData.rentalId = assignment.rentalId;
+        if (assignment.type === 'rental' && assignment.rental_id) {
+          timesheetData.rental_id = assignment.rental_id;
         }
 
         // Create the timesheet

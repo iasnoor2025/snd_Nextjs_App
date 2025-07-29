@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const employee_id = searchParams.get('employee_id');
 
     // Build where clause
-    let where: any = {};
+    const where: any = {};
 
     if (status && status !== 'all') {
       where.status = status;

@@ -183,7 +183,7 @@ function TimesheetDetailContent() {
       <div className="p-6">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Timesheet Not Found</h2>
-          <p className="text-gray-600 mb-4">The timesheet you're looking for doesn't exist.</p>
+          <p className="text-gray-600 mb-4">The timesheet you&apos;re looking for doesn&apos;t exist.</p>
           <Link href="/modules/timesheet-management">
             <Button>
               <ArrowLeft className="h-4 w-4 mr-2" />

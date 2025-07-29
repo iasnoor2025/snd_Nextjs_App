@@ -3,10 +3,11 @@ import { DatabaseService } from '@/lib/database';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const rental = await DatabaseService.getRental(params.id);
+    const { id } = await params;
+    const rental = await DatabaseService.getRental(id);
 
     if (!rental) {
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });

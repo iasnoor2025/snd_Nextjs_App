@@ -21,9 +21,9 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    let processedEmployees = [];
-    let generatedPayrolls = [];
-    let errors = [];
+    const processedEmployees: string[] = [];
+    const generatedPayrolls: string[] = [];
+    const errors: string[] = [];
     let totalGenerated = 0;
     let totalSkipped = 0;
 

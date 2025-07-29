@@ -474,7 +474,9 @@ export default function CreateRentalPage() {
                   <div className="text-center py-8 text-muted-foreground">
                 <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>No rental items added yet</p>
-                <p className="text-sm">Click "Add Item" to get started</p>
+                <p className="text-sm text-muted-foreground">
+                  This will create a new rental with the number &quot;{formData.rentalNumber}&quot;
+                </p>
                   </div>
                 ) : (
                   <div className="space-y-4">

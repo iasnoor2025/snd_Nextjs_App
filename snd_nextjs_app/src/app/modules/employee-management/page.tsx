@@ -28,7 +28,6 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Pagination,
   PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -74,6 +73,12 @@ export default function EmployeeManagementPage() {
 
   // Get allowed actions for employee management
   const allowedActions = getAllowedActions('Employee');
+  
+  // Debug logging
+  console.log('User role:', user?.role);
+  console.log('Allowed actions for Employee:', allowedActions);
+  console.log('Has create permission:', hasPermission('create', 'Employee'));
+  console.log('Has sync permission:', hasPermission('sync', 'Employee'));
 
   useEffect(() => {
     fetchEmployees();
@@ -267,7 +272,7 @@ export default function EmployeeManagementPage() {
       return [];
     }
 
-    let filtered = employees.filter(employee => {
+    const filtered = employees.filter(employee => {
       const matchesSearch =
         employee.file_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
         employee.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -280,8 +285,8 @@ export default function EmployeeManagementPage() {
     });
 
     filtered.sort((a, b) => {
-      let aValue: any = a[sortField as keyof Employee];
-      let bValue: any = b[sortField as keyof Employee];
+      const aValue: any = a[sortField as keyof Employee];
+      const bValue: any = b[sortField as keyof Employee];
 
       if (sortField === 'file_number') {
         return sortDirection === 'asc'
@@ -376,10 +381,12 @@ export default function EmployeeManagementPage() {
             </Can>
 
             <Can action="create" subject="Employee">
-              <Button onClick={() => setIsAddModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Employee
-              </Button>
+              <Link href="/modules/employee-management/create">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Employee
+                </Button>
+              </Link>
             </Can>
 
             <Can action="export" subject="Employee">
@@ -533,40 +540,29 @@ export default function EmployeeManagementPage() {
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
                             <Can action="read" subject="Employee">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleViewEmployee(employee)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </Can>
-
-                            <Can action="read" subject="Employee">
                               <Link href={`/modules/employee-management/${employee.id}`}>
-                                <Button variant="ghost" size="sm">
+                                <Button variant="ghost" size="sm" title="View Details">
                                   <Eye className="h-4 w-4" />
                                 </Button>
                               </Link>
                             </Can>
 
                             <Can action="update" subject="Employee">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditEmployee(employee)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
+                              <Link href={`/modules/employee-management/${employee.id}/edit`}>
+                                <Button variant="ghost" size="sm" title="Edit Employee">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </Link>
                             </Can>
 
                             <Can action="delete" subject="Employee">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="text-destructive"
+                                className="text-destructive hover:text-destructive"
                                 onClick={() => handleDeleteEmployee(employee)}
                                 disabled={isDeleting}
+                                title="Delete Employee"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>

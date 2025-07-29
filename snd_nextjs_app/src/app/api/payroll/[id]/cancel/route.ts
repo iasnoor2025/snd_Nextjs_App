@@ -194,10 +194,11 @@ const mockPayrolls = [
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id: payrollId } = await params;
+    const id = parseInt(payrollId);
     const payrollIndex = mockPayrolls.findIndex(p => p.id === id);
 
     if (payrollIndex === -1) {

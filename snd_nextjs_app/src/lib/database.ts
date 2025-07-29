@@ -2,21 +2,77 @@ import { prisma } from './db'
 
 export class DatabaseService {
   // Customer operations
-  static async getCustomers() {
-    return await prisma.customer.findMany({
+  static async getCustomers(options?: {
+    page?: number
+    limit?: number
+    search?: string
+    status?: string
+    sortBy?: string
+    sortOrder?: 'asc' | 'desc'
+  }) {
+    const page = options?.page || 1
+    const limit = options?.limit || 10
+    const skip = (page - 1) * limit
+
+    // Build where clause
+    const where: any = {}
+    
+    if (options?.search) {
+      where.OR = [
+        { name: { contains: options.search, mode: 'insensitive' } },
+        { company_name: { contains: options.search, mode: 'insensitive' } },
+        { contact_person: { contains: options.search, mode: 'insensitive' } },
+        { email: { contains: options.search, mode: 'insensitive' } },
+        { phone: { contains: options.search, mode: 'insensitive' } },
+      ]
+    }
+
+    if (options?.status) {
+      where.status = options.status
+    }
+
+    // Build orderBy clause
+    const orderBy: any = {}
+    if (options?.sortBy) {
+      orderBy[options.sortBy] = options.sortOrder || 'asc'
+    } else {
+      orderBy.created_at = 'desc'
+    }
+
+    // Get total count for pagination
+    const totalCount = await prisma.customer.count({ where })
+
+    // Get paginated results
+    const customers = await prisma.customer.findMany({
+      where,
       include: {
         rentals: true
-      }
+      },
+      orderBy,
+      skip,
+      take: limit,
     })
+
+    return {
+      customers,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNext: page < Math.ceil(totalCount / limit),
+        hasPrev: page > 1
+      }
+    }
   }
 
-  static async getCustomerById(id: string) {
+  static async getCustomerById(id: number) {
     return await prisma.customer.findUnique({
       where: { id },
       include: {
         rentals: {
           include: {
-            rentalItems: {
+            rental_items: {
               include: {
                 equipment: true
               }
@@ -51,7 +107,7 @@ export class DatabaseService {
     })
   }
 
-  static async updateCustomer(id: string, data: {
+  static async updateCustomer(id: number, data: {
     name?: string
     email?: string
     phone?: string
@@ -76,10 +132,31 @@ export class DatabaseService {
     })
   }
 
-  static async deleteCustomer(id: string) {
+  static async deleteCustomer(id: number) {
     return await prisma.customer.delete({
       where: { id }
     })
+  }
+
+  static async getCustomerStatistics() {
+    const [
+      totalCustomers,
+      activeCustomers,
+      erpnextSyncedCustomers,
+      localOnlyCustomers
+    ] = await Promise.all([
+      prisma.customer.count(),
+      prisma.customer.count({ where: { is_active: true } }),
+      prisma.customer.count({ where: { erpnext_id: { not: null } } }),
+      prisma.customer.count({ where: { erpnext_id: null } })
+    ])
+
+    return {
+      totalCustomers,
+      activeCustomers,
+      erpnextSyncedCustomers,
+      localOnlyCustomers
+    }
   }
 
   static async syncCustomerFromERPNext(erpnextId: string, customerData: any) {
@@ -91,7 +168,7 @@ export class DatabaseService {
   }
 
   static async getCustomerByERPNextId(erpnextId: string) {
-    return await prisma.customer.findUnique({
+    return await prisma.customer.findFirst({
       where: { erpnext_id: erpnextId },
       include: {
         rentals: true
@@ -103,7 +180,7 @@ export class DatabaseService {
   static async getEquipment() {
     return await prisma.equipment.findMany({
       include: {
-        rentalItems: {
+        rental_items: {
           include: {
             rental: true
           }
@@ -112,11 +189,11 @@ export class DatabaseService {
     })
   }
 
-  static async getEquipmentById(id: string) {
+  static async getEquipmentById(id: number) {
     return await prisma.equipment.findUnique({
       where: { id },
       include: {
-        rentalItems: {
+        rental_items: {
           include: {
             rental: {
               include: {
@@ -140,7 +217,7 @@ export class DatabaseService {
     })
   }
 
-  static async updateEquipment(id: string, data: {
+  static async updateEquipment(id: number, data: {
     name?: string
     description?: string
     category?: string
@@ -153,7 +230,7 @@ export class DatabaseService {
     })
   }
 
-  static async deleteEquipment(id: string) {
+  static async deleteEquipment(id: number) {
     return await prisma.equipment.delete({
       where: { id }
     })
@@ -201,36 +278,27 @@ export class DatabaseService {
       where,
       include: {
         customer: true,
-        rentalItems: {
+        rental_items: {
           include: {
             equipment: true
           }
-        },
-        payments: true,
-        invoices: true,
-        statusLogs: {
-          orderBy: { createdAt: 'desc' }
         }
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { created_at: 'desc' }
     })
   }
 
-  static async getRental(id: string) {
+  static async getRental(id: number) {
     return await prisma.rental.findUnique({
       where: { id },
       include: {
         customer: true,
-        rentalItems: {
+        rental_items: {
           include: {
             equipment: true
           }
         },
-        payments: true,
-        invoices: true,
-        statusLogs: {
-          orderBy: { createdAt: 'desc' }
-        }
+
       }
     })
   }
@@ -261,31 +329,24 @@ export class DatabaseService {
     const rental = await prisma.rental.create({
       data: {
         ...rentalData,
-        rentalItems: rentalItems ? {
+        rental_items: rentalItems ? {
           create: rentalItems.map((item: any) => ({
-            equipmentId: item.equipmentId,
+            equipment_id: item.equipmentId,
             quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            totalPrice: item.totalPrice,
+            unit_price: item.unitPrice,
+            total_price: item.totalPrice,
             days: item.days,
-            rateType: item.rateType,
-            operatorId: item.operatorId,
+            rate_type: item.rateType,
+            operator_id: item.operatorId,
             status: item.status,
             notes: item.notes
           }))
         } : undefined,
-        statusLogs: {
-          create: {
-            oldStatus: null,
-            newStatus: 'pending',
-            changedBy: 'system',
-            reason: 'Rental created'
-          }
-        }
+
       },
       include: {
         customer: true,
-        rentalItems: {
+        rental_items: {
           include: {
             equipment: true
           }
@@ -301,7 +362,7 @@ export class DatabaseService {
     return rental
   }
 
-  static async updateRental(id: string, data: {
+  static async updateRental(id: number, data: {
     customerId?: string
     rentalNumber?: string
     startDate?: Date
@@ -382,7 +443,7 @@ export class DatabaseService {
       },
       include: {
         customer: true,
-        rentalItems: {
+        rental_items: {
           include: {
             equipment: true
           }
@@ -396,7 +457,7 @@ export class DatabaseService {
     })
   }
 
-  static async deleteRental(id: string) {
+  static async deleteRental(id: number) {
     try {
       await prisma.rental.delete({
       where: { id }
@@ -413,7 +474,7 @@ export class DatabaseService {
     return await prisma.user.findMany()
   }
 
-  static async getUserById(id: string) {
+  static async getUserById(id: number) {
     return await prisma.user.findUnique({
       where: { id }
     })
@@ -429,13 +490,14 @@ export class DatabaseService {
     email: string
     name?: string
     role?: 'ADMIN' | 'USER' | 'MANAGER'
+    password: string
   }) {
     return await prisma.user.create({
-      data
+      data 
     })
   }
 
-  static async updateUser(id: string, data: {
+  static async updateUser(id: number, data: {
     email?: string
     name?: string
     role?: 'ADMIN' | 'USER' | 'MANAGER'
@@ -446,7 +508,7 @@ export class DatabaseService {
     })
   }
 
-  static async deleteUser(id: string) {
+  static async deleteUser(id: number) {
     return await prisma.user.delete({
       where: { id }
     })

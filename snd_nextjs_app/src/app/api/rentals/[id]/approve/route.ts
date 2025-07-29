@@ -4,11 +4,12 @@ import { prisma } from '@/lib/db';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('Approving rental:', params.id);
-    const rental = await DatabaseService.getRental(params.id);
+    const { id } = await params;
+    console.log('Approving rental:', id);
+    const rental = await DatabaseService.getRental(id);
 
     if (!rental) {
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
@@ -21,7 +22,7 @@ export async function POST(
 
     // Update rental with approval information
     const updatedRental = await prisma.rental.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         approvedAt: new Date().toISOString(),
         status: 'approved',

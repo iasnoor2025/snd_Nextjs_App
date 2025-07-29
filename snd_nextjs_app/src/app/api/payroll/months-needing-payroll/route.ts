@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
     const endDate = end_month ? new Date(end_month + '-01') : new Date(now.getFullYear(), now.getMonth(), 1);
 
     // Generate months to check
-    let months = [];
-    let current = new Date(startDate);
+    const months: { month: number; year: number; employeeCount: number }[] = [];
+    const current = new Date();
     while (current <= endDate) {
       const month = current.getMonth() + 1;
       const year = current.getFullYear();
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
         }
       });
 
-      let monthData = {
+      const monthData = {
         year: year,
         month: month,
         name: current.toLocaleDateString("en-US", { month: "long", year: "numeric" }),

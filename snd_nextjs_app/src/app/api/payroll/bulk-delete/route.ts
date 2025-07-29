@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     let deletedCount = 0;
-    let errors = [];
+    const errors: string[] = [];
 
     for (const payrollId of payroll_ids) {
       try {

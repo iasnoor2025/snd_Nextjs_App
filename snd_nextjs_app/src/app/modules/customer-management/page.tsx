@@ -12,8 +12,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Eye, User, Building, Mail, Phone, Download, Upload, RefreshCw } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, User, Building, Mail, Phone, Download, Upload, Search, Filter, RefreshCw } from 'lucide-react';
 
 interface Customer {
   id: string;
@@ -32,6 +33,22 @@ interface Customer {
   createdAt: string;
 }
 
+interface PaginationData {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+interface CustomerStatistics {
+  totalCustomers: number;
+  activeCustomers: number;
+  erpnextSyncedCustomers: number;
+  localOnlyCustomers: number;
+}
+
 export default function CustomerManagementPage() {
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -39,6 +56,7 @@ export default function CustomerManagementPage() {
   const [error, setError] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isShowDialogOpen, setIsShowDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -53,21 +71,84 @@ export default function CustomerManagementPage() {
     isActive: true,
     status: 'active'
   });
+  const [searchLoading, setSearchLoading] = useState(false);
   const [syncLoading, setSyncLoading] = useState(false);
+  const [statistics, setStatistics] = useState<CustomerStatistics>({
+    totalCustomers: 0,
+    activeCustomers: 0,
+    erpnextSyncedCustomers: 0,
+    localOnlyCustomers: 0
+  });
+
+  // Pagination and filtering state
+  const [pagination, setPagination] = useState<PaginationData>({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false
+  });
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Get allowed actions for customer management
   const allowedActions = getAllowedActions('Customer');
 
-  // Fetch customers
-  const fetchCustomers = async () => {
+  // Fetch customers with pagination and filtering
+  const fetchCustomers = async (page = pagination.page, limit = pagination.limit) => {
     try {
       setLoading(true);
-      const response = await fetch('/api/customers');
+      
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        sortBy: sortBy,
+        sortOrder: sortOrder
+      });
+
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+
+      if (statusFilter && statusFilter !== 'all') {
+        params.append('status', statusFilter);
+      }
+
+      const response = await fetch(`/api/customers?${params.toString()}`);
       if (!response.ok) {
         throw new Error('Failed to fetch customers');
       }
       const data = await response.json();
-      setCustomers(data);
+      
+      // Map database snake_case to frontend camelCase
+      const mappedCustomers = data.customers.map((customer: any) => ({
+        id: customer.id,
+        name: customer.name,
+        contactPerson: customer.contact_person,
+        email: customer.email,
+        phone: customer.phone,
+        address: customer.address,
+        city: customer.city,
+        state: customer.state,
+        country: customer.country,
+        companyName: customer.company_name,
+        isActive: customer.is_active,
+        status: customer.status,
+        erpnext_id: customer.erpnext_id,
+        createdAt: customer.created_at,
+      }));
+      
+      setCustomers(mappedCustomers);
+      setPagination(data.pagination);
+      setStatistics({
+        totalCustomers: data.statistics.totalCustomers,
+        activeCustomers: data.statistics.activeCustomers,
+        erpnextSyncedCustomers: data.statistics.erpnextSyncedCustomers,
+        localOnlyCustomers: data.statistics.localOnlyCustomers,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       toast.error('Failed to fetch customers');
@@ -149,36 +230,136 @@ export default function CustomerManagementPage() {
 
   // Sync customers from ERPNext
   const syncCustomersFromERPNext = async () => {
-    console.log('Starting ERPNext sync...');
+    console.log('Starting ERPNext sync process...');
     setSyncLoading(true);
+    
     try {
-      console.log('Making API request to /api/customers/sync');
-      const response = await fetch('/api/customers/sync', {
+      // Step 1: Check data from ERPNext
+      console.log('Step 1: Checking data from ERPNext...');
+      toast.info('Checking data from ERPNext...');
+      
+      const checkResponse = await fetch('/api/customers/sync/check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
 
-      console.log('Response status:', response.status);
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Sync failed:', errorText);
-        throw new Error(`Failed to sync customers: ${response.status} ${response.statusText}`);
+      if (!checkResponse.ok) {
+        const errorText = await checkResponse.text();
+        console.error('Check failed:', errorText);
+        throw new Error(`Failed to check ERPNext data: ${checkResponse.status} ${checkResponse.statusText}`);
       }
 
-      const result = await response.json();
-      console.log('Sync result:', result);
-      if (result.success) {
-        toast.success(`Synced ${result.data.processed} customers from ERPNext (${result.data.created} created, ${result.data.updated} updated)`);
+      const checkResult = await checkResponse.json();
+      console.log('Check result:', checkResult);
+      
+      if (!checkResult.success) {
+        toast.error(checkResult.message || 'Failed to check ERPNext data');
+        return;
+      }
+
+      // Step 2: Match data
+      console.log('Step 2: Matching data...');
+      toast.info('Matching data with existing customers...');
+      
+      const matchResponse = await fetch('/api/customers/sync/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          erpnextData: checkResult.data,
+          existingCustomers: customers 
+        }),
+      });
+
+      if (!matchResponse.ok) {
+        const errorText = await matchResponse.text();
+        console.error('Match failed:', errorText);
+        throw new Error(`Failed to match data: ${matchResponse.status} ${matchResponse.statusText}`);
+      }
+
+      const matchResult = await matchResponse.json();
+      console.log('Match result:', matchResult);
+      
+      if (!matchResult.success) {
+        toast.error(matchResult.message || 'Failed to match data');
+        return;
+      }
+
+      // Step 3: Sync data
+      console.log('Step 3: Syncing data...');
+      toast.info('Syncing matched data...');
+      
+      const syncResponse = await fetch('/api/customers/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          matchedData: matchResult.data 
+        }),
+      });
+
+      console.log('Sync response status:', syncResponse.status);
+      if (!syncResponse.ok) {
+        const errorText = await syncResponse.text();
+        console.error('Sync failed:', errorText);
+        throw new Error(`Failed to sync customers: ${syncResponse.status} ${syncResponse.statusText}`);
+      }
+
+      const syncResult = await syncResponse.json();
+      console.log('Sync result:', syncResult);
+      
+      if (syncResult.success) {
+        toast.success(`Sync completed! ${syncResult.data.processed} customers processed (${syncResult.data.created} created, ${syncResult.data.updated} updated)`);
         fetchCustomers();
       } else {
-        toast.error(result.message || 'Failed to sync customers');
+        toast.error(syncResult.message || 'Failed to sync customers');
       }
+      
     } catch (err) {
       console.error('Sync error:', err);
       toast.error(`Failed to sync customers from ERPNext: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setSyncLoading(false);
     }
+  };
+
+  // Search and filter handlers
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    setPagination(prev => ({ ...prev, page: 1 }));
+  };
+
+  // Debounced search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setSearchLoading(true);
+      fetchCustomers(1, pagination.limit).finally(() => {
+        setSearchLoading(false);
+      });
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  const handleStatusFilter = (value: string) => {
+    setStatusFilter(value);
+    setPagination(prev => ({ ...prev, page: 1 }));
+    fetchCustomers(1, pagination.limit);
+  };
+
+  const handleSort = (field: string) => {
+    const newOrder = sortBy === field && sortOrder === 'asc' ? 'desc' : 'asc';
+    setSortBy(field);
+    setSortOrder(newOrder);
+    setPagination(prev => ({ ...prev, page: 1 }));
+    fetchCustomers(1, pagination.limit);
+  };
+
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, page }));
+    fetchCustomers(page, pagination.limit);
+  };
+
+  const handleItemsPerPageChange = (limit: number) => {
+    setPagination(prev => ({ ...prev, page: 1, limit }));
+    fetchCustomers(1, limit);
   };
 
   const resetForm = () => {
@@ -215,10 +396,14 @@ export default function CustomerManagementPage() {
     setIsEditDialogOpen(true);
   };
 
+  const openShowDialog = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsShowDialogOpen(true);
+  };
+
   useEffect(() => {
     fetchCustomers();
     console.log('Customer Management page loaded');
-    console.log('Sync function available:', typeof syncCustomersFromERPNext);
   }, []);
 
   if (loading) {
@@ -252,14 +437,19 @@ export default function CustomerManagementPage() {
             <h1 className="text-3xl font-bold">Customer Management</h1>
             <p className="text-muted-foreground">
               Manage customer information and relationships
-              {customers.some(c => c.erpnext_id) && (
-                <span className="text-blue-600 ml-2">
-                  • {customers.filter(c => c.erpnext_id).length} synced from ERPNext
-                </span>
-              )}
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              onClick={syncCustomersFromERPNext}
+              disabled={syncLoading}
+              className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${syncLoading ? 'animate-spin' : ''}`} />
+              {syncLoading ? 'Syncing...' : 'Sync from ERPNext'}
+            </Button>
+
             <Can action="export" subject="Customer">
               <Button variant="outline">
                 <Download className="h-4 w-4 mr-2" />
@@ -274,96 +464,271 @@ export default function CustomerManagementPage() {
               </Button>
             </Can>
 
-            {/* Sync button - visible to all users with read permission */}
-            <Button 
-              variant="outline" 
-              onClick={syncCustomersFromERPNext}
-              disabled={syncLoading}
-              className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${syncLoading ? 'animate-spin' : ''}`} />
-              {syncLoading ? 'Syncing...' : 'Sync from ERPNext'}
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add
             </Button>
-
-            <Can action="create" subject="Customer">
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                New Customer
-              </Button>
-            </Can>
           </div>
         </div>
 
-        {/* ERPNext Sync Section */}
-        <Card className="border-blue-200 bg-blue-50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-blue-800">
-              <RefreshCw className="h-5 w-5" />
-              ERPNext Integration
-            </CardTitle>
-            <CardDescription className="text-blue-700">
-              Sync customers from ERPNext system
-              {customers.some(c => c.erpnext_id) && (
-                <span className="text-blue-600 ml-2">
-                  • {customers.filter(c => c.erpnext_id).length} customers synced
-                </span>
-              )}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <Button 
-                onClick={syncCustomersFromERPNext}
-                disabled={syncLoading}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${syncLoading ? 'animate-spin' : ''}`} />
-                {syncLoading ? 'Syncing...' : 'Sync from ERPNext'}
-              </Button>
-              <span className="text-sm text-blue-600">
-                {syncLoading ? 'Syncing customers from ERPNext...' : 'Click to sync latest customer data from ERPNext'}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Customers</p>
+                  <p className="text-2xl font-bold">{statistics.totalCustomers}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Active Customers</p>
+                  <p className="text-2xl font-bold">{statistics.activeCustomers}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <RefreshCw className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">ERPNext Synced</p>
+                  <p className="text-2xl font-bold">{statistics.erpnextSyncedCustomers}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                  <Building className="h-4 w-4 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Local Only</p>
+                  <p className="text-2xl font-bold">{statistics.localOnlyCustomers}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         <Card>
           <CardHeader>
             <CardTitle>Customers</CardTitle>
             <CardDescription>
               All customer records and their current status
-              {customers.some(c => c.erpnext_id) && (
-                <span className="text-blue-600 ml-2">
-                  • {customers.filter(c => c.erpnext_id).length} synced from ERPNext
-                </span>
-              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Search and Filter Controls */}
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search customers..."
+                    value={searchTerm}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="pl-10"
+                    disabled={searchLoading}
+                  />
+                  {searchLoading && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Select value={statusFilter} onValueChange={handleStatusFilter}>
+                  <SelectTrigger className="w-[180px]">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             <Table>
               <TableHeader>
-                                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Sync</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
+                <TableRow>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('name')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Name
+                      {sortBy === 'name' && (
+                        <span className="text-xs">
+                          {sortOrder === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('company_name')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Company
+                      {sortBy === 'company_name' && (
+                        <span className="text-xs">
+                          {sortOrder === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
+                  </TableHead>
+                  <TableHead>Contact Person</TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('email')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Email
+                      {sortBy === 'email' && (
+                        <span className="text-xs">
+                          {sortOrder === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
+                  </TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleSort('status')}
+                  >
+                    <div className="flex items-center gap-1">
+                      Status
+                      {sortBy === 'status' && (
+                        <span className="text-xs">
+                          {sortOrder === 'asc' ? '↑' : '↓'}
+                        </span>
+                      )}
+                    </div>
+                  </TableHead>
+                  <TableHead>Sync</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
               </TableHeader>
               <TableBody>
-                {customers.map((customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell className="font-medium">{customer.name}</TableCell>
-                    <TableCell>{customer.companyName || 'N/A'}</TableCell>
-                    <TableCell>{customer.contactPerson || 'N/A'}</TableCell>
-                    <TableCell>{customer.email || 'N/A'}</TableCell>
-                    <TableCell>{customer.phone || 'N/A'}</TableCell>
+                {customers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-12 h-12 bg-muted rounded-full flex items-center justify-center">
+                          <User className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-lg font-semibold">No customers found</p>
+                          <p className="text-muted-foreground">
+                            {searchTerm || statusFilter !== 'all' 
+                              ? 'Try adjusting your search or filter criteria'
+                              : 'Get started by adding your first customer'
+                            }
+                          </p>
+                        </div>
+                        {!searchTerm && statusFilter === 'all' && (
+                          <Button onClick={() => setIsCreateDialogOpen(true)} className="mt-2">
+                            <Plus className="h-4 w-4 mr-2" />
+                            Add First Customer
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  customers.map((customer) => (
+                    <TableRow key={customer.id} className="hover:bg-muted/50">
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                          <User className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <div className="font-semibold">{customer.name}</div>
+                          {customer.erpnext_id && (
+                            <div className="text-xs text-muted-foreground">ID: {customer.erpnext_id}</div>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
                     <TableCell>
-                      {customer.city && customer.state ? `${customer.city}, ${customer.state}` : 'N/A'}
+                      <div className="flex items-center gap-2">
+                        <Building className="h-4 w-4 text-muted-foreground" />
+                        <span>{customer.companyName || customer.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {customer.contactPerson ? (
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <span>{customer.contactPerson}</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {customer.email ? (
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-blue-600 hover:underline cursor-pointer">
+                            {customer.email}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {customer.phone ? (
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-green-600">{customer.phone}</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {customer.city || customer.state ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 bg-muted rounded-full flex items-center justify-center">
+                            <span className="text-xs">📍</span>
+                          </div>
+                          <span>
+                            {customer.city && customer.state 
+                              ? `${customer.city}, ${customer.state}`
+                              : customer.city || customer.state
+                            }
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={customer.isActive ? 'default' : 'secondary'}>
@@ -373,6 +738,7 @@ export default function CustomerManagementPage() {
                     <TableCell>
                       {customer.erpnext_id ? (
                         <Badge variant="outline" className="text-blue-600 border-blue-600">
+                          <RefreshCw className="h-3 w-3 mr-1" />
                           ERPNext
                         </Badge>
                       ) : (
@@ -382,30 +748,57 @@ export default function CustomerManagementPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex space-x-2">
-                        <Can action="read" subject="Customer">
-                          <Button size="sm" variant="outline">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Can>
+                      <div className="flex space-x-1">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => openShowDialog(customer)}
+                          className="h-8 w-8 p-0"
+                          title="View Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
 
-                        <Can action="update" subject="Customer">
-                          <Button size="sm" variant="outline" onClick={() => openEditDialog(customer)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </Can>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => openEditDialog(customer)}
+                          className="h-8 w-8 p-0"
+                          title="Edit Customer"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
 
-                        <Can action="delete" subject="Customer">
-                          <Button size="sm" variant="outline" onClick={() => deleteCustomer(customer.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </Can>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => deleteCustomer(customer.id)}
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                          title="Delete Customer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                ))
+              )}
               </TableBody>
             </Table>
+            
+            {/* Pagination */}
+            {pagination.total > 0 && (
+              <div className="mt-6">
+                <Pagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  totalItems={pagination.total}
+                  itemsPerPage={pagination.limit}
+                  onPageChange={handlePageChange}
+                  onItemsPerPageChange={handleItemsPerPageChange}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -643,6 +1036,87 @@ export default function CustomerManagementPage() {
                 <Button onClick={updateCustomer}>
                   Update Customer
                 </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Show Customer Dialog */}
+        {isShowDialogOpen && selectedCustomer && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold">Customer Details</h2>
+                <Button variant="outline" size="sm" onClick={() => setIsShowDialogOpen(false)}>
+                  ×
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Name</Label>
+                  <p className="text-lg font-semibold">{selectedCustomer.name}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Company Name</Label>
+                  <p className="text-lg">{selectedCustomer.companyName || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Contact Person</Label>
+                  <p className="text-lg">{selectedCustomer.contactPerson || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Email</Label>
+                  <p className="text-lg">{selectedCustomer.email || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Phone</Label>
+                  <p className="text-lg">{selectedCustomer.phone || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Status</Label>
+                  <Badge variant={selectedCustomer.isActive ? 'default' : 'secondary'}>
+                    {selectedCustomer.status}
+                  </Badge>
+                </div>
+                <div className="md:col-span-2">
+                  <Label className="text-sm font-medium text-gray-500">Address</Label>
+                  <p className="text-lg whitespace-pre-wrap">{selectedCustomer.address || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">City</Label>
+                  <p className="text-lg">{selectedCustomer.city || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">State</Label>
+                  <p className="text-lg">{selectedCustomer.state || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Country</Label>
+                  <p className="text-lg">{selectedCustomer.country || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">ERPNext ID</Label>
+                  <p className="text-lg">{selectedCustomer.erpnext_id || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">Created At</Label>
+                  <p className="text-lg">{new Date(selectedCustomer.createdAt).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2 mt-6">
+                <Button variant="outline" onClick={() => setIsShowDialogOpen(false)}>
+                  Close
+                </Button>
+                <Can action="update" subject="Customer">
+                  <Button onClick={() => {
+                    setIsShowDialogOpen(false);
+                    openEditDialog(selectedCustomer);
+                  }}>
+                    Edit Customer
+                  </Button>
+                </Can>
               </div>
             </div>
           </div>

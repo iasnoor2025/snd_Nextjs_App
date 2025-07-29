@@ -36,8 +36,8 @@ export async function POST(request: NextRequest) {
 
     // Simulate payroll generation for all employees
     let employeesWithApprovedTimesheets = 0;
-    let generatedPayrolls = [];
-    let errors = [];
+    const generatedPayrolls: string[] = [];
+    const errors: string[] = [];
 
     for (const employee of employees) {
       try {

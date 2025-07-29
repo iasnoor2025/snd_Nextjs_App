@@ -46,14 +46,14 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      deletedAt: null,
+      deleted_at: null,
     };
 
     if (search) {
       where.OR = [
         { employee: { firstName: { contains: search, mode: 'insensitive' } } },
         { employee: { lastName: { contains: search, mode: 'insensitive' } } },
-        { employee: { employeeId: { contains: search, mode: 'insensitive' } } },
+        { employee: { employee_id: { contains: search, mode: 'insensitive' } } },
       ];
     }
 
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (employeeId) {
-      where.employeeId = employeeId;
+      where.employee_id = employeeId;
     }
 
     const [timesheets, total] = await Promise.all([

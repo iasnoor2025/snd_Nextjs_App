@@ -168,7 +168,7 @@ function CreateTimesheetContent() {
   const generateDailyOvertimeHours = (start: Date, end: Date) => {
     const newDailyOvertimeHours: Record<string, string> = {};
     const newDailyNormalHours: Record<string, string> = {};
-    let currentDate = new Date(start);
+    const currentDate = new Date(start);
     while (currentDate <= end) {
       const dateStr = format(currentDate, 'yyyy-MM-dd');
       newDailyOvertimeHours[dateStr] = '0';
@@ -340,7 +340,7 @@ function CreateTimesheetContent() {
         }
 
         // Get hours for this block's date range
-        let current = new Date(block.startDate);
+        const current = new Date(block.startDate);
         const end = new Date(block.endDate);
         const blockHours: Record<string, { normal: string, overtime: string }> = {};
 
@@ -754,7 +754,7 @@ function CreateTimesheetContent() {
                   <ul className="list-disc list-inside space-y-1">
                     <li>Enter normal hours in the first row (default: 8)</li>
                     <li>Enter overtime hours in the second row (default: 0)</li>
-                    <li>Use 'A' for absent days or '0' for no work</li>
+                    <li>Use &apos;A&apos; for absent days or &apos;0&apos; for no work</li>
                     <li>Fridays are highlighted in blue (weekend)</li>
                   </ul>
                 </div>
@@ -1065,7 +1065,7 @@ function CreateTimesheetContent() {
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                This employee has no active assignments. You'll be redirected to the appropriate page to view details and create assignments.
+                This employee has no active assignments. You&apos;ll be redirected to the appropriate page to view details and create assignments.
               </AlertDescription>
             </Alert>
 
@@ -1092,7 +1092,7 @@ function CreateTimesheetContent() {
                 </SelectContent>
               </Select>
               <p className="text-sm text-muted-foreground">
-                Select the type of assignment you want to create. You'll complete the details on the assignment page.
+                Select the type of assignment you want to create. You&apos;ll complete the details on the assignment page.
               </p>
             </div>
 
@@ -1116,7 +1116,7 @@ function CreateTimesheetContent() {
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
-                  Selecting a project will redirect you to the project resources page.
+                  Don&apos;t forget to save your timesheet before leaving this page.
                 </p>
               </div>
             )}
@@ -1141,7 +1141,7 @@ function CreateTimesheetContent() {
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-muted-foreground">
-                  Selecting a rental will redirect you to the rental details page.
+                  Don&apos;t forget to save your timesheet before leaving this page.
                 </p>
               </div>
             )}

@@ -194,10 +194,11 @@ const mockPayrolls = [
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id: payrollId } = await params;
+    const id = parseInt(payrollId);
     const payroll = mockPayrolls.find(p => p.id === id);
 
     if (!payroll) {

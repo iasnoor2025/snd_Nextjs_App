@@ -1,122 +1,195 @@
-import * as React from "react"
-import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 
-import { cn } from "@/lib/utils"
-import { ButtonProps, buttonVariants } from "@/components/ui/button"
+interface PaginationProps {
+  currentPage: number
+  totalPages: number
+  totalItems: number
+  itemsPerPage: number
+  onPageChange: (page: number) => void
+  onItemsPerPageChange?: (itemsPerPage: number) => void
+}
 
-const Pagination = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex items-center justify-center", className)}
-    {...props}
-  />
-))
-Pagination.displayName = "Pagination"
+// Individual pagination components for backward compatibility
+export function PaginationContent({ children }: { children: React.ReactNode }) {
+  return <div className="flex items-center space-x-2">{children}</div>
+}
 
-const PaginationContent = React.forwardRef<
-  HTMLUListElement,
-  React.HTMLAttributes<HTMLUListElement>
->(({ className, ...props }, ref) => (
-  <ul
-    ref={ref}
-    className={cn("flex flex-row items-center gap-1", className)}
-    {...props}
-  />
-))
-PaginationContent.displayName = "PaginationContent"
+export function PaginationItem({ children }: { children: React.ReactNode }) {
+  return <div>{children}</div>
+}
 
-const PaginationItem = React.forwardRef<
-  HTMLLIElement,
-  React.HTMLAttributes<HTMLLIElement>
->(({ className, ...props }, ref) => (
-  <li ref={ref} className={cn("", className)} {...props} />
-))
-PaginationItem.displayName = "PaginationItem"
-
-type PaginationLinkProps = {
+export function PaginationLink({ 
+  children, 
+  onClick, 
+  isActive = false 
+}: { 
+  children: React.ReactNode
+  onClick?: () => void
   isActive?: boolean
-  href?: string
-} & Pick<ButtonProps, "size"> &
-  React.HTMLAttributes<HTMLAnchorElement>
+}) {
+  return (
+    <Button
+      variant={isActive ? "default" : "outline"}
+      size="sm"
+      onClick={onClick}
+      className="w-8 h-8"
+    >
+      {children}
+    </Button>
+  )
+}
 
-const PaginationLink = React.forwardRef<
-  HTMLAnchorElement,
-  PaginationLinkProps
->(({ className, isActive, size = "icon", ...props }, ref) => (
-  <a
-    ref={ref}
-    aria-current={isActive ? "page" : undefined}
-    className={cn(
-      buttonVariants({
-        variant: isActive ? "outline" : "ghost",
-        size,
-      }),
-      className
-    )}
-    {...props}
-  />
-))
-PaginationLink.displayName = "PaginationLink"
+export function PaginationNext({ onClick, disabled }: { onClick?: () => void; disabled?: boolean }) {
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <ChevronRight className="h-4 w-4" />
+    </Button>
+  )
+}
 
-const PaginationPrevious = React.forwardRef<
-  HTMLAnchorElement,
-  React.ComponentProps<typeof PaginationLink>
->(({ className, ...props }, ref) => (
-  <PaginationLink
-    ref={ref}
-    aria-label="Go to previous page"
-    size="default"
-    className={cn("gap-1 pl-2.5", className)}
-    {...props}
-  >
-    <ChevronLeft className="h-4 w-4" />
-    <span>Previous</span>
-  </PaginationLink>
-))
-PaginationPrevious.displayName = "PaginationPrevious"
+export function PaginationPrevious({ onClick, disabled }: { onClick?: () => void; disabled?: boolean }) {
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <ChevronLeft className="h-4 w-4" />
+    </Button>
+  )
+}
 
-const PaginationNext = React.forwardRef<
-  HTMLAnchorElement,
-  React.ComponentProps<typeof PaginationLink>
->(({ className, ...props }, ref) => (
-  <PaginationLink
-    ref={ref}
-    aria-label="Go to next page"
-    size="default"
-    className={cn("gap-1 pr-2.5", className)}
-    {...props}
-  >
-    <span>Next</span>
-    <ChevronRight className="h-4 w-4" />
-  </PaginationLink>
-))
-PaginationNext.displayName = "PaginationNext"
+export function Pagination({
+  currentPage,
+  totalPages,
+  totalItems,
+  itemsPerPage,
+  onPageChange,
+  onItemsPerPageChange
+}: PaginationProps) {
+  const startItem = (currentPage - 1) * itemsPerPage + 1
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems)
 
-const PaginationEllipsis = React.forwardRef<
-  HTMLSpanElement,
-  React.HTMLAttributes<HTMLSpanElement>
->(({ className, ...props }, ref) => (
-  <span
-    ref={ref}
-    aria-hidden
-    className={cn("flex h-9 w-9 items-center justify-center", className)}
-    {...props}
-  >
-    <MoreHorizontal className="h-4 w-4" />
-    <span className="sr-only">More pages</span>
-  </span>
-))
-PaginationEllipsis.displayName = "PaginationEllipsis"
+  const getPageNumbers = () => {
+    const pages = []
+    const maxVisiblePages = 5
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i)
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i)
+        }
+        pages.push('...')
+        pages.push(totalPages)
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1)
+        pages.push('...')
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i)
+        }
+      } else {
+        pages.push(1)
+        pages.push('...')
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+          pages.push(i)
+        }
+        pages.push('...')
+        pages.push(totalPages)
+      }
+    }
+    
+    return pages
+  }
 
-export {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
+  return (
+    <div className="flex items-center justify-between px-2">
+      <div className="flex-1 text-sm text-muted-foreground">
+        Showing {startItem} to {endItem} of {totalItems} results
+      </div>
+      
+      <div className="flex items-center space-x-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(1)}
+          disabled={currentPage === 1}
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </Button>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        
+        <div className="flex items-center space-x-1">
+          {getPageNumbers().map((page, index) => (
+            <div key={index}>
+              {page === '...' ? (
+                <span className="px-2 py-1 text-sm text-muted-foreground">...</span>
+              ) : (
+                <Button
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => onPageChange(page as number)}
+                  className="w-8 h-8"
+                >
+                  {page}
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onPageChange(totalPages)}
+          disabled={currentPage === totalPages}
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </Button>
+      </div>
+      
+      {onItemsPerPageChange && (
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-muted-foreground">Show:</span>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
+            className="border rounded px-2 py-1 text-sm"
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+      )}
+    </div>
+  )
 }

@@ -108,7 +108,7 @@ interface PaginatedResponse {
 
 export default function TimesheetManagementPage() {
   return (
-    <ProtectedRoute>
+    <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Timesheet' }}>
       <TimesheetManagementContent />
     </ProtectedRoute>
   );

@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { ProtectedRoute } from '@/components/protected-route';
+import { Can, RoleBased } from '@/lib/rbac/rbac-components';
+import { useRBAC } from '@/lib/rbac/rbac-context';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +16,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Eye, User, Shield, Mail, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, User, Shield, Mail, Calendar, CheckCircle, XCircle, Settings } from 'lucide-react';
 
 interface User {
   id: string;
@@ -36,11 +39,15 @@ interface Role {
 }
 
 export default function UserManagementPage() {
+  const { user, hasPermission, getAllowedActions } = useRBAC();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Get allowed actions for user management
+  const allowedActions = getAllowedActions('User');
 
   // User management states
   const [isCreateUserDialogOpen, setIsCreateUserDialogOpen] = useState(false);
@@ -331,28 +338,48 @@ export default function UserManagementPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading user management...</div>
-      </div>
+      <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'User' }}>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">Loading user management...</div>
+        </div>
+      </ProtectedRoute>
     );
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-red-500">Error: {error}</div>
-      </div>
+      <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'User' }}>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-red-500">Error: {error}</div>
+        </div>
+      </ProtectedRoute>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">User & Role Management</h1>
-          <p className="text-muted-foreground">Manage users, roles, and permissions</p>
+    <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'User' }}>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">User & Role Management</h1>
+            <p className="text-muted-foreground">Manage users, roles, and permissions</p>
+          </div>
+          <div className="flex space-x-2">
+            <Can action="export" subject="User">
+              <Button variant="outline" size="sm">
+                <Shield className="h-4 w-4 mr-2" />
+                Export Users
+              </Button>
+            </Can>
+
+            <Can action="manage" subject="User">
+              <Button variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-2" />
+                User Settings
+              </Button>
+            </Can>
+          </div>
         </div>
-      </div>
 
       <Tabs defaultValue="users" className="space-y-4">
         <TabsList>
@@ -374,84 +401,86 @@ export default function UserManagementPage() {
                   <CardTitle>Users</CardTitle>
                   <CardDescription>Manage system users and their roles</CardDescription>
                 </div>
-                <Dialog open={isCreateUserDialogOpen} onOpenChange={setIsCreateUserDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="mr-2 h-4 w-4" />
-                      New User
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[425px]">
-                    <DialogHeader>
-                      <DialogTitle>Create New User</DialogTitle>
-                      <DialogDescription>Add a new user to the system.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">Name</Label>
-                        <Input
-                          id="name"
-                          value={userFormData.name}
-                          onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
-                          className="col-span-3"
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="email" className="text-right">Email</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          value={userFormData.email}
-                          onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
-                          className="col-span-3"
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="password" className="text-right">Password</Label>
-                        <Input
-                          id="password"
-                          type="password"
-                          value={userFormData.password}
-                          onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
-                          className="col-span-3"
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="role" className="text-right">Role</Label>
-                        <Select value={userFormData.role} onValueChange={(value) => setUserFormData({ ...userFormData, role: value })}>
-                          <SelectTrigger className="col-span-3">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="ADMIN">Admin</SelectItem>
-                            <SelectItem value="MANAGER">Manager</SelectItem>
-                            <SelectItem value="USER">User</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="isActive" className="text-right">Status</Label>
-                        <Select value={userFormData.isActive.toString()} onValueChange={(value) => setUserFormData({ ...userFormData, isActive: value === 'true' })}>
-                          <SelectTrigger className="col-span-3">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="true">Active</SelectItem>
-                            <SelectItem value="false">Inactive</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button type="button" variant="outline" onClick={() => setIsCreateUserDialogOpen(false)}>
-                        Cancel
+                <Can action="create" subject="User">
+                  <Dialog open={isCreateUserDialogOpen} onOpenChange={setIsCreateUserDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="mr-2 h-4 w-4" />
+                        New User
                       </Button>
-                      <Button type="button" onClick={createUser}>
-                        Create User
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogHeader>
+                        <DialogTitle>Create New User</DialogTitle>
+                        <DialogDescription>Add a new user to the system.</DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="name" className="text-right">Name</Label>
+                          <Input
+                            id="name"
+                            value={userFormData.name}
+                            onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="email" className="text-right">Email</Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={userFormData.email}
+                            onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="password" className="text-right">Password</Label>
+                          <Input
+                            id="password"
+                            type="password"
+                            value={userFormData.password}
+                            onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="role" className="text-right">Role</Label>
+                          <Select value={userFormData.role} onValueChange={(value) => setUserFormData({ ...userFormData, role: value })}>
+                            <SelectTrigger className="col-span-3">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="ADMIN">Admin</SelectItem>
+                              <SelectItem value="MANAGER">Manager</SelectItem>
+                              <SelectItem value="USER">User</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="isActive" className="text-right">Status</Label>
+                          <Select value={userFormData.isActive.toString()} onValueChange={(value) => setUserFormData({ ...userFormData, isActive: value === 'true' })}>
+                            <SelectTrigger className="col-span-3">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="true">Active</SelectItem>
+                              <SelectItem value="false">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setIsCreateUserDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button type="button" onClick={createUser}>
+                          Create User
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </Can>
               </div>
             </CardHeader>
             <CardContent>
@@ -496,19 +525,27 @@ export default function UserManagementPage() {
                       <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                                         <TableCell>
                     <div className="flex space-x-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => router.push(`/modules/user-management/${user.id}`)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => openEditUserDialog(user)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => deleteUser(user.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <Can action="read" subject="User">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => router.push(`/modules/user-management/${user.id}`)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </Can>
+
+                      <Can action="update" subject="User">
+                        <Button size="sm" variant="outline" onClick={() => openEditUserDialog(user)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </Can>
+
+                      <Can action="delete" subject="User">
+                        <Button size="sm" variant="outline" onClick={() => deleteUser(user.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </Can>
                     </div>
                   </TableCell>
                     </TableRow>
@@ -527,79 +564,81 @@ export default function UserManagementPage() {
                   <CardTitle>Roles</CardTitle>
                   <CardDescription>Manage user roles and permissions</CardDescription>
                 </div>
-                <Dialog open={isCreateRoleDialogOpen} onOpenChange={setIsCreateRoleDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Plus className="mr-2 h-4 w-4" />
-                      New Role
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-[600px]">
-                    <DialogHeader>
-                      <DialogTitle>Create New Role</DialogTitle>
-                      <DialogDescription>Add a new role with specific permissions.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="roleName" className="text-right">Role Name</Label>
-                        <Input
-                          id="roleName"
-                          value={roleFormData.name}
-                          onChange={(e) => setRoleFormData({ ...roleFormData, name: e.target.value })}
-                          className="col-span-3"
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="roleDescription" className="text-right">Description</Label>
-                        <Textarea
-                          id="roleDescription"
-                          value={roleFormData.description}
-                          onChange={(e) => setRoleFormData({ ...roleFormData, description: e.target.value })}
-                          className="col-span-3"
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="roleStatus" className="text-right">Status</Label>
-                        <Select value={roleFormData.isActive.toString()} onValueChange={(value) => setRoleFormData({ ...roleFormData, isActive: value === 'true' })}>
-                          <SelectTrigger className="col-span-3">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="true">Active</SelectItem>
-                            <SelectItem value="false">Inactive</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid grid-cols-4 items-start gap-4">
-                        <Label className="text-right pt-2">Permissions</Label>
-                        <div className="col-span-3 space-y-2 max-h-60 overflow-y-auto">
-                          {availablePermissions.map((permission) => (
-                            <div key={permission} className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                id={permission}
-                                checked={roleFormData.permissions.includes(permission)}
-                                onChange={() => handlePermissionToggle(permission)}
-                                className="rounded"
-                              />
-                              <Label htmlFor={permission} className="text-sm">
-                                {permission}
-                              </Label>
-                            </div>
-                          ))}
+                <Can action="create" subject="User">
+                  <Dialog open={isCreateRoleDialogOpen} onOpenChange={setIsCreateRoleDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="mr-2 h-4 w-4" />
+                        New Role
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[600px]">
+                      <DialogHeader>
+                        <DialogTitle>Create New Role</DialogTitle>
+                        <DialogDescription>Add a new role with specific permissions.</DialogDescription>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="roleName" className="text-right">Role Name</Label>
+                          <Input
+                            id="roleName"
+                            value={roleFormData.name}
+                            onChange={(e) => setRoleFormData({ ...roleFormData, name: e.target.value })}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="roleDescription" className="text-right">Description</Label>
+                          <Textarea
+                            id="roleDescription"
+                            value={roleFormData.description}
+                            onChange={(e) => setRoleFormData({ ...roleFormData, description: e.target.value })}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="roleStatus" className="text-right">Status</Label>
+                          <Select value={roleFormData.isActive.toString()} onValueChange={(value) => setRoleFormData({ ...roleFormData, isActive: value === 'true' })}>
+                            <SelectTrigger className="col-span-3">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="true">Active</SelectItem>
+                              <SelectItem value="false">Inactive</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="grid grid-cols-4 items-start gap-4">
+                          <Label className="text-right pt-2">Permissions</Label>
+                          <div className="col-span-3 space-y-2 max-h-60 overflow-y-auto">
+                            {availablePermissions.map((permission) => (
+                              <div key={permission} className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id={permission}
+                                  checked={roleFormData.permissions.includes(permission)}
+                                  onChange={() => handlePermissionToggle(permission)}
+                                  className="rounded"
+                                />
+                                <Label htmlFor={permission} className="text-sm">
+                                  {permission}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <DialogFooter>
-                      <Button type="button" variant="outline" onClick={() => setIsCreateRoleDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="button" onClick={createRole}>
-                        Create Role
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                      <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setIsCreateRoleDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button type="button" onClick={createRole}>
+                          Create Role
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </Can>
               </div>
             </CardHeader>
             <CardContent>
@@ -818,6 +857,43 @@ export default function UserManagementPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Role-based content example */}
+      <RoleBased roles={['ADMIN']}>
+        <Card>
+          <CardHeader>
+            <CardTitle>User Administration</CardTitle>
+            <CardDescription>
+              Advanced user management features for administrators
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <Can action="manage" subject="User">
+                <Button variant="outline">
+                  <Settings className="h-4 w-4 mr-2" />
+                  User Settings
+                </Button>
+              </Can>
+
+              <Can action="export" subject="User">
+                <Button variant="outline">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Export All Users
+                </Button>
+              </Can>
+
+              <Can action="manage" subject="User">
+                <Button variant="outline">
+                  <User className="h-4 w-4 mr-2" />
+                  Bulk User Operations
+                </Button>
+              </Can>
+            </div>
+          </CardContent>
+        </Card>
+      </RoleBased>
     </div>
+  </ProtectedRoute>
   );
 }
