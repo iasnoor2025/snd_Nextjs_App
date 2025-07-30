@@ -1,68 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-config";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
+    const employeeId = parseInt(id);
 
-    // Mock document data
-    const documents = [
-      {
-        id: 1,
-        name: 'Iqama Document',
-        type: 'iqama',
-        file_url: '/documents/iqama_1234567890.pdf',
-        uploaded_at: '2024-01-15',
-        expiry_date: '2025-12-31'
-      },
-      {
-        id: 2,
-        name: 'Passport Copy',
-        type: 'passport',
-        file_url: '/documents/passport_A12345678.pdf',
-        uploaded_at: '2024-01-15',
-        expiry_date: '2026-06-30'
-      },
-      {
-        id: 3,
-        name: 'Driving License',
-        type: 'driving_license',
-        file_url: '/documents/driving_license_DL123456.pdf',
-        uploaded_at: '2024-02-01',
-        expiry_date: '2025-08-15'
-      },
-      {
-        id: 4,
-        name: 'Employment Contract',
-        type: 'contract',
-        file_url: '/documents/contract_EMP001.pdf',
-        uploaded_at: '2024-01-10'
-      },
-      {
-        id: 5,
-        name: 'Medical Certificate',
-        type: 'medical',
-        file_url: '/documents/medical_cert_2024.pdf',
-        uploaded_at: '2024-01-20',
-        expiry_date: '2025-01-20'
-      },
-      {
-        id: 6,
-        name: 'TUV Certification',
-        type: 'tuv_certification',
-        file_url: '/documents/tuv_cert_TUV123456.pdf',
-        uploaded_at: '2024-03-01',
-        expiry_date: '2025-09-30'
-      }
-    ];
+    if (!employeeId) {
+      return NextResponse.json(
+        { error: "Invalid employee ID" },
+        { status: 400 }
+      );
+    }
 
-    return NextResponse.json({
-      success: true,
-      data: documents,
-      message: 'Documents retrieved successfully'
+    // Fetch documents from database
+    const documents = await prisma.employeeDocument.findMany({
+      where: {
+        employee_id: employeeId,
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
     });
+
+    // Format documents to match Laravel response
+    const formattedDocuments = documents.map(doc => ({
+      id: doc.id,
+      name: doc.file_name,
+      file_name: doc.file_name,
+      file_type: doc.mime_type?.split('/')[1]?.toUpperCase() || 'UNKNOWN',
+      size: doc.file_size || 0,
+      url: doc.file_path,
+      mime_type: doc.mime_type,
+      document_type: doc.document_type,
+      description: doc.description,
+      created_at: doc.created_at.toISOString(),
+      updated_at: doc.updated_at.toISOString(),
+    }));
+
+    return NextResponse.json(formattedDocuments);
   } catch (error) {
     console.error('Error in GET /api/employees/[id]/documents:', error);
     return NextResponse.json(
@@ -80,14 +68,39 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
+    const employeeId = parseInt(id);
     const body = await request.json();
 
-    // Mock create response
+    if (!employeeId) {
+      return NextResponse.json(
+        { error: "Invalid employee ID" },
+        { status: 400 }
+      );
+    }
+
+    // Create document in database
+    const document = await prisma.employeeDocument.create({
+      data: {
+        employee_id: employeeId,
+        document_type: body.document_type || 'general',
+        file_path: body.file_path,
+        file_name: body.file_name,
+        file_size: body.file_size,
+        mime_type: body.mime_type,
+        description: body.description,
+      },
+    });
+
     return NextResponse.json({
       success: true,
       message: 'Document uploaded successfully',
-      data: { id: Math.floor(Math.random() * 1000), employee_id: parseInt(id), ...body }
+      data: document
     });
   } catch (error) {
     console.error('Error in POST /api/employees/[id]/documents:', error);
