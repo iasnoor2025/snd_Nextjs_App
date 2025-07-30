@@ -41,6 +41,7 @@ import TimesheetSummary from "@/components/employee/timesheets/TimesheetSummary"
 import TimesheetList from "@/components/employee/timesheets/TimesheetList";
 import PaymentHistory from "@/components/employee/PaymentHistory";
 import DocumentsTab from "@/components/employee/DocumentsTab";
+import AssignmentsTab from "@/components/employee/AssignmentsTab";
 
 interface Employee {
   id: number;

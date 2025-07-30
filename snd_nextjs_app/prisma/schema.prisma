@@ -192,8 +192,11 @@ model Employee {
 model EmployeeAssignment {
   id          Int         @id @default(autoincrement())
   employee_id Int
+  name        String?
+  type        String      @default("manual") // manual, project, rental
   project_id  Int?
   rental_id   Int?
+  location    String?
   start_date  DateTime
   end_date    DateTime?
   status      String      @default("active")

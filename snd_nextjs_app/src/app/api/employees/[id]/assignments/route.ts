@@ -1,55 +1,76 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-config";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    // Mock assignment data
-    const assignments = [
-      {
-        id: 1,
-        name: 'Riyadh Project',
-        location: 'Riyadh, Saudi Arabia',
-        start_date: '2024-01-01',
-        end_date: '2024-06-30',
-        status: 'active',
-        notes: 'Main project assignment for the first half of the year'
+    const { id } = await params;
+    const employeeId = parseInt(id);
+
+    if (!employeeId) {
+      return NextResponse.json(
+        { error: "Invalid employee ID" },
+        { status: 400 }
+      );
+    }
+
+    // Fetch assignments from database
+    const assignments = await prisma.employeeAssignment.findMany({
+      where: {
+        employee_id: employeeId,
       },
-      {
-        id: 2,
-        name: 'Jeddah Site',
-        location: 'Jeddah, Saudi Arabia',
-        start_date: '2024-02-15',
-        end_date: '2024-03-15',
-        status: 'completed',
-        notes: 'Temporary assignment for site inspection'
+      include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        rental: {
+          select: {
+            id: true,
+            rental_number: true,
+            project_name: true,
+          },
+        },
       },
-      {
-        id: 3,
-        name: 'Dammam Operations',
-        location: 'Dammam, Saudi Arabia',
-        start_date: '2024-07-01',
-        end_date: null,
-        status: 'active',
-        notes: 'Ongoing operations support'
+      orderBy: {
+        start_date: 'desc',
       },
-      {
-        id: 4,
-        name: 'Training Program',
-        location: 'Riyadh Office',
-        start_date: '2024-04-01',
-        end_date: '2024-04-30',
-        status: 'completed',
-        notes: 'Professional development training'
-      }
-    ];
+    });
+
+    // Format assignments to match Laravel response
+    const formattedAssignments = assignments.map(assignment => ({
+      id: assignment.id,
+      name: assignment.name,
+      type: assignment.type,
+      location: assignment.location,
+      start_date: assignment.start_date.toISOString().slice(0, 10),
+      end_date: assignment.end_date?.toISOString().slice(0, 10) || null,
+      status: assignment.status,
+      notes: assignment.notes,
+      project_id: assignment.project_id,
+      rental_id: assignment.rental_id,
+      project: assignment.project,
+      rental: assignment.rental,
+      created_at: assignment.created_at.toISOString(),
+      updated_at: assignment.updated_at.toISOString(),
+    }));
 
     return NextResponse.json({
       success: true,
-      data: assignments,
+      data: formattedAssignments,
       message: 'Assignments retrieved successfully'
     });
   } catch (error) {
@@ -69,14 +90,92 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
+    const employeeId = parseInt(id);
     const body = await request.json();
 
-    // Mock create response
+    if (!employeeId) {
+      return NextResponse.json(
+        { error: "Invalid employee ID" },
+        { status: 400 }
+      );
+    }
+
+    // Check if employee exists
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+    });
+
+    if (!employee) {
+      return NextResponse.json(
+        { error: "Employee not found" },
+        { status: 404 }
+      );
+    }
+
+    // Validate required fields
+    if (!body.name || !body.start_date) {
+      return NextResponse.json(
+        { error: "Assignment name and start date are required" },
+        { status: 400 }
+      );
+    }
+
+    // Create assignment in database
+    const assignment = await prisma.employeeAssignment.create({
+      data: {
+        employee_id: employeeId,
+        name: body.name,
+        type: body.type || 'manual',
+        location: body.location,
+        start_date: new Date(body.start_date),
+        end_date: body.end_date ? new Date(body.end_date) : null,
+        status: body.status || 'active',
+        notes: body.notes,
+        project_id: body.project_id || null,
+        rental_id: body.rental_id || null,
+      },
+      include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        rental: {
+          select: {
+            id: true,
+            rental_number: true,
+            project_name: true,
+          },
+        },
+      },
+    });
+
     return NextResponse.json({
       success: true,
       message: 'Assignment created successfully',
-      data: { id: Math.floor(Math.random() * 1000), employee_id: parseInt(id), ...body }
+      data: {
+        id: assignment.id,
+        name: assignment.name,
+        type: assignment.type,
+        location: assignment.location,
+        start_date: assignment.start_date.toISOString().slice(0, 10),
+        end_date: assignment.end_date?.toISOString().slice(0, 10) || null,
+        status: assignment.status,
+        notes: assignment.notes,
+        project_id: assignment.project_id,
+        rental_id: assignment.rental_id,
+        project: assignment.project,
+        rental: assignment.rental,
+        created_at: assignment.created_at.toISOString(),
+        updated_at: assignment.updated_at.toISOString(),
+      }
     });
   } catch (error) {
     console.error('Error in POST /api/employees/[id]/assignments:', error);
