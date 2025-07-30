@@ -133,10 +133,13 @@ export default function EmployeeShowPage() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedPayslipMonth, setSelectedPayslipMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [advances, setAdvances] = useState<any[]>([]);
+  const [loadingAdvances, setLoadingAdvances] = useState(false);
 
   useEffect(() => {
     if (employeeId) {
       fetchEmployeeData();
+      fetchAdvances();
     }
   }, [employeeId]);
 
@@ -151,6 +154,26 @@ export default function EmployeeShowPage() {
       toast.error("Failed to load employee data");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAdvances = async () => {
+    setLoadingAdvances(true);
+    try {
+      const response = await fetch(`/api/employee/advances?employeeId=${employeeId}`);
+      const data = await response.json();
+      if (data.success) {
+        setAdvances(data.advances || []);
+        // Calculate current balance from approved advances
+        const approvedAdvances = data.advances.filter((advance: any) => advance.status === 'approved');
+        const totalBalance = approvedAdvances.reduce((sum: number, advance: any) => sum + Number(advance.amount), 0);
+        setCurrentBalance(totalBalance);
+      }
+    } catch (error) {
+      console.error("Error fetching advances:", error);
+      toast.error("Failed to load advances");
+    } finally {
+      setLoadingAdvances(false);
     }
   };
 
@@ -1276,6 +1299,113 @@ export default function EmployeeShowPage() {
                 </div>
               </div>
             </CardHeader>
+            
+            {/* Advance Request Dialog */}
+            <Dialog open={isAdvanceRequestDialogOpen} onOpenChange={setIsAdvanceRequestDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Request Advance</DialogTitle>
+                  <DialogDescription>Enter advance payment details</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <label htmlFor="amount" className="text-sm font-medium">Amount (SAR)</label>
+                    <Input
+                      id="amount"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={advanceAmount}
+                      onChange={(e) => setAdvanceAmount(e.target.value)}
+                      placeholder="Enter amount"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <label htmlFor="monthlyDeduction" className="text-sm font-medium">Monthly Deduction (SAR)</label>
+                    <Input
+                      id="monthlyDeduction"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={monthlyDeduction}
+                      onChange={(e) => setMonthlyDeduction(e.target.value)}
+                      placeholder="Enter monthly deduction amount"
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <label htmlFor="reason" className="text-sm font-medium">Reason</label>
+                    <Textarea
+                      id="reason"
+                      value={advanceReason}
+                      onChange={(e) => setAdvanceReason(e.target.value)}
+                      placeholder="Enter reason for advance"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsAdvanceRequestDialogOpen(false);
+                      setAdvanceAmount('');
+                      setAdvanceReason('');
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        // Validate form
+                        if (!advanceAmount || !advanceReason) {
+                          toast.error('Please fill in Amount and Reason fields');
+                          return;
+                        }
+
+                        if (parseFloat(advanceAmount) <= 0) {
+                          toast.error('Amount must be greater than 0');
+                          return;
+                        }
+
+                        // Handle advance request submission
+                        const response = await fetch('/api/employee/advances', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            employeeId: employeeId,
+                            amount: advanceAmount,
+                            monthly_deduction: monthlyDeduction,
+                            reason: advanceReason,
+                          }),
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok) {
+                          setIsAdvanceRequestDialogOpen(false);
+                          setAdvanceAmount('');
+                          setAdvanceReason('');
+                          toast.success('Advance request submitted successfully');
+                          // Refresh the advances list
+                          fetchAdvances();
+                        } else {
+                          toast.error(data.error || 'Failed to submit advance request');
+                        }
+                      } catch (error) {
+                        console.error('Error submitting advance request:', error);
+                        toast.error('Failed to submit advance request');
+                      }
+                    }}
+                  >
+                    Submit
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             <CardContent className="p-6">
               <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
                 {/* Current Balance Card */}
@@ -1370,11 +1500,100 @@ export default function EmployeeShowPage() {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-100">
-                        <tr>
-                          <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground italic">
-                            No advance records found.
-                          </td>
-                        </tr>
+                        {loadingAdvances ? (
+                          <tr>
+                            <td colSpan={7} className="px-6 py-8 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                <span className="text-muted-foreground">Loading advances...</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : advances.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground italic">
+                              No advance records found.
+                            </td>
+                          </tr>
+                        ) : (
+                          advances.map((advance) => (
+                            <tr key={advance.id} className="hover:bg-muted/50">
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                SAR {Number(advance.amount).toFixed(2)}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                                {advance.monthly_deduction ? `SAR ${Number(advance.monthly_deduction).toFixed(2)}` : 'Not set'}
+                              </td>
+                              <td className="px-6 py-4 text-sm text-muted-foreground">
+                                <div className="max-w-xs truncate" title={advance.reason}>
+                                  {advance.reason || 'No reason provided'}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                                {new Date(advance.created_at).toLocaleDateString()}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <Badge
+                                  variant={
+                                    advance.status === 'approved' ? 'default' :
+                                    advance.status === 'pending' ? 'secondary' :
+                                    advance.status === 'rejected' ? 'destructive' :
+                                    'outline'
+                                  }
+                                  className={
+                                    advance.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                    advance.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    advance.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }
+                                >
+                                  {advance.status.charAt(0).toUpperCase() + advance.status.slice(1)}
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
+                                Advance
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div className="flex items-center justify-end gap-2">
+                                  {advance.status === 'pending' && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          // Handle approve
+                                          toast.success('Advance approved');
+                                        }}
+                                      >
+                                        Approve
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => {
+                                          // Handle reject
+                                          toast.error('Advance rejected');
+                                        }}
+                                      >
+                                        Reject
+                                      </Button>
+                                    </>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      // Handle view details
+                                      toast.info('View advance details');
+                                    }}
+                                  >
+                                    View
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                 </div>
