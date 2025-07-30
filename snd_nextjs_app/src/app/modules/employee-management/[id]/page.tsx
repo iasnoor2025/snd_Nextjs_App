@@ -135,6 +135,7 @@ export default function EmployeeShowPage() {
   const [selectedPayslipMonth, setSelectedPayslipMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [advances, setAdvances] = useState<any[]>([]);
   const [loadingAdvances, setLoadingAdvances] = useState(false);
+  const [selectedAdvanceForReject, setSelectedAdvanceForReject] = useState<any>(null);
 
   useEffect(() => {
     if (employeeId) {
@@ -164,7 +165,7 @@ export default function EmployeeShowPage() {
       const data = await response.json();
       if (data.success) {
         setAdvances(data.advances || []);
-        // Calculate current balance from approved advances
+        // Calculate current balance from approved advances only
         const approvedAdvances = data.advances.filter((advance: any) => advance.status === 'approved');
         const totalBalance = approvedAdvances.reduce((sum: number, advance: any) => sum + Number(advance.amount), 0);
         setCurrentBalance(totalBalance);
@@ -174,6 +175,56 @@ export default function EmployeeShowPage() {
       toast.error("Failed to load advances");
     } finally {
       setLoadingAdvances(false);
+    }
+  };
+
+  const handleApproveAdvance = async (advanceId: number) => {
+    try {
+      const response = await fetch(`/api/employee/advances/${advanceId}/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Advance approved successfully');
+        fetchAdvances(); // Refresh the advances list
+      } else {
+        toast.error(data.error || 'Failed to approve advance');
+      }
+    } catch (error) {
+      console.error('Error approving advance:', error);
+      toast.error('Failed to approve advance');
+    }
+  };
+
+  const handleRejectAdvance = async (advanceId: number, reason: string) => {
+    try {
+      const response = await fetch(`/api/employee/advances/${advanceId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ rejectionReason: reason }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Advance rejected successfully');
+        setIsRejectDialogOpen(false);
+        setRejectionReason('');
+        setSelectedAdvanceForReject(null);
+        fetchAdvances(); // Refresh the advances list
+      } else {
+        toast.error(data.error || 'Failed to reject advance');
+      }
+    } catch (error) {
+      console.error('Error rejecting advance:', error);
+      toast.error('Failed to reject advance');
     }
   };
 
@@ -1406,6 +1457,57 @@ export default function EmployeeShowPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
+            {/* Reject Advance Dialog */}
+            <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Reject Advance Request</DialogTitle>
+                  <DialogDescription>
+                    Please provide a reason for rejecting this advance request.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <label htmlFor="rejectionReason" className="text-sm font-medium">Rejection Reason</label>
+                    <Textarea
+                      id="rejectionReason"
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      placeholder="Enter reason for rejection"
+                      rows={3}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsRejectDialogOpen(false);
+                      setRejectionReason('');
+                      setSelectedAdvanceForReject(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => {
+                      if (selectedAdvanceForReject && rejectionReason.trim()) {
+                        handleRejectAdvance(selectedAdvanceForReject.id, rejectionReason);
+                      } else {
+                        toast.error('Please provide a rejection reason');
+                      }
+                    }}
+                    disabled={!rejectionReason.trim()}
+                  >
+                    Reject Advance
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             <CardContent className="p-6">
               <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
                 {/* Current Balance Card */}
@@ -1554,42 +1656,39 @@ export default function EmployeeShowPage() {
                                 Advance
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div className="flex items-center justify-end gap-2">
-                                  {advance.status === 'pending' && (
-                                    <>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => {
-                                          // Handle approve
-                                          toast.success('Advance approved');
-                                        }}
-                                      >
-                                        Approve
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => {
-                                          // Handle reject
-                                          toast.error('Advance rejected');
-                                        }}
-                                      >
-                                        Reject
-                                      </Button>
-                                    </>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      // Handle view details
-                                      toast.info('View advance details');
-                                    }}
-                                  >
-                                    View
-                                  </Button>
-                                </div>
+                                                                 <div className="flex items-center justify-end gap-2">
+                                   {advance.status === 'pending' && (
+                                     <>
+                                       <Button
+                                         size="sm"
+                                         variant="outline"
+                                         onClick={() => handleApproveAdvance(advance.id)}
+                                       >
+                                         Approve
+                                       </Button>
+                                       <Button
+                                         size="sm"
+                                         variant="outline"
+                                         onClick={() => {
+                                           setSelectedAdvanceForReject(advance);
+                                           setIsRejectDialogOpen(true);
+                                         }}
+                                       >
+                                         Reject
+                                       </Button>
+                                     </>
+                                   )}
+                                   <Button
+                                     size="sm"
+                                     variant="outline"
+                                     onClick={() => {
+                                       // Handle view details
+                                       toast.info('View advance details');
+                                     }}
+                                   >
+                                     View
+                                   </Button>
+                                 </div>
                               </td>
                             </tr>
                           ))
