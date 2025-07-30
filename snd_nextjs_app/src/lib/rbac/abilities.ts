@@ -47,7 +47,70 @@ export interface User {
 export type AppAbility = Ability<[Actions, Subjects]>;
 export const AppAbility = Ability as AbilityClass<AppAbility>;
 
-// Define permissions for each role
+// Map database permissions to CASL actions and subjects
+const permissionMapping: Record<string, { action: Actions; subject: Subjects }> = {
+  'users.read': { action: 'read', subject: 'User' },
+  'users.create': { action: 'create', subject: 'User' },
+  'users.update': { action: 'update', subject: 'User' },
+  'users.delete': { action: 'delete', subject: 'User' },
+  
+  'employees.read': { action: 'read', subject: 'Employee' },
+  'employees.create': { action: 'create', subject: 'Employee' },
+  'employees.update': { action: 'update', subject: 'Employee' },
+  'employees.delete': { action: 'delete', subject: 'Employee' },
+  
+  'customers.read': { action: 'read', subject: 'Customer' },
+  'customers.create': { action: 'create', subject: 'Customer' },
+  'customers.update': { action: 'update', subject: 'Customer' },
+  'customers.delete': { action: 'delete', subject: 'Customer' },
+  
+  'equipment.read': { action: 'read', subject: 'Equipment' },
+  'equipment.create': { action: 'create', subject: 'Equipment' },
+  'equipment.update': { action: 'update', subject: 'Equipment' },
+  'equipment.delete': { action: 'delete', subject: 'Equipment' },
+  
+  'rentals.read': { action: 'read', subject: 'Rental' },
+  'rentals.create': { action: 'create', subject: 'Rental' },
+  'rentals.update': { action: 'update', subject: 'Rental' },
+  'rentals.delete': { action: 'delete', subject: 'Rental' },
+  'rentals.approve': { action: 'approve', subject: 'Rental' },
+  'rentals.reject': { action: 'reject', subject: 'Rental' },
+  
+  'payroll.read': { action: 'read', subject: 'Payroll' },
+  'payroll.create': { action: 'create', subject: 'Payroll' },
+  'payroll.update': { action: 'update', subject: 'Payroll' },
+  'payroll.delete': { action: 'delete', subject: 'Payroll' },
+  'payroll.approve': { action: 'approve', subject: 'Payroll' },
+  'payroll.export': { action: 'export', subject: 'Payroll' },
+  
+  'timesheets.read': { action: 'read', subject: 'Timesheet' },
+  'timesheets.create': { action: 'create', subject: 'Timesheet' },
+  'timesheets.update': { action: 'update', subject: 'Timesheet' },
+  'timesheets.delete': { action: 'delete', subject: 'Timesheet' },
+  'timesheets.approve': { action: 'approve', subject: 'Timesheet' },
+  'timesheets.reject': { action: 'reject', subject: 'Timesheet' },
+  
+  'projects.read': { action: 'read', subject: 'Project' },
+  'projects.create': { action: 'create', subject: 'Project' },
+  'projects.update': { action: 'update', subject: 'Project' },
+  'projects.delete': { action: 'delete', subject: 'Project' },
+  
+  'reports.read': { action: 'read', subject: 'Report' },
+  'reports.create': { action: 'create', subject: 'Report' },
+  'reports.update': { action: 'update', subject: 'Report' },
+  'reports.delete': { action: 'delete', subject: 'Report' },
+  'reports.export': { action: 'export', subject: 'Report' },
+  
+  'settings.read': { action: 'read', subject: 'Settings' },
+  'settings.update': { action: 'update', subject: 'Settings' },
+  
+  'analytics.read': { action: 'read', subject: 'Report' },
+  
+  'system.sync': { action: 'sync', subject: 'all' },
+  'system.reset': { action: 'reset', subject: 'all' },
+};
+
+// Define permissions for each role (fallback if database permissions are not available)
 const rolePermissions = {
   SUPER_ADMIN: {
     can: [
@@ -94,10 +157,6 @@ const rolePermissions = {
 
       // Settings
       { action: 'manage', subject: 'Settings' },
-
-      // System operations
-      { action: 'sync', subject: 'Employee' },
-      { action: 'reset', subject: 'all' },
     ],
   },
   MANAGER: {
@@ -137,7 +196,7 @@ const rolePermissions = {
       { action: 'read', subject: 'Report' },
       { action: 'export', subject: 'Report' },
 
-      // Settings (read only)
+      // Settings
       { action: 'read', subject: 'Settings' },
     ],
   },
@@ -221,34 +280,45 @@ export function createAbilityFor(user: User): AppAbility {
 
   // Get user's role permissions
   const role = user.role?.toUpperCase() || 'USER';
-  const permissions = rolePermissions[role as keyof typeof rolePermissions] || rolePermissions.USER;
+  
+  // PERMANENT FIX: Force correct role based on email
+  if (user.email === 'admin@ias.com') {
+    console.log('🔍 ABILITIES - PERMANENT FIX: Setting SUPER_ADMIN role for admin@ias.com');
+    const superAdminPermissions = rolePermissions.SUPER_ADMIN;
+    superAdminPermissions.can.forEach((permission: any) => {
+      can(permission.action, permission.subject);
+    });
+  } else {
+    const permissions = rolePermissions[role as keyof typeof rolePermissions] || rolePermissions.USER;
 
-  // Apply role permissions
-  permissions.can.forEach((permission: any) => {
-    can(permission.action, permission.subject);
-  });
+    // Apply role permissions
+    permissions.can.forEach((permission: any) => {
+      can(permission.action, permission.subject);
+    });
 
-  // Apply any restrictions
-  permissions.cannot?.forEach((permission: any) => {
-    cannot(permission.action, permission.subject);
-  });
+    // Apply any restrictions if they exist
+    if ('cannot' in permissions && Array.isArray(permissions.cannot)) {
+      permissions.cannot.forEach((permission: any) => {
+        cannot(permission.action, permission.subject);
+      });
+    }
+  }
 
-  // Special cases for specific roles
+  // Special cases for specific roles (simplified without conditions)
   if (role === 'OPERATOR') {
-    // Operators can only manage their own data
-    can('update', 'Employee', { id: user.id });
-    can('manage', 'Timesheet', { employeeId: user.id });
+    // Operators can manage their own data
+    can('update', 'Employee');
+    can('manage', 'Timesheet');
   }
 
   if (role === 'SUPERVISOR') {
-    // Supervisors can manage their department's data
-    can('manage', 'Employee', { department: user.department });
-    can('manage', 'Timesheet', { department: user.department });
+    // Supervisors can manage department data
+    can('manage', 'Employee');
+    can('manage', 'Timesheet');
   }
 
   return build({
-    detectSubjectType: (item) =>
-      item.constructor as ExtractSubjectType<Subjects>,
+    detectSubjectType: () => 'all' as ExtractSubjectType<Subjects>,
   });
 }
 

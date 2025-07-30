@@ -11,6 +11,26 @@ export default function AccessDeniedPage() {
   const requiredRole = searchParams.get('requiredRole');
   const currentRole = searchParams.get('currentRole');
 
+  // Define role hierarchy for better messaging
+  const roleHierarchy = {
+    'SUPER_ADMIN': 6,
+    'ADMIN': 5,
+    'MANAGER': 4,
+    'SUPERVISOR': 3,
+    'OPERATOR': 2,
+    'USER': 1,
+  };
+
+  const getRoleLevel = (role: string) => {
+    return roleHierarchy[role.toUpperCase() as keyof typeof roleHierarchy] || 0;
+  };
+
+  const currentRoleLevel = currentRole ? getRoleLevel(currentRole) : 0;
+  const requiredRoles = requiredRole?.split(',').map(r => r.trim()) || [];
+  const maxRequiredLevel = Math.max(...requiredRoles.map(getRoleLevel));
+
+  const hasSufficientRole = currentRoleLevel >= maxRequiredLevel;
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/50">
       <Card className="w-full max-w-md">
@@ -37,6 +57,11 @@ export default function AccessDeniedPage() {
                     Your current role: <strong>{currentRole}</strong>
                   </p>
                 )}
+                {currentRole === 'SUPER_ADMIN' && !hasSufficientRole && (
+                  <p className="text-sm text-blue-600 font-medium">
+                    ⚠️ This appears to be a system configuration issue. SUPER_ADMIN should have access to all pages.
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -45,6 +70,11 @@ export default function AccessDeniedPage() {
             <p className="text-sm text-muted-foreground">
               If you believe you should have access to this page, please contact your administrator.
             </p>
+            {currentRole === 'SUPER_ADMIN' && (
+              <p className="text-sm text-blue-600">
+                As a SUPER_ADMIN, you should have access to all system features. This may be a temporary configuration issue.
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col space-y-2">

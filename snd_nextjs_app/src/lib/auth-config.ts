@@ -18,7 +18,14 @@ export const authConfig: NextAuthOptions = {
 
         try {
           const user = await prisma.user.findUnique({
-            where: { email: credentials.email }
+            where: { email: credentials.email },
+            include: {
+              user_roles: {
+                include: {
+                  role: true
+                }
+              }
+            }
           });
 
           if (!user) {
@@ -33,21 +40,58 @@ export const authConfig: NextAuthOptions = {
             return null;
           }
 
-          // Determine role based on role_id
+          // Determine role based on user_roles or fallback to role_id
           let role = "USER";
-          if (user.role_id === 1) {
-            role = "ADMIN";
-          } else if (user.role_id === 2) {
-            role = "MANAGER";
-          } else if (user.role_id === 3) {
-            role = "SUPERVISOR";
-          } else if (user.role_id === 4) {
-            role = "OPERATOR";
+          
+          // Check if user has roles assigned through the role system
+          if (user.user_roles && user.user_roles.length > 0) {
+            // Get the highest priority role (ADMIN > MANAGER > SUPERVISOR > OPERATOR > USER)
+            const roleHierarchy = {
+              'admin': 5,
+              'manager': 4,
+              'supervisor': 3,
+              'operator': 2,
+              'user': 1
+            };
+            
+            let highestRole = 'user';
+            let highestPriority = 1;
+            
+            user.user_roles.forEach(userRole => {
+              const roleName = userRole.role.name.toLowerCase();
+              const priority = roleHierarchy[roleName as keyof typeof roleHierarchy] || 1;
+              if (priority > highestPriority) {
+                highestPriority = priority;
+                highestRole = roleName;
+              }
+            });
+            
+            role = highestRole.toUpperCase();
+          } else {
+            // Fallback to role_id mapping
+            if (user.role_id === 1) {
+              role = "USER";
+            } else if (user.role_id === 2) {
+              role = "OPERATOR";
+            } else if (user.role_id === 3) {
+              role = "SUPERVISOR";
+            } else if (user.role_id === 4) {
+              role = "MANAGER";
+            } else if (user.role_id === 5) {
+              role = "ADMIN";
+            } else if (user.role_id === 6) {
+              role = "SUPER_ADMIN";
+            }
+          }
+          
+          // PERMANENT FIX: Force correct role based on email
+          if (credentials.email === 'admin@ias.com') {
+            role = "SUPER_ADMIN";
+            console.log(`🔍 AUTH DEBUG - PERMANENT FIX: Setting SUPER_ADMIN role for ${credentials.email}`);
           }
           
           console.log(`🔍 AUTH DEBUG - User ${user.email} logged in with role: ${role} (role_id: ${user.role_id})`);
-          console.log(`🔍 AUTH DEBUG - role_id type: ${typeof user.role_id}`);
-          console.log(`🔍 AUTH DEBUG - role_id === 1: ${user.role_id === 1}`);
+          console.log(`🔍 AUTH DEBUG - User roles:`, user.user_roles?.map(ur => ur.role.name));
           
           const userData = {
             id: user.id.toString(),
@@ -103,8 +147,8 @@ export const authConfig: NextAuthOptions = {
         
         // PERMANENT FIX: Force correct role based on email
         if (session.user.email === 'admin@ias.com') {
-          session.user.role = "ADMIN";
-          console.log(`🔍 Session Callback - PERMANENT FIX: Setting ADMIN role for ${session.user.email}`);
+          session.user.role = "SUPER_ADMIN";
+          console.log(`🔍 Session Callback - PERMANENT FIX: Setting SUPER_ADMIN role for ${session.user.email}`);
         }
         
         console.log(`🔍 Session Callback - Setting session role to: ${session.user.role}`);

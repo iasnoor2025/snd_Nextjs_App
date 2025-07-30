@@ -29,8 +29,8 @@ export function RBACProvider({ children }: RBACProviderProps) {
     
     // PERMANENT FIX: Force correct role based on email
     if (session.user.email === 'admin@ias.com') {
-      role = 'ADMIN';
-      console.log('🔍 RBAC Context - PERMANENT FIX: Setting ADMIN role for admin@ias.com');
+      role = 'SUPER_ADMIN';
+      console.log('🔍 RBAC Context - PERMANENT FIX: Setting SUPER_ADMIN role for admin@ias.com');
     }
 
     return {
