@@ -242,11 +242,26 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
   };
 
   const getCurrentAssignment = () => {
-    return assignments.find(a => a.status === 'active') || null;
+    if (assignments.length === 0) return null;
+    
+    // Sort assignments by start_date (newest first)
+    const sortedAssignments = [...assignments].sort((a, b) => {
+      const aDate = a.start_date ? new Date(a.start_date) : new Date(0);
+      const bDate = b.start_date ? new Date(b.start_date) : new Date(0);
+      return bDate.getTime() - aDate.getTime();
+    });
+    
+    // Return the assignment with the latest start_date
+    return sortedAssignments[0] || null;
   };
 
   const getAssignmentHistory = () => {
-    return assignments.filter(a => a.status !== 'active');
+    const currentAssignment = getCurrentAssignment();
+    
+    // All assignments except the current one go to history
+    const history = assignments.filter(a => !currentAssignment || a.id !== currentAssignment.id);
+    
+    return history;
   };
 
   if (loading) {
@@ -287,13 +302,14 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
             Manage and view employee project and rental assignments
           </p>
         </div>
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogTrigger asChild>
-            <Button onClick={() => resetForm()}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Assignment
-            </Button>
-          </DialogTrigger>
+                 {!currentAssignment && (
+           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+             <DialogTrigger asChild>
+               <Button onClick={() => resetForm()}>
+                 <Plus className="mr-2 h-4 w-4" />
+                 Add Assignment
+               </Button>
+             </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Add New Assignment</DialogTitle>
@@ -403,6 +419,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
             </div>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       {/* Current Assignment */}
@@ -454,15 +471,21 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                   </span>
                 </div>
               </div>
-              <div className="space-y-2">
-                {getTypeBadge(currentAssignment.type)}
-                {getStatusBadge(currentAssignment.status)}
-                {currentAssignment.notes && (
-                  <div className="text-sm text-muted-foreground">
-                    <strong>Notes:</strong> {currentAssignment.notes}
-                  </div>
-                )}
-              </div>
+                             <div className="space-y-2">
+                 {getTypeBadge(currentAssignment.type)}
+                 <Badge
+                   className={
+                     currentAssignment.status === 'active' ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'
+                   }
+                 >
+                   {currentAssignment.status || 'active'}
+                 </Badge>
+                 {currentAssignment.notes && (
+                   <div className="text-sm text-muted-foreground">
+                     <strong>Notes:</strong> {currentAssignment.notes}
+                   </div>
+                 )}
+               </div>
             </div>
           </CardContent>
         </Card>

@@ -5,6 +5,66 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Function to manage assignment statuses (similar to Laravel's EmployeeAssignmentService)
+async function manageAssignmentStatuses(employeeId: number): Promise<void> {
+  try {
+    // Get all assignments for this employee, ordered by start date and ID
+    const allAssignments = await prisma.employeeAssignment.findMany({
+      where: { employee_id: employeeId },
+      orderBy: [
+        { start_date: 'asc' },
+        { id: 'asc' }
+      ]
+    });
+
+    if (allAssignments.length === 0) {
+      return;
+    }
+
+    // Find the current/latest assignment (the one with the latest start date)
+    const currentAssignment = allAssignments.reduce((latest, current) => {
+      const latestDate = latest.start_date ? new Date(latest.start_date) : new Date(0);
+      const currentDate = current.start_date ? new Date(current.start_date) : new Date(0);
+      return currentDate > latestDate ? current : latest;
+    });
+
+    // Update all assignments based on their position
+    for (const assignment of allAssignments) {
+      const isCurrent = assignment.id === currentAssignment.id;
+
+      if (isCurrent) {
+        // Current assignment should be active and have no end date
+        if (assignment.status !== 'active' || assignment.end_date !== null) {
+          await prisma.employeeAssignment.update({
+            where: { id: assignment.id },
+            data: {
+              status: 'active',
+              end_date: null
+            }
+          });
+        }
+      } else {
+        // Previous assignments should be completed and have an end date
+        if (assignment.status !== 'completed' || assignment.end_date === null) {
+          // Set end date to the day before the current assignment starts
+          const endDate = new Date(currentAssignment.start_date);
+          endDate.setDate(endDate.getDate() - 1);
+
+          await prisma.employeeAssignment.update({
+            where: { id: assignment.id },
+            data: {
+              status: 'completed',
+              end_date: endDate
+            }
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error managing assignment statuses:', error);
+  }
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -137,8 +197,8 @@ export async function POST(
         type: body.type || 'manual',
         location: body.location,
         start_date: new Date(body.start_date),
-        end_date: body.end_date ? new Date(body.end_date) : null,
-        status: body.status || 'active',
+        end_date: null, // Always null for new assignments
+        status: 'active', // Always active for new assignments
         notes: body.notes,
         project_id: body.project_id || null,
         rental_id: body.rental_id || null,
@@ -158,6 +218,9 @@ export async function POST(
         },
       },
     });
+
+    // Manage assignment statuses after creating new assignment
+    await manageAssignmentStatuses(employeeId);
 
     return NextResponse.json({
       success: true,

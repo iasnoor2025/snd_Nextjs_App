@@ -29,12 +29,12 @@ const mockPayrolls = [
     notes: 'Regular monthly payroll',
     approved_by: 1,
     approved_at: '2024-01-30T10:00:00Z',
-    paid_by: null,
-    paid_at: null,
-    payment_method: null,
-    payment_reference: null,
-    payment_status: null,
-    payment_processed_at: null,
+    paid_by: null as number | null,
+    paid_at: null as string | null,
+    payment_method: null as string | null,
+    payment_reference: null as string | null,
+    payment_status: null as string | null,
+    payment_processed_at: null as string | null,
     currency: 'USD',
     created_at: '2024-01-15T10:00:00Z',
     updated_at: '2024-01-30T10:00:00Z',
@@ -128,12 +128,12 @@ const mockPayrolls = [
     notes: 'Regular monthly payroll',
     approved_by: null,
     approved_at: null,
-    paid_by: null,
-    paid_at: null,
-    payment_method: null,
-    payment_reference: null,
-    payment_status: null,
-    payment_processed_at: null,
+    paid_by: null as number | null,
+    paid_at: null as string | null,
+    payment_method: null as string | null,
+    payment_reference: null as string | null,
+    payment_status: null as string | null,
+    payment_processed_at: null as string | null,
     currency: 'USD',
     created_at: '2024-01-15T10:00:00Z',
     updated_at: '2024-01-15T10:00:00Z',
@@ -240,7 +240,7 @@ export async function POST(
 
     // Process the payment
     payroll.status = 'paid';
-    payroll.paid_by = 1 as number | null; // Mock user ID
+    payroll.paid_by = 1; // Mock user ID
     payroll.paid_at = new Date().toISOString();
     payroll.payment_method = payment_method;
     payroll.payment_reference = reference || null;

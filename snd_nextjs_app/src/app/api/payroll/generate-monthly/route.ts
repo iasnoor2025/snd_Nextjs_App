@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
             ]
           };
 
-          generatedPayrolls.push(payroll);
+          generatedPayrolls.push(payroll.id.toString());
         }
       } catch (error) {
         errors.push(`Error processing ${employee.first_name} ${employee.last_name}: ${error}`);

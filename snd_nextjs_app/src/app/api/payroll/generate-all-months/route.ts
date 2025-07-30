@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
           // Check if payroll already exists for this month
           const existingPayroll = await prisma.payroll.findFirst({
             where: {
-              employeeId: employee.id,
+              employee_id: employee.id,
               month: month,
               year: year
             }
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
           // Check if employee has approved timesheets for this month
           const timesheets = await prisma.timesheet.findMany({
             where: {
-              employeeId: employee.id,
+              employee_id: employee.id,
               status: 'manager_approved',
               date: {
                 gte: new Date(year, month - 1, 1),
@@ -70,28 +70,28 @@ export async function POST(request: NextRequest) {
           }
 
           // Calculate payroll based on timesheets
-          const totalHours = timesheets.reduce((sum, ts) => sum + ts.hoursWorked, 0);
-          const totalOvertimeHours = timesheets.reduce((sum, ts) => sum + ts.overtimeHours, 0);
+          const totalHours = timesheets.reduce((sum, ts) => sum + Number(ts.hours_worked), 0);
+          const totalOvertimeHours = timesheets.reduce((sum, ts) => sum + Number(ts.overtime_hours), 0);
 
-          const overtimeAmount = totalOvertimeHours * (employee.basicSalary / 160) * 1.5;
+          const overtimeAmount = totalOvertimeHours * (Number(employee.basic_salary) / 160) * 1.5;
           const bonusAmount = Math.random() * 300; // Random bonus
-          const deductionAmount = employee.basicSalary * 0.15; // 15% tax
-          const finalAmount = employee.basicSalary + overtimeAmount + bonusAmount - deductionAmount;
+          const deductionAmount = Number(employee.basic_salary) * 0.15; // 15% tax
+          const finalAmount = Number(employee.basic_salary) + overtimeAmount + bonusAmount - deductionAmount;
 
           // Create payroll
           const payroll = await prisma.payroll.create({
             data: {
-              employeeId: employee.id,
+              employee_id: employee.id,
               month: month,
               year: year,
-              baseSalary: employee.basicSalary,
-              overtimeAmount: overtimeAmount,
-              bonusAmount: bonusAmount,
-              deductionAmount: deductionAmount,
-              advanceDeduction: 0,
-              finalAmount: finalAmount,
-              totalWorkedHours: totalHours,
-              overtimeHours: totalOvertimeHours,
+              base_salary: Number(employee.basic_salary),
+              overtime_amount: overtimeAmount,
+              bonus_amount: bonusAmount,
+              deduction_amount: deductionAmount,
+              advance_deduction: 0,
+              final_amount: finalAmount,
+              total_worked_hours: totalHours,
+              overtime_hours: totalOvertimeHours,
               status: 'pending',
               notes: 'Generated from approved timesheets',
               currency: 'USD'
@@ -102,50 +102,50 @@ export async function POST(request: NextRequest) {
           await prisma.payrollItem.createMany({
             data: [
               {
-                payrollId: payroll.id,
+                payroll_id: payroll.id,
                 type: 'earnings',
                 description: 'Basic Salary',
-                amount: employee.basicSalary,
-                isTaxable: true,
-                taxRate: 15,
+                amount: Number(employee.basic_salary),
+                is_taxable: true,
+                tax_rate: 15,
                 order: 1
               },
               {
-                payrollId: payroll.id,
+                payroll_id: payroll.id,
                 type: 'overtime',
                 description: 'Overtime Pay',
                 amount: overtimeAmount,
-                isTaxable: true,
-                taxRate: 15,
+                is_taxable: true,
+                tax_rate: 15,
                 order: 2
               },
               {
-                payrollId: payroll.id,
+                payroll_id: payroll.id,
                 type: 'bonus',
                 description: 'Performance Bonus',
                 amount: bonusAmount,
-                isTaxable: true,
-                taxRate: 15,
+                is_taxable: true,
+                tax_rate: 15,
                 order: 3
               },
               {
-                payrollId: payroll.id,
+                payroll_id: payroll.id,
                 type: 'deduction',
                 description: 'Tax Deduction',
                 amount: -deductionAmount,
-                isTaxable: false,
-                taxRate: 0,
+                is_taxable: false,
+                tax_rate: 0,
                 order: 4
               }
             ]
           });
 
-          generatedPayrolls.push(payroll.id);
+          generatedPayrolls.push(payroll.id.toString());
           totalGenerated++;
           current.setMonth(current.getMonth() + 1);
         }
 
-        processedEmployees.push(employee.id);
+        processedEmployees.push(employee.id.toString());
       } catch (error) {
         errors.push(`Employee ${employee.id}: ${(error as Error).message}`);
       }
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
       `Errors: ${errors.length}`;
 
     if (processedEmployees.length > 0) {
-      message += `\n\nProcessed employees: ${processedEmployees.join(', ')}`;
+      message += `\n\nProcessed employees: ${processedEmployees.map(id => id.toString()).join(', ')}`;
     }
 
     if (errors.length > 0) {

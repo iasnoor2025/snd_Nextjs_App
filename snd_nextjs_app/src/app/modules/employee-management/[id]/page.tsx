@@ -599,7 +599,7 @@ export default function EmployeeShowPage() {
                           {employee.hire_date ? format(new Date(employee.hire_date), 'PPP') : 'Not set'}
                         </dd>
                       </div>
-                      <div className="flex justify-between border-b pb-2">
+                        <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">Service Period</dt>
                         <dd className="text-sm">
                           {(() => {
@@ -628,7 +628,7 @@ export default function EmployeeShowPage() {
                             return parts.join(', ') || 'Less than a day';
                           })()}
                         </dd>
-                      </div>
+                        </div>
                     </dl>
                   </div>
                 </div>
@@ -639,7 +639,7 @@ export default function EmployeeShowPage() {
                     <div className="mb-2 flex justify-between">
                       <span className="text-sm font-medium">Basic Salary</span>
                       <span className="text-base font-semibold">SAR {Number(employee.basic_salary || 0).toFixed(2)}</span>
-                        </div>
+                    </div>
                     <div className="h-1.5 w-full rounded-full bg-muted">
                       <div className="h-1.5 rounded-full bg-primary" style={{ width: '100%' }}></div>
                     </div>
@@ -654,26 +654,26 @@ export default function EmployeeShowPage() {
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">Food Allowance</dt>
                         <dd className="text-sm">SAR {Number(employee.food_allowance).toFixed(2)}</dd>
-                        </div>
+                      </div>
                       )}
                     {Number(employee.housing_allowance || 0) > 0 && (
                         <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">Housing Allowance</dt>
                         <dd className="text-sm">SAR {Number(employee.housing_allowance).toFixed(2)}</dd>
-                        </div>
+                    </div>
                       )}
                     {Number(employee.transport_allowance || 0) > 0 && (
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">Transport Allowance</dt>
                         <dd className="text-sm">SAR {Number(employee.transport_allowance).toFixed(2)}</dd>
-                        </div>
+                  </div>
                       )}
                     </dl>
                   </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+        </TabsContent>
 
         {/* Documents Tab */}
         <TabsContent value="documents" className="mt-6 space-y-6">
@@ -708,7 +708,7 @@ export default function EmployeeShowPage() {
                       );
                     })}
                   </select>
-                </div>
+                    </div>
                 <Button 
                   variant="default" 
                   size="sm" 
@@ -721,12 +721,12 @@ export default function EmployeeShowPage() {
                   >
                     View Payslip
                   </Link>
-                </Button>
-              </div>
+                      </Button>
+                    </div>
       {/* Timesheet Summary */}
       <div className="mb-4">
         <TimesheetSummary employeeId={employee?.id} />
-              </div>
+                    </div>
       {/* Add Timesheet Button and Dialog */}
       {hasPermission('create', 'Timesheet') && (
         <Dialog>
@@ -745,9 +745,9 @@ export default function EmployeeShowPage() {
       {/* Timesheet List */}
       <div className="mt-4">
         <TimesheetList employeeId={employee?.id} />
-              </div>
+                    </div>
               </CardContent>
-            </Card>
+                  </Card>
           </TabsContent>
 
         <TabsContent value="leaves" className="mt-6 space-y-6">
@@ -762,8 +762,8 @@ export default function EmployeeShowPage() {
                   <Button variant="outline">
                     <History className="mr-2 h-4 w-4" />
                     View All
-                  </Button>
-                </div>
+                      </Button>
+                    </div>
               </div>
                   </CardHeader>
                   <CardContent>
@@ -777,7 +777,7 @@ export default function EmployeeShowPage() {
                     <CardContent className="p-4 pt-0">
                       <div className="text-2xl font-bold">0</div>
                   </CardContent>
-                </Card>
+                  </Card>
                 <Card>
                     <CardHeader className="p-4">
                       <CardTitle className="text-sm font-medium">Approved Leaves</CardTitle>
@@ -842,10 +842,10 @@ export default function EmployeeShowPage() {
                           </tr>
                         </tbody>
                       </table>
-                </div>
+                    </div>
                   </CardContent>
                 </Card>
-                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -866,7 +866,7 @@ export default function EmployeeShowPage() {
                   >
                     <CreditCard className="h-4 w-4" />
                     New Advance
-                              </Button>
+                  </Button>
                   <Dialog open={isRepaymentDialogOpen} onOpenChange={setIsRepaymentDialogOpen}>
                     <DialogTrigger asChild>
                       <Button
@@ -895,32 +895,32 @@ export default function EmployeeShowPage() {
                             </p>
                             <Button variant="outline" onClick={() => setIsRepaymentDialogOpen(false)}>
                               Close
-                            </Button>
-                          </div>
+                </Button>
+              </div>
                         ) : (
                           <div className="space-y-4">
                             <div className="grid gap-2">
                               <label htmlFor="repaymentAdvance" className="text-sm font-medium">Select Advance</label>
-                              <Select
+                <Select
                                 value={selectedAdvanceForRepayment?.id?.toString() || ''}
-                                onValueChange={(value) => {
+                  onValueChange={(value) => {
                                   const advance = approvedAdvances.find(a => a.id.toString() === value);
                                   setSelectedAdvanceForRepayment(advance);
                                   setRepaymentAmount('');
-                                }}
-                              >
+                  }}
+                >
                                 <SelectTrigger>
                                   <SelectValue placeholder="Select an advance to repay" />
-                                </SelectTrigger>
-                                <SelectContent>
+                  </SelectTrigger>
+                  <SelectContent>
                                   {approvedAdvances.map((advance) => (
                                     <SelectItem key={advance.id} value={advance.id.toString()}>
                                       SAR {Number(advance.amount).toFixed(2)} - {advance.reason}
-                                    </SelectItem>
+                        </SelectItem>
                                   ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                  </SelectContent>
+                </Select>
+              </div>
                             {selectedAdvanceForRepayment && (
                               <div className="space-y-4">
                                 <div className="rounded-lg border p-4 bg-muted/50">
@@ -948,12 +948,12 @@ export default function EmployeeShowPage() {
                                       Minimum repayment: SAR {Number(selectedAdvanceForRepayment.monthly_deduction).toFixed(2)}
                                     </p>
                                   )}
-                                </div>
-                              </div>
+              </div>
+                    </div>
                             )}
-                          </div>
+                    </div>
                         )}
-                      </div>
+                    </div>
                       {approvedAdvances.length > 0 && (
                         <DialogFooter>
                           <Button
@@ -986,7 +986,7 @@ export default function EmployeeShowPage() {
                   </Dialog>
                 </div>
               </div>
-            </CardHeader>
+                  </CardHeader>
             
             {/* Advance Request Dialog */}
             <Dialog open={isAdvanceRequestDialogOpen} onOpenChange={setIsAdvanceRequestDialogOpen}>
@@ -1007,7 +1007,7 @@ export default function EmployeeShowPage() {
                       onChange={(e) => setAdvanceAmount(e.target.value)}
                       placeholder="Enter amount"
                     />
-                  </div>
+                    </div>
                   <div className="grid gap-2">
                     <label htmlFor="monthlyDeduction" className="text-sm font-medium">Monthly Deduction (SAR)</label>
                     <Input
@@ -1019,7 +1019,7 @@ export default function EmployeeShowPage() {
                       onChange={(e) => setMonthlyDeduction(e.target.value)}
                       placeholder="Enter monthly deduction amount"
                     />
-                  </div>
+              </div>
                   <div className="grid gap-2">
                     <label htmlFor="reason" className="text-sm font-medium">Reason</label>
                     <Textarea
@@ -1090,7 +1090,7 @@ export default function EmployeeShowPage() {
                     }}
                   >
                     Submit
-                  </Button>
+                </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -1141,7 +1141,7 @@ export default function EmployeeShowPage() {
                     disabled={!rejectionReason.trim()}
                   >
                     Reject Advance
-                  </Button>
+                                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -1154,7 +1154,7 @@ export default function EmployeeShowPage() {
                     <Badge variant="outline" className="bg-muted/50">
                       {Number(currentBalance) > 0 ? 'Active' : 'No Balance'}
                             </Badge>
-                </div>
+                  </div>
                   <div className="space-y-2">
                     <p className="text-3xl font-bold text-destructive">SAR {Number(currentBalance).toFixed(2)}</p>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -1162,8 +1162,8 @@ export default function EmployeeShowPage() {
                         className="h-2 rounded-full bg-destructive transition-all duration-500"
                         style={{ width: '100%' }}
                       />
-                </div>
                   </div>
+              </div>
                 </div>
 
                 {/* Monthly Deduction Card */}
@@ -1172,8 +1172,8 @@ export default function EmployeeShowPage() {
                     <h3 className="text-sm font-medium text-muted-foreground">Monthly Deduction</h3>
                     <Badge variant="outline" className="bg-muted/50">
                       Configurable
-                    </Badge>
-                    </div>
+                            </Badge>
+                </div>
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
                       <Input
@@ -1186,7 +1186,7 @@ export default function EmployeeShowPage() {
                         placeholder="0.00"
                       />
                       <span className="text-2xl font-bold text-primary">SAR</span>
-                    </div>
+                </div>
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <span>Current Monthly Deduction</span>
                       <span className="font-medium">
@@ -1204,7 +1204,7 @@ export default function EmployeeShowPage() {
                     <Badge variant="outline" className="bg-muted/50">
                       Projected
                     </Badge>
-                    </div>
+                </div>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-5 w-5 text-muted-foreground" />
@@ -1212,7 +1212,7 @@ export default function EmployeeShowPage() {
                         {monthlyDeduction ? Math.ceil(Number(currentBalance) / Number(monthlyDeduction)) : 0}
                         <span className="ml-1 text-sm font-normal text-muted-foreground">months</span>
                       </p>
-                    </div>
+              </div>
                     <p className="text-xs text-muted-foreground">Based on current balance and monthly deduction</p>
                   </div>
                 </div>
@@ -1223,9 +1223,9 @@ export default function EmployeeShowPage() {
                 <CardHeader className="bg-muted/50 rounded-t-lg p-4 flex flex-row items-center gap-2">
                   <History className="h-5 w-5 text-primary" />
                   <CardTitle className="text-lg font-semibold">Advance History</CardTitle>
-                </CardHeader>
+            </CardHeader>
                 <CardContent className="p-0">
-                  <div className="overflow-x-auto">
+                <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-muted/50">
                         <tr>
@@ -1262,8 +1262,8 @@ export default function EmployeeShowPage() {
                               <td className="px-6 py-4 max-w-[200px] truncate">{advance.reason}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{new Date(advance.created_at).toLocaleDateString()}</td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <Badge
-                                  variant={
+                            <Badge
+                              variant={
                                     advance.status === 'approved' ? 'default' :
                                     advance.status === 'pending' ? 'secondary' :
                                     advance.status === 'rejected' ? 'destructive' :
@@ -1277,22 +1277,22 @@ export default function EmployeeShowPage() {
                                   }
                                 >
                                   {advance.status.charAt(0).toUpperCase() + advance.status.slice(1)}
-                                </Badge>
+                            </Badge>
                               </td>
                               <td className="px-6 py-4 capitalize">{advance.purpose === 'advance' ? 'Request' : Number(advance.amount) < 0 ? 'Repayment' : 'Payment'}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                                  <div className="flex items-center justify-end gap-2">
                                    {advance.status === 'pending' && (
                                      <>
-                                       <Button
-                                         size="sm"
+                              <Button
+                                size="sm"
                                          variant="outline"
                                          onClick={() => handleApproveAdvance(advance.id)}
-                                       >
+                              >
                                          Approve
-                                       </Button>
-                                       <Button
-                                         size="sm"
+                              </Button>
+                              <Button
+                                size="sm"
                                          variant="outline"
                                          onClick={() => {
                                            setSelectedAdvanceForReject(advance);
@@ -1300,10 +1300,10 @@ export default function EmployeeShowPage() {
                                          }}
                                        >
                                          Reject
-                                       </Button>
+                              </Button>
                                      </>
                                    )}
-                                   <Button
+                  <Button
                                      size="sm"
                                      variant="outline"
                                      onClick={() => {
@@ -1312,17 +1312,17 @@ export default function EmployeeShowPage() {
                                      }}
                                    >
                                      View
-                                   </Button>
-                                 </div>
+                  </Button>
+                </div>
                               </td>
                             </tr>
                           ))
-                        )}
+              )}
                       </tbody>
                     </table>
                 </div>
-                </CardContent>
-              </Card>
+            </CardContent>
+          </Card>
             </CardContent>
           </Card>
           <PaymentHistory employeeId={parseInt(employeeId)} />
@@ -1364,10 +1364,10 @@ export default function EmployeeShowPage() {
                     </tr>
                                           </tbody>
                       </table>
-                    </div>
-                                  </CardContent>
-              </Card>
-            </TabsContent>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="final-settlements" className="mt-6 space-y-6">
           <div className="space-y-6">

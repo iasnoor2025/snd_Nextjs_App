@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       // Check if employee has approved timesheets for this month
       const timesheets = await prisma.timesheet.findMany({
         where: {
-          employeeId: employee.id,
+          employee_id: employee.id,
           status: 'manager_approved',
           date: {
             gte: new Date(year, month - 1, 1),
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       // Check if payroll already exists for this month
       const existingPayroll = await prisma.payroll.findFirst({
         where: {
-          employeeId: employee.id,
+          employee_id: employee.id,
           month: month,
           year: year
         }

@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
         // Delete payroll items first (cascade)
         await prisma.payrollItem.deleteMany({
-          where: { payrollId: payrollId }
+          where: { payroll_id: payrollId }
         });
 
         // Delete payroll
