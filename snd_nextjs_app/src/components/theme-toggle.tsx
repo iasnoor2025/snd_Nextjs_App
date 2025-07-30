@@ -11,9 +11,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useI18n } from "@/hooks/use-i18n"
 
 export function ThemeToggle() {
   const { setTheme } = useTheme()
+  const { isRTL } = useI18n()
 
   return (
     <DropdownMenu>
@@ -24,7 +26,7 @@ export function ThemeToggle() {
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align={isRTL ? "start" : "end"}>
         <DropdownMenuItem onClick={() => setTheme("light")}>
           Light
         </DropdownMenuItem>

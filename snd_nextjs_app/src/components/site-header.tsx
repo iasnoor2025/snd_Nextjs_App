@@ -47,7 +47,7 @@ export function SiteHeader() {
           className="mx-2 data-[orientation=vertical]:h-4"
         />
         <h1 className="text-base font-medium">SND Rental Management</h1>
-        <div className="ml-auto flex items-center gap-2">
+        <div className={`${isRTL ? 'mr-auto' : 'ml-auto'} flex items-center gap-2`}>
           <I18nErrorBoundary>
             <LanguageSwitcher />
           </I18nErrorBoundary>
@@ -65,7 +65,7 @@ export function SiteHeader() {
                     {session?.user?.name || session?.user?.email}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align={isRTL ? "start" : "end"}>
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">
@@ -78,16 +78,16 @@ export function SiteHeader() {
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
-                    <Settings className="mr-2 h-4 w-4" />
+                    <Settings className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
                     <span>Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/login' })}>
-                    <LogOut className="mr-2 h-4 w-4" />
+                    <LogOut className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
                     <span>Log out</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleForceLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
+                    <LogOut className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
                     <span>Force Log out</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

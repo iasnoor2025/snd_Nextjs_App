@@ -11,7 +11,7 @@ import { Globe } from 'lucide-react';
 import { useI18n } from '@/hooks/use-i18n';
 
 export function LanguageSwitcher() {
-  const { currentLanguage, changeLanguage, languages } = useI18n();
+  const { currentLanguage, changeLanguage, languages, isRTL } = useI18n();
 
   const handleLanguageChange = (languageCode: string) => {
     changeLanguage(languageCode);
@@ -32,14 +32,14 @@ export function LanguageSwitcher() {
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align={isRTL ? "start" : "end"}>
         {languages.map((language) => (
           <DropdownMenuItem
             key={language.code}
             onClick={() => handleLanguageChange(language.code)}
             className={currentLanguage === language.code ? 'bg-accent' : ''}
           >
-            <span className="mr-2">{language.flag}</span>
+            <span className={isRTL ? "ml-2" : "mr-2"}>{language.flag}</span>
             <span>{language.name}</span>
           </DropdownMenuItem>
         ))}

@@ -14,6 +14,20 @@ export default function TestSidebarRTLPage() {
     changeLanguage(isRTL ? "en" : "ar");
   };
 
+  // Debug function to check sidebar state
+  const checkSidebarState = () => {
+    const sidebarInset = document.querySelector('[data-slot="sidebar-inset"]');
+    const sidebarContainer = document.querySelector('[data-slot="sidebar"]');
+    const peer = document.querySelector('.peer');
+    
+    console.log('Sidebar Inset:', sidebarInset);
+    console.log('Sidebar Container:', sidebarContainer);
+    console.log('Peer Element:', peer);
+    console.log('Peer Data State:', peer?.getAttribute('data-state'));
+    console.log('Sidebar Inset Classes:', sidebarInset?.className);
+    console.log('Sidebar Inset Computed Style:', window.getComputedStyle(sidebarInset || document.createElement('div')));
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -101,6 +115,13 @@ export default function TestSidebarRTLPage() {
                 className="w-full"
               >
                 Switch to Arabic (RTL)
+              </Button>
+              <Button 
+                onClick={checkSidebarState} 
+                variant="outline" 
+                className="w-full"
+              >
+                Debug Sidebar State
               </Button>
             </div>
           </CardContent>

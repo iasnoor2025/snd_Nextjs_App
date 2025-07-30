@@ -250,30 +250,19 @@
     flex-direction: row;
   }
 
-  /* RTL SidebarInset Margin Override */
+  /* RTL SidebarInset Margin Override - Mirror LTR logic exactly */
   .rtl [data-slot="sidebar-inset"] {
     margin-left: 0 !important;
     margin-right: 16rem;
   }
 
-  /* Override the specific classes used by SidebarInset for RTL */
-  .rtl [data-slot="sidebar-inset"].md\:ml-64 {
-    margin-left: 0 !important;
-    margin-right: 16rem;
-  }
-
+  /* RTL collapsed state - same as LTR but with right margin */
   .rtl [data-slot="sidebar-inset"].peer-data-\[state\=collapsed\] {
     margin-right: 0 !important;
   }
 
-  /* When sidebar is collapsed in RTL, remove right margin */
-  .rtl .peer[data-state="collapsed"] [data-slot="sidebar-inset"],
-  .rtl [data-slot="sidebar-inset"].peer-data-\[state\=collapsed\] {
-    margin-right: 0 !important;
-  }
-
-  /* RTL SidebarInset Peer State Override */
-  .rtl .peer-data-\[state\=collapsed\]\[data-slot\=sidebar-inset\] {
-    margin-right: 0 !important;
+  /* RTL expanded state - same as LTR but with right margin */
+  .rtl [data-slot="sidebar-inset"]:not(.peer-data-\[state\=collapsed\]) {
+    margin-right: 16rem !important;
   }
 }
