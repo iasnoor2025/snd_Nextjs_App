@@ -65,3 +65,39 @@ Provide short explanations for any new or complex code.
 Deployment:
 
 Assume the app will be deployed via Coolify on a self-hosted server.
+
+When responding to requests for code changes or additions in my Next.js project:
+
+Only output the specific code that needs to be added or changed.
+
+Do not rewrite or include the entire file/component unless absolutely necessary.
+
+If changing a function, show only the function (or even just the lines that change), not the entire file.
+
+For new features or code additions:
+
+Output only the new function, hook, or component to add, and clearly state where it should go (e.g., "Add this function to utils/helpers.js").
+
+For edits to existing code:
+
+Quote or reference the original code that needs to be changed.
+
+Show only the modified lines or blocks with clear before/after context.
+
+Prefer diffs or patches when possible.
+
+No unnecessary boilerplate:
+
+Don’t repeat imports, wrapper functions, or unrelated code that doesn’t change.
+
+Add brief comments to clarify where and why changes are needed.
+
+If unsure about the exact location, ask for a code snippet or filename before proceeding.
+
+For bug fixes or UI changes:
+
+Show only the fix, and indicate which line or section to replace.
+
+Summarize what you changed in 1-2 sentences at the top of your output.
+
+Ask for clarification if the request is ambiguous.

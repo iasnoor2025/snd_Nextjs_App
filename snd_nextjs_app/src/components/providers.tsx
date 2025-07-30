@@ -4,10 +4,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "next-themes";
 import { SessionProvider } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { RBACProvider } from "@/lib/rbac/rbac-context";
-import { SSEProvider } from "@/contexts/sse-context";
-import '@/lib/i18n'; // Initialize i18n
+import SSEProvider from "@/contexts/sse-context";
+import { I18nProvider } from "@/components/i18n-provider";
+import { I18nWrapper } from "@/components/i18n-wrapper";
+import '@/lib/i18n-client'; // Initialize i18n on client side
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -26,17 +28,7 @@ export function Providers({ children }: ProvidersProps) {
       })
   );
 
-  useEffect(() => {
-    // Set initial document direction based on language
-    const savedLanguage = localStorage.getItem('i18nextLng') || 'en';
-    if (savedLanguage === 'ar') {
-      document.documentElement.dir = 'rtl';
-      document.documentElement.lang = 'ar';
-    } else {
-      document.documentElement.dir = 'ltr';
-      document.documentElement.lang = 'en';
-    }
-  }, []);
+
 
   return (
     <SessionProvider>
@@ -48,8 +40,12 @@ export function Providers({ children }: ProvidersProps) {
           disableTransitionOnChange
         >
           <QueryClientProvider client={queryClient}>
-            <SSEProvider enabled={true} maxEvents={100} showToasts={true}>
-              {children}
+            <SSEProvider>
+              <I18nWrapper>
+                <I18nProvider>
+                  {children}
+                </I18nProvider>
+              </I18nWrapper>
               <ReactQueryDevtools initialIsOpen={false} />
             </SSEProvider>
           </QueryClientProvider>

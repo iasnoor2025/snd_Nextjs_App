@@ -157,10 +157,11 @@ export default function RentalManagementPage() {
         throw new Error('Failed to fetch rentals');
       }
       const data = await response.json();
-      setRentals(data);
+      setRentals(data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       toast.error('Failed to fetch rentals');
+      setRentals([]); // Ensure rentals is always an array
     } finally {
       setLoading(false);
     }
@@ -172,10 +173,12 @@ export default function RentalManagementPage() {
       const response = await fetch('/api/customers');
       if (response.ok) {
         const data = await response.json();
-        setCustomers(data);
+        // The API returns an object with customers array, not a direct array
+        setCustomers(data.customers || []);
       }
     } catch (err) {
       console.error('Failed to fetch customers:', err);
+      setCustomers([]); // Ensure customers is always an array
     }
   };
 
@@ -440,7 +443,7 @@ export default function RentalManagementPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">All customers</SelectItem>
-                    {customers.map((customer) => (
+                    {(customers || []).map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.name}
                       </SelectItem>
@@ -460,7 +463,7 @@ export default function RentalManagementPage() {
       {/* Rentals Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Rentals ({rentals.length})</CardTitle>
+          <CardTitle>Rentals ({(rentals || []).length})</CardTitle>
           <CardDescription>
             Manage all equipment rentals and contracts
           </CardDescription>
@@ -480,7 +483,7 @@ export default function RentalManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rentals.map((rental) => (
+              {(rentals || []).map((rental) => (
                 <TableRow key={rental.id}>
                   <TableCell className="font-medium">{rental.rentalNumber}</TableCell>
                   <TableCell>
@@ -538,7 +541,7 @@ export default function RentalManagementPage() {
               ))}
             </TableBody>
           </Table>
-          {rentals.length === 0 && (
+          {(rentals || []).length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
               No rentals found
             </div>
@@ -574,7 +577,7 @@ export default function RentalManagementPage() {
                   <SelectValue placeholder="Select customer" />
                 </SelectTrigger>
                 <SelectContent>
-                  {customers.map((customer) => (
+                  {(customers || []).map((customer) => (
                     <SelectItem key={customer.id} value={customer.id}>
                       {customer.name}
                     </SelectItem>
@@ -720,7 +723,7 @@ export default function RentalManagementPage() {
                   <SelectValue placeholder="Select customer" />
                 </SelectTrigger>
                 <SelectContent>
-                  {customers.map((customer) => (
+                  {(customers || []).map((customer) => (
                     <SelectItem key={customer.id} value={customer.id}>
                       {customer.name}
                     </SelectItem>

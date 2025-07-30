@@ -1,38 +1,128 @@
 {
   "title": "Rental Management",
-  "subtitle": "Manage equipment rentals and customer orders",
+  "subtitle": "Manage equipment rentals and contracts",
+  "description": "Track and manage rental agreements, equipment assignments, and customer contracts",
+  
+  "actions": {
+    "add": "New Rental",
+    "edit": "Edit Rental",
+    "delete": "Delete Rental",
+    "view": "View Rental",
+    "save": "Save Rental",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "search": "Search rentals...",
+    "filter": "Filter",
+    "refresh": "Refresh",
+    "export": "Export",
+    "import": "Import",
+    "approve": "Approve Rentals",
+    "reject": "Reject Rentals",
+    "manage": "Rental Settings"
+  },
+  
   "fields": {
     "rentalNumber": "Rental Number",
-    "customerId": "Customer ID",
+    "customerId": "Customer",
+    "customerName": "Customer Name",
     "startDate": "Start Date",
-    "endDate": "End Date",
-    "totalAmount": "Total Amount",
+    "expectedEndDate": "Expected End Date",
+    "actualEndDate": "Actual End Date",
+    "depositAmount": "Deposit Amount",
+    "paymentTermsDays": "Payment Terms (Days)",
+    "hasTimesheet": "Has Timesheet",
+    "hasOperators": "Has Operators",
     "status": "Status",
     "paymentStatus": "Payment Status",
-    "notes": "Notes"
+    "notes": "Notes",
+    "equipment": "Equipment",
+    "quantity": "Quantity",
+    "unitPrice": "Unit Price",
+    "totalPrice": "Total Price",
+    "days": "Days",
+    "rateType": "Rate Type",
+    "operatorId": "Operator"
   },
+  
   "status": {
     "pending": "Pending",
     "active": "Active",
     "completed": "Completed",
-    "cancelled": "Cancelled"
-  },
-  "paymentStatus": {
-    "pending": "Pending",
-    "paid": "Paid",
-    "partial": "Partial",
+    "cancelled": "Cancelled",
     "overdue": "Overdue"
   },
-  "actions": {
-    "newRental": "New Rental",
-    "editRental": "Edit Rental",
-    "deleteRental": "Delete Rental",
-    "viewDetails": "View Details"
+  
+  "paymentStatus": {
+    "pending": "Pending",
+    "partial": "Partial",
+    "paid": "Paid",
+    "overdue": "Overdue"
   },
+  
+  "rateTypes": {
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "hourly": "Hourly"
+  },
+  
   "messages": {
-    "rentalCreated": "Rental created successfully",
-    "rentalUpdated": "Rental updated successfully",
-    "rentalDeleted": "Rental deleted successfully",
-    "confirmDelete": "Are you sure you want to delete this rental?"
+    "loading": "Loading rentals...",
+    "noRentals": "No rentals found.",
+    "noRentalsFilter": "No rentals match your filters.",
+    "createSuccess": "Rental created successfully",
+    "createError": "Failed to create rental",
+    "updateSuccess": "Rental updated successfully",
+    "updateError": "Failed to update rental",
+    "deleteSuccess": "Rental deleted successfully",
+    "deleteError": "Failed to delete rental",
+    "fetchError": "Failed to fetch rentals",
+    "confirmDelete": "Are you sure you want to delete this rental?",
+    "exportSuccess": "Rentals exported successfully",
+    "exportError": "Failed to export rentals"
+  },
+  
+  "pagination": {
+    "showing": "Showing {start}-{end} of {total} rentals",
+    "page": "Page {current} of {total}",
+    "itemsPerPage": "Items per page"
+  },
+  
+  "filters": {
+    "all": "All",
+    "status": "Status",
+    "paymentStatus": "Payment Status",
+    "customer": "Customer",
+    "dateRange": "Date Range",
+    "clear": "Clear Filters"
+  },
+  
+  "table": {
+    "headers": {
+      "rentalNumber": "Rental #",
+      "customer": "Customer",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "status": "Status",
+      "paymentStatus": "Payment",
+      "totalAmount": "Total Amount",
+      "actions": "Actions"
+    }
+  },
+  
+  "form": {
+    "addTitle": "Create New Rental",
+    "editTitle": "Edit Rental",
+    "viewTitle": "Rental Details",
+    "required": "This field is required",
+    "invalidDate": "Please enter a valid date",
+    "invalidAmount": "Please enter a valid amount",
+    "invalidQuantity": "Please enter a valid quantity"
+  },
+  
+  "administration": {
+    "title": "Rental Administration",
+    "subtitle": "Advanced rental management features for administrators",
+    "description": "Manage rental approvals, settings, and system configurations"
   }
 }

@@ -7,6 +7,7 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar";
+import { useI18n } from "@/hooks/use-i18n";
 
 interface ConditionalLayoutProps {
   children: React.ReactNode;
@@ -14,6 +15,7 @@ interface ConditionalLayoutProps {
 
 export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const pathname = usePathname();
+  const { isRTL } = useI18n();
   const isLoginPage = pathname === "/login";
 
   if (isLoginPage) {
@@ -34,12 +36,12 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
         } as React.CSSProperties
       }
     >
-      <div className="flex h-screen w-full overflow-hidden bg-background">
+      <div className={`flex h-screen w-full overflow-hidden bg-background ${isRTL ? 'rtl' : ''}`}>
         <AppSidebar />
         <SidebarInset className="flex-1 flex flex-col min-w-0 overflow-hidden peer">
           <SiteHeader />
-          <main className="flex-1 overflow-auto p-6 transition-all duration-200 ease-linear">
-            <div className="w-full h-full max-w-none">
+          <main className="flex-1 overflow-auto p-6 transition-all duration-200 ease-linear main-content">
+            <div className="w-full h-full max-w-none content-wrapper">
               {children}
             </div>
           </main>

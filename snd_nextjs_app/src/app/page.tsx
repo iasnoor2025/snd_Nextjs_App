@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
+
 export default function HomePage() {
   const { t } = useTranslation(['common']);
   const { data: session, status } = useSession();

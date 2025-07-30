@@ -1,111 +1,345 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useSSE, SSEEvent, SSEEventType } from '@/hooks/use-sse';
-import { toast } from 'sonner';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { useSession } from 'next-auth/react';
+import { ToastService } from '@/lib/toast-service';
 
-interface SSEContextType {
+export interface Notification {
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  message: string;
+  data?: any;
+  timestamp: Date;
+  read: boolean;
+  action_url?: string;
+  priority: 'low' | 'medium' | 'high';
+}
+
+export interface SSEContextType {
+  notifications: Notification[];
   isConnected: boolean;
-  isConnecting: boolean;
-  error: string | null;
-  lastEvent: SSEEvent | null;
-  events: SSEEvent[];
-  connect: () => void;
-  disconnect: () => void;
+  connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error';
+  markAsRead: (notificationId: string) => void;
+  markAllAsRead: () => void;
+  deleteNotification: (notificationId: string) => void;
+  clearAllNotifications: () => void;
+  unreadCount: number;
   reconnect: () => void;
-  clearEvents: () => void;
-  sendEvent: (type: SSEEventType, data: any) => Promise<void>;
 }
 
 const SSEContext = createContext<SSEContextType | undefined>(undefined);
 
+export const useSSE = () => {
+  const context = useContext(SSEContext);
+  if (!context) {
+    throw new Error('useSSE must be used within an SSEProvider');
+  }
+  return context;
+};
+
 interface SSEProviderProps {
   children: React.ReactNode;
-  enabled?: boolean;
-  maxEvents?: number;
-  showToasts?: boolean;
 }
 
-export function SSEProvider({ 
-  children, 
-  enabled = true, 
-  maxEvents = 100,
-  showToasts = true 
-}: SSEProviderProps) {
-  const [events, setEvents] = useState<SSEEvent[]>([]);
+export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
+  const { data: session } = useSession();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
+  const [eventSource, setEventSource] = useState<EventSource | null>(null);
+  const eventSourceRef = useRef<EventSource | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const [reconnectAttempts, setReconnectAttempts] = useState(0);
+  const [maxReconnectAttempts] = useState(5);
 
-  const {
-    isConnected,
-    isConnecting,
-    error,
-    lastEvent,
-    connect,
-    disconnect,
-    reconnect
-  } = useSSE({
-    enabled,
-    showToasts,
-    onEvent: (event) => {
-      setEvents(prev => {
-        const newEvents = [event, ...prev];
-        // Keep only the last maxEvents
-        return newEvents.slice(0, maxEvents);
-      });
-    },
-    onConnect: () => {
-      console.log('SSE connected');
-    },
-    onDisconnect: () => {
-      console.log('SSE disconnected');
-    },
-    onError: (error) => {
-      console.error('SSE error:', error);
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Handle SSE messages
+  const handleSSEMessage = useCallback((data: any) => {
+    switch (data.type) {
+      case 'notification':
+        handleNotification(data.payload);
+        break;
+      case 'system':
+        handleSystemMessage(data.payload);
+        break;
+      case 'update':
+        handleUpdate(data.payload);
+        break;
+      default:
+        console.log('Unknown SSE message type:', data.type);
     }
-  });
+  }, []);
 
-  // Send event function
-  const sendEvent = async (type: SSEEventType, data: any) => {
+  // Handle notification messages
+  const handleNotification = useCallback((payload: any) => {
+    const notification: Notification = {
+      id: payload.id || Date.now().toString(),
+      type: payload.type || 'info',
+      title: payload.title || 'Notification',
+      message: payload.message || '',
+      data: payload.data,
+      timestamp: new Date(payload.timestamp || Date.now()),
+      read: false,
+      action_url: payload.action_url,
+      priority: payload.priority || 'medium',
+    };
+
+    setNotifications(prev => [notification, ...prev]);
+
+    // Show toast notification
+    switch (notification.type) {
+      case 'success':
+        ToastService.success(notification.message);
+        break;
+      case 'error':
+        ToastService.error(notification.message);
+        break;
+      case 'warning':
+        ToastService.warning(notification.message);
+        break;
+      case 'info':
+        ToastService.info(notification.message);
+        break;
+    }
+  }, []);
+
+  // Handle system messages
+  const handleSystemMessage = useCallback((payload: any) => {
+    console.log('System message:', payload);
+    
+    switch (payload.action) {
+      case 'reload':
+        window.location.reload();
+        break;
+      case 'redirect':
+        window.location.href = payload.url;
+        break;
+      case 'update_available':
+        ToastService.info('System update available');
+        break;
+      default:
+        console.log('Unknown system action:', payload.action);
+    }
+  }, []);
+
+  // Handle update messages
+  const handleUpdate = useCallback((payload: any) => {
+    console.log('Update message:', payload);
+    
+    // Handle different types of updates
+    switch (payload.entity) {
+      case 'employee':
+        // Trigger employee data refresh
+        break;
+      case 'rental':
+        // Trigger rental data refresh
+        break;
+      case 'equipment':
+        // Trigger equipment data refresh
+        break;
+      default:
+        console.log('Unknown update entity:', payload.entity);
+    }
+  }, []);
+
+  // Initialize SSE connection
+  const connectSSE = useCallback(() => {
+    if (!session?.user?.email) {
+      setConnectionStatus('disconnected');
+      return;
+    }
+
     try {
-      const response = await fetch('/api/sse', {
+      setConnectionStatus('connecting');
+      
+      // Close existing connection
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+
+      // Create new EventSource connection
+      const sse = new EventSource('/api/sse', {
+        withCredentials: true,
+      });
+
+      sse.onopen = () => {
+        setIsConnected(true);
+        setConnectionStatus('connected');
+        setReconnectAttempts(0);
+        reconnectAttemptsRef.current = 0;
+        console.log('SSE connection established');
+      };
+
+      sse.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          handleSSEMessage(data);
+        } catch (error) {
+          console.error('Error parsing SSE message:', error);
+        }
+      };
+
+      sse.onerror = (error) => {
+        console.error('SSE connection error:', error);
+        setIsConnected(false);
+        setConnectionStatus('error');
+        
+        // Attempt to reconnect using a ref to avoid dependency issues
+        if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+          setTimeout(() => {
+            connectSSE();
+          }, Math.pow(2, reconnectAttemptsRef.current) * 1000); // Exponential backoff
+          reconnectAttemptsRef.current += 1;
+          setReconnectAttempts(reconnectAttemptsRef.current);
+        }
+      };
+
+      setEventSource(sse);
+      eventSourceRef.current = sse;
+    } catch (error) {
+      console.error('Failed to create SSE connection:', error);
+      setConnectionStatus('error');
+    }
+  }, [session?.user?.email, handleSSEMessage, maxReconnectAttempts]);
+
+  // Mark notification as read
+  const markAsRead = useCallback(async (notificationId: string) => {
+    setNotifications(prev => 
+      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+    );
+
+    try {
+      await fetch(`/api/notifications/${notificationId}/read`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          type,
-          data,
-          id: `${type}-${Date.now()}`
-        }),
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to send event');
-      }
-
-      const result = await response.json();
-      console.log('Event sent successfully:', result);
     } catch (error) {
-      console.error('Error sending event:', error);
-      toast.error('Failed to send event');
+      console.error('Failed to mark notification as read:', error);
     }
-  };
+  }, []);
 
-  // Clear events function
-  const clearEvents = () => {
-    setEvents([]);
-  };
+  // Mark all notifications as read
+  const markAllAsRead = useCallback(async () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+
+    try {
+      await fetch('/api/notifications/mark-all-read', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  }, []);
+
+  // Delete notification
+  const deleteNotification = useCallback(async (notificationId: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+
+    try {
+      await fetch(`/api/notifications/${notificationId}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+    }
+  }, []);
+
+  // Clear all notifications
+  const clearAllNotifications = useCallback(async () => {
+    setNotifications([]);
+
+    try {
+      await fetch('/api/notifications/clear-all', {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('Failed to clear all notifications:', error);
+    }
+  }, []);
+
+  // Reconnect manually
+  const reconnect = useCallback(() => {
+    setReconnectAttempts(0);
+    reconnectAttemptsRef.current = 0;
+    connectSSE();
+  }, [connectSSE]);
+
+  // Load existing notifications on mount
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        const response = await fetch('/api/notifications');
+        if (response.ok) {
+          const data = await response.json();
+          setNotifications(data.notifications || []);
+        }
+      } catch (error) {
+        console.error('Failed to load notifications:', error);
+      }
+    };
+
+    if (session?.user?.email) {
+      loadNotifications();
+    }
+  }, [session?.user?.email]);
+
+  // Connect to SSE when session is available
+  useEffect(() => {
+    if (session?.user?.email) {
+      connectSSE();
+    } else {
+      setIsConnected(false);
+      setConnectionStatus('disconnected');
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+    };
+  }, [session?.user?.email, connectSSE]);
+
+  // Auto-reconnect on network recovery
+  useEffect(() => {
+    const handleOnline = () => {
+      if (session?.user?.email && !isConnected) {
+        console.log('Network recovered, reconnecting...');
+        reconnect();
+      }
+    };
+
+    const handleOffline = () => {
+      setIsConnected(false);
+      setConnectionStatus('disconnected');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [session?.user?.email, isConnected, reconnect]);
 
   const value: SSEContextType = {
+    notifications,
     isConnected,
-    isConnecting,
-    error,
-    lastEvent,
-    events,
-    connect,
-    disconnect,
+    connectionStatus,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    clearAllNotifications,
+    unreadCount,
     reconnect,
-    clearEvents,
-    sendEvent
   };
 
   return (
@@ -113,50 +347,6 @@ export function SSEProvider({
       {children}
     </SSEContext.Provider>
   );
-}
+};
 
-export function useSSEContext() {
-  const context = useContext(SSEContext);
-  if (context === undefined) {
-    throw new Error('useSSEContext must be used within a SSEProvider');
-  }
-  return context;
-}
-
-// Hook for specific event types
-export function useSSEEvents(eventTypes: SSEEventType[]) {
-  const { events } = useSSEContext();
-  return events.filter(event => eventTypes.includes(event.type));
-}
-
-// Hook for rental events
-export function useRentalEvents() {
-  return useSSEEvents([
-    'rental_status_updated',
-    'payment_received',
-    'maintenance_required',
-    'rental_overdue'
-  ]);
-}
-
-// Hook for employee events
-export function useEmployeeEvents() {
-  return useSSEEvents([
-    'timesheet_updated',
-    'payroll_processed',
-    'leave_request_updated'
-  ]);
-}
-
-// Hook for equipment events
-export function useEquipmentEvents() {
-  return useSSEEvents([
-    'equipment_location_updated',
-    'maintenance_required'
-  ]);
-}
-
-// Hook for sync events
-export function useSyncEvents() {
-  return useSSEEvents(['sync_progress']);
-} 
+export default SSEProvider; 

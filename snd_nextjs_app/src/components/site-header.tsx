@@ -17,10 +17,13 @@ import {
 import { User, LogOut, Settings } from "lucide-react"
 import { LanguageSwitcher } from "./language-switcher"
 import { ThemeToggle } from "./theme-toggle"
+import { I18nErrorBoundary } from "./i18n-error-boundary"
+import { useI18n } from "@/hooks/use-i18n"
 
 export function SiteHeader() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { isRTL } = useI18n();
   
   // Debug session state
   console.log('SiteHeader - Session status:', status);
@@ -38,14 +41,16 @@ export function SiteHeader() {
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <SidebarTrigger className="-ml-1" />
+        <SidebarTrigger className={isRTL ? "-mr-1" : "-ml-1"} />
         <Separator
           orientation="vertical"
           className="mx-2 data-[orientation=vertical]:h-4"
         />
         <h1 className="text-base font-medium">SND Rental Management</h1>
         <div className="ml-auto flex items-center gap-2">
-          <LanguageSwitcher />
+          <I18nErrorBoundary>
+            <LanguageSwitcher />
+          </I18nErrorBoundary>
           {status === "loading" ? (
             <div className="text-sm text-muted-foreground">Loading...</div>
           ) : session ? (

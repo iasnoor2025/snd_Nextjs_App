@@ -1,3 +1,5 @@
+'use client';
+
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
@@ -48,35 +50,38 @@ const resources = {
   },
 };
 
-i18n
-  .use(LanguageDetector)
-  .use(initReactI18next)
-  .init({
-    resources,
-    fallbackLng: 'en',
-    debug: process.env.NODE_ENV === 'development',
+// Only initialize if not already initialized
+if (!i18n.isInitialized) {
+  i18n
+    .use(LanguageDetector)
+    .use(initReactI18next)
+    .init({
+      resources,
+      fallbackLng: 'en',
+      debug: process.env.NODE_ENV === 'development',
 
-    interpolation: {
-      escapeValue: false, // React already escapes values
-    },
+      interpolation: {
+        escapeValue: false, // React already escapes values
+      },
 
-    detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
-      caches: ['localStorage'],
-    },
+      detection: {
+        order: ['localStorage', 'navigator', 'htmlTag'],
+        caches: ['localStorage'],
+      },
 
-    defaultNS: 'common',
-    ns: ['common', 'auth', 'dashboard', 'equipment', 'employee', 'rental', 'settings', 'reporting', 'analytics'],
+      defaultNS: 'common',
+      ns: ['common', 'auth', 'dashboard', 'equipment', 'employee', 'rental', 'settings', 'reporting', 'analytics'],
 
-    react: {
-      useSuspense: false,
-    },
-  })
-  .then(() => {
-    console.log('i18n initialized successfully');
-  })
-  .catch((error) => {
-    console.error('i18n initialization error:', error);
-  });
+      react: {
+        useSuspense: false,
+      },
+    })
+    .then(() => {
+      console.log('i18n initialized successfully');
+    })
+    .catch((error) => {
+      console.error('i18n initialization error:', error);
+    });
+}
 
-export default i18n;
+export default i18n; 

@@ -1,6 +1,5 @@
 'use client';
 
-import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,45 +8,28 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Globe } from 'lucide-react';
-
-const languages = [
-  {
-    code: 'en',
-    name: 'English',
-    flag: '🇺🇸',
-  },
-  {
-    code: 'ar',
-    name: 'العربية',
-    flag: '🇸🇦',
-  },
-];
+import { useI18n } from '@/hooks/use-i18n';
 
 export function LanguageSwitcher() {
-  const { i18n } = useTranslation();
+  const { currentLanguage, changeLanguage, languages } = useI18n();
 
   const handleLanguageChange = (languageCode: string) => {
-    i18n.changeLanguage(languageCode);
-
-    // Update document direction for RTL support
-    if (languageCode === 'ar') {
-      document.documentElement.dir = 'rtl';
-      document.documentElement.lang = 'ar';
-    } else {
-      document.documentElement.dir = 'ltr';
-      document.documentElement.lang = 'en';
-    }
+    changeLanguage(languageCode);
   };
 
-  const currentLanguage = languages.find(lang => lang.code === i18n.language) || languages[0];
+  const currentLang = languages.find(lang => lang.code === currentLanguage);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="flex items-center gap-2">
           <Globe className="h-4 w-4" />
-          <span className="hidden sm:inline">{currentLanguage.flag}</span>
-          <span className="hidden md:inline">{currentLanguage.name}</span>
+          <span className="hidden sm:inline">
+            {currentLang?.flag || '🌐'}
+          </span>
+          <span className="hidden md:inline">
+            {currentLang?.name || 'Language'}
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -55,7 +37,7 @@ export function LanguageSwitcher() {
           <DropdownMenuItem
             key={language.code}
             onClick={() => handleLanguageChange(language.code)}
-            className={i18n.language === language.code ? 'bg-accent' : ''}
+            className={currentLanguage === language.code ? 'bg-accent' : ''}
           >
             <span className="mr-2">{language.flag}</span>
             <span>{language.name}</span>

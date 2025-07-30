@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ProtectedRoute } from '@/components/protected-route';
 import { Can, RoleBased } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
+import { useI18n } from '@/hooks/use-i18n';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -44,7 +45,8 @@ interface Employee {
 }
 
 export default function EmployeeManagementPage() {
-  const { t } = useTranslation(['common']);
+  const { t } = useTranslation(['common', 'employee']);
+  const { isRTL } = useI18n();
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
@@ -87,17 +89,17 @@ export default function EmployeeManagementPage() {
         } else {
           setEmployees([]);
           setFilteredEmployees([]);
-          toast.error('Invalid response format from server');
+          toast.error(t('employee:messages.fetchError'));
         }
       } else {
         setEmployees([]);
         setFilteredEmployees([]);
-        toast.error('Failed to fetch employees');
+        toast.error(t('employee:messages.fetchError'));
       }
     } catch (_error) {
       setEmployees([]);
       setFilteredEmployees([]);
-      toast.error('Failed to fetch employees');
+      toast.error(t('employee:messages.fetchError'));
     } finally {
       setIsLoading(false);
     }
@@ -112,14 +114,14 @@ export default function EmployeeManagementPage() {
 
       if (response.ok) {
         const result = await response.json();
-        toast.success(result.message);
+        toast.success(t('employee:messages.syncSuccess'));
         console.log('Sync result:', result);
         await fetchEmployees(); // Refresh the list
       } else {
-        toast.error('Failed to sync employees');
+        toast.error(t('employee:messages.syncError'));
       }
     } catch (_error) {
-      toast.error('Failed to sync employees');
+      toast.error(t('employee:messages.syncError'));
     } finally {
       setIsSyncing(false);
     }
@@ -310,10 +312,10 @@ export default function EmployeeManagementPage() {
     return (
       <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Employee' }}>
         <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading employees...</p>
-          </div>
+                  <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">{t('employee:messages.loading')}</p>
+        </div>
         </div>
       </ProtectedRoute>
     );
@@ -322,22 +324,20 @@ export default function EmployeeManagementPage() {
   return (
     <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Employee' }}>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Employee Management</h1>
-            <p className="text-muted-foreground">
-              Manage employee information and sync with ERPNext
-            </p>
+        <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <div className={isRTL ? 'text-right' : 'text-left'}>
+            <h1 className="text-3xl font-bold">{t('employee:title')}</h1>
+            <p className="text-muted-foreground">{t('employee:subtitle')}</p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <Can action="sync" subject="Employee">
               <Button
                 onClick={handleSync}
                 disabled={isSyncing}
                 variant="outline"
               >
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                 {isSyncing ? 'Syncing...' : 'Sync with ERPNext'}
               </Button>
             </Can>
@@ -348,7 +348,7 @@ export default function EmployeeManagementPage() {
                 disabled={isSyncing}
                 variant="outline"
               >
-                <Eye className="h-4 w-4 mr-2" />
+                <Eye className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                 {isSyncing ? 'Testing...' : 'Test ERPNext Connection'}
               </Button>
             </Can>
@@ -359,7 +359,7 @@ export default function EmployeeManagementPage() {
                 disabled={isSyncing}
                 variant="outline"
               >
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                 {isSyncing ? 'Checking...' : 'Check Environment'}
               </Button>
             </Can>
@@ -367,15 +367,15 @@ export default function EmployeeManagementPage() {
             <Can action="create" subject="Employee">
               <Link href="/modules/employee-management/create">
                 <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Employee
+                  <Plus className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
+                  {t('employee:actions.add')}
                 </Button>
               </Link>
             </Can>
 
             <Can action="export" subject="Employee">
               <Button variant="outline" onClick={handleExport}>
-                <Download className="h-4 w-4 mr-2" />
+                <Download className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                 Export
               </Button>
             </Can>
@@ -384,45 +384,49 @@ export default function EmployeeManagementPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Employee List</CardTitle>
+            <CardTitle>{t('employee:title')}</CardTitle>
             <CardDescription>
-              Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} employees
+              {t('employee:pagination.showing', { 
+                start: startIndex + 1, 
+                end: Math.min(endIndex, totalItems), 
+                total: totalItems 
+              })}
             </CardDescription>
           </CardHeader>
           <CardContent>
-                          <div className="flex items-center gap-4 mb-4">
+                          <div className={`flex items-center gap-4 mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <div className="flex-1">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4`} />
                     <Input
-                      placeholder="Search employees..."
+                      placeholder={t('employee:actions.search')}
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className={isRTL ? 'pr-10' : 'pl-10'}
                     />
                   </div>
                 </div>
 
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by status" />
+                    <SelectValue placeholder={t('employee:filters.status')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="all">{t('employee:filters.all')}</SelectItem>
+                    <SelectItem value="active">{t('employee:status.active')}</SelectItem>
+                    <SelectItem value="inactive">{t('employee:status.inactive')}</SelectItem>
                   </SelectContent>
                 </Select>
 
                 <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
                   <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filter by department" />
+                    <SelectValue placeholder={t('employee:filters.department')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Departments</SelectItem>
-                    <SelectItem value="HR">HR</SelectItem>
-                    <SelectItem value="IT">IT</SelectItem>
-                    <SelectItem value="Finance">Finance</SelectItem>
+                    <SelectItem value="all">{t('employee:filters.all')}</SelectItem>
+                    <SelectItem value="HR">{t('employee:departments.hr')}</SelectItem>
+                    <SelectItem value="IT">{t('employee:departments.it')}</SelectItem>
+                    <SelectItem value="Finance">{t('employee:departments.finance')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -435,8 +439,8 @@ export default function EmployeeManagementPage() {
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleSort('file_number')}
                     >
-                      <div className="flex items-center gap-1">
-                        File Number
+                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        {t('employee:table.headers.fileNumber')}
                         {getSortIcon('file_number')}
                       </div>
                     </TableHead>
@@ -444,8 +448,8 @@ export default function EmployeeManagementPage() {
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleSort('full_name')}
                     >
-                      <div className="flex items-center gap-1">
-                        Name
+                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        {t('employee:table.headers.name')}
                         {getSortIcon('full_name')}
                       </div>
                     </TableHead>
@@ -453,8 +457,8 @@ export default function EmployeeManagementPage() {
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleSort('email')}
                     >
-                      <div className="flex items-center gap-1">
-                        Email
+                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        {t('employee:table.headers.email')}
                         {getSortIcon('email')}
                       </div>
                     </TableHead>
@@ -462,8 +466,8 @@ export default function EmployeeManagementPage() {
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleSort('department')}
                     >
-                      <div className="flex items-center gap-1">
-                        Department
+                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        {t('employee:table.headers.department')}
                         {getSortIcon('department')}
                       </div>
                     </TableHead>
@@ -471,8 +475,8 @@ export default function EmployeeManagementPage() {
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleSort('status')}
                     >
-                      <div className="flex items-center gap-1">
-                        Status
+                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        {t('employee:table.headers.status')}
                         {getSortIcon('status')}
                       </div>
                     </TableHead>
@@ -480,12 +484,12 @@ export default function EmployeeManagementPage() {
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleSort('hireDate')}
                     >
-                      <div className="flex items-center gap-1">
-                        Hire Date
+                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        {t('employee:table.headers.hireDate')}
                         {getSortIcon('hireDate')}
                       </div>
                     </TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className={isRTL ? 'text-left' : 'text-right'}>{t('employee:table.headers.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -494,16 +498,16 @@ export default function EmployeeManagementPage() {
                       <TableCell colSpan={7} className="text-center py-8">
                         <div className="text-muted-foreground">
                           {searchTerm || statusFilter !== 'all' || departmentFilter !== 'all'
-                            ? 'No employees match your filters.'
-                            : 'No employees found.'}
+                            ? t('employee:messages.noEmployeesFilter')
+                            : t('employee:messages.noEmployees')}
                         </div>
                       </TableCell>
                     </TableRow>
                   ) : (
                     currentEmployees.map((employee) => (
                       <TableRow key={employee.id}>
-                        <TableCell className="font-mono">{employee.file_number}</TableCell>
-                        <TableCell>
+                        <TableCell className={`font-mono ${isRTL ? 'text-right' : 'text-left'}`}>{employee.file_number}</TableCell>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           <div>
                             <div className="font-medium">
                               {employee.full_name}
@@ -513,16 +517,16 @@ export default function EmployeeManagementPage() {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell>{employee.email}</TableCell>
-                        <TableCell>{employee.department}</TableCell>
-                        <TableCell>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.email}</TableCell>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.department}</TableCell>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
                             {employee.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{employee.hire_date || 'N/A'}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.hire_date || 'N/A'}</TableCell>
+                        <TableCell className={isRTL ? 'text-left' : 'text-right'}>
+                          <div className={`flex items-center gap-2 ${isRTL ? 'justify-start' : 'justify-end'}`}>
                             <Can action="read" subject="Employee">
                               <Link href={`/modules/employee-management/${employee.id}`}>
                                 <Button variant="ghost" size="sm" title="View Details">
@@ -561,12 +565,12 @@ export default function EmployeeManagementPage() {
             </div>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between mt-4">
-              <div className="flex items-center gap-4">
-                <div className="text-sm text-muted-foreground">
+            <div className={`flex items-center justify-between mt-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                <div className={`text-sm text-muted-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
                   {totalPages > 1 ? `Page ${currentPage} of ${totalPages}` : `Showing ${totalItems} employees`}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <span className="text-sm text-muted-foreground">Show:</span>
                   <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
                     <SelectTrigger className="w-20">
@@ -584,15 +588,24 @@ export default function EmployeeManagementPage() {
                 </div>
               </div>
               {totalPages > 1 && (
-                <div className="flex items-center gap-2">
+                <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
                   >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
+                    {isRTL ? (
+                      <>
+                        Next
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </>
+                    ) : (
+                      <>
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        Previous
+                      </>
+                    )}
                   </Button>
 
                   <div className="flex items-center gap-1">
@@ -660,8 +673,17 @@ export default function EmployeeManagementPage() {
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
                   >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-1" />
+                    {isRTL ? (
+                      <>
+                        Previous
+                        <ChevronLeft className="h-4 w-4 ml-1" />
+                      </>
+                    ) : (
+                      <>
+                        Next
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </>
+                    )}
                   </Button>
                 </div>
               )}
@@ -679,10 +701,10 @@ export default function EmployeeManagementPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2">
+              <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <Can action="import" subject="Employee">
                   <Button variant="outline">
-                    <Upload className="h-4 w-4 mr-2" />
+                    <Upload className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                     Import Employees
                   </Button>
                 </Can>

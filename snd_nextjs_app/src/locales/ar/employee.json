@@ -1,35 +1,110 @@
 {
-  "title": "الموظفون",
-  "employees": "الموظفون",
-  "employee": "الموظف",
-  "addEmployee": "إضافة موظف",
-  "editEmployee": "تعديل الموظف",
-  "deleteEmployee": "حذف الموظف",
-  "employeeDetails": "تفاصيل الموظف",
-  "personalInfo": "المعلومات الشخصية",
-  "contactInfo": "معلومات الاتصال",
-  "employmentInfo": "معلومات التوظيف",
-  "salaryInfo": "معلومات الراتب",
-  "permissions": "الصلاحيات",
-  "firstName": "الاسم الأول",
-  "lastName": "اسم العائلة",
-  "fullName": "الاسم الكامل",
-  "email": "البريد الإلكتروني",
-  "phone": "رقم الهاتف",
-  "address": "العنوان",
-  "dateOfBirth": "تاريخ الميلاد",
-  "hireDate": "تاريخ التوظيف",
-  "position": "المنصب",
-  "department": "القسم",
-  "manager": "المدير",
-  "salary": "الراتب",
-  "status": "الحالة",
-  "active": "نشط",
-  "inactive": "غير نشط",
-  "terminated": "منتهي",
-  "search": "بحث",
-  "filter": "تصفية",
-  "export": "تصدير",
-  "import": "استيراد",
-  "bulkActions": "إجراءات جماعية"
+  "title": "إدارة الموظفين",
+  "subtitle": "إدارة معلومات وسجلات الموظفين",
+  "description": "عرض وإضافة وتعديل وإدارة بيانات الموظفين",
+  
+  "actions": {
+    "add": "إضافة موظف",
+    "edit": "تعديل موظف",
+    "delete": "حذف موظف",
+    "sync": "مزامنة الموظفين",
+    "export": "تصدير الموظفين",
+    "import": "استيراد الموظفين",
+    "view": "عرض موظف",
+    "save": "حفظ موظف",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "search": "البحث في الموظفين...",
+    "filter": "تصفية",
+    "refresh": "تحديث"
+  },
+  
+  "fields": {
+    "fileNumber": "رقم الملف",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "fullName": "الاسم الكامل",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "department": "القسم",
+    "designation": "المنصب",
+    "status": "الحالة",
+    "hireDate": "تاريخ التعيين",
+    "basicSalary": "الراتب الأساسي",
+    "hourlyRate": "المعدل بالساعة",
+    "nationality": "الجنسية",
+    "address": "العنوان",
+    "emergencyContact": "جهة اتصال الطوارئ",
+    "notes": "ملاحظات"
+  },
+  
+  "status": {
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "terminated": "منتهي الخدمة",
+    "onLeave": "في إجازة",
+    "probation": "فترة تجريبية"
+  },
+  
+  "departments": {
+    "it": "تقنية المعلومات",
+    "hr": "الموارد البشرية",
+    "finance": "المالية",
+    "operations": "العمليات",
+    "sales": "المبيعات",
+    "marketing": "التسويق",
+    "engineering": "الهندسة",
+    "maintenance": "الصيانة"
+  },
+  
+  "messages": {
+    "loading": "جاري تحميل الموظفين...",
+    "noEmployees": "لم يتم العثور على موظفين.",
+    "noEmployeesFilter": "لا يوجد موظفين يطابقون الفلاتر المحددة.",
+    "syncSuccess": "تمت مزامنة الموظفين بنجاح",
+    "syncError": "فشل في مزامنة الموظفين",
+    "exportSuccess": "تم تصدير الموظفين بنجاح",
+    "exportError": "فشل في تصدير الموظفين",
+    "deleteSuccess": "تم حذف الموظف بنجاح",
+    "deleteError": "فشل في حذف الموظف",
+    "saveSuccess": "تم حفظ الموظف بنجاح",
+    "saveError": "فشل في حفظ الموظف",
+    "confirmDelete": "هل أنت متأكد من حذف هذا الموظف؟",
+    "fetchError": "فشل في جلب الموظفين"
+  },
+  
+  "pagination": {
+    "showing": "عرض {start}-{end} من {total} موظف",
+    "page": "الصفحة {current} من {total}",
+    "itemsPerPage": "العناصر في الصفحة"
+  },
+  
+  "filters": {
+    "all": "الكل",
+    "status": "الحالة",
+    "department": "القسم",
+    "clear": "مسح الفلاتر"
+  },
+  
+  "table": {
+    "headers": {
+      "fileNumber": "رقم الملف",
+      "name": "الاسم",
+      "email": "البريد الإلكتروني",
+      "department": "القسم",
+      "status": "الحالة",
+      "hireDate": "تاريخ التعيين",
+      "actions": "الإجراءات"
+    }
+  },
+  
+  "form": {
+    "addTitle": "إضافة موظف جديد",
+    "editTitle": "تعديل موظف",
+    "viewTitle": "تفاصيل الموظف",
+    "required": "هذا الحقل مطلوب",
+    "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صحيح",
+    "invalidPhone": "يرجى إدخال رقم هاتف صحيح",
+    "invalidSalary": "يرجى إدخال مبلغ راتب صحيح"
+  }
 }

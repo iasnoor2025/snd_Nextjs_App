@@ -1,35 +1,128 @@
 {
-  "title": "الإيجارات",
-  "rentals": "الإيجارات",
-  "rental": "الإيجار",
-  "addRental": "إضافة إيجار",
-  "editRental": "تعديل الإيجار",
-  "deleteRental": "حذف الإيجار",
-  "rentalDetails": "تفاصيل الإيجار",
-  "customer": "العميل",
-  "equipment": "المعدات",
-  "startDate": "تاريخ البداية",
-  "endDate": "تاريخ النهاية",
-  "duration": "المدة",
-  "rate": "المعدل",
-  "total": "الإجمالي",
-  "deposit": "الوديعة",
-  "status": "الحالة",
-  "pending": "معلق",
-  "active": "نشط",
-  "completed": "مكتمل",
-  "cancelled": "ملغي",
-  "overdue": "متأخر",
-  "returned": "مُعاد",
-  "notes": "ملاحظات",
-  "terms": "الشروط",
-  "conditions": "الظروف",
-  "signature": "التوقيع",
-  "approval": "الموافقة",
-  "approved": "موافق عليه",
-  "rejected": "مرفوض",
-  "search": "بحث",
-  "filter": "تصفية",
-  "export": "تصدير",
-  "print": "طباعة"
+  "title": "إدارة الإيجارات",
+  "subtitle": "إدارة إيجارات المعدات والعقود",
+  "description": "تتبع وإدارة اتفاقيات الإيجار وتخصيص المعدات وعقود العملاء",
+  
+  "actions": {
+    "add": "إيجار جديد",
+    "edit": "تعديل الإيجار",
+    "delete": "حذف الإيجار",
+    "view": "عرض الإيجار",
+    "save": "حفظ الإيجار",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "search": "البحث في الإيجارات...",
+    "filter": "تصفية",
+    "refresh": "تحديث",
+    "export": "تصدير",
+    "import": "استيراد",
+    "approve": "الموافقة على الإيجارات",
+    "reject": "رفض الإيجارات",
+    "manage": "إعدادات الإيجار"
+  },
+  
+  "fields": {
+    "rentalNumber": "رقم الإيجار",
+    "customerId": "العميل",
+    "customerName": "اسم العميل",
+    "startDate": "تاريخ البداية",
+    "expectedEndDate": "تاريخ الانتهاء المتوقع",
+    "actualEndDate": "تاريخ الانتهاء الفعلي",
+    "depositAmount": "مبلغ الإيداع",
+    "paymentTermsDays": "شروط الدفع (أيام)",
+    "hasTimesheet": "يحتوي على سجل وقت",
+    "hasOperators": "يحتوي على مشغلين",
+    "status": "الحالة",
+    "paymentStatus": "حالة الدفع",
+    "notes": "ملاحظات",
+    "equipment": "المعدات",
+    "quantity": "الكمية",
+    "unitPrice": "سعر الوحدة",
+    "totalPrice": "السعر الإجمالي",
+    "days": "الأيام",
+    "rateType": "نوع السعر",
+    "operatorId": "المشغل"
+  },
+  
+  "status": {
+    "pending": "قيد الانتظار",
+    "active": "نشط",
+    "completed": "مكتمل",
+    "cancelled": "ملغي",
+    "overdue": "متأخر"
+  },
+  
+  "paymentStatus": {
+    "pending": "قيد الانتظار",
+    "partial": "جزئي",
+    "paid": "مدفوع",
+    "overdue": "متأخر"
+  },
+  
+  "rateTypes": {
+    "daily": "يومي",
+    "weekly": "أسبوعي",
+    "monthly": "شهري",
+    "hourly": "ساعي"
+  },
+  
+  "messages": {
+    "loading": "جاري تحميل الإيجارات...",
+    "noRentals": "لم يتم العثور على إيجارات.",
+    "noRentalsFilter": "لا توجد إيجارات تطابق الفلاتر المحددة.",
+    "createSuccess": "تم إنشاء الإيجار بنجاح",
+    "createError": "فشل في إنشاء الإيجار",
+    "updateSuccess": "تم تحديث الإيجار بنجاح",
+    "updateError": "فشل في تحديث الإيجار",
+    "deleteSuccess": "تم حذف الإيجار بنجاح",
+    "deleteError": "فشل في حذف الإيجار",
+    "fetchError": "فشل في جلب الإيجارات",
+    "confirmDelete": "هل أنت متأكد من حذف هذا الإيجار؟",
+    "exportSuccess": "تم تصدير الإيجارات بنجاح",
+    "exportError": "فشل في تصدير الإيجارات"
+  },
+  
+  "pagination": {
+    "showing": "عرض {start}-{end} من {total} إيجار",
+    "page": "الصفحة {current} من {total}",
+    "itemsPerPage": "العناصر في الصفحة"
+  },
+  
+  "filters": {
+    "all": "الكل",
+    "status": "الحالة",
+    "paymentStatus": "حالة الدفع",
+    "customer": "العميل",
+    "dateRange": "نطاق التاريخ",
+    "clear": "مسح الفلاتر"
+  },
+  
+  "table": {
+    "headers": {
+      "rentalNumber": "رقم الإيجار",
+      "customer": "العميل",
+      "startDate": "تاريخ البداية",
+      "endDate": "تاريخ الانتهاء",
+      "status": "الحالة",
+      "paymentStatus": "الدفع",
+      "totalAmount": "المبلغ الإجمالي",
+      "actions": "الإجراءات"
+    }
+  },
+  
+  "form": {
+    "addTitle": "إنشاء إيجار جديد",
+    "editTitle": "تعديل الإيجار",
+    "viewTitle": "تفاصيل الإيجار",
+    "required": "هذا الحقل مطلوب",
+    "invalidDate": "يرجى إدخال تاريخ صحيح",
+    "invalidAmount": "يرجى إدخال مبلغ صحيح",
+    "invalidQuantity": "يرجى إدخال كمية صحيحة"
+  },
+  
+  "administration": {
+    "title": "إدارة الإيجارات",
+    "subtitle": "ميزات إدارة الإيجارات المتقدمة للمديرين",
+    "description": "إدارة الموافقات على الإيجارات والإعدادات وتكوينات النظام"
+  }
 }

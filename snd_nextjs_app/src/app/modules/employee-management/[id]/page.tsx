@@ -7,54 +7,37 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  ArrowLeft,
-  Edit,
-  Eye,
-  Download,
-  Printer,
-  User,
-  Calendar,
-  Phone,
-  Mail,
-  MapPin,
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  ArrowLeft, 
+  Edit, 
+  Trash2,
+  User, 
   Briefcase,
-  DollarSign,
+  FileBox,
+  Calendar,
   Clock,
+  CreditCard,
   FileText,
-  Award,
+  Receipt,
+  Loader2,
+  AlertCircle,
+  Download,
+  IdCard,
   Car,
   Truck,
-  IdCard,
-  CreditCard,
   History,
-  RefreshCw,
-  Plus,
-  Trash2,
-  Check,
-  X,
-  AlertCircle,
-  Loader2,
-  FileBox,
-  Upload,
-  Receipt,
-  Ellipsis
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
-import AssignmentModal from "@/components/AssignmentModal";
-import { DailyTimesheetRecords } from "@/components/DailyTimesheetRecords";
+import { useI18n } from "@/hooks/use-i18n";
+import { useRBAC } from "@/lib/rbac/rbac-context";
+import TimesheetSummary from "@/components/employee/timesheets/TimesheetSummary";
+import TimesheetList from "@/components/employee/timesheets/TimesheetList";
 
 interface Employee {
   id: number;
@@ -71,132 +54,45 @@ interface Employee {
   nationality: string;
   current_location?: string;
   hourly_rate?: number;
-  monthly_deduction?: number;
-  department?: {
-    id: number;
-    name: string;
-  };
-  designation?: {
-    id: number;
-    name: string;
-  };
-  user?: {
-    id: number;
-    name: string;
-    email: string;
-  };
+  basic_salary?: number;
+  food_allowance?: number;
+  housing_allowance?: number;
+  transport_allowance?: number;
+  department?: { id: number; name: string };
+  designation?: { id: number; name: string };
   supervisor?: string;
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
-  erp_employee_id?: string;
+  emergency_contact_relationship?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+  notes?: string;
   iqama_number?: string;
   iqama_expiry?: string;
-  iqama_cost?: number;
+  iqama_file?: string;
   passport_number?: string;
   passport_expiry?: string;
+  passport_file?: string;
   driving_license_number?: string;
   driving_license_expiry?: string;
-  driving_license_cost?: number;
+  driving_license_file?: string;
   operator_license_number?: string;
   operator_license_expiry?: string;
-  operator_license_cost?: number;
+  operator_license_file?: string;
   tuv_certification_number?: string;
   tuv_certification_expiry?: string;
-  tuv_certification_cost?: number;
+  tuv_certification_file?: string;
   spsp_license_number?: string;
   spsp_license_expiry?: string;
-  spsp_license_cost?: number;
-  current_assignment?: any;
-}
-
-interface Timesheet {
-  id: number;
-  date: string;
-  clock_in?: string;
-  clock_out?: string;
-  regular_hours?: number;
-  overtime_hours?: number;
-  status: string;
-  project?: {
-    id: string;
-    name: string;
-  };
-  rental?: {
-    id: string;
-    rentalNumber: string;
-    projectName: string;
-  };
-  assignment?: {
-    id: string;
-    name: string;
-    type: string;
-  };
-  notes?: string;
-  description?: string;
-  tasksCompleted?: string;
-}
-
-interface LeaveRequest {
-  id: number;
-  leave_type: string;
-  start_date: string;
-  end_date: string;
-  reason: string;
-  status: string;
-  return_date?: string;
-}
-
-interface Advance {
-  id: number;
-  amount: number;
-  reason: string;
-  status: 'pending' | 'approved' | 'rejected' | 'paid' | 'partially_repaid';
-  created_at: string;
-  type: 'advance' | 'advance_payment';
-  monthly_deduction?: number;
-  repaid_amount?: number;
-  remaining_balance?: number;
-}
-
-interface Assignment {
-  id: string;
-  name: string;
-  type: string;
-  status: string;
-  location?: string;
-  startDate: string;
-  endDate?: string;
-  notes?: string;
-  assignedById?: string;
-  projectId?: string;
-  rentalId?: string;
-  assignedBy?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  project?: {
-    id: string;
-    name: string;
-    status: string;
-  };
-  rental?: {
-    id: string;
-    rentalNumber: string;
-    projectName: string;
-    status: string;
-  };
-}
-
-interface FinalSettlement {
-  id: number;
-  settlement_date: string;
-  amount: number;
-  status: string;
-  reason?: string;
+  spsp_license_file?: string;
 }
 
 export default function EmployeeShowPage() {
+  const { t } = useI18n();
+  const { hasPermission } = useRBAC();
   const params = useParams();
   const router = useRouter();
   const employeeId = params.id as string;
@@ -204,19 +100,38 @@ export default function EmployeeShowPage() {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("personal-info");
-  const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
-  const [advances, setAdvances] = useState<Advance[]>([]);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [finalSettlements, setFinalSettlements] = useState<FinalSettlement[]>([]);
+  
+  // Assignment related state
+  const [currentAssignment, setCurrentAssignment] = useState<any>(null);
+  const [strictAssignmentHistory, setStrictAssignmentHistory] = useState<any[]>([]);
+  const [isManualAssignmentDialogOpen, setIsManualAssignmentDialogOpen] = useState(false);
+  const [isSubmittingManual, setIsSubmittingManual] = useState(false);
+  const [manualAssignment, setManualAssignment] = useState({
+    name: '',
+    location: '',
+    start_date: '',
+    end_date: '',
+    notes: '',
+  });
+  const [editAssignment, setEditAssignment] = useState<any>(null);
+  const [isEditAssignmentDialogOpen, setIsEditAssignmentDialogOpen] = useState(false);
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [isDeletingAssignment, setIsDeletingAssignment] = useState(false);
+  const [deleteAssignmentId, setDeleteAssignmentId] = useState<number | null>(null);
+
+  // Advances state
   const [currentBalance, setCurrentBalance] = useState(0);
-  const [totalRepaid, setTotalRepaid] = useState(0);
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
-  const [selectedPayslipDate, setSelectedPayslipDate] = useState(new Date());
-  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
-  const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
-  const [assignmentLoading, setAssignmentLoading] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [monthlyDeduction, setMonthlyDeduction] = useState("");
+  const [advanceAmount, setAdvanceAmount] = useState("");
+  const [advanceReason, setAdvanceReason] = useState("");
+  const [isAdvanceRequestDialogOpen, setIsAdvanceRequestDialogOpen] = useState(false);
+  const [isSubmittingAdvance, setIsSubmittingAdvance] = useState(false);
+  const [isRepaymentDialogOpen, setIsRepaymentDialogOpen] = useState(false);
+  const [repaymentAmount, setRepaymentAmount] = useState("");
+  const [selectedAdvance, setSelectedAdvance] = useState<number | null>(null);
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     if (employeeId) {
@@ -224,66 +139,12 @@ export default function EmployeeShowPage() {
     }
   }, [employeeId]);
 
-  // Refetch timesheets when selected month changes
-  useEffect(() => {
-    if (employeeId && selectedMonth) {
-      fetchTimesheetsForMonth();
-    }
-  }, [employeeId, selectedMonth]);
-
-  const fetchTimesheetsForMonth = async () => {
-    try {
-      console.log('Fetching timesheets for month:', selectedMonth);
-      const response = await fetch(`/api/employees/${employeeId}/timesheets?month=${selectedMonth}`);
-      const data = await response.json();
-      console.log('Timesheets data:', data);
-      setTimesheets(data.data || []);
-    } catch (error) {
-      console.error('Error fetching timesheets for month:', error);
-    }
-  };
-
   const fetchEmployeeData = async () => {
     setLoading(true);
     try {
-      // Fetch employee data
-      const employeeResponse = await fetch(`/api/employees/${employeeId}`);
-      const employeeData = await employeeResponse.json();
-
-      // Handle the API response structure - employee data might be nested or direct
-      const employee = employeeData.employee || employeeData;
-      setEmployee(employee);
-
-      // Fetch related data
-      const [timesheetsRes, leaveRequestsRes, advancesRes, assignmentsRes, settlementsRes] = await Promise.all([
-        fetch(`/api/employees/${employeeId}/timesheets?month=${selectedMonth}`),
-        fetch(`/api/employees/${employeeId}/leave-requests`),
-        fetch(`/api/employees/${employeeId}/advances`),
-        fetch(`/api/employees/${employeeId}/assignments`),
-        fetch(`/api/employees/${employeeId}/final-settlements`)
-      ]);
-
-      const timesheetsData = await timesheetsRes.json();
-      const leaveRequestsData = await leaveRequestsRes.json();
-      const advancesData = await advancesRes.json();
-      const assignmentsData = await assignmentsRes.json();
-      const settlementsData = await settlementsRes.json();
-
-      setTimesheets(timesheetsData.data || []);
-      setLeaveRequests(leaveRequestsData.data || []);
-      setAdvances(advancesData.data || []);
-      setAssignments(assignmentsData.assignments || []);
-      setFinalSettlements(settlementsData.data || []);
-
-      // Calculate current balance
-      const totalAdvances = advancesData.data?.reduce((sum: number, advance: Advance) =>
-        advance.status === 'approved' ? sum + advance.amount : sum, 0) || 0;
-      const totalRepaidAmount = advancesData.data?.reduce((sum: number, advance: Advance) =>
-        sum + (advance.repaid_amount || 0), 0) || 0;
-
-      setCurrentBalance(totalAdvances - totalRepaidAmount);
-      setTotalRepaid(totalRepaidAmount);
-
+      const response = await fetch(`/api/employees/${employeeId}`);
+      const data = await response.json();
+      setEmployee(data.employee || data);
     } catch (error) {
       console.error("Error fetching employee data:", error);
       toast.error("Failed to load employee data");
@@ -293,172 +154,41 @@ export default function EmployeeShowPage() {
   };
 
   const getStatusBadge = (status: string) => {
-    if (!status) return null;
-
-    const statusConfig = {
-      active: { variant: "default", className: "bg-green-100 text-green-800 border-green-300" },
-      inactive: { variant: "secondary", className: "bg-gray-100 text-gray-800 border-gray-300" },
-      on_leave: { variant: "outline", className: "bg-blue-100 text-blue-800 border-blue-300" },
-      terminated: { variant: "destructive", className: "bg-red-100 text-red-800 border-red-300" }
-    };
-
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.inactive;
-
-    return (
-      <Badge variant={config.variant as any} className={config.className}>
-        {status.replace('_', ' ').toUpperCase()}
-      </Badge>
-    );
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'SAR'
-    }).format(amount);
-  };
-
-  const calculateMonthlySummary = (timesheetData: Timesheet[]) => {
-    const totalHours = timesheetData.reduce((sum, timesheet) =>
-      sum + (timesheet.regular_hours || 0), 0);
-    const totalOvertime = timesheetData.reduce((sum, timesheet) =>
-      sum + (timesheet.overtime_hours || 0), 0);
-    const totalDays = timesheetData.length;
-
-    return { totalHours, totalOvertime, totalDays };
-  };
-
-  // Format timesheet data for daily records component
-  const formatDailyRecords = (timesheets: Timesheet[]) => {
-    const [year, month] = selectedMonth.split('-');
-    const startDate = new Date(Number(year), Number(month) - 1, 1);
-    const endDate = new Date(Number(year), Number(month), 0);
-    const daysInMonth = endDate.getDate();
-
-    // Create an array for all days in the month
-    const dailyRecords = Array.from({ length: daysInMonth }, (_, i) => {
-      const date = new Date(Number(year), Number(month) - 1, i + 1);
-      return {
-        date: format(date, 'yyyy-MM-dd'),
-        day: format(date, 'd'),
-        dayName: format(date, 'EEE'),
-        regularHours: 0,
-        overtimeHours: 0,
-        status: 'absent',
-        isWeekend: date.getDay() === 0 || date.getDay() === 6, // 0 is Sunday, 6 is Saturday
-      };
-    });
-
-    // Fill in the timesheet data
-    timesheets.forEach((timesheet) => {
-      const date = format(new Date(timesheet.date), 'yyyy-MM-dd');
-      const record = dailyRecords.find((r) => r.date === date);
-      if (record) {
-        record.regularHours = Number(timesheet?.regular_hours || 0);
-        record.overtimeHours = Number(timesheet?.overtime_hours || 0);
-        record.status = timesheet?.status || 'present';
-      }
-    });
-
-    return dailyRecords;
-  };
-
-  const handleEditAssignment = (assignment: Assignment) => {
-    setEditingAssignment(assignment);
-    setShowAssignmentModal(true);
-  };
-
-  const [assignmentToDelete, setAssignmentToDelete] = useState<string | null>(null);
-  const [assignmentDeleteDialogOpen, setAssignmentDeleteDialogOpen] = useState(false);
-
-  const handleDeleteAssignment = (assignmentId: string) => {
-    setAssignmentToDelete(assignmentId);
-    setAssignmentDeleteDialogOpen(true);
-  };
-
-  const confirmDeleteAssignment = async () => {
-    if (!assignmentToDelete) return;
-
-    setAssignmentLoading(true);
-    try {
-      const response = await fetch(`/api/employees/${employeeId}/assignments/${assignmentToDelete}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        toast.success('Assignment deleted successfully');
-        fetchEmployeeData(); // Refresh the data
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to delete assignment');
-      }
-    } catch (error) {
-      console.error('Error deleting assignment:', error);
-      toast.error('Failed to delete assignment');
-    } finally {
-      setAssignmentLoading(false);
-    }
-  };
-
-    const handleDeleteEmployee = () => {
-    if (!employee) return;
-    setDeleteDialogOpen(true);
-  };
-
-  const confirmDeleteEmployee = async () => {
-    if (!employee) return;
-
-    try {
-      toast.loading("Deleting employee...");
-
-      const response = await fetch(`/api/employees/${employeeId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete employee');
-      }
-
-      toast.success("Employee deleted successfully");
-      // Redirect to employee list
-      window.location.href = '/modules/employee-management';
-    } catch (error) {
-      console.error('Error deleting employee:', error);
-      toast.error("Failed to delete employee");
+    switch (status?.toLowerCase()) {
+      case 'active':
+        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+      case 'inactive':
+        return <Badge className="bg-red-100 text-red-800">Inactive</Badge>;
+      default:
+        return <Badge variant="secondary">{status || 'Unknown'}</Badge>;
     }
   };
 
   if (loading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
-          <p className="mt-2 text-muted-foreground">Loading employee information...</p>
+      <div className="flex h-screen items-center justify-center">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading employee data...</span>
+          </div>
         </div>
-      </div>
     );
   }
 
   if (!employee) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="mx-auto h-8 w-8 text-destructive" />
-          <h3 className="mt-2 text-lg font-semibold">Employee not found</h3>
-          <p className="mt-1 text-muted-foreground">The requested employee could not be found.</p>
+      <div className="flex h-screen items-center justify-center">
+              <div className="text-center">
+          <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+          <h2 className="mt-4 text-lg font-semibold">Employee not found</h2>
+          <p className="mt-2 text-muted-foreground">The employee you're looking for doesn't exist.</p>
           <Button className="mt-4" asChild>
             <Link href="/modules/employee-management">Back to Employees</Link>
-          </Button>
+                  </Button>
+              </div>
         </div>
-      </div>
     );
   }
-
-  const monthlySummary = calculateMonthlySummary(timesheets);
 
   return (
     <div className="flex h-full flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
@@ -471,7 +201,7 @@ export default function EmployeeShowPage() {
               {employee.last_name?.[0] || ''}
             </AvatarFallback>
           </Avatar>
-          <div>
+            <div>
             <h1 className="text-2xl font-bold tracking-tight">
               {employee.first_name} {employee.middle_name ? `${employee.middle_name} ` : ''}
               {employee.last_name}
@@ -481,23 +211,6 @@ export default function EmployeeShowPage() {
               <span className="text-xs">•</span>
               <span>ID: {employee.employee_id || 'N/A'}</span>
               {employee.status && getStatusBadge(employee.status)}
-              <span className="text-xs">•</span>
-              <Badge
-                variant="outline"
-                className={
-                  !employee.current_location
-                    ? 'border-gray-200 bg-gray-50 text-gray-500'
-                    : employee.current_location === 'Available'
-                      ? 'border-green-200 bg-green-50 text-green-700'
-                      : employee.current_location === 'Inactive'
-                        ? 'border-red-200 bg-red-50 text-red-700'
-                        : employee.current_location.startsWith('On Leave')
-                          ? 'border-yellow-200 bg-yellow-50 text-yellow-700'
-                          : 'border-blue-200 bg-blue-50 text-blue-700'
-                }
-              >
-                {employee.current_location || 'Not Assigned'}
-              </Badge>
             </div>
           </div>
         </div>
@@ -507,110 +220,79 @@ export default function EmployeeShowPage() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Link>
-          </Button>
+                  </Button>
+          {hasPermission('edit', 'Employee') && (
           <Button size="sm" asChild>
             <Link href={`/modules/employee-management/${employee.id}/edit`}>
               <Edit className="mr-2 h-4 w-4" />
               Edit
-            </Link>
+                </Link>
           </Button>
-          <Button variant="destructive" size="sm" onClick={handleDeleteEmployee}>
+              )}
+              {hasPermission('delete', 'Employee') && (
+            <Button variant="destructive" size="sm">
             <Trash2 className="mr-2 h-4 w-4" />
             Delete
-          </Button>
-          <Button size="sm" asChild>
-            <Link href={`/modules/employee-management/${employee.id}/advances`}>
-              <CreditCard className="mr-2 h-4 w-4" />
-              View Advances
-            </Link>
-          </Button>
+                </Button>
+              )}
+          </div>
         </div>
-      </div>
 
       <Separator />
 
       {/* Tabs Section */}
       <Tabs value={activeTab} onValueChange={setActiveTab} defaultValue="personal-info" className="w-full">
         <TabsList className="flex w-full justify-between rounded-lg border bg-muted/30 p-1 shadow-sm">
-          <TabsTrigger
-            value="personal-info"
-            className="flex items-center gap-2 px-3 py-2 whitespace-nowrap transition-all duration-200 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
-          >
+          <TabsTrigger value="personal-info" className="flex items-center gap-2 px-3 py-2">
             <User className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Personal</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="employment"
-            className="flex items-center gap-2 px-3 py-2 whitespace-nowrap transition-all duration-200 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
-          >
+            </TabsTrigger>
+          <TabsTrigger value="employment" className="flex items-center gap-2 px-3 py-2">
             <Briefcase className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Employment</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="documents"
-            className="flex items-center gap-2 px-3 py-2 whitespace-nowrap transition-all duration-200 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
-          >
+            </TabsTrigger>
+          <TabsTrigger value="documents" className="flex items-center gap-2 px-3 py-2">
             <FileBox className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Documents</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="assignments"
-            className="flex items-center gap-2 px-3 py-2 whitespace-nowrap transition-all duration-200 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
-          >
+            </TabsTrigger>
+          <TabsTrigger value="assignments" className="flex items-center gap-2 px-3 py-2">
             <Calendar className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Assignments</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="timesheets"
-            className="flex items-center gap-2 px-3 py-2 whitespace-nowrap transition-all duration-200 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
-          >
+            </TabsTrigger>
+          <TabsTrigger value="timesheets" className="flex items-center gap-2 px-3 py-2">
             <Clock className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Timesheets</span>
           </TabsTrigger>
-          <TabsTrigger
-            value="leaves"
-            className="flex items-center gap-2 px-3 py-2 whitespace-nowrap transition-all duration-200 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
-          >
+          <TabsTrigger value="leaves" className="flex items-center gap-2 px-3 py-2">
             <Calendar className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Leaves</span>
           </TabsTrigger>
-          <TabsTrigger
-            value="advances"
-            className="flex items-center gap-2 px-3 py-2 whitespace-nowrap transition-all duration-200 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
-          >
+          <TabsTrigger value="advances" className="flex items-center gap-2 px-3 py-2">
             <CreditCard className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Advances</span>
           </TabsTrigger>
-          <TabsTrigger
-            value="resignations"
-            className="flex items-center gap-2 px-3 py-2 whitespace-nowrap transition-all duration-200 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
-          >
+          <TabsTrigger value="resignations" className="flex items-center gap-2 px-3 py-2">
             <FileText className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Resignations</span>
           </TabsTrigger>
-          <TabsTrigger
-            value="final-settlements"
-            className="flex items-center gap-2 px-3 py-2 whitespace-nowrap transition-all duration-200 data-[state=active]:bg-white data-[state=active]:text-primary data-[state=active]:shadow-sm"
-          >
+          <TabsTrigger value="final-settlements" className="flex items-center gap-2 px-3 py-2">
             <Receipt className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Final Settlements</span>
-          </TabsTrigger>
-        </TabsList>
+            </TabsTrigger>
+          </TabsList>
 
         {/* Personal Information Tab */}
-        <TabsContent value="personal-info" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Personal Information
-                </CardTitle>
-              </CardHeader>
+        <TabsContent value="personal-info" className="mt-6 space-y-6">
+              <Card>
+                <CardHeader>
+              <CardTitle>Personal Information</CardTitle>
+              <CardDescription>Personal and identification details</CardDescription>
+                </CardHeader>
               <CardContent className="p-6">
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <div className="space-y-4">
                   <div>
-                    <h3 className="mb-3 text-sm font-medium text-muted-foreground">Basic Information</h3>
+                    <h3 className="mb-3 text-sm font-medium text-muted-foreground">Contact Information</h3>
                     <dl className="space-y-2">
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">Full Name</dt>
@@ -618,174 +300,153 @@ export default function EmployeeShowPage() {
                           {employee.first_name} {employee.middle_name ? `${employee.middle_name} ` : ''}
                           {employee.last_name}
                         </dd>
-                      </div>
+                  </div>
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">Phone</dt>
                         <dd className="text-sm">{employee.phone || 'Not set'}</dd>
-                      </div>
-                      {employee.nationality && (
+                    </div>
+                  {employee.nationality && (
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">Nationality</dt>
                           <dd className="text-sm">{employee.nationality}</dd>
-                        </div>
-                      )}
-                      {employee.date_of_birth && (
+                    </div>
+                  )}
+                  {employee.date_of_birth && (
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">Date of Birth</dt>
-                          <dd className="text-sm">{formatDate(employee.date_of_birth)}</dd>
-                        </div>
-                      )}
+                          <dd className="text-sm">{format(new Date(employee.date_of_birth), 'PPP')}</dd>
+                    </div>
+                  )}
                     </dl>
-                  </div>
+                    </div>
 
-                  <div>
+                    <div>
+                    <h3 className="mb-3 text-sm font-medium text-muted-foreground">Emergency Contact</h3>
+                    {employee.emergency_contact_name || employee.emergency_contact_phone ? (
+                      <dl className="space-y-2">
+                        {employee.emergency_contact_name && (
+                          <div className="flex justify-between border-b pb-2">
+                            <dt className="text-sm font-medium">Name</dt>
+                            <dd className="text-sm">{employee.emergency_contact_name}</dd>
+                    </div>
+                  )}
+                        {employee.emergency_contact_phone && (
+                          <div className="flex justify-between border-b pb-2">
+                            <dt className="text-sm font-medium">Phone</dt>
+                            <dd className="text-sm">{employee.emergency_contact_phone}</dd>
+                      </div>
+                    )}
+                      </dl>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">No emergency contact information</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                      <div>
                     <h3 className="mb-3 text-sm font-medium text-muted-foreground">Identification</h3>
                     <dl className="space-y-2">
                       {employee.iqama_number && (
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">Iqama Number</dt>
                           <dd className="text-sm">{employee.iqama_number}</dd>
-                        </div>
-                      )}
+                      </div>
+                    )}
                       {employee.iqama_expiry && (
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">Iqama Expiry</dt>
-                          <dd className="text-sm">{formatDate(employee.iqama_expiry)}</dd>
-                        </div>
-                      )}
+                          <dd className="text-sm">{format(new Date(employee.iqama_expiry), 'PPP')}</dd>
+                      </div>
+                    )}
                       {employee.passport_number && (
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">Passport Number</dt>
                           <dd className="text-sm">{employee.passport_number}</dd>
-                        </div>
-                      )}
+                      </div>
+                    )}
                       {employee.passport_expiry && (
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">Passport Expiry</dt>
-                          <dd className="text-sm">{formatDate(employee.passport_expiry)}</dd>
-                        </div>
+                          <dd className="text-sm">{format(new Date(employee.passport_expiry), 'PPP')}</dd>
+                  </div>
                       )}
                     </dl>
                   </div>
 
-                  <div>
-                    <h3 className="mb-3 text-sm font-medium text-muted-foreground">Emergency Contact</h3>
+                      <div>
+                    <h3 className="mb-3 text-sm font-medium text-muted-foreground">Licenses & Certifications</h3>
+                    {employee.driving_license_number || employee.operator_license_number || 
+                     employee.tuv_certification_number || employee.spsp_license_number ? (
                     <dl className="space-y-2">
-                      {employee.emergency_contact_name && (
-                        <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">Contact Name</dt>
-                          <dd className="text-sm">{employee.emergency_contact_name}</dd>
-                        </div>
-                      )}
-                      {employee.emergency_contact_phone && (
-                        <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">Contact Phone</dt>
-                          <dd className="text-sm">{employee.emergency_contact_phone}</dd>
-                        </div>
-                      )}
-                    </dl>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5" />
-                  Licenses & Certifications
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
                   {employee.driving_license_number && (
-                    <div>
-                      <h3 className="mb-3 text-sm font-medium text-muted-foreground">Driving License</h3>
-                      <dl className="space-y-2">
                         <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">License Number</dt>
+                            <dt className="text-sm font-medium">Driving License</dt>
                           <dd className="text-sm">{employee.driving_license_number}</dd>
-                        </div>
+                      </div>
+                    )}
                         {employee.driving_license_expiry && (
                           <div className="flex justify-between border-b pb-2">
-                            <dt className="text-sm font-medium">Expiry Date</dt>
-                            <dd className="text-sm">{formatDate(employee.driving_license_expiry)}</dd>
-                          </div>
-                        )}
-                      </dl>
-                    </div>
-                  )}
-
+                            <dt className="text-sm font-medium">License Expiry</dt>
+                            <dd className="text-sm">{format(new Date(employee.driving_license_expiry), 'PPP')}</dd>
+                      </div>
+                    )}
                   {employee.operator_license_number && (
-                    <div>
-                      <h3 className="mb-3 text-sm font-medium text-muted-foreground">Operator License</h3>
-                      <dl className="space-y-2">
                         <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">License Number</dt>
+                            <dt className="text-sm font-medium">Operator License</dt>
                           <dd className="text-sm">{employee.operator_license_number}</dd>
-                        </div>
+                      </div>
+                    )}
                         {employee.operator_license_expiry && (
                           <div className="flex justify-between border-b pb-2">
-                            <dt className="text-sm font-medium">Expiry Date</dt>
-                            <dd className="text-sm">{formatDate(employee.operator_license_expiry)}</dd>
+                            <dt className="text-sm font-medium">Operator License Expiry</dt>
+                            <dd className="text-sm">{format(new Date(employee.operator_license_expiry), 'PPP')}</dd>
                           </div>
                         )}
-                      </dl>
-                    </div>
-                  )}
-
                   {employee.tuv_certification_number && (
-                    <div>
-                      <h3 className="mb-3 text-sm font-medium text-muted-foreground">TUV Certification</h3>
-                      <dl className="space-y-2">
                         <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">Certification Number</dt>
+                            <dt className="text-sm font-medium">TÜV Certification</dt>
                           <dd className="text-sm">{employee.tuv_certification_number}</dd>
                         </div>
+                        )}
                         {employee.tuv_certification_expiry && (
                           <div className="flex justify-between border-b pb-2">
-                            <dt className="text-sm font-medium">Expiry Date</dt>
-                            <dd className="text-sm">{formatDate(employee.tuv_certification_expiry)}</dd>
-                          </div>
+                            <dt className="text-sm font-medium">TÜV Certification Expiry</dt>
+                            <dd className="text-sm">{format(new Date(employee.tuv_certification_expiry), 'PPP')}</dd>
+            </div>
                         )}
-                      </dl>
-                    </div>
-                  )}
-
                   {employee.spsp_license_number && (
-                    <div>
-                      <h3 className="mb-3 text-sm font-medium text-muted-foreground">SPSP License</h3>
-                      <dl className="space-y-2">
                         <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">License Number</dt>
+                            <dt className="text-sm font-medium">SPSP License</dt>
                           <dd className="text-sm">{employee.spsp_license_number}</dd>
                         </div>
+                        )}
                         {employee.spsp_license_expiry && (
                           <div className="flex justify-between border-b pb-2">
-                            <dt className="text-sm font-medium">Expiry Date</dt>
-                            <dd className="text-sm">{formatDate(employee.spsp_license_expiry)}</dd>
+                            <dt className="text-sm font-medium">SPSP License Expiry</dt>
+                            <dd className="text-sm">{format(new Date(employee.spsp_license_expiry), 'PPP')}</dd>
                           </div>
                         )}
                       </dl>
-                    </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">No licenses or certifications available</p>
                   )}
+                  </div>
+                </div>
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </TabsContent>
+          </TabsContent>
 
-        {/* Employment Tab */}
-        <TabsContent value="employment" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+          {/* Employment Tab */}
+        <TabsContent value="employment" className="mt-6 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5" />
-                  Position Information
-                </CardTitle>
+              <CardTitle>Employment Details</CardTitle>
+              <CardDescription>Work and position details</CardDescription>
               </CardHeader>
               <CardContent className="p-6">
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <div className="space-y-4">
                   <div>
                     <h3 className="mb-3 text-sm font-medium text-muted-foreground">Position Information</h3>
@@ -793,11 +454,11 @@ export default function EmployeeShowPage() {
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">Employee ID</dt>
                         <dd className="text-sm">{employee.employee_id}</dd>
-                      </div>
+                        </div>
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">File Number</dt>
                         <dd className="text-sm">{employee.file_number || 'Not assigned'}</dd>
-                      </div>
+                        </div>
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">Designation</dt>
                         <dd className="text-sm">{employee.designation?.name || 'Not assigned'}</dd>
@@ -815,827 +476,958 @@ export default function EmployeeShowPage() {
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">Status</dt>
                         <dd className="text-sm">{getStatusBadge(employee.status)}</dd>
-                      </div>
+                    </div>
                     </dl>
                   </div>
 
                   <div>
-                    <h3 className="mb-3 text-sm font-medium text-muted-foreground">Employment Details</h3>
+                    <h3 className="mb-3 text-sm font-medium text-muted-foreground">Employment Timeline</h3>
                     <dl className="space-y-2">
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">Hire Date</dt>
-                        <dd className="text-sm">{formatDate(employee.hire_date)}</dd>
+                        <dd className="text-sm">
+                          {employee.hire_date ? format(new Date(employee.hire_date), 'PPP') : 'Not set'}
+                        </dd>
                       </div>
-                      {employee.hourly_rate && (
-                        <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">Hourly Rate</dt>
-                          <dd className="text-sm">{formatCurrency(employee.hourly_rate)}</dd>
-                        </div>
-                      )}
-                      {employee.monthly_deduction && (
-                        <div className="flex justify-between border-b pb-2">
-                          <dt className="text-sm font-medium">Monthly Deduction</dt>
-                          <dd className="text-sm">{formatCurrency(employee.monthly_deduction)}</dd>
-                        </div>
-                      )}
+                      <div className="flex justify-between border-b pb-2">
+                        <dt className="text-sm font-medium">Service Period</dt>
+                        <dd className="text-sm">
+                          {(() => {
+                            const hireDate = employee.hire_date ? new Date(employee.hire_date) : new Date();
+                            const today = new Date();
+
+                            let years = today.getFullYear() - hireDate.getFullYear();
+                            let months = today.getMonth() - hireDate.getMonth();
+                            let days = today.getDate() - hireDate.getDate();
+
+                            if (days < 0) {
+                              months--;
+                              const lastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+                              days += lastMonth.getDate();
+                            }
+                            if (months < 0) {
+                              years--;
+                              months += 12;
+                            }
+
+                            const parts = [];
+                            if (years > 0) parts.push(`${years} year${years !== 1 ? 's' : ''}`);
+                            if (months > 0) parts.push(`${months} month${months !== 1 ? 's' : ''}`);
+                            if (days > 0) parts.push(`${days} day${days !== 1 ? 's' : ''}`);
+
+                            return parts.join(', ') || 'Less than a day';
+                          })()}
+                        </dd>
+                      </div>
                     </dl>
                   </div>
                 </div>
+
+                        <div>
+                  <h3 className="mb-3 text-sm font-medium text-muted-foreground">Salary & Benefits</h3>
+                  <div className="mb-4 rounded-lg bg-muted/30 p-5">
+                    <div className="mb-2 flex justify-between">
+                      <span className="text-sm font-medium">Basic Salary</span>
+                      <span className="text-base font-semibold">SAR {Number(employee.basic_salary || 0).toFixed(2)}</span>
+                        </div>
+                    <div className="h-1.5 w-full rounded-full bg-muted">
+                      <div className="h-1.5 rounded-full bg-primary" style={{ width: '100%' }}></div>
+                    </div>
+                  </div>
+
+                  <dl className="space-y-2">
+                        <div className="flex justify-between border-b pb-2">
+                          <dt className="text-sm font-medium">Hourly Rate</dt>
+                      <dd className="text-sm">SAR {Number(employee.hourly_rate || 0).toFixed(2)}</dd>
+                    </div>
+                    {Number(employee.food_allowance || 0) > 0 && (
+                      <div className="flex justify-between border-b pb-2">
+                        <dt className="text-sm font-medium">Food Allowance</dt>
+                        <dd className="text-sm">SAR {Number(employee.food_allowance).toFixed(2)}</dd>
+                        </div>
+                      )}
+                    {Number(employee.housing_allowance || 0) > 0 && (
+                        <div className="flex justify-between border-b pb-2">
+                        <dt className="text-sm font-medium">Housing Allowance</dt>
+                        <dd className="text-sm">SAR {Number(employee.housing_allowance).toFixed(2)}</dd>
+                        </div>
+                      )}
+                    {Number(employee.transport_allowance || 0) > 0 && (
+                      <div className="flex justify-between border-b pb-2">
+                        <dt className="text-sm font-medium">Transport Allowance</dt>
+                        <dd className="text-sm">SAR {Number(employee.transport_allowance).toFixed(2)}</dd>
+                        </div>
+                      )}
+                    </dl>
+                    </div>
+                  </div>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Financial Summary
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-                  {/* Current Balance Card */}
-                  <div className="rounded-lg border bg-white p-6 shadow-sm">
-                    <div className="mb-4 flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-muted-foreground">Current Balance</h3>
-                      <Badge variant="outline" className="bg-muted/50">
-                        {Number(currentBalance) > 0 ? 'Active' : 'No Balance'}
-                      </Badge>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-3xl font-bold text-destructive">SAR {Number(currentBalance).toFixed(2)}</p>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-2 rounded-full bg-destructive transition-all duration-500"
-                          style={{ width: '100%' }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Monthly Deduction Card */}
-                  <div className="rounded-lg border bg-white p-6 shadow-sm">
-                    <div className="mb-4 flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-muted-foreground">Monthly Deduction</h3>
-                      <Badge variant="outline" className="bg-muted/50">
-                        Active
-                      </Badge>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-3xl font-bold text-primary">
-                        SAR {employee.monthly_deduction ? employee.monthly_deduction.toFixed(2) : '0.00'}
-                      </p>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-2 rounded-full bg-primary transition-all duration-500"
-                          style={{ width: '100%' }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Total Repaid Card */}
-                  <div className="rounded-lg border bg-white p-6 shadow-sm">
-                    <div className="mb-4 flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-muted-foreground">Total Repaid</h3>
-                      <Badge variant="outline" className="bg-muted/50">
-                        {totalRepaid > 0 ? 'Repaid' : 'No Repayments'}
-                      </Badge>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-3xl font-bold text-green-600">SAR {Number(totalRepaid).toFixed(2)}</p>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-2 rounded-full bg-green-600 transition-all duration-500"
-                          style={{ width: '100%' }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+          </TabsContent>
 
         {/* Documents Tab */}
-        <TabsContent value="documents" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileBox className="h-5 w-5" />
-                Employee Documents
-              </CardTitle>
-              <CardDescription>
-                Manage employee documents and certifications
-              </CardDescription>
+        <TabsContent value="documents" className="mt-6 space-y-6">
+          {/* Document Overview Card */}
+              <Card>
+                <CardHeader>
+              <div className="flex items-center justify-between">
+                    <div>
+                  <CardTitle>Document Overview</CardTitle>
+                  <CardDescription>Document status and expiry tracking</CardDescription>
+                    </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700">
+                    {employee.status === 'active' ? 'Active Employee' : 'Inactive Employee'}
+                      </Badge>
+                    </div>
+                    </div>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {/* Iqama Document */}
-                {employee.iqama_number && (
-                  <Card className="border-2 border-dashed border-gray-300 p-6 text-center hover:border-primary/50 transition-colors">
-                    <IdCard className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="font-medium mb-2">Iqama</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{employee.iqama_number}</p>
-                    <div className="flex gap-2 justify-center">
-                      <Button size="sm" variant="outline">
-                        <Eye className="h-4 w-4 mr-2" />
-                        View
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
+            <CardContent>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                {/* Document Status Summary */}
+                <div className="rounded-lg bg-muted/30 p-4">
+                  <div className="mb-2 flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-sm font-medium">Document Status</h3>
                     </div>
-                  </Card>
-                )}
+                  <div className="space-y-2">
+                    {(() => {
+                      const documents = [
+                        { name: 'Iqama', expiry: employee.iqama_expiry, number: employee.iqama_number },
+                        { name: 'Passport', expiry: employee.passport_expiry, number: employee.passport_number },
+                        { name: 'Driving License', expiry: employee.driving_license_expiry, number: employee.driving_license_number },
+                        { name: 'Operator License', expiry: employee.operator_license_expiry, number: employee.operator_license_number },
+                        { name: 'TÜV Certification', expiry: employee.tuv_certification_expiry, number: employee.tuv_certification_number },
+                        { name: 'SPSP License', expiry: employee.spsp_license_expiry, number: employee.spsp_license_number },
+                      ].filter((doc) => doc.number);
 
-                {/* Passport Document */}
-                {employee.passport_number && (
-                  <Card className="border-2 border-dashed border-gray-300 p-6 text-center hover:border-primary/50 transition-colors">
-                    <IdCard className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="font-medium mb-2">Passport</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{employee.passport_number}</p>
-                    <div className="flex gap-2 justify-center">
-                      <Button size="sm" variant="outline">
-                        <Eye className="h-4 w-4 mr-2" />
-                        View
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
+                      const now = new Date();
+                      const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+                      const validDocuments = documents.filter((doc) => {
+                        if (!doc.expiry) return false;
+                        const expiryDate = new Date(doc.expiry);
+                        return expiryDate > now;
+                      });
+
+                      const expiringSoon = documents.filter((doc) => {
+                        if (!doc.expiry) return false;
+                        const expiryDate = new Date(doc.expiry);
+                        return expiryDate > now && expiryDate <= thirtyDaysFromNow;
+                      });
+
+                      const expiredDocuments = documents.filter((doc) => {
+                        if (!doc.expiry) return false;
+                        const expiryDate = new Date(doc.expiry);
+                        return expiryDate <= now;
+                      });
+
+                      return (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Total Documents</span>
+                            <span className="text-sm font-medium">{documents.length}</span>
                     </div>
-                  </Card>
-                )}
-
-                {/* Driving License */}
-                {employee.driving_license_number && (
-                  <Card className="border-2 border-dashed border-gray-300 p-6 text-center hover:border-primary/50 transition-colors">
-                    <Car className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="font-medium mb-2">Driving License</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{employee.driving_license_number}</p>
-                    <div className="flex gap-2 justify-center">
-                      <Button size="sm" variant="outline">
-                        <Eye className="h-4 w-4 mr-2" />
-                        View
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Valid Documents</span>
+                            <span className="text-sm font-medium text-green-600">{validDocuments.length}</span>
+                  </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Expiring Soon</span>
+                            <span className="text-sm font-medium text-amber-600">{expiringSoon.length}</span>
                     </div>
-                  </Card>
-                )}
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Expired</span>
+                            <span className="text-sm font-medium text-destructive">{expiredDocuments.length}</span>
+                  </div>
+                        </>
+                      );
+                    })()}
+                      </div>
+                      </div>
 
-                {/* Operator License */}
-                {employee.operator_license_number && (
-                  <Card className="border-2 border-dashed border-gray-300 p-6 text-center hover:border-primary/50 transition-colors">
-                    <Truck className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="font-medium mb-2">Operator License</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{employee.operator_license_number}</p>
-                    <div className="flex gap-2 justify-center">
-                      <Button size="sm" variant="outline">
-                        <Eye className="h-4 w-4 mr-2" />
-                        View
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
-                    </div>
-                  </Card>
-                )}
+                {/* Document Cards */}
+                <div className="col-span-2 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {employee.iqama_number && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <IdCard className="h-4 w-4" />
+                            <span className="text-sm font-medium">Iqama</span>
+                      </div>
+                          <Badge variant="outline" className="text-xs">
+                            {employee.iqama_expiry && new Date(employee.iqama_expiry) > new Date() ? 'Valid' : 'Expired'}
+                      </Badge>
+            </div>
+                </CardHeader>
+                      <CardContent className="pt-0">
+                      <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Number</span>
+                            <span>{employee.iqama_number}</span>
+                        </div>
+                        {employee.iqama_expiry && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Expiry</span>
+                              <span>{format(new Date(employee.iqama_expiry), 'PPP')}</span>
+                          </div>
+                        )}
+                        {employee.iqama_file && (
+                            <Button variant="outline" size="sm" className="w-full">
+                              <Download className="mr-2 h-4 w-4" />
+                              View Document
+                          </Button>
+                        )}
+                      </div>
+              </CardContent>
+            </Card>
+                  )}
 
-                {/* TUV Certification */}
-                {employee.tuv_certification_number && (
-                  <Card className="border-2 border-dashed border-gray-300 p-6 text-center hover:border-primary/50 transition-colors">
-                    <Award className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="font-medium mb-2">TUV Certification</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{employee.tuv_certification_number}</p>
-                    <div className="flex gap-2 justify-center">
-                      <Button size="sm" variant="outline">
-                        <Eye className="h-4 w-4 mr-2" />
-                        View
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
-                    </div>
+                  {employee.passport_number && (
+          <Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <IdCard className="h-4 w-4" />
+                            <span className="text-sm font-medium">Passport</span>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {employee.passport_expiry && new Date(employee.passport_expiry) > new Date() ? 'Valid' : 'Expired'}
+                          </Badge>
+                        </div>
+            </CardHeader>
+                      <CardContent className="pt-0">
+                      <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Number</span>
+                            <span>{employee.passport_number}</span>
+                        </div>
+                        {employee.passport_expiry && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Expiry</span>
+                              <span>{format(new Date(employee.passport_expiry), 'PPP')}</span>
+                          </div>
+                        )}
+                        {employee.passport_file && (
+                            <Button variant="outline" size="sm" className="w-full">
+                              <Download className="mr-2 h-4 w-4" />
+                              View Document
+                          </Button>
+                        )}
+                      </div>
+                      </CardContent>
                   </Card>
-                )}
+                  )}
 
-                {/* SPSP License */}
-                {employee.spsp_license_number && (
-                  <Card className="border-2 border-dashed border-gray-300 p-6 text-center hover:border-primary/50 transition-colors">
-                    <Award className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="font-medium mb-2">SPSP License</h3>
-                    <p className="text-sm text-muted-foreground mb-4">{employee.spsp_license_number}</p>
-                    <div className="flex gap-2 justify-center">
-                      <Button size="sm" variant="outline">
-                        <Eye className="h-4 w-4 mr-2" />
-                        View
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Download className="h-4 w-4 mr-2" />
-                        Download
-                      </Button>
-                    </div>
+                  {employee.driving_license_number && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Car className="h-4 w-4" />
+                            <span className="text-sm font-medium">Driving License</span>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {employee.driving_license_expiry && new Date(employee.driving_license_expiry) > new Date() ? 'Valid' : 'Expired'}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                      <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Number</span>
+                            <span>{employee.driving_license_number}</span>
+                        </div>
+                        {employee.driving_license_expiry && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Expiry</span>
+                              <span>{format(new Date(employee.driving_license_expiry), 'PPP')}</span>
+                          </div>
+                        )}
+                        {employee.driving_license_file && (
+                            <Button variant="outline" size="sm" className="w-full">
+                              <Download className="mr-2 h-4 w-4" />
+                              View Document
+                          </Button>
+                        )}
+                      </div>
+                      </CardContent>
                   </Card>
-                )}
+                  )}
 
-                {/* Upload New Document */}
-                <Card className="border-2 border-dashed border-gray-300 p-6 text-center hover:border-primary/50 transition-colors">
-                  <Plus className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="font-medium mb-2">Upload Document</h3>
-                  <p className="text-sm text-muted-foreground mb-4">Add a new document</p>
-                  <Button size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload
-                  </Button>
-                </Card>
+                  {employee.operator_license_number && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Truck className="h-4 w-4" />
+                            <span className="text-sm font-medium">Operator License</span>
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {employee.operator_license_expiry && new Date(employee.operator_license_expiry) > new Date() ? 'Valid' : 'Expired'}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                      <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Number</span>
+                            <span>{employee.operator_license_number}</span>
+                        </div>
+                        {employee.operator_license_expiry && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-muted-foreground">Expiry</span>
+                              <span>{format(new Date(employee.operator_license_expiry), 'PPP')}</span>
+                          </div>
+                        )}
+                        {employee.operator_license_file && (
+                            <Button variant="outline" size="sm" className="w-full">
+                              <Download className="mr-2 h-4 w-4" />
+                              View Document
+                          </Button>
+                        )}
+                      </div>
+                      </CardContent>
+                  </Card>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Timesheets Tab */}
+                        <TabsContent value="assignments" className="mt-6 space-y-6">
+                  {/* Add Manual Assignment Button: only if no current assignment */}
+                  {hasPermission('edit', 'Employee') && !currentAssignment && (
+                    <div className="mb-4 flex justify-end">
+                      <Button onClick={() => setIsManualAssignmentDialogOpen(true)} variant="outline">
+                        Add Manual Assignment
+                      </Button>
+                    </div>
+                  )}
+                  <Dialog open={isManualAssignmentDialogOpen} onOpenChange={setIsManualAssignmentDialogOpen}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add Manual Assignment</DialogTitle>
+                      </DialogHeader>
+                      <form
+                        method="POST"
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          setIsSubmittingManual(true);
+                          try {
+                            // TODO: Implement manual assignment creation
+                            setIsManualAssignmentDialogOpen(false);
+                            setManualAssignment({ name: '', location: '', start_date: '', end_date: '', notes: '' });
+                            toast.success('Manual assignment created successfully.');
+                          } catch (error) {
+                            toast.error('Failed to create manual assignment.');
+                          } finally {
+                            setIsSubmittingManual(false);
+                          }
+                        }}
+                        className="space-y-4"
+                      >
+                        <Input
+                          placeholder="Assignment Name"
+                          value={manualAssignment.name}
+                          onChange={(e) => setManualAssignment({ ...manualAssignment, name: e.target.value })}
+                          name="name"
+                          required
+                        />
+                        <Input
+                          placeholder="Location"
+                          value={manualAssignment.location}
+                          onChange={(e) => setManualAssignment({ ...manualAssignment, location: e.target.value })}
+                          name="location"
+                        />
+                        <div className="flex gap-2">
+                          <Input
+                            type="date"
+                            placeholder="Start Date"
+                            value={manualAssignment.start_date}
+                            onChange={(e) => setManualAssignment({ ...manualAssignment, start_date: e.target.value })}
+                            name="start_date"
+                            required
+                          />
+                          <Input
+                            type="date"
+                            placeholder="End Date"
+                            value={manualAssignment.end_date}
+                            onChange={(e) => setManualAssignment({ ...manualAssignment, end_date: e.target.value })}
+                            name="end_date"
+                          />
+                        </div>
+                        <Textarea
+                          placeholder="Notes (optional)"
+                          value={manualAssignment.notes}
+                          onChange={(e) => setManualAssignment({ ...manualAssignment, notes: e.target.value })}
+                          name="notes"
+                        />
+                        <div className="flex justify-end">
+                          <Button type="submit" disabled={isSubmittingManual}>
+                            {isSubmittingManual ? 'Saving...' : 'Save'}
+                      </Button>
+                    </div>
+                      </form>
+                    </DialogContent>
+                  </Dialog>
+                  {/* Show only the current assignment as a card */}
+                  {currentAssignment && (
+                    <div className="relative">
+                      <Card className="mb-6 border border-gray-200 shadow-sm">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-xl font-semibold">
+                            {currentAssignment.name || currentAssignment.title || '-'}
+                            {hasPermission('edit', 'Employee') && (
+                                <Button 
+                                  size="sm"
+                                variant="outline"
+                                className="ml-2"
+                                onClick={() => {
+                                  setEditAssignment(currentAssignment);
+                                  setIsEditAssignmentDialogOpen(true);
+                                }}
+                              >
+                                <Edit className="mr-1 inline h-4 w-4" /> Edit
+                                </Button>
+                            )}
+                            {hasPermission('manage', 'Settings') && (
+                                <Button 
+                                  size="sm"
+                                variant="destructive"
+                                className="ml-2"
+                                onClick={() => {
+                                  setDeleteAssignmentId(currentAssignment.id);
+                                  setIsDeletingAssignment(true);
+                                }}
+                              >
+                                <Trash2 className="mr-1 inline h-4 w-4" /> Delete
+                                </Button>
+                            )}
+                          </CardTitle>
+                          <div className="mt-2 flex flex-wrap items-center gap-3">
+                            {/* Type badge */}
+                            <Badge className="bg-blue-500 text-white capitalize">{currentAssignment.type || 'assignment'}</Badge>
+                            {/* Project or Rental # */}
+                            <span className="text-xs text-muted-foreground">
+                              {currentAssignment.type === 'project' && currentAssignment.project?.name
+                                ? `Project: ${currentAssignment.project.name}`
+                                : (currentAssignment.type === 'rental' || currentAssignment.type === 'rental_item') &&
+                                  (currentAssignment.rental?.rental_number || currentAssignment.rental_number)
+                                ? `Rental #: ${currentAssignment.rental?.rental_number || currentAssignment.rental_number}`
+                                : '-'}
+                            </span>
+                            {/* Status badge */}
+                            <Badge
+                              className={
+                                currentAssignment.status === 'active' ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'
+                              }
+                            >
+                              {currentAssignment.status || 'active'}
+                            </Badge>
+                              </div>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <div className="mt-2 flex flex-col gap-1">
+                            {/* Location */}
+                            <span className="text-sm text-muted-foreground">
+                              <strong>Location:</strong> {currentAssignment.location || '-'}
+                            </span>
+                            {/* Date range */}
+                            <span className="text-sm text-muted-foreground">
+                              <strong>From:</strong>{' '}
+                              {currentAssignment.start_date ? format(new Date(currentAssignment.start_date), 'MMM d, yyyy') : '-'}
+                              {currentAssignment.end_date
+                                ? ` - ${format(new Date(currentAssignment.end_date), 'MMM d, yyyy')}`
+                                : ''}
+                            </span>
+                            {/* Today's date */}
+                            <span className="text-sm text-muted-foreground">
+                              <strong>To:</strong> {format(new Date(), 'MMM d, yyyy')}
+                            </span>
+                            {/* Equipment (if available) */}
+                            {currentAssignment.equipment && (
+                              <span className="text-sm text-muted-foreground">
+                                <strong>Equipment:</strong> {currentAssignment.equipment}
+                              </span>
+                            )}
+                          </div>
+                        </CardContent>
+                        {/* Admin Manage Assignment Button */}
+                        {hasPermission('manage', 'Employee') &&
+                          (() => {
+                            let url = '';
+                            if (currentAssignment.type === 'project' && currentAssignment.project_id) {
+                              url = `/projects/${currentAssignment.project_id}/resources`;
+                            } else if (
+                              (currentAssignment.type === 'rental' || currentAssignment.type === 'rental_item') &&
+                              currentAssignment.rental_id
+                            ) {
+                              url = `/rentals/${currentAssignment.rental_id}`;
+                            }
+                            return url ? (
+                              <div className="absolute top-2 right-2">
+                                <Button asChild size="sm" variant="outline">
+                                  <a href={url} target="_blank" rel="noopener noreferrer">
+                                    Manage Assignment
+                                  </a>
+                      </Button>
+                    </div>
+                            ) : null;
+                          })()}
+                  </Card>
+                    </div>
+                  )}
+                  {/* Assignment History Section */}
+                  <div>
+                    <h3 className="mb-2 text-lg font-semibold">Assignment History</h3>
+                    {strictAssignmentHistory.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <div className="text-lg font-medium">No previous assignments found.</div>
+                        <div className="text-sm">This employee has no assignment history.</div>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto rounded-md border">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                Assignment Name
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                Type
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                Location
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                Start Date
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                End Date
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                Status
+                              </th>
+                              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {strictAssignmentHistory.map((a) => (
+                              <tr key={a.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                  {a.name || a.title || '-'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">
+                                  {a.type || 'assignment'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {a.location || '-'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {a.start_date ? format(new Date(a.start_date), 'MMM d, yyyy') : '-'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                  {a.end_date ? format(new Date(a.end_date), 'MMM d, yyyy') : '-'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                  <Badge
+                                    className={
+                                      a.status === 'active' ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'
+                                    }
+                                  >
+                                    {a.status || 'active'}
+                                  </Badge>
+                                </td>
+                                <td className="px-6 py-4 text-right text-sm font-medium">
+                                  <Button variant="outline" size="sm">
+                                    View
+                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                  </div>
+                )}
+                  </div>
+        </TabsContent>
+
         <TabsContent value="timesheets" className="mt-6">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
                   <CardTitle>Timesheet Records</CardTitle>
                   <CardDescription>View and manage employee timesheet records</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {/* Payslip Button with Month Selector */}
+              <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="w-full min-w-[140px] sm:w-auto">
+          <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
+            <option>December 2024</option>
+            <option>November 2024</option>
+            <option>October 2024</option>
+          </select>
+        </div>
+        <Button variant="default" size="sm" className="w-full sm:w-auto">
+          View Payslip
+        </Button>
+      </div>
+      {/* Timesheet Summary */}
+      <div className="mb-4">
+        <TimesheetSummary employeeId={employee?.id} />
+      </div>
+      {/* Add Timesheet Button and Dialog */}
+      {hasPermission('create', 'Timesheet') && (
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button className="mt-4 mb-4">Add Timesheet</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New Timesheet</DialogTitle>
+            </DialogHeader>
+            {/* TimesheetForm component will go here */}
+            <div className="text-muted-foreground italic">Timesheet form will appear here.</div>
+          </DialogContent>
+        </Dialog>
+      )}
+      {/* Timesheet List */}
+      <div className="mt-4">
+        <TimesheetList employeeId={employee?.id} />
+      </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+        <TabsContent value="leaves" className="mt-6 space-y-6">
+            <Card>
+              <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Leave History</CardTitle>
+                  <CardDescription>View and manage employee leave records</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" onClick={() => window.open('/modules/timesheet-management', '_blank')}>
+                  <Button variant="outline">
                     <History className="mr-2 h-4 w-4" />
                     View All
                   </Button>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              {/* Payslip Button with Month Selector */}
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                <Select
-                  value={format(selectedPayslipDate, 'yyyy-MM')}
-                  onValueChange={(value) => {
-                    const [year, month] = value.split('-').map(Number);
-                    setSelectedPayslipDate(new Date(year, month - 1, 1));
-                  }}
-                >
-                  <SelectTrigger className="w-full min-w-[140px] sm:w-auto">
-                    <SelectValue placeholder={format(selectedPayslipDate, 'MMMM yyyy')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 24 }, (_, i) => {
-                      const date = subMonths(new Date(), i);
-                      return (
-                        <SelectItem key={i} value={format(date, 'yyyy-MM')}>
-                          {format(date, 'MMMM yyyy')}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-                <Button variant="default" size="sm" className="w-full sm:w-auto">
-                  <Printer className="mr-2 h-4 w-4" />
-                  View Payslip
-                </Button>
-              </div>
-
-              {/* Timesheet Month Selector */}
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                <Select
-                  value={selectedMonth}
-                  onValueChange={(value) => {
-                    setSelectedMonth(value);
-                    // The useEffect will automatically refetch data when selectedMonth changes
-                  }}
-                >
-                  <SelectTrigger className="w-full min-w-[140px] sm:w-auto">
-                    <SelectValue placeholder={format(new Date(selectedMonth + '-01'), 'MMMM yyyy')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 24 }, (_, i) => {
-                      const date = subMonths(new Date(), i);
-                      return (
-                        <SelectItem key={i} value={format(date, 'yyyy-MM')}>
-                          {format(date, 'MMMM yyyy')}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Daily Timesheet Records Calendar */}
-              <div className="mb-6">
-                <DailyTimesheetRecords
-                  timesheets={formatDailyRecords(timesheets)}
-                  selectedMonth={selectedMonth}
-                  showSummary={false}
-                />
-              </div>
-
-              {/* Summary Cards */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-4 mb-6">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Regular Hours
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {monthlySummary.totalHours.toFixed(1)}
-                    </div>
+              </CardHeader>
+              <CardContent>
+              <div className="space-y-6">
+                {/* Leave Summary */}
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                  <Card>
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-sm font-medium">Total Leaves</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <div className="text-2xl font-bold">0</div>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Overtime Hours
-                    </CardTitle>
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-sm font-medium">Approved Leaves</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {monthlySummary.totalOvertime.toFixed(1)}
-                    </div>
+                    <CardContent className="p-4 pt-0">
+                      <div className="text-2xl font-bold">0</div>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Total Hours
-                    </CardTitle>
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-sm font-medium">Pending Leaves</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {(monthlySummary.totalHours + monthlySummary.totalOvertime).toFixed(1)}
-                    </div>
+                    <CardContent className="p-4 pt-0">
+                      <div className="text-2xl font-bold">0</div>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Days Worked
-                    </CardTitle>
+                    <CardHeader className="p-4">
+                      <CardTitle className="text-sm font-medium">Rejected Leaves</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">
-                      {timesheets.length}
-                    </div>
+                    <CardContent className="p-4 pt-0">
+                      <div className="text-2xl font-bold">0</div>
                   </CardContent>
                 </Card>
-              </div>
-
-              {/* Add Timesheet Button */}
-              <div className="mb-4">
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Timesheet
-                </Button>
-              </div>
-
-              {/* Timesheet List */}
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold mb-4">Detailed Timesheet Records</h3>
-                {timesheets.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Clock In</TableHead>
-                          <TableHead>Clock Out</TableHead>
-                          <TableHead>Regular Hours</TableHead>
-                          <TableHead>Overtime</TableHead>
-                          <TableHead>Total</TableHead>
-                          <TableHead>Project</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {timesheets.map((timesheet) => (
-                          <TableRow key={timesheet.id}>
-                            <TableCell className="font-medium">{formatDate(timesheet.date)}</TableCell>
-                            <TableCell>{timesheet.clock_in || '-'}</TableCell>
-                            <TableCell>{timesheet.clock_out || '-'}</TableCell>
-                            <TableCell>{timesheet.regular_hours || 0}</TableCell>
-                            <TableCell>{timesheet.overtime_hours || 0}</TableCell>
-                            <TableCell className="font-medium">
-                              {((timesheet.regular_hours || 0) + (timesheet.overtime_hours || 0)).toFixed(2)}
-                            </TableCell>
-                            <TableCell>
-                              {timesheet.project?.name || timesheet.rental?.projectName || timesheet.assignment?.name || '-'}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={
-                                  timesheet.status === 'approved' ? 'default' :
-                                  timesheet.status === 'pending' ? 'secondary' :
-                                  timesheet.status === 'rejected' ? 'destructive' : 'outline'
-                                }
-                              >
-                                {timesheet.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <Ellipsis className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    View
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem>
-                                    <Edit className="mr-2 h-4 w-4" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem className="text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
                   </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Clock className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No Timesheets Found</h3>
-                    <p className="text-muted-foreground">No timesheet records available for this employee.</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Advances Tab */}
-        <TabsContent value="advances" className="space-y-6">
+                  
+                {/* Leave Records */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Advance Requests
-              </CardTitle>
-              <CardDescription>
-                Employee advance requests and payment history
-              </CardDescription>
+                    <CardTitle>Recent Leave Requests</CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
-              {advances.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Reason</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Repaid Amount</TableHead>
-                        <TableHead>Remaining Balance</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {advances.map((advance) => (
-                        <TableRow key={advance.id}>
-                          <TableCell className="font-medium">
-                            {formatCurrency(advance.amount)}
-                          </TableCell>
-                          <TableCell>{advance.reason}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                advance.status === 'approved' ? 'default' :
-                                advance.status === 'pending' ? 'secondary' :
-                                advance.status === 'rejected' ? 'destructive' : 'outline'
-                              }
-                            >
-                              {advance.status.replace('_', ' ')}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{formatDate(advance.created_at)}</TableCell>
-                          <TableCell>{formatCurrency(advance.repaid_amount || 0)}</TableCell>
-                          <TableCell>{formatCurrency(advance.remaining_balance || advance.amount)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  <CardContent>
+                    <div className="overflow-x-auto rounded-md border">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Leave Type
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Start Date
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              End Date
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Duration
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          <tr>
+                            <td colSpan={6} className="px-6 py-8 text-center text-sm text-muted-foreground">
+                              No leave requests found
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                  </div>
+                  </CardContent>
+                </Card>
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <CreditCard className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No Advance Requests</h3>
-                  <p className="text-muted-foreground">No advance requests found for this employee.</p>
-                </div>
-              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Assignments Tab */}
-        <TabsContent value="assignments" className="space-y-6">
+        <TabsContent value="advances" className="mt-6 space-y-6">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Employee Assignments
-                  </CardTitle>
-                  <CardDescription>
-                    Manage employee assignments to projects, rentals, and other tasks
-                  </CardDescription>
-                </div>
-                <Button onClick={() => setShowAssignmentModal(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Assignment
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              {assignments.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Assignment Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Location</TableHead>
-                        <TableHead>Start Date</TableHead>
-                        <TableHead>End Date</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Assigned By</TableHead>
-                        <TableHead>Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {assignments.map((assignment) => (
-                        <TableRow key={assignment.id}>
-                          <TableCell className="font-medium">{assignment.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="capitalize">
-                              {assignment.type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{assignment.location || 'N/A'}</TableCell>
-                          <TableCell>{formatDate(assignment.startDate)}</TableCell>
-                          <TableCell>
-                            {assignment.endDate ? formatDate(assignment.endDate) : 'Ongoing'}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                assignment.status === 'active' ? 'default' :
-                                assignment.status === 'completed' ? 'secondary' :
-                                assignment.status === 'pending' ? 'outline' : 'destructive'
-                              }
-                            >
-                              {assignment.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {assignment.assignedBy?.name || 'N/A'}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
+                    <div>
+                  <CardTitle>Advance Payment Management</CardTitle>
+                  <CardDescription>Track and manage employee advance payments and deductions</CardDescription>
+                    </div>
+                <div className="flex gap-2">
                               <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditAssignment(assignment)}
-                              >
-                                <Edit className="h-4 w-4" />
+                    variant="outline"
+                    onClick={() => setIsAdvanceRequestDialogOpen(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    New Advance
                               </Button>
+                  <Dialog open={isRepaymentDialogOpen} onOpenChange={setIsRepaymentDialogOpen}>
+                    <DialogTrigger asChild>
                               <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteAssignment(assignment.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
+                        className="flex items-center gap-2"
+                        disabled={false}
+                      >
+                        <CreditCard className="h-4 w-4" />
+                        Make Repayment
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Record Repayment</DialogTitle>
+                        <DialogDescription>
+                          Enter the repayment amount. For partial repayments, the amount must be at least the total
+                          monthly deduction.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="p-6 text-center">
+                          <AlertCircle className="mx-auto mb-4 h-12 w-12 text-amber-500" />
+                          <h3 className="mb-2 text-lg font-medium">No Active Advances</h3>
+                          <p className="mb-4 text-sm text-muted-foreground">
+                            There are no active advances available for repayment.
+                          </p>
+                          <Button variant="outline" onClick={() => setIsRepaymentDialogOpen(false)}>
+                            Close
                               </Button>
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No Assignments Found</h3>
-                  <p className="text-muted-foreground">No assignments found for this employee.</p>
-                  <Button
-                    className="mt-4"
-                    onClick={() => setShowAssignmentModal(true)}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add First Assignment
-                  </Button>
+                    </DialogContent>
+                  </Dialog>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Leaves Tab */}
-        <TabsContent value="leaves" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Leave Requests
-              </CardTitle>
-              <CardDescription>
-                Employee leave requests and history
-              </CardDescription>
+              </div>
             </CardHeader>
             <CardContent className="p-6">
-              {leaveRequests.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Leave Type</TableHead>
-                        <TableHead>Start Date</TableHead>
-                        <TableHead>End Date</TableHead>
-                        <TableHead>Reason</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Return Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {leaveRequests.map((leave) => (
-                        <TableRow key={leave.id}>
-                          <TableCell className="font-medium">{leave.leave_type}</TableCell>
-                          <TableCell>{formatDate(leave.start_date)}</TableCell>
-                          <TableCell>{formatDate(leave.end_date)}</TableCell>
-                          <TableCell>{leave.reason}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                leave.status === 'approved' ? 'default' :
-                                leave.status === 'pending' ? 'secondary' :
-                                leave.status === 'rejected' ? 'destructive' : 'outline'
-                              }
-                            >
-                              {leave.status}
+              <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+                {/* Current Balance Card */}
+                <div className="rounded-lg border bg-white p-6 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-muted-foreground">Current Balance</h3>
+                    <Badge variant="outline" className="bg-muted/50">
+                      {Number(currentBalance) > 0 ? 'Active' : 'No Balance'}
                             </Badge>
-                          </TableCell>
-                          <TableCell>{leave.return_date ? formatDate(leave.return_date) : '-'}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
                 </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Calendar className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No Leave Requests</h3>
-                  <p className="text-muted-foreground">No leave requests found for this employee.</p>
+                  <div className="space-y-2">
+                    <p className="text-3xl font-bold text-destructive">SAR {Number(currentBalance).toFixed(2)}</p>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-2 rounded-full bg-destructive transition-all duration-500"
+                        style={{ width: '100%' }}
+                      />
                 </div>
-              )}
+                  </div>
+                </div>
+
+                {/* Monthly Deduction Card */}
+                <div className="rounded-lg border bg-white p-6 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-muted-foreground">Monthly Deduction</h3>
+                    <Badge variant="outline" className="bg-muted/50">
+                      Configurable
+                    </Badge>
+                    </div>
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        step="1.00"
+                        min="0"
+                        value={monthlyDeduction}
+                        onChange={(e) => setMonthlyDeduction(e.target.value)}
+                        className="w-32 text-2xl font-bold text-primary"
+                        placeholder="0.00"
+                      />
+                      <span className="text-2xl font-bold text-primary">SAR</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <span>Current Monthly Deduction</span>
+                      <span className="font-medium">
+                        SAR {Number(monthlyDeduction || 0).toFixed(2)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Company will decide monthly deduction</p>
+                  </div>
+                </div>
+
+                {/* Estimated Repayment Card */}
+                <div className="rounded-lg border bg-white p-6 shadow-sm">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="text-sm font-medium text-muted-foreground">Estimated Repayment</h3>
+                    <Badge variant="outline" className="bg-muted/50">
+                      Projected
+                    </Badge>
+                    </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-muted-foreground" />
+                      <p className="text-2xl font-bold text-primary">
+                        {monthlyDeduction ? Math.ceil(Number(currentBalance) / Number(monthlyDeduction)) : 0}
+                        <span className="ml-1 text-sm font-normal text-muted-foreground">months</span>
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Based on current balance and monthly deduction</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modern Advance History Card */}
+              <Card className="mt-6 shadow-sm border border-gray-200 bg-white rounded-lg">
+                <CardHeader className="bg-muted/50 rounded-t-lg p-4 flex flex-row items-center gap-2">
+                  <History className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-lg font-semibold">Advance History</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Monthly Deduction</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Reason</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Date</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Type</th>
+                          <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-100">
+                        <tr>
+                          <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground italic">
+                            No advance records found.
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                </div>
+                </CardContent>
+              </Card>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Resignations Tab */}
-        <TabsContent value="resignations" className="space-y-6">
+        <TabsContent value="resignations" className="mt-6 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Resignation Requests
-              </CardTitle>
-              <CardDescription>
-                Employee resignation requests and history
-              </CardDescription>
+              <CardTitle>Resignation History</CardTitle>
+              <CardDescription>View and manage resignation requests</CardDescription>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="text-center py-8">
-                <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No Resignation Requests</h3>
-                <p className="text-muted-foreground">No resignation requests found for this employee.</p>
+            <CardContent>
+              <div className="overflow-x-auto rounded-md border">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Last Working Day
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Reason
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Submitted On
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    <tr>
+                      <td colSpan={5} className="px-6 py-8 text-center text-sm text-muted-foreground">
+                        No resignation requests found
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Final Settlements Tab */}
-        <TabsContent value="final-settlements" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Receipt className="h-5 w-5" />
-                Final Settlements
-              </CardTitle>
-              <CardDescription>
-                Employee final settlement records
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              {finalSettlements.length > 0 ? (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Settlement Date</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Reason</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {finalSettlements.map((settlement) => (
-                        <TableRow key={settlement.id}>
-                          <TableCell>{formatDate(settlement.settlement_date)}</TableCell>
-                          <TableCell className="font-medium">
-                            {formatCurrency(settlement.amount)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                settlement.status === 'approved' ? 'default' :
-                                settlement.status === 'pending' ? 'secondary' :
-                                settlement.status === 'rejected' ? 'destructive' : 'outline'
-                              }
-                            >
-                              {settlement.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{settlement.reason || '-'}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Receipt className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">No Final Settlements</h3>
-                  <p className="text-muted-foreground">No final settlement records found for this employee.</p>
-                </div>
+        <TabsContent value="final-settlements" className="mt-6 space-y-6">
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold">Final Settlement</h2>
+              {hasPermission('create', 'FinalSettlement') && (
+                <Button>Create Settlement</Button>
               )}
-            </CardContent>
-          </Card>
+            </div>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="text-center text-muted-foreground">
+                  <Receipt className="mx-auto mb-4 h-12 w-12 opacity-50" />
+                  <p>No final settlements found for this employee.</p>
+                  {hasPermission('create', 'FinalSettlement') && (
+                    <Button className="mt-4">Create New Settlement</Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
-      </Tabs>
-
-      {/* Assignment Modal */}
-      {showAssignmentModal && (
-        <AssignmentModal
-          employeeId={employeeId}
-          assignment={editingAssignment}
-          onClose={() => {
-            setShowAssignmentModal(false);
-            setEditingAssignment(null);
-          }}
-          onSuccess={() => {
-            setShowAssignmentModal(false);
-            setEditingAssignment(null);
-            fetchEmployeeData();
-          }}
-        />
-      )}
-
-      {/* Confirmation Dialog */}
-      <ConfirmationDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        title="Delete Employee"
-        description={`Are you sure you want to delete ${employee?.first_name} ${employee?.last_name}? This action cannot be undone.`}
-        confirmText="Delete Employee"
-        cancelText="Cancel"
-        onConfirm={confirmDeleteEmployee}
-        variant="destructive"
-      />
-
-      {/* Assignment Confirmation Dialog */}
-      <ConfirmationDialog
-        open={assignmentDeleteDialogOpen}
-        onOpenChange={setAssignmentDeleteDialogOpen}
-        title="Delete Assignment"
-        description="Are you sure you want to delete this assignment? This action cannot be undone."
-        confirmText="Delete Assignment"
-        cancelText="Cancel"
-        onConfirm={confirmDeleteAssignment}
-        variant="destructive"
-      />
-    </div>
+        </Tabs>
+      </div>
   );
 }

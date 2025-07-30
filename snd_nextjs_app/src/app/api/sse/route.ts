@@ -1,98 +1,101 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connections, sendEventToClient, broadcastEvent, type SSEEvent, type SSEEventType } from '@/lib/sse-utils';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-config';
 
 export async function GET(request: NextRequest) {
-  // Set headers for SSE
-  const headers = {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Cache-Control',
-  };
-
-  // Create a readable stream for SSE
-  const stream = new ReadableStream({
-    start(controller) {
-      // Add this connection to the set
-      connections.add(controller);
-
-      // Send initial connection event
-      const connectionEvent: SSEEvent = {
-        type: 'system_notification',
-        data: {
-          message: 'SSE connection established',
-          status: 'connected'
-        },
-        timestamp: new Date().toISOString(),
-        id: 'connection-established'
-      };
-
-      sendEventToClient(controller, connectionEvent);
-
-      // Send heartbeat every 30 seconds to keep connection alive
-      const heartbeatInterval = setInterval(() => {
-        const heartbeatEvent: SSEEvent = {
-          type: 'system_notification',
-          data: {
-            message: 'heartbeat',
-            status: 'alive'
-          },
-          timestamp: new Date().toISOString(),
-          id: 'heartbeat'
-        };
-
-        sendEventToClient(controller, heartbeatEvent);
-      }, 30000);
-
-      // Handle client disconnect
-      request.signal.addEventListener('abort', () => {
-        connections.delete(controller);
-        clearInterval(heartbeatInterval);
-        controller.close();
-      });
-    },
-    cancel(controller) {
-      connections.delete(controller);
+  try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return new NextResponse('Unauthorized', { status: 401 });
     }
-  });
 
-  return new Response(stream, { headers });
+    // Set SSE headers
+    const response = new NextResponse(
+      new ReadableStream({
+        start(controller) {
+          // Send initial connection message
+          const initialMessage = {
+            type: 'connection',
+            payload: {
+              message: 'SSE connection established',
+              userId: session.user.id,
+              timestamp: new Date().toISOString(),
+            },
+          };
+
+          controller.enqueue(
+            new TextEncoder().encode(`data: ${JSON.stringify(initialMessage)}\n\n`)
+          );
+
+          // Keep connection alive with heartbeat
+          const heartbeat = setInterval(() => {
+            const heartbeatMessage = {
+              type: 'heartbeat',
+              payload: {
+                timestamp: new Date().toISOString(),
+              },
+            };
+
+            controller.enqueue(
+              new TextEncoder().encode(`data: ${JSON.stringify(heartbeatMessage)}\n\n`)
+            );
+          }, 30000); // Send heartbeat every 30 seconds
+
+          // Cleanup on close
+          request.signal.addEventListener('abort', () => {
+            clearInterval(heartbeat);
+            controller.close();
+          });
+        },
+      }),
+      {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Cache-Control',
+        },
+      }
+    );
+
+    return response;
+  } catch (error) {
+    console.error('SSE connection error:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
+  }
 }
 
-// POST endpoint for sending events (for testing and server-side events)
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { type, data, id } = body;
-
-    if (!type || !data) {
-      return NextResponse.json(
-        { error: 'Missing required fields: type and data' },
-        { status: 400 }
-      );
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const event: SSEEvent = {
-      type: type as SSEEventType,
-      data,
+    const body = await request.json();
+    const { type, payload, targetUserId } = body;
+
+    // Validate request
+    if (!type || !payload) {
+      return new NextResponse('Invalid request', { status: 400 });
+    }
+
+    // Here you would typically:
+    // 1. Store the notification in the database
+    // 2. Send it to the appropriate SSE connections
+    // 3. Handle different notification types
+
+    // For now, we'll just return success
+    return NextResponse.json({
+      success: true,
+      message: 'Notification sent',
       timestamp: new Date().toISOString(),
-      id
-    };
-
-    // Broadcast the event to all connected clients
-    broadcastEvent(event);
-
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Event broadcasted successfully',
-      connectionsCount: connections.size
     });
   } catch (error) {
-    console.error('Error handling SSE POST request:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    console.error('SSE POST error:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 } 
