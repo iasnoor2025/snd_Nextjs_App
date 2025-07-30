@@ -30,118 +30,120 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useI18n } from "@/hooks/use-i18n"
-
-const data = {
-  user: {
-    name: "Admin User",
-    email: "admin@snd.com",
-    avatar: undefined,
-  },
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: IconDashboard,
-    },
-    {
-      title: "Customer Management",
-      url: "/modules/customer-management",
-      icon: IconUsers,
-    },
-    {
-      title: "Company Management",
-      url: "/modules/company-management",
-      icon: IconBuilding,
-    },
-    {
-      title: "Employee Management",
-      url: "/modules/employee-management",
-      icon: IconUsers,
-    },
-    {
-      title: "Equipment Management",
-      url: "/modules/equipment-management",
-      icon: IconTools,
-    },
-    {
-      title: "Rental Management",
-      url: "/modules/rental-management",
-      icon: IconCalendar,
-    },
-    {
-      title: "Timesheet Management",
-      url: "/modules/timesheet-management",
-      icon: IconCalendar,
-    },
-    {
-      title: "Project Management",
-      url: "/modules/project-management",
-      icon: IconFileDescription,
-    },
-    {
-      title: "Payroll Management",
-      url: "/modules/payroll-management",
-      icon: IconChartBar,
-    },
-    {
-      title: "Leave Management",
-      url: "/modules/leave-management",
-      icon: IconCalendar,
-    },
-    {
-      title: "Safety Management",
-      url: "/modules/safety-management",
-      icon: IconHelp,
-    },
-    {
-      title: "Reporting",
-      url: "/modules/reporting",
-      icon: IconReport,
-    },
-    {
-      title: "User Management",
-      url: "/modules/user-management",
-      icon: IconUsers,
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Settings",
-      url: "/modules/settings",
-      icon: IconSettings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: IconHelp,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
-    },
-  ],
-  documents: [
-    {
-      name: "Analytics",
-      url: "/modules/analytics",
-      icon: IconChartBar,
-    },
-    {
-      name: "Audit & Compliance",
-      url: "/modules/audit-compliance",
-      icon: IconDatabase,
-    },
-    {
-      name: "Localization",
-      url: "/modules/localization",
-      icon: IconFileDescription,
-    },
-  ],
-}
+import { useTranslation } from "react-i18next"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { isRTL } = useI18n();
+  const { t } = useTranslation('sidebar');
+  
+  const data = {
+    user: {
+      name: "Admin User",
+      email: "admin@snd.com",
+      avatar: undefined,
+    },
+    navMain: [
+      {
+        title: t('dashboard'),
+        url: "/dashboard",
+        icon: IconDashboard,
+      },
+      {
+        title: t('customerManagement'),
+        url: "/modules/customer-management",
+        icon: IconUsers,
+      },
+      {
+        title: t('companyManagement'),
+        url: "/modules/company-management",
+        icon: IconBuilding,
+      },
+      {
+        title: t('employeeManagement'),
+        url: "/modules/employee-management",
+        icon: IconUsers,
+      },
+      {
+        title: t('equipmentManagement'),
+        url: "/modules/equipment-management",
+        icon: IconTools,
+      },
+      {
+        title: t('rentalManagement'),
+        url: "/modules/rental-management",
+        icon: IconCalendar,
+      },
+      {
+        title: t('timesheetManagement'),
+        url: "/modules/timesheet-management",
+        icon: IconCalendar,
+      },
+      {
+        title: t('projectManagement'),
+        url: "/modules/project-management",
+        icon: IconFileDescription,
+      },
+      {
+        title: t('payrollManagement'),
+        url: "/modules/payroll-management",
+        icon: IconChartBar,
+      },
+      {
+        title: t('leaveManagement'),
+        url: "/modules/leave-management",
+        icon: IconCalendar,
+      },
+      {
+        title: t('safetyManagement'),
+        url: "/modules/safety-management",
+        icon: IconHelp,
+      },
+      {
+        title: t('reporting'),
+        url: "/modules/reporting",
+        icon: IconReport,
+      },
+      {
+        title: t('userManagement'),
+        url: "/modules/user-management",
+        icon: IconUsers,
+      },
+    ],
+    navSecondary: [
+      {
+        title: t('settings'),
+        url: "/modules/settings",
+        icon: IconSettings,
+      },
+      {
+        title: t('getHelp'),
+        url: "#",
+        icon: IconHelp,
+      },
+      {
+        title: t('search'),
+        url: "#",
+        icon: IconSearch,
+      },
+    ],
+    documents: [
+      {
+        name: t('analytics'),
+        url: "/modules/analytics",
+        icon: IconChartBar,
+      },
+      {
+        name: t('auditCompliance'),
+        url: "/modules/audit-compliance",
+        icon: IconDatabase,
+      },
+      {
+        name: t('localization'),
+        url: "/modules/localization",
+        icon: IconFileDescription,
+      },
+    ],
+  };
   
   return (
     <Sidebar 
@@ -160,7 +162,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <a href="#">
                 <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">SND Rental</span>
+                <span className="text-base font-semibold">{t('appTitle')}</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

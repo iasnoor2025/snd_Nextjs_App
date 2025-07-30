@@ -14,6 +14,7 @@ import enRental from '@/locales/en/rental.json';
 import enSettings from '@/locales/en/settings.json';
 import enReporting from '@/locales/en/reporting.json';
 import enAnalytics from '@/locales/en/analytics.json';
+import enSidebar from '@/locales/en/sidebar.json';
 
 import arCommon from '@/locales/ar/common.json';
 import arAuth from '@/locales/ar/auth.json';
@@ -24,6 +25,7 @@ import arRental from '@/locales/ar/rental.json';
 import arSettings from '@/locales/ar/settings.json';
 import arReporting from '@/locales/ar/reporting.json';
 import arAnalytics from '@/locales/ar/analytics.json';
+import arSidebar from '@/locales/ar/sidebar.json';
 
 const resources = {
   en: {
@@ -36,6 +38,7 @@ const resources = {
     settings: enSettings,
     reporting: enReporting,
     analytics: enAnalytics,
+    sidebar: enSidebar,
   },
   ar: {
     common: arCommon,
@@ -47,6 +50,7 @@ const resources = {
     settings: arSettings,
     reporting: arReporting,
     analytics: arAnalytics,
+    sidebar: arSidebar,
   },
 };
 
@@ -70,7 +74,7 @@ if (!i18n.isInitialized) {
       },
 
       defaultNS: 'common',
-      ns: ['common', 'auth', 'dashboard', 'equipment', 'employee', 'rental', 'settings', 'reporting', 'analytics'],
+      ns: ['common', 'auth', 'dashboard', 'equipment', 'employee', 'rental', 'settings', 'reporting', 'analytics', 'sidebar'],
 
       react: {
         useSuspense: false,

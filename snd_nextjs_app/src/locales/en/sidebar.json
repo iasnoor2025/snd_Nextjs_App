@@ -1,0 +1,22 @@
+{
+  "dashboard": "Dashboard",
+  "customerManagement": "Customer Management",
+  "companyManagement": "Company Management",
+  "employeeManagement": "Employee Management",
+  "equipmentManagement": "Equipment Management",
+  "rentalManagement": "Rental Management",
+  "timesheetManagement": "Timesheet Management",
+  "projectManagement": "Project Management",
+  "payrollManagement": "Payroll Management",
+  "leaveManagement": "Leave Management",
+  "safetyManagement": "Safety Management",
+  "reporting": "Reporting",
+  "userManagement": "User Management",
+  "settings": "Settings",
+  "getHelp": "Get Help",
+  "search": "Search",
+  "analytics": "Analytics",
+  "auditCompliance": "Audit & Compliance",
+  "localization": "Localization",
+  "appTitle": "SND Rental"
+} 

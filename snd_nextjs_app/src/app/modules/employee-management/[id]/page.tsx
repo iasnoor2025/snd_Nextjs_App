@@ -12,11 +12,11 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  ArrowLeft, 
-  Edit, 
+import {
+  ArrowLeft,
+  Edit,
   Trash2,
-  User, 
+  User,
   Briefcase,
   FileBox,
   Calendar,
@@ -132,6 +132,7 @@ export default function EmployeeShowPage() {
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedPayslipMonth, setSelectedPayslipMonth] = useState(format(new Date(), 'yyyy-MM'));
 
   useEffect(() => {
     if (employeeId) {
@@ -170,23 +171,23 @@ export default function EmployeeShowPage() {
         <div className="flex items-center gap-2">
           <Loader2 className="h-6 w-6 animate-spin" />
           <span>Loading employee data...</span>
-          </div>
         </div>
+      </div>
     );
   }
 
   if (!employee) {
     return (
       <div className="flex h-screen items-center justify-center">
-              <div className="text-center">
+        <div className="text-center">
           <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
           <h2 className="mt-4 text-lg font-semibold">Employee not found</h2>
           <p className="mt-2 text-muted-foreground">The employee you're looking for doesn't exist.</p>
           <Button className="mt-4" asChild>
             <Link href="/modules/employee-management">Back to Employees</Link>
-                  </Button>
-              </div>
+          </Button>
         </div>
+      </div>
     );
   }
 
@@ -201,7 +202,7 @@ export default function EmployeeShowPage() {
               {employee.last_name?.[0] || ''}
             </AvatarFallback>
           </Avatar>
-            <div>
+          <div>
             <h1 className="text-2xl font-bold tracking-tight">
               {employee.first_name} {employee.middle_name ? `${employee.middle_name} ` : ''}
               {employee.last_name}
@@ -220,23 +221,23 @@ export default function EmployeeShowPage() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Link>
-                  </Button>
+          </Button>
           {hasPermission('edit', 'Employee') && (
           <Button size="sm" asChild>
             <Link href={`/modules/employee-management/${employee.id}/edit`}>
               <Edit className="mr-2 h-4 w-4" />
               Edit
-                </Link>
+            </Link>
           </Button>
               )}
               {hasPermission('delete', 'Employee') && (
             <Button variant="destructive" size="sm">
             <Trash2 className="mr-2 h-4 w-4" />
             Delete
-                </Button>
+          </Button>
               )}
-          </div>
         </div>
+      </div>
 
       <Separator />
 
@@ -246,19 +247,19 @@ export default function EmployeeShowPage() {
           <TabsTrigger value="personal-info" className="flex items-center gap-2 px-3 py-2">
             <User className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Personal</span>
-            </TabsTrigger>
+          </TabsTrigger>
           <TabsTrigger value="employment" className="flex items-center gap-2 px-3 py-2">
             <Briefcase className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Employment</span>
-            </TabsTrigger>
+          </TabsTrigger>
           <TabsTrigger value="documents" className="flex items-center gap-2 px-3 py-2">
             <FileBox className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Documents</span>
-            </TabsTrigger>
+          </TabsTrigger>
           <TabsTrigger value="assignments" className="flex items-center gap-2 px-3 py-2">
             <Calendar className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Assignments</span>
-            </TabsTrigger>
+          </TabsTrigger>
           <TabsTrigger value="timesheets" className="flex items-center gap-2 px-3 py-2">
             <Clock className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Timesheets</span>
@@ -278,16 +279,16 @@ export default function EmployeeShowPage() {
           <TabsTrigger value="final-settlements" className="flex items-center gap-2 px-3 py-2">
             <Receipt className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Final Settlements</span>
-            </TabsTrigger>
-          </TabsList>
+          </TabsTrigger>
+        </TabsList>
 
         {/* Personal Information Tab */}
         <TabsContent value="personal-info" className="mt-6 space-y-6">
-              <Card>
-                <CardHeader>
+            <Card>
+              <CardHeader>
               <CardTitle>Personal Information</CardTitle>
               <CardDescription>Personal and identification details</CardDescription>
-                </CardHeader>
+              </CardHeader>
               <CardContent className="p-6">
               <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                 <div className="space-y-4">
@@ -300,25 +301,25 @@ export default function EmployeeShowPage() {
                           {employee.first_name} {employee.middle_name ? `${employee.middle_name} ` : ''}
                           {employee.last_name}
                         </dd>
-                  </div>
+                      </div>
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">Phone</dt>
                         <dd className="text-sm">{employee.phone || 'Not set'}</dd>
-                    </div>
-                  {employee.nationality && (
+                      </div>
+                      {employee.nationality && (
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">Nationality</dt>
                           <dd className="text-sm">{employee.nationality}</dd>
-                    </div>
-                  )}
-                  {employee.date_of_birth && (
+                        </div>
+                      )}
+                      {employee.date_of_birth && (
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">Date of Birth</dt>
                           <dd className="text-sm">{format(new Date(employee.date_of_birth), 'PPP')}</dd>
-                    </div>
-                  )}
+                        </div>
+                      )}
                     </dl>
-                    </div>
+                  </div>
 
                     <div>
                     <h3 className="mb-3 text-sm font-medium text-muted-foreground">Emergency Contact</h3>
@@ -344,37 +345,37 @@ export default function EmployeeShowPage() {
                 </div>
 
                 <div className="space-y-4">
-                      <div>
+                  <div>
                     <h3 className="mb-3 text-sm font-medium text-muted-foreground">Identification</h3>
                     <dl className="space-y-2">
                       {employee.iqama_number && (
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">Iqama Number</dt>
                           <dd className="text-sm">{employee.iqama_number}</dd>
-                      </div>
-                    )}
+                        </div>
+                      )}
                       {employee.iqama_expiry && (
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">Iqama Expiry</dt>
                           <dd className="text-sm">{format(new Date(employee.iqama_expiry), 'PPP')}</dd>
-                      </div>
-                    )}
+                        </div>
+                      )}
                       {employee.passport_number && (
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">Passport Number</dt>
                           <dd className="text-sm">{employee.passport_number}</dd>
-                      </div>
-                    )}
+                        </div>
+                      )}
                       {employee.passport_expiry && (
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">Passport Expiry</dt>
                           <dd className="text-sm">{format(new Date(employee.passport_expiry), 'PPP')}</dd>
-                  </div>
+                        </div>
                       )}
                     </dl>
                   </div>
 
-                      <div>
+                  <div>
                     <h3 className="mb-3 text-sm font-medium text-muted-foreground">Licenses & Certifications</h3>
                     {employee.driving_license_number || employee.operator_license_number || 
                      employee.tuv_certification_number || employee.spsp_license_number ? (
@@ -383,19 +384,19 @@ export default function EmployeeShowPage() {
                         <div className="flex justify-between border-b pb-2">
                             <dt className="text-sm font-medium">Driving License</dt>
                           <dd className="text-sm">{employee.driving_license_number}</dd>
-                      </div>
+                        </div>
                     )}
                         {employee.driving_license_expiry && (
                           <div className="flex justify-between border-b pb-2">
                             <dt className="text-sm font-medium">License Expiry</dt>
                             <dd className="text-sm">{format(new Date(employee.driving_license_expiry), 'PPP')}</dd>
-                      </div>
-                    )}
+                          </div>
+                        )}
                   {employee.operator_license_number && (
                         <div className="flex justify-between border-b pb-2">
                             <dt className="text-sm font-medium">Operator License</dt>
                           <dd className="text-sm">{employee.operator_license_number}</dd>
-                      </div>
+                        </div>
                     )}
                         {employee.operator_license_expiry && (
                           <div className="flex justify-between border-b pb-2">
@@ -413,7 +414,7 @@ export default function EmployeeShowPage() {
                           <div className="flex justify-between border-b pb-2">
                             <dt className="text-sm font-medium">TÜV Certification Expiry</dt>
                             <dd className="text-sm">{format(new Date(employee.tuv_certification_expiry), 'PPP')}</dd>
-            </div>
+                          </div>
                         )}
                   {employee.spsp_license_number && (
                         <div className="flex justify-between border-b pb-2">
@@ -436,9 +437,9 @@ export default function EmployeeShowPage() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+        </TabsContent>
 
-          {/* Employment Tab */}
+        {/* Employment Tab */}
         <TabsContent value="employment" className="mt-6 space-y-6">
             <Card>
               <CardHeader>
@@ -454,11 +455,11 @@ export default function EmployeeShowPage() {
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">Employee ID</dt>
                         <dd className="text-sm">{employee.employee_id}</dd>
-                        </div>
+                      </div>
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">File Number</dt>
                         <dd className="text-sm">{employee.file_number || 'Not assigned'}</dd>
-                        </div>
+                      </div>
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">Designation</dt>
                         <dd className="text-sm">{employee.designation?.name || 'Not assigned'}</dd>
@@ -476,7 +477,7 @@ export default function EmployeeShowPage() {
                       <div className="flex justify-between border-b pb-2">
                         <dt className="text-sm font-medium">Status</dt>
                         <dd className="text-sm">{getStatusBadge(employee.status)}</dd>
-                    </div>
+                      </div>
                     </dl>
                   </div>
 
@@ -559,8 +560,8 @@ export default function EmployeeShowPage() {
                         </div>
                       )}
                     </dl>
-                    </div>
                   </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -568,8 +569,8 @@ export default function EmployeeShowPage() {
         {/* Documents Tab */}
         <TabsContent value="documents" className="mt-6 space-y-6">
           {/* Document Overview Card */}
-              <Card>
-                <CardHeader>
+            <Card>
+              <CardHeader>
               <div className="flex items-center justify-between">
                     <div>
                   <CardTitle>Document Overview</CardTitle>
@@ -580,7 +581,7 @@ export default function EmployeeShowPage() {
                     {employee.status === 'active' ? 'Active Employee' : 'Inactive Employee'}
                       </Badge>
                     </div>
-                    </div>
+                      </div>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -631,7 +632,7 @@ export default function EmployeeShowPage() {
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-muted-foreground">Valid Documents</span>
                             <span className="text-sm font-medium text-green-600">{validDocuments.length}</span>
-                  </div>
+                      </div>
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-muted-foreground">Expiring Soon</span>
                             <span className="text-sm font-medium text-amber-600">{expiringSoon.length}</span>
@@ -643,8 +644,8 @@ export default function EmployeeShowPage() {
                         </>
                       );
                     })()}
-                      </div>
-                      </div>
+                    </div>
+                  </div>
 
                 {/* Document Cards */}
                 <div className="col-span-2 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -659,19 +660,19 @@ export default function EmployeeShowPage() {
                           <Badge variant="outline" className="text-xs">
                             {employee.iqama_expiry && new Date(employee.iqama_expiry) > new Date() ? 'Valid' : 'Expired'}
                       </Badge>
-            </div>
+                    </div>
                 </CardHeader>
                       <CardContent className="pt-0">
-                      <div className="space-y-2">
+                    <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Number</span>
                             <span>{employee.iqama_number}</span>
-                        </div>
+                      </div>
                         {employee.iqama_expiry && (
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Expiry</span>
                               <span>{format(new Date(employee.iqama_expiry), 'PPP')}</span>
-                          </div>
+                    </div>
                         )}
                         {employee.iqama_file && (
                             <Button variant="outline" size="sm" className="w-full">
@@ -679,7 +680,7 @@ export default function EmployeeShowPage() {
                               View Document
                           </Button>
                         )}
-                      </div>
+                </div>
               </CardContent>
             </Card>
                   )}
@@ -702,7 +703,7 @@ export default function EmployeeShowPage() {
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Number</span>
                             <span>{employee.passport_number}</span>
-                        </div>
+                    </div>
                         {employee.passport_expiry && (
                             <div className="flex justify-between text-sm">
                               <span className="text-muted-foreground">Expiry</span>
@@ -713,14 +714,14 @@ export default function EmployeeShowPage() {
                             <Button variant="outline" size="sm" className="w-full">
                               <Download className="mr-2 h-4 w-4" />
                               View Document
-                          </Button>
+                      </Button>
                         )}
-                      </div>
+                    </div>
                       </CardContent>
                   </Card>
-                  )}
+                )}
 
-                  {employee.driving_license_number && (
+                {employee.driving_license_number && (
                     <Card>
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
@@ -749,14 +750,14 @@ export default function EmployeeShowPage() {
                             <Button variant="outline" size="sm" className="w-full">
                               <Download className="mr-2 h-4 w-4" />
                               View Document
-                          </Button>
+                      </Button>
                         )}
-                      </div>
+                    </div>
                       </CardContent>
                   </Card>
-                  )}
+                )}
 
-                  {employee.operator_license_number && (
+                {employee.operator_license_number && (
                     <Card>
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
@@ -785,12 +786,12 @@ export default function EmployeeShowPage() {
                             <Button variant="outline" size="sm" className="w-full">
                               <Download className="mr-2 h-4 w-4" />
                               View Document
-                          </Button>
+                      </Button>
                         )}
-                      </div>
+                    </div>
                       </CardContent>
                   </Card>
-                  )}
+                )}
                 </div>
               </div>
             </CardContent>
@@ -904,7 +905,7 @@ export default function EmployeeShowPage() {
                                 }}
                               >
                                 <Trash2 className="mr-1 inline h-4 w-4" /> Delete
-                                </Button>
+                      </Button>
                             )}
                           </CardTitle>
                           <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -1052,7 +1053,7 @@ export default function EmployeeShowPage() {
                             ))}
                           </tbody>
                         </table>
-                  </div>
+              </div>
                 )}
                   </div>
         </TabsContent>
@@ -1064,23 +1065,42 @@ export default function EmployeeShowPage() {
                   <CardDescription>View and manage employee timesheet records</CardDescription>
             </CardHeader>
             <CardContent>
-              {/* Payslip Button with Month Selector */}
+                            {/* Payslip Button with Month Selector */}
               <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="w-full min-w-[140px] sm:w-auto">
-          <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background">
-            <option>December 2024</option>
-            <option>November 2024</option>
-            <option>October 2024</option>
-          </select>
-        </div>
-        <Button variant="default" size="sm" className="w-full sm:w-auto">
-          View Payslip
-        </Button>
-      </div>
+                <div className="w-full min-w-[140px] sm:w-auto">
+                  <select 
+                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                    value={selectedPayslipMonth}
+                    onChange={(e) => setSelectedPayslipMonth(e.target.value)}
+                  >
+                    {Array.from({ length: 24 }, (_, i) => {
+                      const date = subMonths(new Date(), i);
+                      return (
+                        <option key={i} value={format(date, 'yyyy-MM')}>
+                          {format(date, 'MMMM yyyy')}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="w-full sm:w-auto"
+                  asChild
+                >
+                  <Link 
+                    href={`/modules/employee-management/${employee?.id}/payslip?month=${selectedPayslipMonth}`}
+                    target="_blank"
+                  >
+                    View Payslip
+                  </Link>
+                </Button>
+              </div>
       {/* Timesheet Summary */}
       <div className="mb-4">
         <TimesheetSummary employeeId={employee?.id} />
-      </div>
+              </div>
       {/* Add Timesheet Button and Dialog */}
       {hasPermission('create', 'Timesheet') && (
         <Dialog>
@@ -1099,13 +1119,13 @@ export default function EmployeeShowPage() {
       {/* Timesheet List */}
       <div className="mt-4">
         <TimesheetList employeeId={employee?.id} />
-      </div>
+              </div>
               </CardContent>
             </Card>
           </TabsContent>
 
         <TabsContent value="leaves" className="mt-6 space-y-6">
-            <Card>
+                <Card>
               <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -1119,8 +1139,8 @@ export default function EmployeeShowPage() {
                   </Button>
                 </div>
               </div>
-              </CardHeader>
-              <CardContent>
+                  </CardHeader>
+                  <CardContent>
               <div className="space-y-6">
                 {/* Leave Summary */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
@@ -1156,8 +1176,8 @@ export default function EmployeeShowPage() {
                       <div className="text-2xl font-bold">0</div>
                   </CardContent>
                 </Card>
-                  </div>
-                  
+              </div>
+
                 {/* Leave Records */}
           <Card>
             <CardHeader>
@@ -1196,7 +1216,7 @@ export default function EmployeeShowPage() {
                           </tr>
                         </tbody>
                       </table>
-                  </div>
+                </div>
                   </CardContent>
                 </Card>
                 </div>
@@ -1208,10 +1228,10 @@ export default function EmployeeShowPage() {
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                    <div>
+                <div>
                   <CardTitle>Advance Payment Management</CardTitle>
                   <CardDescription>Track and manage employee advance payments and deductions</CardDescription>
-                    </div>
+                </div>
                 <div className="flex gap-2">
                               <Button
                     variant="outline"
@@ -1414,8 +1434,8 @@ export default function EmployeeShowPage() {
               )}
             </div>
 
-            <Card>
-              <CardContent className="p-6">
+          <Card>
+            <CardContent className="p-6">
                 <div className="text-center text-muted-foreground">
                   <Receipt className="mx-auto mb-4 h-12 w-12 opacity-50" />
                   <p>No final settlements found for this employee.</p>
@@ -1423,11 +1443,11 @@ export default function EmployeeShowPage() {
                     <Button className="mt-4">Create New Settlement</Button>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+            </CardContent>
+          </Card>
           </div>
         </TabsContent>
-        </Tabs>
-      </div>
+      </Tabs>
+    </div>
   );
 }

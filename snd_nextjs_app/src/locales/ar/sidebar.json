@@ -1,0 +1,22 @@
+{
+  "dashboard": "لوحة التحكم",
+  "customerManagement": "إدارة العملاء",
+  "companyManagement": "إدارة الشركة",
+  "employeeManagement": "إدارة الموظفين",
+  "equipmentManagement": "إدارة المعدات",
+  "rentalManagement": "إدارة التأجير",
+  "timesheetManagement": "إدارة الجداول الزمنية",
+  "projectManagement": "إدارة المشاريع",
+  "payrollManagement": "إدارة الرواتب",
+  "leaveManagement": "إدارة الإجازات",
+  "safetyManagement": "إدارة السلامة",
+  "reporting": "التقارير",
+  "userManagement": "إدارة المستخدمين",
+  "settings": "الإعدادات",
+  "getHelp": "الحصول على المساعدة",
+  "search": "البحث",
+  "analytics": "التحليلات",
+  "auditCompliance": "المراجعة والامتثال",
+  "localization": "التوطين",
+  "appTitle": "إدارة التأجير"
+} 
