@@ -38,6 +38,9 @@ export const useSSE = () => {
   return context;
 };
 
+// Alias for backward compatibility
+export const useSSEContext = useSSE;
+
 interface SSEProviderProps {
   children: React.ReactNode;
 }

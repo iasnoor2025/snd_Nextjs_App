@@ -179,6 +179,11 @@ export default function CreateEmployeePage() {
     access_restriction_reason: '',
   });
 
+  useEffect(() => {
+    fetchDepartments();
+    fetchDesignations();
+  }, []);
+
   // Check permissions
   if (!hasPermission('create', 'Employee')) {
     return (
@@ -206,11 +211,6 @@ export default function CreateEmployeePage() {
       </ProtectedRoute>
     );
   }
-
-  useEffect(() => {
-    fetchDepartments();
-    fetchDesignations();
-  }, []);
 
   const fetchDepartments = async () => {
     try {

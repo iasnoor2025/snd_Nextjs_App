@@ -7,7 +7,7 @@ const prisma = new PrismaClient();
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     console.log("POST /api/employee/advances/[id]/reject called");
@@ -28,13 +28,14 @@ export async function POST(
       );
     }
 
-    const advanceId = parseInt(params.id);
+    const resolvedParams = await params;
+    const advanceId = parseInt(resolvedParams.id);
     if (!advanceId) {
       return NextResponse.json({ error: "Invalid advance ID" }, { status: 400 });
     }
 
     // Check if advance exists and is pending
-    const advance = await prisma.employeeAdvance.findUnique({
+    const advance = await prisma.advancePayment.findUnique({
       where: { id: advanceId },
     });
 
@@ -50,12 +51,12 @@ export async function POST(
     }
 
     // Update advance status to rejected
-    const updatedAdvance = await prisma.employeeAdvance.update({
+    const updatedAdvance = await prisma.advancePayment.update({
       where: { id: advanceId },
       data: {
         status: "rejected",
-        approved_by: session.user.id,
-        approved_at: new Date(),
+        rejected_by: parseInt(session.user.id),
+        rejected_at: new Date(),
         rejection_reason: rejectionReason,
       },
     });

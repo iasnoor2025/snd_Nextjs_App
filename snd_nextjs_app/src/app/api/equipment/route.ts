@@ -6,17 +6,17 @@ const prisma = new PrismaClient();
 export async function GET(request: NextRequest) {
   try {
     const equipment = await prisma.equipment.findMany({
-      where: { isActive: true },
+      where: { is_active: true },
       select: {
         id: true,
         name: true,
-        modelNumber: true,
+        model_number: true,
         status: true,
-        categoryId: true,
+        category_id: true,
         manufacturer: true,
-        dailyRate: true,
-        weeklyRate: true,
-        monthlyRate: true
+        daily_rate: true,
+        weekly_rate: true,
+        monthly_rate: true
       },
       orderBy: { name: 'asc' }
     });
@@ -39,17 +39,17 @@ export async function POST(request: NextRequest) {
       data: {
         name: body.name,
         description: body.description,
-        categoryId: body.categoryId,
+        category_id: body.categoryId,
         manufacturer: body.manufacturer,
-        modelNumber: body.modelNumber,
-        serialNumber: body.serialNumber,
-        purchaseDate: body.purchaseDate ? new Date(body.purchaseDate) : null,
-        purchasePrice: body.purchasePrice ? parseFloat(body.purchasePrice) : null,
+        model_number: body.modelNumber,
+        serial_number: body.serialNumber,
+        purchase_date: body.purchaseDate ? new Date(body.purchaseDate) : null,
+        purchase_price: body.purchasePrice ? parseFloat(body.purchasePrice) : null,
         status: body.status || 'available',
-        dailyRate: body.dailyRate ? parseFloat(body.dailyRate) : null,
-        weeklyRate: body.weeklyRate ? parseFloat(body.weeklyRate) : null,
-        monthlyRate: body.monthlyRate ? parseFloat(body.monthlyRate) : null,
-        isActive: true
+        daily_rate: body.dailyRate ? parseFloat(body.dailyRate) : null,
+        weekly_rate: body.weeklyRate ? parseFloat(body.weeklyRate) : null,
+        monthly_rate: body.monthlyRate ? parseFloat(body.monthlyRate) : null,
+        is_active: true
       }
     });
 
@@ -89,18 +89,18 @@ export async function PUT(request: NextRequest) {
       data: {
         name,
         description,
-        categoryId,
+        category_id: categoryId,
         manufacturer,
-        modelNumber,
-        serialNumber,
-        purchaseDate: purchaseDate ? new Date(purchaseDate) : null,
-        purchasePrice: purchasePrice ? parseFloat(purchasePrice) : null,
+        model_number: modelNumber,
+        serial_number: serialNumber,
+        purchase_date: purchaseDate ? new Date(purchaseDate) : null,
+        purchase_price: purchasePrice ? parseFloat(purchasePrice) : null,
         status,
-        locationId,
+        location_id: locationId,
         notes,
-        dailyRate: dailyRate ? parseFloat(dailyRate) : null,
-        weeklyRate: weeklyRate ? parseFloat(weeklyRate) : null,
-        monthlyRate: monthlyRate ? parseFloat(monthlyRate) : null,
+        daily_rate: dailyRate ? parseFloat(dailyRate) : null,
+        weekly_rate: weeklyRate ? parseFloat(weeklyRate) : null,
+        monthly_rate: monthlyRate ? parseFloat(monthlyRate) : null,
       },
     });
 

@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -38,6 +39,7 @@ import { useI18n } from "@/hooks/use-i18n";
 import { useRBAC } from "@/lib/rbac/rbac-context";
 import TimesheetSummary from "@/components/employee/timesheets/TimesheetSummary";
 import TimesheetList from "@/components/employee/timesheets/TimesheetList";
+import PaymentHistory from "@/components/employee/PaymentHistory";
 
 interface Employee {
   id: number;
@@ -136,6 +138,10 @@ export default function EmployeeShowPage() {
   const [advances, setAdvances] = useState<any[]>([]);
   const [loadingAdvances, setLoadingAdvances] = useState(false);
   const [selectedAdvanceForReject, setSelectedAdvanceForReject] = useState<any>(null);
+  const [selectedAdvanceForRepayment, setSelectedAdvanceForRepayment] = useState<any>(null);
+
+  // Filter approved advances for repayment
+  const approvedAdvances = advances.filter((advance: any) => advance.status === 'approved');
 
   useEffect(() => {
     if (employeeId) {
@@ -225,6 +231,33 @@ export default function EmployeeShowPage() {
     } catch (error) {
       console.error('Error rejecting advance:', error);
       toast.error('Failed to reject advance');
+    }
+  };
+
+  const handleRepayment = async (advanceId: number, amount: string) => {
+    try {
+      const response = await fetch(`/api/employee/advances/${advanceId}/repay`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ repaymentAmount: amount }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Repayment recorded successfully');
+        setIsRepaymentDialogOpen(false);
+        setRepaymentAmount('');
+        setSelectedAdvanceForRepayment(null);
+        fetchAdvances(); // Refresh the advances list
+      } else {
+        toast.error(data.error || 'Failed to record repayment');
+      }
+    } catch (error) {
+      console.error('Error recording repayment:', error);
+      toast.error('Failed to record repayment');
     }
   };
 
@@ -1317,9 +1350,9 @@ export default function EmployeeShowPage() {
                               </Button>
                   <Dialog open={isRepaymentDialogOpen} onOpenChange={setIsRepaymentDialogOpen}>
                     <DialogTrigger asChild>
-                              <Button
+                      <Button
                         className="flex items-center gap-2"
-                        disabled={false}
+                        disabled={approvedAdvances.length === 0}
                       >
                         <CreditCard className="h-4 w-4" />
                         Make Repayment
@@ -1334,17 +1367,102 @@ export default function EmployeeShowPage() {
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4">
-                        <div className="p-6 text-center">
-                          <AlertCircle className="mx-auto mb-4 h-12 w-12 text-amber-500" />
-                          <h3 className="mb-2 text-lg font-medium">No Active Advances</h3>
-                          <p className="mb-4 text-sm text-muted-foreground">
-                            There are no active advances available for repayment.
-                          </p>
-                          <Button variant="outline" onClick={() => setIsRepaymentDialogOpen(false)}>
-                            Close
-                              </Button>
+                        {approvedAdvances.length === 0 ? (
+                          <div className="p-6 text-center">
+                            <AlertCircle className="mx-auto mb-4 h-12 w-12 text-amber-500" />
+                            <h3 className="mb-2 text-lg font-medium">No Active Advances</h3>
+                            <p className="mb-4 text-sm text-muted-foreground">
+                              There are no approved advances available for repayment.
+                            </p>
+                            <Button variant="outline" onClick={() => setIsRepaymentDialogOpen(false)}>
+                              Close
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <div className="grid gap-2">
+                              <label htmlFor="repaymentAdvance" className="text-sm font-medium">Select Advance</label>
+                              <Select
+                                value={selectedAdvanceForRepayment?.id?.toString() || ''}
+                                onValueChange={(value) => {
+                                  const advance = approvedAdvances.find(a => a.id.toString() === value);
+                                  setSelectedAdvanceForRepayment(advance);
+                                  setRepaymentAmount('');
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select an advance to repay" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {approvedAdvances.map((advance) => (
+                                    <SelectItem key={advance.id} value={advance.id.toString()}>
+                                      SAR {Number(advance.amount).toFixed(2)} - {advance.reason}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
-                </div>
+                            {selectedAdvanceForRepayment && (
+                              <div className="space-y-4">
+                                <div className="rounded-lg border p-4 bg-muted/50">
+                                  <h4 className="font-medium mb-2">Advance Details</h4>
+                                  <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div>Amount: SAR {Number(selectedAdvanceForRepayment.amount).toFixed(2)}</div>
+                                    <div>Monthly Deduction: SAR {selectedAdvanceForRepayment.monthly_deduction ? Number(selectedAdvanceForRepayment.monthly_deduction).toFixed(2) : 'Not set'}</div>
+                                    <div>Repaid Amount: SAR {selectedAdvanceForRepayment.repaid_amount ? Number(selectedAdvanceForRepayment.repaid_amount).toFixed(2) : '0.00'}</div>
+                                    <div>Remaining Balance: SAR {selectedAdvanceForRepayment.remaining_balance ? Number(selectedAdvanceForRepayment.remaining_balance).toFixed(2) : Number(selectedAdvanceForRepayment.amount).toFixed(2)}</div>
+                                  </div>
+                                </div>
+                                <div className="grid gap-2">
+                                  <label htmlFor="repaymentAmount" className="text-sm font-medium">Repayment Amount (SAR)</label>
+                                  <Input
+                                    id="repaymentAmount"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={repaymentAmount}
+                                    onChange={(e) => setRepaymentAmount(e.target.value)}
+                                    placeholder="Enter repayment amount"
+                                  />
+                                  {selectedAdvanceForRepayment.monthly_deduction && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Minimum repayment: SAR {Number(selectedAdvanceForRepayment.monthly_deduction).toFixed(2)}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {approvedAdvances.length > 0 && (
+                        <DialogFooter>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => {
+                              setIsRepaymentDialogOpen(false);
+                              setRepaymentAmount('');
+                              setSelectedAdvanceForRepayment(null);
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type="button"
+                            onClick={() => {
+                              if (selectedAdvanceForRepayment && repaymentAmount) {
+                                handleRepayment(selectedAdvanceForRepayment.id, repaymentAmount);
+                              } else {
+                                toast.error('Please select an advance and enter repayment amount');
+                              }
+                            }}
+                            disabled={!selectedAdvanceForRepayment || !repaymentAmount}
+                          >
+                            Record Repayment
+                          </Button>
+                        </DialogFooter>
+                      )}
                     </DialogContent>
                   </Dialog>
                 </div>
@@ -1613,27 +1731,17 @@ export default function EmployeeShowPage() {
                           </tr>
                         ) : advances.length === 0 ? (
                           <tr>
-                            <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground italic">
+                                                          <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground italic">
                               No advance records found.
                             </td>
                           </tr>
                         ) : (
                           advances.map((advance) => (
                             <tr key={advance.id} className="hover:bg-muted/50">
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                SAR {Number(advance.amount).toFixed(2)}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                                {advance.monthly_deduction ? `SAR ${Number(advance.monthly_deduction).toFixed(2)}` : 'Not set'}
-                              </td>
-                              <td className="px-6 py-4 text-sm text-muted-foreground">
-                                <div className="max-w-xs truncate" title={advance.reason}>
-                                  {advance.reason || 'No reason provided'}
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                                {new Date(advance.created_at).toLocaleDateString()}
-                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">SAR {Number(advance.amount).toFixed(2)}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">SAR {Number(advance.monthly_deduction || 0).toFixed(2)}</td>
+                              <td className="px-6 py-4 max-w-[200px] truncate">{advance.reason}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{new Date(advance.created_at).toLocaleDateString()}</td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <Badge
                                   variant={
@@ -1652,9 +1760,7 @@ export default function EmployeeShowPage() {
                                   {advance.status.charAt(0).toUpperCase() + advance.status.slice(1)}
                                 </Badge>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
-                                Advance
-                              </td>
+                              <td className="px-6 py-4 capitalize">{advance.purpose === 'advance' ? 'Request' : Number(advance.amount) < 0 ? 'Repayment' : 'Payment'}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                                  <div className="flex items-center justify-end gap-2">
                                    {advance.status === 'pending' && (
@@ -1700,6 +1806,7 @@ export default function EmployeeShowPage() {
               </Card>
             </CardContent>
           </Card>
+          <PaymentHistory employeeId={parseInt(employeeId)} />
         </TabsContent>
 
         <TabsContent value="resignations" className="mt-6 space-y-6">
@@ -1736,12 +1843,12 @@ export default function EmployeeShowPage() {
                         No resignation requests found
                       </td>
                     </tr>
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                                          </tbody>
+                      </table>
+                    </div>
+                                  </CardContent>
+              </Card>
+            </TabsContent>
 
         <TabsContent value="final-settlements" className="mt-6 space-y-6">
           <div className="space-y-6">

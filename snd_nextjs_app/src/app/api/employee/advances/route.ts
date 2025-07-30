@@ -51,10 +51,11 @@ export async function POST(request: NextRequest) {
 
     // Create the advance record
     console.log("Creating advance record...");
-    const advance = await prisma.employeeAdvance.create({
+    const advance = await prisma.advancePayment.create({
       data: {
         employee_id: parseInt(employeeId),
         amount: parseFloat(amount),
+        purpose: "advance",
         monthly_deduction: monthly_deduction ? parseFloat(monthly_deduction) : null,
         reason: reason,
         status: "pending",
@@ -95,9 +96,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Get advances for the employee
-    const advances = await prisma.employeeAdvance.findMany({
+    const advances = await prisma.advancePayment.findMany({
       where: {
         employee_id: parseInt(employeeId),
+        deleted_at: null,
       },
       orderBy: {
         created_at: "desc",

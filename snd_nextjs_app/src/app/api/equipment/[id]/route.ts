@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const equipment = await DatabaseService.getEquipmentById(id)
+    const equipment = await DatabaseService.getEquipmentById(parseInt(id))
     if (!equipment) {
       return NextResponse.json(
         { error: 'Equipment not found' },
@@ -30,7 +30,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json()
-    const equipment = await DatabaseService.updateEquipment(id, body)
+    const equipment = await DatabaseService.updateEquipment(parseInt(id), body)
     return NextResponse.json(equipment)
   } catch (error) {
     return NextResponse.json(
@@ -46,7 +46,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await DatabaseService.deleteEquipment(id)
+    await DatabaseService.deleteEquipment(parseInt(id))
     return NextResponse.json({ message: 'Equipment deleted successfully' })
   } catch (error) {
     return NextResponse.json(

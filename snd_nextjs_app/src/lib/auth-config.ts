@@ -117,3 +117,6 @@ export const authConfig: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
+
+// Alias for backward compatibility
+export const authOptions = authConfig;

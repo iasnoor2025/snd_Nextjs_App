@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     // Get real counts from database
     const employeeCount = await prisma.employee.count();
     const customerCount = await prisma.customer?.count() || 0;
-    const itemCount = await prisma.item?.count() || 0;
+    // const itemCount = await prisma.item?.count() || 0; // Item model not available
 
     // Get last sync times (you might want to store these in a separate table)
     // For now, we'll return null for last sync times
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
         lastSync: null 
       },
       items: { 
-        count: itemCount, 
+        count: 0, // Item model not available
         lastSync: null 
       },
     };
