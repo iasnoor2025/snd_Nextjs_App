@@ -141,15 +141,29 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
     setSubmitting(true);
     try {
-      const response = await fetch(`/api/employees/${employeeId}/assignments/${selectedAssignment.id}`, {
+      console.log('🔄 Sending PUT request to update assignment:', {
+        employeeId,
+        assignmentId: selectedAssignment.id,
+        formData: {
+          ...formData,
+          id: selectedAssignment.id,
+        }
+      });
+      
+      const response = await fetch(`/api/employees/${employeeId}/assignments`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          id: selectedAssignment.id, // Include the assignment ID in the body
+        }),
       });
 
       if (response.ok) {
+        const responseData = await response.json();
+        console.log('✅ Assignment updated successfully:', responseData);
         toast.success('Assignment updated successfully');
         setShowEditDialog(false);
         setSelectedAssignment(null);
@@ -157,6 +171,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         fetchAssignments();
       } else {
         const errorData = await response.json();
+        console.error('❌ Failed to update assignment:', errorData);
         toast.error(errorData.error || 'Failed to update assignment');
       }
     } catch (error) {

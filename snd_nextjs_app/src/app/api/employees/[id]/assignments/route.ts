@@ -29,12 +29,19 @@ async function manageAssignmentStatuses(employeeId: number): Promise<void> {
     });
 
     // Update all assignments based on their position
-    for (const assignment of allAssignments) {
+    for (let i = 0; i < allAssignments.length; i++) {
+      const assignment = allAssignments[i];
       const isCurrent = assignment.id === currentAssignment.id;
+
+      console.log(`\n📝 Processing assignment ${assignment.name} (ID: ${assignment.id}):`);
+      console.log(`  Current status: ${assignment.status}`);
+      console.log(`  Current end_date: ${assignment.end_date}`);
+      console.log(`  Is current assignment: ${isCurrent}`);
 
       if (isCurrent) {
         // Current assignment should be active and have no end date
         if (assignment.status !== 'active' || assignment.end_date !== null) {
+          console.log(`  🔄 Updating current assignment to active with no end date`);
           await prisma.employeeAssignment.update({
             where: { id: assignment.id },
             data: {
@@ -42,13 +49,33 @@ async function manageAssignmentStatuses(employeeId: number): Promise<void> {
               end_date: null
             }
           });
+        } else {
+          console.log(`  ✅ Current assignment already correct`);
         }
       } else {
         // Previous assignments should be completed and have an end date
-        if (assignment.status !== 'completed' || assignment.end_date === null) {
-          // Set end date to the day before the current assignment starts
-          const endDate = new Date(currentAssignment.start_date);
-          endDate.setDate(endDate.getDate() - 1);
+        // Always update previous assignments to ensure end dates are correct
+          // Find the next assignment after this one to set the correct end date
+          let nextAssignment = null;
+          for (let j = i + 1; j < allAssignments.length; j++) {
+            if (allAssignments[j].start_date > assignment.start_date) {
+              nextAssignment = allAssignments[j];
+              break;
+            }
+          }
+
+          let endDate;
+          if (nextAssignment) {
+            // Set end date to the day before the next assignment starts
+            endDate = new Date(nextAssignment.start_date);
+            endDate.setDate(endDate.getDate() - 1);
+            console.log(`  🔄 Updating previous assignment to completed with end date: ${endDate.toISOString().slice(0, 10)} (day before ${nextAssignment.name})`);
+          } else {
+            // If no next assignment, set to the day before current assignment starts
+            endDate = new Date(currentAssignment.start_date);
+            endDate.setDate(endDate.getDate() - 1);
+            console.log(`  🔄 Updating previous assignment to completed with end date: ${endDate.toISOString().slice(0, 10)} (day before current assignment)`);
+          }
 
           await prisma.employeeAssignment.update({
             where: { id: assignment.id },
@@ -57,7 +84,7 @@ async function manageAssignmentStatuses(employeeId: number): Promise<void> {
               end_date: endDate
             }
           });
-        }
+          console.log(`  ✅ Updated previous assignment`);
       }
     }
   } catch (error) {
@@ -84,6 +111,11 @@ export async function GET(
         { status: 400 }
       );
     }
+
+    // Ensure assignment statuses are properly managed before fetching
+    console.log(`🔧 Managing assignment statuses for employee ${employeeId}...`);
+    await manageAssignmentStatuses(employeeId);
+    console.log(`✅ Assignment statuses managed for employee ${employeeId}`);
 
     // Fetch assignments from database
     const assignments = await prisma.employeeAssignment.findMany({
@@ -112,7 +144,7 @@ export async function GET(
     // Format assignments to match Laravel response
     const formattedAssignments = assignments.map(assignment => ({
       id: assignment.id,
-      name: assignment.name,
+      name: assignment.name, 
       type: assignment.type,
       location: assignment.location,
       start_date: assignment.start_date.toISOString().slice(0, 10),
@@ -248,6 +280,117 @@ export async function POST(
       {
         success: false,
         message: 'Failed to create assignment: ' + (error as Error).message
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const employeeId = parseInt(id);
+    const body = await request.json();
+
+    if (!employeeId) {
+      return NextResponse.json(
+        { error: "Invalid employee ID" },
+        { status: 400 }
+      );
+    }
+
+    // Check if employee exists
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+    });
+
+    if (!employee) {
+      return NextResponse.json(
+        { error: "Employee not found" },
+        { status: 404 }
+      );
+    }
+
+    // Validate required fields
+    if (!body.name || !body.start_date) {
+      return NextResponse.json(
+        { error: "Assignment name and start date are required" },
+        { status: 400 }
+      );
+    }
+
+    // Update assignment in database
+    const assignment = await prisma.employeeAssignment.update({
+      where: { id: body.id },
+      data: {
+        name: body.name,
+        type: body.type || 'manual',
+        location: body.location,
+        start_date: new Date(body.start_date),
+        end_date: body.end_date ? new Date(body.end_date) : null,
+        notes: body.notes,
+        project_id: body.project_id || null,
+        rental_id: body.rental_id || null,
+      },
+      include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        rental: {
+          select: {
+            id: true,
+            rental_number: true,
+          },
+        },
+      },
+    });
+
+    // Manage assignment statuses after updating assignment
+    console.log(`🔧 Managing assignment statuses after update for employee ${employeeId}...`);
+    await manageAssignmentStatuses(employeeId);
+    console.log(`✅ Assignment statuses managed after update for employee ${employeeId}`);
+
+    return NextResponse.json({
+      success: true,
+      message: 'Assignment updated successfully',
+      data: {
+        id: assignment.id,
+        name: assignment.name,
+        type: assignment.type,
+        location: assignment.location,
+        start_date: assignment.start_date.toISOString().slice(0, 10),
+        end_date: assignment.end_date?.toISOString().slice(0, 10) || null,
+        status: assignment.status,
+        notes: assignment.notes,
+        project_id: assignment.project_id,
+        rental_id: assignment.rental_id,
+        project: assignment.project,
+        rental: assignment.rental ? {
+          id: assignment.rental.id,
+          rental_number: assignment.rental.rental_number,
+          project_name: null, // We'll add this later if needed
+        } : null,
+        created_at: assignment.created_at.toISOString(),
+        updated_at: assignment.updated_at.toISOString(),
+      }
+    });
+  } catch (error) {
+    console.error('Error in PUT /api/employees/[id]/assignments:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Failed to update assignment: ' + (error as Error).message
       },
       { status: 500 }
     );
