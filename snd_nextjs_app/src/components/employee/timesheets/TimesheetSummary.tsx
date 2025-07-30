@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Loader2 } from "lucide-react";
 
 interface TimesheetRecord {
@@ -56,13 +58,13 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
   // Generate sample data for the selected month
   const generateDailyRecords = (year: number, month: number) => {
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
+
     return Array.from({ length: daysInMonth }, (_, i) => {
       const day = i + 1;
       const date = new Date(year, month, day);
       const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
       const isFriday = date.getDay() === 5;
-      
+
       return {
         date: date.toISOString().slice(0, 10),
         day: String(day),
@@ -195,99 +197,108 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
                   <h3 className="text-xs font-medium">Daily Timesheet Records</h3>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
                         {Array.from({ length: 31 }, (_, i) => {
                           const date = new Date(year, month, i + 1);
                           const isFridayDay = date.getDay() === 5;
                           return (
-                            <th
+                            <TableHead
                               key={i + 1}
-                              className={`p-1 text-center text-xs font-medium ${isFridayDay ? 'bg-blue-900 text-blue-200' : 'text-cyan-100'}`}
+                              className={`p-1 text-center text-xs font-medium border ${isFridayDay ? 'bg-blue-900 text-blue-200' : 'text-muted-foreground'
+                                }`}
                             >
                               {i + 1}
-                            </th>
+                            </TableHead>
                           );
                         })}
-                      </tr>
-                    </thead>
-                    <tbody>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {/* Days Row */}
-                      <tr className="border-b">
+                      <TableRow>
                         {Array.from({ length: daysInMonth }, (_, i) => {
                           const date = new Date(year, month, i + 1);
                           const dateString = date.toISOString().slice(0, 10);
                           const record = dailyRecords.find((r) => r.date === dateString);
                           const isFridayDay = date.getDay() === 5;
                           return (
-                            <td key={`day-${dateString}`} className={`p-1 text-center ${isFridayDay ? 'bg-blue-900' : ''}`}>
-                              <div className={`text-[10px] ${isFridayDay ? 'font-bold text-blue-200' : 'text-cyan-200'}`}>
+                            <TableCell key={`day-${dateString}`} className={`p-1 text-center border ${isFridayDay ? 'bg-blue-900' : ''}`}>
+                              <div className={`text-[10px] ${isFridayDay ? 'font-bold text-blue-200' : 'text-muted-foreground'}`}>
                                 {record ? record.dayName : ''}
                               </div>
-                            </td>
+                            </TableCell>
                           );
                         })}
-                      </tr>
+                      </TableRow>
                       {/* Regular Hours Row */}
-                      <tr className="border-b">
+                      <TableRow>
                         {Array.from({ length: daysInMonth }, (_, i) => {
                           const date = new Date(year, month, i + 1);
                           const dateString = date.toISOString().slice(0, 10);
                           const record = dailyRecords.find((r) => r.date === dateString);
                           const isFridayDay = date.getDay() === 5;
                           return (
-                            <td key={`regular-${dateString}`} className={`p-1 text-center ${isFridayDay ? 'bg-blue-900' : ''}`}>
+                            <TableCell key={`regular-${dateString}`} className={`p-1 text-center border ${isFridayDay ? 'bg-blue-900' : ''}`}>
                               {record && record.regularHours > 0 ? (
-                                <div className={`text-[10px] font-medium ${isFridayDay ? 'text-blue-200' : 'text-cyan-100'}`}>
+                                <div className={`text-[10px] font-medium ${isFridayDay ? 'text-blue-200' : 'text-foreground'}`}>
                                   {record.regularHours}h
                                 </div>
                               ) : (
-                                <div className={`text-[10px] ${isFridayDay ? 'text-blue-400' : 'text-cyan-700'}`}>-</div>
+                                <div className={`text-[10px] ${isFridayDay ? 'text-blue-400' : 'text-muted-foreground'}`}>-</div>
                               )}
-                            </td>
+                            </TableCell>
                           );
                         })}
-                      </tr>
+                      </TableRow>
                       {/* Overtime Hours Row */}
-                      <tr className="border-b">
+                      <TableRow>
                         {Array.from({ length: daysInMonth }, (_, i) => {
                           const date = new Date(year, month, i + 1);
                           const dateString = date.toISOString().slice(0, 10);
                           const record = dailyRecords.find((r) => r.date === dateString);
                           const isFridayDay = date.getDay() === 5;
                           return (
-                            <td key={`overtime-${dateString}`} className={`p-1 text-center ${isFridayDay ? 'bg-blue-900' : ''}`}>
+                            <TableCell key={`overtime-${dateString}`} className={`p-1 text-center border ${isFridayDay ? 'bg-blue-900' : ''}`}>
                               {record && record.overtimeHours > 0 ? (
-                                <div className={`text-[10px] font-medium ${isFridayDay ? 'text-blue-200' : 'text-amber-300'}`}>
+                                <div className={`text-[10px] font-medium ${isFridayDay ? 'text-blue-200' : 'text-orange-500'}`}>
                                   +{record.overtimeHours}h
                                 </div>
                               ) : (
-                                <div className={`text-[10px] ${isFridayDay ? 'text-blue-400' : 'text-cyan-700'}`}>-</div>
+                                <div className={`text-[10px] ${isFridayDay ? 'text-blue-400' : 'text-muted-foreground'}`}>-</div>
                               )}
-                            </td>
+                            </TableCell>
                           );
                         })}
-                      </tr>
+                      </TableRow>
                       {/* Status Row */}
-                      <tr className="border-b">
+                      <TableRow>
                         {Array.from({ length: daysInMonth }, (_, i) => {
                           const date = new Date(year, month, i + 1);
                           const dateString = date.toISOString().slice(0, 10);
                           const record = dailyRecords.find((r) => r.date === dateString);
                           const isFridayDay = date.getDay() === 5;
                           return (
-                            <td key={`status-${dateString}`} className={`p-1 text-center ${isFridayDay ? 'bg-blue-900' : ''}`}>
-                              <div
-                                className={`inline-block rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                            <TableCell key={`status-${dateString}`} className={`p-1 text-center border ${isFridayDay ? 'bg-blue-900' : ''}`}>
+                              <Badge
+                                variant={
                                   isFridayDay
-                                    ? 'bg-blue-800 text-blue-200'
+                                    ? 'secondary'
                                     : record && record.status === 'present'
-                                      ? 'bg-emerald-800 text-emerald-200'
+                                      ? 'default'
                                       : record && record.status === 'absent'
-                                        ? 'bg-red-800 text-red-200'
-                                        : 'bg-cyan-900 text-cyan-200'
-                                }`}
+                                        ? 'destructive'
+                                        : 'outline'
+                                }
+                                className={`text-[10px] font-bold ${isFridayDay
+                                    ? 'bg-blue-800 text-blue-200 border-blue-800'
+                                    : record && record.status === 'present'
+                                      ? 'bg-green-600 text-white border-green-600'
+                                      : record && record.status === 'absent'
+                                        ? 'bg-red-600 text-white border-red-600'
+                                        : 'bg-gray-600 text-white border-gray-600'
+                                  }`}
                               >
                                 {isFridayDay
                                   ? 'F'
@@ -296,13 +307,13 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
                                     : record && record.status === 'absent'
                                       ? 'A'
                                       : ''}
-                              </div>
-                            </td>
+                              </Badge>
+                            </TableCell>
                           );
                         })}
-                      </tr>
-                    </tbody>
-                  </table>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
             </CardContent>
