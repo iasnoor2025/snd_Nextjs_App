@@ -33,14 +33,14 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
     for (const assignment of assignments) {
       const employeeId = assignment.employee_id;
 
-      if (!assignment.startDate) {
+      if (!assignment.start_date) {
         errors.push(`Assignment ${assignment.id}: missing start date`);
         continue;
       }
 
-      const start = new Date(assignment.startDate);
+      const start = new Date(assignment.start_date);
       // Use assignment end date if set, otherwise use today
-      const end = assignment.endDate ? new Date(assignment.endDate) : today;
+      const end = assignment.end_date ? new Date(assignment.end_date) : today;
 
       // If start is after end, skip
       if (start > end) {
@@ -95,17 +95,22 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
           assignment_id: assignment.id,
         };
 
-        // Add project or rental assignment
-        if (assignment.type === 'project' && assignment.project_id) { 
-          timesheetData.project_id = assignment.project_id;
-        }
-        if (assignment.type === 'rental' && assignment.rental_id) {
-          timesheetData.rental_id = assignment.rental_id;
-        }
+        // Add project or rental assignment based on available IDs
 
         // Create the timesheet
         await prisma.timesheet.create({
-          data: timesheetData,
+          data: {
+            employee_id: employeeId,
+            date: currentDate,
+            status: 'draft',
+            hours_worked: hoursWorked,
+            overtime_hours: overtimeHours,
+            start_time: new Date(currentDate.getTime() + 6 * 60 * 60 * 1000), // 6 AM
+            end_time: new Date(currentDate.getTime() + 16 * 60 * 60 * 1000), // 4 PM
+            assignment_id: assignment.id,
+            project_id: assignment.project_id || null,
+            rental_id: assignment.rental_id || null,
+          },
         });
 
         created++;

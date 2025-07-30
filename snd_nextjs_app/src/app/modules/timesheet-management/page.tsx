@@ -581,6 +581,10 @@ function TimesheetManagementContent() {
             </Can>
 
             <Can action="create" subject="Timesheet">
+              <AutoGenerateButton />
+            </Can>
+
+            <Can action="create" subject="Timesheet">
               <Link href="/modules/timesheet-management/create">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
