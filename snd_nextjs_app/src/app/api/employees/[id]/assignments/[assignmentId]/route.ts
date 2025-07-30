@@ -45,7 +45,7 @@ async function manageAssignmentStatuses(employeeId: string): Promise<void> {
 
     if (isCurrent) {
       // Current assignment should be active and have no end date
-      if (assignment.status !== 'active' || assignment.endDate !== null) {
+      if (assignment.status !== 'active' || assignment.end_date !== null) {
         console.log('Updating current assignment status', {
           assignmentId: assignment.id,
           oldStatus: assignment.status,
@@ -56,13 +56,13 @@ async function manageAssignmentStatuses(employeeId: string): Promise<void> {
           where: { id: assignment.id },
           data: {
             status: 'active',
-            endDate: null
+            end_date: null
           },
         });
       }
     } else {
       // Previous assignments should be completed and have an end date
-      if (assignment.status !== 'completed' || assignment.endDate === null) {
+      if (assignment.status !== 'completed' || assignment.end_date === null) {
         // Set end date to the day before the current assignment starts
         const endDate = new Date(currentAssignment.start_date);
         endDate.setDate(endDate.getDate() - 1);
@@ -78,7 +78,7 @@ async function manageAssignmentStatuses(employeeId: string): Promise<void> {
           where: { id: assignment.id },
           data: {
             status: 'completed',
-            endDate: endDate
+            end_date: endDate
           },
         });
       }
@@ -100,7 +100,7 @@ export async function PUT(
     // Check if assignment exists and belongs to this employee
     const existingAssignment = await prisma.employeeAssignment.findFirst({
       where: {
-        id: assignmentId,
+        id: parseInt(assignmentId),
         employee_id: parseInt(employeeId),
         status: "active",
       },
@@ -115,24 +115,15 @@ export async function PUT(
 
     // Update the assignment
     const updatedAssignment = await prisma.employeeAssignment.update({
-      where: { id: assignmentId },
+      where: { id: parseInt(assignmentId) },
       data: {
-        name: name || existingAssignment.name,
-        startDate: startDate ? new Date(startDate) : existingAssignment.startDate,
-        endDate: null, // Always null for current assignment
-        location: location || existingAssignment.location,
+        start_date: startDate ? new Date(startDate) : existingAssignment.start_date,
+        end_date: null, // Always null for current assignment
         notes: notes || existingAssignment.notes,
-        projectId: projectId && projectId !== 'none' ? projectId : null,
-        rentalId: rentalId && rentalId !== 'none' ? rentalId : null,
+        project_id: projectId && projectId !== 'none' ? parseInt(projectId) : null,
+        rental_id: rentalId && rentalId !== 'none' ? parseInt(rentalId) : null,
       },
       include: {
-        assignedBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
         project: {
           select: {
             id: true,
@@ -143,7 +134,7 @@ export async function PUT(
         rental: {
           select: {
             id: true,
-            rentalNumber: true,
+            rental_number: true,
             status: true,
           },
         },
@@ -179,9 +170,8 @@ export async function DELETE(
     // Check if assignment exists and belongs to this employee
     const existingAssignment = await prisma.employeeAssignment.findFirst({
       where: {
-        id: assignmentId,
+        id: parseInt(assignmentId),
         employee_id: parseInt(employeeId),
-        deleted_at: null,
       },
     });
 
@@ -194,7 +184,7 @@ export async function DELETE(
 
     // Soft delete the assignment
     await prisma.employeeAssignment.update({
-      where: { id: assignmentId },
+      where: { id: parseInt(assignmentId) },
       data: {
         status: "deleted",
       },
