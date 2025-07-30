@@ -25,14 +25,10 @@ export async function GET(request: NextRequest) {
               user: true,
             },
           },
-          project: true,
+          project_rel: true,
           rental: true,
           assignment: true,
-          foremanApprover: true,
-          inchargeApprover: true,
-          checkingApprover: true,
-          managerApprover: true,
-          rejector: true,
+          approved_by_user: true,
         },
       });
 
@@ -51,8 +47,8 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       where.OR = [
-        { employee: { firstName: { contains: search, mode: 'insensitive' } } },
-        { employee: { lastName: { contains: search, mode: 'insensitive' } } },
+        { employee: { first_name: { contains: search, mode: 'insensitive' } } },
+        { employee: { last_name: { contains: search, mode: 'insensitive' } } },
         { employee: { employee_id: { contains: search, mode: 'insensitive' } } },
       ];
     }
@@ -91,14 +87,10 @@ export async function GET(request: NextRequest) {
               user: true,
             },
           },
-          project: true,
+          project_rel: true,
           rental: true,
           assignment: true,
-          foremanApprover: true,
-          inchargeApprover: true,
-          checkingApprover: true,
-          managerApprover: true,
-          rejector: true,
+          approved_by_user: true,
         },
       }),
       prisma.timesheet.count({ where }),

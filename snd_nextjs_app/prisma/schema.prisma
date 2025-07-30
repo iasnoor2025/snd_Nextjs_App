@@ -160,8 +160,8 @@ model Employee {
   created_at                         DateTime                    @default(now())
   updated_at                         DateTime                    @updatedAt
   deleted_at                         DateTime?
-  advance_payments                   AdvancePayment[]
   advance_payment_histories          AdvancePaymentHistory[]
+  advance_payments                   AdvancePayment[]
   employee_assignments               EmployeeAssignment[]
   employee_documents                 EmployeeDocument[]
   employee_leaves                    EmployeeLeave[]
@@ -192,17 +192,17 @@ model Employee {
 model EmployeeAssignment {
   id          Int         @id @default(autoincrement())
   employee_id Int
-  name        String?
-  type        String      @default("manual") // manual, project, rental
   project_id  Int?
   rental_id   Int?
-  location    String?
   start_date  DateTime
   end_date    DateTime?
   status      String      @default("active")
   notes       String?
   created_at  DateTime    @default(now())
   updated_at  DateTime    @updatedAt
+  location    String?
+  name        String?
+  type        String      @default("manual")
   employee    Employee    @relation(fields: [employee_id], references: [id])
   project     Project?    @relation(fields: [project_id], references: [id])
   rental      Rental?     @relation(fields: [rental_id], references: [id])
@@ -212,12 +212,12 @@ model EmployeeAssignment {
 }
 
 model AdvancePayment {
-  id                Int       @id @default(autoincrement())
+  id                Int                     @id @default(autoincrement())
   employee_id       Int
-  amount            Decimal   @db.Decimal(10, 2)
+  amount            Decimal                 @db.Decimal(10, 2)
   purpose           String
   reason            String?
-  status            String    @default("pending")
+  status            String                  @default("pending")
   approved_by       Int?
   approved_at       DateTime?
   rejected_by       Int?
@@ -225,35 +225,31 @@ model AdvancePayment {
   rejection_reason  String?
   repayment_date    DateTime?
   estimated_months  Int?
-  monthly_deduction Decimal?  @db.Decimal(10, 2)
+  monthly_deduction Decimal?                @db.Decimal(10, 2)
   payment_date      DateTime?
-  repaid_amount     Decimal   @db.Decimal(10, 2) @default(0)
-  created_at        DateTime  @default(now())
-  updated_at        DateTime  @updatedAt
+  repaid_amount     Decimal                 @default(0) @db.Decimal(10, 2)
+  created_at        DateTime                @default(now())
+  updated_at        DateTime                @updatedAt
   deleted_at        DateTime?
-
-  // Relations
-  employee          Employee  @relation(fields: [employee_id], references: [id])
-  payment_histories  AdvancePaymentHistory[]
+  payment_histories AdvancePaymentHistory[]
+  employee          Employee                @relation(fields: [employee_id], references: [id])
 
   @@map("advance_payments")
 }
 
 model AdvancePaymentHistory {
-  id                Int       @id @default(autoincrement())
+  id                 Int            @id @default(autoincrement())
   advance_payment_id Int
-  employee_id       Int
-  amount            Decimal   @db.Decimal(10, 2)
-  payment_date      DateTime
-  notes             String?
-  recorded_by       Int?
-  created_at        DateTime  @default(now())
-  updated_at        DateTime  @updatedAt
-  deleted_at        DateTime?
-
-  // Relations
-  advance_payment   AdvancePayment @relation(fields: [advance_payment_id], references: [id])
-  employee          Employee        @relation(fields: [employee_id], references: [id])
+  employee_id        Int
+  amount             Decimal        @db.Decimal(10, 2)
+  payment_date       DateTime
+  notes              String?
+  recorded_by        Int?
+  created_at         DateTime       @default(now())
+  updated_at         DateTime       @updatedAt
+  deleted_at         DateTime?
+  advance_payment    AdvancePayment @relation(fields: [advance_payment_id], references: [id])
+  employee           Employee       @relation(fields: [employee_id], references: [id])
 
   @@map("advance_payment_histories")
 }

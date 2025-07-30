@@ -55,18 +55,18 @@ export async function GET(request: NextRequest) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: parseInt(userId) },
       select: {
         id: true,
         name: true,
         email: true,
-        role: true,
+        role_id: true,
         avatar: true,
         locale: true,
-        lastLoginAt: true,
+        last_login_at: true,
         isActive: true,
-        createdAt: true,
-        updatedAt: true,
+        created_at: true,
+        updated_at: true,
       },
     });
 
@@ -77,20 +77,21 @@ export async function GET(request: NextRequest) {
         data: {
           name: 'Test User',
           email: 'test@example.com',
-          role: 'ADMIN',
+          password: 'password123',
+          role_id: 1,
           isActive: true,
         },
         select: {
           id: true,
           name: true,
           email: true,
-          role: true,
+          role_id: true,
           avatar: true,
           locale: true,
-          lastLoginAt: true,
+          last_login_at: true,
           isActive: true,
-          createdAt: true,
-          updatedAt: true,
+          created_at: true,
+          updated_at: true,
         },
       });
 
@@ -101,12 +102,12 @@ export async function GET(request: NextRequest) {
         email: testUser.email,
         phone: '',
         avatar: testUser.avatar || '',
-        role: testUser.role,
+        role: testUser.role_id,
         department: 'General',
         location: '',
         bio: 'This is a test user created for demonstration purposes.',
-        joinDate: testUser.createdAt.toISOString(),
-        lastLogin: testUser.lastLoginAt?.toISOString() || testUser.createdAt.toISOString(),
+        joinDate: testUser.created_at.toISOString(),
+        lastLogin: testUser.last_login_at?.toISOString() || testUser.created_at.toISOString(),
         status: testUser.isActive ? 'active' : 'inactive',
         firstName: '',
         middleName: '',
@@ -123,12 +124,12 @@ export async function GET(request: NextRequest) {
 
     // Get employee data if exists
     const employee = await prisma.employee.findFirst({
-      where: { userId: user.id },
+      where: { user_id: parseInt(user.id.toString()) },  
       select: {
         id: true,
-        firstName: true,
-        middleName: true,
-        lastName: true,
+        first_name: true,
+        middle_name: true,
+        last_name: true,
         phone: true,
         address: true,
         city: true,
@@ -156,24 +157,24 @@ export async function GET(request: NextRequest) {
       try {
         finalEmployee = await prisma.employee.create({
           data: {
-            userId: user.id,
-            employeeId: `EMP${Date.now()}`,
-            firstName: user.name?.split(' ')[0] || 'Admin',
-            lastName: user.name?.split(' ').slice(1).join(' ') || 'User',
+            user_id: user.id,
+            employee_id: `EMP${Date.now()}`,
+            first_name: user.name?.split(' ')[0] || 'Admin',
+            last_name: user.name?.split(' ').slice(1).join(' ') || 'User',
             phone: '+1 (555) 123-4567',
             address: '123 Admin Street',
             city: 'Admin City',
             state: 'Admin State',
             country: 'Admin Country',
-            hireDate: new Date(),
-            basicSalary: 50000,
+            hire_date: new Date(),
+            basic_salary: 50000,
             status: 'active',
           },
           select: {
             id: true,
-            firstName: true,
-            middleName: true,
-            lastName: true,
+            first_name: true,
+            middle_name: true,
+            last_name: true,
             phone: true,
             address: true,
             city: true,
@@ -204,19 +205,19 @@ export async function GET(request: NextRequest) {
       email: user.email,
       phone: finalEmployee?.phone || '',
       avatar: user.avatar || '',
-      role: user.role,
+      role: user.role_id,
       department: finalEmployee?.department?.name || 'General',
       location: finalEmployee?.city && finalEmployee?.state
         ? `${finalEmployee.city}, ${finalEmployee.state}`
         : finalEmployee?.country || '',
       bio: '', // Could be added to user model later
-      joinDate: user.createdAt.toISOString(),
-      lastLogin: user.lastLoginAt?.toISOString() || user.createdAt.toISOString(),
+      joinDate: user.created_at.toISOString(),
+      lastLogin: user.last_login_at?.toISOString() || user.created_at.toISOString(),
       status: user.isActive ? 'active' : 'inactive',
       // Employee specific fields
-      firstName: finalEmployee?.firstName || '',
-      middleName: finalEmployee?.middleName || '',
-      lastName: finalEmployee?.lastName || '',
+      firstName: finalEmployee?.first_name || '',
+      middleName: finalEmployee?.middle_name || '',
+      lastName: finalEmployee?.last_name || '',
       designation: finalEmployee?.designation?.name || '',
       address: finalEmployee?.address || '',
       city: finalEmployee?.city || '',
@@ -230,7 +231,7 @@ export async function GET(request: NextRequest) {
 
         // Return session user data on any error
     const sessionProfile = {
-      id: session?.user?.id || "error-user",
+      id: session?.user?.id || "error-user",  
       name: session?.user?.name || "Authenticated User",
       email: session?.user?.email || "",
       phone: "",
@@ -303,7 +304,7 @@ export async function PUT(request: NextRequest) {
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id },
+      where: { id: parseInt(userId) },
     });
 
     if (!existingUser) {
@@ -329,7 +330,7 @@ export async function PUT(request: NextRequest) {
 
     // Update user
     const updatedUser = await prisma.user.update({
-      where: { id },
+      where: { id: parseInt(userId) },
       data: {
         name,
         email,
@@ -338,18 +339,18 @@ export async function PUT(request: NextRequest) {
         id: true,
         name: true,
         email: true,
-        role: true,
+        role_id: true,
         avatar: true,
-        lastLoginAt: true,
+        last_login_at: true,
         isActive: true,
-        createdAt: true,
-        updatedAt: true,
+        created_at: true,
+        updated_at: true,
       },
     });
 
     // Update or create employee record
     let employee = await prisma.employee.findFirst({
-      where: { userId: userId },
+      where: { user_id: parseInt(userId) },
     });
 
     console.log('Found existing employee:', employee);
@@ -360,9 +361,9 @@ export async function PUT(request: NextRequest) {
       employee = await prisma.employee.update({
         where: { id: employee.id },
         data: {
-          firstName: firstName || employee.firstName,
-          middleName: middleName || employee.middleName,
-          lastName: lastName || employee.lastName,
+          first_name: firstName || employee.first_name,
+          middle_name: middleName || employee.middle_name,
+          last_name: lastName || employee.last_name,
           phone: phone || employee.phone,
           address: address || employee.address,
           city: city || employee.city,
@@ -384,18 +385,18 @@ export async function PUT(request: NextRequest) {
       console.log('Creating new employee record...');
       employee = await prisma.employee.create({
         data: {
-          userId: userId,
-          employeeId: `EMP${Date.now()}`, // Generate employee ID
-          firstName: firstName || '',
-          middleName: middleName || '',
-          lastName: lastName || '',
+          user_id: parseInt(userId),
+          employee_id: `EMP${Date.now()}`, // Generate employee ID
+          first_name: firstName || '',
+          middle_name: middleName || '',
+          last_name: lastName || '',
           phone: phone || '',
           address: address || '',
           city: city || '',
           state: state || '',
           country: country || '',
-          hireDate: new Date(),
-          basicSalary: 50000,
+          hire_date: new Date(),
+          basic_salary: 50000,
           status: 'active',
         },
         include: {
@@ -417,19 +418,19 @@ export async function PUT(request: NextRequest) {
       email: updatedUser.email,
       phone: employee?.phone || '',
       avatar: updatedUser.avatar || '',
-      role: updatedUser.role,
-      department: employee?.department?.name || 'General',
+      role: updatedUser.role_id,
+      department: employee?.department_id?.name || 'General', 
       location: employee?.city && employee?.state
         ? `${employee.city}, ${employee.state}`
         : employee?.country || '',
       bio: '',
-      joinDate: updatedUser.createdAt.toISOString(),
-      lastLogin: updatedUser.lastLoginAt?.toISOString() || updatedUser.createdAt.toISOString(),
+      joinDate: updatedUser.created_at.toISOString(),
+      lastLogin: updatedUser.last_login_at?.toISOString() || updatedUser.created_at.toISOString(),
       status: updatedUser.isActive ? 'active' : 'inactive',
-      firstName: employee?.firstName || '',
-      middleName: employee?.middleName || '',
-      lastName: employee?.lastName || '',
-      designation: employee?.designation?.name || '',
+      firstName: employee?.first_name || '',
+      middleName: employee?.middle_name || '',
+      lastName: employee?.last_name || '',
+      designation: employee?.designation_id?.name || '', 
       address: employee?.address || '',
       city: employee?.city || '',
       state: employee?.state || '',

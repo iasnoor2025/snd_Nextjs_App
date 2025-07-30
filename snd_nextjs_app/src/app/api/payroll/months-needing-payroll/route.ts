@@ -72,7 +72,8 @@ export async function GET(request: NextRequest) {
         name: current.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
         has_approved_timesheets: timesheets.length > 0,
         has_existing_payroll: !!existingPayroll,
-        needs_payroll: timesheets.length > 0 && !existingPayroll
+        needs_payroll: timesheets.length > 0 && !existingPayroll,
+        employeeCount: 1 // Since we're checking for a specific employee
       };
 
       months.push(monthData);
@@ -84,7 +85,7 @@ export async function GET(request: NextRequest) {
       data: months,
       employee: {
         id: employee.id,
-        name: employee.fullName,
+        name: `${employee.first_name} ${employee.middle_name || ''} ${employee.last_name}`.trim(),
         employee_id: employee.file_number
       }
     });
