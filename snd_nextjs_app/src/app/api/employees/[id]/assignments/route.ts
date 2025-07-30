@@ -41,7 +41,6 @@ export async function GET(
           select: {
             id: true,
             rental_number: true,
-            project_name: true,
           },
         },
       },
@@ -63,7 +62,11 @@ export async function GET(
       project_id: assignment.project_id,
       rental_id: assignment.rental_id,
       project: assignment.project,
-      rental: assignment.rental,
+      rental: assignment.rental ? {
+        id: assignment.rental.id,
+        rental_number: assignment.rental.rental_number,
+        project_name: null, // We'll add this later if needed
+      } : null,
       created_at: assignment.created_at.toISOString(),
       updated_at: assignment.updated_at.toISOString(),
     }));
@@ -151,7 +154,6 @@ export async function POST(
           select: {
             id: true,
             rental_number: true,
-            project_name: true,
           },
         },
       },
@@ -162,9 +164,9 @@ export async function POST(
       message: 'Assignment created successfully',
       data: {
         id: assignment.id,
-        name: assignment.name,
-        type: assignment.type,
-        location: assignment.location,
+        name: assignment.name, 
+        type: assignment.type, 
+        location: assignment.location, 
         start_date: assignment.start_date.toISOString().slice(0, 10),
         end_date: assignment.end_date?.toISOString().slice(0, 10) || null,
         status: assignment.status,

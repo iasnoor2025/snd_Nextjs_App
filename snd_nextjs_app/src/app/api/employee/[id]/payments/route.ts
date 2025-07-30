@@ -54,7 +54,18 @@ export async function GET(
     });
 
     // Group payments by month
-    const monthlyHistory = paymentHistory.reduce((acc, payment) => {
+    const monthlyHistory = paymentHistory.reduce((acc: Record<string, {
+      month: string;
+      total_amount: number;
+      payments: Array<{
+        id: number;
+        amount: number;
+        payment_date: string;
+        notes: string | null;
+        recorded_by: string;
+        advance_payment_id: number;
+      }>;
+    }>, payment) => {
       const monthKey = new Date(payment.payment_date).toISOString().slice(0, 7); // YYYY-MM
       const monthName = new Date(payment.payment_date).toLocaleDateString('en-US', { 
         month: 'long', 
@@ -72,7 +83,7 @@ export async function GET(
       acc[monthKey].total_amount += Number(payment.amount);
       acc[monthKey].payments.push({
         id: payment.id,
-        amount: payment.amount,
+        amount: Number(payment.amount),
         payment_date: payment.payment_date.toISOString().slice(0, 10), // YYYY-MM-DD
         notes: payment.notes,
         recorded_by: 'System', // TODO: Add user lookup

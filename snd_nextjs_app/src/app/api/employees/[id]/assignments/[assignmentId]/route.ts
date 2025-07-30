@@ -69,7 +69,12 @@ export async function PUT(
           select: {
             id: true,
             rental_number: true,
-            project_name: true,
+            project: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },

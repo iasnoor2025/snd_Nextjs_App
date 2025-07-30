@@ -240,7 +240,7 @@ export async function POST(
 
     // Process the payment
     payroll.status = 'paid';
-    payroll.paid_by = 1; // Mock user ID
+    payroll.paid_by = 1 as number | null; // Mock user ID
     payroll.paid_at = new Date().toISOString();
     payroll.payment_method = payment_method;
     payroll.payment_reference = reference || null;
