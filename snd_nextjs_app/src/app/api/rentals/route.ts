@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { DatabaseService } from '@/lib/database'
-import { PaymentStatus } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -64,7 +63,7 @@ export async function POST(request: NextRequest) {
       expectedEndDate: body.expectedEndDate ? new Date(body.expectedEndDate) : undefined,
       actualEndDate: body.actualEndDate ? new Date(body.actualEndDate) : undefined,
       status: body.status || 'pending',
-      paymentStatus: (body.paymentStatus || 'pending') as PaymentStatus,
+      paymentStatus: (body.paymentStatus || 'pending'),
       subtotal: parseFloat(body.subtotal) || 0,
       taxAmount: parseFloat(body.taxAmount) || 0,
       totalAmount: parseFloat(body.totalAmount) || 0,

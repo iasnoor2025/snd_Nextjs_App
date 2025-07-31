@@ -110,7 +110,7 @@ export default function TaskDialog({
 
   const loadEmployees = async () => {
     try {
-      const response = await apiService.getEmployees();
+      const response = await apiService.get<{ data: Employee[] }>('/employees');
       setEmployees(response.data || []);
     } catch (error) {
       // API service already handles fallback to mock data
@@ -162,12 +162,14 @@ export default function TaskDialog({
         type: 'tasks'
       };
 
+      // TODO: Project resource endpoints don't exist yet
+      // Implement these when the endpoints become available
       if (initialData?.id) {
-        await apiService.updateProjectResource(projectId, initialData.id, submitData);
-        toast.success('Task updated successfully');
+        // await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
+        toast.success('Task update feature not implemented yet');
       } else {
-        await apiService.addProjectResource(projectId, submitData);
-        toast.success('Task added successfully');
+        // await apiService.post(`/projects/${projectId}/resources`, submitData);
+        toast.success('Task add feature not implemented yet');
       }
 
       onSuccess();

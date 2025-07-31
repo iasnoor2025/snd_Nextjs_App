@@ -164,12 +164,12 @@ export default function ProjectResourcesPage() {
       setLoading(true);
 
       // Fetch project details
-      const projectResponse = await apiService.getProject(projectId);
+      const projectResponse = await apiService.get<{ data: Project }>(`/projects/${projectId}`);
       setProject(projectResponse.data);
 
-      // Fetch resources
-      const resourcesResponse = await apiService.getProjectResources(projectId);
-      setResources(resourcesResponse.data || []);
+      // TODO: Project resources endpoint doesn't exist yet
+      // Implement this when the endpoint becomes available
+      setResources([]);
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -256,9 +256,10 @@ export default function ProjectResourcesPage() {
 
     try {
       setLoading(true);
-      await apiService.deleteProjectResource(projectId, resource.id);
-      toast.success('Resource deleted successfully');
-      fetchData();
+      // TODO: Project resource delete endpoint doesn't exist yet
+      // await apiService.delete(`/projects/${projectId}/resources/${resource.id}`);
+      toast.success('Resource delete feature not implemented yet');
+      // fetchData();
     } catch (error) {
       console.error('Error deleting resource:', error);
       toast.error('Failed to delete resource');
@@ -698,11 +699,13 @@ export default function ProjectResourcesPage() {
                   const resource = resources.find(r => r.id === task.id);
                   if (resource) {
                     try {
-                      await apiService.updateProjectResource(projectId, task.id, {
-                        ...resource,
-                        status
-                      });
-                      handleResourceSuccess();
+                      // TODO: Project resource update endpoint doesn't exist yet
+                      // await apiService.put(`/projects/${projectId}/resources/${task.id}`, {
+                      //   ...resource,
+                      //   status
+                      // });
+                      toast.success('Task status update feature not implemented yet');
+                      // handleResourceSuccess();
                     } catch (error) {
                       console.error('Error updating task status:', error);
                       toast.error('Failed to update task status');
@@ -713,11 +716,13 @@ export default function ProjectResourcesPage() {
                   const resource = resources.find(r => r.id === task.id);
                   if (resource) {
                     try {
-                      await apiService.updateProjectResource(projectId, task.id, {
-                        ...resource,
-                        completion_percentage: percentage
-                      });
-                      handleResourceSuccess();
+                      // TODO: Project resource update endpoint doesn't exist yet
+                      // await apiService.put(`/projects/${projectId}/resources/${task.id}`, {
+                      //   ...resource,
+                      //   completion_percentage: percentage
+                      // });
+                      toast.success('Task completion update feature not implemented yet');
+                      // handleResourceSuccess();
                     } catch (error) {
                       console.error('Error updating task completion:', error);
                       toast.error('Failed to update task completion');

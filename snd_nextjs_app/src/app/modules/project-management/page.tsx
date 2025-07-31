@@ -611,47 +611,13 @@ export default function ProjectManagementPage() {
       {/* Pagination */}
       {projects && projects.last_page > 1 && (
         <div className="flex justify-center mt-6">
-          <Pagination>
-            {projects.prev_page_url && (
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  size="sm"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setCurrentPage(projects.current_page - 1);
-                  }}
-                />
-              </PaginationItem>
-            )}
-            {Array.from({ length: projects.last_page }, (_, i) => i + 1).map((page) => (
-              <PaginationItem key={page}>
-                <PaginationLink
-                  href="#"
-                  size="sm"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setCurrentPage(page);
-                  }}
-                  isActive={page === projects.current_page}
-                >
-                  {page}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-            {projects.next_page_url && (
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  size="sm"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setCurrentPage(projects.current_page + 1);
-                  }}
-                />
-              </PaginationItem>
-            )}
-          </Pagination>
+          <Pagination
+            currentPage={projects.current_page}
+            totalPages={projects.last_page}
+            totalItems={projects.total}
+            itemsPerPage={projects.per_page}
+            onPageChange={setCurrentPage}
+          />
         </div>
       )}
 

@@ -30,8 +30,8 @@ export async function POST(request: NextRequest) {
 
     // Check if user has permission to approve at this stage
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      include: { roles: true }
+      where: { id: parseInt(session.user.id) },
+      include: { user_roles: true }
     });
 
     if (!user) {
@@ -79,16 +79,16 @@ export async function POST(request: NextRequest) {
 
     switch (approvalStage) {
       case 'foreman':
-        hasPermission = userRole === 'FOREMAN' || userRole === 'ADMIN';
+        hasPermission = userRole === 'FOREMAN' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
         break;
       case 'incharge':
-        hasPermission = userRole === 'TIMESHEET_INCHARGE' || userRole === 'ADMIN';
+        hasPermission = userRole === 'TIMESHEET_INCHARGE' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
         break;
       case 'checking':
-        hasPermission = userRole === 'TIMESHEET_CHECKER' || userRole === 'ADMIN';
+        hasPermission = userRole === 'TIMESHEET_CHECKER' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
         break;
       case 'manager':
-        hasPermission = userRole === 'MANAGER' || userRole === 'ADMIN';
+        hasPermission = userRole === 'MANAGER' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
         break;
     }
 
@@ -135,10 +135,7 @@ export async function POST(request: NextRequest) {
             user: true
           }
         },
-        foremanApprover: true,
-        inchargeApprover: true,
-        checkingApprover: true,
-        managerApprover: true
+        approved_by_user: true
       }
     });
 

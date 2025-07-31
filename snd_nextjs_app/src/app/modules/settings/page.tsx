@@ -404,49 +404,13 @@ export default function SettingsPage() {
                 {Math.min(settings.current_page * settings.per_page, settings.total)} of{" "}
                 {settings.total} results
               </div>
-              <Pagination>
-                <PaginationContent>
-                  {settings.prev_page_url && (
-                    <PaginationItem>
-                      <PaginationPrevious
-                        href="#"
-                        size="sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(settings.current_page - 1);
-                        }}
-                      />
-                    </PaginationItem>
-                  )}
-                  {Array.from({ length: settings.last_page }, (_, i) => i + 1).map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        href="#"
-                        size="sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(page);
-                        }}
-                        isActive={page === settings.current_page}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  {settings.next_page_url && (
-                    <PaginationItem>
-                      <PaginationNext
-                        href="#"
-                        size="sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(settings.current_page + 1);
-                        }}
-                      />
-                    </PaginationItem>
-                  )}
-                </PaginationContent>
-              </Pagination>
+              <Pagination
+                currentPage={settings.current_page}
+                totalPages={settings.last_page}
+                totalItems={settings.total}
+                itemsPerPage={settings.per_page}
+                onPageChange={setCurrentPage}
+              />
             </div>
           )}
         </CardContent>

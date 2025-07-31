@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     // Check if timesheet belongs to the current user's employee record
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: parseInt(session.user.id) },
       include: { employees: true }
     });
 
@@ -44,11 +44,12 @@ export async function POST(request: NextRequest) {
     const userEmployeeIds = user.employees.map(emp => emp.id);
     const canSubmit = userEmployeeIds.includes(timesheet.employeeId) ||
                      session.user.role === 'ADMIN' ||
-                     session.user.role === 'MANAGER';
+                     session.user.role === 'MANAGER' ||
+                     session.user.role === 'SUPER_ADMIN';
 
     if (!canSubmit) {
       return NextResponse.json({
-        error: 'You can only submit your own timesheets or have admin/manager permissions'
+        error: 'You can only submit your own timesheets or have admin/manager/super_admin permissions'
       }, { status: 403 });
     }
 

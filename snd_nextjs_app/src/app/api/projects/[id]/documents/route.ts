@@ -10,28 +10,22 @@ export async function GET(
   try {
     const { id: projectId } = await params;
 
-    const documents = await prisma.projectDocument.findMany({
-      where: { projectId },
-      include: {
-        uploader: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
+    const documents = await prisma.media.findMany({
+      where: { 
+        model_type: 'Project',
+        model_id: parseInt(projectId)
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { created_at: 'desc' }
     });
 
     // Transform the data to match the frontend expectations
     const transformedDocuments = documents.map(doc => ({
       id: doc.id,
-      name: doc.name,
-      type: doc.fileType || 'Unknown',
-      uploaded_by: doc.uploader?.name || 'Unknown',
-      uploaded_at: doc.createdAt.toISOString(),
-      size: doc.fileSize ? `${(doc.fileSize / 1024 / 1024).toFixed(1)} MB` : 'Unknown'
+      name: doc.file_name,
+      type: doc.mime_type || 'Unknown',
+      uploaded_by: 'Unknown', // Media model doesn't have uploader relation
+      uploaded_at: doc.created_at.toISOString(),
+      size: doc.file_size ? `${(doc.file_size / 1024 / 1024).toFixed(1)} MB` : 'Unknown'
     }));
 
     return NextResponse.json({ data: transformedDocuments });
@@ -52,28 +46,15 @@ export async function POST(
     const { id: projectId } = await params;
     const body = await request.json();
 
-    const document = await prisma.projectDocument.create({
+    const document = await prisma.media.create({
       data: {
-        projectId,
-        userId: body.user_id,
-        name: body.name,
-        description: body.description,
-        category: body.category,
-        filePath: body.file_path,
-        fileSize: body.file_size,
-        fileType: body.file_type,
-        uploadedBy: body.uploaded_by,
-        isShared: body.is_shared || false,
-        metadata: body.metadata || {}
-      },
-      include: {
-        uploader: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
+        file_name: body.name,
+        file_path: body.file_path,
+        file_size: body.file_size,
+        mime_type: body.file_type,
+        model_type: 'Project',
+        model_id: parseInt(projectId),
+        collection: body.category || 'documents'
       }
     });
 

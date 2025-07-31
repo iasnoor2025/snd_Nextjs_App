@@ -22,18 +22,18 @@ export async function POST(request: NextRequest) {
       try {
         const timesheet = await prisma.timesheet.create({
           data: {
-            employeeId: timesheetData.employeeId,
+            employee_id: timesheetData.employeeId,
             date: new Date(timesheetData.date),
-            hoursWorked: parseFloat(timesheetData.hoursWorked || '0'),
-            overtimeHours: parseFloat(timesheetData.overtimeHours || '0'),
-            startTime: timesheetData.startTime || '08:00',
-            endTime: timesheetData.endTime,
+            hours_worked: parseFloat(timesheetData.hoursWorked || '0'),
+            overtime_hours: parseFloat(timesheetData.overtimeHours || '0'),
+            start_time: timesheetData.startTime ? new Date(timesheetData.startTime) : new Date(),
+            end_time: timesheetData.endTime ? new Date(timesheetData.endTime) : null,
             status: 'draft',
-            projectId: timesheetData.projectId || null,
-            rentalId: timesheetData.rentalId || null,
-            assignmentId: timesheetData.assignmentId || null,
+            project_id: timesheetData.projectId || null,
+            rental_id: timesheetData.rentalId || null,
+            assignment_id: timesheetData.assignmentId || null,
             description: timesheetData.description,
-            tasksCompleted: timesheetData.tasksCompleted,
+            tasks: timesheetData.tasksCompleted,
           },
         });
 

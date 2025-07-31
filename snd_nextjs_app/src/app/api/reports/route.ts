@@ -1,56 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const search = searchParams.get('search') || '';
-    const status = searchParams.get('status') || '';
-    const type = searchParams.get('type') || '';
-
-    const skip = (page - 1) * limit;
-
-    const where: any = {};
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { created_by: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    if (status && status !== 'all') {
-      where.status = status;
-    }
-
-    if (type && type !== 'all') {
-      where.type = type;
-    }
-
-    const [reports, total] = await Promise.all([
-      prisma.report.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
-      }),
-      prisma.report.count({ where }),
-    ]);
-
-    const totalPages = Math.ceil(total / limit);
-
+    // TODO: Implement reports when Report model is added to schema
+    // For now, return empty array
     return NextResponse.json({
-      data: reports,
-      current_page: page,
-      last_page: totalPages,
-      per_page: limit,
-      total,
-      next_page_url: page < totalPages ? `/api/reports?page=${page + 1}` : null,
-      prev_page_url: page > 1 ? `/api/reports?page=${page - 1}` : null,
+      data: [],
+      current_page: 1,
+      last_page: 1,
+      per_page: 10,
+      total: 0,
+      next_page_url: null,
+      prev_page_url: null,
     });
   } catch (error) {
     console.error('Error fetching reports:', error);
@@ -63,31 +24,11 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const {
-      name,
-      type,
-      status,
-      created_by,
-      schedule,
-      parameters,
-      description,
-    } = body;
-
-    const report = await prisma.report.create({
-      data: {
-        name,
-        type,
-        status,
-        created_by,
-        schedule,
-        parameters: parameters ? JSON.stringify(parameters) : null,
-        description,
-        last_generated: null,
-      },
-    });
-
-    return NextResponse.json(report, { status: 201 });
+    // TODO: Implement report creation when Report model is added to schema
+    return NextResponse.json(
+      { error: 'Reports not implemented yet' },
+      { status: 501 }
+    );
   } catch (error) {
     console.error('Error creating report:', error);
     return NextResponse.json(
@@ -99,32 +40,11 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json();
-    const {
-      id,
-      name,
-      type,
-      status,
-      created_by,
-      schedule,
-      parameters,
-      description,
-    } = body;
-
-    const report = await prisma.report.update({
-      where: { id },
-      data: {
-        name,
-        type,
-        status,
-        created_by,
-        schedule,
-        parameters: parameters ? JSON.stringify(parameters) : null,
-        description,
-      },
-    });
-
-    return NextResponse.json(report);
+    // TODO: Implement report update when Report model is added to schema
+    return NextResponse.json(
+      { error: 'Reports not implemented yet' },
+      { status: 501 }
+    );
   } catch (error) {
     console.error('Error updating report:', error);
     return NextResponse.json(
@@ -136,14 +56,11 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { id } = body;
-
-    await prisma.report.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({ message: 'Report deleted successfully' });
+    // TODO: Implement report deletion when Report model is added to schema
+    return NextResponse.json(
+      { error: 'Reports not implemented yet' },
+      { status: 501 }
+    );
   } catch (error) {
     console.error('Error deleting report:', error);
     return NextResponse.json(

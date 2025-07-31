@@ -8,7 +8,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const rental = await DatabaseService.getRental(id);
+    const rental = await DatabaseService.getRental(parseInt(id));
 
     if (!rental) {
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
@@ -20,31 +20,18 @@ export async function POST(
 
     // Update rental with completion information
     const updatedRental = await prisma.rental.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
-        actualEndDate: new Date().toISOString(),
+        actual_end_date: new Date(),
         status: 'completed',
-        completedAt: new Date().toISOString(),
-        statusLogs: {
-          create: {
-            oldStatus: rental.status,
-            newStatus: 'completed',
-            changedBy: 'system',
-            reason: 'Rental completed'
-          }
-        }
+        completed_at: new Date(),
       },
       include: {
         customer: true,
-        rentalItems: {
+        rental_items: {
           include: {
             equipment: true
           }
-        },
-        payments: true,
-        invoices: true,
-        statusLogs: {
-          orderBy: { createdAt: 'desc' }
         }
       }
     });

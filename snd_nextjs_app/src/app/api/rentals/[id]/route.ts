@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const rental = await DatabaseService.getRental(id)
+    const rental = await DatabaseService.getRental(parseInt(id))
 
     if (!rental) {
       return NextResponse.json(
@@ -72,7 +72,7 @@ export async function PUT(
       rentalItems: body.rentalItems || [],
     }
 
-    const rental = await DatabaseService.updateRental(id, updateData)
+    const rental = await DatabaseService.updateRental(parseInt(id), updateData)
 
     if (!rental) {
       return NextResponse.json(
@@ -97,7 +97,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const success = await DatabaseService.deleteRental(id)
+    const success = await DatabaseService.deleteRental(parseInt(id))
 
     if (!success) {
       return NextResponse.json(

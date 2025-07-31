@@ -439,7 +439,7 @@ export default function UserManagementPage() {
                     <CardTitle>Users</CardTitle>
                     <CardDescription>Manage system users and their roles</CardDescription>
                   </div>
-                  <Can I="create" a="User">
+                  <Can action="create" subject="User">
                     <Button onClick={() => setIsCreateUserDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
                       New User
@@ -496,12 +496,12 @@ export default function UserManagementPage() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Can I="update" a="User">
+                            <Can action="update" subject="User">
                               <Button size="sm" variant="outline" onClick={() => openEditUserDialog(user)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </Can>
-                            <Can I="delete" a="User">
+                            <Can action="delete" subject="User">
                               <Button size="sm" variant="outline">
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -525,7 +525,7 @@ export default function UserManagementPage() {
                     <CardTitle>Roles</CardTitle>
                     <CardDescription>Manage system roles and their permissions</CardDescription>
                   </div>
-                  <Can I="create" a="User">
+                  <Can action="create" subject="User">
                     <Button onClick={() => setIsCreateRoleDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
                       New Role
@@ -589,12 +589,12 @@ export default function UserManagementPage() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Can I="update" a="User">
+                            <Can action="update" subject="User">
                               <Button size="sm" variant="outline" onClick={() => openEditRoleDialog(role)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </Can>
-                            <Can I="delete" a="User">
+                            <Can action="delete" subject="User">
                               <Button size="sm" variant="outline">
                                 <Trash2 className="h-4 w-4" />
                               </Button>

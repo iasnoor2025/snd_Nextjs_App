@@ -130,12 +130,14 @@ export default function ExpenseDialog({
         total_cost: formData.amount || 0
       };
 
+      // TODO: Project resource endpoints don't exist yet
+      // Implement these when the endpoints become available
       if (initialData?.id) {
-        await apiService.updateProjectResource(projectId, initialData.id, submitData);
-        toast.success('Expense resource updated successfully');
+        // await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
+        toast.success('Expense resource update feature not implemented yet');
       } else {
-        await apiService.addProjectResource(projectId, submitData);
-        toast.success('Expense resource added successfully');
+        // await apiService.post(`/projects/${projectId}/resources`, submitData);
+        toast.success('Expense resource add feature not implemented yet');
       }
 
       onSuccess();

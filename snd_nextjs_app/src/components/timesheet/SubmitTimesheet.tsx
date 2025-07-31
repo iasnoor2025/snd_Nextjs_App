@@ -44,6 +44,7 @@ export default function SubmitTimesheet({ timesheet, onStatusChange }: SubmitTim
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           timesheetId: timesheet.id,
           notes

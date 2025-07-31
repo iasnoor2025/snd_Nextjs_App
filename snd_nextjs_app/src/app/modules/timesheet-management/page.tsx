@@ -173,7 +173,9 @@ function TimesheetManagementContent() {
         ...(month && month !== 'all' && { month }),
       });
 
-      const response = await fetch(`/api/timesheets?${params}`);
+      const response = await fetch(`/api/timesheets?${params}`, {
+        credentials: 'include',
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch timesheets');
       }
@@ -266,6 +268,7 @@ function TimesheetManagementContent() {
         headers: {
           'x-user-role': userRole,
         },
+        credentials: 'include',
       });
 
       const data = await response.json();
@@ -321,6 +324,7 @@ function TimesheetManagementContent() {
           'Content-Type': 'application/json',
           'x-user-role': userRole,
         },
+        credentials: 'include',
         body: JSON.stringify({
           timesheetIds: bulkDeleteDialog.timesheets.map(t => t.id)
         }),
@@ -369,6 +373,13 @@ function TimesheetManagementContent() {
   const executeBulkAction = async () => {
     if (!bulkActionDialog.action || selectedTimesheets.length === 0) return;
 
+    console.log('🔍 BULK ACTION - Starting bulk action:', {
+      action: bulkActionDialog.action,
+      selectedTimesheets,
+      userRole: user?.role,
+      notes: bulkActionDialog.notes
+    });
+
     setBulkActionLoading(true);
     try {
       const response = await fetch('/api/timesheets/bulk-approve', {
@@ -376,6 +387,7 @@ function TimesheetManagementContent() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           timesheetIds: selectedTimesheets,
           action: bulkActionDialog.action,
@@ -384,6 +396,7 @@ function TimesheetManagementContent() {
       });
 
       const data = await response.json();
+      console.log('🔍 BULK ACTION - Response:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to process timesheets');
@@ -394,6 +407,7 @@ function TimesheetManagementContent() {
       setBulkActionDialog({ open: false, action: null, notes: '' });
       fetchTimesheets(); // Refresh the list
     } catch (error) {
+      console.error('🔍 BULK ACTION - Error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to process timesheets');
     } finally {
       setBulkActionLoading(false);
@@ -418,50 +432,65 @@ function TimesheetManagementContent() {
 
   const canApproveTimesheet = (timesheet: Timesheet) => {
     // Check if timesheet is in a state that can be approved
-    const canProcess = ['draft', 'submitted', 'foreman_approved', 'incharge_approved', 'checking_approved'].includes(timesheet.status);
-    if (!canProcess) return false;
+    // Include 'pending' status which is the default in database
+    const canProcess = ['pending', 'draft', 'submitted', 'foreman_approved', 'incharge_approved', 'checking_approved'].includes(timesheet.status);
+    if (!canProcess) {
+      console.log(`🔍 APPROVAL CHECK - Timesheet ${timesheet.id} cannot be processed. Status: ${timesheet.status}`);
+      return false;
+    }
+
+    // Get user role from RBAC context
+    const userRole = user?.role || 'USER';
 
     // For draft timesheets, check submission permissions
     if (timesheet.status === 'draft') {
-      // For now, we'll use a simple role check - in a real app, you'd get the user's role from session
-      const userRole = 'ADMIN'; // This should come from your auth context
-      return ['ADMIN', 'MANAGER'].includes(userRole);
+      const canSubmit = ['ADMIN', 'MANAGER', 'SUPER_ADMIN'].includes(userRole);
+      console.log(`🔍 APPROVAL CHECK - Draft timesheet ${timesheet.id}: userRole=${userRole}, canSubmit=${canSubmit}`);
+      return canSubmit;
     }
 
     // Define approval workflow stages and who can approve at each stage
+    // Include 'pending' as equivalent to 'submitted' for approval purposes
     const approvalWorkflow = {
-      submitted: ['FOREMAN', 'MANAGER', 'ADMIN'],
-      foreman_approved: ['INCHARGE', 'MANAGER', 'ADMIN'],
-      incharge_approved: ['CHECKING', 'MANAGER', 'ADMIN'],
-      checking_approved: ['MANAGER', 'ADMIN']
+      pending: ['FOREMAN', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
+      submitted: ['FOREMAN', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
+      foreman_approved: ['INCHARGE', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
+      incharge_approved: ['CHECKING', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
+      checking_approved: ['MANAGER', 'ADMIN', 'SUPER_ADMIN']
     };
 
     const allowedRoles = approvalWorkflow[timesheet.status as keyof typeof approvalWorkflow];
-    if (!allowedRoles) return false;
+    if (!allowedRoles) {
+      console.log(`🔍 APPROVAL CHECK - No workflow defined for status: ${timesheet.status}`);
+      return false;
+    }
 
-    // For now, we'll use a simple role check - in a real app, you'd get the user's role from session
-    const userRole = 'ADMIN'; // This should come from your auth context
-    return allowedRoles.includes(userRole);
+    const canApprove = allowedRoles.includes(userRole);
+    console.log(`🔍 APPROVAL CHECK - Timesheet ${timesheet.id}: status=${timesheet.status}, userRole=${userRole}, allowedRoles=${allowedRoles.join(',')}, canApprove=${canApprove}`);
+    return canApprove;
   };
 
   const canRejectTimesheet = (timesheet: Timesheet) => {
     // Check if timesheet is in a state that can be rejected
-    const canProcess = ['submitted', 'foreman_approved', 'incharge_approved', 'checking_approved'].includes(timesheet.status);
+    // Include 'pending' status which is the default in database
+    const canProcess = ['pending', 'submitted', 'foreman_approved', 'incharge_approved', 'checking_approved'].includes(timesheet.status);
     if (!canProcess) return false;
+
+    // Get user role from RBAC context
+    const userRole = user?.role || 'USER';
 
     // Any role that can approve can also reject
     const approvalWorkflow = {
-      submitted: ['FOREMAN', 'MANAGER', 'ADMIN'],
-      foreman_approved: ['INCHARGE', 'MANAGER', 'ADMIN'],
-      incharge_approved: ['CHECKING', 'MANAGER', 'ADMIN'],
-      checking_approved: ['MANAGER', 'ADMIN']
+      pending: ['FOREMAN', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
+      submitted: ['FOREMAN', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
+      foreman_approved: ['INCHARGE', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
+      incharge_approved: ['CHECKING', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
+      checking_approved: ['MANAGER', 'ADMIN', 'SUPER_ADMIN']
     };
 
     const allowedRoles = approvalWorkflow[timesheet.status as keyof typeof approvalWorkflow];
     if (!allowedRoles) return false;
 
-    // For now, we'll use a simple role check - in a real app, you'd get the user's role from session
-    const userRole = 'ADMIN'; // This should come from your auth context
     return allowedRoles.includes(userRole);
   };
 
@@ -482,8 +511,8 @@ function TimesheetManagementContent() {
   const canApproveSelected = selectedTimesheetsData.some(t => canApproveTimesheet(t));
   const canRejectSelected = selectedTimesheetsData.some(t => canRejectTimesheet(t));
 
-  // Get user role from session or context
-  const userRole = 'USER' as string; // This should come from your auth context/session
+  // Get user role from RBAC context
+  const userRole = user?.role || 'USER';
 
   // Extract unique projects for filter
   const projects = useMemo(() => {
@@ -1073,47 +1102,13 @@ function TimesheetManagementContent() {
 
       {timesheets && (
         <div className="mt-6 flex justify-center">
-          <Pagination>
-            {timesheets.prev_page_url && (
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  size="sm"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setCurrentPage(timesheets.current_page - 1);
-                  }}
-                />
-              </PaginationItem>
-            )}
-            {Array.from({ length: timesheets.last_page }, (_, i) => i + 1).map((page) => (
-              <PaginationItem key={page}>
-                <PaginationLink
-                  href="#"
-                  size="sm"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setCurrentPage(page);
-                  }}
-                  isActive={page === timesheets.current_page}
-                >
-                  {page}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-            {timesheets.next_page_url && (
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  size="sm"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setCurrentPage(timesheets.current_page + 1);
-                  }}
-                />
-              </PaginationItem>
-            )}
-          </Pagination>
+          <Pagination
+            currentPage={timesheets.current_page}
+            totalPages={timesheets.last_page}
+            totalItems={timesheets.total}
+            itemsPerPage={timesheets.per_page}
+            onPageChange={setCurrentPage}
+          />
         </div>
       )}
 

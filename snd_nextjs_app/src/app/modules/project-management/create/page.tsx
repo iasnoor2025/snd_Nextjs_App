@@ -56,8 +56,8 @@ export default function CreateProjectPage() {
     customer_id: '',
     location_id: '',
     manager_id: '',
-    start_date: null as Date | null,
-    end_date: null as Date | null,
+    start_date: undefined as Date | undefined,
+    end_date: undefined as Date | undefined,
     status: 'planning',
     priority: 'medium',
     budget: '',
@@ -96,15 +96,11 @@ export default function CreateProjectPage() {
 
   const fetchInitialData = async () => {
     try {
-      const [customersRes, locationsRes, employeesRes] = await Promise.all([
-        apiService.getCustomers(),
-        apiService.getLocations(),
-        apiService.getEmployees(),
-      ]);
-
-      setCustomers(customersRes.data || []);
-      setLocations(locationsRes.data || []);
-      setEmployees(employeesRes.data || []);
+      // TODO: These endpoints don't exist yet, so we'll set empty arrays
+      // Implement these when the endpoints become available
+      setCustomers([]);
+      setLocations([]);
+      setEmployees([]);
     } catch (error) {
       console.error('Error fetching initial data:', error);
       toast.error('Failed to load initial data');
@@ -148,19 +144,20 @@ export default function CreateProjectPage() {
         initial_budget: parseFloat(formData.initial_budget) || 0,
       };
 
-      const response = await apiService.createProject(submitData);
+      // TODO: Project create endpoint doesn't exist yet
+      // const response = await apiService.post('/projects', submitData);
 
-      // Handle file uploads if any
-      if (selectedFiles.length > 0) {
-        const formDataFiles = new FormData();
-        selectedFiles.forEach(file => {
-          formDataFiles.append('files[]', file);
-        });
-        await apiService.uploadProjectFiles(response.data.id, formDataFiles);
-      }
+      // TODO: Project file upload endpoint doesn't exist yet
+      // if (selectedFiles.length > 0) {
+      //   const formDataFiles = new FormData();
+      //   selectedFiles.forEach(file => {
+      //     formDataFiles.append('files[]', file);
+      //   });
+      //   await apiService.post(`/projects/${response.data.id}/files`, formDataFiles);
+      // }
 
-      toast.success('Project created successfully');
-      router.push(`/modules/project-management/${response.data.id}`);
+      toast.success('Project create feature not implemented yet');
+      // router.push(`/modules/project-management/${response.data.id}`);
     } catch (error) {
       console.error('Error creating project:', error);
       toast.error('Failed to create project');

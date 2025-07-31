@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
         include: {
           rentals: {
             include: {
@@ -54,11 +54,11 @@ export async function GET(request: NextRequest) {
       name: project.name,
       client: project.rentals[0]?.customer?.name || 'Unknown Client',
       status: project.status,
-      priority: project.priority || 'medium',
-      start_date: project.startDate?.toISOString() || '',
-      end_date: project.endDate?.toISOString() || '',
+      priority: 'medium', // Default value since priority field doesn't exist
+      start_date: project.start_date?.toISOString() || '',
+      end_date: project.end_date?.toISOString() || '',
       budget: Number(project.budget) || 0,
-      progress: Number(project.progress) || 0,
+      progress: 0, // Default value since progress field doesn't exist
     }));
 
     const totalPages = Math.ceil(total / limit);
@@ -101,12 +101,10 @@ export async function POST(request: NextRequest) {
         name,
         description,
         status,
-        priority,
-        startDate: start_date ? new Date(start_date) : null,
-        endDate: end_date ? new Date(end_date) : null,
+        start_date: start_date ? new Date(start_date) : null,
+        end_date: end_date ? new Date(end_date) : null,
         budget: budget ? parseFloat(budget) : null,
-        progress: progress ? parseFloat(progress) : null,
-        managerId: manager_id,
+        notes: body.notes,
       },
     });
 
@@ -142,12 +140,10 @@ export async function PUT(request: NextRequest) {
         name,
         description,
         status,
-        priority,
-        startDate: start_date ? new Date(start_date) : null,
-        endDate: end_date ? new Date(end_date) : null,
+        start_date: start_date ? new Date(start_date) : null,
+        end_date: end_date ? new Date(end_date) : null,
         budget: budget ? parseFloat(budget) : null,
-        progress: progress ? parseFloat(progress) : null,
-        managerId: manager_id,
+        notes: body.notes,
       },
     });
 

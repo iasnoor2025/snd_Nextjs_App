@@ -212,46 +212,13 @@ export default function CompanyManagementPage() {
                 {Math.min(companies.pagination.page * companies.pagination.limit, companies.pagination.total)} of{" "}
                 {companies.pagination.total} results
               </div>
-              <Pagination>
-                <PaginationContent>
-                  {companies.pagination.page > 1 && (
-                    <PaginationItem>
-                      <PaginationPrevious
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(companies.pagination.page - 1);
-                        }}
-                      />
-                    </PaginationItem>
-                  )}
-                  {Array.from({ length: companies.pagination.totalPages }, (_, i) => i + 1).map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(page);
-                        }}
-                        isActive={page === companies.pagination.page}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  {companies.pagination.page < companies.pagination.totalPages && (
-                    <PaginationItem>
-                      <PaginationNext
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(companies.pagination.page + 1);
-                        }}
-                      />
-                    </PaginationItem>
-                  )}
-                </PaginationContent>
-              </Pagination>
+              <Pagination
+                currentPage={companies.pagination.page}
+                totalPages={companies.pagination.totalPages}
+                totalItems={companies.pagination.total}
+                itemsPerPage={companies.pagination.limit}
+                onPageChange={setCurrentPage}
+              />
             </div>
           )}
         </CardContent>

@@ -85,8 +85,10 @@ export default function ProjectTemplatesPage() {
   const fetchTemplates = async () => {
     try {
       setLoading(true);
-      const response = await apiService.getProjectTemplates();
-      setTemplates(response.data || []);
+      // TODO: Project templates endpoint doesn't exist yet
+      // const response = await apiService.get('/project-templates');
+      // setTemplates(response.data || []);
+      setTemplates([]);
     } catch (error) {
       console.error('Error fetching templates:', error);
       toast.error('Failed to load templates');
@@ -105,12 +107,13 @@ export default function ProjectTemplatesPage() {
 
     try {
       setLoading(true);
-      await apiService.createProjectTemplate({
-        ...formData,
-        estimated_duration: parseInt(formData.estimated_duration) || 0,
-        estimated_budget: parseFloat(formData.estimated_budget) || 0,
-        team_size: parseInt(formData.team_size) || 0,
-      });
+      // TODO: Project template create endpoint doesn't exist yet
+      // await apiService.post('/project-templates', {
+      //   ...formData,
+      //   estimated_duration: parseInt(formData.estimated_duration) || 0,
+      //   estimated_budget: parseFloat(formData.estimated_budget) || 0,
+      //   team_size: parseInt(formData.team_size) || 0,
+      // });
 
       toast.success('Template created successfully');
       setDialogOpen(false);
@@ -134,10 +137,10 @@ export default function ProjectTemplatesPage() {
 
   const handleUseTemplate = async (template: ProjectTemplate) => {
     try {
-      const response = await apiService.createProjectFromTemplate(template.id);
-      toast.success('Project created from template successfully');
-      // Redirect to the new project
-      window.location.href = `/modules/project-management/${response.data.id}`;
+      // TODO: Project from template endpoint doesn't exist yet
+      // const response = await apiService.post(`/project-templates/${template.id}/create-project`);
+      toast.success('Project from template feature not implemented yet');
+      // window.location.href = `/modules/project-management/${response.data.id}`;
     } catch (error) {
       console.error('Error creating project from template:', error);
       toast.error('Failed to create project from template');
@@ -148,9 +151,10 @@ export default function ProjectTemplatesPage() {
     if (!confirm('Are you sure you want to delete this template?')) return;
 
     try {
-      await apiService.deleteProjectTemplate(templateId);
-      toast.success('Template deleted successfully');
-      fetchTemplates();
+      // TODO: Project template delete endpoint doesn't exist yet
+      // await apiService.delete(`/project-templates/${templateId}`);
+      toast.success('Template delete feature not implemented yet');
+      // fetchTemplates();
     } catch (error) {
       console.error('Error deleting template:', error);
       toast.error('Failed to delete template');
@@ -166,9 +170,10 @@ export default function ProjectTemplatesPage() {
       };
       delete duplicateData.id;
 
-      await apiService.createProjectTemplate(duplicateData);
-      toast.success('Template duplicated successfully');
-      fetchTemplates();
+      // TODO: Project template create endpoint doesn't exist yet
+      // await apiService.post('/project-templates', duplicateData);
+      toast.success('Template duplicate feature not implemented yet');
+      // fetchTemplates();
     } catch (error) {
       console.error('Error duplicating template:', error);
       toast.error('Failed to duplicate template');

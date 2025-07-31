@@ -19,11 +19,11 @@ export async function GET(
     }
 
     const role = await prisma.role.findUnique({
-      where: { id },
+      where: { id: parseInt(id) },
       include: {
         _count: {
           select: {
-            users: true,
+            user_roles: true,
           },
         },
       },
@@ -39,11 +39,11 @@ export async function GET(
     const roleWithUserCount = {
       id: role.id,
       name: role.name,
-      description: role.description,
-      permissions: role.permissions,
-      isActive: role.isActive,
-      createdAt: role.createdAt,
-      userCount: role._count.users,
+      description: '', // Role model doesn't have description field
+      permissions: [], // Role model doesn't have permissions field
+      isActive: true, // Role model doesn't have isActive field
+      createdAt: role.created_at,
+      userCount: role._count.user_roles,
     };
 
     return NextResponse.json(roleWithUserCount);
@@ -82,7 +82,7 @@ export async function PUT(
 
     // Check if role exists
     const existingRole = await prisma.role.findUnique({
-      where: { id },
+      where: { id: parseInt(id) },
     });
 
     if (!existingRole) {
@@ -108,17 +108,14 @@ export async function PUT(
 
     // Update role
     const updatedRole = await prisma.role.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
         name: body.name,
-        description: body.description || existingRole.description,
-        permissions: body.permissions || existingRole.permissions,
-        isActive: body.isActive !== undefined ? body.isActive : existingRole.isActive,
       },
       include: {
         _count: {
           select: {
-            users: true,
+            user_roles: true,
           },
         },
       },
@@ -127,11 +124,11 @@ export async function PUT(
     const roleWithUserCount = {
       id: updatedRole.id,
       name: updatedRole.name,
-      description: updatedRole.description,
-      permissions: updatedRole.permissions,
-      isActive: updatedRole.isActive,
-      createdAt: updatedRole.createdAt,
-      userCount: updatedRole._count.users,
+      description: '', // Role model doesn't have description field
+      permissions: [], // Role model doesn't have permissions field
+      isActive: true, // Role model doesn't have isActive field
+      createdAt: updatedRole.created_at,
+      userCount: updatedRole._count.user_roles,
     };
 
     return NextResponse.json(roleWithUserCount);

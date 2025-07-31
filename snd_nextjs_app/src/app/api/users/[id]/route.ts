@@ -19,15 +19,15 @@ export async function GET(
     }
 
     const user = await prisma.user.findUnique({
-      where: { id },
+      where: { id: parseInt(id) },
       select: {
         id: true,
         name: true,
         email: true,
-        role: true,
+        role_id: true,
         isActive: true,
-        createdAt: true,
-        lastLoginAt: true,
+        created_at: true,
+        last_login_at: true,
       },
     });
 
@@ -74,7 +74,7 @@ export async function PUT(
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
-      where: { id },
+      where: { id: parseInt(id) },
     });
 
     if (!existingUser) {
@@ -86,21 +86,21 @@ export async function PUT(
 
     // Update user
     const updatedUser = await prisma.user.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
         name: body.name,
         email: body.email,
-        role: body.role || existingUser.role,
+        role_id: body.role_id || existingUser.role_id,
         isActive: body.isActive !== undefined ? body.isActive : existingUser.isActive,
       },
       select: {
         id: true,
         name: true,
         email: true,
-        role: true,
+        role_id: true,
         isActive: true,
-        createdAt: true,
-        lastLoginAt: true,
+        created_at: true,
+        last_login_at: true,
       },
     });
 

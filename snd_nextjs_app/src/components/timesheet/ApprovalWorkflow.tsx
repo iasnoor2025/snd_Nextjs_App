@@ -103,6 +103,7 @@ export default function ApprovalWorkflow({ timesheet, userRole, onStatusChange }
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           timesheetId: timesheet.id,
           approvalStage,
@@ -138,6 +139,7 @@ export default function ApprovalWorkflow({ timesheet, userRole, onStatusChange }
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           timesheetId: timesheet.id,
           rejectionReason: rejectionReason.trim(),

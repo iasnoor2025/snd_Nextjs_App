@@ -108,19 +108,17 @@ export default function ProjectPlanningPage() {
   const fetchProjectData = async () => {
     try {
       setLoading(true);
-      const [projectRes, milestonesRes, tasksRes, resourcesRes, budgetRes] = await Promise.all([
-        apiService.getProject(projectId),
-        apiService.getProjectMilestones(projectId),
-        apiService.getProjectTasks(projectId),
-        apiService.getProjectResources(projectId),
-        apiService.getProjectBudget(projectId),
-      ]);
-
+      
+      // Fetch project details
+      const projectRes = await apiService.get<{ data: Project }>(`/projects/${projectId}`);
       setProject(projectRes.data);
-      setMilestones(milestonesRes.data || []);
-      setTasks(tasksRes.data || []);
-      setResources(resourcesRes.data || []);
-      setBudgetItems(budgetRes.data || []);
+      
+      // TODO: These endpoints don't exist yet, so we'll set empty arrays
+      // Implement these when the endpoints become available
+      setMilestones([]);
+      setTasks([]);
+      setResources([]);
+      setBudgetItems([]);
     } catch (error) {
       console.error('Error fetching project data:', error);
       toast.error('Failed to load project data');

@@ -10,33 +10,9 @@ export async function GET(
   try {
     const { id: projectId } = await params;
 
-    const tasks = await prisma.projectTask.findMany({
-      where: { projectId },
-      include: {
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-
-    // Transform the data to match the frontend expectations
-    const transformedTasks = tasks.map(task => ({
-      id: task.id,
-      name: task.title,
-      description: task.description || '',
-      status: task.status,
-      priority: task.priority,
-      assigned_to: task.assignedTo?.name || 'Unassigned',
-      due_date: task.dueDate?.toISOString() || '',
-      progress: task.completionPercentage
-    }));
-
-    return NextResponse.json({ data: transformedTasks });
+    // TODO: Implement project tasks when ProjectTask model is added to schema
+    // For now, return empty array
+    return NextResponse.json({ data: [] });
   } catch (error) {
     console.error('Error fetching project tasks:', error);
     return NextResponse.json(
@@ -54,29 +30,11 @@ export async function POST(
     const { id: projectId } = await params;
     const body = await request.json();
 
-    const task = await prisma.projectTask.create({
-      data: {
-        projectId,
-        title: body.name,
-        description: body.description,
-        status: body.status || 'pending',
-        priority: body.priority || 'medium',
-        dueDate: body.due_date ? new Date(body.due_date) : null,
-        completionPercentage: body.progress || 0,
-        assignedToId: body.assigned_to_id
-      },
-      include: {
-        assignedTo: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        }
-      }
-    });
-
-    return NextResponse.json({ data: task }, { status: 201 });
+    // TODO: Implement project task creation when ProjectTask model is added to schema
+    return NextResponse.json(
+      { error: 'Project tasks not implemented yet' },
+      { status: 501 }
+    );
   } catch (error) {
     console.error('Error creating project task:', error);
     return NextResponse.json(

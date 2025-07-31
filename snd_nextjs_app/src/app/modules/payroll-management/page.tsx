@@ -142,6 +142,10 @@ export default function PayrollManagementPage() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [generateEmployee, setGenerateEmployee] = useState<string>("all");
+  const [generateStartMonth, setGenerateStartMonth] = useState<string>("");
+  const [generateEndMonth, setGenerateEndMonth] = useState<string>("");
+  const [employeeFilter, setEmployeeFilter] = useState<string>("all");
 
   // Get allowed actions for payroll management
   const allowedActions = getAllowedActions('Payroll');
@@ -914,7 +918,7 @@ export default function PayrollManagementPage() {
               </Table>
 
               {/* Pagination */}
-              {payrolls?.last_page > 1 && (
+              {payrolls && payrolls.last_page > 1 && (
                 <div className="mt-4">
                   <Pagination
                     currentPage={currentPage}

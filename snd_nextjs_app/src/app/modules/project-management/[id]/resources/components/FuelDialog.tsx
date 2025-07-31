@@ -101,7 +101,7 @@ export default function FuelDialog({
 
   const loadEquipment = async () => {
     try {
-      const response = await apiService.getEquipment();
+      const response = await apiService.get<{ data: Equipment[] }>('/equipment');
       setEquipment(response.data || []);
     } catch (error) {
       console.error('Error loading equipment:', error);
@@ -179,12 +179,14 @@ export default function FuelDialog({
         total_cost: (formData.liters || 0) * (formData.price_per_liter || 0)
       };
 
+      // TODO: Project resource endpoints don't exist yet
+      // Implement these when the endpoints become available
       if (initialData?.id) {
-        await apiService.updateProjectResource(projectId, initialData.id, submitData);
-        toast.success('Fuel resource updated successfully');
+        // await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
+        toast.success('Fuel resource update feature not implemented yet');
       } else {
-        await apiService.addProjectResource(projectId, submitData);
-        toast.success('Fuel resource added successfully');
+        // await apiService.post(`/projects/${projectId}/resources`, submitData);
+        toast.success('Fuel resource add feature not implemented yet');
       }
 
       onSuccess();

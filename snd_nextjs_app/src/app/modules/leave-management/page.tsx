@@ -470,49 +470,13 @@ export default function LeaveManagementPage() {
                 {Math.min(leaveRequests.current_page * leaveRequests.per_page, leaveRequests.total)} of{" "}
                 {leaveRequests.total} results
               </div>
-              <Pagination>
-                <PaginationContent>
-                  {leaveRequests.prev_page_url && (
-                    <PaginationItem>
-                      <PaginationPrevious
-                        href="#"
-                        size="sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(leaveRequests.current_page - 1);
-                        }}
-                      />
-                    </PaginationItem>
-                  )}
-                  {Array.from({ length: leaveRequests.last_page }, (_, i) => i + 1).map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        href="#"
-                        size="sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(page);
-                        }}
-                        isActive={page === leaveRequests.current_page}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  {leaveRequests.next_page_url && (
-                    <PaginationItem>
-                      <PaginationNext
-                        href="#"
-                        size="sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(leaveRequests.current_page + 1);
-                        }}
-                      />
-                    </PaginationItem>
-                  )}
-                </PaginationContent>
-              </Pagination>
+              <Pagination
+                currentPage={leaveRequests.current_page}
+                totalPages={leaveRequests.last_page}
+                totalItems={leaveRequests.total}
+                itemsPerPage={leaveRequests.per_page}
+                onPageChange={setCurrentPage}
+              />
             </div>
           )}
         </CardContent>

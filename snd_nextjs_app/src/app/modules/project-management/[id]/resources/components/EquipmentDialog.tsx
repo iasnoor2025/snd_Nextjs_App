@@ -99,7 +99,7 @@ export default function EquipmentDialog({
 
   const loadEquipment = async () => {
     try {
-      const response = await apiService.getEquipment();
+      const response = await apiService.get<{ data: Equipment[] }>('/equipment');
       setEquipment(response.data || []);
     } catch (error) {
       console.error('Error loading equipment:', error);
@@ -124,7 +124,7 @@ export default function EquipmentDialog({
       setFormData(prev => ({
         ...prev,
         usage_hours: usageHours,
-        total_cost: (prev.hourly_rate * usageHours) + (prev.maintenance_cost || 0)
+        total_cost: ((prev.hourly_rate || 0) * usageHours) + (prev.maintenance_cost || 0)
       }));
     }
   }, [formData.start_date, formData.end_date, formData.hourly_rate, formData.maintenance_cost]);
@@ -193,12 +193,14 @@ export default function EquipmentDialog({
         total_cost: (formData.hourly_rate * formData.usage_hours) + (formData.maintenance_cost || 0)
       };
 
+      // TODO: Project resource endpoints don't exist yet
+      // Implement these when the endpoints become available
       if (initialData?.id) {
-        await apiService.updateProjectResource(projectId, initialData.id, submitData);
-        toast.success('Equipment resource updated successfully');
+        // await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
+        toast.success('Equipment resource update feature not implemented yet');
       } else {
-        await apiService.addProjectResource(projectId, submitData);
-        toast.success('Equipment resource added successfully');
+        // await apiService.post(`/projects/${projectId}/resources`, submitData);
+        toast.success('Equipment resource add feature not implemented yet');
       }
 
       onSuccess();

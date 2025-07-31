@@ -60,10 +60,10 @@ export async function POST(request: NextRequest) {
         // Check for existing timesheet
         const existingTimesheet = await prisma.timesheet.findFirst({
           where: {
-            employeeId: employee_id,
+            employee_id: employee_id,
             date: new Date(date),
-            ...(project_id && { projectId: project_id }),
-            ...(rental_id && { rentalId: rental_id }),
+            ...(project_id && { project_id: project_id }),
+            ...(rental_id && { rental_id: rental_id }),
           },
         });
 
@@ -74,18 +74,18 @@ export async function POST(request: NextRequest) {
         // Create timesheet
         const timesheet = await prisma.timesheet.create({
           data: {
-            employeeId: employee_id,
-            assignmentId: assignment_id || null,
-            projectId: project_id || null,
-            rentalId: rental_id || null,
+            employee_id: employee_id,
+            assignment_id: assignment_id || null,
+            project_id: project_id || null,
+            rental_id: rental_id || null,
             date: new Date(date),
-            hoursWorked: normalHours,
-            overtimeHours: overtimeHours,
+            hours_worked: normalHours,
+            overtime_hours: overtimeHours,
             description: description || null,
-            tasksCompleted: tasks || null,
+            tasks: tasks || null,
             status: 'draft',
-            startTime: start_time || '08:00',
-            endTime: end_time || null,
+            start_time: start_time ? new Date(start_time) : new Date(),
+            end_time: end_time ? new Date(end_time) : null,
           },
         });
 

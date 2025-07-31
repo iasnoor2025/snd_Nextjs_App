@@ -7,35 +7,35 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const rental = await DatabaseService.getRental(id);
+    const rental = await DatabaseService.getRental(parseInt(id));
 
     if (!rental) {
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
     }
 
-    if (!rental.quotationId) {
+    if (!rental.quotation_id) {
       return NextResponse.json({ error: 'No quotation found for this rental' }, { status: 404 });
     }
 
     // Generate quotation data for display
     const quotation = {
-      id: rental.quotationId,
-      rentalId: rental.id,
-      quotationNumber: rental.quotationId,
+      id: rental.quotation_id,
+      rental_id: rental.id,
+      quotation_number: rental.quotation_id,
       customer: rental.customer,
-      rentalItems: rental.rentalItems,
+      rental_items: rental.rental_items,
       subtotal: rental.subtotal,
-      taxAmount: rental.taxAmount,
-      totalAmount: rental.totalAmount,
+      tax_amount: rental.tax_amount,
+      total_amount: rental.total_amount,
       discount: rental.discount,
       tax: rental.tax,
-      finalAmount: rental.finalAmount,
-      depositAmount: rental.depositAmount,
-      paymentTermsDays: rental.paymentTermsDays,
-      startDate: rental.startDate,
-      expectedEndDate: rental.expectedEndDate,
+      final_amount: rental.final_amount,
+      deposit_amount: rental.deposit_amount,
+      payment_terms_days: rental.payment_terms_days,
+      start_date: rental.start_date,
+      expected_end_date: rental.expected_end_date,
       notes: rental.notes,
-      createdAt: rental.createdAt,
+      created_at: rental.created_at,
       status: 'draft'
     };
 

@@ -112,41 +112,15 @@ export default function ProjectDetailPage() {
         setLoading(true);
 
         // Fetch project details
-        const projectResponse = await apiService.getProject(projectId);
+        const projectResponse = await apiService.get<{ data: Project }>(`/projects/${projectId}`);
         setProject(projectResponse.data);
 
-        // Fetch related data
-        try {
-          const tasksResponse = await apiService.getProjectTasks(projectId);
-          setTasks(tasksResponse.data || []);
-        } catch (error) {
-          console.warn('Failed to fetch tasks:', error);
-          setTasks([]);
-        }
-
-        try {
-          const milestonesResponse = await apiService.getProjectMilestones(projectId);
-          setMilestones(milestonesResponse.data || []);
-        } catch (error) {
-          console.warn('Failed to fetch milestones:', error);
-          setMilestones([]);
-        }
-
-        try {
-          const documentsResponse = await apiService.getProjectDocuments(projectId);
-          setDocuments(documentsResponse.data || []);
-        } catch (error) {
-          console.warn('Failed to fetch documents:', error);
-          setDocuments([]);
-        }
-
-        try {
-          const resourcesResponse = await apiService.getProjectResources(projectId);
-          setResources(resourcesResponse.data || []);
-        } catch (error) {
-          console.warn('Failed to fetch resources:', error);
-          setResources([]);
-        }
+        // Fetch related data - these endpoints don't exist yet, so we'll set empty arrays
+        // TODO: Implement these endpoints when they become available
+        setTasks([]);
+        setMilestones([]);
+        setDocuments([]);
+        setResources([]);
 
       } catch (error) {
         console.error('Error fetching project:', error);

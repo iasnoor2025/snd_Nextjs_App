@@ -112,13 +112,20 @@ export default function ProjectReportsPage() {
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      const [projectRes, reportRes] = await Promise.all([
-        apiService.getProject(projectId),
-        apiService.getProjectReports(projectId, { dateRange }),
-      ]);
-
+      
+      // Fetch project details
+      const projectRes = await apiService.get<{ data: Project }>(`/projects/${projectId}`);
       setProject(projectRes.data);
-      setReportData(reportRes.data);
+      
+      // TODO: Project reports endpoint doesn't exist yet, so we'll set empty data
+      // Implement this when the endpoint becomes available
+      setReportData({
+        progress: { overall: 0, byPhase: [] },
+        cost: { planned: 0, actual: 0, variance: 0, byCategory: [] },
+        resources: { total: 0, allocated: 0, utilization: 0, byType: [] },
+        risks: [],
+        timeline: { onSchedule: 0, delayed: 0, completed: 0, milestones: [] }
+      });
     } catch (error) {
       console.error('Error fetching report data:', error);
       toast.error('Failed to load report data');
@@ -130,8 +137,9 @@ export default function ProjectReportsPage() {
   const handleExportReport = async (type: string) => {
     try {
       toast.loading('Generating report...');
-      await apiService.exportProjectReport(projectId, { type, dateRange });
-      toast.success('Report exported successfully');
+      // TODO: Project report export endpoint doesn't exist yet
+      // Implement this when the endpoint becomes available
+      toast.success('Report export feature not implemented yet');
     } catch (error) {
       console.error('Error exporting report:', error);
       toast.error('Failed to export report');

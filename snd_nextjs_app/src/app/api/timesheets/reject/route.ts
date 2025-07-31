@@ -52,16 +52,16 @@ export async function POST(request: NextRequest) {
 
     switch (rejectionStage) {
       case 'foreman':
-        hasPermission = userRole === 'FOREMAN' || userRole === 'ADMIN';
+        hasPermission = userRole === 'FOREMAN' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
         break;
       case 'incharge':
-        hasPermission = userRole === 'TIMESHEET_INCHARGE' || userRole === 'ADMIN';
+        hasPermission = userRole === 'TIMESHEET_INCHARGE' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
         break;
       case 'checking':
-        hasPermission = userRole === 'TIMESHEET_CHECKER' || userRole === 'ADMIN';
+        hasPermission = userRole === 'TIMESHEET_CHECKER' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
         break;
       case 'manager':
-        hasPermission = userRole === 'MANAGER' || userRole === 'ADMIN';
+        hasPermission = userRole === 'MANAGER' || userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
         break;
     }
 
@@ -76,18 +76,14 @@ export async function POST(request: NextRequest) {
       where: { id: timesheetId },
       data: {
         status: 'rejected',
-        rejectedBy: session.user.id,
-        rejectedAt: new Date(),
-        rejectionReason: rejectionReason,
-        rejectionStage: rejectionStage
+        notes: rejectionReason,
       },
       include: {
         employee: {
           include: {
             user: true
           }
-        },
-        rejector: true
+        }
       }
     });
 

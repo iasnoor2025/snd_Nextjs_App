@@ -323,47 +323,13 @@ export default function SalaryAdvancesPage() {
       </Card>
       {advances && (
         <div className="mt-6">
-          <Pagination>
-            {advances.prev_page_url && (
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  size="sm"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setCurrentPage(advances.current_page - 1);
-                  }}
-                />
-              </PaginationItem>
-            )}
-            {Array.from({ length: advances.last_page }, (_, i) => i + 1).map((page) => (
-              <PaginationItem key={page}>
-                <PaginationLink
-                  href="#"
-                  size="sm"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setCurrentPage(page);
-                  }}
-                  isActive={page === advances.current_page}
-                >
-                  {page}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-            {advances.next_page_url && (
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  size="sm"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setCurrentPage(advances.current_page + 1);
-                  }}
-                />
-              </PaginationItem>
-            )}
-          </Pagination>
+          <Pagination
+            currentPage={advances.current_page}
+            totalPages={advances.last_page}
+            totalItems={advances.total}
+            itemsPerPage={advances.per_page}
+            onPageChange={setCurrentPage}
+          />
         </div>
       )}
     </div>

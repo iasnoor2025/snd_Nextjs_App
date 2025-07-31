@@ -9,43 +9,30 @@ export async function POST(
   try {
     const { id } = await params;
     console.log('Approving rental:', id);
-    const rental = await DatabaseService.getRental(id);
+    const rental = await DatabaseService.getRental(parseInt(id));
 
     if (!rental) {
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
     }
 
-    if (!rental.quotationId) {
+    if (!rental.quotation_id) {
       console.log('No quotation found for rental:', rental);
       return NextResponse.json({ error: 'No quotation found for this rental' }, { status: 404 });
     }
 
     // Update rental with approval information
     const updatedRental = await prisma.rental.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
-        approvedAt: new Date().toISOString(),
+        approved_at: new Date(),
         status: 'approved',
-        statusLogs: {
-          create: {
-            oldStatus: rental.status,
-            newStatus: 'approved',
-            changedBy: 'customer',
-            reason: 'Quotation approved by customer'
-          }
-        }
       },
       include: {
         customer: true,
-        rentalItems: {
+        rental_items: {
           include: {
             equipment: true
           }
-        },
-        payments: true,
-        invoices: true,
-        statusLogs: {
-          orderBy: { createdAt: 'desc' }
         }
       }
     });

@@ -8,21 +8,17 @@ export async function GET(
   try {
     const { id } = await params;
     const timesheet = await prisma.timesheet.findUnique({
-      where: { id },
+      where: { id: parseInt(id) },
       include: {
         employee: {
           include: {
             user: true
           }
         },
-        project: true,
+        project_rel: true,
         rental: true,
         assignment: true,
-        foremanApprover: true,
-        inchargeApprover: true,
-        checkingApprover: true,
-        managerApprover: true,
-        rejector: true
+        approved_by_user: true
       }
     });
 
@@ -48,7 +44,7 @@ export async function DELETE(
     const { id } = await params;
     // Check if timesheet exists
     const existingTimesheet = await prisma.timesheet.findUnique({
-      where: { id }
+      where: { id: parseInt(id) }
     });
 
     if (!existingTimesheet) {
@@ -71,7 +67,7 @@ export async function DELETE(
 
     // Delete the timesheet
     await prisma.timesheet.delete({
-      where: { id }
+      where: { id: parseInt(id) }
     });
 
     return NextResponse.json(

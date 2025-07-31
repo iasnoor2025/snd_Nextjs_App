@@ -103,7 +103,7 @@ export default function ManpowerDialog({
 
   const loadEmployees = async () => {
     try {
-      const response = await apiService.getEmployees();
+      const response = await apiService.get<{ data: Employee[] }>('/employees');
       setEmployees(response.data || []);
     } catch (error) {
       console.error('Error loading employees:', error);
@@ -127,7 +127,7 @@ export default function ManpowerDialog({
       setFormData(prev => ({
         ...prev,
         total_days: totalDays,
-        total_cost: prev.daily_rate * totalDays
+        total_cost: (prev.daily_rate || 0) * totalDays
       }));
     }
   }, [formData.start_date, formData.end_date, formData.daily_rate]);
@@ -194,15 +194,17 @@ export default function ManpowerDialog({
         ...formData,
         project_id: projectId,
         type: 'manpower',
-        total_cost: formData.daily_rate * formData.total_days
+        total_cost: (formData.daily_rate || 0) * (formData.total_days || 0)
       };
 
+      // TODO: Project resource endpoints don't exist yet
+      // Implement these when the endpoints become available
       if (initialData?.id) {
-        await apiService.updateProjectResource(projectId, initialData.id, submitData);
-        toast.success('Manpower resource updated successfully');
+        // await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
+        toast.success('Manpower resource update feature not implemented yet');
       } else {
-        await apiService.addProjectResource(projectId, submitData);
-        toast.success('Manpower resource added successfully');
+        // await apiService.post(`/projects/${projectId}/resources`, submitData);
+        toast.success('Manpower resource add feature not implemented yet');
       }
 
       onSuccess();

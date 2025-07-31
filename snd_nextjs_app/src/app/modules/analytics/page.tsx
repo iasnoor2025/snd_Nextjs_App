@@ -500,49 +500,13 @@ export default function AnalyticsPage() {
                 {Math.min(reports.current_page * reports.per_page, reports.total)} of{" "}
                 {reports.total} results
               </div>
-              <Pagination>
-                <PaginationContent>
-                  {reports.prev_page_url && (
-                    <PaginationItem>
-                      <PaginationPrevious
-                        href="#"
-                        size="sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(reports.current_page - 1);
-                        }}
-                      />
-                    </PaginationItem>
-                  )}
-                  {Array.from({ length: reports.last_page }, (_, i) => i + 1).map((page) => (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        href="#"
-                        size="sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(page);
-                        }}
-                        isActive={page === reports.current_page}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  ))}
-                  {reports.next_page_url && (
-                    <PaginationItem>
-                      <PaginationNext
-                        href="#"
-                        size="sm"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setCurrentPage(reports.current_page + 1);
-                        }}
-                      />
-                    </PaginationItem>
-                  )}
-                </PaginationContent>
-              </Pagination>
+              <Pagination
+                currentPage={reports.current_page}
+                totalPages={reports.last_page}
+                totalItems={reports.total}
+                itemsPerPage={reports.per_page}
+                onPageChange={setCurrentPage}
+              />
             </div>
           )}
         </CardContent>

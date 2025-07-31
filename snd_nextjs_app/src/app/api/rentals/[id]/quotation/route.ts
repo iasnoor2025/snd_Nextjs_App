@@ -9,7 +9,7 @@ export async function POST(
   try {
     const { id } = await params;
     console.log('Generating quotation for rental:', id);
-    const rental = await DatabaseService.getRental(id);
+    const rental = await DatabaseService.getRental(parseInt(id));
 
     if (!rental) {
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
@@ -18,43 +18,30 @@ export async function POST(
     // Generate unique quotation number
     const quotationNumber = `QT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // Update rental with quotation information and create status log
+    // Update rental with quotation information
     const updatedRental = await prisma.rental.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: {
-        quotationId: quotationNumber,
+        quotation_id: parseInt(quotationNumber.replace(/\D/g, '')), // Extract numeric part
         status: 'quotation_generated',
-        statusLogs: {
-          create: {
-            oldStatus: rental.status,
-            newStatus: 'quotation_generated',
-            changedBy: 'system',
-            reason: `Quotation ${quotationNumber} generated`
-          }
-        }
       },
       include: {
         customer: true,
-        rentalItems: {
+        rental_items: {
           include: {
             equipment: true
           }
-        },
-        payments: true,
-        invoices: true,
-        statusLogs: {
-          orderBy: { createdAt: 'desc' }
         }
       }
     });
 
     return NextResponse.json({
       message: 'Quotation generated successfully',
-              quotation: {
-          id: quotationNumber,
-          rentalId: id,
-          quotationNumber,
-        createdAt: new Date().toISOString(),
+      quotation: {
+        id: quotationNumber,
+        rental_id: parseInt(id),
+        quotation_number: quotationNumber,
+        created_at: new Date().toISOString(),
         rental: updatedRental
       }
     });

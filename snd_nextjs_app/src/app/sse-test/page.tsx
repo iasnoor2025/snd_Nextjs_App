@@ -20,50 +20,52 @@ import {
 import { toast } from 'sonner';
 
 export default function SSETestPage() {
-  const { sendEvent, events, lastEvent, isConnected } = useSSEContext();
+  const { isConnected } = useSSEContext();
   const [eventType, setEventType] = useState('rental_status_updated');
   const [eventData, setEventData] = useState('{"status": "active", "rental_id": 123}');
 
   const handleSendEvent = async () => {
     try {
       const parsedData = JSON.parse(eventData);
-      await sendEvent(eventType as any, parsedData);
-      toast.success('Event sent successfully!');
+      // TODO: sendEvent method doesn't exist in SSE context
+      // await sendEvent(eventType as any, parsedData);
+      toast.success('Event sending feature not implemented yet!');
     } catch (error) {
       toast.error('Failed to send event. Check your JSON format.');
     }
   };
 
   const sendTestEvents = async () => {
-    const testEvents = [
-      {
-        type: 'rental_status_updated' as const,
-        data: { status: 'active', rental_id: 123, customer: 'John Doe' }
-      },
-      {
-        type: 'payment_received' as const,
-        data: { amount: 1500, rental_id: 123, payment_method: 'credit_card' }
-      },
-      {
-        type: 'maintenance_required' as const,
-        data: { equipment_name: 'Excavator XC-200', issue: 'Engine maintenance due' }
-      },
-      {
-        type: 'rental_overdue' as const,
-        data: { rental_id: 124, days_overdue: 3, customer: 'Jane Smith' }
-      },
-      {
-        type: 'payroll_processed' as const,
-        data: { employee_id: 456, amount: 2500, period: '2024-01' }
-      }
-    ];
+    // TODO: sendEvent method doesn't exist in SSE context
+    // const testEvents = [
+    //   {
+    //     type: 'rental_status_updated' as const,
+    //     data: { status: 'active', rental_id: 123, customer: 'John Doe' }
+    //   },
+    //   {
+    //     type: 'payment_received' as const,
+    //     data: { amount: 1500, rental_id: 123, payment_method: 'credit_card' }
+    //   },
+    //   {
+    //     type: 'maintenance_required' as const,
+    //     data: { equipment_name: 'Excavator XC-200', issue: 'Engine maintenance due' }
+    //   },
+    //   {
+    //     type: 'rental_overdue' as const,
+    //     data: { rental_id: 124, days_overdue: 3, customer: 'Jane Smith' }
+    //   },
+    //   {
+    //     type: 'payroll_processed' as const,
+    //     data: { employee_id: 456, amount: 2500, period: '2024-01' }
+    //   }
+    // ];
 
-    for (const event of testEvents) {
-      await sendEvent(event.type, event.data);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between events
-    }
+    // for (const event of testEvents) {
+    //   await sendEvent(event.type, event.data);
+    //   await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between events
+    // }
 
-    toast.success('Test events sent!');
+    toast.success('Test events feature not implemented yet!');
   };
 
   return (

@@ -7,17 +7,17 @@ const prisma = new PrismaClient();
 
 // GET /api/profile - Get current user profile
 export async function GET(request: NextRequest) {
+  // Get the current user session
+  const session = await getServerSession(authConfig);
+
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: 'Not authenticated' },
+      { status: 401 }
+    );
+  }
+
   try {
-    // Get the current user session
-    const session = await getServerSession(authConfig);
-
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
-    }
-
     const userId = session.user.id;
     console.log('Current user ID from session:', userId);
 
@@ -351,6 +351,14 @@ export async function PUT(request: NextRequest) {
     // Update or create employee record
     let employee = await prisma.employee.findFirst({
       where: { user_id: parseInt(userId) },
+      include: {
+        designation: {
+          select: { name: true },
+        },
+        department: {
+          select: { name: true },
+        },
+      },
     });
 
     console.log('Found existing employee:', employee);
@@ -419,7 +427,7 @@ export async function PUT(request: NextRequest) {
       phone: employee?.phone || '',
       avatar: updatedUser.avatar || '',
       role: updatedUser.role_id,
-      department: employee?.department_id?.name || 'General', 
+      department: employee?.department?.name || 'General', 
       location: employee?.city && employee?.state
         ? `${employee.city}, ${employee.state}`
         : employee?.country || '',
@@ -430,7 +438,7 @@ export async function PUT(request: NextRequest) {
       firstName: employee?.first_name || '',
       middleName: employee?.middle_name || '',
       lastName: employee?.last_name || '',
-      designation: employee?.designation_id?.name || '', 
+      designation: employee?.designation?.name || '', 
       address: employee?.address || '',
       city: employee?.city || '',
       state: employee?.state || '',

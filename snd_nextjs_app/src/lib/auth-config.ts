@@ -117,6 +117,17 @@ export const authConfig: NextAuthOptions = {
   jwt: {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
+  cookies: {
+    sessionToken: {
+      name: `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
   pages: {
     signIn: '/login',
     signOut: '/login',
@@ -130,8 +141,10 @@ export const authConfig: NextAuthOptions = {
       if (user) {
         token.role = user.role;
         token.isActive = user.isActive;
+        token.id = user.id;
         console.log(`🔍 JWT Callback - Setting role to: ${user.role}`);
         console.log(`🔍 JWT Callback - Setting isActive to: ${user.isActive}`);
+        console.log(`🔍 JWT Callback - Setting id to: ${user.id}`);
       }
       
       console.log(`🔍 JWT Callback - Final token:`, token);
@@ -144,6 +157,7 @@ export const authConfig: NextAuthOptions = {
       if (token) {
         session.user.role = token.role || "USER";
         session.user.isActive = token.isActive || true;
+        session.user.id = token.id || token.sub;
         
         // PERMANENT FIX: Force correct role based on email
         if (session.user.email === 'admin@ias.com') {
@@ -153,6 +167,7 @@ export const authConfig: NextAuthOptions = {
         
         console.log(`🔍 Session Callback - Setting session role to: ${session.user.role}`);
         console.log(`🔍 Session Callback - Setting session isActive to: ${session.user.isActive}`);
+        console.log(`🔍 Session Callback - Setting session id to: ${session.user.id}`);
       }
       
       console.log(`🔍 Session Callback - Final session:`, session);
