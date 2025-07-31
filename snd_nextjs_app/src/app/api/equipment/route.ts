@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
         if (erpResponse.ok) {
           const erpData = await erpResponse.json();
           return NextResponse.json({ 
+            success: true,
             data: erpData.data || [],
             source: 'erpnext',
             count: erpData.count || 0
@@ -63,6 +64,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ 
+      success: true,
       data: equipment,
       source: 'local',
       count: equipment.length
@@ -70,7 +72,10 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching equipment:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch equipment' },
+      { 
+        success: false,
+        error: 'Failed to fetch equipment' 
+      },
       { status: 500 }
     );
   }
@@ -98,11 +103,14 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    return NextResponse.json({ data: equipment }, { status: 201 });
+    return NextResponse.json({ success: true, data: equipment }, { status: 201 });
   } catch (error) {
     console.error('Error creating equipment:', error);
     return NextResponse.json(
-      { error: 'Failed to create equipment' },
+      { 
+        success: false,
+        error: 'Failed to create equipment' 
+      },
       { status: 500 }
     );
   }
@@ -149,11 +157,14 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(equipment);
+    return NextResponse.json({ success: true, data: equipment });
   } catch (error) {
     console.error('Error updating equipment:', error);
     return NextResponse.json(
-      { error: 'Failed to update equipment' },
+      { 
+        success: false,
+        error: 'Failed to update equipment' 
+      },
       { status: 500 }
     );
   }
@@ -168,11 +179,14 @@ export async function DELETE(request: NextRequest) {
       where: { id },
     });
 
-    return NextResponse.json({ message: 'Equipment deleted successfully' });
+    return NextResponse.json({ success: true, message: 'Equipment deleted successfully' });
   } catch (error) {
     console.error('Error deleting equipment:', error);
     return NextResponse.json(
-      { error: 'Failed to delete equipment' },
+      { 
+        success: false,
+        error: 'Failed to delete equipment' 
+      },
       { status: 500 }
     );
   }
