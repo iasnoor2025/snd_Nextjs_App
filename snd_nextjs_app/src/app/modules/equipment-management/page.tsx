@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiService } from "@/lib/api-service";
+import { useRouter } from "next/navigation";
 
 interface Equipment {
   id: number;
@@ -68,6 +69,8 @@ export default function EquipmentManagementPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const router = useRouter();
 
   useEffect(() => {
     fetchEquipment();
@@ -265,10 +268,18 @@ export default function EquipmentManagementPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => router.push(`/modules/equipment-management/${item.id}`)}
+                              >
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="sm">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => router.push(`/modules/equipment-management/${item.id}/edit`)}
+                              >
                                 <Edit className="h-4 w-4" />
                               </Button>
                               <Button variant="ghost" size="sm">
