@@ -137,14 +137,10 @@ export default function PayrollManagementPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [monthFilter, setMonthFilter] = useState<Date | undefined>(undefined);
   const [showFilters, setShowFilters] = useState(false);
-  const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [generateEmployee, setGenerateEmployee] = useState<string>("all");
-  const [generateStartMonth, setGenerateStartMonth] = useState<string>("");
-  const [generateEndMonth, setGenerateEndMonth] = useState<string>("");
   const [employeeFilter, setEmployeeFilter] = useState<string>("all");
 
   // Get allowed actions for payroll management
@@ -175,13 +171,46 @@ export default function PayrollManagementPage() {
       const data = await response.json();
 
       if (data.success) {
-        setPayrolls(data);
+        // Handle the nested data structure from the API
+        setPayrolls(data.data);
       } else {
         toast.error("Failed to fetch payrolls");
+        // Set empty data structure to prevent errors
+        setPayrolls({
+          data: [],
+          current_page: 1,
+          last_page: 1,
+          per_page: 10,
+          total: 0,
+          from: 0,
+          to: 0,
+          next_page_url: null,
+          prev_page_url: null,
+          first_page_url: '',
+          last_page_url: '',
+          path: '',
+          links: []
+        });
       }
     } catch (error) {
       toast.error("Error fetching payrolls");
       console.error("Error:", error);
+      // Set empty data structure to prevent errors
+      setPayrolls({
+        data: [],
+        current_page: 1,
+        last_page: 1,
+        per_page: 10,
+        total: 0,
+        from: 0,
+        to: 0,
+        next_page_url: null,
+        prev_page_url: null,
+        first_page_url: '',
+        last_page_url: '',
+        path: '',
+        links: []
+      });
     } finally {
       setLoading(false);
     }
@@ -205,40 +234,6 @@ export default function PayrollManagementPage() {
     fetchEmployees();
   }, [currentPage, statusFilter, monthFilter, searchTerm]);
 
-  const handleGenerate = async () => {
-    if (!monthFilter) {
-      toast.error("Please select a month");
-      return;
-    }
-
-    try {
-      setGenerating(true);
-      const response = await fetch("/api/payroll/generate-monthly", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ month: monthFilter.toISOString().slice(0, 7) }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success(data.message);
-        setIsGenerateDialogOpen(false);
-        setMonthFilter(undefined);
-        fetchPayrolls(); // Refresh the list
-      } else {
-        toast.error(data.message || "Failed to generate payroll");
-      }
-    } catch (error) {
-      toast.error("Error generating payroll");
-      console.error("Error:", error);
-    } finally {
-      setGenerating(false);
-    }
-  };
-
   const handleGenerateApproved = async () => {
     try {
       setGenerating(true);
@@ -260,39 +255,6 @@ export default function PayrollManagementPage() {
       }
     } catch (error) {
       toast.error("Error generating payroll for approved timesheets");
-      console.error("Error:", error);
-    } finally {
-      setGenerating(false);
-    }
-  };
-
-  const handleGenerateAllMonths = async () => {
-    try {
-      setGenerating(true);
-      const response = await fetch("/api/payroll/generate-all-months", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          employee_id: null, // No specific employee filter for all months
-          start_month: monthFilter?.toISOString().slice(0, 7) || null,
-          end_month: monthFilter?.toISOString().slice(0, 7) || null,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success(data.message);
-        setIsGenerateDialogOpen(false);
-        setMonthFilter(undefined);
-        fetchPayrolls(); // Refresh the list
-      } else {
-        toast.error(data.message || "Failed to generate payroll for all months");
-      }
-    } catch (error) {
-      toast.error("Error generating payroll for all months");
       console.error("Error:", error);
     } finally {
       setGenerating(false);
@@ -430,7 +392,10 @@ export default function PayrollManagementPage() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedPayrolls(new Set(payrolls?.data.map(p => p.id) || []));
+      const payrollIds = payrolls?.data && Array.isArray(payrolls.data) 
+        ? payrolls.data.map(p => p.id) 
+        : [];
+      setSelectedPayrolls(new Set(payrollIds));
     } else {
       setSelectedPayrolls(new Set());
     }
@@ -516,37 +481,25 @@ export default function PayrollManagementPage() {
             </Can>
 
             <Can action="create" subject="Payroll">
-              <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
+              <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
-                    <CalendarDays className="h-4 w-4 mr-2" />
-                    Generate Monthly
+                    <Zap className="h-4 w-4 mr-2" />
+                    Generate for Approved
                   </Button>
                 </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Generate Monthly Payroll</DialogTitle>
+                  <DialogTitle>Generate Payroll for Approved Timesheets</DialogTitle>
                   <DialogDescription>
-                    Generate payroll for all employees for a specific month
+                    Generate payroll for all employees who have manager-approved timesheets
                   </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="generate-month">Select Month</Label>
-                    <Input
-                      id="generate-month"
-                      type="month"
-                      value={monthFilter ? monthFilter.toISOString().slice(0, 7) : ""}
-                      onChange={(e) => setMonthFilter(new Date(e.target.value))}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsGenerateDialogOpen(false)} disabled={generating}>
+                  <Button variant="outline" onClick={() => setIsApproveDialogOpen(false)} disabled={generating}>
                     Cancel
                   </Button>
-                  <Button onClick={handleGenerate} disabled={generating}>
+                  <Button onClick={handleGenerateApproved} disabled={generating}>
                     {generating ? (
                       <>
                         <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -560,106 +513,6 @@ export default function PayrollManagementPage() {
               </DialogContent>
             </Dialog>
             </Can>
-
-          <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Zap className="h-4 w-4 mr-2" />
-                Generate for Approved
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Generate Payroll for Approved Timesheets</DialogTitle>
-                <DialogDescription>
-                  Generate payroll for all employees who have manager-approved timesheets
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsApproveDialogOpen(false)} disabled={generating}>
-                  Cancel
-                </Button>
-                <Button onClick={handleGenerateApproved} disabled={generating}>
-                  {generating ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    "Generate Payroll"
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Play className="h-4 w-4 mr-2" />
-                Generate All Months
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Generate Payroll for All Months</DialogTitle>
-                <DialogDescription>
-                  Generate payroll for all months that need it (checks for approved timesheets and skips existing payrolls)
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="generate-employee">Employee (Optional)</Label>
-                  <Select value={generateEmployee} onValueChange={setGenerateEmployee}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select employee (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Employees</SelectItem>
-                      {employees.map((employee) => (
-                        <SelectItem key={employee.id} value={employee.id.toString()}>
-                          {employee.full_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="generate-start-month">Start Month (Optional)</Label>
-                  <Input
-                    id="generate-start-month"
-                    type="month"
-                    value={generateStartMonth}
-                    onChange={(e) => setGenerateStartMonth(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="generate-end-month">End Month (Optional)</Label>
-                  <Input
-                    id="generate-end-month"
-                    type="month"
-                    value={generateEndMonth}
-                    onChange={(e) => setGenerateEndMonth(e.target.value)}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsGenerateDialogOpen(false)} disabled={generating}>
-                  Cancel
-                </Button>
-                <Button onClick={handleGenerateAllMonths} disabled={generating}>
-                  {generating ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
-                    </>
-                  ) : (
-                    "Generate Payroll"
-                  )}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
 
           <Link href="/modules/payroll-management/reports">
             <Button variant="outline" size="sm">
@@ -795,7 +648,7 @@ export default function PayrollManagementPage() {
             <CardTitle>Payrolls ({payrolls?.total || 0} total)</CardTitle>
             <div className="flex items-center gap-2">
               <Checkbox
-                checked={selectedPayrolls.size === (payrolls?.data.length || 0) && (payrolls?.data.length || 0) > 0}
+                checked={selectedPayrolls.size === (payrolls?.data && Array.isArray(payrolls.data) ? payrolls.data.length : 0) && (payrolls?.data && Array.isArray(payrolls.data) ? payrolls.data.length : 0) > 0}
                 onCheckedChange={handleSelectAll}
               />
               <span className="text-sm text-muted-foreground">Select All</span>
@@ -826,94 +679,111 @@ export default function PayrollManagementPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {payrolls?.data.map((payroll) => (
-                    <TableRow key={payroll.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedPayrolls.has(payroll.id)}
-                          onCheckedChange={(checked) =>
-                            handleSelectPayroll(payroll.id, checked as boolean)
-                          }
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{payroll.employee.full_name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {payroll.employee.department} • {payroll.employee.designation}
+                  {payrolls?.data && Array.isArray(payrolls.data) ? (
+                    payrolls.data.map((payroll) => (
+                      <TableRow key={payroll.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedPayrolls.has(payroll.id)}
+                            onCheckedChange={(checked) =>
+                              handleSelectPayroll(payroll.id, checked as boolean)
+                            }
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">{payroll.employee.full_name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {payroll.employee.department} • {payroll.employee.designation}
+                            </div>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(payroll.year, payroll.month - 1).toLocaleDateString("en-US", {
-                          month: "long",
-                          year: "numeric",
-                        })}
-                      </TableCell>
-                      <TableCell>{formatCurrency(payroll.base_salary)}</TableCell>
-                      <TableCell>{formatCurrency(payroll.overtime_amount)}</TableCell>
-                      <TableCell>{formatCurrency(payroll.bonus_amount)}</TableCell>
-                      <TableCell>{formatCurrency(payroll.deduction_amount)}</TableCell>
-                      <TableCell className="font-medium">{formatCurrency(payroll.final_amount)}</TableCell>
-                      <TableCell>{getStatusBadge(payroll.status)}</TableCell>
-                      <TableCell>{formatDate(payroll.created_at)}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Link href={`/modules/payroll-management/${payroll.id}`}>
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Link href={`/modules/payroll-management/${payroll.id}/edit`}>
-                            <Button variant="outline" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDownloadPayslip(payroll.id)}
-                          >
-                            <FileDown className="h-4 w-4" />
-                          </Button>
-                          {payroll.status === "pending" && (
+                        </TableCell>
+                        <TableCell>
+                          {new Date(payroll.year, payroll.month - 1).toLocaleDateString("en-US", {
+                            month: "long",
+                            year: "numeric",
+                          })}
+                        </TableCell>
+                        <TableCell>{formatCurrency(payroll.base_salary)}</TableCell>
+                        <TableCell>{formatCurrency(payroll.overtime_amount)}</TableCell>
+                        <TableCell>{formatCurrency(payroll.bonus_amount)}</TableCell>
+                        <TableCell>{formatCurrency(payroll.deduction_amount)}</TableCell>
+                        <TableCell className="font-medium">{formatCurrency(payroll.final_amount)}</TableCell>
+                        <TableCell>{getStatusBadge(payroll.status)}</TableCell>
+                        <TableCell>{formatDate(payroll.created_at)}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Link href={`/modules/payroll-management/${payroll.id}`}>
+                              <Button variant="outline" size="sm">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                            <Link href={`/modules/payroll-management/${payroll.id}/edit`}>
+                              <Button variant="outline" size="sm">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </Link>
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleApprove(payroll.id)}
+                              onClick={() => handleDownloadPayslip(payroll.id)}
                             >
-                              <CheckCircle className="h-4 w-4" />
+                              <FileDown className="h-4 w-4" />
                             </Button>
-                          )}
-                          {payroll.status === "approved" && (
+                            {payroll.status === "pending" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleApprove(payroll.id)}
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {payroll.status === "approved" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleProcessPayment(payroll.id)}
+                              >
+                                <DollarSign className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {payroll.status !== "paid" && payroll.status !== "cancelled" && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleCancel(payroll.id)}
+                              >
+                                <Ban className="h-4 w-4" />
+                              </Button>
+                            )}
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleProcessPayment(payroll.id)}
+                              onClick={() => handleDelete(payroll.id)}
                             >
-                              <DollarSign className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={11} className="text-center py-8">
+                        <div className="text-muted-foreground">
+                          {loading ? (
+                            <div className="flex items-center justify-center">
+                              <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+                              Loading payrolls...
+                            </div>
+                          ) : (
+                            "No payrolls found"
                           )}
-                          {payroll.status !== "paid" && payroll.status !== "cancelled" && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleCancel(payroll.id)}
-                            >
-                              <Ban className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(payroll.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
 
