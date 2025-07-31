@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Building2, Users, FileText, Clock, DollarSign, Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import apiService from '@/lib/api';
+import ApiService from '@/lib/api-service';
 
 interface ProjectResource {
   id: string;
@@ -83,15 +83,15 @@ export default function ResourceManagement({
       setLoading(true);
 
       // Fetch resources
-      const resourcesResponse = await apiService.getProjectResources(projectId) as any;
+      const resourcesResponse = await ApiService.getProjectResources(Number(projectId));
       setResources(resourcesResponse.data || []);
 
       // Fetch equipment for dropdown
-      const equipmentResponse = await apiService.getEquipment() as any;
+      const equipmentResponse = await ApiService.getEquipment();
       setEquipment(equipmentResponse.data || []);
 
       // Fetch employees for dropdown
-      const employeesResponse = await apiService.getEmployees() as any;
+      const employeesResponse = await ApiService.getEmployees();
       setEmployees(employeesResponse.data || []);
 
     } catch (error) {
@@ -112,7 +112,7 @@ export default function ResourceManagement({
         project_id: projectId
       };
 
-      await apiService.createProjectResource(projectId, resourceData);
+      await ApiService.createProjectResource(Number(projectId), resourceData);
       toast.success('Resource added successfully');
       setDialogOpen(false);
       setFormData({});

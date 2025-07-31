@@ -5,8 +5,8 @@ const prisma = new PrismaClient();
 
 // ERPNext configuration
 const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
-const ERPNEXT_API_KEY = process.env.ERPNEXT_API_KEY;
-const ERPNEXT_API_SECRET = process.env.ERPNEXT_API_SECRET;
+const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY;
+const ERPNEXT_API_SECRET = process.env.NEXT_PUBLIC_ERPNEXT_API_SECRET;
 
 async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   if (!ERPNEXT_URL || !ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {
@@ -45,11 +45,12 @@ export async function GET(request: NextRequest) {
       return await syncEquipmentFromERPNext();
     }
 
-    // Default: fetch equipment from ERPNext
-    const filters = encodeURIComponent(JSON.stringify([["item_group", "=", "Equipment"]]));
-    const endpoint = `/api/resource/Item?filters=${filters}&limit_page_length=1000&fields=["name","item_code","item_name","description","item_group","stock_uom","disabled","standard_rate","last_purchase_rate","valuation_rate","stock_qty","model","serial_no","manufacturer"]`;
+    // Default: fetch equipment from ERPNext - simplified for testing
+    const endpoint = `/api/resource/Item?limit_page_length=10`;
 
+    console.log('Making ERPNext request to:', endpoint);
     const data = await makeERPNextRequest(endpoint);
+    console.log('ERPNext response received, data length:', data.data?.length || 0);
 
     return NextResponse.json({
       success: true,

@@ -321,7 +321,7 @@ export class ApiService {
   }
 
   static async syncEquipmentFromERPNext() {
-    return this.post('/erpnext/equipment', { action: 'sync' }, {
+    return this.post('/equipment/sync', {}, {
       toastMessage: 'Equipment synced from ERPNext successfully',
       errorMessage: 'Failed to sync equipment from ERPNext',
     });

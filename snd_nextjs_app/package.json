@@ -52,6 +52,7 @@
     "@radix-ui/react-toggle-group": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.7",
     "@react-spring/web": "^10.0.1",
+    "@sentry/nextjs": "^9.43.0",
     "@skhazaei/persian-date-picker": "^0.1.0",
     "@tabler/icons-react": "^3.34.1",
     "@tanstack/react-query": "^5.80.7",
