@@ -11,6 +11,7 @@ export type Subjects =
   | 'Payroll'
   | 'Timesheet'
   | 'Project'
+  | 'Leave'
   | 'Department'
   | 'Designation'
   | 'Report'
@@ -58,16 +59,22 @@ const permissionMapping: Record<string, { action: Actions; subject: Subjects }> 
   'employees.create': { action: 'create', subject: 'Employee' },
   'employees.update': { action: 'update', subject: 'Employee' },
   'employees.delete': { action: 'delete', subject: 'Employee' },
+  'employees.approve': { action: 'approve', subject: 'Employee' },
+  'employees.reject': { action: 'reject', subject: 'Employee' },
   
   'customers.read': { action: 'read', subject: 'Customer' },
   'customers.create': { action: 'create', subject: 'Customer' },
   'customers.update': { action: 'update', subject: 'Customer' },
   'customers.delete': { action: 'delete', subject: 'Customer' },
+  'customers.approve': { action: 'approve', subject: 'Customer' },
+  'customers.reject': { action: 'reject', subject: 'Customer' },
   
   'equipment.read': { action: 'read', subject: 'Equipment' },
   'equipment.create': { action: 'create', subject: 'Equipment' },
   'equipment.update': { action: 'update', subject: 'Equipment' },
   'equipment.delete': { action: 'delete', subject: 'Equipment' },
+  'equipment.approve': { action: 'approve', subject: 'Equipment' },
+  'equipment.reject': { action: 'reject', subject: 'Equipment' },
   
   'rentals.read': { action: 'read', subject: 'Rental' },
   'rentals.create': { action: 'create', subject: 'Rental' },
@@ -81,6 +88,7 @@ const permissionMapping: Record<string, { action: Actions; subject: Subjects }> 
   'payroll.update': { action: 'update', subject: 'Payroll' },
   'payroll.delete': { action: 'delete', subject: 'Payroll' },
   'payroll.approve': { action: 'approve', subject: 'Payroll' },
+  'payroll.reject': { action: 'reject', subject: 'Payroll' },
   'payroll.export': { action: 'export', subject: 'Payroll' },
   
   'timesheets.read': { action: 'read', subject: 'Timesheet' },
@@ -94,27 +102,73 @@ const permissionMapping: Record<string, { action: Actions; subject: Subjects }> 
   'projects.create': { action: 'create', subject: 'Project' },
   'projects.update': { action: 'update', subject: 'Project' },
   'projects.delete': { action: 'delete', subject: 'Project' },
+  'projects.approve': { action: 'approve', subject: 'Project' },
+  'projects.reject': { action: 'reject', subject: 'Project' },
+  
+  'leaves.read': { action: 'read', subject: 'Leave' },
+  'leaves.create': { action: 'create', subject: 'Leave' },
+  'leaves.update': { action: 'update', subject: 'Leave' },
+  'leaves.delete': { action: 'delete', subject: 'Leave' },
+  'leaves.approve': { action: 'approve', subject: 'Leave' },
+  'leaves.reject': { action: 'reject', subject: 'Leave' },
   
   'reports.read': { action: 'read', subject: 'Report' },
   'reports.create': { action: 'create', subject: 'Report' },
   'reports.update': { action: 'update', subject: 'Report' },
   'reports.delete': { action: 'delete', subject: 'Report' },
   'reports.export': { action: 'export', subject: 'Report' },
+  'reports.approve': { action: 'approve', subject: 'Report' },
+  'reports.reject': { action: 'reject', subject: 'Report' },
   
   'settings.read': { action: 'read', subject: 'Settings' },
   'settings.update': { action: 'update', subject: 'Settings' },
   
   'analytics.read': { action: 'read', subject: 'Report' },
+  'analytics.approve': { action: 'approve', subject: 'Report' },
+  'analytics.reject': { action: 'reject', subject: 'Report' },
   
   'system.sync': { action: 'sync', subject: 'all' },
   'system.reset': { action: 'reset', subject: 'all' },
+  'system.approve': { action: 'approve', subject: 'all' },
+  'system.reject': { action: 'reject', subject: 'all' },
+  
+  // Global approval permissions
+  'approve.all': { action: 'approve', subject: 'all' },
+  'reject.all': { action: 'reject', subject: 'all' },
 };
 
 // Define permissions for each role (fallback if database permissions are not available)
 const rolePermissions = {
   SUPER_ADMIN: {
     can: [
+      // Complete system access - all actions on all subjects
       { action: 'manage', subject: 'all' },
+      
+      // Specific approval permissions for all modules
+      { action: 'approve', subject: 'Rental' },
+      { action: 'reject', subject: 'Rental' },
+      { action: 'approve', subject: 'Payroll' },
+      { action: 'reject', subject: 'Payroll' },
+      { action: 'approve', subject: 'Timesheet' },
+      { action: 'reject', subject: 'Timesheet' },
+      { action: 'approve', subject: 'Leave' },
+      { action: 'reject', subject: 'Leave' },
+      { action: 'approve', subject: 'Project' },
+      { action: 'reject', subject: 'Project' },
+      { action: 'approve', subject: 'Equipment' },
+      { action: 'reject', subject: 'Equipment' },
+      { action: 'approve', subject: 'Employee' },
+      { action: 'reject', subject: 'Employee' },
+      { action: 'approve', subject: 'Customer' },
+      { action: 'reject', subject: 'Customer' },
+      
+      // Export and import permissions
+      { action: 'export', subject: 'all' },
+      { action: 'import', subject: 'all' },
+      
+      // System operations
+      { action: 'sync', subject: 'all' },
+      { action: 'reset', subject: 'all' },
     ],
   },
   ADMIN: {

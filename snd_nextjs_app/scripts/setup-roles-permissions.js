@@ -24,30 +24,39 @@ async function setupRolesAndPermissions() {
       'roles.read', 'roles.create', 'roles.update', 'roles.delete',
       // Employee management
       'employees.read', 'employees.create', 'employees.update', 'employees.delete',
+      'employees.approve', 'employees.reject',
       // Customer management
       'customers.read', 'customers.create', 'customers.update', 'customers.delete',
+      'customers.approve', 'customers.reject',
       // Equipment management
       'equipment.read', 'equipment.create', 'equipment.update', 'equipment.delete',
+      'equipment.approve', 'equipment.reject',
       // Rental management
       'rentals.read', 'rentals.create', 'rentals.update', 'rentals.delete',
       'rentals.approve', 'rentals.reject',
       // Payroll management
       'payroll.read', 'payroll.create', 'payroll.update', 'payroll.delete',
-      'payroll.approve', 'payroll.export',
+      'payroll.approve', 'payroll.reject', 'payroll.export',
       // Timesheet management
       'timesheets.read', 'timesheets.create', 'timesheets.update', 'timesheets.delete',
       'timesheets.approve', 'timesheets.reject',
       // Project management
       'projects.read', 'projects.create', 'projects.update', 'projects.delete',
+      'projects.approve', 'projects.reject',
+      // Leave management
+      'leaves.read', 'leaves.create', 'leaves.update', 'leaves.delete',
+      'leaves.approve', 'leaves.reject',
       // Reports
       'reports.read', 'reports.create', 'reports.update', 'reports.delete',
-      'reports.export',
+      'reports.export', 'reports.approve', 'reports.reject',
       // Settings
       'settings.read', 'settings.update',
       // Analytics
-      'analytics.read',
+      'analytics.read', 'analytics.approve', 'analytics.reject',
       // System operations
-      'system.sync', 'system.reset'
+      'system.sync', 'system.reset', 'system.approve', 'system.reject',
+      // Approval permissions for all modules
+      'approve.all', 'reject.all'
     ];
 
     // Create roles
