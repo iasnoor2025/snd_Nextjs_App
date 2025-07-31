@@ -9,6 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   AlertCircle,
   CheckCircle,
   RefreshCw,
@@ -55,6 +64,10 @@ export default function EquipmentManagementPage() {
   const [syncing, setSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   useEffect(() => {
     fetchEquipment();
@@ -103,6 +116,13 @@ export default function EquipmentManagementPage() {
     return matchesSearch && matchesStatus;
   });
 
+  // Pagination calculations
+  const totalItems = filteredEquipment.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentEquipment = filteredEquipment.slice(startIndex, endIndex);
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       available: { variant: 'default' as const, label: 'Available' },
@@ -115,8 +135,17 @@ export default function EquipmentManagementPage() {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="w-full p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -156,11 +185,15 @@ export default function EquipmentManagementPage() {
                 />
               </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="status-filter" className="text-sm font-medium">
+                Status:
+              </Label>
               <select
+                id="status-filter"
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border border-input rounded-md bg-background"
+                className="border rounded-md px-3 py-2 text-sm"
               >
                 <option value="all">All Status</option>
                 <option value="available">Available</option>
@@ -168,9 +201,22 @@ export default function EquipmentManagementPage() {
                 <option value="maintenance">Maintenance</option>
                 <option value="out_of_service">Out of Service</option>
               </select>
-              <Button variant="outline" onClick={fetchEquipment} disabled={loading}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="items-per-page" className="text-sm font-medium">
+                Show:
+              </Label>
+              <select
+                id="items-per-page"
+                value={itemsPerPage}
+                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                className="border rounded-md px-3 py-2 text-sm"
+              >
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
             </div>
           </div>
         </CardContent>
@@ -190,71 +236,153 @@ export default function EquipmentManagementPage() {
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin" />
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="ml-2">Loading equipment...</span>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Model</TableHead>
-                  <TableHead>Manufacturer</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Daily Rate</TableHead>
-                  <TableHead>ERPNext ID</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEquipment.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      {equipment.length === 0 ? (
-                        <div className="flex flex-col items-center space-y-2">
-                          <Package className="h-8 w-8 text-muted-foreground" />
-                          <p>No equipment found</p>
-                          <p className="text-sm">Sync from ERPNext to get started</p>
-                        </div>
-                      ) : (
-                        "No equipment matches your search criteria"
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredEquipment.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>{item.model_number || '-'}</TableCell>
-                      <TableCell>{item.manufacturer || '-'}</TableCell>
-                      <TableCell>{getStatusBadge(item.status)}</TableCell>
-                      <TableCell>
-                        {item.daily_rate ? `$${item.daily_rate}` : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {item.erpnext_id ? (
-                          <Badge variant="outline">{item.erpnext_id}</Badge>
-                        ) : (
-                          '-'
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+            <>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Model</TableHead>
+                      <TableHead>Manufacturer</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Daily Rate</TableHead>
+                      <TableHead>ERPNext ID</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {currentEquipment.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          {equipment.length === 0 ? (
+                            <div className="flex flex-col items-center space-y-2">
+                              <Package className="h-8 w-8 text-muted-foreground" />
+                              <p>No equipment found</p>
+                              <p className="text-sm">Sync from ERPNext to get started</p>
+                            </div>
+                          ) : (
+                            "No equipment matches your search criteria"
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      currentEquipment.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium">{item.name}</TableCell>
+                          <TableCell>{item.model_number || '-'}</TableCell>
+                          <TableCell>{item.manufacturer || '-'}</TableCell>
+                          <TableCell>{getStatusBadge(item.status)}</TableCell>
+                          <TableCell>
+                            {item.daily_rate ? `$${item.daily_rate.toFixed(2)}` : '-'}
+                          </TableCell>
+                          <TableCell className="font-mono text-sm">
+                            {item.erpnext_id || '-'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Button variant="ghost" size="sm">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between px-2 py-4">
+                  <div className="flex-1 text-sm text-muted-foreground">
+                    Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} results
+                  </div>
+                  
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious 
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage > 1) handlePageChange(currentPage - 1);
+                          }}
+                          className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                        />
+                      </PaginationItem>
+                      
+                      {/* First page */}
+                      {currentPage > 3 && (
+                        <>
+                          <PaginationItem>
+                            <PaginationLink href="#" onClick={(e) => { e.preventDefault(); handlePageChange(1); }}>
+                              1
+                            </PaginationLink>
+                          </PaginationItem>
+                          <PaginationItem>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                        </>
+                      )}
+                      
+                      {/* Page numbers around current page */}
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        const page = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                        if (page > totalPages) return null;
+                        
+                        return (
+                          <PaginationItem key={page}>
+                            <PaginationLink 
+                              href="#" 
+                              onClick={(e) => { e.preventDefault(); handlePageChange(page); }}
+                              isActive={currentPage === page}
+                            >
+                              {page}
+                            </PaginationLink>
+                          </PaginationItem>
+                        );
+                      })}
+                      
+                      {/* Last page */}
+                      {currentPage < totalPages - 2 && (
+                        <>
+                          <PaginationItem>
+                            <PaginationEllipsis />
+                          </PaginationItem>
+                          <PaginationItem>
+                            <PaginationLink href="#" onClick={(e) => { e.preventDefault(); handlePageChange(totalPages); }}>
+                              {totalPages}
+                            </PaginationLink>
+                          </PaginationItem>
+                        </>
+                      )}
+                      
+                      <PaginationItem>
+                        <PaginationNext 
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                          }}
+                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
