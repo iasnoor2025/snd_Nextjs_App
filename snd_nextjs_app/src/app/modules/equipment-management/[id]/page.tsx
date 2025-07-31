@@ -18,11 +18,12 @@ import {
   FileText,
   Loader2,
   AlertCircle,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiService } from "@/lib/api-service";
 import { Label } from "@/components/ui/label";
-import EquipmentRentalHistory from "@/components/equipment/EquipmentRentalHistory";
+import EquipmentAssignmentHistory from "@/components/equipment/EquipmentRentalHistory";
 
 interface Equipment {
   id: number;
@@ -157,6 +158,7 @@ export default function EquipmentShowPage() {
             <Edit className="h-4 w-4 mr-2" />
             Edit Equipment
           </Button>
+
           <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
             {deleting ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -304,8 +306,8 @@ export default function EquipmentShowPage() {
                  </Card>
        </div>
 
-       {/* Rental History */}
-       <EquipmentRentalHistory equipmentId={equipment.id} />
+               {/* Assignment History */}
+        <EquipmentAssignmentHistory equipmentId={equipment.id} />
      </div>
    );
  } 

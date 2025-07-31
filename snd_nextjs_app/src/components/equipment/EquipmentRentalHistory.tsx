@@ -7,6 +7,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   History, 
   Calendar, 
@@ -18,21 +22,31 @@ import {
   Eye,
   Loader2,
   AlertCircle,
-  RefreshCw
+  RefreshCw,
+  Plus
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { ApiService } from "@/lib/api-service";
 import Link from "next/link";
-import { Label } from "@/components/ui/label";
 
-interface RentalHistoryItem {
+interface AssignmentHistoryItem {
   id: number;
-  rental_id: number;
-  rental_number: string;
-  customer_name: string;
+  rental_id?: number;
+  rental_number?: string;
+  customer_name?: string;
   customer_email?: string;
   customer_phone?: string;
+  project_id?: number;
+  project_name?: string;
+  project_description?: string;
+  project_status?: string;
+  employee_id?: number;
+  employee_name?: string;
+  employee_id_number?: string;
+  employee_email?: string;
+  employee_phone?: string;
+  assignment_type: string;
   equipment_name: string;
   quantity: number;
   unit_price: number;
@@ -41,42 +55,56 @@ interface RentalHistoryItem {
   days?: number;
   status: string;
   notes?: string;
-  rental_start_date: string;
+  start_date?: string;
+  expected_end_date?: string;
+  actual_end_date?: string;
+  rental_start_date?: string;
   rental_expected_end_date?: string;
   rental_actual_end_date?: string;
-  rental_status: string;
+  rental_status?: string;
   created_at: string;
   updated_at: string;
 }
 
-interface EquipmentRentalHistoryProps {
+interface EquipmentAssignmentHistoryProps {
   equipmentId: number;
 }
 
-export default function EquipmentRentalHistory({ equipmentId }: EquipmentRentalHistoryProps) {
-  const [rentalHistory, setRentalHistory] = useState<RentalHistoryItem[]>([]);
+export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAssignmentHistoryProps) {
+  const [assignmentHistory, setAssignmentHistory] = useState<AssignmentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedRental, setSelectedRental] = useState<RentalHistoryItem | null>(null);
+  const [selectedAssignment, setSelectedAssignment] = useState<AssignmentHistoryItem | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showManualAssignmentDialog, setShowManualAssignmentDialog] = useState(false);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [manualAssignmentForm, setManualAssignmentForm] = useState({
+    employeeId: '',
+    startDate: '',
+    endDate: '',
+    dailyRate: '',
+    totalAmount: '',
+    notes: ''
+  });
+  const [submittingManualAssignment, setSubmittingManualAssignment] = useState(false);
 
   useEffect(() => {
-    fetchRentalHistory();
+    fetchAssignmentHistory();
   }, [equipmentId]);
 
-  const fetchRentalHistory = async () => {
+  const fetchAssignmentHistory = async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await ApiService.getEquipmentRentalHistory(equipmentId);
       if (response.success) {
-        setRentalHistory(response.data || []);
+        setAssignmentHistory(response.data || []);
       } else {
-        setError(response.error || 'Failed to load rental history');
+        setError(response.error || 'Failed to load assignment history');
       }
     } catch (error) {
-      console.error('Error fetching rental history:', error);
-      setError('Failed to load rental history');
+      console.error('Error fetching assignment history:', error);
+      setError('Failed to load assignment history');
     } finally {
       setLoading(false);
     }
@@ -118,26 +146,82 @@ export default function EquipmentRentalHistory({ equipmentId }: EquipmentRentalH
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const openDetailsDialog = (rental: RentalHistoryItem) => {
-    setSelectedRental(rental);
+  const openDetailsDialog = (assignment: AssignmentHistoryItem) => {
+    setSelectedAssignment(assignment);
     setShowDetailsDialog(true);
   };
 
-  const getCurrentRental = () => {
-    return rentalHistory.find(rental => 
-      rental.status === 'active' && 
-      (rental.rental_status === 'active' || rental.rental_status === 'approved')
+  const getCurrentAssignment = () => {
+    return assignmentHistory.find(assignment => 
+      assignment.status === 'active' && 
+      (assignment.rental_status === 'active' || assignment.rental_status === 'approved' || !assignment.rental_status)
     );
   };
 
-  const getCompletedRentals = () => {
-    return rentalHistory.filter(rental => 
-      rental.rental_status === 'completed' || rental.status === 'completed'
+  const getCompletedAssignments = () => {
+    return assignmentHistory.filter(assignment => 
+      assignment.rental_status === 'completed' || assignment.status === 'completed'
     );
   };
 
   const getTotalRevenue = () => {
-    return rentalHistory.reduce((total, rental) => total + Number(rental.total_price), 0);
+    return assignmentHistory.reduce((total, assignment) => total + Number(assignment.total_price), 0);
+  };
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await ApiService.getEmployees();
+      if (response.success) {
+        setEmployees(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
+
+  const handleManualAssignmentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmittingManualAssignment(true);
+
+    try {
+      const assignmentData = {
+        assignment_type: 'manual',
+        start_date: manualAssignmentForm.startDate,
+        end_date: manualAssignmentForm.endDate || undefined,
+        daily_rate: manualAssignmentForm.dailyRate ? parseFloat(manualAssignmentForm.dailyRate) : undefined,
+        total_amount: manualAssignmentForm.totalAmount ? parseFloat(manualAssignmentForm.totalAmount) : undefined,
+        notes: manualAssignmentForm.notes || undefined,
+        status: 'active',
+        employee_id: parseInt(manualAssignmentForm.employeeId)
+      };
+
+      const response = await ApiService.createEquipmentAssignment(equipmentId, assignmentData);
+      
+      if (response.success) {
+        toast.success('Manual assignment created successfully');
+        setShowManualAssignmentDialog(false);
+        setManualAssignmentForm({
+          employeeId: '',
+          startDate: '',
+          endDate: '',
+          dailyRate: '',
+          totalAmount: '',
+          notes: ''
+        });
+        fetchAssignmentHistory(); // Refresh the history
+      } else {
+        toast.error(response.error || 'Failed to create manual assignment');
+      }
+    } catch (error) {
+      toast.error('Failed to create manual assignment');
+    } finally {
+      setSubmittingManualAssignment(false);
+    }
+  };
+
+  const openManualAssignmentDialog = () => {
+    fetchEmployees();
+    setShowManualAssignmentDialog(true);
   };
 
   if (loading) {
@@ -152,7 +236,7 @@ export default function EquipmentRentalHistory({ equipmentId }: EquipmentRentalH
         <CardContent>
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin" />
-            <span className="ml-2">Loading rental history...</span>
+            <span className="ml-2">Loading assignment history...</span>
           </div>
         </CardContent>
       </Card>
@@ -165,7 +249,7 @@ export default function EquipmentRentalHistory({ equipmentId }: EquipmentRentalH
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <History className="h-5 w-5" />
-            <span>Rental History</span>
+            <span>Assignment History</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -175,7 +259,7 @@ export default function EquipmentRentalHistory({ equipmentId }: EquipmentRentalH
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={fetchRentalHistory}
+              onClick={fetchAssignmentHistory}
               className="ml-4"
             >
               <RefreshCw className="h-4 w-4 mr-2" />
@@ -187,8 +271,6 @@ export default function EquipmentRentalHistory({ equipmentId }: EquipmentRentalH
     );
   }
 
-  const currentRental = getCurrentRental();
-  const completedRentals = getCompletedRentals();
   const totalRevenue = getTotalRevenue();
 
   return (
@@ -197,10 +279,10 @@ export default function EquipmentRentalHistory({ equipmentId }: EquipmentRentalH
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <History className="h-5 w-5" />
-            <span>Rental History</span>
+            <span>Assignment History</span>
           </CardTitle>
           <CardDescription>
-            Track all rental assignments and revenue for this equipment
+            Track all assignments (rental, project, manual) and revenue for this equipment
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -209,9 +291,9 @@ export default function EquipmentRentalHistory({ equipmentId }: EquipmentRentalH
             <div className="bg-muted p-4 rounded-lg">
               <div className="flex items-center space-x-2">
                 <Package className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-muted-foreground">Total Rentals</span>
+                <span className="text-sm font-medium text-muted-foreground">Total Assignments</span>
               </div>
-              <div className="text-2xl font-bold">{rentalHistory.length}</div>
+              <div className="text-2xl font-bold">{assignmentHistory.length}</div>
             </div>
             
             <div className="bg-muted p-4 rounded-lg">
@@ -227,7 +309,7 @@ export default function EquipmentRentalHistory({ equipmentId }: EquipmentRentalH
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">Completed</span>
               </div>
-              <div className="text-2xl font-bold">{completedRentals.length}</div>
+              <div className="text-2xl font-bold">{getCompletedAssignments().length}</div>
             </div>
             
             <div className="bg-muted p-4 rounded-lg">
@@ -236,36 +318,45 @@ export default function EquipmentRentalHistory({ equipmentId }: EquipmentRentalH
                 <span className="text-sm font-medium text-muted-foreground">Current Status</span>
               </div>
               <div className="text-2xl font-bold">
-                {currentRental ? 'Rented' : 'Available'}
+                {getCurrentAssignment() ? 'Assigned' : 'Available'}
               </div>
             </div>
           </div>
 
           <Separator />
 
-          {/* Current Rental */}
-          {currentRental && (
+          {/* Current Assignment */}
+          {getCurrentAssignment() && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Current Rental</h3>
+              <h3 className="text-lg font-semibold">Current Assignment</h3>
               <Card>
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <span className="font-medium">Rental #{currentRental.rental_number}</span>
-                        {getRentalStatusBadge(currentRental.rental_status)}
+                        <span className="font-medium">
+                          {getCurrentAssignment()?.assignment_type === 'rental' 
+                            ? `Rental #${getCurrentAssignment()?.rental_number}`
+                            : getCurrentAssignment()?.assignment_type === 'project'
+                            ? `Project: ${getCurrentAssignment()?.project_name}`
+                            : `Manual: ${getCurrentAssignment()?.employee_name}`
+                          }
+                        </span>
+                        {getCurrentAssignment()?.rental_status && getRentalStatusBadge(getCurrentAssignment()!.rental_status)}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Customer: {currentRental.customer_name}
+                        {getCurrentAssignment()?.assignment_type === 'rental' && `Customer: ${getCurrentAssignment()?.customer_name}`}
+                        {getCurrentAssignment()?.assignment_type === 'project' && `Project: ${getCurrentAssignment()?.project_name}`}
+                        {getCurrentAssignment()?.assignment_type === 'manual' && `Employee: ${getCurrentAssignment()?.employee_name}`}
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        Start Date: {format(new Date(currentRental.rental_start_date), 'MMM dd, yyyy')}
-                      </div>
+                                             <div className="text-sm text-muted-foreground">
+                         Start Date: {format(new Date(getCurrentAssignment()!.rental_start_date || getCurrentAssignment()!.start_date), 'MMM dd, yyyy')}
+                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold">${currentRental.total_price.toFixed(2)}</div>
+                      <div className="text-lg font-bold">${getCurrentAssignment()!.total_price.toFixed(2)}</div>
                       <div className="text-sm text-muted-foreground">
-                        {currentRental.quantity} × ${currentRental.unit_price.toFixed(2)} {currentRental.rate_type}
+                        {getCurrentAssignment()!.quantity} × ${getCurrentAssignment()!.unit_price.toFixed(2)} {getCurrentAssignment()!.rate_type}
                       </div>
                     </div>
                   </div>
@@ -276,29 +367,36 @@ export default function EquipmentRentalHistory({ equipmentId }: EquipmentRentalH
 
           <Separator />
 
-          {/* Rental History Table */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">Rental History</h3>
-              <Button variant="outline" size="sm" onClick={fetchRentalHistory}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
-              </Button>
-            </div>
+                     {/* Assignment History Table */}
+           <div className="space-y-4">
+             <div className="flex items-center justify-between">
+               <h3 className="text-lg font-semibold">Assignment History</h3>
+               <div className="flex gap-2">
+                 <Button variant="outline" size="sm" onClick={fetchAssignmentHistory}>
+                   <RefreshCw className="h-4 w-4 mr-2" />
+                   Refresh
+                 </Button>
+                 <Button variant="default" size="sm" onClick={openManualAssignmentDialog}>
+                   <Plus className="h-4 w-4 mr-2" />
+                   Add Manual Assignment
+                 </Button>
+               </div>
+             </div>
             
-            {rentalHistory.length === 0 ? (
+            {assignmentHistory.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Package className="h-8 w-8 mx-auto mb-2" />
-                <p>No rental history found</p>
-                <p className="text-sm">This equipment hasn't been rented yet</p>
+                <p>No assignment history found</p>
+                <p className="text-sm">This equipment hasn't been assigned yet</p>
               </div>
             ) : (
               <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Rental #</TableHead>
-                      <TableHead>Customer</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Reference</TableHead>
+                      <TableHead>Customer/Project/Employee</TableHead>
                       <TableHead>Period</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Status</TableHead>
@@ -306,53 +404,90 @@ export default function EquipmentRentalHistory({ equipmentId }: EquipmentRentalH
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rentalHistory.map((rental) => (
-                      <TableRow key={rental.id}>
+                    {assignmentHistory.map((assignment) => (
+                      <TableRow key={assignment.id}>
+                        <TableCell>
+                          <Badge variant={assignment.assignment_type === 'rental' ? 'default' : 'secondary'}>
+                            {assignment.assignment_type === 'rental' ? 'Rental' : 
+                             assignment.assignment_type === 'project' ? 'Project' : 'Manual'}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="font-medium">
-                          <Link 
-                            href={`/modules/rental-management/${rental.rental_id}`}
-                            className="hover:underline text-blue-600"
-                          >
-                            {rental.rental_number}
-                          </Link>
+                          {assignment.assignment_type === 'rental' ? (
+                            <Link 
+                              href={`/modules/rental-management/${assignment.rental_id}`}
+                              className="hover:underline text-blue-600"
+                            >
+                              {assignment.rental_number}
+                            </Link>
+                          ) : assignment.assignment_type === 'project' ? (
+                            <Link 
+                              href={`/modules/project-management/${assignment.project_id}`}
+                              className="hover:underline text-green-600"
+                            >
+                              Project #{assignment.project_id}
+                            </Link>
+                          ) : (
+                            <span className="text-orange-600">Manual Assignment</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <div>
-                            <div className="font-medium">{rental.customer_name}</div>
-                            {rental.customer_email && (
-                              <div className="text-sm text-muted-foreground">{rental.customer_email}</div>
+                            {assignment.assignment_type === 'rental' && (
+                              <>
+                                <div className="font-medium">{assignment.customer_name}</div>
+                                {assignment.customer_email && (
+                                  <div className="text-sm text-muted-foreground">{assignment.customer_email}</div>
+                                )}
+                              </>
+                            )}
+                            {assignment.assignment_type === 'project' && (
+                              <>
+                                <div className="font-medium">{assignment.project_name}</div>
+                                {assignment.project_description && (
+                                  <div className="text-sm text-muted-foreground">{assignment.project_description}</div>
+                                )}
+                              </>
+                            )}
+                            {assignment.assignment_type === 'manual' && (
+                              <>
+                                <div className="font-medium">{assignment.employee_name}</div>
+                                {assignment.employee_id_number && (
+                                  <div className="text-sm text-muted-foreground">ID: {assignment.employee_id_number}</div>
+                                )}
+                              </>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <div>{format(new Date(rental.rental_start_date), 'MMM dd, yyyy')}</div>
-                            {rental.rental_expected_end_date && (
+                            <div>{format(new Date(assignment.rental_start_date || assignment.start_date), 'MMM dd, yyyy')}</div>
+                            {(assignment.rental_expected_end_date || assignment.expected_end_date) && (
                               <div className="text-muted-foreground">
-                                to {format(new Date(rental.rental_expected_end_date), 'MMM dd, yyyy')}
+                                to {format(new Date(assignment.rental_expected_end_date || assignment.expected_end_date), 'MMM dd, yyyy')}
                               </div>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div>
-                            <div className="font-medium">${rental.total_price.toFixed(2)}</div>
+                            <div className="font-medium">${assignment.total_price.toFixed(2)}</div>
                             <div className="text-sm text-muted-foreground">
-                              {rental.quantity} × ${rental.unit_price.toFixed(2)} {getRateTypeBadge(rental.rate_type)}
+                              {assignment.quantity} × ${assignment.unit_price.toFixed(2)} {getRateTypeBadge(assignment.rate_type)}
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            {getStatusBadge(rental.status)}
-                            {getRentalStatusBadge(rental.rental_status)}
+                            {getStatusBadge(assignment.status)}
+                            {assignment.rental_status && getRentalStatusBadge(assignment.rental_status)}
                           </div>
                         </TableCell>
                         <TableCell>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => openDetailsDialog(rental)}
+                            onClick={() => openDetailsDialog(assignment)}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -367,72 +502,121 @@ export default function EquipmentRentalHistory({ equipmentId }: EquipmentRentalH
         </CardContent>
       </Card>
 
-      {/* Rental Details Dialog */}
+      {/* Assignment Details Dialog */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Rental Details</DialogTitle>
+            <DialogTitle>Assignment Details</DialogTitle>
             <DialogDescription>
-              Detailed information about this rental assignment
+              Detailed information about this assignment
             </DialogDescription>
           </DialogHeader>
           
-          {selectedRental && (
+          {selectedAssignment && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Rental Number</Label>
-                  <p className="font-medium">{selectedRental.rental_number}</p>
+                  <Label className="text-sm font-medium text-muted-foreground">Assignment Type</Label>
+                  <Badge variant={selectedAssignment.assignment_type === 'rental' ? 'default' : 'secondary'}>
+                    {selectedAssignment.assignment_type === 'rental' ? 'Rental' : 
+                     selectedAssignment.assignment_type === 'project' ? 'Project' : 'Manual'}
+                  </Badge>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Status</Label>
                   <div className="flex space-x-2">
-                    {getStatusBadge(selectedRental.status)}
-                    {getRentalStatusBadge(selectedRental.rental_status)}
+                    {getStatusBadge(selectedAssignment.status)}
+                    {selectedAssignment.rental_status && getRentalStatusBadge(selectedAssignment.rental_status)}
                   </div>
                 </div>
               </div>
 
               <Separator />
 
-              <div>
-                <Label className="text-sm font-medium text-muted-foreground">Customer Information</Label>
-                <div className="mt-2 space-y-1">
-                  <p className="font-medium">{selectedRental.customer_name}</p>
-                  {selectedRental.customer_email && (
-                    <p className="text-sm text-muted-foreground">{selectedRental.customer_email}</p>
-                  )}
-                  {selectedRental.customer_phone && (
-                    <p className="text-sm text-muted-foreground">{selectedRental.customer_phone}</p>
-                  )}
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Start Date</Label>
-                  <p>{format(new Date(selectedRental.rental_start_date), 'MMM dd, yyyy')}</p>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Expected End Date</Label>
-                  <p>
-                    {selectedRental.rental_expected_end_date 
-                      ? format(new Date(selectedRental.rental_expected_end_date), 'MMM dd, yyyy')
-                      : 'Not specified'
-                    }
-                  </p>
-                </div>
-                {selectedRental.rental_actual_end_date && (
+              {selectedAssignment.assignment_type === 'rental' && (
+                <>
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Actual End Date</Label>
-                    <p>{format(new Date(selectedRental.rental_actual_end_date), 'MMM dd, yyyy')}</p>
+                    <Label className="text-sm font-medium text-muted-foreground">Rental Information</Label>
+                    <div className="mt-2 space-y-1">
+                      <p className="font-medium">Rental #{selectedAssignment.rental_number}</p>
+                    </div>
                   </div>
-                )}
+                  <Separator />
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Customer Information</Label>
+                    <div className="mt-2 space-y-1">
+                      <p className="font-medium">{selectedAssignment.customer_name}</p>
+                      {selectedAssignment.customer_email && (
+                        <p className="text-sm text-muted-foreground">{selectedAssignment.customer_email}</p>
+                      )}
+                      {selectedAssignment.customer_phone && (
+                        <p className="text-sm text-muted-foreground">{selectedAssignment.customer_phone}</p>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {selectedAssignment.assignment_type === 'project' && (
+                <>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Project Information</Label>
+                    <div className="mt-2 space-y-1">
+                      <p className="font-medium">{selectedAssignment.project_name}</p>
+                      {selectedAssignment.project_description && (
+                        <p className="text-sm text-muted-foreground">{selectedAssignment.project_description}</p>
+                      )}
+                      <p className="text-sm text-muted-foreground">Project ID: {selectedAssignment.project_id}</p>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {selectedAssignment.assignment_type === 'manual' && (
+                <>
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">Employee Information</Label>
+                    <div className="mt-2 space-y-1">
+                      <p className="font-medium">{selectedAssignment.employee_name}</p>
+                      {selectedAssignment.employee_id_number && (
+                        <p className="text-sm text-muted-foreground">ID: {selectedAssignment.employee_id_number}</p>
+                      )}
+                      {selectedAssignment.employee_email && (
+                        <p className="text-sm text-muted-foreground">{selectedAssignment.employee_email}</p>
+                      )}
+                      {selectedAssignment.employee_phone && (
+                        <p className="text-sm text-muted-foreground">{selectedAssignment.employee_phone}</p>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <Separator />
+
+                             <div className="grid grid-cols-2 gap-4">
+                 <div>
+                   <Label className="text-sm font-medium text-muted-foreground">Start Date</Label>
+                   <p>{format(new Date(selectedAssignment.rental_start_date || selectedAssignment.start_date), 'MMM dd, yyyy')}</p>
+                 </div>
+                 <div>
+                   <Label className="text-sm font-medium text-muted-foreground">Expected End Date</Label>
+                   <p>
+                     {(selectedAssignment.rental_expected_end_date || selectedAssignment.expected_end_date)
+                       ? format(new Date(selectedAssignment.rental_expected_end_date || selectedAssignment.expected_end_date), 'MMM dd, yyyy')
+                       : 'Not specified'
+                     }
+                   </p>
+                 </div>
+                 {(selectedAssignment.rental_actual_end_date || selectedAssignment.actual_end_date) && (
+                   <div>
+                     <Label className="text-sm font-medium text-muted-foreground">Actual End Date</Label>
+                     <p>{format(new Date(selectedAssignment.rental_actual_end_date || selectedAssignment.actual_end_date), 'MMM dd, yyyy')}</p>
+                   </div>
+                 )}
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Days</Label>
-                  <p>{selectedRental.days || 'Not specified'}</p>
+                  <p>{selectedAssignment.days || 'Not specified'}</p>
                 </div>
               </div>
 
@@ -441,28 +625,28 @@ export default function EquipmentRentalHistory({ equipmentId }: EquipmentRentalH
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Quantity</Label>
-                  <p>{selectedRental.quantity}</p>
+                  <p>{selectedAssignment.quantity}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Rate Type</Label>
-                  <div>{getRateTypeBadge(selectedRental.rate_type)}</div>
+                  <div>{getRateTypeBadge(selectedAssignment.rate_type)}</div>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Unit Price</Label>
-                  <p>${selectedRental.unit_price.toFixed(2)}</p>
+                  <p>${selectedAssignment.unit_price.toFixed(2)}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Total Price</Label>
-                  <p className="font-bold">${selectedRental.total_price.toFixed(2)}</p>
+                  <p className="font-bold">${selectedAssignment.total_price.toFixed(2)}</p>
                 </div>
               </div>
 
-              {selectedRental.notes && (
+              {selectedAssignment.notes && (
                 <>
                   <Separator />
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
-                    <p className="mt-1">{selectedRental.notes}</p>
+                    <p className="mt-1">{selectedAssignment.notes}</p>
                   </div>
                 </>
               )}
@@ -472,17 +656,139 @@ export default function EquipmentRentalHistory({ equipmentId }: EquipmentRentalH
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Created</Label>
-                  <p>{format(new Date(selectedRental.created_at), 'MMM dd, yyyy HH:mm')}</p>
+                  <p>{format(new Date(selectedAssignment.created_at), 'MMM dd, yyyy HH:mm')}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
-                  <p>{format(new Date(selectedRental.updated_at), 'MMM dd, yyyy HH:mm')}</p>
+                  <p>{format(new Date(selectedAssignment.updated_at), 'MMM dd, yyyy HH:mm')}</p>
                 </div>
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-} 
+                 </DialogContent>
+       </Dialog>
+
+       {/* Manual Assignment Dialog */}
+       <Dialog open={showManualAssignmentDialog} onOpenChange={setShowManualAssignmentDialog}>
+         <DialogContent className="max-w-2xl">
+           <DialogHeader>
+             <DialogTitle>Add Manual Assignment</DialogTitle>
+             <DialogDescription>
+               Assign this equipment to an employee manually
+             </DialogDescription>
+           </DialogHeader>
+           
+           <form onSubmit={handleManualAssignmentSubmit} className="space-y-4">
+             {/* Employee Selection */}
+             <div className="space-y-2">
+               <Label htmlFor="employee">Employee *</Label>
+               <Select 
+                 value={manualAssignmentForm.employeeId} 
+                 onValueChange={(value) => setManualAssignmentForm(prev => ({ ...prev, employeeId: value }))}
+               >
+                 <SelectTrigger>
+                   <SelectValue placeholder="Select an employee" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   {employees.map((employee) => (
+                     <SelectItem key={employee.id} value={employee.id.toString()}>
+                       <div className="flex flex-col">
+                         <span className="font-medium">
+                           {employee.first_name} {employee.last_name}
+                         </span>
+                         <span className="text-sm text-muted-foreground">
+                           ID: {employee.employee_id}
+                         </span>
+                       </div>
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+             </div>
+
+             {/* Date Range */}
+             <div className="grid grid-cols-2 gap-4">
+               <div className="space-y-2">
+                 <Label htmlFor="start-date">Start Date *</Label>
+                 <Input
+                   id="start-date"
+                   type="date"
+                   value={manualAssignmentForm.startDate}
+                   onChange={(e) => setManualAssignmentForm(prev => ({ ...prev, startDate: e.target.value }))}
+                   required
+                 />
+               </div>
+               <div className="space-y-2">
+                 <Label htmlFor="end-date">End Date (Optional)</Label>
+                 <Input
+                   id="end-date"
+                   type="date"
+                   value={manualAssignmentForm.endDate}
+                   onChange={(e) => setManualAssignmentForm(prev => ({ ...prev, endDate: e.target.value }))}
+                   min={manualAssignmentForm.startDate}
+                 />
+               </div>
+             </div>
+
+             {/* Financial Information */}
+             <div className="grid grid-cols-2 gap-4">
+               <div className="space-y-2">
+                 <Label htmlFor="daily-rate">Daily Rate</Label>
+                 <Input
+                   id="daily-rate"
+                   type="number"
+                   step="0.01"
+                   placeholder="0.00"
+                   value={manualAssignmentForm.dailyRate}
+                   onChange={(e) => setManualAssignmentForm(prev => ({ ...prev, dailyRate: e.target.value }))}
+                 />
+               </div>
+               <div className="space-y-2">
+                 <Label htmlFor="total-amount">Total Amount (Optional)</Label>
+                 <Input
+                   id="total-amount"
+                   type="number"
+                   step="0.01"
+                   placeholder="0.00"
+                   value={manualAssignmentForm.totalAmount}
+                   onChange={(e) => setManualAssignmentForm(prev => ({ ...prev, totalAmount: e.target.value }))}
+                 />
+               </div>
+             </div>
+
+             {/* Notes */}
+             <div className="space-y-2">
+               <Label htmlFor="notes">Notes</Label>
+               <Textarea
+                 id="notes"
+                 placeholder="Add any additional notes about this assignment..."
+                 value={manualAssignmentForm.notes}
+                 onChange={(e) => setManualAssignmentForm(prev => ({ ...prev, notes: e.target.value }))}
+                 rows={3}
+               />
+             </div>
+
+             {/* Dialog Footer */}
+             <div className="flex justify-end space-x-2 pt-4">
+               <Button
+                 type="button"
+                 variant="outline"
+                 onClick={() => setShowManualAssignmentDialog(false)}
+               >
+                 Cancel
+               </Button>
+               <Button type="submit" disabled={submittingManualAssignment}>
+                 {submittingManualAssignment ? (
+                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                 ) : (
+                   <Plus className="h-4 w-4 mr-2" />
+                 )}
+                 Create Manual Assignment
+               </Button>
+             </div>
+           </form>
+         </DialogContent>
+       </Dialog>
+     </>
+   );
+ } 

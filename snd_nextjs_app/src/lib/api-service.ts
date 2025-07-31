@@ -312,6 +312,24 @@ export class ApiService {
     });
   }
 
+  static async createEquipmentAssignment(id: number, data: {
+    assignment_type: 'rental' | 'project' | 'manual';
+    project_id?: number;
+    employee_id?: number;
+    rental_id?: number;
+    start_date: string;
+    end_date?: string;
+    daily_rate?: number;
+    total_amount?: number;
+    notes?: string;
+    status?: string;
+  }) {
+    return this.post(`/equipment/${id}/rentals`, data, {
+      toastMessage: 'Equipment assignment created successfully',
+      errorMessage: 'Failed to create equipment assignment',
+    });
+  }
+
   // ========================================
   // ERPNext EQUIPMENT INTEGRATION
   // ========================================
