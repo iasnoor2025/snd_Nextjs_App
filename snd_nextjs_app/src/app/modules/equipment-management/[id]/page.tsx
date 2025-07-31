@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { ApiService } from "@/lib/api-service";
 import { Label } from "@/components/ui/label";
+import EquipmentRentalHistory from "@/components/equipment/EquipmentRentalHistory";
 
 interface Equipment {
   id: number;
@@ -300,8 +301,11 @@ export default function EquipmentShowPage() {
               </div>
             </div>
           </CardContent>
-        </Card>
-      </div>
-    </div>
-  );
-} 
+                 </Card>
+       </div>
+
+       {/* Rental History */}
+       <EquipmentRentalHistory equipmentId={equipment.id} />
+     </div>
+   );
+ } 

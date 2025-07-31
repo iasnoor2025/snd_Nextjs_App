@@ -306,6 +306,12 @@ export class ApiService {
     });
   }
 
+  static async getEquipmentRentalHistory(id: number) {
+    return this.get(`/equipment/${id}/rentals`, undefined, {
+      errorMessage: 'Failed to load equipment rental history',
+    });
+  }
+
   // ========================================
   // ERPNext EQUIPMENT INTEGRATION
   // ========================================
