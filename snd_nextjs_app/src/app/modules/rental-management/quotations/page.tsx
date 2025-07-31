@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { usePrint } from "@/hooks/use-print";
 import {
   Pagination,
   PaginationContent,
@@ -114,6 +115,9 @@ export default function QuotationsPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const { printRef, handlePrint } = usePrint({
+    documentTitle: "Rental-Quotations-List",
+  });
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
@@ -386,7 +390,7 @@ export default function QuotationsPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6" ref={printRef}>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Quotations</h1>

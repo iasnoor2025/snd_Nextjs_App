@@ -101,7 +101,6 @@ const statusIcons = {
 export default function PayrollDetailsPage() {
   const params = useParams();
   const payrollId = params.id as string;
-  const printRef = useRef<HTMLDivElement>(null);
 
   const [payroll, setPayroll] = useState<Payroll | null>(null);
   const [loading, setLoading] = useState(true);
@@ -158,8 +157,8 @@ export default function PayrollDetailsPage() {
     toast.success("Payslip download started");
   };
 
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
+  const { printRef, handlePrint } = usePrint({
+    documentTitle: `Payroll-${payrollId}`,
   });
 
   const handleShare = () => {

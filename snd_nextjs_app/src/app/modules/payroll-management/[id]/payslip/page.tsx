@@ -9,7 +9,7 @@ import { ArrowLeft, Download, Printer, FileText, User, Building, DollarSign, Clo
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
-import { useRef } from "react";
+import { usePrint } from "@/hooks/use-print";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 
@@ -387,7 +387,9 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   const [payslipData, setPayslipData] = useState<PayslipData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const payslipRef = useRef<HTMLDivElement>(null);
+  const { printRef: payslipRef, handlePrint } = usePrint({
+    documentTitle: `Payslip-${id}`,
+  });
 
   useEffect(() => {
     const fetchPayslipData = async () => {
@@ -431,9 +433,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     };
   }, []);
 
-  const handlePrint = () => {
-    window.print();
-  };
+
 
   const handleDownload = async () => {
     setIsLoading(true);

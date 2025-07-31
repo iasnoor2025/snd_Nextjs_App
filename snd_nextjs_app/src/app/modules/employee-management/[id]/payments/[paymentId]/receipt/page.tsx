@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Printer, Download, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { usePrint } from "@/hooks/use-print";
 
 interface ReceiptData {
   payment: {
@@ -46,6 +47,9 @@ export default function ReceiptPage() {
 
   const employeeId = params.id as string;
   const paymentId = params.paymentId as string;
+  const { printRef, handlePrint } = usePrint({
+    documentTitle: `Payment-Receipt-${employeeId}-${paymentId}`,
+  });
 
   useEffect(() => {
     const fetchReceipt = async () => {
@@ -70,9 +74,7 @@ export default function ReceiptPage() {
     }
   }, [employeeId, paymentId]);
 
-  const handlePrint = () => {
-    window.print();
-  };
+
 
   const handleDownload = () => {
     // TODO: Implement PDF download functionality
@@ -110,7 +112,7 @@ export default function ReceiptPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 p-4" ref={printRef}>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">

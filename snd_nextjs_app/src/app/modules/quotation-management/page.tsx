@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { usePrint } from "@/hooks/use-print";
 
 interface Customer {
   id: number;
@@ -88,6 +89,9 @@ export default function QuotationManagementPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const { printRef, handlePrint } = usePrint({
+    documentTitle: "Quotation-List",
+  });
 
   useEffect(() => {
     const fetchQuotations = async () => {
@@ -173,9 +177,7 @@ export default function QuotationManagementPage() {
     toast.info("Export functionality coming soon");
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+
 
   if (loading) {
     return (
@@ -194,7 +196,7 @@ export default function QuotationManagementPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6" ref={printRef}>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Quotation Management</h1>
         <div className="flex space-x-2">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { useI18n } from "@/hooks/use-i18n";
 import { useRBAC } from "@/lib/rbac/rbac-context";
+import { usePrint } from "@/hooks/use-print";
 
 interface DayData {
   date: string;
@@ -141,7 +142,9 @@ export default function EmployeePayslipPage() {
   const [payslipData, setPayslipData] = useState<PayslipData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMonthState, setSelectedMonthState] = useState(selectedMonth);
-  const payslipRef = useRef<HTMLDivElement>(null);
+  const { printRef: payslipRef, handlePrint } = usePrint({
+    documentTitle: `Employee-Payslip-${employeeId}`,
+  });
   const [isLoadingPDF, setIsLoadingPDF] = useState(false);
 
   // Generate sample payslip data matching Laravel structure
@@ -234,9 +237,7 @@ export default function EmployeePayslipPage() {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+
 
   const handleDownload = async () => {
     setIsLoadingPDF(true);
