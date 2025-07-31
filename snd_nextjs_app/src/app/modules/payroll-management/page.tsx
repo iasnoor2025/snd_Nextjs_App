@@ -442,7 +442,7 @@ export default function PayrollManagementPage() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: "SAR",
     }).format(amount);
   };
 
@@ -692,9 +692,17 @@ export default function PayrollManagementPage() {
                         </TableCell>
                         <TableCell>
                           <div>
-                            <div className="font-medium">{payroll.employee.full_name}</div>
+                            <div className="font-medium">
+                              {payroll.employee ? 
+                                (payroll.employee.full_name || `${payroll.employee.first_name} ${payroll.employee.last_name}`) : 
+                                'Unknown Employee'
+                              }
+                            </div>
                             <div className="text-sm text-muted-foreground">
-                              {payroll.employee.department} • {payroll.employee.designation}
+                              {payroll.employee ? 
+                                `${payroll.employee.department || 'N/A'} • ${payroll.employee.designation || 'N/A'}` : 
+                                'No details available'
+                              }
                             </div>
                           </div>
                         </TableCell>

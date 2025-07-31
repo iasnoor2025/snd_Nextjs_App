@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
               overtime_hours: totalOvertimeHours,
               status: 'pending',
               notes: `Generated from approved timesheets for ${month}/${year}`,
-              currency: 'USD'
+              currency: 'SAR'
             }
           });
 

@@ -36,7 +36,7 @@ const mockPayrolls = [
     payment_reference: null,
     payment_status: null,
     payment_processed_at: null,
-    currency: 'USD',
+    currency: 'SAR',
     created_at: '2024-01-15T10:00:00Z',
     updated_at: '2024-01-30T10:00:00Z',
     items: [
@@ -135,7 +135,7 @@ const mockPayrolls = [
     payment_reference: null,
     payment_status: null,
     payment_processed_at: null,
-    currency: 'USD',
+    currency: 'SAR',
     created_at: '2024-01-15T10:00:00Z',
     updated_at: '2024-01-15T10:00:00Z',
     items: [

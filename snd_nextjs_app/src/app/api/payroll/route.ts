@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
         overtime_hours: body.overtime_hours || 0,
         status: 'pending',
         notes: body.notes || '',
-        currency: 'USD'
+        currency: 'SAR'
       },
       include: {
         employee: true,
