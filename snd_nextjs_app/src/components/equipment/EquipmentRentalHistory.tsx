@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { 
   History, 
   Calendar, 
@@ -23,7 +24,11 @@ import {
   Loader2,
   AlertCircle,
   RefreshCw,
-  Plus
+  Plus,
+  Edit,
+  CheckCircle,
+  Trash2,
+  MoreHorizontal
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -222,6 +227,52 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
   const openManualAssignmentDialog = () => {
     fetchEmployees();
     setShowManualAssignmentDialog(true);
+  };
+
+  const handleEditAssignment = (assignment: AssignmentHistoryItem) => {
+    // TODO: Implement edit functionality
+    toast.info('Edit functionality coming soon');
+  };
+
+  const handleCompleteAssignment = async (assignment: AssignmentHistoryItem) => {
+    if (!confirm(`Are you sure you want to complete this assignment?`)) {
+      return;
+    }
+
+    try {
+      const response = await ApiService.updateEquipmentAssignment(assignment.id, {
+        status: 'completed',
+        actual_end_date: new Date().toISOString().split('T')[0]
+      });
+      
+      if (response.success) {
+        toast.success('Assignment completed successfully');
+        fetchAssignmentHistory();
+      } else {
+        toast.error(response.error || 'Failed to complete assignment');
+      }
+    } catch (error) {
+      toast.error('Failed to complete assignment');
+    }
+  };
+
+  const handleDeleteAssignment = async (assignment: AssignmentHistoryItem) => {
+    if (!confirm(`Are you sure you want to delete this assignment? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await ApiService.deleteEquipmentAssignment(assignment.id);
+      
+      if (response.success) {
+        toast.success('Assignment deleted successfully');
+        fetchAssignmentHistory();
+      } else {
+        toast.error(response.error || 'Failed to delete assignment');
+      }
+    } catch (error) {
+      toast.error('Failed to delete assignment');
+    }
   };
 
   if (loading) {
@@ -484,13 +535,41 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openDetailsDialog(assignment)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openDetailsDialog(assignment)}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              
+                              {assignment.status === 'active' && (
+                                <>
+                                  <DropdownMenuItem onClick={() => handleEditAssignment(assignment)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit Assignment
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleCompleteAssignment(assignment)}>
+                                    <CheckCircle className="h-4 w-4 mr-2" />
+                                    Complete Assignment
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                </>
+                              )}
+                              
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteAssignment(assignment)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Assignment
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))}
