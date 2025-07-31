@@ -14,99 +14,130 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+
+interface PayrollItem {
+  id: number;
+  payroll_id: number;
+  type: string;
+  description: string;
+  amount: number;
+  is_taxable: boolean;
+  tax_rate: number;
+  order: number;
+}
 
 interface Employee {
-  id: string;
-  name: string;
-  employee_id: string;
+  id: number;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  file_number: string;
+  basic_salary: number;
   department: string;
-  position: string;
+  designation: string;
+  status: string;
 }
 
 interface Payroll {
-  id: string;
-  employee_id: string;
-  employee_name: string;
-  period: string;
-  gross_pay: number;
-  net_pay: number;
-  basic_salary: number;
-  allowances: number;
-  deductions: number;
+  id: number;
+  employee_id: number;
+  employee: Employee;
+  month: number;
+  year: number;
+  base_salary: number;
+  overtime_amount: number;
+  bonus_amount: number;
+  deduction_amount: number;
+  advance_deduction: number;
+  final_amount: number;
+  total_worked_hours: number;
   overtime_hours: number;
-  overtime_rate: number;
-  payment_date: string;
-  payment_method: string;
   status: string;
   notes: string;
+  approved_by: number | null;
+  approved_at: string | null;
+  paid_by: number | null;
+  paid_at: string | null;
+  payment_method: string | null;
+  payment_reference: string | null;
+  payment_status: string | null;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+  items: PayrollItem[];
 }
-
-const mockEmployees: Employee[] = [
-  { id: "1", name: "John Doe", employee_id: "EMP001", department: "Engineering", position: "Software Engineer" },
-  { id: "2", name: "Jane Smith", employee_id: "EMP002", department: "Marketing", position: "Marketing Manager" },
-  { id: "3", name: "Bob Johnson", employee_id: "EMP003", department: "Sales", position: "Sales Representative" },
-];
-
-const mockPayroll: Payroll = {
-  id: "1",
-  employee_id: "1",
-  employee_name: "John Doe",
-  period: "January 2024",
-  gross_pay: 5000,
-  net_pay: 3800,
-  basic_salary: 4000,
-  allowances: 500,
-  deductions: 1200,
-  overtime_hours: 10,
-  overtime_rate: 25,
-  payment_date: "2024-01-31",
-  payment_method: "bank_transfer",
-  status: "processed",
-  notes: "Regular monthly payroll"
-};
 
 export default function EditPayrollPage() {
   const params = useParams();
+  const router = useRouter();
   const payrollId = params.id as string;
 
+  const [payroll, setPayroll] = useState<Payroll | null>(null);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [formData, setFormData] = useState({
-    employee_id: "",
-    period: "",
-    gross_pay: "",
-    net_pay: "",
-    basic_salary: "",
-    allowances: "",
-    deductions: "",
-    overtime_hours: "",
-    overtime_rate: "",
-    payment_date: undefined as Date | undefined,
-    payment_method: "",
-    notes: ""
+    base_salary: "",
+    overtime_amount: "",
+    bonus_amount: "",
+    deduction_amount: "",
+    advance_deduction: "",
+    notes: "",
+    status: ""
   });
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading payroll data
-    setTimeout(() => {
-      setFormData({
-        employee_id: mockPayroll.employee_id,
-        period: mockPayroll.period,
-        gross_pay: mockPayroll.gross_pay.toString(),
-        net_pay: mockPayroll.net_pay.toString(),
-        basic_salary: mockPayroll.basic_salary.toString(),
-        allowances: mockPayroll.allowances.toString(),
-        deductions: mockPayroll.deductions.toString(),
-        overtime_hours: mockPayroll.overtime_hours.toString(),
-        overtime_rate: mockPayroll.overtime_rate.toString(),
-        payment_date: new Date(mockPayroll.payment_date),
-        payment_method: mockPayroll.payment_method,
-        notes: mockPayroll.notes
-      });
-      setInitialLoading(false);
-    }, 1000);
+    // Fetch payroll data from API
+    const fetchPayroll = async () => {
+      try {
+        setInitialLoading(true);
+        const response = await fetch(`/api/payroll/${payrollId}`);
+        const data = await response.json();
+
+        if (data.success) {
+          setFormData({
+            base_salary: data.data.base_salary.toString(),
+            overtime_amount: data.data.overtime_amount.toString(),
+            bonus_amount: data.data.bonus_amount.toString(),
+            deduction_amount: data.data.deduction_amount.toString(),
+            advance_deduction: data.data.advance_deduction.toString(),
+            notes: data.data.notes || "",
+            status: data.data.status
+          });
+        } else {
+          toast.error("Failed to fetch payroll details");
+        }
+      } catch (error) {
+        console.error("Error fetching payroll:", error);
+        toast.error("Error fetching payroll details");
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    if (payrollId) {
+      fetchPayroll();
+    }
+  }, [payrollId]);
+
+  const fetchEmployees = async () => {
+    try {
+      const response = await fetch("/api/employees");
+      const data = await response.json();
+      if (data.success) {
+        setEmployees(data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching employees:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (payrollId) {
+      fetchEmployees();
+    }
   }, [payrollId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,19 +145,39 @@ export default function EditPayrollPage() {
     setLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      toast.success("Payroll updated successfully");
-      // Redirect to payroll list
-      window.location.href = "/modules/payroll-management";
+      const response = await fetch(`/api/payroll/${payrollId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          base_salary: parseFloat(formData.base_salary),
+          overtime_amount: parseFloat(formData.overtime_amount),
+          bonus_amount: parseFloat(formData.bonus_amount),
+          deduction_amount: parseFloat(formData.deduction_amount),
+          advance_deduction: parseFloat(formData.advance_deduction),
+          notes: formData.notes,
+          status: formData.status
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("Payroll updated successfully");
+        router.push(`/modules/payroll-management/${payrollId}`);
+      } else {
+        toast.error(data.message || "Failed to update payroll");
+      }
     } catch (error) {
-      toast.error("Failed to update payroll");
+      console.error("Error updating payroll:", error);
+      toast.error("Error updating payroll");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleInputChange = (field: string, value: string | Date) => {
+  const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -134,9 +185,20 @@ export default function EditPayrollPage() {
   };
 
   const calculateNetPay = () => {
-    const gross = parseFloat(formData.gross_pay) || 0;
-    const deductions = parseFloat(formData.deductions) || 0;
-    return gross - deductions;
+    const baseSalary = parseFloat(formData.base_salary) || 0;
+    const overtimeAmount = parseFloat(formData.overtime_amount) || 0;
+    const bonusAmount = parseFloat(formData.bonus_amount) || 0;
+    const deductionAmount = parseFloat(formData.deduction_amount) || 0;
+    const advanceDeduction = parseFloat(formData.advance_deduction) || 0;
+
+    return baseSalary + overtimeAmount + bonusAmount - deductionAmount - advanceDeduction;
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "SAR",
+    }).format(amount);
   };
 
   if (initialLoading) {
@@ -144,65 +206,72 @@ export default function EditPayrollPage() {
       <div className="p-6">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Loading payroll data...</span>
+          <span className="ml-2">Loading payroll details...</span>
         </div>
       </div>
     );
   }
 
+  if (!payroll) {
+    return (
+      <div className="p-6">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold">Payroll not found</h2>
+          <p className="text-gray-600">The requested payroll could not be found.</p>
+        </div>
+      </div>
+    );
+  }
+
+  const employeeName = payroll.employee ? 
+    (payroll.employee.full_name || `${payroll.employee.first_name} ${payroll.employee.last_name}`) : 
+    'Unknown Employee';
+
+  const period = new Date(payroll.year, payroll.month - 1).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
   return (
     <div className="p-6">
-      <div className="flex items-center gap-4 mb-6">
-        <Link href="/modules/payroll-management">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold">Edit Payroll</h1>
-          <p className="text-gray-600">Modify payroll record for {mockPayroll.employee_name}</p>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <Link href={`/modules/payroll-management/${payrollId}`}>
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold">Edit Payroll</h1>
+            <p className="text-gray-600">Modify payroll record for {employeeName}</p>
+          </div>
         </div>
       </div>
 
       <form onSubmit={handleSubmit}>
         <div className="grid gap-6">
-          {/* Employee Information */}
+          {/* Header Information */}
           <Card>
             <CardHeader>
-              <CardTitle>Employee Information</CardTitle>
-              <CardDescription>Employee and period details</CardDescription>
+              <CardTitle>Payroll Information</CardTitle>
+              <CardDescription>
+                Payroll #{payroll.id} - {period} - {employeeName}
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="employee">Employee</Label>
-                  <Select value={formData.employee_id} onValueChange={(value) => handleInputChange("employee_id", value)}>
+                <div>
+                  <Label htmlFor="status">Status</Label>
+                  <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select an employee" />
+                      <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockEmployees.map((employee) => (
-                        <SelectItem key={employee.id} value={employee.id}>
-                          {employee.name} - {employee.employee_id}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="period">Payroll Period</Label>
-                  <Select value={formData.period} onValueChange={(value) => handleInputChange("period", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="January 2024">January 2024</SelectItem>
-                      <SelectItem value="February 2024">February 2024</SelectItem>
-                      <SelectItem value="March 2024">March 2024</SelectItem>
-                      <SelectItem value="April 2024">April 2024</SelectItem>
-                      <SelectItem value="May 2024">May 2024</SelectItem>
-                      <SelectItem value="June 2024">June 2024</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="approved">Approved</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -210,153 +279,107 @@ export default function EditPayrollPage() {
             </CardContent>
           </Card>
 
-          {/* Salary Details */}
+          {/* Salary Breakdown */}
           <Card>
             <CardHeader>
-              <CardTitle>Salary Details</CardTitle>
-              <CardDescription>Enter salary and compensation information</CardDescription>
+              <CardTitle>Salary Breakdown</CardTitle>
+              <CardDescription>Edit salary components</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="basic_salary">Basic Salary</Label>
-                  <Input
-                    id="basic_salary"
-                    type="number"
-                    placeholder="0.00"
-                    value={formData.basic_salary}
-                    onChange={(e) => handleInputChange("basic_salary", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="allowances">Allowances</Label>
-                  <Input
-                    id="allowances"
-                    type="number"
-                    placeholder="0.00"
-                    value={formData.allowances}
-                    onChange={(e) => handleInputChange("allowances", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gross_pay">Gross Pay</Label>
-                  <Input
-                    id="gross_pay"
-                    type="number"
-                    placeholder="0.00"
-                    value={formData.gross_pay}
-                    onChange={(e) => handleInputChange("gross_pay", e.target.value)}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Overtime */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Overtime</CardTitle>
-              <CardDescription>Enter overtime hours and rate</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="overtime_hours">Overtime Hours</Label>
+                <div>
+                  <Label htmlFor="base_salary">Base Salary</Label>
                   <Input
-                    id="overtime_hours"
+                    id="base_salary"
                     type="number"
-                    placeholder="0"
-                    value={formData.overtime_hours}
-                    onChange={(e) => handleInputChange("overtime_hours", e.target.value)}
+                    step="0.01"
+                    value={formData.base_salary}
+                    onChange={(e) => handleInputChange("base_salary", e.target.value)}
+                    placeholder="0.00"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="overtime_rate">Overtime Rate</Label>
+                <div>
+                  <Label htmlFor="overtime_amount">Overtime Amount</Label>
                   <Input
-                    id="overtime_rate"
+                    id="overtime_amount"
                     type="number"
+                    step="0.01"
+                    value={formData.overtime_amount}
+                    onChange={(e) => handleInputChange("overtime_amount", e.target.value)}
                     placeholder="0.00"
-                    value={formData.overtime_rate}
-                    onChange={(e) => handleInputChange("overtime_rate", e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="bonus_amount">Bonus Amount</Label>
+                  <Input
+                    id="bonus_amount"
+                    type="number"
+                    step="0.01"
+                    value={formData.bonus_amount}
+                    onChange={(e) => handleInputChange("bonus_amount", e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="deduction_amount">Deduction Amount</Label>
+                  <Input
+                    id="deduction_amount"
+                    type="number"
+                    step="0.01"
+                    value={formData.deduction_amount}
+                    onChange={(e) => handleInputChange("deduction_amount", e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="advance_deduction">Advance Deduction</Label>
+                  <Input
+                    id="advance_deduction"
+                    type="number"
+                    step="0.01"
+                    value={formData.advance_deduction}
+                    onChange={(e) => handleInputChange("advance_deduction", e.target.value)}
+                    placeholder="0.00"
                   />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Deductions */}
+          {/* Summary */}
           <Card>
             <CardHeader>
-              <CardTitle>Deductions</CardTitle>
-              <CardDescription>Enter tax and other deductions</CardDescription>
+              <CardTitle>Summary</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               <div className="space-y-2">
-                <Label htmlFor="deductions">Total Deductions</Label>
-                <Input
-                  id="deductions"
-                  type="number"
-                  placeholder="0.00"
-                  value={formData.deductions}
-                  onChange={(e) => handleInputChange("deductions", e.target.value)}
-                />
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Net Pay:</span>
-                  <span className="text-lg font-bold text-green-600">
-                    ${calculateNetPay().toLocaleString()}
-                  </span>
+                <div className="flex justify-between">
+                  <span>Base Salary:</span>
+                  <span>{formatCurrency(parseFloat(formData.base_salary) || 0)}</span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Payment Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment Information</CardTitle>
-              <CardDescription>Set payment date and method</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="payment_date">Payment Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !formData.payment_date && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.payment_date ? format(formData.payment_date, "PPP") : "Pick a date"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={formData.payment_date}
-                        onSelect={(date) => handleInputChange("payment_date", date || new Date())}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                <div className="flex justify-between">
+                  <span>Overtime:</span>
+                  <span>{formatCurrency(parseFloat(formData.overtime_amount) || 0)}</span>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="payment_method">Payment Method</Label>
-                  <Select value={formData.payment_method} onValueChange={(value) => handleInputChange("payment_method", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select payment method" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                      <SelectItem value="check">Check</SelectItem>
-                      <SelectItem value="cash">Cash</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="flex justify-between">
+                  <span>Bonus:</span>
+                  <span>{formatCurrency(parseFloat(formData.bonus_amount) || 0)}</span>
+                </div>
+                <div className="flex justify-between text-red-600">
+                  <span>Deductions:</span>
+                  <span>-{formatCurrency(parseFloat(formData.deduction_amount) || 0)}</span>
+                </div>
+                {parseFloat(formData.advance_deduction) > 0 && (
+                  <div className="flex justify-between text-red-600">
+                    <span>Advance Deduction:</span>
+                    <span>-{formatCurrency(parseFloat(formData.advance_deduction) || 0)}</span>
+                  </div>
+                )}
+                <div className="border-t pt-2">
+                  <div className="flex justify-between font-semibold text-lg">
+                    <span>Net Pay:</span>
+                    <span className="text-green-600">{formatCurrency(calculateNetPay())}</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -365,26 +388,21 @@ export default function EditPayrollPage() {
           {/* Notes */}
           <Card>
             <CardHeader>
-              <CardTitle>Additional Notes</CardTitle>
-              <CardDescription>Add any additional notes or comments</CardDescription>
+              <CardTitle>Notes</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Enter any additional notes..."
-                  value={formData.notes}
-                  onChange={(e) => handleInputChange("notes", e.target.value)}
-                  rows={4}
-                />
-              </div>
+              <Textarea
+                value={formData.notes}
+                onChange={(e) => handleInputChange("notes", e.target.value)}
+                placeholder="Add any notes about this payroll..."
+                rows={4}
+              />
             </CardContent>
           </Card>
 
-          {/* Submit */}
+          {/* Actions */}
           <div className="flex justify-end gap-4">
-            <Link href="/modules/payroll-management">
+            <Link href={`/modules/payroll-management/${payrollId}`}>
               <Button variant="outline" type="button">
                 Cancel
               </Button>
@@ -392,13 +410,13 @@ export default function EditPayrollPage() {
             <Button type="submit" disabled={loading}>
               {loading ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Updating...
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
                 </>
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Update Payroll
+                  Save Changes
                 </>
               )}
             </Button>

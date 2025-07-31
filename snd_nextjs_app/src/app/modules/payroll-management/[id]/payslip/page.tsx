@@ -160,6 +160,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
         }
         const data = await response.json();
         if (data.success) {
+          console.log('Payslip data received:', data.data);
           setPayslipData(data.data);
         } else {
           throw new Error(data.message || 'Failed to fetch payslip data');
@@ -293,6 +294,11 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
 
   const { payroll, employee, attendanceData, company } = payslipData;
 
+  // Add safety checks for employee data
+  const employeeName = employee ? 
+    (employee.full_name || `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || 'Unknown Employee') : 
+    'Unknown Employee';
+
   // Calculate pay details
   const basicSalary = payroll.base_salary || 0;
   const overtimeAmount = payroll.overtime_amount || 0;
@@ -388,21 +394,21 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span className="font-medium text-gray-500">File #:</span>
-                        <span className="font-semibold text-gray-800">{employee.file_number || '-'}</span>
+                        <span className="font-semibold text-gray-800">{employee?.file_number || '-'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium text-gray-500">Name:</span>
                         <span className="font-semibold text-gray-800">
-                          {employee.full_name}
+                          {employeeName}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium text-gray-500">Designation:</span>
-                        <span className="font-semibold text-gray-800">{employee.designation || '-'}</span>
+                        <span className="font-semibold text-gray-800">{employee?.designation || '-'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="font-medium text-gray-500">Department:</span>
-                        <span className="font-semibold text-gray-800">{employee.department || '-'}</span>
+                        <span className="font-semibold text-gray-800">{employee?.department || '-'}</span>
                       </div>
                     </div>
                   </div>
@@ -528,18 +534,26 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {payroll.items.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <Badge variant={item.type === 'earnings' ? 'default' : 'secondary'}>
-                            {item.type}
-                          </Badge>
+                    {payroll.items && payroll.items.length > 0 ? (
+                      payroll.items.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>
+                            <Badge variant={item.type === 'earnings' ? 'default' : 'secondary'}>
+                              {item.type}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{item.description}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(item.amount)}</TableCell>
+                          <TableCell className="text-right">{item.tax_rate}%</TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-gray-500 py-4">
+                          No payroll items available
                         </TableCell>
-                        <TableCell>{item.description}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(item.amount)}</TableCell>
-                        <TableCell className="text-right">{item.tax_rate}%</TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -732,7 +746,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
               </div>
               <div className="text-center">
                 <p className="mb-1 font-semibold">Employee</p>
-                <p className="text-muted-foreground italic">{employee.full_name}</p>
+                <p className="text-muted-foreground italic">{employeeName}</p>
                 <div className="mt-8 border-t border-gray-300 pt-1">Signature</div>
               </div>
             </div>

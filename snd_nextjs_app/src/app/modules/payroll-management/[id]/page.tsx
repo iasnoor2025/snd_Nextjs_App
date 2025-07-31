@@ -9,54 +9,59 @@ import { ArrowLeft, Edit, Download, FileText, Printer, Share2, Loader2 } from "l
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
-interface Payroll {
-  id: string;
-  employee_id: string;
-  employee_name: string;
-  employee_number: string;
-  department: string;
-  position: string;
-  period: string;
-  gross_pay: number;
-  net_pay: number;
-  basic_salary: number;
-  allowances: number;
-  deductions: number;
-  overtime_hours: number;
-  overtime_rate: number;
-  overtime_pay: number;
-  payment_date: string;
-  payment_method: string;
-  status: string;
-  notes: string;
-  created_at: string;
-  updated_at: string;
+interface PayrollItem {
+  id: number;
+  payroll_id: number;
+  type: string;
+  description: string;
+  amount: number;
+  is_taxable: boolean;
+  tax_rate: number;
+  order: number;
 }
 
-const mockPayroll: Payroll = {
-  id: "1",
-  employee_id: "1",
-  employee_name: "John Doe",
-  employee_number: "EMP001",
-  department: "Engineering",
-  position: "Software Engineer",
-  period: "January 2024",
-  gross_pay: 5000,
-  net_pay: 3800,
-  basic_salary: 4000,
-  allowances: 500,
-  deductions: 1200,
-  overtime_hours: 10,
-  overtime_rate: 25,
-  overtime_pay: 250,
-  payment_date: "2024-01-31",
-  payment_method: "bank_transfer",
-  status: "processed",
-  notes: "Regular monthly payroll with overtime compensation for project deadlines.",
-  created_at: "2024-01-15T10:00:00Z",
-  updated_at: "2024-01-30T14:30:00Z"
-};
+interface Employee {
+  id: number;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  file_number: string;
+  basic_salary: number;
+  department: string;
+  designation: string;
+  status: string;
+}
+
+interface Payroll {
+  id: number;
+  employee_id: number;
+  employee: Employee;
+  month: number;
+  year: number;
+  base_salary: number;
+  overtime_amount: number;
+  bonus_amount: number;
+  deduction_amount: number;
+  advance_deduction: number;
+  final_amount: number;
+  total_worked_hours: number;
+  overtime_hours: number;
+  status: string;
+  notes: string;
+  approved_by: number | null;
+  approved_at: string | null;
+  paid_by: number | null;
+  paid_at: string | null;
+  payment_method: string | null;
+  payment_reference: string | null;
+  payment_status: string | null;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+  items: PayrollItem[];
+}
 
 export default function PayrollDetailsPage() {
   const params = useParams();
@@ -65,28 +70,49 @@ export default function PayrollDetailsPage() {
   const [payroll, setPayroll] = useState<Payroll | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Simulate loading payroll data
-    setTimeout(() => {
-      setPayroll(mockPayroll);
+  const fetchPayroll = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`/api/payroll/${payrollId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        setPayroll(data.data);
+      } else {
+        toast.error("Failed to fetch payroll details");
+      }
+    } catch (error) {
+      console.error("Error fetching payroll:", error);
+      toast.error("Error fetching payroll details");
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
+  };
+
+  useEffect(() => {
+    if (payrollId) {
+      fetchPayroll();
+    }
   }, [payrollId]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "processed":
-        return <Badge className="bg-green-100 text-green-800">Processed</Badge>;
+      case "paid":
+        return <Badge className="bg-green-100 text-green-800">Paid</Badge>;
+      case "approved":
+        return <Badge className="bg-blue-100 text-blue-800">Approved</Badge>;
       case "pending":
         return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      case "draft":
-        return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
+      case "cancelled":
+        return <Badge className="bg-red-100 text-red-800">Cancelled</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
   };
 
-  const getPaymentMethodLabel = (method: string) => {
+  const getPaymentMethodLabel = (method: string | null) => {
+    if (!method) return "Not specified";
+    
     switch (method) {
       case "bank_transfer":
         return "Bank Transfer";
@@ -99,9 +125,17 @@ export default function PayrollDetailsPage() {
     }
   };
 
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "SAR",
+    }).format(amount);
+  };
+
   const handleDownloadPayslip = () => {
     // Simulate download
     console.log("Downloading payslip for payroll:", payrollId);
+    toast.success("Payslip download started");
   };
 
   const handlePrint = () => {
@@ -111,6 +145,7 @@ export default function PayrollDetailsPage() {
   const handleShare = () => {
     // Simulate share functionality
     console.log("Sharing payroll details");
+    toast.success("Payroll details shared");
   };
 
   if (loading) {
@@ -135,6 +170,17 @@ export default function PayrollDetailsPage() {
     );
   }
 
+  const employeeName = payroll.employee ? 
+    (payroll.employee.full_name || `${payroll.employee.first_name} ${payroll.employee.last_name}`) : 
+    'Unknown Employee';
+
+  const period = new Date(payroll.year, payroll.month - 1).toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const grossPay = payroll.base_salary + payroll.overtime_amount + payroll.bonus_amount;
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -147,7 +193,7 @@ export default function PayrollDetailsPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold">Payroll Details</h1>
-            <p className="text-gray-600">Payroll #{payroll.id} - {payroll.period}</p>
+            <p className="text-gray-600">Payroll #{payroll.id} - {period}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -184,14 +230,14 @@ export default function PayrollDetailsPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-xl">{payroll.employee_name}</CardTitle>
+                <CardTitle className="text-xl">{employeeName}</CardTitle>
                 <CardDescription>
-                  {payroll.position} • {payroll.department}
+                  {payroll.employee?.designation || 'N/A'} • {payroll.employee?.department || 'N/A'}
                 </CardDescription>
               </div>
               <div className="text-right">
                 <div className="text-2xl font-bold text-green-600">
-                  ${payroll.net_pay.toLocaleString()}
+                  {formatCurrency(payroll.final_amount)}
                 </div>
                 <div className="text-sm text-gray-500">Net Pay</div>
                 {getStatusBadge(payroll.status)}
@@ -210,19 +256,19 @@ export default function PayrollDetailsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <div className="text-sm font-medium text-gray-500">Employee Name</div>
-                  <div className="text-sm">{payroll.employee_name}</div>
+                  <div className="text-sm">{employeeName}</div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-gray-500">Employee ID</div>
-                  <div className="text-sm">{payroll.employee_number}</div>
+                  <div className="text-sm">{payroll.employee?.file_number || 'N/A'}</div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-gray-500">Department</div>
-                  <div className="text-sm">{payroll.department}</div>
+                  <div className="text-sm">{payroll.employee?.department || 'N/A'}</div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-gray-500">Position</div>
-                  <div className="text-sm">{payroll.position}</div>
+                  <div className="text-sm">{payroll.employee?.designation || 'N/A'}</div>
                 </div>
               </div>
             </CardContent>
@@ -237,11 +283,13 @@ export default function PayrollDetailsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <div className="text-sm font-medium text-gray-500">Payroll Period</div>
-                  <div className="text-sm">{payroll.period}</div>
+                  <div className="text-sm">{period}</div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-gray-500">Payment Date</div>
-                  <div className="text-sm">{format(new Date(payroll.payment_date), "PPP")}</div>
+                  <div className="text-sm">
+                    {payroll.paid_at ? format(new Date(payroll.paid_at), "PPP") : 'Not paid yet'}
+                  </div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-gray-500">Payment Method</div>
@@ -270,20 +318,20 @@ export default function PayrollDetailsPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Basic Salary</span>
-                    <span>${payroll.basic_salary.toLocaleString()}</span>
+                    <span>{formatCurrency(payroll.base_salary)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Allowances</span>
-                    <span>${payroll.allowances.toLocaleString()}</span>
+                    <span>Overtime Pay</span>
+                    <span>{formatCurrency(payroll.overtime_amount)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Overtime Pay ({payroll.overtime_hours} hrs @ ${payroll.overtime_rate}/hr)</span>
-                    <span>${payroll.overtime_pay.toLocaleString()}</span>
+                    <span>Bonus</span>
+                    <span>{formatCurrency(payroll.bonus_amount)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-semibold">
                     <span>Gross Pay</span>
-                    <span className="text-green-600">${payroll.gross_pay.toLocaleString()}</span>
+                    <span className="text-green-600">{formatCurrency(grossPay)}</span>
                   </div>
                 </div>
               </div>
@@ -293,19 +341,53 @@ export default function PayrollDetailsPage() {
                 <h4 className="font-semibold mb-3 text-red-700">Deductions</h4>
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span>Total Deductions</span>
-                    <span className="text-red-600">-${payroll.deductions.toLocaleString()}</span>
+                    <span>Tax & Other Deductions</span>
+                    <span className="text-red-600">-{formatCurrency(payroll.deduction_amount)}</span>
                   </div>
+                  {payroll.advance_deduction > 0 && (
+                    <div className="flex justify-between">
+                      <span>Advance Deduction</span>
+                      <span className="text-red-600">-{formatCurrency(payroll.advance_deduction)}</span>
+                    </div>
+                  )}
                   <Separator />
                   <div className="flex justify-between font-semibold text-lg">
                     <span>Net Pay</span>
-                    <span className="text-green-600">${payroll.net_pay.toLocaleString()}</span>
+                    <span className="text-green-600">{formatCurrency(payroll.final_amount)}</span>
                   </div>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Payroll Items */}
+        {payroll.items && payroll.items.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Payroll Items</CardTitle>
+              <CardDescription>Detailed breakdown of all payroll components</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {payroll.items.map((item) => (
+                  <div key={item.id} className="flex justify-between items-center py-2 border-b last:border-b-0">
+                    <div>
+                      <div className="font-medium">{item.description}</div>
+                      <div className="text-sm text-gray-500">{item.type}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">{formatCurrency(item.amount)}</div>
+                      {item.is_taxable && (
+                        <div className="text-xs text-gray-500">Taxable ({item.tax_rate}%)</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Notes */}
         {payroll.notes && (
@@ -334,6 +416,18 @@ export default function PayrollDetailsPage() {
                 <div className="text-sm font-medium text-gray-500">Last Updated</div>
                 <div className="text-sm">{format(new Date(payroll.updated_at), "PPP 'at' p")}</div>
               </div>
+              {payroll.approved_at && (
+                <div>
+                  <div className="text-sm font-medium text-gray-500">Approved</div>
+                  <div className="text-sm">{format(new Date(payroll.approved_at), "PPP 'at' p")}</div>
+                </div>
+              )}
+              {payroll.paid_at && (
+                <div>
+                  <div className="text-sm font-medium text-gray-500">Paid</div>
+                  <div className="text-sm">{format(new Date(payroll.paid_at), "PPP 'at' p")}</div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

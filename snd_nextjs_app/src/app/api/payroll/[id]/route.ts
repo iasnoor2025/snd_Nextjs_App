@@ -1,198 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
-// Mock data (same as in the main route)
-const mockPayrolls = [
-  {
-    id: 1,
-    employee_id: 1,
-    employee: {
-      id: 1,
-      first_name: 'John',
-      last_name: 'Doe',
-      full_name: 'John Doe',
-      file_number: 'EMP001',
-      basic_salary: 5000,
-      department: 'Engineering',
-      designation: 'Software Engineer'
-    },
-    month: 1,
-    year: 2024,
-    base_salary: 5000,
-    overtime_amount: 250,
-    bonus_amount: 500,
-    deduction_amount: 1200,
-    advance_deduction: 0,
-    final_amount: 4550,
-    total_worked_hours: 160,
-    overtime_hours: 10,
-    status: 'approved',
-    notes: 'Regular monthly payroll',
-    approved_by: 1,
-    approved_at: '2024-01-30T10:00:00Z',
-    paid_by: null,
-    paid_at: null,
-    payment_method: null,
-    payment_reference: null,
-    payment_status: null,
-    payment_processed_at: null,
-    currency: 'SAR',
-    created_at: '2024-01-15T10:00:00Z',
-    updated_at: '2024-01-30T10:00:00Z',
-    items: [
-      {
-        id: 1,
-        payroll_id: 1,
-        type: 'earnings',
-        description: 'Basic Salary',
-        amount: 5000,
-        is_taxable: true,
-        tax_rate: 15,
-        order: 1
-      },
-      {
-        id: 2,
-        payroll_id: 1,
-        type: 'overtime',
-        description: 'Overtime (10 hours)',
-        amount: 250,
-        is_taxable: true,
-        tax_rate: 15,
-        order: 2
-      },
-      {
-        id: 3,
-        payroll_id: 1,
-        type: 'bonus',
-        description: 'Performance Bonus',
-        amount: 500,
-        is_taxable: true,
-        tax_rate: 15,
-        order: 3
-      },
-      {
-        id: 4,
-        payroll_id: 1,
-        type: 'deduction',
-        description: 'Tax Deduction',
-        amount: 862.5,
-        is_taxable: false,
-        tax_rate: 0,
-        order: 4
-      },
-      {
-        id: 5,
-        payroll_id: 1,
-        type: 'deduction',
-        description: 'Health Insurance',
-        amount: 150,
-        is_taxable: false,
-        tax_rate: 0,
-        order: 5
-      },
-      {
-        id: 6,
-        payroll_id: 1,
-        type: 'deduction',
-        description: 'Retirement Contribution',
-        amount: 187.5,
-        is_taxable: false,
-        tax_rate: 0,
-        order: 6
-      }
-    ]
-  },
-  {
-    id: 2,
-    employee_id: 2,
-    employee: {
-      id: 2,
-      first_name: 'Jane',
-      last_name: 'Smith',
-      full_name: 'Jane Smith',
-      file_number: 'EMP002',
-      basic_salary: 4500,
-      department: 'Marketing',
-      designation: 'Marketing Manager'
-    },
-    month: 1,
-    year: 2024,
-    base_salary: 4500,
-    overtime_amount: 0,
-    bonus_amount: 300,
-    deduction_amount: 900,
-    advance_deduction: 0,
-    final_amount: 3900,
-    total_worked_hours: 160,
-    overtime_hours: 0,
-    status: 'pending',
-    notes: 'Regular monthly payroll',
-    approved_by: null,
-    approved_at: null,
-    paid_by: null,
-    paid_at: null,
-    payment_method: null,
-    payment_reference: null,
-    payment_status: null,
-    payment_processed_at: null,
-    currency: 'SAR',
-    created_at: '2024-01-15T10:00:00Z',
-    updated_at: '2024-01-15T10:00:00Z',
-    items: [
-      {
-        id: 7,
-        payroll_id: 2,
-        type: 'earnings',
-        description: 'Basic Salary',
-        amount: 4500,
-        is_taxable: true,
-        tax_rate: 15,
-        order: 1
-      },
-      {
-        id: 8,
-        payroll_id: 2,
-        type: 'bonus',
-        description: 'Performance Bonus',
-        amount: 300,
-        is_taxable: true,
-        tax_rate: 15,
-        order: 2
-      },
-      {
-        id: 9,
-        payroll_id: 2,
-        type: 'deduction',
-        description: 'Tax Deduction',
-        amount: 720,
-        is_taxable: false,
-        tax_rate: 0,
-        order: 3
-      },
-      {
-        id: 10,
-        payroll_id: 2,
-        type: 'deduction',
-        description: 'Health Insurance',
-        amount: 135,
-        is_taxable: false,
-        tax_rate: 0,
-        order: 4
-      },
-      {
-        id: 11,
-        payroll_id: 2,
-        type: 'deduction',
-        description: 'Retirement Contribution',
-        amount: 45,
-        is_taxable: false,
-        tax_rate: 0,
-        order: 5
-      }
-    ]
-  }
-];
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -200,7 +8,20 @@ export async function GET(
   try {
     const { id: idParam } = await params;
     const id = parseInt(idParam);
-    const payroll = mockPayrolls.find(p => p.id === id);
+
+    // Connect to database
+    await prisma.$connect();
+
+    // Get payroll with employee and items
+    const payroll = await prisma.payroll.findUnique({
+      where: { id: id },
+      include: {
+        employee: true,
+        items: {
+          orderBy: { order: 'asc' }
+        }
+      }
+    });
 
     if (!payroll) {
       return NextResponse.json(
@@ -218,6 +39,7 @@ export async function GET(
       message: 'Payroll retrieved successfully'
     });
   } catch (error) {
+    console.error('Error retrieving payroll:', error);
     return NextResponse.json(
       {
         success: false,
@@ -225,6 +47,8 @@ export async function GET(
       },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
@@ -236,10 +60,18 @@ export async function PUT(
     const { id: idParam } = await params;
     const id = parseInt(idParam);
     const body = await request.json();
-    const { items, notes, status } = body;
+    const { base_salary, overtime_amount, bonus_amount, deduction_amount, advance_deduction, notes, status } = body;
 
-    const payrollIndex = mockPayrolls.findIndex(p => p.id === id);
-    if (payrollIndex === -1) {
+    // Connect to database
+    await prisma.$connect();
+
+    // Check if payroll exists
+    const existingPayroll = await prisma.payroll.findUnique({
+      where: { id: id },
+      include: { employee: true }
+    });
+
+    if (!existingPayroll) {
       return NextResponse.json(
         {
           success: false,
@@ -249,68 +81,42 @@ export async function PUT(
       );
     }
 
-    const payroll = mockPayrolls[payrollIndex];
+    // Calculate final amount
+    const finalAmount = (base_salary || existingPayroll.base_salary) + 
+                       (overtime_amount || existingPayroll.overtime_amount) + 
+                       (bonus_amount || existingPayroll.bonus_amount) - 
+                       (deduction_amount || existingPayroll.deduction_amount) - 
+                       (advance_deduction || existingPayroll.advance_deduction);
 
-    // Update payroll items if provided
-    if (items && Array.isArray(items)) {
-      // Validate items
-      for (const item of items) {
-        if (!item.type || !item.description || typeof item.amount !== 'number') {
-          return NextResponse.json(
-            {
-              success: false,
-              message: 'Invalid item data. Each item must have type, description, and amount.'
-            },
-            { status: 400 }
-          );
+    // Update payroll
+    const updatedPayroll = await prisma.payroll.update({
+      where: { id: id },
+      data: {
+        base_salary: base_salary !== undefined ? base_salary : existingPayroll.base_salary,
+        overtime_amount: overtime_amount !== undefined ? overtime_amount : existingPayroll.overtime_amount,
+        bonus_amount: bonus_amount !== undefined ? bonus_amount : existingPayroll.bonus_amount,
+        deduction_amount: deduction_amount !== undefined ? deduction_amount : existingPayroll.deduction_amount,
+        advance_deduction: advance_deduction !== undefined ? advance_deduction : existingPayroll.advance_deduction,
+        final_amount: finalAmount,
+        notes: notes !== undefined ? notes : existingPayroll.notes,
+        status: status !== undefined ? status : existingPayroll.status,
+        updated_at: new Date()
+      },
+      include: {
+        employee: true,
+        items: {
+          orderBy: { order: 'asc' }
         }
       }
-
-      // Update items
-      payroll.items = items.map((item, index) => ({
-        id: index + 1,
-        payroll_id: payroll.id,
-        type: item.type,
-        description: item.description,
-        amount: item.amount,
-        is_taxable: item.is_taxable || false,
-        tax_rate: item.tax_rate || 0,
-        order: index + 1
-      }));
-
-      // Recalculate totals
-      const earnings = payroll.items
-        .filter(item => ['earnings', 'overtime', 'bonus'].includes(item.type))
-        .reduce((sum, item) => sum + item.amount, 0);
-
-      const deductions = payroll.items
-        .filter(item => ['deduction', 'advance'].includes(item.type))
-        .reduce((sum, item) => sum + item.amount, 0);
-
-      payroll.base_salary = payroll.items.find(item => item.type === 'earnings')?.amount || 0;
-      payroll.overtime_amount = payroll.items.find(item => item.type === 'overtime')?.amount || 0;
-      payroll.bonus_amount = payroll.items.find(item => item.type === 'bonus')?.amount || 0;
-      payroll.deduction_amount = deductions;
-      payroll.final_amount = earnings - deductions;
-    }
-
-    // Update other fields
-    if (notes !== undefined) {
-      payroll.notes = notes;
-    }
-
-    if (status !== undefined) {
-      payroll.status = status;
-    }
-
-    payroll.updated_at = new Date().toISOString();
+    });
 
     return NextResponse.json({
       success: true,
-      data: payroll,
+      data: updatedPayroll,
       message: 'Payroll updated successfully'
     });
   } catch (error) {
+    console.error('Error updating payroll:', error);
     return NextResponse.json(
       {
         success: false,
@@ -318,6 +124,8 @@ export async function PUT(
       },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
