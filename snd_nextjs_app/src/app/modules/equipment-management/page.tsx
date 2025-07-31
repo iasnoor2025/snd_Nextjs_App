@@ -67,7 +67,7 @@ export default function EquipmentManagementPage() {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchEquipment();
@@ -229,9 +229,6 @@ export default function EquipmentManagementPage() {
             <Database className="h-5 w-5" />
             <span>Equipment Inventory</span>
           </CardTitle>
-          <CardDescription>
-            Equipment synced from ERPNext and stored in local database
-          </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -387,46 +384,7 @@ export default function EquipmentManagementPage() {
         </CardContent>
       </Card>
 
-      {/* Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Info className="h-5 w-5" />
-            <span>Equipment Management Information</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-start space-x-3">
-              <RotateCw className="h-5 w-5 text-blue-500 mt-0.5" />
-              <div>
-                <p className="font-medium">ERPNext Synchronization</p>
-                <p className="text-sm text-muted-foreground">
-                  Equipment is automatically synced from ERPNext to your local database. Use the "Sync from ERPNext" button to update your equipment list with the latest data from ERPNext.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3">
-              <Database className="h-5 w-5 text-green-500 mt-0.5" />
-              <div>
-                <p className="font-medium">Local Database</p>
-                <p className="text-sm text-muted-foreground">
-                  All equipment data is stored locally for fast access and offline availability. Changes made in ERPNext will be reflected here after synchronization.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3">
-              <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5" />
-              <div>
-                <p className="font-medium">Data Management</p>
-                <p className="text-sm text-muted-foreground">
-                  Equipment data is read-only from ERPNext. To modify equipment information, please update it directly in ERPNext and then sync again.
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+
     </div>
   );
 }
