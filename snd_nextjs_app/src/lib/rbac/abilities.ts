@@ -337,7 +337,7 @@ export function createAbilityFor(user: User): AppAbility {
   
   // PERMANENT FIX: Force correct role based on email
   if (user.email === 'admin@ias.com') {
-    console.log('🔍 ABILITIES - PERMANENT FIX: Setting SUPER_ADMIN role for admin@ias.com');
+  
     const superAdminPermissions = rolePermissions.SUPER_ADMIN;
     superAdminPermissions.can.forEach((permission: any) => {
       can(permission.action, permission.subject);

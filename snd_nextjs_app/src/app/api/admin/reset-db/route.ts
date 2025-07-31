@@ -6,10 +6,10 @@ const prisma = new PrismaClient();
 
 export async function POST(_request: NextRequest) {
   try {
-    console.log('🔄 Starting database reset via API...');
+
 
     // Clear all data from all tables
-    console.log('🗑️  Clearing all data...');
+    
 
     // Delete in order to respect foreign key constraints
     await prisma.payrollItem.deleteMany();
@@ -19,10 +19,10 @@ export async function POST(_request: NextRequest) {
     await prisma.employee.deleteMany();
     await prisma.user.deleteMany();
 
-    console.log('✅ All data cleared successfully');
+    
 
     // Create admin user
-    console.log('👤 Creating admin user...');
+    
 
     const hashedPassword = await bcrypt.hash('password', 12);
 
@@ -38,7 +38,7 @@ export async function POST(_request: NextRequest) {
       },
     });
 
-    console.log('✅ Admin user created successfully');
+    
 
     return NextResponse.json({
       success: true,

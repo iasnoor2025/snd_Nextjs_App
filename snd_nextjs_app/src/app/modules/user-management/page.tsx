@@ -363,9 +363,9 @@ export default function UserManagementPage() {
       try {
         setLoading(true);
         setError(null);
-        console.log('Starting to fetch data...');
+    
         await Promise.all([fetchUsers(), fetchRoles()]);
-        console.log('Data fetching completed');
+        
       } catch (err) {
         console.error('Error in fetchData:', err);
         setError(err instanceof Error ? err.message : 'Failed to load data');

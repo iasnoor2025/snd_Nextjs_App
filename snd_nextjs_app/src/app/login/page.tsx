@@ -12,14 +12,12 @@ export default function LoginPage() {
 
   // Redirect to home if already authenticated
   useEffect(() => {
-    console.log('🔍 Login Page - Status:', status);
-    console.log('🔍 Login Page - Session:', session);
+
     
     if (status === "loading") return
 
     if (session) {
-      console.log('🔍 Login Page - User authenticated, redirecting to dashboard');
-      console.log('🔍 Login Page - User role:', session.user?.role);
+
       router.push("/dashboard")
     }
   }, [session, status, router])

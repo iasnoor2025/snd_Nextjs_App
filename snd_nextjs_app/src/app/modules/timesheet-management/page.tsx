@@ -373,13 +373,6 @@ function TimesheetManagementContent() {
   const executeBulkAction = async () => {
     if (!bulkActionDialog.action || selectedTimesheets.length === 0) return;
 
-    console.log('🔍 BULK ACTION - Starting bulk action:', {
-      action: bulkActionDialog.action,
-      selectedTimesheets,
-      userRole: user?.role,
-      notes: bulkActionDialog.notes
-    });
-
     setBulkActionLoading(true);
     try {
       const response = await fetch('/api/timesheets/bulk-approve', {
@@ -396,7 +389,7 @@ function TimesheetManagementContent() {
       });
 
       const data = await response.json();
-      console.log('🔍 BULK ACTION - Response:', data);
+
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to process timesheets');
@@ -435,7 +428,7 @@ function TimesheetManagementContent() {
     // Include 'pending' status which is the default in database
     const canProcess = ['pending', 'draft', 'submitted', 'foreman_approved', 'incharge_approved', 'checking_approved'].includes(timesheet.status);
     if (!canProcess) {
-      console.log(`🔍 APPROVAL CHECK - Timesheet ${timesheet.id} cannot be processed. Status: ${timesheet.status}`);
+
       return false;
     }
 
@@ -445,7 +438,7 @@ function TimesheetManagementContent() {
     // For draft timesheets, check submission permissions
     if (timesheet.status === 'draft') {
       const canSubmit = ['ADMIN', 'MANAGER', 'SUPER_ADMIN'].includes(userRole);
-      console.log(`🔍 APPROVAL CHECK - Draft timesheet ${timesheet.id}: userRole=${userRole}, canSubmit=${canSubmit}`);
+
       return canSubmit;
     }
 
@@ -461,12 +454,12 @@ function TimesheetManagementContent() {
 
     const allowedRoles = approvalWorkflow[timesheet.status as keyof typeof approvalWorkflow];
     if (!allowedRoles) {
-      console.log(`🔍 APPROVAL CHECK - No workflow defined for status: ${timesheet.status}`);
+
       return false;
     }
 
     const canApprove = allowedRoles.includes(userRole);
-    console.log(`🔍 APPROVAL CHECK - Timesheet ${timesheet.id}: status=${timesheet.status}, userRole=${userRole}, allowedRoles=${allowedRoles.join(',')}, canApprove=${canApprove}`);
+
     return canApprove;
   };
 

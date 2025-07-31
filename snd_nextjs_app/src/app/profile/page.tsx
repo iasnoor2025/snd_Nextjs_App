@@ -121,13 +121,13 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      console.log('Fetching profile...')
+  
       const response = await fetch('/api/profile')
-      console.log('Profile response status:', response.status)
+      
 
       if (response.ok) {
         const data = await response.json()
-        console.log('Profile data:', data)
+
         setProfile(data)
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))

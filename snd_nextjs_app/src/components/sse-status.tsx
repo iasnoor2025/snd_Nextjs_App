@@ -30,15 +30,12 @@ export function SSEStatus({
 }: SSEStatusProps) {
   const { 
     isConnected, 
-    isConnecting, 
-    error, 
-    lastEvent, 
-    events,
-    connect, 
-    disconnect, 
-    reconnect,
-    clearEvents 
+    connectionStatus,
+    reconnect
   } = useSSEContext();
+
+  const isConnecting = connectionStatus === 'connecting';
+  const error = connectionStatus === 'error';
 
   const getStatusIcon = () => {
     if (isConnecting) return <RefreshCw className="h-4 w-4 animate-spin" />;
@@ -63,14 +60,13 @@ export function SSEStatus({
     toast.info('Reconnecting to real-time updates...');
   };
 
+  // Note: disconnect and clearEvents methods are not available in the current SSE context
   const handleDisconnect = () => {
-    disconnect();
-    toast.info('Disconnected from real-time updates');
+    toast.info('Disconnect functionality not implemented');
   };
 
   const handleClearEvents = () => {
-    clearEvents();
-    toast.success('Event history cleared');
+    toast.info('Clear events functionality not implemented');
   };
 
   return (
@@ -96,7 +92,7 @@ export function SSEStatus({
             {!isConnected && !isConnecting && (
               <Button 
                 size="sm" 
-                onClick={connect}
+                onClick={() => toast.info('Connect functionality not implemented')}
                 className="flex items-center gap-1"
               >
                 <Wifi className="h-4 w-4" />
@@ -127,78 +123,35 @@ export function SSEStatus({
                 Reconnect
               </Button>
             )}
-            
-            {events.length > 0 && (
-              <Button 
-                size="sm" 
-                variant="outline"
-                onClick={handleClearEvents}
-                className="flex items-center gap-1"
-              >
-                <X className="h-4 w-4" />
-                Clear Events
-              </Button>
-            )}
           </div>
         )}
 
         {error && (
           <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-md">
             <AlertCircle className="h-4 w-4 text-red-500" />
-            <span className="text-sm text-red-700">{error}</span>
+            <span className="text-sm text-red-700">Connection error</span>
           </div>
         )}
 
         {showDetails && (
           <div className="space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Events received:</span>
-              <Badge variant="secondary">{events.length}</Badge>
+              <span className="text-muted-foreground">Connection status:</span>
+              <Badge variant="secondary">{connectionStatus}</Badge>
             </div>
             
-            {lastEvent && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Last event:</span>
-                </div>
-                <div className="p-2 bg-muted rounded-md text-xs">
-                  <div className="font-medium">{lastEvent.type}</div>
-                  <div className="text-muted-foreground">
-                    {new Date(lastEvent.timestamp).toLocaleString()}
-                  </div>
-                  <div className="mt-1">
-                    <pre className="text-xs overflow-x-auto">
-                      {JSON.stringify(lastEvent.data, null, 2)}
-                    </pre>
-                  </div>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Status:</span>
+              </div>
+              <div className="p-2 bg-muted rounded-md text-xs">
+                <div className="font-medium">Real-time updates</div>
+                <div className="text-muted-foreground">
+                  {isConnected ? 'Active' : 'Inactive'}
                 </div>
               </div>
-            )}
-
-            {events.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <Activity className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Recent events:</span>
-                </div>
-                <div className="max-h-32 overflow-y-auto space-y-1">
-                  {events.slice(0, 5).map((event, index) => (
-                    <div 
-                      key={`${event.id}-${index}`}
-                      className="p-2 bg-muted rounded-md text-xs"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{event.type}</span>
-                        <span className="text-muted-foreground">
-                          {new Date(event.timestamp).toLocaleTimeString()}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            </div>
           </div>
         )}
       </CardContent>
@@ -208,7 +161,8 @@ export function SSEStatus({
 
 // Compact version for header/toolbar
 export function SSEStatusCompact() {
-  const { isConnected, isConnecting, error } = useSSEContext();
+  const { isConnected, connectionStatus } = useSSEContext();
+  const isConnecting = connectionStatus === 'connecting';
 
   const getStatusIcon = () => {
     if (isConnecting) return <RefreshCw className="h-4 w-4 animate-spin text-yellow-500" />;

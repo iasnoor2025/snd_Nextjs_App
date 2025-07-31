@@ -38,10 +38,12 @@ export function DatePicker({ value, onChange, placeholder = "Pick a date", disab
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
         <Calendar
-          mode="single"
-          selected={value || undefined}
-          onSelect={onChange}
-          initialFocus
+          {...{
+            mode: "single",
+            selected: value || undefined,
+            onSelect: onChange || (() => {}),
+            initialFocus: true
+          } as any}
         />
       </PopoverContent>
     </Popover>

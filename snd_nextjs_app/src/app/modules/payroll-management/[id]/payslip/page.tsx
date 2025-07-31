@@ -438,39 +438,44 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   const handleDownload = async () => {
     setIsLoading(true);
     try {
-      const params = new URLSearchParams({
-        employee_id: payslipData?.employee.id.toString() || '',
-        month: payslipData?.payroll.month.toString() || '',
-        year: payslipData?.payroll.year.toString() || '',
-      });
-      const response = await fetch(`/api/payroll/payslip/pdf?${params.toString()}`, {
+      // Use the payroll-specific endpoint with the payroll ID
+      const response = await fetch(`/api/payroll/${id}/payslip`, {
         method: 'GET',
         credentials: 'include',
-        headers: {
-          Accept: 'application/pdf',
-        },
       });
+      
       if (!response.ok) {
         const text = await response.text();
         toast.error('Failed to download PDF', { description: text });
         throw new Error('Failed to download PDF');
       }
-      const contentType = response.headers.get('content-type') || '';
-      if (!contentType.includes('application/pdf')) {
-        const text = await response.text();
-        toast.warning('PDF downloaded, but response was not a PDF.', { description: text });
-        return;
+
+      // Check if response is PDF
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/pdf')) {
+        // Handle PDF response
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `payslip_${payslipData?.employee.id}_${payslipData?.payroll.month}_${payslipData?.payroll.year}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        toast.success('Payslip downloaded successfully');
+      } else {
+        // Handle JSON response (fallback)
+        const data = await response.json();
+        if (data.success) {
+          toast.info('Using UI PDF generation instead of backend PDF');
+          handleDownloadPDF();
+        } else {
+          toast.error(data.message || 'Failed to download PDF');
+        }
       }
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `payslip_${payslipData?.employee.id}_${payslipData?.payroll.month}_${payslipData?.payroll.year}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
     } catch (e) {
+      console.error('Download error:', e);
       toast.error('Failed to download PDF');
     } finally {
       setIsLoading(false);

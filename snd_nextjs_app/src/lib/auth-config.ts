@@ -29,14 +29,14 @@ export const authConfig: NextAuthOptions = {
           });
 
           if (!user) {
-            console.log(`User not found: ${credentials.email}`);
+      
             return null;
           }
 
           const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
 
           if (!isPasswordValid) {
-            console.log(`Invalid password for user: ${credentials.email}`);
+    
             return null;
           }
 
@@ -87,11 +87,10 @@ export const authConfig: NextAuthOptions = {
           // PERMANENT FIX: Force correct role based on email
           if (credentials.email === 'admin@ias.com') {
             role = "SUPER_ADMIN";
-            console.log(`🔍 AUTH DEBUG - PERMANENT FIX: Setting SUPER_ADMIN role for ${credentials.email}`);
+    
           }
           
-          console.log(`🔍 AUTH DEBUG - User ${user.email} logged in with role: ${role} (role_id: ${user.role_id})`);
-          console.log(`🔍 AUTH DEBUG - User roles:`, user.user_roles?.map(ur => ur.role.name));
+          
           
           const userData = {
             id: user.id.toString(),
@@ -101,7 +100,7 @@ export const authConfig: NextAuthOptions = {
             isActive: user.isActive || true,
           };
           
-          console.log(`🔍 AUTH DEBUG - Returning user data:`, userData);
+  
           return userData;
         } catch (error) {
           console.error("Auth error:", error);
@@ -135,42 +134,36 @@ export const authConfig: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      console.log(`🔍 JWT Callback - Called with user:`, user);
-      console.log(`🔍 JWT Callback - Token before:`, token);
+
       
       if (user) {
         token.role = user.role;
         token.isActive = user.isActive;
         token.id = user.id;
-        console.log(`🔍 JWT Callback - Setting role to: ${user.role}`);
-        console.log(`🔍 JWT Callback - Setting isActive to: ${user.isActive}`);
-        console.log(`🔍 JWT Callback - Setting id to: ${user.id}`);
+        
       }
       
-      console.log(`🔍 JWT Callback - Final token:`, token);
+      
       return token;
     },
     async session({ session, token }) {
-      console.log(`🔍 Session Callback - Called with token:`, token);
-      console.log(`🔍 Session Callback - Session before:`, session);
+
       
       if (token) {
         session.user.role = token.role || "USER";
         session.user.isActive = token.isActive || true;
-        session.user.id = token.id || token.sub;
+        session.user.id = String(token.id || token.sub || 'unknown');
         
         // PERMANENT FIX: Force correct role based on email
         if (session.user.email === 'admin@ias.com') {
           session.user.role = "SUPER_ADMIN";
-          console.log(`🔍 Session Callback - PERMANENT FIX: Setting SUPER_ADMIN role for ${session.user.email}`);
+
         }
         
-        console.log(`🔍 Session Callback - Setting session role to: ${session.user.role}`);
-        console.log(`🔍 Session Callback - Setting session isActive to: ${session.user.isActive}`);
-        console.log(`🔍 Session Callback - Setting session id to: ${session.user.id}`);
+        
       }
       
-      console.log(`🔍 Session Callback - Final session:`, session);
+      
       return session;
     },
   },

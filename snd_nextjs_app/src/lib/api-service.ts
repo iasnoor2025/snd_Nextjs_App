@@ -307,6 +307,33 @@ export class ApiService {
   }
 
   // ========================================
+  // ERPNext EQUIPMENT INTEGRATION
+  // ========================================
+
+  static async getERPNextEquipment(params?: {
+    sync_erpnext?: boolean;
+    source?: 'erpnext' | 'local';
+  }) {
+    return this.get('/equipment', params, {
+      toastMessage: 'Equipment loaded successfully',
+      errorMessage: 'Failed to load equipment',
+    });
+  }
+
+  static async syncEquipmentFromERPNext() {
+    return this.post('/erpnext/equipment', { action: 'sync' }, {
+      toastMessage: 'Equipment synced from ERPNext successfully',
+      errorMessage: 'Failed to sync equipment from ERPNext',
+    });
+  }
+
+  static async getERPNextEquipmentDirect() {
+    return this.get('/erpnext/equipment', undefined, {
+      errorMessage: 'Failed to fetch equipment from ERPNext',
+    });
+  }
+
+  // ========================================
   // RENTAL MANAGEMENT
   // ========================================
 

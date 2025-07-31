@@ -22,10 +22,6 @@ export const usePrint = (options: UsePrintOptions = {}) => {
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle,
-    onBeforeGetContent: () => {
-      onBeforePrint?.();
-      toast.success("Preparing print layout...");
-    },
     onAfterPrint: () => {
       onAfterPrint?.();
       toast.success("Print completed successfully");

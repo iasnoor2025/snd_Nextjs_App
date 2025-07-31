@@ -26,8 +26,7 @@ export function SiteHeader() {
   const { isRTL } = useI18n();
   
   // Debug session state
-  console.log('SiteHeader - Session status:', status);
-  console.log('SiteHeader - Session data:', session);
+  
 
   const handleForceLogout = async () => {
     await signOut({ redirect: false });

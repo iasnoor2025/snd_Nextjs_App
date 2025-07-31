@@ -87,9 +87,7 @@ export class ToastService {
     return this.error('Access forbidden', options);
   }
 
-  static validationError(message: string, options?: ToastOptions) {
-    return this.error(`Validation error: ${message}`, options);
-  }
+
 
   static networkError(options?: ToastOptions) {
     return this.error('Network error. Please check your connection.', options);

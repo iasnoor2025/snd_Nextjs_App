@@ -118,7 +118,7 @@ export default function QuotationViewPage() {
         throw new Error('Failed to fetch quotation');
       }
       const data = await response.json();
-      console.log('Fetched quotation data:', data.quotation);
+  
       setQuotation(data.quotation);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -241,7 +241,7 @@ export default function QuotationViewPage() {
         shipmentTerms: quotation.shipmentTerms || ''
       };
 
-      console.log('PDF Data being sent:', pdfData);
+  
       const pdfBlob = await PDFGenerator.generateQuotationPDF(pdfData);
 
       // Create download link

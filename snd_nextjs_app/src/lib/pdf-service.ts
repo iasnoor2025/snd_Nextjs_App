@@ -337,7 +337,7 @@ export class PDFService {
 
   addPageNumber() {
     const pageInfo = this.doc.getCurrentPageInfo();
-    const pageText = `Page ${pageInfo.pageNumber} of ${pageInfo.pageCount}`;
+    const pageText = `Page ${pageInfo.pageNumber}`;
     const pageY = this.pageHeight - this.margin.bottom;
     
     this.setFont(8, 'helvetica');
@@ -354,7 +354,7 @@ export class PDFService {
   save(filename: string) {
     try {
       this.doc.save(filename);
-      ToastService.exportSuccess('PDF', `Document saved as ${filename}`);
+      ToastService.exportSuccess('PDF');
     } catch (error) {
       console.error('PDF save error:', error);
       ToastService.exportError('PDF', 'Failed to save document');

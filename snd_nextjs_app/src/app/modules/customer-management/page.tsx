@@ -230,12 +230,12 @@ export default function CustomerManagementPage() {
 
   // Sync customers from ERPNext
   const syncCustomersFromERPNext = async () => {
-    console.log('Starting ERPNext sync process...');
+
     setSyncLoading(true);
     
     try {
       // Step 1: Check data from ERPNext
-      console.log('Step 1: Checking data from ERPNext...');
+      
       toast.info('Checking data from ERPNext...');
       
       const checkResponse = await fetch('/api/customers/sync/check', {
@@ -250,7 +250,7 @@ export default function CustomerManagementPage() {
       }
 
       const checkResult = await checkResponse.json();
-      console.log('Check result:', checkResult);
+      
       
       if (!checkResult.success) {
         toast.error(checkResult.message || 'Failed to check ERPNext data');
@@ -258,7 +258,7 @@ export default function CustomerManagementPage() {
       }
 
       // Step 2: Match data
-      console.log('Step 2: Matching data...');
+      
       toast.info('Matching data with existing customers...');
       
       const matchResponse = await fetch('/api/customers/sync/match', {
@@ -277,7 +277,7 @@ export default function CustomerManagementPage() {
       }
 
       const matchResult = await matchResponse.json();
-      console.log('Match result:', matchResult);
+      
       
       if (!matchResult.success) {
         toast.error(matchResult.message || 'Failed to match data');
@@ -285,7 +285,7 @@ export default function CustomerManagementPage() {
       }
 
       // Step 3: Sync data
-      console.log('Step 3: Syncing data...');
+      
       toast.info('Syncing matched data...');
       
       const syncResponse = await fetch('/api/customers/sync', {
@@ -296,7 +296,7 @@ export default function CustomerManagementPage() {
         }),
       });
 
-      console.log('Sync response status:', syncResponse.status);
+      
       if (!syncResponse.ok) {
         const errorText = await syncResponse.text();
         console.error('Sync failed:', errorText);
@@ -304,7 +304,7 @@ export default function CustomerManagementPage() {
       }
 
       const syncResult = await syncResponse.json();
-      console.log('Sync result:', syncResult);
+      
       
       if (syncResult.success) {
         toast.success(`Sync completed! ${syncResult.data.processed} customers processed (${syncResult.data.created} created, ${syncResult.data.updated} updated)`);
@@ -403,7 +403,7 @@ export default function CustomerManagementPage() {
 
   useEffect(() => {
     fetchCustomers();
-    console.log('Customer Management page loaded');
+
   }, []);
 
   if (loading) {

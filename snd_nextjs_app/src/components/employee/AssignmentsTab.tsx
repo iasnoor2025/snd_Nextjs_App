@@ -141,7 +141,8 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
     setSubmitting(true);
     try {
-      console.log('🔄 Sending PUT request to update assignment:', {
+      // Update assignment logic here
+      console.log('Updating assignment:', {
         employeeId,
         assignmentId: selectedAssignment.id,
         formData: {
@@ -163,7 +164,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
       if (response.ok) {
         const responseData = await response.json();
-        console.log('✅ Assignment updated successfully:', responseData);
+
         toast.success('Assignment updated successfully');
         setShowEditDialog(false);
         setSelectedAssignment(null);

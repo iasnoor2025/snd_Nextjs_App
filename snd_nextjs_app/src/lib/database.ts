@@ -329,6 +329,8 @@ export class DatabaseService {
     const rental = await prisma.rental.create({
       data: {
         ...rentalData,
+        rental_number: rentalData.rentalNumber || `RENTAL-${Date.now()}`,
+        start_date: rentalData.startDate || new Date(),
         rental_items: rentalItems ? {
           create: rentalItems.map((item: any) => ({
             equipment_id: item.equipmentId,
@@ -350,11 +352,6 @@ export class DatabaseService {
           include: {
             equipment: true
           }
-        },
-        payments: true,
-        invoices: true,
-        statusLogs: {
-          orderBy: { createdAt: 'desc' }
         }
       }
     })
@@ -447,11 +444,6 @@ export class DatabaseService {
           include: {
             equipment: true
           }
-        },
-        payments: true,
-        invoices: true,
-        statusLogs: {
-          orderBy: { createdAt: 'desc' }
         }
       }
     })
@@ -493,7 +485,10 @@ export class DatabaseService {
     password: string
   }) {
     return await prisma.user.create({
-      data 
+      data: {
+        ...data,
+        name: data.name || 'Unknown User'
+      }
     })
   }
 

@@ -38,6 +38,7 @@ interface ProjectResource {
   category?: string;
   expense_description?: string;
   notes?: string;
+  usage_hours?: number;
 }
 
 interface Equipment {
@@ -82,15 +83,15 @@ export default function ResourceManagement({
       setLoading(true);
 
       // Fetch resources
-      const resourcesResponse = await apiService.getProjectResources(projectId);
+      const resourcesResponse = await apiService.getProjectResources(projectId) as any;
       setResources(resourcesResponse.data || []);
 
       // Fetch equipment for dropdown
-      const equipmentResponse = await apiService.getEquipment();
+      const equipmentResponse = await apiService.getEquipment() as any;
       setEquipment(equipmentResponse.data || []);
 
       // Fetch employees for dropdown
-      const employeesResponse = await apiService.getEmployees();
+      const employeesResponse = await apiService.getEmployees() as any;
       setEmployees(employeesResponse.data || []);
 
     } catch (error) {

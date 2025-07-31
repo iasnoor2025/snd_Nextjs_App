@@ -64,6 +64,33 @@ class ApiService {
       body: data ? JSON.stringify(data) : undefined,
     });
   }
+
+  // Project Resources Methods
+  async getProjectResources(projectId: string) {
+    return this.get(`/projects/${projectId}/resources`);
+  }
+
+  async createProjectResource(projectId: string, data: any) {
+    return this.post(`/projects/${projectId}/resources`, data);
+  }
+
+  async updateProjectResource(projectId: string, resourceId: string, data: any) {
+    return this.put(`/projects/${projectId}/resources/${resourceId}`, data);
+  }
+
+  async deleteProjectResource(projectId: string, resourceId: string) {
+    return this.delete(`/projects/${projectId}/resources/${resourceId}`);
+  }
+
+  // Equipment Methods
+  async getEquipment() {
+    return this.get('/equipment');
+  }
+
+  // Employee Methods
+  async getEmployees() {
+    return this.get('/employees');
+  }
 }
 
 // Create and export a singleton instance

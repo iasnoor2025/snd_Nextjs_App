@@ -1,354 +1,407 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { ProtectedRoute } from '@/components/protected-route';
-import { Can, RoleBased } from '@/lib/rbac/rbac-components';
-import { useRBAC } from '@/lib/rbac/rbac-context';
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
+  AlertCircle,
+  CheckCircle,
+  RefreshCw,
+  Download,
+  Upload,
+  Settings,
+  Database,
+  Package,
+  FileText,
+  Loader2,
+  AlertTriangle,
+  Info,
+  Wifi,
   Plus,
   Search,
+  Filter,
+  MoreHorizontal,
   Edit,
   Trash2,
   Eye,
-  Calendar,
-  Download,
-  Upload,
-  Settings
 } from "lucide-react";
 import { toast } from "sonner";
-import Link from "next/link";
+import { ApiService } from "@/lib/api-service";
 
 interface Equipment {
-  id: string;
+  id: number;
   name: string;
-  category: string;
+  model_number?: string;
   status: string;
-  location: string;
-  purchase_date: string;
-  serial_number: string;
-  condition: string;
+  category_id?: number;
+  manufacturer?: string;
+  daily_rate?: number;
+  weekly_rate?: number;
+  monthly_rate?: number;
+  erpnext_id?: string;
+  serial_number?: string;
+  description?: string;
 }
 
-interface PaginatedResponse {
-  data: Equipment[];
-  current_page: number;
-  last_page: number;
-  per_page: number;
-  total: number;
-  next_page_url: string | null;
-  prev_page_url: string | null;
+interface ERPNextEquipment {
+  name: string;
+  item_code: string;
+  item_name: string;
+  description?: string;
+  manufacturer?: string;
+  model?: string;
+  serial_no?: string;
+  standard_rate?: string;
+  disabled?: boolean;
 }
 
 export default function EquipmentManagementPage() {
-  const { user, hasPermission, getAllowedActions } = useRBAC();
-  const [equipment, setEquipment] = useState<PaginatedResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
-  const [category, setCategory] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-
-  // Get allowed actions for equipment management
-  const allowedActions = getAllowedActions('Equipment');
-
-  const mockEquipment = useMemo(() => [
-    {
-      id: "1",
-      name: "Excavator CAT 320",
-      category: "Heavy Equipment",
-      status: "available",
-      location: "Site A",
-      purchase_date: "2023-01-15",
-      serial_number: "CAT320-001",
-      condition: "excellent"
-    },
-    {
-      id: "2",
-      name: "Bulldozer Komatsu D65",
-      category: "Heavy Equipment",
-      status: "in_use",
-      location: "Site B",
-      purchase_date: "2023-02-01",
-      serial_number: "KOMD65-002",
-      condition: "good"
-    },
-    {
-      id: "3",
-      name: "Crane Mobile 50T",
-      category: "Lifting Equipment",
-      status: "maintenance",
-      location: "Site C",
-      purchase_date: "2023-03-01",
-      serial_number: "CRN50T-003",
-      condition: "fair"
-    }
-  ], []);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
+  const [erpnextEquipment, setERPNextEquipment] = useState<ERPNextEquipment[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [activeTab, setActiveTab] = useState("local");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   useEffect(() => {
-    const fetchEquipment = async () => {
-      try {
-        setLoading(true);
-        const params = new URLSearchParams({
-          page: currentPage.toString(),
-          limit: '10',
-          ...(search && { search }),
-          ...(status && status !== 'all' && { status }),
-          ...(category && category !== 'all' && { category }),
-        });
-
-        const response = await fetch(`/api/equipment?${params}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch equipment');
-        }
-
-        const data = await response.json();
-        setEquipment(data);
-      } catch (error) {
-        console.error('Error fetching equipment:', error);
-        toast.error('Failed to fetch equipment');
-        // Fallback to mock data for demo
-        setEquipment({
-          data: mockEquipment,
-          current_page: 1,
-          last_page: 1,
-          per_page: 10,
-          total: mockEquipment.length,
-          next_page_url: null,
-          prev_page_url: null
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchEquipment();
-  }, [currentPage, search, status, category, mockEquipment]);
+  }, []);
 
-  const handleDelete = async () => {
+  const fetchEquipment = async () => {
+    setLoading(true);
     try {
-      toast.loading("Deleting equipment...");
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success("Equipment deleted successfully");
+      const response = await ApiService.getEquipment();
+      if (response.success && Array.isArray(response.data)) {
+        setEquipment(response.data);
+      } else {
+        setEquipment([]);
+        toast.error('Failed to load equipment');
+      }
     } catch (error) {
-      toast.error("Failed to delete equipment");
+      setEquipment([]);
+      toast.error('Failed to load equipment');
+    } finally {
+      setLoading(false);
     }
   };
+
+  const fetchERPNextEquipment = async () => {
+    setLoading(true);
+    try {
+      const response = await ApiService.getERPNextEquipmentDirect();
+      if (response.success && Array.isArray(response.data)) {
+        setERPNextEquipment(response.data);
+      } else {
+        setERPNextEquipment([]);
+        toast.error('Failed to load ERPNext equipment');
+      }
+    } catch (error) {
+      setERPNextEquipment([]);
+      toast.error('Failed to load ERPNext equipment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const syncEquipmentFromERPNext = async () => {
+    setSyncing(true);
+    try {
+      const response = await ApiService.syncEquipmentFromERPNext();
+      if (response.success) {
+        toast.success(`Equipment synced successfully! ${response.data?.created || 0} created, ${response.data?.updated || 0} updated`);
+        await fetchEquipment(); // Refresh the local equipment list
+      } else {
+        toast.error('Failed to sync equipment from ERPNext');
+      }
+    } catch (error) {
+      toast.error('Failed to sync equipment from ERPNext');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === 'erpnext') {
+      fetchERPNextEquipment();
+    }
+  };
+
+  const filteredEquipment = equipment.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (item.model_number && item.model_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (item.manufacturer && item.manufacturer.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesStatus = filterStatus === 'all' || item.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const filteredERPNextEquipment = erpnextEquipment.filter(item => {
+    return item.item_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           (item.model && item.model.toLowerCase().includes(searchTerm.toLowerCase())) ||
+           (item.manufacturer && item.manufacturer.toLowerCase().includes(searchTerm.toLowerCase()));
+  });
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "available":
-        return <Badge className="bg-green-100 text-green-800">Available</Badge>;
-      case "in_use":
-        return <Badge className="bg-blue-100 text-blue-800">In Use</Badge>;
-      case "maintenance":
-        return <Badge className="bg-yellow-100 text-yellow-800">Maintenance</Badge>;
-      case "out_of_service":
-        return <Badge className="bg-red-100 text-red-800">Out of Service</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
-    }
+    const statusConfig = {
+      available: { variant: 'default' as const, label: 'Available' },
+      rented: { variant: 'secondary' as const, label: 'Rented' },
+      maintenance: { variant: 'destructive' as const, label: 'Maintenance' },
+      out_of_service: { variant: 'destructive' as const, label: 'Out of Service' },
+    };
+    
+    const config = statusConfig[status as keyof typeof statusConfig] || { variant: 'outline' as const, label: status };
+    return <Badge variant={config.variant}>{config.label}</Badge>;
   };
-
-  const getConditionBadge = (condition: string) => {
-    switch (condition) {
-      case "excellent":
-        return <Badge className="bg-green-100 text-green-800">Excellent</Badge>;
-      case "good":
-        return <Badge className="bg-blue-100 text-blue-800">Good</Badge>;
-      case "fair":
-        return <Badge className="bg-yellow-100 text-yellow-800">Fair</Badge>;
-      case "poor":
-        return <Badge className="bg-red-100 text-red-800">Poor</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-800">{condition}</Badge>;
-    }
-  };
-
-  if (loading) {
-    return (
-      <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Equipment' }}>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading equipment...</p>
-          </div>
-        </div>
-      </ProtectedRoute>
-    );
-  }
 
   return (
-    <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Equipment' }}>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Equipment Management</h1>
-            <p className="text-muted-foreground">Track and manage rental equipment inventory</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Can action="export" subject="Equipment">
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            </Can>
-
-            <Can action="import" subject="Equipment">
-              <Button variant="outline">
-                <Upload className="h-4 w-4 mr-2" />
-                Import
-              </Button>
-            </Can>
-
-            <Can action="create" subject="Equipment">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Add Equipment
-              </Button>
-            </Can>
-          </div>
+    <div className="container mx-auto py-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Equipment Management</h1>
+          <p className="text-muted-foreground">
+            Manage equipment inventory and ERPNext integration
+          </p>
         </div>
+        <div className="flex gap-2">
+          <Button onClick={syncEquipmentFromERPNext} disabled={syncing}>
+            {syncing ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            Sync from ERPNext
+          </Button>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Equipment
+          </Button>
+        </div>
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Equipment Inventory</CardTitle>
-            <CardDescription>Manage your equipment database and track availability</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Search equipment..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+      {/* Search and Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex gap-4 items-center">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search equipment..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
               </div>
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="in_use">In Use</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                  <SelectItem value="out_of_service">Out of Service</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Filter by category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="Heavy Equipment">Heavy Equipment</SelectItem>
-                  <SelectItem value="Lifting Equipment">Lifting Equipment</SelectItem>
-                  <SelectItem value="Tools">Tools</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
+            <div className="flex gap-2">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-3 py-2 border border-input rounded-md bg-background"
+              >
+                <option value="all">All Status</option>
+                <option value="available">Available</option>
+                <option value="rented">Rented</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="out_of_service">Out of Service</option>
+              </select>
+              <Button variant="outline" onClick={fetchEquipment} disabled={loading}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Serial Number</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Condition</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Purchase Date</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {equipment?.data.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>{item.category}</TableCell>
-                    <TableCell className="font-mono">{item.serial_number}</TableCell>
-                    <TableCell>{getStatusBadge(item.status)}</TableCell>
-                    <TableCell>{getConditionBadge(item.condition)}</TableCell>
-                    <TableCell>{item.location}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-3 w-3" />
-                        <span>{new Date(item.purchase_date).toLocaleDateString()}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Can action="read" subject="Equipment">
-                          <Button size="sm" variant="outline">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Can>
+      {/* Equipment Tabs */}
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="local">Local Equipment</TabsTrigger>
+          <TabsTrigger value="erpnext">ERPNext Equipment</TabsTrigger>
+        </TabsList>
 
-                        <Can action="update" subject="Equipment">
-                          <Button size="sm" variant="outline">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </Can>
-
-                        <Can action="delete" subject="Equipment">
-                          <Button size="sm" variant="outline" onClick={handleDelete}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </Can>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        {/* Role-based content example */}
-        <RoleBased roles={['ADMIN', 'MANAGER']}>
+        {/* Local Equipment Tab */}
+        <TabsContent value="local" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Equipment Administration</CardTitle>
+              <CardTitle className="flex items-center space-x-2">
+                <Database className="h-5 w-5" />
+                <span>Local Equipment Inventory</span>
+              </CardTitle>
               <CardDescription>
-                Advanced equipment management features for administrators
+                Equipment stored in the local database
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2">
-                <Can action="manage" subject="Equipment">
-                  <Button variant="outline">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Equipment Settings
-                  </Button>
-                </Can>
-
-                <Can action="export" subject="Equipment">
-                  <Button variant="outline">
-                    Generate Reports
-                  </Button>
-                </Can>
-
-                <Can action="import" subject="Equipment">
-                  <Button variant="outline">
-                    Bulk Import
-                  </Button>
-                </Can>
-              </div>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Model</TableHead>
+                      <TableHead>Manufacturer</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Daily Rate</TableHead>
+                      <TableHead>ERPNext ID</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredEquipment.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          No equipment found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredEquipment.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-medium">{item.name}</TableCell>
+                          <TableCell>{item.model_number || '-'}</TableCell>
+                          <TableCell>{item.manufacturer || '-'}</TableCell>
+                          <TableCell>{getStatusBadge(item.status)}</TableCell>
+                          <TableCell>
+                            {item.daily_rate ? `$${item.daily_rate}` : '-'}
+                          </TableCell>
+                          <TableCell>
+                            {item.erpnext_id ? (
+                              <Badge variant="outline">{item.erpnext_id}</Badge>
+                            ) : (
+                              '-'
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button variant="ghost" size="sm">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="sm">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
-        </RoleBased>
-      </div>
-    </ProtectedRoute>
+        </TabsContent>
+
+        {/* ERPNext Equipment Tab */}
+        <TabsContent value="erpnext" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Package className="h-5 w-5" />
+                <span>ERPNext Equipment</span>
+              </CardTitle>
+              <CardDescription>
+                Equipment available in ERPNext system
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Item Name</TableHead>
+                      <TableHead>Item Code</TableHead>
+                      <TableHead>Model</TableHead>
+                      <TableHead>Manufacturer</TableHead>
+                      <TableHead>Standard Rate</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredERPNextEquipment.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          No ERPNext equipment found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredERPNextEquipment.map((item) => (
+                        <TableRow key={item.name}>
+                          <TableCell className="font-medium">{item.item_name}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{item.item_code}</Badge>
+                          </TableCell>
+                          <TableCell>{item.model || '-'}</TableCell>
+                          <TableCell>{item.manufacturer || '-'}</TableCell>
+                          <TableCell>
+                            {item.standard_rate ? `$${item.standard_rate}` : '-'}
+                          </TableCell>
+                          <TableCell>
+                            {item.disabled ? (
+                              <Badge variant="destructive">Disabled</Badge>
+                            ) : (
+                              <Badge variant="default">Active</Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Information */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Info className="h-5 w-5" />
+            <span>Equipment Management Information</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-start space-x-3">
+              <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5" />
+              <div>
+                <p className="font-medium">ERPNext Integration</p>
+                <p className="text-sm text-muted-foreground">
+                  Equipment can be synchronized from ERPNext to your local system. Changes made in ERPNext will be reflected here after synchronization.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3">
+              <Info className="h-5 w-5 text-blue-500 mt-0.5" />
+              <div>
+                <p className="font-medium">Data Management</p>
+                <p className="text-sm text-muted-foreground">
+                  Local equipment data is stored in your database and can be managed independently. ERPNext data is read-only and used for synchronization.
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

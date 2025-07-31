@@ -30,7 +30,7 @@ export function RBACProvider({ children }: RBACProviderProps) {
     // PERMANENT FIX: Force correct role based on email
     if (session.user.email === 'admin@ias.com') {
       role = 'SUPER_ADMIN';
-      console.log('🔍 RBAC Context - PERMANENT FIX: Setting SUPER_ADMIN role for admin@ias.com');
+    
     }
 
     return {
@@ -59,27 +59,24 @@ export function RBACProvider({ children }: RBACProviderProps) {
 
   const contextValue: RBACContextType = useMemo(() => {
     // Debug logging
-    console.log('RBAC Context - Session:', session);
-    console.log('RBAC Context - User:', user);
-    console.log('RBAC Context - Status:', status);
-    console.log('RBAC Context - Ability:', ability);
+
     
     return {
       ability,
       user,
       hasPermission: (action: string, subject: string) => {
         if (!user) {
-          console.log(`Permission check failed - no user. Action: ${action}, Subject: ${subject}`);
+    
           return false;
         }
         const result = hasPermission(user, action as any, subject as any);
-        console.log(`Permission check - User: ${user.email}, Role: ${user.role}, Action: ${action}, Subject: ${subject}, Result: ${result}`);
+        
         return result;
       },
       getAllowedActions: (subject: string) => {
         if (!user) return [];
         const actions = getAllowedActions(user, subject as any);
-        console.log(`Allowed actions for ${subject} - User: ${user.email}, Role: ${user.role}, Actions:`, actions);
+
         return actions;
       },
       canAccessRoute: (route: string) => {

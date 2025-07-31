@@ -78,7 +78,7 @@ export default function ERPNextIntegrationPage() {
 
       if (result.success) {
         toast.success(`Connection successful! Found ${result.data.employeeCount} employees`);
-        console.log('Connection test result:', result);
+  
       } else {
         toast.error(`Connection failed: ${result.message}`);
         console.error('Connection test failed:', result);
@@ -173,20 +173,20 @@ export default function ERPNextIntegrationPage() {
   const syncItems = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/erpnext/items');
+      const response = await fetch('/api/erpnext/equipment?action=sync');
       const result = await response.json();
 
       if (result.success) {
-        toast.success(`Synced ${result.count} items from ERPNext`);
+        toast.success(`Synced ${result.data?.created || 0} created, ${result.data?.updated || 0} updated equipment from ERPNext`);
         setSyncStatus(prev => ({
           ...prev,
-          items: { count: result.count, lastSync: new Date().toISOString() }
+          items: { count: result.data?.total_processed || 0, lastSync: new Date().toISOString() }
         }));
       } else {
-        toast.error('Failed to sync items');
+        toast.error('Failed to sync equipment');
       }
     } catch (error) {
-      toast.error('Error syncing items');
+      toast.error('Error syncing equipment');
     } finally {
       setLoading(false);
     }
@@ -440,18 +440,18 @@ export default function ERPNextIntegrationPage() {
         <TabsContent value="items" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Item/Equipment Synchronization</CardTitle>
+              <CardTitle>Equipment Synchronization</CardTitle>
               <CardDescription>
-                Manage equipment and item data synchronization with ERPNext
+                Manage equipment data synchronization with ERPNext
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium">Total Items</p>
+                    <p className="font-medium">Total Equipment</p>
                     <p className="text-sm text-muted-foreground">
-                      {syncStatus.items.count} items synchronized
+                      {syncStatus.items.count} equipment synchronized
                     </p>
                   </div>
                   <Button onClick={syncItems} disabled={loading}>

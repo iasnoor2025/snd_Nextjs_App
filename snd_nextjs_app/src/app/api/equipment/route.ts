@@ -5,6 +5,44 @@ const prisma = new PrismaClient();
 
 export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const syncERPNext = searchParams.get('sync_erpnext');
+    const source = searchParams.get('source');
+
+    // If sync_erpnext is requested, trigger ERPNext sync first
+    if (syncERPNext === 'true') {
+      try {
+        const syncResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/erpnext/equipment?action=sync`, {
+          method: 'GET'
+        });
+        
+        if (syncResponse.ok) {
+          const syncResult = await syncResponse.json();
+          console.log('ERPNext sync result:', syncResult);
+        }
+      } catch (error) {
+        console.error('Error syncing from ERPNext:', error);
+      }
+    }
+
+    // If source is erpnext, fetch from ERPNext API
+    if (source === 'erpnext') {
+      try {
+        const erpResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/erpnext/equipment`);
+        if (erpResponse.ok) {
+          const erpData = await erpResponse.json();
+          return NextResponse.json({ 
+            data: erpData.data || [],
+            source: 'erpnext',
+            count: erpData.count || 0
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching from ERPNext:', error);
+      }
+    }
+
+    // Default: fetch from local database
     const equipment = await prisma.equipment.findMany({
       where: { is_active: true },
       select: {
@@ -16,12 +54,19 @@ export async function GET(request: NextRequest) {
         manufacturer: true,
         daily_rate: true,
         weekly_rate: true,
-        monthly_rate: true
+        monthly_rate: true,
+        erpnext_id: true,
+        serial_number: true,
+        description: true
       },
       orderBy: { name: 'asc' }
     });
 
-    return NextResponse.json({ data: equipment });
+    return NextResponse.json({ 
+      data: equipment,
+      source: 'local',
+      count: equipment.length
+    });
   } catch (error) {
     console.error('Error fetching equipment:', error);
     return NextResponse.json(

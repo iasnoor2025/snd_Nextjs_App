@@ -69,10 +69,7 @@ export default function EmployeeManagementPage() {
   const allowedActions = getAllowedActions('Employee');
   
   // Debug logging
-  console.log('User role:', user?.role);
-  console.log('Allowed actions for Employee:', allowedActions);
-  console.log('Has create permission:', hasPermission('create', 'Employee'));
-  console.log('Has sync permission:', hasPermission('sync', 'Employee'));
+  
 
   useEffect(() => {
     fetchEmployees();
@@ -115,7 +112,7 @@ export default function EmployeeManagementPage() {
       if (response.ok) {
         const result = await response.json();
         toast.success(t('employee:messages.syncSuccess'));
-        console.log('Sync result:', result);
+
         await fetchEmployees(); // Refresh the list
       } else {
         toast.error(t('employee:messages.syncError'));
@@ -135,7 +132,7 @@ export default function EmployeeManagementPage() {
 
       if (result.success) {
         toast.success('ERPNext test completed - check console for details');
-        console.log('ERPNext test results:', result);
+
       } else {
         toast.error(`ERPNext test failed: ${result.message}`);
         console.error('ERPNext test failed:', result);
@@ -155,7 +152,7 @@ export default function EmployeeManagementPage() {
 
       if (result.success) {
         toast.success('Environment check completed - check console for details');
-        console.log('Environment check:', result);
+
       } else {
         toast.error(`Environment check failed: ${result.message}`);
         console.error('Environment check failed:', result);

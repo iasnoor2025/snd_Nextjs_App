@@ -62,9 +62,9 @@ export class PDFGenerator {
       }
 
       // Validate each rental item
-      console.log('Validating rental items:', quotationData.rentalItems);
+  
       quotationData.rentalItems.forEach((item, index) => {
-        console.log(`Item ${index + 1}:`, item);
+        
         if (!item.equipmentName) {
           throw new Error(`Rental item ${index + 1} is missing equipment name`);
         }

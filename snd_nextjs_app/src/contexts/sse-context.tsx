@@ -71,7 +71,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         handleUpdate(data.payload);
         break;
       default:
-        console.log('Unknown SSE message type:', data.type);
+
     }
   }, []);
 
@@ -110,7 +110,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
 
   // Handle system messages
   const handleSystemMessage = useCallback((payload: any) => {
-    console.log('System message:', payload);
+    
     
     switch (payload.action) {
       case 'reload':
@@ -123,13 +123,13 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         ToastService.info('System update available');
         break;
       default:
-        console.log('Unknown system action:', payload.action);
+
     }
   }, []);
 
   // Handle update messages
   const handleUpdate = useCallback((payload: any) => {
-    console.log('Update message:', payload);
+    
     
     // Handle different types of updates
     switch (payload.entity) {
@@ -143,7 +143,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         // Trigger equipment data refresh
         break;
       default:
-        console.log('Unknown update entity:', payload.entity);
+
     }
   }, []);
 
@@ -172,7 +172,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         setConnectionStatus('connected');
         setReconnectAttempts(0);
         reconnectAttemptsRef.current = 0;
-        console.log('SSE connection established');
+
       };
 
       sse.onmessage = (event) => {
@@ -314,7 +314,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
   useEffect(() => {
     const handleOnline = () => {
       if (session?.user?.email && !isConnected) {
-        console.log('Network recovered, reconnecting...');
+
         reconnect();
       }
     };
