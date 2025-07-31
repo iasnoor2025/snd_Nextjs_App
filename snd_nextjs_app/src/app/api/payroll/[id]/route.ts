@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
 
 // Mock data (same as in the main route)
 const mockPayrolls = [
@@ -327,9 +328,17 @@ export async function DELETE(
   try {
     const { id: idParam } = await params;
     const id = parseInt(idParam);
-    const payrollIndex = mockPayrolls.findIndex(p => p.id === id);
 
-    if (payrollIndex === -1) {
+    // Connect to database
+    await prisma.$connect();
+
+    // Check if payroll exists
+    const payroll = await prisma.payroll.findUnique({
+      where: { id: id },
+      include: { employee: true }
+    });
+
+    if (!payroll) {
       return NextResponse.json(
         {
           success: false,
@@ -338,8 +347,6 @@ export async function DELETE(
         { status: 404 }
       );
     }
-
-    const payroll = mockPayrolls[payrollIndex];
 
     // Check if payroll is paid - if so, prevent deletion
     if (payroll.status === 'paid') {
@@ -352,14 +359,22 @@ export async function DELETE(
       );
     }
 
-    // In a real implementation, you would delete from database here
-    // mockPayrolls.splice(payrollIndex, 1);
+    // Delete payroll items first (cascade)
+    await prisma.payrollItem.deleteMany({
+      where: { payroll_id: id }
+    });
+
+    // Delete payroll
+    await prisma.payroll.delete({
+      where: { id: id }
+    });
 
     return NextResponse.json({
       success: true,
       message: 'Payroll deleted successfully'
     });
   } catch (error) {
+    console.error('Error deleting payroll:', error);
     return NextResponse.json(
       {
         success: false,
@@ -367,5 +382,7 @@ export async function DELETE(
       },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
