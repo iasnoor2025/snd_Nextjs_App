@@ -202,22 +202,6 @@ export default function EquipmentManagementPage() {
                 <option value="out_of_service">Out of Service</option>
               </select>
             </div>
-            <div className="flex items-center gap-2">
-              <Label htmlFor="items-per-page" className="text-sm font-medium">
-                Show:
-              </Label>
-              <select
-                id="items-per-page"
-                value={itemsPerPage}
-                onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
-                className="border rounded-md px-3 py-2 text-sm"
-              >
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
-            </div>
           </div>
         </CardContent>
       </Card>
@@ -306,77 +290,96 @@ export default function EquipmentManagementPage() {
                     Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} results
                   </div>
                   
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious 
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (currentPage > 1) handlePageChange(currentPage - 1);
-                          }}
-                          className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                        />
-                      </PaginationItem>
-                      
-                      {/* First page */}
-                      {currentPage > 3 && (
-                        <>
-                          <PaginationItem>
-                            <PaginationLink href="#" onClick={(e) => { e.preventDefault(); handlePageChange(1); }}>
-                              1
-                            </PaginationLink>
-                          </PaginationItem>
-                          <PaginationItem>
-                            <PaginationEllipsis />
-                          </PaginationItem>
-                        </>
-                      )}
-                      
-                      {/* Page numbers around current page */}
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        const page = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
-                        if (page > totalPages) return null;
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="items-per-page" className="text-sm font-medium">
+                        Show:
+                      </Label>
+                      <select
+                        id="items-per-page"
+                        value={itemsPerPage}
+                        onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+                        className="border rounded-md px-3 py-2 text-sm"
+                      >
+                        <option value={10}>10</option>
+                        <option value={25}>25</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                      </select>
+                    </div>
+                    
+                    <Pagination>
+                      <PaginationContent>
+                        <PaginationItem>
+                          <PaginationPrevious 
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (currentPage > 1) handlePageChange(currentPage - 1);
+                            }}
+                            className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                          />
+                        </PaginationItem>
                         
-                        return (
-                          <PaginationItem key={page}>
-                            <PaginationLink 
-                              href="#" 
-                              onClick={(e) => { e.preventDefault(); handlePageChange(page); }}
-                              isActive={currentPage === page}
-                            >
-                              {page}
-                            </PaginationLink>
-                          </PaginationItem>
-                        );
-                      })}
-                      
-                      {/* Last page */}
-                      {currentPage < totalPages - 2 && (
-                        <>
-                          <PaginationItem>
-                            <PaginationEllipsis />
-                          </PaginationItem>
-                          <PaginationItem>
-                            <PaginationLink href="#" onClick={(e) => { e.preventDefault(); handlePageChange(totalPages); }}>
-                              {totalPages}
-                            </PaginationLink>
-                          </PaginationItem>
-                        </>
-                      )}
-                      
-                      <PaginationItem>
-                        <PaginationNext 
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (currentPage < totalPages) handlePageChange(currentPage + 1);
-                          }}
-                          className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
+                        {/* First page */}
+                        {currentPage > 3 && (
+                          <>
+                            <PaginationItem>
+                              <PaginationLink href="#" onClick={(e) => { e.preventDefault(); handlePageChange(1); }}>
+                                1
+                              </PaginationLink>
+                            </PaginationItem>
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                          </>
+                        )}
+                        
+                        {/* Page numbers around current page */}
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          const page = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                          if (page > totalPages) return null;
+                          
+                          return (
+                            <PaginationItem key={page}>
+                              <PaginationLink 
+                                href="#" 
+                                onClick={(e) => { e.preventDefault(); handlePageChange(page); }}
+                                isActive={currentPage === page}
+                              >
+                                {page}
+                              </PaginationLink>
+                            </PaginationItem>
+                          );
+                        })}
+                        
+                        {/* Last page */}
+                        {currentPage < totalPages - 2 && (
+                          <>
+                            <PaginationItem>
+                              <PaginationEllipsis />
+                            </PaginationItem>
+                            <PaginationItem>
+                              <PaginationLink href="#" onClick={(e) => { e.preventDefault(); handlePageChange(totalPages); }}>
+                                {totalPages}
+                              </PaginationLink>
+                            </PaginationItem>
+                          </>
+                        )}
+                        
+                        <PaginationItem>
+                          <PaginationNext 
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (currentPage < totalPages) handlePageChange(currentPage + 1);
+                            }}
+                            className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                          />
+                        </PaginationItem>
+                      </PaginationContent>
+                    </Pagination>
+                  </div>
                 </div>
               )}
             </>
