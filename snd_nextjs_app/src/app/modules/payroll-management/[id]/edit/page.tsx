@@ -7,9 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, ArrowLeft, Save, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { ArrowLeft, Save, Loader2, User, Calendar, DollarSign, FileText, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -68,6 +68,13 @@ interface Payroll {
   items: PayrollItem[];
 }
 
+const statusColors = {
+  pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  approved: "bg-blue-100 text-blue-800 border-blue-200",
+  paid: "bg-green-100 text-green-800 border-green-200",
+  cancelled: "bg-red-100 text-red-800 border-red-200"
+};
+
 export default function EditPayrollPage() {
   const params = useParams();
   const router = useRouter();
@@ -97,6 +104,7 @@ export default function EditPayrollPage() {
         const data = await response.json();
 
         if (data.success) {
+          setPayroll(data.data);
           setFormData({
             base_salary: data.data.base_salary.toString(),
             overtime_amount: data.data.overtime_amount.toString(),
@@ -203,10 +211,13 @@ export default function EditPayrollPage() {
 
   if (initialLoading) {
     return (
-      <div className="p-6">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
         <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Loading payroll details...</span>
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-blue-600" />
+            <h3 className="text-lg font-semibold text-gray-700">Loading payroll details...</h3>
+            <p className="text-gray-500">Please wait while we fetch the payroll information</p>
+          </div>
         </div>
       </div>
     );
@@ -214,10 +225,19 @@ export default function EditPayrollPage() {
 
   if (!payroll) {
     return (
-      <div className="p-6">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold">Payroll not found</h2>
-          <p className="text-gray-600">The requested payroll could not be found.</p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center py-12">
+            <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Payroll Not Found</h2>
+            <p className="text-gray-600 mb-6">The requested payroll could not be found or may have been removed.</p>
+            <Link href="/modules/payroll-management">
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Payroll Management
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -232,197 +252,317 @@ export default function EditPayrollPage() {
     year: "numeric",
   });
 
+  const netPay = calculateNetPay();
+
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Link href={`/modules/payroll-management/${payrollId}`}>
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold">Edit Payroll</h1>
-            <p className="text-gray-600">Modify payroll record for {employeeName}</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="p-6">
+        {/* Header */}
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-4">
+              <Link href={`/modules/payroll-management/${payrollId}`}>
+                <Button variant="ghost" size="sm" className="hover:bg-white/80">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back
+                </Button>
+              </Link>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Edit Payroll</h1>
+                <p className="text-gray-600">Modify payroll record for {employeeName}</p>
+              </div>
+            </div>
+            <Badge 
+              variant="outline" 
+              className={cn("text-sm font-medium", statusColors[formData.status as keyof typeof statusColors])}
+            >
+              {formData.status.charAt(0).toUpperCase() + formData.status.slice(1)}
+            </Badge>
           </div>
+
+          <form onSubmit={handleSubmit}>
+            <div className="grid gap-8">
+              {/* Payroll Overview Card */}
+              <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl">Payroll #{payroll.id}</CardTitle>
+                      <CardDescription className="text-blue-100">
+                        {period} • {employeeName}
+                      </CardDescription>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-2xl font-bold">{formatCurrency(netPay)}</div>
+                      <div className="text-blue-100 text-sm">Net Pay</div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <User className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Employee</p>
+                        <p className="font-semibold">{employeeName}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <Calendar className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Period</p>
+                        <p className="font-semibold">{period}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <FileText className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">File Number</p>
+                        <p className="font-semibold">{payroll.employee?.file_number || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Salary Components */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Status Selection */}
+                  <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                          <DollarSign className="h-5 w-5 text-blue-600" />
+                        </div>
+                        Payroll Status
+                      </CardTitle>
+                      <CardDescription>Update the payroll processing status</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="status" className="text-sm font-medium">Status</Label>
+                          <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                            <SelectTrigger className="mt-1">
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">Pending</SelectItem>
+                              <SelectItem value="approved">Approved</SelectItem>
+                              <SelectItem value="paid">Paid</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Salary Breakdown */}
+                  <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                          <DollarSign className="h-5 w-5 text-green-600" />
+                        </div>
+                        Salary Breakdown
+                      </CardTitle>
+                      <CardDescription>Edit salary components and amounts</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="base_salary" className="text-sm font-medium">Base Salary</Label>
+                          <Input
+                            id="base_salary"
+                            type="number"
+                            step="0.01"
+                            value={formData.base_salary}
+                            onChange={(e) => handleInputChange("base_salary", e.target.value)}
+                            placeholder="0.00"
+                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="overtime_amount" className="text-sm font-medium">Overtime Amount</Label>
+                          <Input
+                            id="overtime_amount"
+                            type="number"
+                            step="0.01"
+                            value={formData.overtime_amount}
+                            onChange={(e) => handleInputChange("overtime_amount", e.target.value)}
+                            placeholder="0.00"
+                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="bonus_amount" className="text-sm font-medium">Bonus Amount</Label>
+                          <Input
+                            id="bonus_amount"
+                            type="number"
+                            step="0.01"
+                            value={formData.bonus_amount}
+                            onChange={(e) => handleInputChange("bonus_amount", e.target.value)}
+                            placeholder="0.00"
+                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="deduction_amount" className="text-sm font-medium">Deduction Amount</Label>
+                          <Input
+                            id="deduction_amount"
+                            type="number"
+                            step="0.01"
+                            value={formData.deduction_amount}
+                            onChange={(e) => handleInputChange("deduction_amount", e.target.value)}
+                            placeholder="0.00"
+                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="advance_deduction" className="text-sm font-medium">Advance Deduction</Label>
+                          <Input
+                            id="advance_deduction"
+                            type="number"
+                            step="0.01"
+                            value={formData.advance_deduction}
+                            onChange={(e) => handleInputChange("advance_deduction", e.target.value)}
+                            placeholder="0.00"
+                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Notes */}
+                  <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <div className="p-2 bg-purple-100 rounded-lg">
+                          <FileText className="h-5 w-5 text-purple-600" />
+                        </div>
+                        Notes
+                      </CardTitle>
+                      <CardDescription>Add any additional notes about this payroll</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Textarea
+                        value={formData.notes}
+                        onChange={(e) => handleInputChange("notes", e.target.value)}
+                        placeholder="Add any notes about this payroll..."
+                        rows={4}
+                        className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Summary Sidebar */}
+                <div className="space-y-6">
+                  {/* Salary Summary */}
+                  <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <div className="p-2 bg-indigo-100 rounded-lg">
+                          <DollarSign className="h-5 w-5 text-indigo-600" />
+                        </div>
+                        Salary Summary
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center py-2">
+                          <span className="text-gray-600">Base Salary:</span>
+                          <span className="font-semibold">{formatCurrency(parseFloat(formData.base_salary) || 0)}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2">
+                          <span className="text-gray-600">Overtime:</span>
+                          <span className="font-semibold text-blue-600">{formatCurrency(parseFloat(formData.overtime_amount) || 0)}</span>
+                        </div>
+                        <div className="flex justify-between items-center py-2">
+                          <span className="text-gray-600">Bonus:</span>
+                          <span className="font-semibold text-green-600">{formatCurrency(parseFloat(formData.bonus_amount) || 0)}</span>
+                        </div>
+                        <Separator />
+                        <div className="flex justify-between items-center py-2">
+                          <span className="text-gray-600">Deductions:</span>
+                          <span className="font-semibold text-red-600">-{formatCurrency(parseFloat(formData.deduction_amount) || 0)}</span>
+                        </div>
+                        {parseFloat(formData.advance_deduction) > 0 && (
+                          <div className="flex justify-between items-center py-2">
+                            <span className="text-gray-600">Advance Deduction:</span>
+                            <span className="font-semibold text-red-600">-{formatCurrency(parseFloat(formData.advance_deduction) || 0)}</span>
+                          </div>
+                        )}
+                        <Separator />
+                        <div className="flex justify-between items-center py-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg px-3">
+                          <span className="font-bold text-gray-900">Net Pay:</span>
+                          <span className="font-bold text-2xl text-green-600">{formatCurrency(netPay)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Quick Actions */}
+                  <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Quick Actions</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <Link href={`/modules/payroll-management/${payrollId}`}>
+                        <Button variant="outline" className="w-full justify-start">
+                          <ArrowLeft className="h-4 w-4 mr-2" />
+                          View Details
+                        </Button>
+                      </Link>
+                      <Link href={`/modules/payroll-management/${payrollId}/payslip`}>
+                        <Button variant="outline" className="w-full justify-start">
+                          <FileText className="h-4 w-4 mr-2" />
+                          View Payslip
+                        </Button>
+                      </Link>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-4 pt-6">
+                <Link href={`/modules/payroll-management/${payrollId}`}>
+                  <Button variant="outline" type="button" className="px-8">
+                    Cancel
+                  </Button>
+                </Link>
+                <Button 
+                  type="submit" 
+                  disabled={loading}
+                  className="px-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </form>
         </div>
       </div>
-
-      <form onSubmit={handleSubmit}>
-        <div className="grid gap-6">
-          {/* Header Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Payroll Information</CardTitle>
-              <CardDescription>
-                Payroll #{payroll.id} - {period} - {employeeName}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="approved">Approved</SelectItem>
-                      <SelectItem value="paid">Paid</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Salary Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Salary Breakdown</CardTitle>
-              <CardDescription>Edit salary components</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="base_salary">Base Salary</Label>
-                  <Input
-                    id="base_salary"
-                    type="number"
-                    step="0.01"
-                    value={formData.base_salary}
-                    onChange={(e) => handleInputChange("base_salary", e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="overtime_amount">Overtime Amount</Label>
-                  <Input
-                    id="overtime_amount"
-                    type="number"
-                    step="0.01"
-                    value={formData.overtime_amount}
-                    onChange={(e) => handleInputChange("overtime_amount", e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="bonus_amount">Bonus Amount</Label>
-                  <Input
-                    id="bonus_amount"
-                    type="number"
-                    step="0.01"
-                    value={formData.bonus_amount}
-                    onChange={(e) => handleInputChange("bonus_amount", e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="deduction_amount">Deduction Amount</Label>
-                  <Input
-                    id="deduction_amount"
-                    type="number"
-                    step="0.01"
-                    value={formData.deduction_amount}
-                    onChange={(e) => handleInputChange("deduction_amount", e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="advance_deduction">Advance Deduction</Label>
-                  <Input
-                    id="advance_deduction"
-                    type="number"
-                    step="0.01"
-                    value={formData.advance_deduction}
-                    onChange={(e) => handleInputChange("advance_deduction", e.target.value)}
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Summary */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Base Salary:</span>
-                  <span>{formatCurrency(parseFloat(formData.base_salary) || 0)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Overtime:</span>
-                  <span>{formatCurrency(parseFloat(formData.overtime_amount) || 0)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Bonus:</span>
-                  <span>{formatCurrency(parseFloat(formData.bonus_amount) || 0)}</span>
-                </div>
-                <div className="flex justify-between text-red-600">
-                  <span>Deductions:</span>
-                  <span>-{formatCurrency(parseFloat(formData.deduction_amount) || 0)}</span>
-                </div>
-                {parseFloat(formData.advance_deduction) > 0 && (
-                  <div className="flex justify-between text-red-600">
-                    <span>Advance Deduction:</span>
-                    <span>-{formatCurrency(parseFloat(formData.advance_deduction) || 0)}</span>
-                  </div>
-                )}
-                <div className="border-t pt-2">
-                  <div className="flex justify-between font-semibold text-lg">
-                    <span>Net Pay:</span>
-                    <span className="text-green-600">{formatCurrency(calculateNetPay())}</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Notes */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Notes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Textarea
-                value={formData.notes}
-                onChange={(e) => handleInputChange("notes", e.target.value)}
-                placeholder="Add any notes about this payroll..."
-                rows={4}
-              />
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-4">
-            <Link href={`/modules/payroll-management/${payrollId}`}>
-              <Button variant="outline" type="button">
-                Cancel
-              </Button>
-            </Link>
-            <Button type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Changes
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
-      </form>
     </div>
   );
 }
