@@ -82,7 +82,7 @@ export async function GET(
 
     console.log('Payslip API returning data:', {
       payrollId: payroll.id,
-      employeeName: payroll.employee?.full_name,
+      employeeName: payroll.employee ? `${payroll.employee.first_name || ''} ${payroll.employee.middle_name ? payroll.employee.middle_name + ' ' : ''}${payroll.employee.last_name || ''}`.trim() : 'Unknown',
       itemsCount: payroll.items?.length || 0,
       baseSalary: payroll.base_salary,
       finalAmount: payroll.final_amount,

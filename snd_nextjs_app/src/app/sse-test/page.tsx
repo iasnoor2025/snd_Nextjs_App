@@ -23,6 +23,18 @@ export default function SSETestPage() {
   const { isConnected } = useSSEContext();
   const [eventType, setEventType] = useState('rental_status_updated');
   const [eventData, setEventData] = useState('{"status": "active", "rental_id": 123}');
+  const [events, setEvents] = useState<any[]>([]);
+
+  const sendEvent = async (type: string, data: any) => {
+    const event = {
+      id: Date.now().toString(),
+      type,
+      data,
+      timestamp: new Date()
+    };
+    setEvents(prev => [event, ...prev]);
+    toast.success(`Event sent: ${type}`);
+  };
 
   const handleSendEvent = async () => {
     try {

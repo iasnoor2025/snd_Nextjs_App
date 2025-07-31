@@ -13,8 +13,7 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             first_name: true,
-            last_name: true,
-            full_name: true
+            last_name: true
           }
         }
       },
@@ -37,7 +36,7 @@ export async function GET(request: NextRequest) {
         recentTimesheets: timesheets.map(ts => ({
           id: ts.id,
           employee_id: ts.employee_id,
-          employee_name: ts.employee?.full_name || `${ts.employee?.first_name} ${ts.employee?.last_name}`,
+          employee_name: `${ts.employee?.first_name || ''} ${ts.employee?.last_name || ''}`.trim(),
           date: ts.date,
           hours_worked: ts.hours_worked,
           overtime_hours: ts.overtime_hours,

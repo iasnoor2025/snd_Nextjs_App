@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
 export default function TestSidebarRTLPage() {
-  const { isRTL, currentLanguage, changeLanguage } = useI18n();
+  const { isRTL, currentLanguage, changeLanguage, languages } = useI18n();
 
   const toggleLanguage = () => {
     changeLanguage(isRTL ? "en" : "ar");
@@ -63,7 +63,7 @@ export default function TestSidebarRTLPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <span>Language:</span>
-              <Badge variant="outline">{currentLanguage?.name || "Unknown"}</Badge>
+              <Badge variant="outline">{languages.find(lang => lang.code === currentLanguage)?.name || "Unknown"}</Badge>
             </div>
             <div className="flex items-center justify-between">
               <span>Direction:</span>
