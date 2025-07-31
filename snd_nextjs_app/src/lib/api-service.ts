@@ -516,6 +516,38 @@ export class ApiService {
   }
 
   // ========================================
+  // PROJECT RESOURCES METHODS
+  // ========================================
+
+  static async getProjectResources(projectId: number) {
+    return this.get(`/projects/${projectId}/resources`);
+  }
+
+  static async createProjectResource(projectId: number, data: any) {
+    return this.post(`/projects/${projectId}/resources`, data, {
+      showToast: true,
+      toastMessage: 'Resource added successfully',
+      errorMessage: 'Failed to add resource'
+    });
+  }
+
+  static async updateProjectResource(projectId: number, resourceId: number, data: any) {
+    return this.put(`/projects/${projectId}/resources/${resourceId}`, data, {
+      showToast: true,
+      toastMessage: 'Resource updated successfully',
+      errorMessage: 'Failed to update resource'
+    });
+  }
+
+  static async deleteProjectResource(projectId: number, resourceId: number) {
+    return this.delete(`/projects/${projectId}/resources/${resourceId}`, {
+      showToast: true,
+      toastMessage: 'Resource deleted successfully',
+      errorMessage: 'Failed to delete resource'
+    });
+  }
+
+  // ========================================
   // FILE UPLOAD
   // ========================================
 

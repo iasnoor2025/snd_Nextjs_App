@@ -30,6 +30,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
+import { usePrint } from "@/hooks/use-print";
 
 interface PayrollItem {
   id: number;
@@ -100,6 +101,7 @@ const statusIcons = {
 export default function PayrollDetailsPage() {
   const params = useParams();
   const payrollId = params.id as string;
+  const printRef = useRef<HTMLDivElement>(null);
 
   const [payroll, setPayroll] = useState<Payroll | null>(null);
   const [loading, setLoading] = useState(true);
@@ -156,9 +158,9 @@ export default function PayrollDetailsPage() {
     toast.success("Payslip download started");
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = useReactToPrint({
+    contentRef: printRef,
+  });
 
   const handleShare = () => {
     console.log("Sharing payroll details");
@@ -219,7 +221,7 @@ export default function PayrollDetailsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="p-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto" ref={printRef}>
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
