@@ -16,9 +16,9 @@ export async function POST(request: NextRequest) {
       }, { status: 500 });
     }
 
-    // Test with minimal fields first
-    console.log('Testing with minimal fields...');
-    const response = await fetch(`${ERPNEXT_URL}/api/resource/Item?limit_page_length=5&fields=["name","item_code","item_name","item_group"]`, {
+    // Test with last_purchase_rate and valuation_rate
+    console.log('Testing with last_purchase_rate and valuation_rate...');
+    const response = await fetch(`${ERPNEXT_URL}/api/resource/Item?limit_page_length=5&fields=["name","item_code","item_name","item_group","description","stock_uom","disabled","standard_rate","last_purchase_rate","valuation_rate"]`, {
       headers: {
         'Authorization': `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
         'Content-Type': 'application/json',

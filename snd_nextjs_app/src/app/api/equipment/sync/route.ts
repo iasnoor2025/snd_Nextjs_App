@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
     const existingEquipmentCount = await prisma.equipment.count();
     console.log(`Database has ${existingEquipmentCount} existing equipment`);
 
-    // Fetch all items from ERPNext (same approach as employee sync)
+    // Fetch all items from ERPNext (using only working fields)
     console.log('Fetching items from ERPNext...');
-    const erpnextResponse = await fetch(`${ERPNEXT_URL}/api/resource/Item?limit_page_length=1000&fields=["name","item_code","item_name","description","item_group","stock_uom","disabled","standard_rate","last_purchase_rate","valuation_rate","model","serial_no","manufacturer"]`, {
+    const erpnextResponse = await fetch(`${ERPNEXT_URL}/api/resource/Item?limit_page_length=1000&fields=["name","item_code","item_name","description","item_group","stock_uom","disabled","standard_rate","last_purchase_rate","valuation_rate"]`, {
       headers: {
         'Authorization': `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
         'Content-Type': 'application/json',
@@ -128,9 +128,9 @@ export async function POST(request: NextRequest) {
         const equipmentData = {
           name: erpEquipmentItem.item_name || erpEquipmentItem.item_code,
           description: erpEquipmentItem.description || '',
-          manufacturer: erpEquipmentItem.manufacturer || '',
-          model_number: erpEquipmentItem.model || '',
-          serial_number: erpEquipmentItem.serial_no || '',
+          manufacturer: '', // Not available in API response
+          model_number: '', // Not available in API response
+          serial_number: '', // Not available in API response
           erpnext_id: erpEquipmentItem.item_code,
           daily_rate: erpEquipmentItem.standard_rate ? parseFloat(erpEquipmentItem.standard_rate) : null,
           status: 'available',
