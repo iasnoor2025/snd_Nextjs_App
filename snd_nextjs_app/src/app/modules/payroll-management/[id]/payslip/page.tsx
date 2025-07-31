@@ -13,18 +13,19 @@ import { useRef } from "react";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 
-// Add print styles
+// Professional print styles
 const printStyles = `
   @media print {
     @page {
-      size: A4;
-      margin: 10mm;
+      size: A4 landscape;
+      margin: 15mm;
     }
 
     body {
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
       background-color: white !important;
+      font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
     }
 
     .sidebar-wrapper,
@@ -38,32 +39,266 @@ const printStyles = `
       display: none !important;
     }
 
-    .print\\:p-0 {
+    .payslip-container {
+      width: 100% !important;
+      max-width: none !important;
+      margin: 0 !important;
       padding: 0 !important;
-    }
-
-    .card-container {
+      background: white !important;
       box-shadow: none !important;
-      border: 1px solid #e5e7eb !important;
+      border: none !important;
     }
 
-    .header-container {
-      border-bottom: 2px solid #e5e7eb !important;
+    .payslip-header {
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
+      color: white !important;
+      padding: 2rem !important;
+      border-radius: 0 !important;
+      margin-bottom: 2rem !important;
+    }
+
+    .company-logo {
+      width: 80px !important;
+      height: 80px !important;
+      border-radius: 12px !important;
+      background: white !important;
+      padding: 8px !important;
     }
 
     .company-name {
-      font-size: 1.25rem !important;
-      font-weight: 600 !important;
+      font-size: 2rem !important;
+      font-weight: 700 !important;
+      margin-bottom: 0.5rem !important;
     }
 
     .company-subtitle {
-      font-size: 0.875rem !important;
-      color: #6b7280 !important;
+      font-size: 1rem !important;
+      opacity: 0.9 !important;
     }
 
-    .pay-slip-title {
+    .payslip-title {
+      font-size: 1.5rem !important;
+      font-weight: 600 !important;
+      text-align: right !important;
+    }
+
+    .employee-info-grid {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 2rem !important;
+      margin-bottom: 2rem !important;
+    }
+
+    .info-card {
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 12px !important;
+      padding: 1.5rem !important;
+    }
+
+    .info-card-title {
+      font-size: 0.875rem !important;
+      font-weight: 600 !important;
+      color: #64748b !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      margin-bottom: 1rem !important;
+    }
+
+    .info-row {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      padding: 0.5rem 0 !important;
+      border-bottom: 1px solid #f1f5f9 !important;
+    }
+
+    .info-row:last-child {
+      border-bottom: none !important;
+    }
+
+    .info-label {
+      font-size: 0.875rem !important;
+      color: #64748b !important;
+      font-weight: 500 !important;
+    }
+
+    .info-value {
+      font-size: 0.875rem !important;
+      font-weight: 600 !important;
+      color: #1e293b !important;
+    }
+
+    .info-value-green {
+      color: #059669 !important;
+    }
+
+    .info-value-red {
+      color: #dc2626 !important;
+    }
+
+    .attendance-section {
+      margin-bottom: 2rem !important;
+    }
+
+    .section-title {
+      font-size: 1.25rem !important;
+      font-weight: 600 !important;
+      color: #1e293b !important;
+      margin-bottom: 1rem !important;
+      padding-bottom: 0.5rem !important;
+      border-bottom: 2px solid #e2e8f0 !important;
+    }
+
+    .attendance-table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      border-radius: 12px !important;
+      overflow: hidden !important;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .attendance-table th {
+      background: #1e293b !important;
+      color: white !important;
+      font-weight: 600 !important;
+      padding: 0.75rem 0.5rem !important;
+      text-align: center !important;
+      font-size: 0.75rem !important;
+    }
+
+    .attendance-table td {
+      padding: 0.5rem !important;
+      text-align: center !important;
+      font-size: 0.75rem !important;
+      border: 1px solid #e2e8f0 !important;
+      background: white !important;
+    }
+
+    .attendance-table .friday {
+      background: #dbeafe !important;
+    }
+
+    .attendance-table .absent {
+      background: #fecaca !important;
+      color: #dc2626 !important;
+      font-weight: 600 !important;
+    }
+
+    .attendance-table .regular {
+      color: #059669 !important;
+      font-weight: 600 !important;
+    }
+
+    .attendance-table .overtime {
+      color: #2563eb !important;
+      font-weight: 600 !important;
+    }
+
+    .summary-section {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 2rem !important;
+      margin-bottom: 2rem !important;
+    }
+
+    .summary-card {
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 12px !important;
+      padding: 1.5rem !important;
+    }
+
+    .summary-card-title {
       font-size: 1.125rem !important;
       font-weight: 600 !important;
+      color: #1e293b !important;
+      margin-bottom: 1rem !important;
+    }
+
+    .summary-row {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      padding: 0.75rem 0 !important;
+      border-bottom: 1px solid #f1f5f9 !important;
+    }
+
+    .summary-row:last-child {
+      border-bottom: none !important;
+      font-weight: 700 !important;
+      font-size: 1.125rem !important;
+      padding-top: 1rem !important;
+      border-top: 2px solid #e2e8f0 !important;
+    }
+
+    .summary-label {
+      font-size: 0.875rem !important;
+      color: #64748b !important;
+      font-weight: 500 !important;
+    }
+
+    .summary-value {
+      font-size: 0.875rem !important;
+      font-weight: 600 !important;
+      color: #1e293b !important;
+    }
+
+    .summary-value-green {
+      color: #059669 !important;
+    }
+
+    .summary-value-red {
+      color: #dc2626 !important;
+    }
+
+    .signatures-section {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 2rem !important;
+      margin-top: 3rem !important;
+      padding-top: 2rem !important;
+      border-top: 2px solid #e2e8f0 !important;
+    }
+
+    .signature-card {
+      text-align: center !important;
+      padding: 1.5rem !important;
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 12px !important;
+    }
+
+    .signature-title {
+      font-size: 0.875rem !important;
+      font-weight: 600 !important;
+      color: #64748b !important;
+      margin-bottom: 1rem !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+    }
+
+    .signature-name {
+      font-size: 1rem !important;
+      font-weight: 600 !important;
+      color: #1e293b !important;
+      margin-bottom: 2rem !important;
+    }
+
+    .signature-line {
+      border-top: 2px solid #cbd5e1 !important;
+      padding-top: 0.5rem !important;
+      font-size: 0.75rem !important;
+      color: #64748b !important;
+    }
+
+    .legend {
+      margin-top: 1rem !important;
+      padding: 1rem !important;
+      background: #f8fafc !important;
+      border-radius: 8px !important;
+      font-size: 0.75rem !important;
+      color: #64748b !important;
     }
   }
 `;
@@ -89,6 +324,10 @@ interface Employee {
   department: string;
   designation: string;
   status: string;
+  food_allowance?: number;
+  housing_allowance?: number;
+  transport_allowance?: number;
+  advance_payment?: number;
 }
 
 interface Payroll {
@@ -178,15 +417,12 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
 
   // Inject print styles
   useEffect(() => {
-    // Create style element
     const style = document.createElement('style');
     style.innerHTML = printStyles;
     style.id = 'pay-slip-print-styles';
 
-    // Append to head
     document.head.appendChild(style);
 
-    // Cleanup on unmount
     return () => {
       const styleElement = document.getElementById('pay-slip-print-styles');
       if (styleElement) {
@@ -249,25 +485,40 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       useCORS: true,
     });
     const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF({
-      orientation: 'landscape',
-      unit: 'pt',
-      format: 'a4',
-    });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
-    pdf.save('Payslip-' + (new Date()).toISOString().slice(0, 10) + '.pdf');
+    const pdf = new jsPDF('landscape', 'mm', 'a4');
+    const imgWidth = 297;
+    const pageHeight = 210;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    pdf.save(`payslip_${payslipData?.employee.id}_${payslipData?.payroll.month}_${payslipData?.payroll.year}.pdf`);
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "SAR",
+    }).format(amount);
   };
 
   if (loading) {
     return (
       <div className="flex h-full flex-1 flex-col gap-4 p-4">
         <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading payslip...</p>
-          </div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <span className="ml-2">Loading payslip data...</span>
         </div>
       </div>
     );
@@ -276,18 +527,10 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   if (!payslipData) {
     return (
       <div className="flex h-full flex-1 flex-col gap-4 p-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Error Loading Pay Slip</CardTitle>
-            <CardDescription>There was an error loading the pay slip data. Please try again.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" onClick={() => router.back()}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="text-center">
+          <h2 className="text-xl font-semibold">Payslip not found</h2>
+          <p className="text-gray-600">The requested payslip could not be found.</p>
+        </div>
       </div>
     );
   }
@@ -309,11 +552,25 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   const totalWorkedHours = payroll.total_worked_hours || 0;
   const overtimeHours = payroll.overtime_hours || 0;
 
-  // Calculate summary
-  const totalRegularHours = totalWorkedHours - overtimeHours;
-  const daysWorked = Math.ceil(totalWorkedHours / 8);
-  const contractDaysPerMonth = 30;
-  const absentDays = Math.max(0, contractDaysPerMonth - daysWorked);
+  // Calculate absent days from actual attendance data
+  const absentDays = attendanceData.reduce((count, day) => {
+    return count + (day.status === 'A' ? 1 : 0);
+  }, 0);
+
+  // Calculate total worked hours from attendance data
+  const totalWorkedHoursFromAttendance = attendanceData.reduce((total, day) => {
+    return total + (day.hours || 0) + (day.overtime || 0);
+  }, 0);
+
+  // Calculate overtime hours from attendance data
+  const overtimeHoursFromAttendance = attendanceData.reduce((total, day) => {
+    return total + (day.overtime || 0);
+  }, 0);
+
+  // Calculate days worked from attendance data (excluding absences)
+  const daysWorkedFromAttendance = attendanceData.reduce((count, day) => {
+    return count + (day.status !== 'A' && (day.hours > 0 || day.overtime > 0) ? 1 : 0);
+  }, 0);
 
   // Format dates
   const monthName = new Date(payroll.year, payroll.month - 1).toLocaleDateString("en-US", { month: "long" });
@@ -328,343 +585,224 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   // Create calendar data for the month
   const calendarDays = attendanceData || [];
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "SAR",
-    }).format(amount);
-  };
+  // Calculate totals for salary details
+  const totalAllowances = (employee.food_allowance || 0) + (employee.housing_allowance || 0) + (employee.transport_allowance || 0);
+  const absentDeduction = absentDays > 0 ? (basicSalary / daysInMonth) * absentDays : 0;
+  const netSalary = basicSalary + totalAllowances + overtimeAmount - absentDeduction - (employee.advance_payment || 0);
 
   return (
-    <div className="flex h-full flex-1 flex-col gap-4 p-4">
-      <div className="flex items-center justify-between print:hidden">
-        <h1 className="text-2xl font-bold tracking-tight">Pay Slip</h1>
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back
-          </Button>
-          <Button variant="outline" onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4" />
-            Print
-          </Button>
-          <Button variant="default" onClick={handleDownload} disabled={isLoading}>
-            <Download className="mr-2 h-4 w-4" />
-            {isLoading ? 'Generating...' : 'Download PDF (Backend)'}
-          </Button>
-          <Button variant="default" onClick={handleDownloadPDF}>
-            <Download className="mr-2 h-4 w-4" />
-            Download PDF (UI)
-          </Button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with back button */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4 print:hidden">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.back()}
+              className="flex items-center space-x-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Payroll</span>
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Payslip</h1>
+              <p className="text-sm text-gray-600">
+                Employee: {payslipData?.employee?.full_name || 'Loading...'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePrint}
+              className="flex items-center space-x-2"
+            >
+              <Printer className="h-4 w-4" />
+              <span>Print</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadPDF}
+              className="flex items-center space-x-2"
+            >
+              <Download className="h-4 w-4" />
+              <span>Download PDF</span>
+            </Button>
+          </div>
         </div>
       </div>
-      <div ref={payslipRef}>
-        <Card className="card-container print:shadow-none">
-          <CardHeader className="header-container border-b pb-4">
+
+      {/* Full width payslip content */}
+      <div className="w-full max-w-none mx-0 px-0">
+        <div ref={payslipRef} className="payslip-container bg-white shadow-lg mx-0 max-w-none">
+          {/* Compact Header */}
+          <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white p-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-md bg-gray-100">
-                  <img src="/snd%20logo.png" alt="SND Logo" className="h-14 w-14 object-contain bg-white border border-gray-200 rounded" />
+              <div className="flex items-center space-x-4">
+                <div className="bg-white p-2 rounded-lg shadow-md">
+                  <img src="/snd%20logo.png" alt="SND Logo" className="w-12 h-12 object-contain" />
                 </div>
                 <div>
-                  <CardTitle className="company-name text-xl">{company.name}</CardTitle>
-                  <CardDescription className="company-subtitle">{company.address}</CardDescription>
+                  <h1 className="text-xl font-bold">Samhan Naser Al-Dosri Est.</h1>
+                  <p className="text-sm opacity-90">For Gen. Contracting & Rent. Equipments</p>
                 </div>
               </div>
               <div className="text-right">
-                <h2 className="pay-slip-title text-lg font-semibold">Employee Pay Slip</h2>
-                <p className="text-sm text-muted-foreground">
-                  {monthName} {payroll.year}
-                </p>
+                <h2 className="text-lg font-semibold">Employee Pay Slip</h2>
+                <p className="text-sm opacity-90">{monthName} {payroll.year}</p>
               </div>
             </div>
-          </CardHeader>
+          </div>
 
-          <CardContent className="space-y-6 p-6">
-            {/* Employee & Pay Summary Section - 5 Equal Columns */}
-            <Card className="mb-6 border-none bg-white/90 shadow-none">
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-5">
-                  {/* Employee Details */}
-                  <div className="flex flex-col gap-2 border-r border-gray-200 pr-0 md:pr-4">
-                    <div className="mb-1 flex items-center gap-2">
-                      <User className="h-5 w-5 text-primary" />
-                      <span className="text-base font-semibold text-gray-800">Employee Details</span>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="font-medium text-gray-500">File #:</span>
-                        <span className="font-semibold text-gray-800">{employee?.file_number || '-'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium text-gray-500">Name:</span>
-                        <span className="font-semibold text-gray-800">
-                          {employeeName}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium text-gray-500">Designation:</span>
-                        <span className="font-semibold text-gray-800">{employee?.designation || '-'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium text-gray-500">Department:</span>
-                        <span className="font-semibold text-gray-800">{employee?.department || '-'}</span>
-                      </div>
-                    </div>
+          {/* Compact Employee Information Grid */}
+          <div className="p-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+              {/* Employee Details */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">Employee Details</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                    <span className="text-xs text-gray-600 font-medium">File Number</span>
+                    <span className="text-xs font-semibold text-gray-900">{employee?.file_number || '-'}</span>
                   </div>
-                  {/* Work Details */}
-                  <div className="flex flex-col gap-2 border-r border-gray-200 pr-0 md:pr-4">
-                    <div className="mb-1 flex items-center gap-2">
-                      <Building className="h-5 w-5 text-primary" />
-                      <span className="text-base font-semibold text-gray-800">Work Details</span>
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="font-medium text-gray-500">Payroll ID:</span>
-                        <span className="font-semibold text-gray-800">{payroll.id}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium text-gray-500">Status:</span>
-                        <span className="font-semibold text-gray-800">{payroll.status}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium text-gray-500">Month:</span>
-                        <span className="font-semibold text-gray-800">{monthName}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium text-gray-500">Year:</span>
-                        <span className="font-semibold text-gray-800">{payroll.year}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="font-medium text-gray-500">Date Range:</span>
-                        <span className="font-semibold text-gray-800">
-                          {formattedStartDate} - {formattedEndDate}
-                        </span>
-                      </div>
-                    </div>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                    <span className="text-xs text-gray-600 font-medium">Employee Name</span>
+                    <span className="text-xs font-semibold text-gray-900">{employeeName.toUpperCase()}</span>
                   </div>
-                  {/* Salary Details */}
-                  <div className="flex flex-col gap-2 border-r border-gray-200 pr-0 md:pr-4">
-                    <div className="mb-1 flex items-center gap-1">
-                      <DollarSign className="h-4 w-4 text-green-600" />
-                      <span className="text-base font-semibold text-gray-700">Salary Details</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Basic:</span>
-                      <span className="font-bold text-green-700">{formatCurrency(basicSalary)}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Overtime:</span>
-                      <span>{overtimeAmount > 0 ? formatCurrency(overtimeAmount) : '-'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Bonus:</span>
-                      <span>{bonusAmount > 0 ? formatCurrency(bonusAmount) : '-'}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Deductions:</span>
-                      <span className="text-red-600">{formatCurrency(deductionAmount)}</span>
-                    </div>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                    <span className="text-xs text-gray-600 font-medium">Designation</span>
+                    <span className="text-xs font-semibold text-gray-900">{employee?.designation || '-'}</span>
                   </div>
-                  {/* Working Hours */}
-                  <div className="flex flex-col gap-2 border-r border-gray-200 pr-0 md:pr-4">
-                    <div className="mb-1 flex items-center gap-1">
-                      <Clock className="h-4 w-4 text-blue-600" />
-                      <span className="text-base font-semibold text-gray-700">Working Hours</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Contract:</span>
-                      <span>{contractDaysPerMonth * 8}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Total:</span>
-                      <span>{totalWorkedHours}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Regular:</span>
-                      <span>{totalRegularHours}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">OT:</span>
-                      <span>{overtimeHours}</span>
-                    </div>
-                  </div>
-                  {/* Other Details */}
-                  <div className="flex flex-col gap-2">
-                    <div className="mb-1 flex items-center gap-1">
-                      <MapPin className="h-4 w-4 text-purple-600" />
-                      <span className="text-base font-semibold text-gray-700">Other Details</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Advance:</span>
-                      <span className="text-right font-semibold text-orange-600">
-                        {advanceDeduction > 0 ? formatCurrency(advanceDeduction) : '0'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Days Worked:</span>
-                      <span className="text-right font-semibold text-gray-800">{daysWorked}</span>
-                    </div>
-                    <div className="flex justify-between text-xs">
-                      <span className="text-gray-500">Absent Days:</span>
-                      <span className="text-right font-bold text-red-600">{absentDays}</span>
-                    </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-xs text-gray-600 font-medium">Employee ID</span>
+                    <span className="text-xs font-semibold text-gray-900">{employee?.id}</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Separator />
-
-            {/* Payroll Items Table */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <h3 className="font-semibold">Payroll Breakdown</h3>
               </div>
 
-              <div className="overflow-x-auto rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                      <TableHead className="text-right">Tax Rate</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {payroll.items && payroll.items.length > 0 ? (
-                      payroll.items.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell>
-                            <Badge variant={item.type === 'earnings' ? 'default' : 'secondary'}>
-                              {item.type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>{item.description}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(item.amount)}</TableCell>
-                          <TableCell className="text-right">{item.tax_rate}%</TableCell>
-                        </TableRow>
-                      ))
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center text-gray-500 py-4">
-                          No payroll items available
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
+              {/* Work Details */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">Work Details</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                    <span className="text-xs text-gray-600 font-medium">Pay Period</span>
+                    <span className="text-xs font-semibold text-gray-900">{monthName} {payroll.year}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                    <span className="text-xs text-gray-600 font-medium">Date Range</span>
+                    <span className="text-xs font-semibold text-gray-900">{formattedStartDate} - {formattedEndDate}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                    <span className="text-xs text-gray-600 font-medium">Status</span>
+                    <span className="text-xs font-semibold text-gray-900 capitalize">{payroll.status}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-xs text-gray-600 font-medium">Payroll ID</span>
+                    <span className="text-xs font-semibold text-gray-900">#{payroll.id}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Salary Summary */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">Salary Summary</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center py-1 border-b border-gray-100">
+                    <span className="text-xs text-gray-600 font-medium">Basic Salary</span>
+                    <span className="text-xs font-semibold text-green-700">{formatCurrency(basicSalary)}</span>
+                  </div>
+                  {employee?.food_allowance && employee.food_allowance > 0 && (
+                    <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                      <span className="text-xs text-gray-600 font-medium">Food Allowance</span>
+                      <span className="text-xs font-semibold text-gray-900">{formatCurrency(employee.food_allowance)}</span>
+                    </div>
+                  )}
+                  {employee?.housing_allowance && employee.housing_allowance > 0 && (
+                    <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                      <span className="text-xs text-gray-600 font-medium">Housing Allowance</span>
+                      <span className="text-xs font-semibold text-gray-900">{formatCurrency(employee.housing_allowance)}</span>
+                    </div>
+                  )}
+                  {employee?.transport_allowance && employee.transport_allowance > 0 && (
+                    <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                      <span className="text-xs text-gray-600 font-medium">Transport Allowance</span>
+                      <span className="text-xs font-semibold text-gray-900">{formatCurrency(employee.transport_allowance)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                    <span className="text-xs text-gray-600 font-medium">Overtime Pay</span>
+                    <span className="text-xs font-semibold text-green-700">{formatCurrency(overtimeAmount)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-xs text-gray-600 font-medium">Net Salary</span>
+                    <span className="text-xs font-semibold text-green-700">{formatCurrency(netSalary)}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Attendance Calendar */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <h3 className="font-semibold">Attendance Record</h3>
-              </div>
-
-              <div className="overflow-x-auto rounded-md border">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+            {/* Compact Attendance Record */}
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2 pb-1 border-b border-gray-200">Attendance Record</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse rounded-lg overflow-hidden shadow-md">
+                  <thead>
                     <tr>
-                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day, idx, arr) => (
-                        <th
-                          key={day}
-                          className={`border bg-black text-center align-middle text-xs font-bold text-white h-10 ${idx === 0 ? 'rounded-l-md' : ''} ${idx === arr.length - 1 ? 'rounded-r-md' : ''}`}
-                        >
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((day, idx) => (
+                        <th key={day} className="bg-gray-900 text-white font-semibold p-1 text-center text-xs">
                           {day.toString().padStart(2, '0')}
                         </th>
                       ))}
                     </tr>
+                    <tr>
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+                        const date = new Date(payroll.year, payroll.month - 1, day);
+                        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                        return (
+                          <th key={`day-${day}`} className="bg-gray-900 text-gray-300 font-medium p-1 text-center text-xs">
+                            {dayName.substring(0, 1).toUpperCase()}
+                          </th>
+                        );
+                      })}
+                    </tr>
                   </thead>
                   <tbody>
-                    <tr className="bg-gray-50">
-                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-                        const dayDate = new Date(payroll.year, payroll.month - 1, day);
-                        const dayName = dayDate.toString() !== 'Invalid Date' ? dayDate.toLocaleDateString('en-US', { weekday: 'short' }) : '';
+                    <tr>
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+                        const date = new Date(payroll.year, payroll.month - 1, day);
+                        const dateString = date.toISOString().split('T')[0];
+                        const dayData = calendarDays.find(d => d.date === dateString);
+                        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
                         const isFriday = dayName === 'Fri';
-                        const bgColor = isFriday ? 'bg-blue-100' : '';
+                        const isAbsent = dayData && dayData.hours === 0 && dayData.overtime === 0 && !isFriday;
+                        
                         return (
-                          <td key={`day-${day}`} className={`text-center ${bgColor} border p-1 text-xs`}>
-                            <div className="text-xs text-gray-600">{dayName.substring(0, 1)}</div>
+                          <td key={`regular-${day}`} className={`p-1 text-center text-xs border border-gray-200 ${
+                            isFriday ? 'bg-blue-100' : isAbsent ? 'bg-red-100 text-red-700 font-semibold' : 'bg-white'
+                          }`}>
+                            {isFriday ? 'F' : isAbsent ? 'A' : dayData ? (
+                              <span className="text-green-700 font-semibold">{dayData.hours}</span>
+                            ) : '-'}
                           </td>
                         );
                       })}
                     </tr>
                     <tr>
-                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-                        const dayDate = `${payroll.year}-${payroll.month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-                        const dayData = calendarDays.find(d => d.date === dayDate);
-                        const checkDate = new Date(payroll.year, payroll.month - 1, day);
-                        const dayName = checkDate.toString() !== 'Invalid Date' ? checkDate.toLocaleDateString('en-US', { weekday: 'short' }) : '';
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+                        const date = new Date(payroll.year, payroll.month - 1, day);
+                        const dateString = date.toISOString().split('T')[0];
+                        const dayData = calendarDays.find(d => d.date === dateString);
+                        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
                         const isFriday = dayName === 'Fri';
-                        let content = '';
-                        let textColor = '';
-                        const bgColor = isFriday ? 'bg-blue-100' : '';
-
-                        if (dayData) {
-                          const regularHours = dayData.hours || 0;
-                          const overtimeHours = dayData.overtime || 0;
-
-                          if (regularHours === 0 && overtimeHours === 0) {
-                            if (isFriday) {
-                              content = 'F';
-                            } else {
-                              content = 'A';
-                              textColor = 'text-red-600';
-                            }
-                          } else {
-                            if (isFriday) {
-                              content = 'F';
-                            } else {
-                              content = `${regularHours}`;
-                              textColor = 'text-green-600';
-                            }
-                          }
-                        } else {
-                          if (checkDate.getMonth() !== (payroll.month - 1)) {
-                            content = '-';
-                          } else if (isFriday) {
-                            content = 'F';
-                          } else {
-                            content = '-';
-                          }
-                        }
+                        
                         return (
-                          <td
-                            key={`data-${day}`}
-                            className={`text-center ${bgColor} ${textColor} border p-1 text-xs`}
-                          >
-                            {content}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                    {/* Overtime row */}
-                    <tr>
-                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-                        const dayDate = `${payroll.year}-${payroll.month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-                        const dayData = calendarDays.find(d => d.date === dayDate);
-                        const checkDate = new Date(payroll.year, payroll.month - 1, day);
-                        const dayName = checkDate.toString() !== 'Invalid Date' ? checkDate.toLocaleDateString('en-US', { weekday: 'short' }) : '';
-                        const isFriday = dayName === 'Fri';
-                        let content = '0';
-                        let textColor = '';
-                        const bgColor = isFriday ? 'bg-blue-100' : '';
-
-                        if (dayData) {
-                          const overtimeHours = dayData.overtime || 0;
-                          if (overtimeHours > 0) {
-                            content = `${overtimeHours}`;
-                            textColor = 'text-blue-600';
-                          }
-                        }
-                        return (
-                          <td key={`ot-${day}`} className={`text-center ${bgColor} ${textColor} border p-1 text-xs`}>
-                            {content}
+                          <td key={`overtime-${day}`} className={`p-1 text-center text-xs border border-gray-200 ${
+                            isFriday ? 'bg-blue-100' : 'bg-white'
+                          }`}>
+                            <span className="text-blue-700 font-semibold">{dayData && dayData.overtime > 0 ? dayData.overtime : '0'}</span>
                           </td>
                         );
                       })}
@@ -672,86 +810,110 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                   </tbody>
                 </table>
               </div>
-              <div className="mt-1 text-xs text-gray-500">
-                <span className="font-semibold text-green-600">8</span> = regular hours,&nbsp;
-                <span className="font-semibold text-blue-600">More than 8</span> = overtime hours,&nbsp;
-                <span className="font-semibold text-red-600">A</span> = absent,&nbsp;
-                <span className="font-semibold">F</span> = Friday (weekend)
+              <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">
+                <span className="text-green-700 font-semibold">8</span> = regular hours, <span className="text-blue-700 font-semibold">More than 8</span> = overtime hours, <span className="text-red-700 font-semibold">A</span> = absent, <span className="font-semibold">F</span> = Friday (weekend)
               </div>
             </div>
 
-            {/* Summary */}
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div className="space-y-4">
-                <h3 className="font-semibold">Attendance Summary</h3>
-                <div className="grid grid-cols-2 gap-y-2 rounded-md border bg-gray-50 p-4 text-sm">
-                  <div className="font-medium">Total Hours:</div>
-                  <div className="text-right">{totalWorkedHours}</div>
-
-                  <div className="font-medium">Regular Hours:</div>
-                  <div className="text-right">{totalRegularHours}</div>
-
-                  <div className="font-medium">Overtime Hours:</div>
-                  <div className="text-right text-green-600">{overtimeHours}</div>
-
-                  <div className="font-medium">Days Worked:</div>
-                  <div className="text-right">{daysWorked}</div>
-
-                  <div className="font-medium">Absent Days:</div>
-                  <div className="text-right text-red-600">{absentDays}</div>
+            {/* Compact Summary Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+              {/* Working Hours Summary */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Working Hours Summary</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                    <span className="text-xs text-gray-600 font-medium">Total Hours Worked</span>
+                    <span className="text-xs font-semibold text-gray-900">{totalWorkedHoursFromAttendance} hrs</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                    <span className="text-xs text-gray-600 font-medium">Regular Hours</span>
+                    <span className="text-xs font-semibold text-gray-900">{totalWorkedHoursFromAttendance - overtimeHoursFromAttendance} hrs</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                    <span className="text-xs text-gray-600 font-medium">Overtime Hours</span>
+                    <span className="text-xs font-semibold text-green-700">{overtimeHoursFromAttendance} hrs</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                    <span className="text-xs text-gray-600 font-medium">Days Worked</span>
+                    <span className="text-xs font-semibold text-gray-900">{daysWorkedFromAttendance} days</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-xs text-gray-600 font-medium">Absent Days</span>
+                    <span className="text-xs font-semibold text-red-700">{absentDays} days</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="font-semibold">Payment Summary</h3>
-                <div className="grid grid-cols-2 gap-y-2 rounded-md border bg-gray-50 p-4 text-sm">
-                  <div className="font-medium">Basic Salary:</div>
-                  <div className="text-right font-semibold">{formatCurrency(basicSalary)}</div>
-
-                  <div className="font-medium">Overtime Pay:</div>
-                  <div className="text-right text-green-600">{formatCurrency(overtimeAmount)}</div>
-
-                  <div className="font-medium">Bonus:</div>
-                  <div className="text-right text-green-600">{formatCurrency(bonusAmount)}</div>
-
-                  <div className="font-medium">Deductions:</div>
-                  <div className="text-right text-red-600">{formatCurrency(deductionAmount)}</div>
-
-                  <div className="font-medium">Advance:</div>
-                  <div className="text-right text-red-600">{formatCurrency(advanceDeduction)}</div>
-
-                  <Separator className="col-span-2 my-1" />
-
-                  <div className="font-medium">Total Deductions:</div>
-                  <div className="text-right text-red-600">{formatCurrency(deductionAmount + advanceDeduction)}</div>
-
-                  <div className="font-medium">Net Salary:</div>
-                  <div className="text-right font-bold text-green-600">{formatCurrency(finalAmount)}</div>
+              {/* Salary Breakdown */}
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Salary Breakdown</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                    <span className="text-xs text-gray-600 font-medium">Basic Salary</span>
+                    <span className="text-xs font-semibold text-green-700">{formatCurrency(payroll.base_salary || 0)}</span>
+                  </div>
+                  {employee?.food_allowance && employee.food_allowance > 0 && (
+                    <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                      <span className="text-xs text-gray-600 font-medium">Food Allowance</span>
+                      <span className="text-xs font-semibold text-gray-900">{formatCurrency(employee.food_allowance)}</span>
+                    </div>
+                  )}
+                  {employee?.housing_allowance && employee.housing_allowance > 0 && (
+                    <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                      <span className="text-xs text-gray-600 font-medium">Housing Allowance</span>
+                      <span className="text-xs font-semibold text-gray-900">{formatCurrency(employee.housing_allowance)}</span>
+                    </div>
+                  )}
+                  {employee?.transport_allowance && employee.transport_allowance > 0 && (
+                    <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                      <span className="text-xs text-gray-600 font-medium">Transport Allowance</span>
+                      <span className="text-xs font-semibold text-gray-900">{formatCurrency(employee.transport_allowance)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                    <span className="text-xs text-gray-600 font-medium">Overtime Pay</span>
+                    <span className="text-xs font-semibold text-green-700">{formatCurrency(payroll.overtime_amount || 0)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                    <span className="text-xs text-gray-600 font-medium">Bonus Amount</span>
+                    <span className="text-xs font-semibold text-green-700">{formatCurrency(payroll.bonus_amount || 0)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                    <span className="text-xs text-gray-600 font-medium">Deduction Amount</span>
+                    <span className="text-xs font-semibold text-red-700">{formatCurrency(payroll.deduction_amount || 0)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                    <span className="text-xs text-gray-600 font-medium">Advance Deduction</span>
+                    <span className="text-xs font-semibold text-red-700">{formatCurrency(payroll.advance_deduction || 0)}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-t-2 border-gray-300">
+                    <span className="text-sm font-semibold text-gray-900">Final Amount</span>
+                    <span className="text-sm font-bold text-green-700">{formatCurrency(payroll.final_amount || 0)}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </CardContent>
 
-          <CardFooter className="flex justify-end border-t pt-6">
-            <div className="grid grid-cols-3 gap-x-12 text-sm">
-              <div className="text-center">
-                <p className="mb-1 font-semibold">Chief-Accountant</p>
-                <p className="text-muted-foreground italic">Samir Taima</p>
-                <div className="mt-8 border-t border-gray-300 pt-1">Signature</div>
+            {/* Compact Signatures Section */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
+              <div className="text-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Chief Accountant</h4>
+                <div className="text-sm font-semibold text-gray-900 mb-4">Samir Taima</div>
+                <div className="border-t border-gray-300 pt-1 text-xs text-gray-500">Signature</div>
               </div>
-              <div className="text-center">
-                <p className="mb-1 font-semibold">Verified By</p>
-                <p className="text-muted-foreground italic">Salem Samhan Al-Dosri</p>
-                <div className="mt-8 border-t border-gray-300 pt-1">Signature</div>
+              <div className="text-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Verified By</h4>
+                <div className="text-sm font-semibold text-gray-900 mb-4">Salem Samhan Al-Dosri</div>
+                <div className="border-t border-gray-300 pt-1 text-xs text-gray-500">Signature</div>
               </div>
-              <div className="text-center">
-                <p className="mb-1 font-semibold">Employee</p>
-                <p className="text-muted-foreground italic">{employeeName}</p>
-                <div className="mt-8 border-t border-gray-300 pt-1">Signature</div>
+              <div className="text-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Employee</h4>
+                <div className="text-sm font-semibold text-gray-900 mb-4">{employeeName}</div>
+                <div className="border-t border-gray-300 pt-1 text-xs text-gray-500">Signature</div>
               </div>
             </div>
-          </CardFooter>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
