@@ -287,6 +287,7 @@ export default function EmployeeManagementPage() {
       setSortField(field);
       setSortDirection('asc');
     }
+    setCurrentPage(1); // Reset to first page when sorting
   };
 
   const getSortIcon = (field: string) => {
@@ -320,6 +321,8 @@ export default function EmployeeManagementPage() {
       return [];
     }
 
+
+
     const filtered = employees.filter(employee => {
       const matchesSearch =
         (employee.file_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
@@ -329,8 +332,8 @@ export default function EmployeeManagementPage() {
       const matchesStatus = statusFilter === 'all' || employee.status === statusFilter;
       const matchesDepartment = departmentFilter === 'all' || employee.department === departmentFilter;
       const matchesAssignment = assignmentFilter === 'all' || 
-        (assignmentFilter === 'assigned' && employee.current_assignment) ||
-        (assignmentFilter === 'unassigned' && !employee.current_assignment);
+        (assignmentFilter === 'assigned' && employee.current_assignment && employee.current_assignment.id && employee.current_assignment.status === 'active') ||
+        (assignmentFilter === 'unassigned' && (!employee.current_assignment || !employee.current_assignment.id || employee.current_assignment.status !== 'active'));
 
       return matchesSearch && matchesStatus && matchesDepartment && matchesAssignment;
     });
@@ -369,7 +372,7 @@ export default function EmployeeManagementPage() {
     });
 
     return filtered;
-  }, [employees, searchTerm, statusFilter, departmentFilter, sortField, sortDirection]);
+  }, [employees, searchTerm, statusFilter, departmentFilter, assignmentFilter, sortField, sortDirection]);
 
   // Pagination logic
   const totalItems = filteredAndSortedEmployees.length;
@@ -535,13 +538,19 @@ export default function EmployeeManagementPage() {
                     <Input
                       placeholder={t('employee:actions.search')}
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1); // Reset to first page when searching
+                      }}
                       className={isRTL ? 'pr-10' : 'pl-10'}
                     />
                   </div>
                 </div>
 
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilter} onValueChange={(value) => {
+                  setStatusFilter(value);
+                  setCurrentPage(1); // Reset to first page when filtering
+                }}>
                   <SelectTrigger className="w-48">
                     <SelectValue placeholder={t('employee:filters.status')} />
                   </SelectTrigger>
@@ -552,7 +561,10 @@ export default function EmployeeManagementPage() {
                   </SelectContent>
                 </Select>
 
-                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <Select value={departmentFilter} onValueChange={(value) => {
+                  setDepartmentFilter(value);
+                  setCurrentPage(1); // Reset to first page when filtering
+                }}>
                   <SelectTrigger className="w-48">
                     <SelectValue placeholder={t('employee:filters.department')} />
                   </SelectTrigger>
@@ -564,7 +576,10 @@ export default function EmployeeManagementPage() {
                   </SelectContent>
                 </Select>
 
-                <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
+                <Select value={assignmentFilter} onValueChange={(value) => {
+                  setAssignmentFilter(value);
+                  setCurrentPage(1); // Reset to first page when filtering
+                }}>
                   <SelectTrigger className="w-48">
                     <SelectValue placeholder="Assignment Status" />
                   </SelectTrigger>
@@ -575,6 +590,23 @@ export default function EmployeeManagementPage() {
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Search Results Summary */}
+              {(searchTerm || statusFilter !== 'all' || departmentFilter !== 'all' || assignmentFilter !== 'all') && (
+                <div className="mb-4 p-3 bg-muted/50 rounded-md">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {filteredAndSortedEmployees.length} of {employees.length} employees
+                    {searchTerm && ` matching "${searchTerm}"`}
+                    {statusFilter !== 'all' && ` with status "${statusFilter}"`}
+                    {departmentFilter !== 'all' && ` in department "${departmentFilter}"`}
+                    {assignmentFilter !== 'all' && (
+                      assignmentFilter === 'assigned' 
+                        ? ` who are currently assigned` 
+                        : ` who are not currently assigned`
+                    )}
+                  </div>
+                </div>
+              )}
 
             <div className="rounded-md border">
               <Table>
