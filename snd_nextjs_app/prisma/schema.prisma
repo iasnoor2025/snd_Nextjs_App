@@ -187,6 +187,8 @@ model Employee {
   timesheets                         Timesheet[]
   weekly_timesheets                  WeeklyTimesheet[]
   equipment_rental_history           EquipmentRentalHistory[]
+  project_resources                  ProjectResource[]
+  assigned_tasks                     ProjectResource[]          @relation("TaskAssignedTo")
 
   @@map("employees")
 }
@@ -767,6 +769,7 @@ model Equipment {
   assigned_employee           Employee?    @relation("EquipmentAssignedTo", fields: [assigned_to], references: [id])
   rental_items                RentalItem[]
   equipment_rental_history    EquipmentRentalHistory[]
+  project_resources           ProjectResource[]
 
   @@map("equipment")
 }
@@ -883,6 +886,7 @@ model Project {
   rentals              Rental[]
   timesheets           Timesheet[]
   equipment_rental_history EquipmentRentalHistory[]
+  project_resources    ProjectResource[]
 
   @@map("projects")
 }
@@ -1107,4 +1111,71 @@ model Location {
   updated_at  DateTime  @updatedAt
 
   @@map("locations")
+}
+
+model ProjectResource {
+  id                    Int       @id @default(autoincrement())
+  project_id            Int
+  type                  String    // "manpower", "equipment", "material", "fuel", "expense", "tasks"
+  name                  String
+  description           String?
+  quantity              Int?
+  unit_cost             Decimal?  @db.Decimal(10, 2)
+  total_cost            Decimal?  @db.Decimal(10, 2)
+  date                  DateTime?
+  status                String    @default("pending") // "pending", "in_progress", "completed", "cancelled"
+  notes                 String?
+
+  // Manpower specific fields
+  employee_id           Int?
+  worker_name           String?
+  job_title             String?
+  daily_rate            Decimal?  @db.Decimal(10, 2)
+  days_worked           Int?
+  start_date            DateTime?
+  end_date              DateTime?
+  total_days            Int?
+
+  // Equipment specific fields
+  equipment_id          Int?
+  equipment_name        String?
+  operator_name         String?
+  hourly_rate           Decimal?  @db.Decimal(10, 2)
+  hours_worked          Decimal?  @db.Decimal(10, 2)
+  usage_hours           Decimal?  @db.Decimal(10, 2)
+  maintenance_cost      Decimal?  @db.Decimal(10, 2)
+
+  // Material specific fields
+  material_name         String?
+  unit                  String?
+  unit_price            Decimal?  @db.Decimal(10, 2)
+  material_id           Int?
+
+  // Fuel specific fields
+  fuel_type             String?
+  liters                Decimal?  @db.Decimal(10, 2)
+  price_per_liter       Decimal?  @db.Decimal(10, 2)
+
+  // Expense specific fields
+  category              String?
+  expense_description   String?
+  amount                Decimal?  @db.Decimal(10, 2)
+
+  // Task specific fields
+  title                 String?
+  priority              String?   // "low", "medium", "high"
+  due_date              DateTime?
+  completion_percentage Int?
+  assigned_to_id        Int?
+
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
+
+  // Relations
+  project               Project   @relation(fields: [project_id], references: [id], onDelete: Cascade)
+  employee              Employee? @relation(fields: [employee_id], references: [id])
+  equipment             Equipment? @relation(fields: [equipment_id], references: [id])
+  assigned_to           Employee? @relation("TaskAssignedTo", fields: [assigned_to_id], references: [id])
+
+  @@map("project_resources")
 }

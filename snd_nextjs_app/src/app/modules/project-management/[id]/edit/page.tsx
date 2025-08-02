@@ -1,21 +1,20 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import Link from 'next/link';
+import { toast } from 'sonner';
+import { ArrowLeft, Building2, CalendarIcon, DollarSign, FileText, Users, Target, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { CalendarIcon, ArrowLeft, Save, Plus, Users, Building2, MapPin, DollarSign, FileText } from 'lucide-react';
-import { toast } from 'sonner';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import Link from 'next/link';
 import apiService from '@/lib/api';
 
 interface Customer {
@@ -43,14 +42,59 @@ interface Employee {
   position?: string;
 }
 
-export default function CreateProjectPage() {
+interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  customer_id?: string;
+  location_id?: string;
+  manager_id?: string;
+  start_date?: Date;
+  end_date?: Date;
+  status: string;
+  priority: string;
+  budget?: string;
+  initial_budget?: string;
+  notes?: string;
+  objectives?: string;
+  scope?: string;
+  deliverables?: string;
+  constraints?: string;
+  assumptions?: string;
+  risks?: string;
+  quality_standards?: string;
+  communication_plan?: string;
+  stakeholder_management?: string;
+  change_management?: string;
+  procurement_plan?: string;
+  resource_plan?: string;
+  schedule_plan?: string;
+  cost_plan?: string;
+  quality_plan?: string;
+  risk_plan?: string;
+  communication_plan_detailed?: string;
+  stakeholder_plan?: string;
+  change_plan?: string;
+  procurement_plan_detailed?: string;
+  resource_plan_detailed?: string;
+  schedule_plan_detailed?: string;
+  cost_plan_detailed?: string;
+  quality_plan_detailed?: string;
+  risk_plan_detailed?: string;
+}
+
+export default function EditProjectPage() {
   const router = useRouter();
+  const params = useParams();
+  const projectId = params.id as string;
+  
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [projectManagers, setProjectManagers] = useState<Employee[]>([]);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [project, setProject] = useState<Project | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -93,11 +137,66 @@ export default function CreateProjectPage() {
   });
 
   useEffect(() => {
-    fetchInitialData();
-  }, []);
+    fetchProjectData();
+  }, [projectId]);
 
-  const fetchInitialData = async () => {
+  const fetchProjectData = async () => {
     try {
+      setLoading(true);
+
+      // Fetch project details
+      const projectResponse = await apiService.getProject(projectId) as any;
+      if (projectResponse.success) {
+        const projectData = projectResponse.data;
+        setProject(projectData);
+        
+        // Update form data with project data
+        const initialFormData = {
+          name: projectData.name || '',
+          description: projectData.description || '',
+          customer_id: projectData.customer_id?.toString() || '',
+          location_id: projectData.location_id?.toString() || '',
+          manager_id: projectData.manager_id?.toString() || '',
+          start_date: projectData.start_date ? new Date(projectData.start_date) : undefined,
+          end_date: projectData.end_date ? new Date(projectData.end_date) : undefined,
+          status: projectData.status || 'planning',
+          priority: projectData.priority || 'medium',
+          budget: projectData.budget?.toString() || '',
+          initial_budget: projectData.initial_budget?.toString() || '',
+          notes: projectData.notes || '',
+          objectives: projectData.objectives || '',
+          scope: projectData.scope || '',
+          deliverables: projectData.deliverables || '',
+          constraints: projectData.constraints || '',
+          assumptions: projectData.assumptions || '',
+          risks: projectData.risks || '',
+          quality_standards: projectData.quality_standards || '',
+          communication_plan: projectData.communication_plan || '',
+          stakeholder_management: projectData.stakeholder_management || '',
+          change_management: projectData.change_management || '',
+          procurement_plan: projectData.procurement_plan || '',
+          resource_plan: projectData.resource_plan || '',
+          schedule_plan: projectData.schedule_plan || '',
+          cost_plan: projectData.cost_plan || '',
+          quality_plan: projectData.quality_plan || '',
+          risk_plan: projectData.risk_plan || '',
+          communication_plan_detailed: projectData.communication_plan_detailed || '',
+          stakeholder_plan: projectData.stakeholder_plan || '',
+          change_plan: projectData.change_plan || '',
+          procurement_plan_detailed: projectData.procurement_plan_detailed || '',
+          resource_plan_detailed: projectData.resource_plan_detailed || '',
+          schedule_plan_detailed: projectData.schedule_plan_detailed || '',
+          cost_plan_detailed: projectData.cost_plan_detailed || '',
+          quality_plan_detailed: projectData.quality_plan_detailed || '',
+          risk_plan_detailed: projectData.risk_plan_detailed || '',
+        };
+        
+        setFormData(initialFormData);
+      } else {
+        toast.error('Failed to load project details');
+        router.push('/modules/project-management');
+      }
+
       // Fetch customers
       try {
         const customersResponse = await apiService.get('/customers?limit=1000') as any; 
@@ -112,7 +211,7 @@ export default function CreateProjectPage() {
         setCustomers([]);
       }
 
-      // Fetch locations (optional - might not be implemented yet)
+      // Fetch locations
       try {
         const locationsResponse = await apiService.get('/locations?limit=1000') as any;
         if (locationsResponse.success && locationsResponse.data) {
@@ -176,8 +275,11 @@ export default function CreateProjectPage() {
         setProjectManagers([]);
       }
     } catch (error) {
-      console.error('Error in fetchInitialData:', error);
-      toast.error('Failed to load initial data');
+      console.error('Error in fetchProjectData:', error);
+      toast.error('Failed to load project data');
+      router.push('/modules/project-management');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -186,17 +288,6 @@ export default function CreateProjectPage() {
       ...prev,
       [field]: value
     }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      setSelectedFiles(prev => [...prev, ...files]);
-    }
-  };
-
-  const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -208,7 +299,7 @@ export default function CreateProjectPage() {
     }
 
     try {
-      setLoading(true);
+      setSaving(true);
 
       const submitData = {
         ...formData,
@@ -218,24 +309,15 @@ export default function CreateProjectPage() {
         initial_budget: parseFloat(formData.initial_budget) || 0,
       };
 
-      const response = await apiService.createProject(submitData) as any;
+      const response = await apiService.updateProject(projectId, submitData) as any;
 
-      // TODO: Project file upload endpoint doesn't exist yet
-      // if (selectedFiles.length > 0) {
-      //   const formDataFiles = new FormData();
-      //   selectedFiles.forEach(file => {
-      //     formDataFiles.append('files[]', file);
-      //   });
-      //   await apiService.post(`/projects/${response.data.id}/files`, formDataFiles);
-      // }
-
-      toast.success('Project created successfully!');
-      router.push(`/modules/project-management/${response.data.id}`);
+      toast.success('Project updated successfully!');
+      router.push(`/modules/project-management/${projectId}`);
     } catch (error) {
-      console.error('Error creating project:', error);
-      toast.error('Failed to create project');
+      console.error('Error updating project:', error);
+      toast.error('Failed to update project');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -254,20 +336,48 @@ export default function CreateProjectPage() {
     { value: 'critical', label: 'Critical', color: 'bg-purple-100 text-purple-800' },
   ];
 
+  if (loading) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading project details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!project) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="text-center">
+          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Project Not Found</h2>
+          <p className="text-gray-600 mb-4">The project you're looking for doesn't exist.</p>
+          <Link href="/modules/project-management">
+            <Button>Back to Projects</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Link href="/modules/project-management">
+          <Link href={`/modules/project-management/${projectId}`}>
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Projects
+              Back to Project
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold">Create New Project</h1>
-            <p className="text-muted-foreground">Set up a new construction project with all necessary details</p>
+            <h1 className="text-3xl font-bold">Edit Project</h1>
+            <p className="text-muted-foreground">Update project details and information</p>
           </div>
         </div>
       </div>
@@ -296,20 +406,20 @@ export default function CreateProjectPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="customer_id">Client *</Label>
-                <Select value={formData.customer_id} onValueChange={(value) => handleInputChange('customer_id', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a client">
-                      {formData.customer_id && customers.find(c => c.id.toString() === formData.customer_id.toString())?.company_name}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60 overflow-y-auto">
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id.toString()}>
-                        {customer.company_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                                 <Select value={formData.customer_id} onValueChange={(value) => handleInputChange('customer_id', value)}>
+                   <SelectTrigger>
+                     <SelectValue placeholder="Select a client">
+                       {formData.customer_id && customers.find(c => c.id.toString() === formData.customer_id.toString())?.company_name}
+                     </SelectValue>
+                   </SelectTrigger>
+                   <SelectContent className="max-h-60 overflow-y-auto">
+                     {customers.map((customer) => (
+                       <SelectItem key={customer.id} value={customer.id.toString()}>
+                         {customer.company_name}
+                       </SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
               </div>
             </div>
 
@@ -327,41 +437,41 @@ export default function CreateProjectPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="location_id">Project Location</Label>
-                <Select value={formData.location_id} onValueChange={(value) => handleInputChange('location_id', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a location">
-                      {formData.location_id && locations.find(l => l.id.toString() === formData.location_id.toString()) && 
-                        `${locations.find(l => l.id.toString() === formData.location_id.toString())?.name}, ${locations.find(l => l.id.toString() === formData.location_id.toString())?.city}, ${locations.find(l => l.id.toString() === formData.location_id.toString())?.state}`
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60 overflow-y-auto">
-                    {locations.map((location) => (
-                      <SelectItem key={location.id} value={location.id.toString()}>
-                        {location.name}, {location.city}, {location.state}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                                 <Select value={formData.location_id} onValueChange={(value) => handleInputChange('location_id', value)}>
+                   <SelectTrigger>
+                     <SelectValue placeholder="Select a location">
+                       {formData.location_id && locations.find(l => l.id.toString() === formData.location_id.toString()) && 
+                         `${locations.find(l => l.id.toString() === formData.location_id.toString())?.name}, ${locations.find(l => l.id.toString() === formData.location_id.toString())?.city}, ${locations.find(l => l.id.toString() === formData.location_id.toString())?.state}`
+                       }
+                     </SelectValue>
+                   </SelectTrigger>
+                   <SelectContent className="max-h-60 overflow-y-auto">
+                     {locations.map((location) => (
+                       <SelectItem key={location.id} value={location.id.toString()}>
+                         {location.name}, {location.city}, {location.state}
+                       </SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="manager_id">Project Manager</Label>
-                <Select value={formData.manager_id} onValueChange={(value) => handleInputChange('manager_id', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a manager">
-                      {formData.manager_id && projectManagers.find(e => e.id.toString() === formData.manager_id.toString()) && 
+                                 <Select value={formData.manager_id} onValueChange={(value) => handleInputChange('manager_id', value)}>
+                   <SelectTrigger>
+                     <SelectValue placeholder="Select a manager">
+                                             {formData.manager_id && projectManagers.find(e => e.id.toString() === formData.manager_id.toString()) && 
                         `${projectManagers.find(e => e.id.toString() === formData.manager_id.toString())?.first_name} ${projectManagers.find(e => e.id.toString() === formData.manager_id.toString())?.last_name}`
                       }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60 overflow-y-auto">
+                     </SelectValue>
+                   </SelectTrigger>
+                                     <SelectContent className="max-h-60 overflow-y-auto">
                     {projectManagers.map((employee) => (
                       <SelectItem key={employee.id} value={employee.id.toString()}>
                         {employee.first_name} {employee.last_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
-                </Select>
+                 </Select>
               </div>
             </div>
           </CardContent>
@@ -533,115 +643,48 @@ export default function CreateProjectPage() {
               </div>
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="deliverables">Deliverables</Label>
+              <Textarea
+                id="deliverables"
+                value={formData.deliverables}
+                onChange={(e) => handleInputChange('deliverables', e.target.value)}
+                placeholder="List project deliverables"
+                rows={3}
+              />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="deliverables">Deliverables</Label>
-                <Textarea
-                  id="deliverables"
-                  value={formData.deliverables}
-                  onChange={(e) => handleInputChange('deliverables', e.target.value)}
-                  placeholder="List project deliverables"
-                  rows={3}
-                />
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="constraints">Constraints</Label>
                 <Textarea
                   id="constraints"
                   value={formData.constraints}
                   onChange={(e) => handleInputChange('constraints', e.target.value)}
-                  placeholder="List project constraints"
+                  placeholder="Project constraints"
                   rows={3}
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="assumptions">Assumptions</Label>
                 <Textarea
                   id="assumptions"
                   value={formData.assumptions}
                   onChange={(e) => handleInputChange('assumptions', e.target.value)}
-                  placeholder="List project assumptions"
-                  rows={3}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="risks">Initial Risks</Label>
-                <Textarea
-                  id="risks"
-                  value={formData.risks}
-                  onChange={(e) => handleInputChange('risks', e.target.value)}
-                  placeholder="Identify initial project risks"
+                  placeholder="Project assumptions"
                   rows={3}
                 />
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Documents */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <FileText className="h-5 w-5" />
-              <span>Project Documents</span>
-            </CardTitle>
-            <CardDescription>Upload relevant project documents</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="documents">Upload Documents</Label>
-              <Input
-                id="documents"
-                type="file"
-                multiple
-                onChange={handleFileChange}
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-              />
-              <p className="text-sm text-muted-foreground">
-                Supported formats: PDF, DOC, DOCX, XLS, XLSX, JPG, JPEG, PNG
-              </p>
-            </div>
-
-            {selectedFiles.length > 0 && (
-              <div className="space-y-2">
-                <Label>Selected Files</Label>
-                <div className="space-y-2">
-                  {selectedFiles.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
-                      <span className="text-sm">{file.name}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeFile(index)}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Notes */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Additional Notes</CardTitle>
-            <CardDescription>Any additional information about the project</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="risks">Risks</Label>
               <Textarea
-                id="notes"
-                value={formData.notes}
-                onChange={(e) => handleInputChange('notes', e.target.value)}
-                placeholder="Add any additional notes or comments"
-                rows={4}
+                id="risks"
+                value={formData.risks}
+                onChange={(e) => handleInputChange('risks', e.target.value)}
+                placeholder="Identify project risks"
+                rows={3}
               />
             </div>
           </CardContent>
@@ -649,26 +692,16 @@ export default function CreateProjectPage() {
 
         {/* Submit Button */}
         <div className="flex justify-end space-x-4">
-          <Link href="/modules/project-management">
+          <Link href={`/modules/project-management/${projectId}`}>
             <Button variant="outline" type="button">
               Cancel
             </Button>
           </Link>
-          <Button type="submit" disabled={loading}>
-            {loading ? (
-              <>
-                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Creating Project...
-              </>
-            ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Create Project
-              </>
-            )}
+          <Button type="submit" disabled={saving}>
+            {saving ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
       </form>
     </div>
   );
-}
+} 

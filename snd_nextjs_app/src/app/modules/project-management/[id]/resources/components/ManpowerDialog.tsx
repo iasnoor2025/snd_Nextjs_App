@@ -197,14 +197,12 @@ export default function ManpowerDialog({
         total_cost: (formData.daily_rate || 0) * (formData.total_days || 0)
       };
 
-      // TODO: Project resource endpoints don't exist yet
-      // Implement these when the endpoints become available
       if (initialData?.id) {
-        // await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
-        toast.success('Manpower resource update feature not implemented yet');
+        await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
+        toast.success('Manpower resource updated successfully');
       } else {
-        // await apiService.post(`/projects/${projectId}/resources`, submitData);
-        toast.success('Manpower resource add feature not implemented yet');
+        await apiService.post(`/projects/${projectId}/resources`, submitData);
+        toast.success('Manpower resource added successfully');
       }
 
       onSuccess();

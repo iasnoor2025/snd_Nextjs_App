@@ -454,7 +454,7 @@ export default function RentalManagementPage() {
                     <SelectTrigger>
                       <SelectValue placeholder="All statuses" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-60 overflow-y-auto">
                       <SelectItem value="">All statuses</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="active">Active</SelectItem>
@@ -472,7 +472,7 @@ export default function RentalManagementPage() {
                     <SelectTrigger>
                       <SelectValue placeholder="All payment statuses" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-60 overflow-y-auto">
                       <SelectItem value="">All payment statuses</SelectItem>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="partial">Partial</SelectItem>
@@ -490,7 +490,7 @@ export default function RentalManagementPage() {
                     <SelectTrigger>
                       <SelectValue placeholder="All customers" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-h-60 overflow-y-auto">
                       <SelectItem value="">All customers</SelectItem>
                       {(customers || []).map((customer) => (
                         <SelectItem key={customer.id} value={customer.id}>
@@ -630,7 +630,7 @@ export default function RentalManagementPage() {
                   <SelectTrigger>
                     <SelectValue placeholder="Select customer" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-60 overflow-y-auto">
                     {(customers || []).map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.name}
@@ -685,7 +685,7 @@ export default function RentalManagementPage() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-60 overflow-y-auto">
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
@@ -702,7 +702,7 @@ export default function RentalManagementPage() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-60 overflow-y-auto">
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="partial">Partial</SelectItem>
                     <SelectItem value="paid">Paid</SelectItem>
@@ -776,7 +776,7 @@ export default function RentalManagementPage() {
                   <SelectTrigger>
                     <SelectValue placeholder="Select customer" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-60 overflow-y-auto">
                     {(customers || []).map((customer) => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.name}
@@ -831,7 +831,7 @@ export default function RentalManagementPage() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-60 overflow-y-auto">
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
@@ -848,7 +848,7 @@ export default function RentalManagementPage() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-60 overflow-y-auto">
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="partial">Partial</SelectItem>
                     <SelectItem value="paid">Paid</SelectItem>

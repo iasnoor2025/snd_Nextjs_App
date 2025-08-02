@@ -3,65 +3,12 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export async function GET(
+export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string; resourceId: string }> }
 ) {
   try {
-    const { id: projectId } = await params;
-
-    const resources = await prisma.projectResource.findMany({
-      where: {
-        project_id: parseInt(projectId)
-      },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            designation: true
-          }
-        },
-        equipment: {
-          select: {
-            id: true,
-            name: true,
-            description: true
-          }
-        },
-        assigned_to: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true
-          }
-        }
-      },
-      orderBy: {
-        created_at: 'desc'
-      }
-    });
-
-    return NextResponse.json({ 
-      success: true,
-      data: resources 
-    });
-  } catch (error) {
-    console.error('Error fetching project resources:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch project resources' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id: projectId } = await params;
+    const { id: projectId, resourceId } = await params;
     const body = await request.json();
 
     // Validate required fields
@@ -72,9 +19,8 @@ export async function POST(
       );
     }
 
-    // Prepare the data for insertion
+    // Prepare the data for update
     const resourceData = {
-      project_id: parseInt(projectId),
       type: body.type,
       name: body.name,
       description: body.description,
@@ -128,7 +74,11 @@ export async function POST(
       assigned_to_id: body.assigned_to_id ? parseInt(body.assigned_to_id) : null,
     };
 
-    const resource = await prisma.projectResource.create({
+    const resource = await prisma.projectResource.update({
+      where: {
+        id: parseInt(resourceId),
+        project_id: parseInt(projectId)
+      },
       data: resourceData,
       include: {
         employee: {
@@ -161,10 +111,37 @@ export async function POST(
       data: resource 
     });
   } catch (error) {
-    console.error('Error creating project resource:', error);
+    console.error('Error updating project resource:', error);
     return NextResponse.json(
-      { error: 'Failed to create project resource' },
+      { error: 'Failed to update project resource' },
       { status: 500 }
     );
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; resourceId: string }> }
+) {
+  try {
+    const { id: projectId, resourceId } = await params;
+
+    await prisma.projectResource.delete({
+      where: {
+        id: parseInt(resourceId),
+        project_id: parseInt(projectId)
+      }
+    });
+
+    return NextResponse.json({ 
+      success: true,
+      message: 'Resource deleted successfully' 
+    });
+  } catch (error) {
+    console.error('Error deleting project resource:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete project resource' },
+      { status: 500 }
+    );
+  }
+} 

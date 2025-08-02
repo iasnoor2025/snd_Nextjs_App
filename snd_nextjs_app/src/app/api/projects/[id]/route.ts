@@ -13,6 +13,7 @@ export async function GET(
     const project = await prisma.project.findUnique({
       where: { id: parseInt(projectId) },
       include: {
+        customer: true,
         rentals: {
           include: {
             customer: true
@@ -33,8 +34,8 @@ export async function GET(
       id: project.id,
       name: project.name,
       description: project.description,
-      client_name: project.rentals[0]?.customer?.name || 'Unknown Client',
-      client_contact: project.rentals[0]?.customer?.email || 'No contact info',
+      customer_id: project.customer_id,
+      customer: project.customer,
       status: project.status,
       priority: 'medium', // Default value since priority field doesn't exist
       start_date: project.start_date?.toISOString() || '',
@@ -56,7 +57,10 @@ export async function GET(
       notes: project.notes || 'Project is progressing well with foundation work completed and structural framework 65% complete.'
     };
 
-    return NextResponse.json({ data: transformedProject });
+    return NextResponse.json({ 
+      success: true,
+      data: transformedProject 
+    });
   } catch (error) {
     console.error('Error fetching project:', error);
     return NextResponse.json(
@@ -79,15 +83,23 @@ export async function PUT(
       data: {
         name: body.name,
         description: body.description,
+        customer_id: body.customer_id ? parseInt(body.customer_id) : null,
         status: body.status,
         start_date: body.start_date ? new Date(body.start_date) : null,
         end_date: body.end_date ? new Date(body.end_date) : null,
         budget: body.budget ? parseFloat(body.budget) : null,
-        notes: body.notes,
+        notes: body.notes || body.objectives || body.scope || body.deliverables || body.constraints || body.assumptions || body.risks || body.quality_standards || body.communication_plan || body.stakeholder_management || body.change_management || body.procurement_plan || body.resource_plan || body.schedule_plan || body.cost_plan || body.quality_plan || body.risk_plan || body.communication_plan_detailed || body.stakeholder_plan || body.change_plan || body.procurement_plan_detailed || body.resource_plan_detailed || body.schedule_plan_detailed || body.cost_plan_detailed || body.quality_plan_detailed || body.risk_plan_detailed,
+      },
+      include: {
+        customer: true,
       },
     });
 
-    return NextResponse.json({ data: project });
+    return NextResponse.json({ 
+      success: true,
+      data: project,
+      message: 'Project updated successfully'
+    });
   } catch (error) {
     console.error('Error updating project:', error);
     return NextResponse.json(

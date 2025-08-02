@@ -167,9 +167,13 @@ export default function ProjectResourcesPage() {
       const projectResponse = await apiService.get<{ data: Project }>(`/projects/${projectId}`);
       setProject(projectResponse.data);
 
-      // TODO: Project resources endpoint doesn't exist yet
-      // Implement this when the endpoint becomes available
-      setResources([]);
+      // Fetch project resources
+      const resourcesResponse = await apiService.getProjectResources(projectId) as any;
+      if (resourcesResponse.success) {
+        setResources(resourcesResponse.data || []);
+      } else {
+        setResources([]);
+      }
 
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -256,10 +260,9 @@ export default function ProjectResourcesPage() {
 
     try {
       setLoading(true);
-      // TODO: Project resource delete endpoint doesn't exist yet
-      // await apiService.delete(`/projects/${projectId}/resources/${resource.id}`);
-      toast.success('Resource delete feature not implemented yet');
-      // fetchData();
+      await apiService.deleteProjectResource(projectId, resource.id);
+      toast.success('Resource deleted successfully');
+      fetchData();
     } catch (error) {
       console.error('Error deleting resource:', error);
       toast.error('Failed to delete resource');

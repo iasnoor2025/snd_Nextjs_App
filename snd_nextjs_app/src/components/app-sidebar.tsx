@@ -15,6 +15,7 @@ import {
   IconTools,
   IconUsers,
   IconUser,
+  IconMapPin,
 } from "@tabler/icons-react"
 import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
@@ -97,6 +98,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: t('safetyManagement'),
         url: "/modules/safety-management",
         icon: IconHelp,
+      },
+      {
+        title: t('locationManagement'),
+        url: "/modules/location-management",
+        icon: IconMapPin,
       },
       {
         title: t('reporting'),

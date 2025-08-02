@@ -87,28 +87,64 @@ export async function POST(request: NextRequest) {
     const {
       name,
       description,
-      status,
-      priority,
+      customer_id,
+      location_id,
+      manager_id,
       start_date,
       end_date,
+      status,
+      priority,
       budget,
-      progress,
-      manager_id,
+      initial_budget,
+      notes,
+      objectives,
+      scope,
+      deliverables,
+      constraints,
+      assumptions,
+      risks,
+      quality_standards,
+      communication_plan,
+      stakeholder_management,
+      change_management,
+      procurement_plan,
+      resource_plan,
+      schedule_plan,
+      cost_plan,
+      quality_plan,
+      risk_plan,
+      communication_plan_detailed,
+      stakeholder_plan,
+      change_plan,
+      procurement_plan_detailed,
+      resource_plan_detailed,
+      schedule_plan_detailed,
+      cost_plan_detailed,
+      quality_plan_detailed,
+      risk_plan_detailed,
     } = body;
 
     const project = await prisma.project.create({
       data: {
         name,
         description,
-        status,
+        customer_id: customer_id ? parseInt(customer_id) : null,
         start_date: start_date ? new Date(start_date) : null,
         end_date: end_date ? new Date(end_date) : null,
+        status: status || 'planning',
         budget: budget ? parseFloat(budget) : null,
-        notes: body.notes,
+        notes: notes || objectives || scope || deliverables || constraints || assumptions || risks || quality_standards || communication_plan || stakeholder_management || change_management || procurement_plan || resource_plan || schedule_plan || cost_plan || quality_plan || risk_plan || communication_plan_detailed || stakeholder_plan || change_plan || procurement_plan_detailed || resource_plan_detailed || schedule_plan_detailed || cost_plan_detailed || quality_plan_detailed || risk_plan_detailed,
+      },
+      include: {
+        customer: true,
       },
     });
 
-    return NextResponse.json(project, { status: 201 });
+    return NextResponse.json({
+      success: true,
+      data: project,
+      message: 'Project created successfully'
+    }, { status: 201 });
   } catch (error) {
     console.error('Error creating project:', error);
     return NextResponse.json(

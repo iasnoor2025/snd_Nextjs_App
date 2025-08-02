@@ -99,6 +99,36 @@ class ApiService {
     const endpoint = queryString ? `/employees?${queryString}` : '/employees';
     return this.get(endpoint);
   }
+
+  // Project Methods
+  async getProjects(params?: { page?: number; limit?: number; search?: string; status?: string; priority?: string }) {
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.priority) queryParams.append('priority', params.priority);
+    
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/projects?${queryString}` : '/projects';
+    return this.get(endpoint);
+  }
+
+  async createProject(data: any) {
+    return this.post('/projects', data);
+  }
+
+  async updateProject(id: string, data: any) {
+    return this.put(`/projects/${id}`, data);
+  }
+
+  async deleteProject(id: string) {
+    return this.delete(`/projects/${id}`);
+  }
+
+  async getProject(id: string) {
+    return this.get(`/projects/${id}`);
+  }
 }
 
 // Create and export a singleton instance
