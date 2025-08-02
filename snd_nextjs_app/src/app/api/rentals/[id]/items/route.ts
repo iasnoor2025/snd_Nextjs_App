@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/database';
+import { prisma } from '@/lib/db';
 
 export async function POST(
   request: NextRequest,
@@ -50,6 +51,37 @@ export async function POST(
       status: body.status || 'active',
       notes: body.notes || '',
     });
+
+    // If an operator is assigned, create an employee assignment
+    if (body.operatorId && rentalItem) {
+      try {
+        // Get rental details for assignment name
+        const rental = await DatabaseService.getRental(parseInt(rentalId));
+        const customerName = rental?.customer?.name || 'Unknown Customer';
+        
+        // Create employee assignment
+        await prisma.employeeAssignment.create({
+          data: {
+            employee_id: parseInt(body.operatorId),
+            name: `${customerName} - ${body.equipmentName} Rental`,
+            type: 'rental_item',
+            location: rental?.location?.name || 'Unknown Location',
+            start_date: new Date(),
+            end_date: null,
+            status: 'active',
+            notes: `Assigned to rental item: ${body.equipmentName}`,
+            rental_id: parseInt(rentalId),
+            project_id: null,
+          },
+        });
+
+        console.log(`Employee assignment created for operator ${body.operatorId} on rental ${rentalId}`);
+      } catch (assignmentError) {
+        console.error('Error creating employee assignment:', assignmentError);
+        // Don't fail the rental item creation if assignment creation fails
+        // Just log the error
+      }
+    }
 
     return NextResponse.json(rentalItem, { status: 201 });
   } catch (error) {

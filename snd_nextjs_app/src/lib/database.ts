@@ -574,6 +574,15 @@ export class DatabaseService {
     })
   }
 
+  static async getRentalItem(id: number) {
+    return await prisma.rentalItem.findUnique({
+      where: { id },
+      include: {
+        equipment: true
+      }
+    })
+  }
+
   static async updateRentalItem(id: number, data: {
     equipmentId?: number | null
     equipmentName?: string

@@ -188,7 +188,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
     setDeletingId(selectedAssignment.id);
     try {
-      const response = await fetch(`/api/employees/${employeeId}/assignments/${selectedAssignment.id}`, {
+      const response = await fetch(`/api/employees/${employeeId}/assignments?assignmentId=${selectedAssignment.id}`, {
         method: 'DELETE',
       });
 
@@ -248,13 +248,31 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
       'manual': 'bg-gray-100 text-gray-800',
       'project': 'bg-blue-100 text-blue-800',
       'rental': 'bg-purple-100 text-purple-800',
+      'rental_item': 'bg-purple-100 text-purple-800',
     };
 
     return (
       <Badge className={typeColors[type] || typeColors.manual}>
-        {type.charAt(0).toUpperCase() + type.slice(1)}
+        {type === 'rental_item' ? 'Rental' : type.charAt(0).toUpperCase() + type.slice(1)}
       </Badge>
     );
+  };
+
+  const getAssignmentDetails = (assignment: Assignment) => {
+    const details = [];
+    
+    if (assignment.project) {
+      details.push(`Project: ${assignment.project.name}`);
+    }
+    
+    if (assignment.rental) {
+      details.push(`Rental: ${assignment.rental.rental_number}`);
+      if (assignment.rental.project_name) {
+        details.push(`Customer: ${assignment.rental.project_name}`);
+      }
+    }
+    
+    return details.join(' • ');
   };
 
   const getCurrentAssignment = () => {
@@ -486,22 +504,30 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                     {currentAssignment.end_date && ` - ${format(new Date(currentAssignment.end_date), 'MMM d, yyyy')}`}
                   </span>
                 </div>
+                {getAssignmentDetails(currentAssignment) && (
+                  <div className="flex items-center gap-2">
+                    <Briefcase className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      <strong>Details:</strong> {getAssignmentDetails(currentAssignment)}
+                    </span>
+                  </div>
+                )}
               </div>
-                             <div className="space-y-2">
-                 {getTypeBadge(currentAssignment.type)}
-                 <Badge
-                   className={
-                     currentAssignment.status === 'active' ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'
-                   }
-                 >
-                   {currentAssignment.status || 'active'}
-                 </Badge>
-                 {currentAssignment.notes && (
-                   <div className="text-sm text-muted-foreground">
-                     <strong>Notes:</strong> {currentAssignment.notes}
-                   </div>
-                 )}
-               </div>
+              <div className="space-y-2">
+                {getTypeBadge(currentAssignment.type)}
+                <Badge
+                  className={
+                    currentAssignment.status === 'active' ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'
+                  }
+                >
+                  {currentAssignment.status || 'active'}
+                </Badge>
+                {currentAssignment.notes && (
+                  <div className="text-sm text-muted-foreground">
+                    <strong>Notes:</strong> {currentAssignment.notes}
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -525,6 +551,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                 <TableRow>
                   <TableHead>Assignment Name</TableHead>
                   <TableHead>Type</TableHead>
+                  <TableHead>Details</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Start Date</TableHead>
                   <TableHead>End Date</TableHead>
@@ -540,6 +567,11 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                     </TableCell>
                     <TableCell>
                       {getTypeBadge(assignment.type)}
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-muted-foreground">
+                        {getAssignmentDetails(assignment) || '-'}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {assignment.location || '-'}

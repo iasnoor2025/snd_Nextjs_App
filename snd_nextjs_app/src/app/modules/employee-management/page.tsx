@@ -29,19 +29,19 @@ import { Textarea } from '@/components/ui/textarea';
 
 interface Employee {
   id: number;
-  file_number: string;
-  first_name: string;
-  last_name: string;
-  full_name: string;
-  email: string;
-  department: string;
-  designation: string;
-  status: string;
+  file_number: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  full_name: string | null;
+  email: string | null;
+  department: string | null;
+  designation: string | null;
+  status: string | null;
   hire_date: string | null;
-  basic_salary: number;
-  phone?: string;
-  nationality?: string;
-  hourly_rate: number;
+  basic_salary: number | null;
+  phone?: string | null;
+  nationality?: string | null;
+  hourly_rate: number | null;
 }
 
 export default function EmployeeManagementPage() {
@@ -166,7 +166,7 @@ export default function EmployeeManagementPage() {
 
 
   const handleDeleteEmployee = async (employee: Employee) => {
-    if (!confirm(`Are you sure you want to delete ${employee.full_name}?`)) {
+    if (!confirm(`Are you sure you want to delete ${employee.full_name || 'this employee'}?`)) {
       return;
     }
 
@@ -177,7 +177,7 @@ export default function EmployeeManagementPage() {
       });
 
       if (response.ok) {
-        toast.success(`Employee ${employee.full_name} deleted successfully`);
+        toast.success(`Employee ${employee.full_name || 'deleted'} successfully`);
         await fetchEmployees(); // Refresh the list
       } else {
         const error = await response.json();
@@ -257,9 +257,9 @@ export default function EmployeeManagementPage() {
 
     const filtered = employees.filter(employee => {
       const matchesSearch =
-        employee.file_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        employee.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        employee.email.toLowerCase().includes(searchTerm.toLowerCase());
+        (employee.file_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (employee.full_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (employee.email?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
       const matchesStatus = statusFilter === 'all' || employee.status === statusFilter;
       const matchesDepartment = departmentFilter === 'all' || employee.department === departmentFilter;
@@ -271,10 +271,15 @@ export default function EmployeeManagementPage() {
       const aValue: any = a[sortField as keyof Employee];
       const bValue: any = b[sortField as keyof Employee];
 
+      // Handle null/undefined values
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return sortDirection === 'asc' ? -1 : 1;
+      if (bValue == null) return sortDirection === 'asc' ? 1 : -1;
+
       if (sortField === 'file_number') {
         return sortDirection === 'asc'
-          ? naturalSort(aValue, bValue)
-          : naturalSort(bValue, aValue);
+          ? naturalSort(String(aValue), String(bValue))
+          : naturalSort(String(bValue), String(aValue));
       }
 
       if (typeof aValue === 'string' && typeof bValue === 'string') {
@@ -287,7 +292,12 @@ export default function EmployeeManagementPage() {
         return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
       }
 
-      return 0;
+      // Fallback for mixed types
+      const aStr = String(aValue);
+      const bStr = String(bValue);
+      return sortDirection === 'asc'
+        ? aStr.localeCompare(bStr)
+        : bStr.localeCompare(aStr);
     });
 
     return filtered;
@@ -503,22 +513,22 @@ export default function EmployeeManagementPage() {
                   ) : (
                     currentEmployees.map((employee) => (
                       <TableRow key={employee.id}>
-                        <TableCell className={`font-mono ${isRTL ? 'text-right' : 'text-left'}`}>{employee.file_number}</TableCell>
+                        <TableCell className={`font-mono ${isRTL ? 'text-right' : 'text-left'}`}>{employee.file_number || 'N/A'}</TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           <div>
                             <div className="font-medium">
-                              {employee.full_name}
+                              {employee.full_name || 'N/A'}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {employee.designation}
+                              {employee.designation || 'N/A'}
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.email}</TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.department}</TableCell>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.email || 'N/A'}</TableCell>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.department || 'N/A'}</TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
-                            {employee.status}
+                            {employee.status || 'N/A'}
                           </Badge>
                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.hire_date || 'N/A'}</TableCell>
@@ -729,11 +739,11 @@ export default function EmployeeManagementPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>File Number</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.file_number}</p>
+                  <p className="text-sm text-muted-foreground">{selectedEmployee.file_number || 'N/A'}</p>
                 </div>
                 <div>
                   <Label>Full Name</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.full_name}</p>
+                  <p className="text-sm text-muted-foreground">{selectedEmployee.full_name || 'N/A'}</p>
                 </div>
                 <div>
                   <Label>Email</Label>
@@ -745,16 +755,16 @@ export default function EmployeeManagementPage() {
                 </div>
                 <div>
                   <Label>Department</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.department}</p>
+                  <p className="text-sm text-muted-foreground">{selectedEmployee.department || 'N/A'}</p>
                 </div>
                 <div>
                   <Label>Designation</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.designation}</p>
+                  <p className="text-sm text-muted-foreground">{selectedEmployee.designation || 'N/A'}</p>
                 </div>
                 <div>
                   <Label>Status</Label>
                   <Badge variant={selectedEmployee.status === 'active' ? 'default' : 'secondary'}>
-                    {selectedEmployee.status}
+                    {selectedEmployee.status || 'N/A'}
                   </Badge>
                 </div>
                 <div>
@@ -763,7 +773,7 @@ export default function EmployeeManagementPage() {
                 </div>
                 <div>
                   <Label>Basic Salary</Label>
-                  <p className="text-sm text-muted-foreground">${selectedEmployee.basic_salary}</p>
+                  <p className="text-sm text-muted-foreground">${selectedEmployee.basic_salary || 'N/A'}</p>
                 </div>
                 <div>
                   <Label>Nationality</Label>
@@ -771,7 +781,7 @@ export default function EmployeeManagementPage() {
                 </div>
                 <div>
                   <Label>Hourly Rate</Label>
-                  <p className="text-sm text-muted-foreground">${selectedEmployee.hourly_rate}</p>
+                  <p className="text-sm text-muted-foreground">${selectedEmployee.hourly_rate || 'N/A'}</p>
                 </div>
               </div>
             )}
@@ -796,15 +806,15 @@ export default function EmployeeManagementPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="file_number">File Number</Label>
-                  <Input id="file_number" defaultValue={selectedEmployee.file_number} disabled />
+                  <Input id="file_number" defaultValue={selectedEmployee.file_number || ''} disabled />
                 </div>
                 <div>
                   <Label htmlFor="first_name">First Name</Label>
-                  <Input id="first_name" defaultValue={selectedEmployee.first_name} />
+                  <Input id="first_name" defaultValue={selectedEmployee.first_name || ''} />
                 </div>
                 <div>
                   <Label htmlFor="last_name">Last Name</Label>
-                  <Input id="last_name" defaultValue={selectedEmployee.last_name} />
+                  <Input id="last_name" defaultValue={selectedEmployee.last_name || ''} />
                 </div>
                 <div>
                   <Label htmlFor="email">Email</Label>
@@ -816,7 +826,7 @@ export default function EmployeeManagementPage() {
                 </div>
                 <div>
                   <Label htmlFor="department">Department</Label>
-                  <Select defaultValue={selectedEmployee.department}>
+                  <Select defaultValue={selectedEmployee.department || ''}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -830,11 +840,11 @@ export default function EmployeeManagementPage() {
                 </div>
                 <div>
                   <Label htmlFor="designation">Designation</Label>
-                  <Input id="designation" defaultValue={selectedEmployee.designation} />
+                  <Input id="designation" defaultValue={selectedEmployee.designation || ''} />
                 </div>
                 <div>
                   <Label htmlFor="status">Status</Label>
-                  <Select defaultValue={selectedEmployee.status}>
+                  <Select defaultValue={selectedEmployee.status || ''}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -850,11 +860,11 @@ export default function EmployeeManagementPage() {
                 </div>
                 <div>
                   <Label htmlFor="basic_salary">Basic Salary</Label>
-                  <Input id="basic_salary" type="number" defaultValue={selectedEmployee.basic_salary} />
+                  <Input id="basic_salary" type="number" defaultValue={selectedEmployee.basic_salary || ''} />
                 </div>
                 <div>
-                  <Label htmlFor="basic_salary">Hourly Rate</Label>
-                  <Input id="hourly_rate" type="number" step="0.01" defaultValue={selectedEmployee.hourly_rate} />
+                  <Label htmlFor="hourly_rate">Hourly Rate</Label>
+                  <Input id="hourly_rate" type="number" step="0.01" defaultValue={selectedEmployee.hourly_rate || ''} />
                 </div>
                 <div>
                   <Label htmlFor="nationality">Nationality</Label>
