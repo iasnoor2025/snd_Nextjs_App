@@ -594,6 +594,7 @@ export default function RentalDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
+  const [isEditItemDialogOpen, setIsEditItemDialogOpen] = useState(false);
   const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
     customerId: '',
@@ -608,6 +609,23 @@ export default function RentalDetailPage() {
     paymentStatus: 'pending',
     notes: '',
   });
+
+  const [itemFormData, setItemFormData] = useState({
+    id: '',
+    equipmentId: '',
+    equipmentName: '',
+    quantity: 1,
+    unitPrice: 0,
+    totalPrice: 0,
+    days: 1,
+    rateType: 'daily',
+    operatorId: '',
+    status: 'active',
+    notes: '',
+  });
+
+  const [equipment, setEquipment] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
 
   // Helper function to convert Decimal to number
   const formatAmount = (amount: any): string => {
@@ -665,6 +683,8 @@ export default function RentalDetailPage() {
         throw new Error('Failed to fetch rental');
       }
       const data = await response.json();
+      console.log('Fetched rental data:', data);
+      console.log('Rental items:', data.rental_items || data.rentalItems);
       setRental(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -673,6 +693,34 @@ export default function RentalDetailPage() {
         setLoading(false);
       }
     };
+
+  // Fetch equipment
+  const fetchEquipment = async () => {
+    try {
+      const response = await fetch('/api/equipment');
+      if (!response.ok) {
+        throw new Error('Failed to fetch equipment');
+      }
+      const data = await response.json();
+      setEquipment(data.data || data.equipment || []);
+    } catch (err) {
+      console.error('Failed to fetch equipment:', err);
+    }
+  };
+
+  // Fetch employees
+  const fetchEmployees = async () => {
+    try {
+      const response = await fetch('/api/employees');
+      if (!response.ok) {
+        throw new Error('Failed to fetch employees');
+      }
+      const data = await response.json();
+      setEmployees(data.data || data.employees || []);
+    } catch (err) {
+      console.error('Failed to fetch employees:', err);
+    }
+  };
 
   // Update rental
   const updateRental = async () => {
@@ -874,9 +922,167 @@ export default function RentalDetailPage() {
     setIsEditDialogOpen(true);
   };
 
+  // Add rental item
+  const addRentalItem = async () => {
+    if (!rental) return;
+
+    // Validate required fields
+    if (!itemFormData.equipmentName || !itemFormData.quantity || !itemFormData.unitPrice) {
+      toast.error('Please fill in all required fields: Equipment, Quantity, and Unit Price');
+      return;
+    }
+
+    try {
+      // Calculate total price
+      const totalPrice = itemFormData.quantity * itemFormData.unitPrice * itemFormData.days;
+
+      const requestData = {
+        ...itemFormData,
+        totalPrice,
+        rentalId: rental.id,
+      };
+
+      console.log('Sending rental item data:', requestData);
+
+      const response = await fetch(`/api/rentals/${rental.id}/items`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(errorData.error || 'Failed to add rental item');
+      }
+
+      toast.success('Rental item added successfully');
+      setIsAddItemDialogOpen(false);
+      
+      // Reset form
+      setItemFormData({
+        id: '',
+        equipmentId: '',
+        equipmentName: '',
+        quantity: 1,
+        unitPrice: 0,
+        totalPrice: 0,
+        days: 1,
+        rateType: 'daily',
+        operatorId: '',
+        status: 'active',
+        notes: '',
+      });
+      
+      // Refresh rental data
+      fetchRental();
+    } catch (err) {
+      toast.error('Failed to add rental item');
+    }
+  };
+
+  const openEditItemDialog = (item: any) => {
+    setItemFormData({
+      id: item.id,
+      equipmentId: item.equipment_id?.toString() || item.equipmentId?.toString() || '',
+      equipmentName: item.equipment_name || item.equipmentName || '',
+      quantity: item.quantity || 1,
+      unitPrice: item.unit_price || item.unitPrice || 0,
+      totalPrice: item.total_price || item.totalPrice || 0,
+      days: item.days || 1,
+      rateType: item.rate_type || item.rateType || 'daily',
+      operatorId: item.operator_id?.toString() || item.operatorId?.toString() || '',
+      status: item.status || 'active',
+      notes: item.notes || '',
+    });
+    setIsEditItemDialogOpen(true);
+  };
+
+  const updateRentalItem = async () => {
+    if (!rental) return;
+
+    // Validate required fields
+    if (!itemFormData.equipmentName || !itemFormData.quantity || !itemFormData.unitPrice) {
+      toast.error('Please fill in all required fields: Equipment, Quantity, and Unit Price');
+      return;
+    }
+
+    try {
+      // Calculate total price
+      const totalPrice = itemFormData.quantity * itemFormData.unitPrice * itemFormData.days;
+
+      const requestData = {
+        ...itemFormData,
+        totalPrice,
+      };
+
+      console.log('Updating rental item data:', requestData);
+
+      const response = await fetch(`/api/rentals/${rental.id}/items/${itemFormData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(errorData.error || 'Failed to update rental item');
+      }
+
+      toast.success('Rental item updated successfully');
+      setIsEditItemDialogOpen(false);
+      
+      // Reset form
+      setItemFormData({
+        id: '',
+        equipmentId: '',
+        equipmentName: '',
+        quantity: 1,
+        unitPrice: 0,
+        totalPrice: 0,
+        days: 1,
+        rateType: 'daily',
+        operatorId: '',
+        status: 'active',
+        notes: '',
+      });
+      
+      // Refresh rental data
+      fetchRental();
+    } catch (err) {
+      toast.error('Failed to update rental item');
+    }
+  };
+
+  const deleteRentalItem = async (itemId: string) => {
+    if (!rental) return;
+
+    if (!confirm('Are you sure you want to delete this rental item?')) return;
+
+    try {
+      const response = await fetch(`/api/rentals/${rental.id}/items/${itemId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(errorData.error || 'Failed to delete rental item');
+      }
+
+      toast.success('Rental item deleted successfully');
+      fetchRental();
+    } catch (err) {
+      toast.error('Failed to delete rental item');
+    }
+  };
+
   useEffect(() => {
     if (rentalId) {
       fetchRental();
+      fetchEquipment();
+      fetchEmployees();
     }
   }, [rentalId]);
 
@@ -1100,28 +1306,58 @@ export default function RentalDetailPage() {
                         <TableHead>Quantity</TableHead>
                         <TableHead>Unit Price</TableHead>
                         <TableHead>Total Price</TableHead>
+                        <TableHead>Days</TableHead>
                         <TableHead>Rate Type</TableHead>
+                        <TableHead>Operator</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {rental.rentalItems?.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell>{item.equipmentName}</TableCell>
-                          <TableCell>{item.quantity}</TableCell>
-                          <TableCell>${formatAmount(item.unitPrice)}</TableCell>
-                          <TableCell>${formatAmount(item.totalPrice)}</TableCell>
-                          <TableCell>{item.rateType}</TableCell>
-                          <TableCell>
-                            <Button variant="outline" size="sm">
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {(rental.rentalItems || rental.rental_items)?.map((item) => {
+                        // Find operator name from employees list
+                        const operatorId = item.operator_id || item.operatorId;
+                        const operator = employees.find(emp => emp.id.toString() === operatorId?.toString());
+                        const operatorName = operator ? `${operator.first_name} ${operator.last_name}` : 'N/A';
+                        
+                        return (
+                          <TableRow key={item.id}>
+                            <TableCell>{item.equipment_name || item.equipmentName}</TableCell>
+                            <TableCell>{item.quantity}</TableCell>
+                            <TableCell>${formatAmount(item.unit_price || item.unitPrice)}</TableCell>
+                            <TableCell>${formatAmount(item.total_price || item.totalPrice)}</TableCell>
+                            <TableCell>{item.days || 1}</TableCell>
+                            <TableCell>{item.rate_type || item.rateType}</TableCell>
+                            <TableCell>{operatorName}</TableCell>
+                            <TableCell>
+                              <Badge variant={item.status === 'active' ? 'default' : 'secondary'}>
+                                {item.status || 'active'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => openEditItemDialog(item)}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => deleteRentalItem(item.id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
-                  {(!rental.rentalItems || rental.rentalItems.length === 0) && (
+                  {(!(rental.rentalItems || rental.rental_items) || (rental.rentalItems || rental.rental_items).length === 0) && (
                     <div className="text-center py-8 text-muted-foreground">
                       No rental items found
                     </div>
@@ -1455,6 +1691,285 @@ export default function RentalDetailPage() {
               Cancel
             </Button>
             <Button onClick={updateRental}>Update Rental</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Item Dialog */}
+      <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Rental Item</DialogTitle>
+            <DialogDescription>
+              Add a new item to this rental
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="equipment">Equipment</Label>
+              <Select
+                value={itemFormData.equipmentId}
+                onValueChange={(value) => {
+                  const selectedEquipment = equipment.find(eq => eq.id.toString() === value);
+                  console.log('Selected equipment:', selectedEquipment);
+                  console.log('Equipment list:', equipment);
+                  setItemFormData(prev => ({ 
+                    ...prev, 
+                    equipmentId: value,
+                    equipmentName: selectedEquipment?.name || '',
+                    unitPrice: selectedEquipment?.daily_rate || 0
+                  }))
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select equipment" />
+                </SelectTrigger>
+                <SelectContent>
+                  {equipment.map((eq) => (
+                    <SelectItem key={eq.id} value={eq.id.toString()}>
+                      {eq.name} - ${eq.daily_rate}/day
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="operator">Operator</Label>
+              <Select
+                value={itemFormData.operatorId}
+                onValueChange={(value) => setItemFormData(prev => ({ ...prev, operatorId: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select operator (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id.toString()}>
+                      {emp.first_name} {emp.last_name} - {emp.employee_id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="quantity">Quantity</Label>
+              <Input
+                id="quantity"
+                type="number"
+                value={itemFormData.quantity}
+                onChange={(e) => setItemFormData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
+                placeholder="1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="unitPrice">Unit Price</Label>
+              <Input
+                id="unitPrice"
+                type="number"
+                step="0.01"
+                value={itemFormData.unitPrice}
+                onChange={(e) => setItemFormData(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <Label htmlFor="days">Days</Label>
+              <Input
+                id="days"
+                type="number"
+                value={itemFormData.days}
+                onChange={(e) => setItemFormData(prev => ({ ...prev, days: parseInt(e.target.value) || 0 }))}
+                placeholder="1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="rateType">Rate Type</Label>
+              <Select
+                value={itemFormData.rateType}
+                onValueChange={(value) => setItemFormData(prev => ({ ...prev, rateType: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select rate type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="hourly">Hourly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={itemFormData.status}
+                onValueChange={(value) => setItemFormData(prev => ({ ...prev, status: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              value={itemFormData.notes}
+              onChange={(e) => setItemFormData(prev => ({ ...prev, notes: e.target.value }))}
+              rows={3}
+              placeholder="Enter any additional notes"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddItemDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={addRentalItem}>Add Item</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Item Dialog */}
+      <Dialog open={isEditItemDialogOpen} onOpenChange={setIsEditItemDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Rental Item</DialogTitle>
+            <DialogDescription>
+              Update the rental item details
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="editEquipment">Equipment</Label>
+              <Select
+                value={itemFormData.equipmentId}
+                onValueChange={(value) => {
+                  const selectedEquipment = equipment.find(eq => eq.id.toString() === value);
+                  setItemFormData(prev => ({ 
+                    ...prev, 
+                    equipmentId: value,
+                    equipmentName: selectedEquipment?.name || '',
+                    unitPrice: selectedEquipment?.daily_rate || 0
+                  }))
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select equipment" />
+                </SelectTrigger>
+                <SelectContent>
+                  {equipment.map((eq) => (
+                    <SelectItem key={eq.id} value={eq.id.toString()}>
+                      {eq.name} - ${eq.daily_rate}/day
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="editOperator">Operator</Label>
+              <Select
+                value={itemFormData.operatorId}
+                onValueChange={(value) => setItemFormData(prev => ({ ...prev, operatorId: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select operator (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id.toString()}>
+                      {emp.first_name} {emp.last_name} - {emp.employee_id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="editQuantity">Quantity</Label>
+              <Input
+                id="editQuantity"
+                type="number"
+                value={itemFormData.quantity}
+                onChange={(e) => setItemFormData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
+                placeholder="1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editUnitPrice">Unit Price</Label>
+              <Input
+                id="editUnitPrice"
+                type="number"
+                step="0.01"
+                value={itemFormData.unitPrice}
+                onChange={(e) => setItemFormData(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editDays">Days</Label>
+              <Input
+                id="editDays"
+                type="number"
+                value={itemFormData.days}
+                onChange={(e) => setItemFormData(prev => ({ ...prev, days: parseInt(e.target.value) || 0 }))}
+                placeholder="1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editRateType">Rate Type</Label>
+              <Select
+                value={itemFormData.rateType}
+                onValueChange={(value) => setItemFormData(prev => ({ ...prev, rateType: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select rate type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Daily</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="hourly">Hourly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="editStatus">Status</Label>
+              <Select
+                value={itemFormData.status}
+                onValueChange={(value) => setItemFormData(prev => ({ ...prev, status: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="editNotes">Notes</Label>
+            <Textarea
+              id="editNotes"
+              value={itemFormData.notes}
+              onChange={(e) => setItemFormData(prev => ({ ...prev, notes: e.target.value }))}
+              rows={3}
+              placeholder="Enter any additional notes"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditItemDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={updateRentalItem}>Update Item</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

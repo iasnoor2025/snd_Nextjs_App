@@ -519,4 +519,96 @@ export class DatabaseService {
       where: { id }
     })
   }
+
+  // Rental Item operations
+  static async addRentalItem(data: {
+    rentalId: number
+    equipmentId?: number | null
+    equipmentName: string
+    quantity: number
+    unitPrice: number
+    totalPrice: number
+    days?: number
+    rateType?: string
+    operatorId?: number | null
+    status?: string
+    notes?: string
+  }) {
+    console.log('DatabaseService.addRentalItem called with:', data);
+    
+    try {
+      const result = await prisma.rentalItem.create({
+        data: {
+          rental_id: data.rentalId,
+          equipment_id: data.equipmentId,
+          equipment_name: data.equipmentName,
+          quantity: data.quantity,
+          unit_price: data.unitPrice,
+          total_price: data.totalPrice,
+          days: data.days || 1,
+          rate_type: data.rateType || 'daily',
+          operator_id: data.operatorId,
+          status: data.status || 'active',
+          notes: data.notes || '',
+        },
+        include: {
+          equipment: true
+        }
+      });
+      
+      console.log('Rental item created successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('DatabaseService.addRentalItem error:', error);
+      throw error;
+    }
+  }
+
+  static async getRentalItems(rentalId: number) {
+    return await prisma.rentalItem.findMany({
+      where: { rental_id: rentalId },
+      include: {
+        equipment: true
+      },
+      orderBy: { created_at: 'desc' }
+    })
+  }
+
+  static async updateRentalItem(id: number, data: {
+    equipmentId?: number | null
+    equipmentName?: string
+    quantity?: number
+    unitPrice?: number
+    totalPrice?: number
+    days?: number
+    rateType?: string
+    operatorId?: number | null
+    status?: string
+    notes?: string
+  }) {
+    return await prisma.rentalItem.update({
+      where: { id },
+      data: {
+        equipment_id: data.equipmentId,
+        equipment_name: data.equipmentName,
+        quantity: data.quantity,
+        unit_price: data.unitPrice,
+        total_price: data.totalPrice,
+        days: data.days,
+        rate_type: data.rateType,
+        operator_id: data.operatorId,
+        status: data.status,
+        notes: data.notes,
+      },
+      include: {
+        equipment: true
+      }
+    })
+  }
+
+  static async deleteRentalItem(id: number) {
+    return await prisma.rentalItem.delete({
+      where: { id }
+    })
+  }
 }
