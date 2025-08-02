@@ -98,7 +98,36 @@ export default function EmployeeManagementPage() {
   // Get allowed actions for employee management
   const allowedActions = getAllowedActions('Employee');
   
-  // Debug logging
+  // Debug function for assignment data
+  const debugAssignments = () => {
+    console.log('=== Assignment Debug Info ===');
+    console.log('Total employees:', employees.length);
+    console.log('Filtered employees:', filteredAndSortedEmployees.length);
+    console.log('Current assignment filter:', assignmentFilter);
+    
+    const employeesWithAssignments = employees.filter(emp => emp.current_assignment && emp.current_assignment.id);
+    const employeesWithoutAssignments = employees.filter(emp => !emp.current_assignment || !emp.current_assignment.id);
+    
+    console.log('Employees with assignments:', employeesWithAssignments.length);
+    console.log('Employees without assignments:', employeesWithoutAssignments.length);
+    
+    // Show first few employees with assignments
+    console.log('Sample employees with assignments:');
+    employeesWithAssignments.slice(0, 3).forEach(emp => {
+      console.log(`- ${emp.file_number}: ${emp.full_name}`, emp.current_assignment);
+    });
+    
+    // Show first few employees without assignments
+    console.log('Sample employees without assignments:');
+    employeesWithoutAssignments.slice(0, 3).forEach(emp => {
+      console.log(`- ${emp.file_number}: ${emp.full_name}`, emp.current_assignment);
+    });
+  };
+  
+  // Make debug function available globally
+  if (typeof window !== 'undefined') {
+    (window as any).debugAssignments = debugAssignments;
+  }
   
 
   useEffect(() => {
@@ -332,8 +361,8 @@ export default function EmployeeManagementPage() {
       const matchesStatus = statusFilter === 'all' || employee.status === statusFilter;
       const matchesDepartment = departmentFilter === 'all' || employee.department === departmentFilter;
       const matchesAssignment = assignmentFilter === 'all' || 
-        (assignmentFilter === 'assigned' && employee.current_assignment && employee.current_assignment.id && employee.current_assignment.status === 'active') ||
-        (assignmentFilter === 'unassigned' && (!employee.current_assignment || !employee.current_assignment.id || employee.current_assignment.status !== 'active'));
+        (assignmentFilter === 'assigned' && employee.current_assignment && employee.current_assignment.id && employee.current_assignment.status === 'active' && employee.current_assignment.name) ||
+        (assignmentFilter === 'unassigned' && (!employee.current_assignment || !employee.current_assignment.id || employee.current_assignment.status !== 'active' || !employee.current_assignment.name));
 
       return matchesSearch && matchesStatus && matchesDepartment && matchesAssignment;
     });
@@ -799,7 +828,10 @@ export default function EmployeeManagementPage() {
             <div className={`flex items-center justify-between mt-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
               <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <div className={`text-sm text-muted-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
-                  {totalPages > 1 ? `Page ${currentPage} of ${totalPages}` : `Showing ${totalItems} employees`}
+                  {totalPages > 1 
+                    ? `Showing ${startIndex + 1}-${Math.min(endIndex, totalItems)} of ${totalItems} employees`
+                    : `Showing ${totalItems} employees`
+                  }
                 </div>
                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
                   <span className="text-sm text-muted-foreground">Show:</span>
