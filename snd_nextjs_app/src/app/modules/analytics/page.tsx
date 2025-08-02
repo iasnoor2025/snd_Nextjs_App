@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Eye, Edit, Trash2, Plus, BarChart3, TrendingUp, PieChart, Activity, Download, Settings } from "lucide-react";
+import { Eye, Edit, Trash2, Plus, BarChart3, TrendingUp, PieChart, Activity, Download, Settings, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 interface AnalyticsReport {
@@ -500,13 +500,86 @@ export default function AnalyticsPage() {
                 {Math.min(reports.current_page * reports.per_page, reports.total)} of{" "}
                 {reports.total} results
               </div>
-              <Pagination
-                currentPage={reports.current_page}
-                totalPages={reports.last_page}
-                totalItems={reports.total}
-                itemsPerPage={reports.per_page}
-                onPageChange={setCurrentPage}
-              />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, reports.current_page - 1))}
+                  disabled={reports.current_page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {/* First page */}
+                  {reports.current_page > 2 && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(1)}
+                        className="w-8 h-8 p-0"
+                      >
+                        1
+                      </Button>
+                      {reports.current_page > 3 && (
+                        <span className="px-2 text-muted-foreground">...</span>
+                      )}
+                    </>
+                  )}
+
+                  {/* Current page and surrounding pages */}
+                  {(() => {
+                    const pages = [];
+                    const startPage = Math.max(1, reports.current_page - 1);
+                    const endPage = Math.min(reports.last_page, reports.current_page + 1);
+
+                    for (let page = startPage; page <= endPage; page++) {
+                      pages.push(page);
+                    }
+
+                    return pages.map((page) => (
+                      <Button
+                        key={page}
+                        variant={reports.current_page === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {page}
+                      </Button>
+                    ));
+                  })()}
+
+                  {/* Last page */}
+                  {reports.current_page < reports.last_page - 1 && (
+                    <>
+                      {reports.current_page < reports.last_page - 2 && (
+                        <span className="px-2 text-muted-foreground">...</span>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(reports.last_page)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {reports.last_page}
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(reports.last_page, reports.current_page + 1))}
+                  disabled={reports.current_page === reports.last_page}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

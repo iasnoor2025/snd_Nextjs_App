@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Eye, Edit, Trash2, Plus, Building2 } from "lucide-react";
+import { Eye, Edit, Trash2, Plus, Building2, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 interface Company {
@@ -212,13 +212,86 @@ export default function CompanyManagementPage() {
                 {Math.min(companies.pagination.page * companies.pagination.limit, companies.pagination.total)} of{" "}
                 {companies.pagination.total} results
               </div>
-              <Pagination
-                currentPage={companies.pagination.page}
-                totalPages={companies.pagination.totalPages}
-                totalItems={companies.pagination.total}
-                itemsPerPage={companies.pagination.limit}
-                onPageChange={setCurrentPage}
-              />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, companies.pagination.page - 1))}
+                  disabled={companies.pagination.page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {/* First page */}
+                  {companies.pagination.page > 2 && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(1)}
+                        className="w-8 h-8 p-0"
+                      >
+                        1
+                      </Button>
+                      {companies.pagination.page > 3 && (
+                        <span className="px-2 text-muted-foreground">...</span>
+                      )}
+                    </>
+                  )}
+
+                  {/* Current page and surrounding pages */}
+                  {(() => {
+                    const pages = [];
+                    const startPage = Math.max(1, companies.pagination.page - 1);
+                    const endPage = Math.min(companies.pagination.totalPages, companies.pagination.page + 1);
+
+                    for (let page = startPage; page <= endPage; page++) {
+                      pages.push(page);
+                    }
+
+                    return pages.map((page) => (
+                      <Button
+                        key={page}
+                        variant={companies.pagination.page === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {page}
+                      </Button>
+                    ));
+                  })()}
+
+                  {/* Last page */}
+                  {companies.pagination.page < companies.pagination.totalPages - 1 && (
+                    <>
+                      {companies.pagination.page < companies.pagination.totalPages - 2 && (
+                        <span className="px-2 text-muted-foreground">...</span>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(companies.pagination.totalPages)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {companies.pagination.totalPages}
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(companies.pagination.totalPages, companies.pagination.page + 1))}
+                  disabled={companies.pagination.page === companies.pagination.totalPages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

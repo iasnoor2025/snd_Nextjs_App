@@ -304,7 +304,7 @@ export class DatabaseService {
   }
 
   static async createRental(data: {
-    customerId: string
+    customerId: number
     rentalNumber: string
     startDate: Date
     expectedEndDate?: Date
@@ -328,23 +328,38 @@ export class DatabaseService {
 
     const rental = await prisma.rental.create({
       data: {
-        ...rentalData,
+        customer_id: rentalData.customerId,
         rental_number: rentalData.rentalNumber || `RENTAL-${Date.now()}`,
         start_date: rentalData.startDate || new Date(),
+        expected_end_date: rentalData.expectedEndDate,
+        actual_end_date: rentalData.actualEndDate,
+        status: rentalData.status || 'pending',
+        payment_status: rentalData.paymentStatus || 'pending',
+        subtotal: rentalData.subtotal || 0,
+        tax_amount: rentalData.taxAmount || 0,
+        total_amount: rentalData.totalAmount || 0,
+        discount: rentalData.discount || 0,
+        tax: rentalData.tax || 0,
+        final_amount: rentalData.finalAmount || 0,
+        deposit_amount: rentalData.depositAmount || 0,
+        payment_terms_days: rentalData.paymentTermsDays || 30,
+        has_timesheet: rentalData.hasTimesheet || false,
+        has_operators: rentalData.hasOperators || false,
+        notes: rentalData.notes || '',
         rental_items: rentalItems ? {
           create: rentalItems.map((item: any) => ({
-            equipment_id: item.equipmentId,
+            equipment_id: item.equipmentId ? parseInt(item.equipmentId) : null,
+            equipment_name: item.equipmentName,
             quantity: item.quantity,
             unit_price: item.unitPrice,
             total_price: item.totalPrice,
             days: item.days,
             rate_type: item.rateType,
-            operator_id: item.operatorId,
-            status: item.status,
+            operator_id: item.operatorId ? parseInt(item.operatorId) : null,
+            status: item.status || 'active',
             notes: item.notes
           }))
         } : undefined,
-
       },
       include: {
         customer: true,
@@ -360,7 +375,7 @@ export class DatabaseService {
   }
 
   static async updateRental(id: number, data: {
-    customerId?: string
+    customerId?: number
     rentalNumber?: string
     startDate?: Date
     expectedEndDate?: Date | null
@@ -395,48 +410,44 @@ export class DatabaseService {
       updateData.actualEndDate = null
     }
 
-    // Get current rental to determine old status
-    const currentRental = await prisma.rental.findUnique({
-      where: { id },
-      select: { status: true }
-    });
 
-    // Determine workflow action for status log
-    let newStatus = currentRental?.status || 'pending'
-    let reason = 'Rental updated'
-
-    if (data.approvedAt) {
-      newStatus = 'approved'
-      reason = 'Quotation approved by customer'
-    } else if (data.mobilizationDate) {
-      newStatus = 'mobilization'
-      reason = 'Equipment mobilization started'
-    } else if (data.status === 'active') {
-      newStatus = 'active'
-      reason = 'Rental activated and in progress'
-    } else if (data.status === 'completed') {
-      newStatus = 'completed'
-      reason = 'Rental completed successfully'
-    } else if (data.invoiceDate) {
-      newStatus = currentRental?.status || 'completed'
-      reason = 'Invoice generated for rental'
-    } else if (data.status) {
-      newStatus = data.status
-      reason = `Status changed to ${data.status}`
-    }
 
     return await prisma.rental.update({
       where: { id },
       data: {
-        ...updateData,
-        statusLogs: {
-          create: {
-            oldStatus: currentRental?.status || null,
-            newStatus,
-            changedBy: 'user',
-            reason
-          }
-        }
+        customer_id: updateData.customerId,
+        rental_number: updateData.rentalNumber,
+        start_date: updateData.startDate,
+        expected_end_date: updateData.expectedEndDate,
+        actual_end_date: updateData.actualEndDate,
+        status: updateData.status,
+        payment_status: updateData.paymentStatus,
+        subtotal: updateData.subtotal || 0,
+        tax_amount: updateData.taxAmount || 0,
+        total_amount: updateData.totalAmount || 0,
+        discount: updateData.discount || 0,
+        tax: updateData.tax || 0,
+        final_amount: updateData.finalAmount || 0,
+        deposit_amount: updateData.depositAmount || 0,
+        payment_terms_days: updateData.paymentTermsDays,
+        has_timesheet: updateData.hasTimesheet,
+        has_operators: updateData.hasOperators,
+        notes: updateData.notes,
+        rental_items: rentalItems ? {
+          deleteMany: {},
+          create: rentalItems.map((item: any) => ({
+            equipment_id: item.equipmentId ? parseInt(item.equipmentId) : null,
+            equipment_name: item.equipmentName,
+            quantity: item.quantity,
+            unit_price: item.unitPrice,
+            total_price: item.totalPrice,
+            days: item.days,
+            rate_type: item.rateType,
+            operator_id: item.operatorId ? parseInt(item.operatorId) : null,
+            status: item.status || 'active',
+            notes: item.notes
+          }))
+        } : undefined,
       },
       include: {
         customer: true,
@@ -481,7 +492,7 @@ export class DatabaseService {
   static async createUser(data: {
     email: string
     name?: string
-    role?: 'ADMIN' | 'USER' | 'MANAGER'
+    role?: 'ADMIN' | 'USER' | 'MANAGER' | 'SUPER_ADMIN'
     password: string
   }) {
     return await prisma.user.create({
@@ -495,7 +506,7 @@ export class DatabaseService {
   static async updateUser(id: number, data: {
     email?: string
     name?: string
-    role?: 'ADMIN' | 'USER' | 'MANAGER'
+    role?: 'ADMIN' | 'USER' | 'MANAGER' | 'SUPER_ADMIN'
   }) {
     return await prisma.user.update({
       where: { id },

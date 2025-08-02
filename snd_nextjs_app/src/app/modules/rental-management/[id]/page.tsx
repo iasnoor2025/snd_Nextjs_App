@@ -104,14 +104,14 @@ interface Rental {
   startDate: string;
   expectedEndDate?: string;
   actualEndDate?: string;
-  status: string;
+  status?: string;
   subtotal: number;
   taxAmount: number;
   totalAmount: number;
   discount: number;
   tax: number;
   finalAmount: number;
-  paymentStatus: string;
+  paymentStatus?: string;
   notes?: string;
   depositAmount: number;
   paymentTermsDays: number;
@@ -150,7 +150,12 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
     const safeFormatDate = (date: string | null | undefined): string | null => {
       if (!date) return null;
       try {
-        return format(new Date(date), 'MMM d, yyyy');
+        const dateObj = new Date(date);
+        if (isNaN(dateObj.getTime())) {
+          console.error('Invalid date format:', date);
+          return null;
+        }
+        return format(dateObj, 'MMM d, yyyy');
       } catch (e) {
         console.error('Invalid date format:', date);
         return null;
@@ -509,7 +514,7 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
                 <div>
                   <p className="text-sm font-medium">Rental Created</p>
                   <p className="text-xs text-muted-foreground">
-                    {format(new Date(rental.createdAt), 'MMM dd, yyyy HH:mm')}
+                    {rental.createdAt && !isNaN(new Date(rental.createdAt).getTime()) ? format(new Date(rental.createdAt), 'MMM dd, yyyy HH:mm') : 'N/A'}
                   </p>
                 </div>
               </div>
@@ -519,7 +524,7 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
                   <div>
                     <p className="text-sm font-medium">Quotation Generated</p>
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(rental.createdAt), 'MMM dd, yyyy')}
+                      {rental.createdAt && !isNaN(new Date(rental.createdAt).getTime()) ? format(new Date(rental.createdAt), 'MMM dd, yyyy') : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -530,7 +535,7 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
                   <div>
                     <p className="text-sm font-medium">Quotation Approved</p>
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(rental.approvedAt), 'MMM dd, yyyy')}
+                      {rental.approvedAt && !isNaN(new Date(rental.approvedAt).getTime()) ? format(new Date(rental.approvedAt), 'MMM dd, yyyy') : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -541,7 +546,7 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
                   <div>
                     <p className="text-sm font-medium">Mobilization Started</p>
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(rental.mobilizationDate), 'MMM dd, yyyy')}
+                      {rental.mobilizationDate && !isNaN(new Date(rental.mobilizationDate).getTime()) ? format(new Date(rental.mobilizationDate), 'MMM dd, yyyy') : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -552,7 +557,7 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
                   <div>
                     <p className="text-sm font-medium">Rental Started</p>
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(rental.startDate), 'MMM dd, yyyy')}
+                      {rental.startDate && !isNaN(new Date(rental.startDate).getTime()) ? format(new Date(rental.startDate), 'MMM dd, yyyy') : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -563,7 +568,7 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
                   <div>
                     <p className="text-sm font-medium">Rental Completed</p>
                     <p className="text-xs text-muted-foreground">
-                      {rental.actualEndDate
+                      {rental.actualEndDate && !isNaN(new Date(rental.actualEndDate).getTime())
                         ? format(new Date(rental.actualEndDate), 'MMM dd, yyyy')
                         : 'N/A'
                       }
@@ -612,7 +617,11 @@ export default function RentalDetailPage() {
   };
 
   // Get status badge color
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status?: string) => {
+    if (!status) {
+      return <Badge variant="outline">Unknown</Badge>;
+    }
+    
     switch (status.toLowerCase()) {
       case 'pending':
         return <Badge variant="secondary">Pending</Badge>;
@@ -628,7 +637,11 @@ export default function RentalDetailPage() {
   };
 
   // Get payment status badge
-  const getPaymentStatusBadge = (status: string) => {
+  const getPaymentStatusBadge = (status?: string) => {
+    if (!status) {
+      return <Badge variant="outline">Unknown</Badge>;
+    }
+    
     switch (status.toLowerCase()) {
       case 'pending':
         return <Badge variant="secondary">Pending</Badge>;
@@ -854,8 +867,8 @@ export default function RentalDetailPage() {
       paymentTermsDays: rental.paymentTermsDays.toString(),
       hasTimesheet: rental.hasTimesheet,
       hasOperators: rental.hasOperators,
-      status: rental.status,
-      paymentStatus: rental.paymentStatus,
+      status: rental.status || 'pending',
+      paymentStatus: rental.paymentStatus || 'pending',
       notes: rental.notes || '',
     });
     setIsEditDialogOpen(true);
@@ -900,7 +913,7 @@ export default function RentalDetailPage() {
           <div>
             <h1 className="text-3xl font-bold">Rental #{rental.rentalNumber}</h1>
             <p className="text-muted-foreground">
-              {rental.customer?.name} • {format(new Date(rental.startDate), 'MMM dd, yyyy')}
+              {rental.customer?.name} • {rental.startDate && !isNaN(new Date(rental.startDate).getTime()) ? format(new Date(rental.startDate), 'MMM dd, yyyy') : 'N/A'}
             </p>
           </div>
         </div>
@@ -988,13 +1001,13 @@ export default function RentalDetailPage() {
                     <div>
                       <Label className="text-sm font-medium">Start Date</Label>
                       <p className="text-sm text-muted-foreground">
-                        {format(new Date(rental.startDate), 'MMM dd, yyyy')}
+                        {rental.startDate && !isNaN(new Date(rental.startDate).getTime()) ? format(new Date(rental.startDate), 'MMM dd, yyyy') : 'N/A'}
                       </p>
                     </div>
                       <div>
                       <Label className="text-sm font-medium">Expected End Date</Label>
                       <p className="text-sm text-muted-foreground">
-                        {rental.expectedEndDate
+                        {rental.expectedEndDate && !isNaN(new Date(rental.expectedEndDate).getTime())
                           ? format(new Date(rental.expectedEndDate), 'MMM dd, yyyy')
                           : 'N/A'
                         }
@@ -1003,7 +1016,7 @@ export default function RentalDetailPage() {
                       <div>
                       <Label className="text-sm font-medium">Actual End Date</Label>
                       <p className="text-sm text-muted-foreground">
-                        {rental.actualEndDate
+                        {rental.actualEndDate && !isNaN(new Date(rental.actualEndDate).getTime())
                           ? format(new Date(rental.actualEndDate), 'MMM dd, yyyy')
                           : 'N/A'
                         }
@@ -1020,7 +1033,7 @@ export default function RentalDetailPage() {
                     <div>
                       <Label className="text-sm font-medium">Created</Label>
                       <p className="text-sm text-muted-foreground">
-                        {format(new Date(rental.createdAt), 'MMM dd, yyyy HH:mm')}
+                        {rental.createdAt && !isNaN(new Date(rental.createdAt).getTime()) ? format(new Date(rental.createdAt), 'MMM dd, yyyy HH:mm') : 'N/A'}
                       </p>
                     </div>
                   </div>

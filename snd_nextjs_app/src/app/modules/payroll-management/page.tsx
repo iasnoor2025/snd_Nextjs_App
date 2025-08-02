@@ -53,7 +53,9 @@ import {
   Users,
   Upload,
   Shield,
-  CreditCard
+  CreditCard,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -798,13 +800,93 @@ export default function PayrollManagementPage() {
               {/* Pagination */}
               {payrolls && payrolls.last_page > 1 && (
                 <div className="mt-4">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={payrolls.last_page}
-                    totalItems={payrolls.total}
-                    itemsPerPage={payrolls.per_page}
-                    onPageChange={setCurrentPage}
-                  />
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-gray-500">
+                      Showing {((currentPage - 1) * payrolls.per_page) + 1} to{" "}
+                      {Math.min(currentPage * payrolls.per_page, payrolls.total)} of{" "}
+                      {payrolls.total} results
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4 mr-1" />
+                        Previous
+                      </Button>
+
+                      <div className="flex items-center gap-1">
+                        {/* First page */}
+                        {currentPage > 2 && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(1)}
+                              className="w-8 h-8 p-0"
+                            >
+                              1
+                            </Button>
+                            {currentPage > 3 && (
+                              <span className="px-2 text-muted-foreground">...</span>
+                            )}
+                          </>
+                        )}
+
+                        {/* Current page and surrounding pages */}
+                        {(() => {
+                          const pages = [];
+                          const startPage = Math.max(1, currentPage - 1);
+                          const endPage = Math.min(payrolls.last_page, currentPage + 1);
+
+                          for (let page = startPage; page <= endPage; page++) {
+                            pages.push(page);
+                          }
+
+                          return pages.map((page) => (
+                            <Button
+                              key={page}
+                              variant={currentPage === page ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setCurrentPage(page)}
+                              className="w-8 h-8 p-0"
+                            >
+                              {page}
+                            </Button>
+                          ));
+                        })()}
+
+                        {/* Last page */}
+                        {currentPage < payrolls.last_page - 1 && (
+                          <>
+                            {currentPage < payrolls.last_page - 2 && (
+                              <span className="px-2 text-muted-foreground">...</span>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(payrolls.last_page)}
+                              className="w-8 h-8 p-0"
+                            >
+                              {payrolls.last_page}
+                            </Button>
+                          </>
+                        )}
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(Math.min(payrolls.last_page, currentPage + 1))}
+                        disabled={currentPage === payrolls.last_page}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4 ml-1" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )}
             </>

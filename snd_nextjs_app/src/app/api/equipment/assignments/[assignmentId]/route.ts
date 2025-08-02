@@ -5,10 +5,11 @@ const prisma = new PrismaClient();
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { assignmentId: string } }
+  { params }: { params: Promise<{ assignmentId: string }> }
 ) {
   try {
-    const assignmentId = parseInt(params.assignmentId);
+    const { assignmentId: assignmentIdParam } = await params;
+    const assignmentId = parseInt(assignmentIdParam);
     
     if (isNaN(assignmentId)) {
       return NextResponse.json(
@@ -111,10 +112,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { assignmentId: string } }
+  { params }: { params: Promise<{ assignmentId: string }> }
 ) {
   try {
-    const assignmentId = parseInt(params.assignmentId);
+    const { assignmentId: assignmentIdParam } = await params;
+    const assignmentId = parseInt(assignmentIdParam);
     
     if (isNaN(assignmentId)) {
       return NextResponse.json(

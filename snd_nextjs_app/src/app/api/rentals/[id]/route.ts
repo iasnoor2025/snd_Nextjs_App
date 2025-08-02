@@ -51,7 +51,7 @@ export async function PUT(
 
     // Set update data
     const updateData = {
-      customerId: body.customerId,
+      customerId: parseInt(body.customerId),
       rentalNumber: body.rentalNumber,
       startDate: new Date(body.startDate),
       expectedEndDate: body.expectedEndDate ? new Date(body.expectedEndDate) : null,

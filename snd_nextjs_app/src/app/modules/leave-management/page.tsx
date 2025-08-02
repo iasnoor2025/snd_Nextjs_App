@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
-import { Eye, Edit, Trash2, Plus, Calendar, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Eye, Edit, Trash2, Plus, Calendar, CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 interface LeaveRequest {
@@ -470,13 +470,86 @@ export default function LeaveManagementPage() {
                 {Math.min(leaveRequests.current_page * leaveRequests.per_page, leaveRequests.total)} of{" "}
                 {leaveRequests.total} results
               </div>
-              <Pagination
-                currentPage={leaveRequests.current_page}
-                totalPages={leaveRequests.last_page}
-                totalItems={leaveRequests.total}
-                itemsPerPage={leaveRequests.per_page}
-                onPageChange={setCurrentPage}
-              />
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, leaveRequests.current_page - 1))}
+                  disabled={leaveRequests.current_page === 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {/* First page */}
+                  {leaveRequests.current_page > 2 && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(1)}
+                        className="w-8 h-8 p-0"
+                      >
+                        1
+                      </Button>
+                      {leaveRequests.current_page > 3 && (
+                        <span className="px-2 text-muted-foreground">...</span>
+                      )}
+                    </>
+                  )}
+
+                  {/* Current page and surrounding pages */}
+                  {(() => {
+                    const pages = [];
+                    const startPage = Math.max(1, leaveRequests.current_page - 1);
+                    const endPage = Math.min(leaveRequests.last_page, leaveRequests.current_page + 1);
+
+                    for (let page = startPage; page <= endPage; page++) {
+                      pages.push(page);
+                    }
+
+                    return pages.map((page) => (
+                      <Button
+                        key={page}
+                        variant={leaveRequests.current_page === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(page)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {page}
+                      </Button>
+                    ));
+                  })()}
+
+                  {/* Last page */}
+                  {leaveRequests.current_page < leaveRequests.last_page - 1 && (
+                    <>
+                      {leaveRequests.current_page < leaveRequests.last_page - 2 && (
+                        <span className="px-2 text-muted-foreground">...</span>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(leaveRequests.last_page)}
+                        className="w-8 h-8 p-0"
+                      >
+                        {leaveRequests.last_page}
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(leaveRequests.last_page, leaveRequests.current_page + 1))}
+                  disabled={leaveRequests.current_page === leaveRequests.last_page}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     // Set default values
     const rentalData = {
-      customerId: body.customerId,
+      customerId: parseInt(body.customerId),
       rentalNumber: body.rentalNumber,
       startDate: new Date(body.startDate),
       expectedEndDate: body.expectedEndDate ? new Date(body.expectedEndDate) : undefined,

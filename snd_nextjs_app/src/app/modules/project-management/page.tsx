@@ -33,7 +33,9 @@ import {
   Clock,
   Download,
   Upload,
-  Settings
+  Settings,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -611,13 +613,86 @@ export default function ProjectManagementPage() {
       {/* Pagination */}
       {projects && projects.last_page > 1 && (
         <div className="flex justify-center mt-6">
-          <Pagination
-            currentPage={projects.current_page}
-            totalPages={projects.last_page}
-            totalItems={projects.total}
-            itemsPerPage={projects.per_page}
-            onPageChange={setCurrentPage}
-          />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.max(1, projects.current_page - 1))}
+              disabled={projects.current_page === 1}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+
+            <div className="flex items-center gap-1">
+              {/* First page */}
+              {projects.current_page > 2 && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(1)}
+                    className="w-8 h-8 p-0"
+                  >
+                    1
+                  </Button>
+                  {projects.current_page > 3 && (
+                    <span className="px-2 text-muted-foreground">...</span>
+                  )}
+                </>
+              )}
+
+              {/* Current page and surrounding pages */}
+              {(() => {
+                const pages = [];
+                const startPage = Math.max(1, projects.current_page - 1);
+                const endPage = Math.min(projects.last_page, projects.current_page + 1);
+
+                for (let page = startPage; page <= endPage; page++) {
+                  pages.push(page);
+                }
+
+                return pages.map((page) => (
+                  <Button
+                    key={page}
+                    variant={projects.current_page === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {page}
+                  </Button>
+                ));
+              })()}
+
+              {/* Last page */}
+              {projects.current_page < projects.last_page - 1 && (
+                <>
+                  {projects.current_page < projects.last_page - 2 && (
+                    <span className="px-2 text-muted-foreground">...</span>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(projects.last_page)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {projects.last_page}
+                  </Button>
+                </>
+              )}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.min(projects.last_page, projects.current_page + 1))}
+              disabled={projects.current_page === projects.last_page}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
         </div>
       )}
 

@@ -27,7 +27,9 @@ import {
   Upload,
   Settings,
   Clock,
-  Users
+  Users,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -1093,15 +1095,88 @@ function TimesheetManagementContent() {
         </DialogContent>
       </Dialog>
 
-      {timesheets && (
+      {timesheets && timesheets.last_page > 1 && (
         <div className="mt-6 flex justify-center">
-          <Pagination
-            currentPage={timesheets.current_page}
-            totalPages={timesheets.last_page}
-            totalItems={timesheets.total}
-            itemsPerPage={timesheets.per_page}
-            onPageChange={setCurrentPage}
-          />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.max(1, timesheets.current_page - 1))}
+              disabled={timesheets.current_page === 1}
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Previous
+            </Button>
+
+            <div className="flex items-center gap-1">
+              {/* First page */}
+              {timesheets.current_page > 2 && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(1)}
+                    className="w-8 h-8 p-0"
+                  >
+                    1
+                  </Button>
+                  {timesheets.current_page > 3 && (
+                    <span className="px-2 text-muted-foreground">...</span>
+                  )}
+                </>
+              )}
+
+              {/* Current page and surrounding pages */}
+              {(() => {
+                const pages = [];
+                const startPage = Math.max(1, timesheets.current_page - 1);
+                const endPage = Math.min(timesheets.last_page, timesheets.current_page + 1);
+
+                for (let page = startPage; page <= endPage; page++) {
+                  pages.push(page);
+                }
+
+                return pages.map((page) => (
+                  <Button
+                    key={page}
+                    variant={timesheets.current_page === page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {page}
+                  </Button>
+                ));
+              })()}
+
+              {/* Last page */}
+              {timesheets.current_page < timesheets.last_page - 1 && (
+                <>
+                  {timesheets.current_page < timesheets.last_page - 2 && (
+                    <span className="px-2 text-muted-foreground">...</span>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(timesheets.last_page)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {timesheets.last_page}
+                  </Button>
+                </>
+              )}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.min(timesheets.last_page, timesheets.current_page + 1))}
+              disabled={timesheets.current_page === timesheets.last_page}
+            >
+              Next
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
         </div>
       )}
 

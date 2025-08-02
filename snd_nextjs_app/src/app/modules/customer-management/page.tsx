@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Eye, User, Building, Mail, Phone, Download, Upload, Search, Filter, RefreshCw } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, User, Building, Mail, Phone, Download, Upload, Search, Filter, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Customer {
   id: string;
@@ -789,14 +789,93 @@ export default function CustomerManagementPage() {
             {/* Pagination */}
             {pagination.total > 0 && (
               <div className="mt-6">
-                <Pagination
-                  currentPage={pagination.page}
-                  totalPages={pagination.totalPages}
-                  totalItems={pagination.total}
-                  itemsPerPage={pagination.limit}
-                  onPageChange={handlePageChange}
-                  onItemsPerPageChange={handleItemsPerPageChange}
-                />
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-500">
+                    Showing {((pagination.page - 1) * pagination.limit) + 1} to{" "}
+                    {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
+                    {pagination.total} results
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(Math.max(1, pagination.page - 1))}
+                      disabled={pagination.page === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Previous
+                    </Button>
+
+                    <div className="flex items-center gap-1">
+                      {/* First page */}
+                      {pagination.page > 2 && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePageChange(1)}
+                            className="w-8 h-8 p-0"
+                          >
+                            1
+                          </Button>
+                          {pagination.page > 3 && (
+                            <span className="px-2 text-muted-foreground">...</span>
+                          )}
+                        </>
+                      )}
+
+                      {/* Current page and surrounding pages */}
+                      {(() => {
+                        const pages = [];
+                        const startPage = Math.max(1, pagination.page - 1);
+                        const endPage = Math.min(pagination.totalPages, pagination.page + 1);
+
+                        for (let page = startPage; page <= endPage; page++) {
+                          pages.push(page);
+                        }
+
+                        return pages.map((page) => (
+                          <Button
+                            key={page}
+                            variant={pagination.page === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(page)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {page}
+                          </Button>
+                        ));
+                      })()}
+
+                      {/* Last page */}
+                      {pagination.page < pagination.totalPages - 1 && (
+                        <>
+                          {pagination.page < pagination.totalPages - 2 && (
+                            <span className="px-2 text-muted-foreground">...</span>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handlePageChange(pagination.totalPages)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {pagination.totalPages}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(Math.min(pagination.totalPages, pagination.page + 1))}
+                      disabled={pagination.page === pagination.totalPages}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>

@@ -25,7 +25,9 @@ import {
   XCircle,
   Mail,
   Clock,
-  AlertCircle
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -602,13 +604,93 @@ export default function QuotationsPage() {
           {/* Pagination */}
           {quotations && quotations.last_page > 1 && (
             <div className="mt-4">
-              <Pagination
-                currentPage={currentPage}
-                totalPages={quotations.last_page}
-                totalItems={quotations.total}
-                itemsPerPage={quotations.per_page}
-                onPageChange={setCurrentPage}
-              />
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-500">
+                  Showing {((currentPage - 1) * quotations.per_page) + 1} to{" "}
+                  {Math.min(currentPage * quotations.per_page, quotations.total)} of{" "}
+                  {quotations.total} results
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Previous
+                  </Button>
+
+                  <div className="flex items-center gap-1">
+                    {/* First page */}
+                    {currentPage > 2 && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(1)}
+                          className="w-8 h-8 p-0"
+                        >
+                          1
+                        </Button>
+                        {currentPage > 3 && (
+                          <span className="px-2 text-muted-foreground">...</span>
+                        )}
+                      </>
+                    )}
+
+                    {/* Current page and surrounding pages */}
+                    {(() => {
+                      const pages = [];
+                      const startPage = Math.max(1, currentPage - 1);
+                      const endPage = Math.min(quotations.last_page, currentPage + 1);
+
+                      for (let page = startPage; page <= endPage; page++) {
+                        pages.push(page);
+                      }
+
+                      return pages.map((page) => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {page}
+                        </Button>
+                      ));
+                    })()}
+
+                    {/* Last page */}
+                    {currentPage < quotations.last_page - 1 && (
+                      <>
+                        {currentPage < quotations.last_page - 2 && (
+                          <span className="px-2 text-muted-foreground">...</span>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(quotations.last_page)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {quotations.last_page}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.min(quotations.last_page, currentPage + 1))}
+                    disabled={currentPage === quotations.last_page}
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>
