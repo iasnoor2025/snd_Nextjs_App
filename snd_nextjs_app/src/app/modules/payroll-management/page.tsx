@@ -7,6 +7,7 @@ import { useRBAC } from '@/lib/rbac/rbac-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EmployeeDropdown } from "@/components/ui/employee-dropdown";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -592,19 +593,21 @@ export default function PayrollManagementPage() {
 
             <div className="space-y-2">
               <Label htmlFor="employee">Employee</Label>
-              <Select value={employeeFilter} onValueChange={setEmployeeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select employee" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Employees</SelectItem>
-                  {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id.toString()}>
-                      {employee.full_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant={employeeFilter === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setEmployeeFilter("all")}
+                >
+                  All Employees
+                </Button>
+                <EmployeeDropdown
+                  value={employeeFilter === "all" ? "" : employeeFilter}
+                  onValueChange={(value) => setEmployeeFilter(value || "all")}
+                  placeholder="Select employee"
+                  showSearch={true}
+                />
+              </div>
             </div>
           </div>
         </CardContent>

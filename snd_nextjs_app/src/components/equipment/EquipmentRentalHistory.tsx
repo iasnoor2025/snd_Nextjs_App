@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { EmployeeDropdown } from "@/components/ui/employee-dropdown";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { 
   History, 
@@ -842,29 +842,13 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
            <form onSubmit={handleManualAssignmentSubmit} className="space-y-4">
              {/* Employee Selection */}
              <div className="space-y-2">
-               <Label htmlFor="employee">Employee *</Label>
-               <Select 
-                 value={manualAssignmentForm.employeeId} 
+               <EmployeeDropdown
+                 value={manualAssignmentForm.employeeId}
                  onValueChange={(value) => setManualAssignmentForm(prev => ({ ...prev, employeeId: value }))}
-               >
-                 <SelectTrigger>
-                   <SelectValue placeholder="Select an employee" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   {employees.map((employee) => (
-                     <SelectItem key={employee.id} value={employee.id.toString()}>
-                       <div className="flex flex-col">
-                         <span className="font-medium">
-                           {employee.first_name} {employee.last_name}
-                         </span>
-                         <span className="text-sm text-muted-foreground">
-                           ID: {employee.employee_id}
-                         </span>
-                       </div>
-                     </SelectItem>
-                   ))}
-                 </SelectContent>
-               </Select>
+                 label="Employee"
+                 placeholder="Select an employee"
+                 required={true}
+               />
              </div>
 
              {/* Date Range */}
@@ -964,29 +948,13 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
            <form onSubmit={handleEditAssignmentSubmit} className="space-y-4">
              {/* Employee Selection */}
              <div className="space-y-2">
-               <Label htmlFor="edit-employee">Employee *</Label>
-               <Select 
-                 value={editAssignmentForm.employeeId} 
+               <EmployeeDropdown
+                 value={editAssignmentForm.employeeId}
                  onValueChange={(value) => setEditAssignmentForm(prev => ({ ...prev, employeeId: value }))}
-               >
-                 <SelectTrigger>
-                   <SelectValue placeholder="Select an employee" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   {employees.map((employee) => (
-                     <SelectItem key={employee.id} value={employee.id.toString()}>
-                       <div className="flex flex-col">
-                         <span className="font-medium">
-                           {employee.first_name} {employee.last_name}
-                         </span>
-                         <span className="text-sm text-muted-foreground">
-                           ID: {employee.employee_id}
-                         </span>
-                       </div>
-                     </SelectItem>
-                   ))}
-                 </SelectContent>
-               </Select>
+                 label="Employee"
+                 placeholder="Select an employee"
+                 required={true}
+               />
              </div>
 
              {/* Date Range */}

@@ -32,52 +32,7 @@ export async function GET(
         serial_number: true,
         description: true,
         created_at: true,
-        updated_at: true,
-        equipment_rental_history: {
-          where: {
-            status: 'active',
-            end_date: null
-          },
-          select: {
-            id: true,
-            assignment_type: true,
-            start_date: true,
-            end_date: true,
-            status: true,
-            notes: true,
-            daily_rate: true,
-            total_amount: true,
-            project: {
-              select: {
-                id: true,
-                name: true,
-                location: true
-              }
-            },
-            rental: {
-              select: {
-                id: true,
-                rental_number: true,
-                project: {
-                  select: {
-                    id: true,
-                    name: true
-                  }
-                }
-              }
-            },
-            employee: {
-              select: {
-                id: true,
-                first_name: true,
-                last_name: true,
-                file_number: true
-              }
-            }
-          },
-          take: 1,
-          orderBy: { start_date: 'desc' }
-        }
+        updated_at: true
       }
     });
 
@@ -88,8 +43,29 @@ export async function GET(
       );
     }
 
-    // Transform the data to include current assignment
-    const currentAssignment = equipment.equipment_rental_history[0];
+    // Get current assignment for this equipment
+    const currentAssignment = await prisma.equipmentRentalHistory.findFirst({
+      where: {
+        equipment_id: id,
+        status: 'active',
+        end_date: null
+      },
+      select: {
+        id: true,
+        assignment_type: true,
+        project: {
+          select: {
+            name: true
+          }
+        },
+        rental: {
+          select: {
+            rental_number: true
+          }
+        }
+      }
+    });
+    
     const equipmentWithAssignment = {
       ...equipment,
       current_assignment: currentAssignment ? {
@@ -98,26 +74,10 @@ export async function GET(
         name: currentAssignment.assignment_type === 'project' && currentAssignment.project 
           ? currentAssignment.project.name 
           : currentAssignment.assignment_type === 'rental' && currentAssignment.rental
-          ? `${currentAssignment.rental.project?.name || 'Unknown Project'} - ${currentAssignment.rental.rental_number}`
+          ? `Rental: ${currentAssignment.rental.rental_number}`
           : currentAssignment.assignment_type,
-        location: currentAssignment.project?.location || null,
-        start_date: currentAssignment.start_date,
-        end_date: currentAssignment.end_date,
-        status: currentAssignment.status,
-        notes: currentAssignment.notes,
-        project: currentAssignment.project,
-        rental: currentAssignment.rental ? {
-          id: currentAssignment.rental.id,
-          rental_number: currentAssignment.rental.rental_number,
-          project: currentAssignment.rental.project
-        } : null,
-        employee: currentAssignment.employee ? {
-          id: currentAssignment.employee.id,
-          name: `${currentAssignment.employee.first_name} ${currentAssignment.employee.last_name}`.trim(),
-          file_number: currentAssignment.employee.file_number
-        } : null
-      } : null,
-      equipment_rental_history: undefined // Remove the raw assignments array
+        status: 'active'
+      } : null
     };
 
     return NextResponse.json({
@@ -127,7 +87,11 @@ export async function GET(
   } catch (error) {
     console.error('Error fetching equipment:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch equipment' },
+      { 
+        success: false,
+        error: 'Failed to fetch equipment',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

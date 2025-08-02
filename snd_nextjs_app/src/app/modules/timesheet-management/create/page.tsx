@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -480,22 +481,14 @@ function CreateTimesheetContent() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="employee_id">Employee *</Label>
-                <Select value={data.employeeId} onValueChange={handleEmployeeChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an employee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {employees.map((employee) => (
-                      <SelectItem key={employee.id} value={employee.id}>
-                        {employee.firstName} {employee.lastName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors?.employeeId && (
-                  <p className="text-sm text-red-600">{errors.employeeId}</p>
-                )}
+                <EmployeeDropdown
+                  value={data.employeeId}
+                  onValueChange={handleEmployeeChange}
+                  label="Employee"
+                  placeholder="Select an employee"
+                  required={true}
+                  error={errors?.employeeId}
+                />
               </div>
 
               {/* Assignment Selection for Bulk */}

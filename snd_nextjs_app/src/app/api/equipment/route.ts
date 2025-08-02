@@ -25,11 +25,52 @@ export async function GET(request: NextRequest) {
     
     console.log(`Found ${equipment.length} equipment items`);
     
-    // Add current_assignment field for compatibility
-    const equipmentWithAssignments = equipment.map(item => ({
-      ...item,
-      current_assignment: null
-    }));
+    // Get current assignments for equipment that have them
+    const currentAssignments = await prisma.equipmentRentalHistory.findMany({
+      where: {
+        status: 'active',
+        end_date: null
+      },
+      select: {
+        equipment_id: true,
+        assignment_type: true,
+        project: {
+          select: {
+            name: true
+          }
+        },
+        rental: {
+          select: {
+            rental_number: true
+          }
+        }
+      }
+    });
+    
+    // Create a map of equipment_id to assignment info
+    const assignmentMap = new Map();
+    currentAssignments.forEach(assignment => {
+      assignmentMap.set(assignment.equipment_id, assignment);
+    });
+    
+    // Add assignment info to equipment
+    const equipmentWithAssignments = equipment.map(item => {
+      const assignment = assignmentMap.get(item.id);
+      
+      return {
+        ...item,
+        current_assignment: assignment ? {
+          id: assignment.equipment_id,
+          type: assignment.assignment_type,
+          name: assignment.assignment_type === 'project' && assignment.project 
+            ? assignment.project.name 
+            : assignment.assignment_type === 'rental' && assignment.rental
+            ? `Rental: ${assignment.rental.rental_number}`
+            : assignment.assignment_type,
+          status: 'active'
+        } : null
+      };
+    });
 
     return NextResponse.json({ 
       success: true,

@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AssignmentDialog } from "./components/AssignmentDialog";
 import { 
   ArrowLeft,
   Plus,
@@ -242,8 +242,20 @@ export default function EquipmentAssignmentPage() {
         </Button>
       </div>
 
-      {/* Current Assignment */}
-      {equipment.current_assignment && (
+      {/* Assignment Dialog */}
+      <AssignmentDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        equipmentId={equipmentId}
+        onSuccess={() => {
+          fetchData();
+          setShowCreateDialog(false);
+        }}
+      />
+
+
+      {/* Current Assignment */}  
+      {equipment?.current_assignment && ( 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
