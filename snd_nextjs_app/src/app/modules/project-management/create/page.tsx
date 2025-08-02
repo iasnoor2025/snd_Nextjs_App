@@ -96,13 +96,49 @@ export default function CreateProjectPage() {
 
   const fetchInitialData = async () => {
     try {
-      // TODO: These endpoints don't exist yet, so we'll set empty arrays
-      // Implement these when the endpoints become available
-      setCustomers([]);
-      setLocations([]);
-      setEmployees([]);
+      // Fetch customers
+      try {
+        const customersResponse = await apiService.get('/customers?limit=1000') as any; 
+        if (customersResponse.success) {
+          setCustomers(customersResponse.data || []);
+        } else {
+          console.error('Failed to fetch customers');
+          setCustomers([]);
+        }
+      } catch (error) {
+        console.error('Error fetching customers:', error);
+        setCustomers([]);
+      }
+
+      // Fetch locations (optional - might not be implemented yet)
+      try {
+        const locationsResponse = await apiService.get('/locations?limit=1000') as any;
+        if (locationsResponse.success) {
+          setLocations(locationsResponse.data || []);
+        } else {
+          console.log('Locations API not available yet');
+          setLocations([]);
+        }
+      } catch (error) {
+        console.log('Locations API not available yet');
+        setLocations([]);
+      }
+
+      // Fetch employees
+      try {
+        const employeesResponse = await apiService.getEmployees({ per_page: 1000 });
+        if (employeesResponse.success) {
+          setEmployees(employeesResponse.data || []);
+        } else {
+          console.error('Failed to fetch employees');
+          setEmployees([]);
+        }
+      } catch (error) {
+        console.error('Error fetching employees:', error);
+        setEmployees([]);
+      }
     } catch (error) {
-      console.error('Error fetching initial data:', error);
+      console.error('Error in fetchInitialData:', error);
       toast.error('Failed to load initial data');
     }
   };

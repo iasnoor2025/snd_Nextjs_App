@@ -1090,3 +1090,21 @@ model EquipmentRentalHistory {
 
   @@map("equipment_rental_history")
 }
+
+model Location {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  address     String?
+  city        String?
+  state       String?
+  zip_code    String?
+  country     String?
+  latitude    Decimal?  @db.Decimal(10, 8)
+  longitude   Decimal?  @db.Decimal(11, 8)
+  is_active   Boolean   @default(true)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+
+  @@map("locations")
+}

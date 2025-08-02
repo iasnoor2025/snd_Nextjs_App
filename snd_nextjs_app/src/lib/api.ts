@@ -3,7 +3,8 @@ class ApiService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    // For Next.js API routes, use the same domain
+    this.baseUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
   }
 
   private async request<T>(
@@ -88,8 +89,15 @@ class ApiService {
   }
 
   // Employee Methods
-  async getEmployees() {
-    return this.get('/employees');
+  async getEmployees(params?: { per_page?: number; page?: number; search?: string }) {
+    const queryParams = new URLSearchParams();
+    if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/employees?${queryString}` : '/employees';
+    return this.get(endpoint);
   }
 }
 
