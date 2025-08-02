@@ -158,8 +158,8 @@ export default function TaskDialog({
         ...formData,
         completion_percentage: finalCompletionPercentage,
         assigned_to_id: formData.assigned_to_id === 'none' ? null : formData.assigned_to_id,
-        project_id: projectId,
-        type: 'tasks'
+        type: 'tasks',
+        name: formData.name || formData.title || 'Task'
       };
 
       // TODO: Project resource endpoints don't exist yet

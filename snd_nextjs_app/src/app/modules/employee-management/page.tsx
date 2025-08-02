@@ -42,6 +42,27 @@ interface Employee {
   phone?: string | null;
   nationality?: string | null;
   hourly_rate: number | null;
+  current_assignment?: {
+    id: number;
+    type: string;
+    name: string;
+    location: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    status: string;
+    notes: string | null;
+    project?: {
+      id: number;
+      name: string;
+      location: string | null;
+    } | null;
+    rental?: {
+      id: number;
+      project_name: string;
+      rental_number: string;
+      location: string | null;
+    } | null;
+  } | null;
 }
 
 export default function EmployeeManagementPage() {
@@ -53,6 +74,7 @@ export default function EmployeeManagementPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [assignmentFilter, setAssignmentFilter] = useState('all');
   const [sortField, setSortField] = useState<string>('file_number');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isLoading, setIsLoading] = useState(true);
@@ -263,6 +285,9 @@ export default function EmployeeManagementPage() {
 
       const matchesStatus = statusFilter === 'all' || employee.status === statusFilter;
       const matchesDepartment = departmentFilter === 'all' || employee.department === departmentFilter;
+      // const matchesAssignment = assignmentFilter === 'all' || 
+      //   (assignmentFilter === 'assigned' && employee.current_assignment) ||
+      //   (assignmentFilter === 'unassigned' && !employee.current_assignment);
 
       return matchesSearch && matchesStatus && matchesDepartment;
     });
@@ -389,6 +414,69 @@ export default function EmployeeManagementPage() {
           </div>
         </div>
 
+        {/* Assignment Statistics - Temporarily disabled */}
+        {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Employees</p>
+                  <p className="text-2xl font-bold">{employees.length}</p>
+                </div>
+                <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-blue-600 text-sm">👥</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Currently Assigned</p>
+                  <p className="text-2xl font-bold">{employees.filter(emp => emp.current_assignment).length}</p>
+                </div>
+                <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <span className="text-green-600 text-sm">📋</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Project Assignments</p>
+                  <p className="text-2xl font-bold">
+                    {employees.filter(emp => emp.current_assignment?.type === 'project').length}
+                  </p>
+                </div>
+                <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
+                  <span className="text-purple-600 text-sm">🏗️</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Rental Assignments</p>
+                  <p className="text-2xl font-bold">
+                    {employees.filter(emp => emp.current_assignment?.type === 'rental').length}
+                  </p>
+                </div>
+                <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
+                  <span className="text-orange-600 text-sm">🚛</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div> */}
+
         <Card>
           <CardHeader>
             <CardTitle>{t('employee:title')}</CardTitle>
@@ -436,6 +524,17 @@ export default function EmployeeManagementPage() {
                     <SelectItem value="Finance">{t('employee:departments.finance')}</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Assignment Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Assignments</SelectItem>
+                    <SelectItem value="assigned">Currently Assigned</SelectItem>
+                    <SelectItem value="unassigned">Not Assigned</SelectItem>
+                  </SelectContent>
+                </Select> */}
               </div>
 
             <div className="rounded-md border">
@@ -478,6 +577,11 @@ export default function EmployeeManagementPage() {
                         {getSortIcon('department')}
                       </div>
                     </TableHead>
+                    {/* <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        Current Assignment
+                      </div>
+                    </TableHead> */}
                     <TableHead
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleSort('status')}
@@ -516,8 +620,14 @@ export default function EmployeeManagementPage() {
                         <TableCell className={`font-mono ${isRTL ? 'text-right' : 'text-left'}`}>{employee.file_number || 'N/A'}</TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           <div>
-                            <div className="font-medium">
+                            <div className="font-medium flex items-center gap-2">
                               {employee.full_name || 'N/A'}
+                              {/* {employee.current_assignment && (
+                                <Badge variant="outline" className="text-xs">
+                                  {employee.current_assignment.type === 'project' ? '📋 Project' : 
+                                   employee.current_assignment.type === 'rental' ? '🚛 Rental' : '📋 Assigned'}
+                                </Badge>
+                              )} */}
                             </div>
                             <div className="text-sm text-muted-foreground">
                               {employee.designation || 'N/A'}
@@ -526,6 +636,36 @@ export default function EmployeeManagementPage() {
                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.email || 'N/A'}</TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.department || 'N/A'}</TableCell>
+                        {/* <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                          {employee.current_assignment ? (
+                            <div className="space-y-1">
+                              <div className="font-medium text-sm">
+                                {employee.current_assignment.name}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {employee.current_assignment.type === 'project' && employee.current_assignment.project ? (
+                                  <span>Project: {employee.current_assignment.project.name}</span>
+                                ) : employee.current_assignment.type === 'rental' && employee.current_assignment.rental ? (
+                                  <span>Rental: {employee.current_assignment.rental.project_name} - {employee.current_assignment.rental.rental_number}</span>
+                                ) : (
+                                  <span>{employee.current_assignment.type}</span>
+                                )}
+                              </div>
+                              {employee.current_assignment.location && (
+                                <div className="text-xs text-muted-foreground">
+                                  📍 {employee.current_assignment.location}
+                                </div>
+                              )}
+                              {employee.current_assignment.start_date && (
+                                <div className="text-xs text-muted-foreground">
+                                  Since: {new Date(employee.current_assignment.start_date).toLocaleDateString())
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-sm">No assignment</span>
+                          )}
+                        </TableCell> */}
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
                             {employee.status || 'N/A'}
@@ -541,6 +681,16 @@ export default function EmployeeManagementPage() {
                                 </Button>
                               </Link>
                             </Can>
+
+                            {/* <Can action="read" subject="Employee">
+                              <Link href={`/modules/employee-management/${employee.id}/assignments`}>
+                                <Button variant="ghost" size="sm" title="Manage Assignments">
+                                  <div className="h-4 w-4 flex items-center justify-center">
+                                    <span className="text-xs">📋</span>
+                                  </div>
+                                </Button>
+                              </Link>
+                            </Can> */}
 
                             <Can action="update" subject="Employee">
                               <Link href={`/modules/employee-management/${employee.id}/edit`}>

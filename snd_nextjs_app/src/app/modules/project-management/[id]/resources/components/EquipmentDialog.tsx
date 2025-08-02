@@ -23,6 +23,7 @@ interface EquipmentResource {
   id?: string;
   equipment_id?: string;
   equipment_name?: string;
+  name?: string; // Add name field
   operator_name?: string;
   start_date?: string;
   end_date?: string;
@@ -54,6 +55,7 @@ export default function EquipmentDialog({
   const [formData, setFormData] = useState<EquipmentResource>({
     equipment_id: '',
     equipment_name: '',
+    name: '', // Add name field
     operator_name: '',
     start_date: '',
     end_date: '',
@@ -84,6 +86,7 @@ export default function EquipmentDialog({
       setFormData({
         equipment_id: '',
         equipment_name: '',
+        name: '', // Add name field
         operator_name: '',
         start_date: '',
         end_date: '',
@@ -140,6 +143,7 @@ export default function EquipmentDialog({
           if (selectedEquipment) {
             newData.equipment_id = value;
             newData.equipment_name = selectedEquipment.name;
+            newData.name = selectedEquipment.name; // Set name from equipment
             // Calculate hourly rate from daily rate (assuming 8-hour workday)
             const hourlyRate = selectedEquipment.daily_rate ? selectedEquipment.daily_rate / 8 : 0;
             newData.hourly_rate = hourlyRate;
@@ -147,6 +151,7 @@ export default function EquipmentDialog({
         } else {
           newData.equipment_id = '';
           newData.equipment_name = '';
+          newData.name = ''; // Clear name
           newData.hourly_rate = 0;
         }
       }
@@ -188,9 +193,9 @@ export default function EquipmentDialog({
 
       const submitData = {
         ...formData,
-        project_id: projectId,
         type: 'equipment',
-        total_cost: (formData.hourly_rate * formData.usage_hours) + (formData.maintenance_cost || 0)
+        name: formData.name || formData.equipment_name || (formData.equipment_id ? equipment.find(eq => eq.id === formData.equipment_id)?.name : ''),
+        total_cost: (formData.hourly_rate || 0) * (formData.usage_hours || 0)
       };
 
       // TODO: Project resource endpoints don't exist yet

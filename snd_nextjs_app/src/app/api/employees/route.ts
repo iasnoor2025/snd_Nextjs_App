@@ -78,6 +78,8 @@ function formatEmployeeForFrontend(employee: any) {
     access_restriction_reason: employee.access_restriction_reason,
     created_at: employee.created_at?.toISOString().split('T')[0] || null,
     updated_at: employee.updated_at?.toISOString().split('T')[0] || null,
+    // Current assignment information (temporarily disabled)
+    current_assignment: null
   };
 }
 
@@ -111,7 +113,7 @@ export async function GET(request: NextRequest) {
 
     console.log('Query parameters:', { search, status, department, page, limit });
 
-    // Fetch employees from database
+    // Fetch employees from database (temporarily without assignments to debug)
     const employees = await prisma.employee.findMany({
       include: {
         department: true,

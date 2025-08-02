@@ -125,8 +125,8 @@ export default function ExpenseDialog({
 
       const submitData = {
         ...formData,
-        project_id: projectId,
         type: 'expense',
+        name: formData.name || `${formData.category} Expense`,
         total_cost: formData.amount || 0
       };
 

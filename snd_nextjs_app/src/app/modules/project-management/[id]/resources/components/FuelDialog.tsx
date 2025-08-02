@@ -26,6 +26,7 @@ interface FuelResource {
   equipment_id?: string;
   equipment_name?: string;
   fuel_type?: string;
+  name?: string; // Add name field
   liters?: number;
   price_per_liter?: number;
   total_cost?: number;
@@ -174,8 +175,8 @@ export default function FuelDialog({
 
       const submitData = {
         ...formData,
-        project_id: projectId,
         type: 'fuel',
+        name: formData.name || `${formData.fuel_type} Fuel`,
         total_cost: (formData.liters || 0) * (formData.price_per_liter || 0)
       };
 

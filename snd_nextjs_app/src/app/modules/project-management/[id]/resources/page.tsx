@@ -169,61 +169,85 @@ export default function ProjectResourcesPage() {
 
       // Fetch project resources
       const resourcesResponse = await apiService.getProjectResources(projectId) as any;
+      
       if (resourcesResponse.success) {
-        setResources(resourcesResponse.data || []);
+        // Transform the API response to match our frontend structure
+        const transformedResources = (resourcesResponse.data || []).map((resource: any) => ({
+          id: resource.id.toString(),
+          type: resource.type,
+          name: resource.name || resource.title || resource.worker_name || resource.equipment_name || resource.material_name || 'Unnamed Resource',
+          description: resource.description,
+          quantity: resource.quantity,
+          unit_cost: resource.unit_cost ? parseFloat(resource.unit_cost) : undefined,
+          total_cost: resource.total_cost ? parseFloat(resource.total_cost) : undefined,
+          date: resource.date,
+          status: resource.status,
+          notes: resource.notes,
+
+          // Manpower specific fields
+          employee_id: resource.employee_id?.toString(),
+          employee: resource.employee ? {
+            id: resource.employee.id.toString(),
+            first_name: resource.employee.first_name,
+            last_name: resource.employee.last_name,
+            full_name: `${resource.employee.first_name} ${resource.employee.last_name}`
+          } : undefined,
+          worker_name: resource.worker_name,
+          job_title: resource.job_title,
+          daily_rate: resource.daily_rate ? parseFloat(resource.daily_rate) : undefined,
+          days_worked: resource.days_worked,
+          start_date: resource.start_date,
+          end_date: resource.end_date,
+          total_days: resource.total_days,
+
+          // Equipment specific fields
+          equipment_id: resource.equipment_id?.toString(),
+          equipment_name: resource.equipment_name,
+          operator_name: resource.operator_name,
+          hourly_rate: resource.hourly_rate ? parseFloat(resource.hourly_rate) : undefined,
+          hours_worked: resource.hours_worked ? parseFloat(resource.hours_worked) : undefined,
+          usage_hours: resource.usage_hours ? parseFloat(resource.usage_hours) : undefined,
+          maintenance_cost: resource.maintenance_cost ? parseFloat(resource.maintenance_cost) : undefined,
+
+          // Material specific fields
+          material_name: resource.material_name,
+          unit: resource.unit,
+          unit_price: resource.unit_price ? parseFloat(resource.unit_price) : undefined,
+          material_id: resource.material_id?.toString(),
+
+          // Fuel specific fields
+          fuel_type: resource.fuel_type,
+          liters: resource.liters ? parseFloat(resource.liters) : undefined,
+          price_per_liter: resource.price_per_liter ? parseFloat(resource.price_per_liter) : undefined,
+
+          // Expense specific fields
+          category: resource.category,
+          expense_description: resource.expense_description,
+          amount: resource.amount ? parseFloat(resource.amount) : undefined,
+
+          // Task specific fields
+          title: resource.title,
+          priority: resource.priority,
+          due_date: resource.due_date,
+          completion_percentage: resource.completion_percentage,
+          assigned_to: resource.assigned_to ? {
+            id: resource.assigned_to.id.toString(),
+            name: `${resource.assigned_to.first_name} ${resource.assigned_to.last_name}`
+          } : undefined,
+          assigned_to_id: resource.assigned_to_id?.toString(),
+
+          created_at: resource.created_at,
+          updated_at: resource.updated_at
+        }));
+        setResources(transformedResources);
       } else {
         setResources([]);
       }
 
     } catch (error) {
       console.error('Error fetching data:', error);
-      // Use mock data when API fails
-      setProject({
-        id: projectId,
-        name: 'Office Building Construction',
-        budget: 2500000
-      });
-
-      // Mock resources with proper type structure
-      const mockResources: ProjectResource[] = [
-        {
-          id: '1',
-          type: 'manpower',
-          name: 'John Doe',
-          description: 'Site Engineer',
-          daily_rate: 250,
-          total_days: 30,
-          total_cost: 7500,
-          status: 'in_progress',
-          date: '2024-01-15',
-          worker_name: 'John Doe',
-          job_title: 'Site Engineer',
-          start_date: '2024-01-15',
-          end_date: '2024-02-15',
-          created_at: '2024-01-15T00:00:00Z',
-          updated_at: '2024-01-15T00:00:00Z'
-        },
-        {
-          id: '2',
-          type: 'equipment',
-          name: 'Excavator',
-          description: 'CAT-320 Excavator',
-          hourly_rate: 100,
-          usage_hours: 160,
-          total_cost: 16000,
-          status: 'completed',
-          date: '2024-01-10',
-          equipment_name: 'CAT-320',
-          operator_name: 'Mike Johnson',
-          start_date: '2024-01-10',
-          end_date: '2024-01-20',
-          created_at: '2024-01-10T00:00:00Z',
-          updated_at: '2024-01-10T00:00:00Z'
-        }
-      ];
-
-      setResources(mockResources);
-      toast.info('Using demo data - backend not available');
+      toast.error('Failed to fetch project data');
+      setResources([]);
     } finally {
       setLoading(false);
     }
@@ -557,88 +581,103 @@ export default function ProjectResourcesPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filterResourcesByType(type).map((resource) => (
-                      <TableRow key={resource.id}>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{resource.name || resource.title}</div>
-                            {resource.description && (
-                              <div className="text-sm text-muted-foreground truncate max-w-xs">
-                                {resource.description}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            {type === 'manpower' && (
-                              <>
-                                {resource.job_title && <div>{resource.job_title}</div>}
-                                {resource.daily_rate && <div>Rate: ${resource.daily_rate}/day</div>}
-                                {resource.total_days && <div>Days: {resource.total_days}</div>}
-                              </>
-                            )}
-                            {type === 'equipment' && (
-                              <>
-                                {resource.operator_name && <div>Operator: {resource.operator_name}</div>}
-                                {resource.hourly_rate && <div>Rate: ${resource.hourly_rate}/hr</div>}
-                                {resource.usage_hours && <div>Hours: {resource.usage_hours}</div>}
-                              </>
-                            )}
-                            {type === 'material' && (
-                              <>
-                                {resource.quantity && <div>Qty: {resource.quantity}</div>}
-                                {resource.unit && <div>Unit: {resource.unit}</div>}
-                                {resource.unit_price && <div>Price: ${resource.unit_price}</div>}
-                              </>
-                            )}
-                            {type === 'fuel' && (
-                              <>
-                                {resource.liters && <div>Liters: {resource.liters}</div>}
-                                {resource.price_per_liter && <div>Price: ${resource.price_per_liter}/L</div>}
-                              </>
-                            )}
-                            {type === 'expense' && (
-                              <>
-                                {resource.category && <div>Category: {resource.category}</div>}
-                                {resource.expense_description && <div>{resource.expense_description}</div>}
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">
-                            ${(resource.total_cost || 0).toLocaleString()}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(resource.status)}>
-                            {resource.status.replace('_', ' ')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {resource.date && format(new Date(resource.date), 'MMM dd, yyyy')}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleEditResource(resource)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteResource(resource)}
-                            >
-                              <Trash2 className="h-4 w-4" />
+                    {filterResourcesByType(type).length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8">
+                          <div className="flex flex-col items-center space-y-2">
+                            {getResourceTypeIcon(type)}
+                            <p className="text-muted-foreground">No {type} resources found</p>
+                            <Button size="sm" onClick={() => handleAddResource(type)}>
+                              <Plus className="h-4 w-4 mr-2" />
+                              Add {type.charAt(0).toUpperCase() + type.slice(1)}
                             </Button>
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      filterResourcesByType(type).map((resource) => (
+                        <TableRow key={resource.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{resource.name || resource.title}</div>
+                              {resource.description && (
+                                <div className="text-sm text-muted-foreground truncate max-w-xs">
+                                  {resource.description}
+                                </div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              {type === 'manpower' && (
+                                <>
+                                  {resource.job_title && <div>{resource.job_title}</div>}
+                                  {resource.daily_rate && <div>Rate: ${resource.daily_rate}/day</div>}
+                                  {resource.total_days && <div>Days: {resource.total_days}</div>}
+                                </>
+                              )}
+                              {type === 'equipment' && (
+                                <>
+                                  {resource.operator_name && <div>Operator: {resource.operator_name}</div>}
+                                  {resource.hourly_rate && <div>Rate: ${resource.hourly_rate}/hr</div>}
+                                  {resource.usage_hours && <div>Hours: {resource.usage_hours}</div>}
+                                </>
+                              )}
+                              {type === 'material' && (
+                                <>
+                                  {resource.quantity && <div>Qty: {resource.quantity}</div>}
+                                  {resource.unit && <div>Unit: {resource.unit}</div>}
+                                  {resource.unit_price && <div>Price: ${resource.unit_price}</div>}
+                                </>
+                              )}
+                              {type === 'fuel' && (
+                                <>
+                                  {resource.liters && <div>Liters: {resource.liters}</div>}
+                                  {resource.price_per_liter && <div>Price: ${resource.price_per_liter}/L</div>}
+                                </>
+                              )}
+                              {type === 'expense' && (
+                                <>
+                                  {resource.category && <div>Category: {resource.category}</div>}
+                                  {resource.expense_description && <div>{resource.expense_description}</div>}
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium">
+                              ${(resource.total_cost || 0).toLocaleString()}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(resource.status)}>
+                              {resource.status.replace('_', ' ')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {resource.date && format(new Date(resource.date), 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditResource(resource)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteResource(resource)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>

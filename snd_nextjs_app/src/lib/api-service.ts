@@ -839,6 +839,41 @@ export class ApiService {
       throw error;
     }
   }
+
+  // Employee Assignment Methods
+  static async getEmployeeAssignments(employeeId: number) {
+    return this.get(`/employees/${employeeId}/assignments`);
+  }
+
+  static async createEmployeeAssignment(employeeId: number, data: {
+    project_id: number;
+    start_date: string;
+    end_date?: string;
+    role?: string;
+    daily_rate?: number;
+    notes?: string;
+    status?: string;
+  }) {
+    return this.post(`/employees/${employeeId}/assignments`, data);
+  }
+
+  static async updateEmployeeAssignment(employeeId: number, assignmentId: number, data: {
+    project_id?: number;
+    start_date?: string;
+    end_date?: string;
+    role?: string;
+    daily_rate?: number;
+    notes?: string;
+    status?: string;
+  }) {
+    return this.put(`/employees/${employeeId}/assignments/${assignmentId}`, data);
+  }
+
+  static async deleteEmployeeAssignment(employeeId: number, assignmentId: number) {
+    return this.delete(`/employees/${employeeId}/assignments/${assignmentId}`);
+  }
+
+  // Equipment Assignment Methods
 }
 
 export default ApiService; 

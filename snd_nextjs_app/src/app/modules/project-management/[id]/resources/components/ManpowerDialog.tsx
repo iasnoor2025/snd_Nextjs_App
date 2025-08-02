@@ -27,6 +27,7 @@ interface ManpowerResource {
   id?: string;
   employee_id?: string;
   worker_name?: string;
+  name?: string; // Add name field
   job_title?: string;
   start_date?: string;
   end_date?: string;
@@ -58,6 +59,7 @@ export default function ManpowerDialog({
   const [formData, setFormData] = useState<ManpowerResource>({
     employee_id: '',
     worker_name: '',
+    name: '', // Add name field
     job_title: '',
     start_date: '',
     end_date: '',
@@ -88,6 +90,7 @@ export default function ManpowerDialog({
       setFormData({
         employee_id: '',
         worker_name: '',
+        name: '', // Add name field
         job_title: '',
         start_date: '',
         end_date: '',
@@ -143,6 +146,7 @@ export default function ManpowerDialog({
           if (selectedEmployee) {
             newData.employee_id = value;
             newData.worker_name = '';
+            newData.name = `${selectedEmployee.first_name} ${selectedEmployee.last_name}`; // Set name from employee
             newData.job_title = selectedEmployee.designation || '';
             // Calculate daily rate from hourly rate (10 hours per day)
             const dailyRate = selectedEmployee.hourly_rate ? selectedEmployee.hourly_rate * 10 : 0;
@@ -150,12 +154,14 @@ export default function ManpowerDialog({
           }
         } else {
           newData.employee_id = '';
+          newData.name = '';
         }
       }
 
       // Handle worker name
       if (field === 'worker_name') {
         newData.worker_name = value;
+        newData.name = value; // Set name to worker name
         newData.employee_id = '';
       }
 
@@ -192,24 +198,38 @@ export default function ManpowerDialog({
 
       const submitData = {
         ...formData,
-        project_id: projectId,
         type: 'manpower',
+        name: formData.name || formData.worker_name || (formData.employee_id ? employees.find(emp => emp.id === formData.employee_id)?.first_name + ' ' + employees.find(emp => emp.id === formData.employee_id)?.last_name : ''),
         total_cost: (formData.daily_rate || 0) * (formData.total_days || 0)
       };
 
+      console.log('Submitting manpower data:', submitData);
+      console.log('Project ID:', projectId);
+      console.log('Form data before submit:', formData);
+      console.log('Use employee:', useEmployee);
+
       if (initialData?.id) {
+        console.log('Updating resource with ID:', initialData.id);
         await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
         toast.success('Manpower resource updated successfully');
       } else {
-        await apiService.post(`/projects/${projectId}/resources`, submitData);
-        toast.success('Manpower resource added successfully');
+        console.log('Creating new resource');
+        try {
+          const response = await apiService.post(`/projects/${projectId}/resources`, submitData);
+          console.log('API response:', response);
+          toast.success('Manpower resource added successfully');
+        } catch (apiError) {
+          console.error('API Error details:', apiError);
+          throw apiError;
+        }
       }
 
       onSuccess();
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving manpower resource:', error);
-      toast.error('Failed to save manpower resource');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save manpower resource';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -221,6 +241,7 @@ export default function ManpowerDialog({
       setFormData(prev => ({
         ...prev,
         worker_name: '',
+        name: '', // Clear name when switching to employee
         employee_id: '',
         job_title: '',
         daily_rate: 0,
@@ -231,6 +252,7 @@ export default function ManpowerDialog({
       setFormData(prev => ({
         ...prev,
         employee_id: '',
+        name: '', // Clear name when switching to worker
         worker_name: '',
         job_title: '',
         daily_rate: 0,
@@ -261,10 +283,10 @@ export default function ManpowerDialog({
                 <h4 className="font-medium">Link to Employee</h4>
                 <p className="text-sm text-muted-foreground">Do you want to connect this resource to an employee?</p>
               </div>
-              <Toggle
+              <Toggle 
                 pressed={useEmployee}
                 onPressedChange={handleUseEmployeeChange}
-                className="h-8 min-w-12"
+                className="h-8 min-w-12" 
                 disabled={!!initialData?.employee_id}
               />
             </div>

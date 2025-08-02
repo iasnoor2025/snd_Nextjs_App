@@ -18,8 +18,9 @@ interface MaterialResource {
   id?: string;
   material_id?: string;
   material_name?: string;
-  unit?: string;
+  name?: string; // Add name field
   quantity?: number;
+  unit?: string;
   unit_price?: number;
   total_cost?: number;
   date_used?: string;
@@ -159,8 +160,8 @@ export default function MaterialDialog({
 
       const submitData = {
         ...formData,
-        project_id: projectId,
         type: 'material',
+        name: formData.name || formData.material_name || (formData.material_id ? materials.find(mat => mat.id === formData.material_id)?.name : ''),
         total_cost: (formData.quantity || 0) * (formData.unit_price || 0)
       };
 

@@ -156,6 +156,53 @@ export async function POST(
       }
     });
 
+    // If this is a manpower resource with an employee, create an employee assignment
+    if (body.type === 'manpower' && body.employee_id) {
+      try {
+        console.log('Creating employee assignment for employee:', body.employee_id);
+        await prisma.employeeAssignment.create({
+          data: {
+            employee_id: parseInt(body.employee_id),
+            project_id: parseInt(projectId),
+            name: `${body.name} Assignment`,
+            start_date: body.start_date ? new Date(body.start_date) : new Date(),
+            end_date: body.end_date ? new Date(body.end_date) : null,
+            notes: body.notes,
+            status: 'active',
+            type: 'project'
+          }
+        });
+        console.log('Employee assignment created successfully');
+      } catch (assignmentError) {
+        console.error('Error creating employee assignment:', assignmentError);
+        // Don't fail the resource creation if assignment creation fails
+      }
+    }
+
+    // If this is an equipment resource, create an equipment assignment
+    if (body.type === 'equipment' && body.equipment_id) {
+      try {
+        console.log('Creating equipment assignment for equipment:', body.equipment_id);
+        await prisma.equipmentRentalHistory.create({
+          data: {
+            equipment_id: parseInt(body.equipment_id),
+            assignment_type: 'project',
+            project_id: parseInt(projectId),
+            start_date: body.start_date ? new Date(body.start_date) : new Date(),
+            end_date: body.end_date ? new Date(body.end_date) : null,
+            daily_rate: body.hourly_rate ? parseFloat(body.hourly_rate) * 8 : null, // Convert hourly to daily
+            total_amount: body.total_cost ? parseFloat(body.total_cost) : null,
+            notes: body.notes,
+            status: 'active'
+          }
+        });
+        console.log('Equipment assignment created successfully');
+      } catch (assignmentError) {
+        console.error('Error creating equipment assignment:', assignmentError);
+        // Don't fail the resource creation if assignment creation fails
+      }
+    }
+
     return NextResponse.json({ 
       success: true,
       data: resource 
