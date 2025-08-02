@@ -1,51 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/db';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const syncERPNext = searchParams.get('sync_erpnext');
-    const source = searchParams.get('source');
-
-    // If sync_erpnext is requested, trigger ERPNext sync first
-    if (syncERPNext === 'true') {
-      try {
-        const syncResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/erpnext/equipment?action=sync`, {
-          method: 'GET'
-        });
-        
-        if (syncResponse.ok) {
-          const syncResult = await syncResponse.json();
-          console.log('ERPNext sync result:', syncResult);
-        }
-      } catch (error) {
-        console.error('Error syncing from ERPNext:', error);
-      }
-    }
-
-    // If source is erpnext, fetch from ERPNext API
-    if (source === 'erpnext') {
-      try {
-        const erpResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/erpnext/equipment`);
-        if (erpResponse.ok) {
-          const erpData = await erpResponse.json();
-          return NextResponse.json({ 
-            success: true,
-            data: erpData.data || [],
-            source: 'erpnext',
-            count: erpData.count || 0
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching from ERPNext:', error);
-      }
-    }
-
-    // Default: fetch from local database
+    console.log('Fetching equipment from database...');
+    
     const equipment = await prisma.equipment.findMany({
-      where: { is_active: true },
       select: {
         id: true,
         name: true,
@@ -62,19 +22,28 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { name: 'asc' }
     });
+    
+    console.log(`Found ${equipment.length} equipment items`);
+    
+    // Add current_assignment field for compatibility
+    const equipmentWithAssignments = equipment.map(item => ({
+      ...item,
+      current_assignment: null
+    }));
 
     return NextResponse.json({ 
       success: true,
-      data: equipment,
+      data: equipmentWithAssignments,
       source: 'local',
-      count: equipment.length
+      count: equipmentWithAssignments.length
     });
   } catch (error) {
     console.error('Error fetching equipment:', error);
     return NextResponse.json(
       { 
         success: false,
-        error: 'Failed to fetch equipment' 
+        error: 'Failed to fetch equipment',
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
     );

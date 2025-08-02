@@ -28,6 +28,8 @@ interface Employee {
   current_location?: string;
   hourly_rate?: number;
   basic_salary?: number;
+  contract_days_per_month?: number;
+  contract_hours_per_day?: number;
   address?: string;
   city?: string;
   state?: string;
@@ -79,6 +81,8 @@ export default function EditEmployeePage() {
     current_location: "",
     hourly_rate: "",
     basic_salary: "",
+    contract_days_per_month: "26",
+    contract_hours_per_day: "8",
     address: "",
     city: "",
     state: "",
@@ -109,7 +113,7 @@ export default function EditEmployeePage() {
         const result = await response.json();
 
         if (result.success) {
-          const emp = result.data;
+          const emp = result.employee;
           setEmployee(emp);
           setFormData({
             first_name: emp.first_name || "",
@@ -124,8 +128,10 @@ export default function EditEmployeePage() {
             date_of_birth: emp.date_of_birth ? emp.date_of_birth.split('T')[0] : "",
             nationality: emp.nationality || "",
             current_location: emp.current_location || "",
-            hourly_rate: emp.hourly_rate?.toString() || "",
-            basic_salary: emp.basic_salary?.toString() || "",
+            hourly_rate: emp.hourly_rate ? emp.hourly_rate.toString() : "",
+            basic_salary: emp.basic_salary ? emp.basic_salary.toString() : "",
+            contract_days_per_month: emp.contract_days_per_month ? emp.contract_days_per_month.toString() : "26",
+            contract_hours_per_day: emp.contract_hours_per_day ? emp.contract_hours_per_day.toString() : "8",
             address: emp.address || "",
             city: emp.city || "",
             state: emp.state || "",
@@ -182,8 +188,10 @@ export default function EditEmployeePage() {
         },
         body: JSON.stringify({
           ...formData,
-          hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
-          basic_salary: formData.basic_salary ? parseFloat(formData.basic_salary) : null,
+          hourly_rate: formData.hourly_rate && formData.hourly_rate.trim() !== '' ? parseFloat(formData.hourly_rate) : null,
+          basic_salary: formData.basic_salary && formData.basic_salary.trim() !== '' ? parseFloat(formData.basic_salary) : null,
+          contract_days_per_month: formData.contract_days_per_month ? parseInt(formData.contract_days_per_month) : 26,
+          contract_hours_per_day: formData.contract_hours_per_day ? parseInt(formData.contract_hours_per_day) : 8,
         }),
       });
 
@@ -203,11 +211,32 @@ export default function EditEmployeePage() {
     }
   };
 
+  const calculateHourlyRate = (basicSalary: number, contractDays: number, contractHours: number): number => {
+    if (contractDays <= 0 || contractHours <= 0) {
+      return 0;
+    }
+    return Math.round((basicSalary / (contractDays * contractHours)) * 100) / 100;
+  };
+
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      };
+
+      // Auto-calculate hourly rate when basic salary, contract days, or contract hours change
+      if (field === 'basic_salary' || field === 'contract_days_per_month' || field === 'contract_hours_per_day') {
+        const basicSalary = parseFloat(newData.basic_salary) || 0;
+        const contractDays = parseFloat(newData.contract_days_per_month) || 26;
+        const contractHours = parseFloat(newData.contract_hours_per_day) || 8;
+        
+        const calculatedHourlyRate = calculateHourlyRate(basicSalary, contractDays, contractHours);
+        newData.hourly_rate = calculatedHourlyRate.toString();
+      }
+
+      return newData;
+    });
   };
 
   if (loading) {
@@ -402,18 +431,6 @@ export default function EditEmployeePage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="hourly_rate">Hourly Rate</Label>
-                <Input
-                  id="hourly_rate"
-                  type="number"
-                  step="0.01"
-                  value={formData.hourly_rate}
-                  onChange={(e) => handleInputChange('hourly_rate', e.target.value)}
-                  placeholder="Enter hourly rate"
-                />
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="basic_salary">Basic Salary</Label>
                 <Input
                   id="basic_salary"
@@ -422,6 +439,48 @@ export default function EditEmployeePage() {
                   value={formData.basic_salary}
                   onChange={(e) => handleInputChange('basic_salary', e.target.value)}
                   placeholder="Enter basic salary"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contract_days_per_month">Contract Days Per Month</Label>
+                <Input
+                  id="contract_days_per_month"
+                  type="number"
+                  min="1"
+                  max="31"
+                  value={formData.contract_days_per_month}
+                  onChange={(e) => handleInputChange('contract_days_per_month', e.target.value)}
+                  placeholder="Enter contract days per month"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="contract_hours_per_day">Contract Hours Per Day</Label>
+                <Input
+                  id="contract_hours_per_day"
+                  type="number"
+                  min="1"
+                  max="24"
+                  value={formData.contract_hours_per_day}
+                  onChange={(e) => handleInputChange('contract_hours_per_day', e.target.value)}
+                  placeholder="Enter contract hours per day"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="hourly_rate">Hourly Rate (Auto-calculated)</Label>
+                <Input
+                  id="hourly_rate"
+                  type="number"
+                  step="0.01"
+                  value={formData.hourly_rate}
+                  onChange={(e) => handleInputChange('hourly_rate', e.target.value)}
+                  placeholder="Auto-calculated hourly rate"
+                  readOnly
+                  className="bg-gray-50"
                 />
               </div>
             </div>

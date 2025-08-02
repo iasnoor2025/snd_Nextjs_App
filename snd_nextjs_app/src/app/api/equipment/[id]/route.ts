@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
@@ -34,7 +32,52 @@ export async function GET(
         serial_number: true,
         description: true,
         created_at: true,
-        updated_at: true
+        updated_at: true,
+        equipment_rental_history: {
+          where: {
+            status: 'active',
+            end_date: null
+          },
+          select: {
+            id: true,
+            assignment_type: true,
+            start_date: true,
+            end_date: true,
+            status: true,
+            notes: true,
+            daily_rate: true,
+            total_amount: true,
+            project: {
+              select: {
+                id: true,
+                name: true,
+                location: true
+              }
+            },
+            rental: {
+              select: {
+                id: true,
+                rental_number: true,
+                project: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                }
+              }
+            },
+            employee: {
+              select: {
+                id: true,
+                first_name: true,
+                last_name: true,
+                file_number: true
+              }
+            }
+          },
+          take: 1,
+          orderBy: { start_date: 'desc' }
+        }
       }
     });
 
@@ -45,9 +88,41 @@ export async function GET(
       );
     }
 
+    // Transform the data to include current assignment
+    const currentAssignment = equipment.equipment_rental_history[0];
+    const equipmentWithAssignment = {
+      ...equipment,
+      current_assignment: currentAssignment ? {
+        id: currentAssignment.id,
+        type: currentAssignment.assignment_type,
+        name: currentAssignment.assignment_type === 'project' && currentAssignment.project 
+          ? currentAssignment.project.name 
+          : currentAssignment.assignment_type === 'rental' && currentAssignment.rental
+          ? `${currentAssignment.rental.project?.name || 'Unknown Project'} - ${currentAssignment.rental.rental_number}`
+          : currentAssignment.assignment_type,
+        location: currentAssignment.project?.location || null,
+        start_date: currentAssignment.start_date,
+        end_date: currentAssignment.end_date,
+        status: currentAssignment.status,
+        notes: currentAssignment.notes,
+        project: currentAssignment.project,
+        rental: currentAssignment.rental ? {
+          id: currentAssignment.rental.id,
+          rental_number: currentAssignment.rental.rental_number,
+          project: currentAssignment.rental.project
+        } : null,
+        employee: currentAssignment.employee ? {
+          id: currentAssignment.employee.id,
+          name: `${currentAssignment.employee.first_name} ${currentAssignment.employee.last_name}`.trim(),
+          file_number: currentAssignment.employee.file_number
+        } : null
+      } : null,
+      equipment_rental_history: undefined // Remove the raw assignments array
+    };
+
     return NextResponse.json({
       success: true,
-      data: equipment
+      data: equipmentWithAssignment
     });
   } catch (error) {
     console.error('Error fetching equipment:', error);

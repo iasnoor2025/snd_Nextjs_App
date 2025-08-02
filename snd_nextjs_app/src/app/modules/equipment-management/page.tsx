@@ -57,6 +57,34 @@ interface Equipment {
   erpnext_id?: string;
   serial_number?: string;
   description?: string;
+  current_assignment?: {
+    id: number;
+    type: string;
+    name: string;
+    location: string | null;
+    start_date: string | null;
+    end_date: string | null;
+    status: string;
+    notes: string | null;
+    project?: {
+      id: number;
+      name: string;
+      location: string | null;
+    } | null;
+    rental?: {
+      id: number;
+      rental_number: string;
+      project?: {
+        id: number;
+        name: string;
+      } | null;
+    } | null;
+    employee?: {
+      id: number;
+      name: string;
+      file_number: string;
+    } | null;
+  } | null;
 }
 
 export default function EquipmentManagementPage() {
@@ -65,6 +93,7 @@ export default function EquipmentManagementPage() {
   const [syncing, setSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterAssignment, setFilterAssignment] = useState("all");
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -79,15 +108,19 @@ export default function EquipmentManagementPage() {
   const fetchEquipment = async () => {
     setLoading(true);
     try {
+      console.log('Fetching equipment...');
       const response = await ApiService.getEquipment();
+      console.log('Equipment response:', response);
       if (response.success && Array.isArray(response.data)) {
         setEquipment(response.data);
       } else {
         setEquipment([]);
+        console.error('Equipment response error:', response);
         toast.error('Failed to load equipment');
       }
     } catch (error) {
       setEquipment([]);
+      console.error('Equipment fetch error:', error);
       toast.error('Failed to load equipment');
     } finally {
       setLoading(false);
@@ -116,7 +149,10 @@ export default function EquipmentManagementPage() {
                          (item.model_number && item.model_number.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (item.manufacturer && item.manufacturer.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = filterStatus === 'all' || item.status === filterStatus;
-    return matchesSearch && matchesStatus;
+    const matchesAssignment = filterAssignment === 'all' || 
+                             (filterAssignment === 'assigned' && item.current_assignment) ||
+                             (filterAssignment === 'unassigned' && !item.current_assignment);
+    return matchesSearch && matchesStatus && matchesAssignment;
   });
 
   // Pagination calculations
@@ -126,7 +162,20 @@ export default function EquipmentManagementPage() {
   const endIndex = startIndex + itemsPerPage;
   const currentEquipment = filteredEquipment.slice(startIndex, endIndex);
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (equipment: Equipment) => {
+    // Determine status based on current assignment
+    if (equipment.current_assignment) {
+      const assignment = equipment.current_assignment;
+      if (assignment.status === 'active') {
+        return <Badge variant="secondary">Assigned</Badge>;
+      } else if (assignment.status === 'completed') {
+        return <Badge variant="default">Available</Badge>;
+      } else if (assignment.status === 'pending') {
+        return <Badge variant="outline">Pending</Badge>;
+      }
+    }
+    
+    // Fall back to equipment status if no assignment
     const statusConfig = {
       available: { variant: 'default' as const, label: 'Available' },
       rented: { variant: 'secondary' as const, label: 'Rented' },
@@ -134,7 +183,7 @@ export default function EquipmentManagementPage() {
       out_of_service: { variant: 'destructive' as const, label: 'Out of Service' },
     };
     
-    const config = statusConfig[status as keyof typeof statusConfig] || { variant: 'outline' as const, label: status };
+    const config = statusConfig[equipment.status as keyof typeof statusConfig] || { variant: 'outline' as const, label: equipment.status };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
@@ -205,6 +254,21 @@ export default function EquipmentManagementPage() {
                 <option value="out_of_service">Out of Service</option>
               </select>
             </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="assignment-filter" className="text-sm font-medium">
+                Assignment:
+              </Label>
+              <select
+                id="assignment-filter"
+                value={filterAssignment}
+                onChange={(e) => setFilterAssignment(e.target.value)}
+                className="border rounded-md px-3 py-2 text-sm"
+              >
+                <option value="all">All Assignments</option>
+                <option value="assigned">Currently Assigned</option>
+                <option value="unassigned">Not Assigned</option>
+              </select>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -233,6 +297,7 @@ export default function EquipmentManagementPage() {
                       <TableHead>Model</TableHead>
                       <TableHead>Manufacturer</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Current Assignment</TableHead>
                       <TableHead>Daily Rate</TableHead>
                       <TableHead>ERPNext ID</TableHead>
                       <TableHead>Actions</TableHead>
@@ -259,7 +324,42 @@ export default function EquipmentManagementPage() {
                           <TableCell className="font-medium">{item.name}</TableCell>
                           <TableCell>{item.model_number || '-'}</TableCell>
                           <TableCell>{item.manufacturer || '-'}</TableCell>
-                          <TableCell>{getStatusBadge(item.status)}</TableCell>
+                          <TableCell>{getStatusBadge(item)}</TableCell>
+                          <TableCell>
+                            {item.current_assignment ? (
+                              <div className="space-y-1">
+                                <div className="font-medium text-sm">
+                                  {item.current_assignment.name}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                                                   {item.current_assignment.type === 'project' && item.current_assignment.project ? (
+                                   <span>Project: {item.current_assignment.project.name}</span>
+                                 ) : item.current_assignment.type === 'rental' && item.current_assignment.rental ? (
+                                   <span>Rental: {item.current_assignment.rental.project?.name || 'Unknown Project'} - {item.current_assignment.rental.rental_number}</span>
+                                 ) : (
+                                   <span>{item.current_assignment.type}</span>
+                                 )}
+                                </div>
+                                {item.current_assignment.employee && (
+                                  <div className="text-xs text-muted-foreground">
+                                    👤 {item.current_assignment.employee.name} ({item.current_assignment.employee.file_number})
+                                  </div>
+                                )}
+                                {item.current_assignment.location && (
+                                  <div className="text-xs text-muted-foreground">
+                                    📍 {item.current_assignment.location}
+                                  </div>
+                                )}
+                                {item.current_assignment.start_date && (
+                                  <div className="text-xs text-muted-foreground">
+                                    Since: {new Date(item.current_assignment.start_date).toLocaleDateString()}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">No assignment</span>
+                            )}
+                          </TableCell>
                           <TableCell>
                             {item.daily_rate ? `$${item.daily_rate.toFixed(2)}` : '-'}
                           </TableCell>
@@ -281,6 +381,16 @@ export default function EquipmentManagementPage() {
                                 onClick={() => router.push(`/modules/equipment-management/${item.id}/edit`)}
                               >
                                 <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => router.push(`/modules/equipment-management/${item.id}/assign`)}
+                                title="Manage Assignments"
+                              >
+                                <div className="h-4 w-4 flex items-center justify-center">
+                                  <span className="text-xs">📋</span>
+                                </div>
                               </Button>
                               <Button variant="ghost" size="sm">
                                 <Trash2 className="h-4 w-4" />

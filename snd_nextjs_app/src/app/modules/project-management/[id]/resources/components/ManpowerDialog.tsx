@@ -6,22 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Toggle } from '@/components/ui/toggle';
+import { Switch } from '@/components/ui/switch';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, Users, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { EmployeeDropdown, type Employee } from '@/components/ui/employee-dropdown';
 import apiService from '@/lib/api';
-
-interface Employee {
-  id: string;
-  first_name: string;
-  last_name: string;
-  designation?: string;
-  hourly_rate?: number;
-}
 
 interface ManpowerResource {
   id?: string;
@@ -53,7 +45,6 @@ export default function ManpowerDialog({
   initialData,
   onSuccess
 }: ManpowerDialogProps) {
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
   const [useEmployee, setUseEmployee] = useState(initialData?.employee_id ? true : false);
   const [formData, setFormData] = useState<ManpowerResource>({
@@ -70,12 +61,7 @@ export default function ManpowerDialog({
     status: 'pending'
   });
 
-  // Load employees when dialog opens
-  useEffect(() => {
-    if (open && !initialData?.employee_id) {
-      loadEmployees();
-    }
-  }, [open]);
+  // No need to load employees here - handled by EmployeeDropdown component
 
   // Initialize form data when editing
   useEffect(() => {
@@ -104,20 +90,7 @@ export default function ManpowerDialog({
     }
   }, [initialData]);
 
-  const loadEmployees = async () => {
-    try {
-      const response = await apiService.get<{ data: Employee[] }>('/employees');
-      setEmployees(response.data || []);
-    } catch (error) {
-      console.error('Error loading employees:', error);
-      // Use mock data if API fails
-      setEmployees([
-        { id: '1', first_name: 'John', last_name: 'Doe', designation: 'Engineer', hourly_rate: 25 },
-        { id: '2', first_name: 'Jane', last_name: 'Smith', designation: 'Manager', hourly_rate: 35 },
-        { id: '3', first_name: 'Mike', last_name: 'Johnson', designation: 'Technician', hourly_rate: 20 }
-      ]);
-    }
-  };
+  // Employee loading is now handled by the EmployeeDropdown component
 
   // Calculate total days when start/end dates change
   useEffect(() => {
@@ -142,16 +115,9 @@ export default function ManpowerDialog({
       // Handle employee selection
       if (field === 'employee_id') {
         if (value) {
-          const selectedEmployee = employees.find(emp => emp.id === value);
-          if (selectedEmployee) {
-            newData.employee_id = value;
-            newData.worker_name = '';
-            newData.name = `${selectedEmployee.first_name} ${selectedEmployee.last_name}`; // Set name from employee
-            newData.job_title = selectedEmployee.designation || '';
-            // Calculate daily rate from hourly rate (10 hours per day)
-            const dailyRate = selectedEmployee.hourly_rate ? selectedEmployee.hourly_rate * 10 : 0;
-            newData.daily_rate = dailyRate;
-          }
+          newData.employee_id = value;
+          newData.worker_name = '';
+          // Name and other details will be populated when employee is selected
         } else {
           newData.employee_id = '';
           newData.name = '';
@@ -199,7 +165,7 @@ export default function ManpowerDialog({
       const submitData = {
         ...formData,
         type: 'manpower',
-        name: formData.name || formData.worker_name || (formData.employee_id ? employees.find(emp => emp.id === formData.employee_id)?.first_name + ' ' + employees.find(emp => emp.id === formData.employee_id)?.last_name : ''),
+        name: formData.name || formData.worker_name || '',
         total_cost: (formData.daily_rate || 0) * (formData.total_days || 0)
       };
 
@@ -283,10 +249,9 @@ export default function ManpowerDialog({
                 <h4 className="font-medium">Link to Employee</h4>
                 <p className="text-sm text-muted-foreground">Do you want to connect this resource to an employee?</p>
               </div>
-              <Toggle 
-                pressed={useEmployee}
-                onPressedChange={handleUseEmployeeChange}
-                className="h-8 min-w-12" 
+              <Switch 
+                checked={useEmployee}
+                onCheckedChange={handleUseEmployeeChange}
                 disabled={!!initialData?.employee_id}
               />
             </div>
@@ -294,27 +259,19 @@ export default function ManpowerDialog({
 
           {useEmployee ? (
             <div className="space-y-2">
-              <Label htmlFor="employee_id">Select Employee</Label>
               {initialData && initialData.employee_id ? (
                 <div className="rounded bg-gray-100 p-2 text-gray-800">
-                  {employees.find(emp => emp.id === initialData.employee_id)?.first_name} {employees.find(emp => emp.id === initialData.employee_id)?.last_name}
+                  Employee ID: {initialData.employee_id}
                 </div>
               ) : (
-                <Select
+                <EmployeeDropdown
                   value={formData.employee_id || ''}
                   onValueChange={(value) => handleInputChange('employee_id', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an employee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {employees.map((employee) => (
-                      <SelectItem key={employee.id} value={employee.id}>
-                        {employee.first_name} {employee.last_name} - {employee.designation}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  label="Select Employee"
+                  placeholder="Select an employee"
+                  required={true}
+                  showSearch={true}
+                />
               )}
             </div>
           ) : (
