@@ -163,7 +163,7 @@ model Employee {
   advance_payment_histories          AdvancePaymentHistory[]
   advance_payments                   AdvancePayment[]
   employee_assignments               EmployeeAssignment[]
-  equipment_assignments              EquipmentAssignment[]        @relation("EquipmentAssignmentEmployee")
+
   employee_documents                 EmployeeDocument[]
   employee_leaves                    EmployeeLeave[]
   employee_performance_reviews       EmployeePerformanceReview[]
@@ -767,32 +767,8 @@ model Equipment {
   assigned_employee           Employee?    @relation("EquipmentAssignedTo", fields: [assigned_to], references: [id])
   rental_items                RentalItem[]
   equipment_rental_history    EquipmentRentalHistory[]
-  equipment_assignments       EquipmentAssignment[]
 
   @@map("equipment")
-}
-
-model EquipmentAssignment {
-  id          Int         @id @default(autoincrement())
-  equipment_id Int
-  project_id  Int?
-  rental_id   Int?
-  employee_id Int?
-  start_date  DateTime
-  end_date    DateTime?
-  status      String      @default("active")
-  notes       String?
-  created_at  DateTime    @default(now())
-  updated_at  DateTime    @updatedAt
-  location    String?
-  name        String?
-  type        String      @default("manual")
-  equipment   Equipment   @relation(fields: [equipment_id], references: [id])
-  project     Project?    @relation(fields: [project_id], references: [id])
-  rental      Rental?     @relation(fields: [rental_id], references: [id])
-  employee    Employee?   @relation("EquipmentAssignmentEmployee", fields: [employee_id], references: [id])
-
-  @@map("equipment_assignments")
 }
 
 model Rental {
@@ -837,7 +813,7 @@ model Rental {
   updated_at                  DateTime                   @updatedAt
   deleted_at                  DateTime?
   employee_assignments        EmployeeAssignment[]
-  equipment_assignments       EquipmentAssignment[]
+
   rental_items                RentalItem[]
   rental_operator_assignments RentalOperatorAssignment[]
   approved_by_user            User?                      @relation("RentalApprovedBy", fields: [approved_by], references: [id])
@@ -902,7 +878,7 @@ model Project {
   updated_at           DateTime             @updatedAt
   deleted_at           DateTime?
   employee_assignments EmployeeAssignment[]
-  equipment_assignments EquipmentAssignment[]
+
   customer             Customer?            @relation(fields: [customer_id], references: [id])
   rentals              Rental[]
   timesheets           Timesheet[]

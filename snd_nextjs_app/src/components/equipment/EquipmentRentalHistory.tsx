@@ -82,6 +82,7 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
   const [selectedAssignment, setSelectedAssignment] = useState<AssignmentHistoryItem | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showManualAssignmentDialog, setShowManualAssignmentDialog] = useState(false);
+  const [showEditAssignmentDialog, setShowEditAssignmentDialog] = useState(false);
   const [employees, setEmployees] = useState<any[]>([]);
   const [manualAssignmentForm, setManualAssignmentForm] = useState({
     employeeId: '',
@@ -91,7 +92,16 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
     totalAmount: '',
     notes: ''
   });
+  const [editAssignmentForm, setEditAssignmentForm] = useState({
+    employeeId: '',
+    startDate: '',
+    endDate: '',
+    dailyRate: '',
+    totalAmount: '',
+    notes: ''
+  });
   const [submittingManualAssignment, setSubmittingManualAssignment] = useState(false);
+  const [submittingEditAssignment, setSubmittingEditAssignment] = useState(false);
 
   useEffect(() => {
     fetchAssignmentHistory();
@@ -105,7 +115,7 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
       if (response.success) {
         setAssignmentHistory(response.data || []);
       } else {
-        setError(response.error || 'Failed to load assignment history');
+        setError(response.message || 'Failed to load assignment history');
       }
     } catch (error) {
       console.error('Error fetching assignment history:', error);
@@ -190,7 +200,7 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
 
     try {
       const assignmentData = {
-        assignment_type: 'manual',
+        assignment_type: 'manual' as const,
         start_date: manualAssignmentForm.startDate,
         end_date: manualAssignmentForm.endDate || undefined,
         daily_rate: manualAssignmentForm.dailyRate ? parseFloat(manualAssignmentForm.dailyRate) : undefined,
@@ -215,12 +225,53 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
         });
         fetchAssignmentHistory(); // Refresh the history
       } else {
-        toast.error(response.error || 'Failed to create manual assignment');
+        toast.error(response.message || 'Failed to create manual assignment');
       }
     } catch (error) {
       toast.error('Failed to create manual assignment');
     } finally {
       setSubmittingManualAssignment(false);
+    }
+  };
+
+  const handleEditAssignmentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAssignment) return;
+    
+    setSubmittingEditAssignment(true);
+
+    try {
+      const assignmentData = {
+        start_date: editAssignmentForm.startDate,
+        end_date: editAssignmentForm.endDate || undefined,
+        daily_rate: editAssignmentForm.dailyRate ? parseFloat(editAssignmentForm.dailyRate) : undefined,
+        total_amount: editAssignmentForm.totalAmount ? parseFloat(editAssignmentForm.totalAmount) : undefined,
+        notes: editAssignmentForm.notes || undefined,
+        employee_id: parseInt(editAssignmentForm.employeeId)
+      };
+
+      const response = await ApiService.updateEquipmentAssignment(selectedAssignment.id, assignmentData);
+      
+      if (response.success) {
+        toast.success('Assignment updated successfully');
+        setShowEditAssignmentDialog(false);
+        setEditAssignmentForm({
+          employeeId: '',
+          startDate: '',
+          endDate: '',
+          dailyRate: '',
+          totalAmount: '',
+          notes: ''
+        });
+        setSelectedAssignment(null);
+        fetchAssignmentHistory(); // Refresh the history
+      } else {
+        toast.error(response.message || 'Failed to update assignment');
+      }
+    } catch (error) {
+      toast.error('Failed to update assignment');
+    } finally {
+      setSubmittingEditAssignment(false);
     }
   };
 
@@ -230,8 +281,25 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
   };
 
   const handleEditAssignment = (assignment: AssignmentHistoryItem) => {
-    // TODO: Implement edit functionality
-    toast.info('Edit functionality coming soon');
+    // Only allow editing manual assignments for now
+    if (assignment.assignment_type !== 'manual') {
+      toast.error('Only manual assignments can be edited');
+      return;
+    }
+
+    // Populate the edit form with current assignment data
+    setEditAssignmentForm({
+      employeeId: assignment.employee_id?.toString() || '',
+      startDate: assignment.start_date ? new Date(assignment.start_date).toISOString().split('T')[0] : '',
+      endDate: assignment.expected_end_date ? new Date(assignment.expected_end_date).toISOString().split('T')[0] : '',
+      dailyRate: assignment.unit_price?.toString() || '',
+      totalAmount: assignment.total_price?.toString() || '',
+      notes: assignment.notes || ''
+    });
+
+    setSelectedAssignment(assignment);
+    fetchEmployees(); // Load employees for the dropdown
+    setShowEditAssignmentDialog(true);
   };
 
   const handleCompleteAssignment = async (assignment: AssignmentHistoryItem) => {
@@ -241,15 +309,14 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
 
     try {
       const response = await ApiService.updateEquipmentAssignment(assignment.id, {
-        status: 'completed',
-        actual_end_date: new Date().toISOString().split('T')[0]
+        status: 'completed'
       });
       
       if (response.success) {
         toast.success('Assignment completed successfully');
         fetchAssignmentHistory();
       } else {
-        toast.error(response.error || 'Failed to complete assignment');
+        toast.error(response.message || 'Failed to complete assignment');
       }
     } catch (error) {
       toast.error('Failed to complete assignment');
@@ -268,7 +335,7 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
         toast.success('Assignment deleted successfully');
         fetchAssignmentHistory();
       } else {
-        toast.error(response.error || 'Failed to delete assignment');
+        toast.error(response.message || 'Failed to delete assignment');
       }
     } catch (error) {
       toast.error('Failed to delete assignment');
@@ -393,16 +460,19 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                             : `Manual: ${getCurrentAssignment()?.employee_name}`
                           }
                         </span>
-                        {getCurrentAssignment()?.rental_status && getRentalStatusBadge(getCurrentAssignment()!.rental_status)}
+                        {getCurrentAssignment()?.rental_status && getRentalStatusBadge(getCurrentAssignment()!.rental_status!)}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         {getCurrentAssignment()?.assignment_type === 'rental' && `Customer: ${getCurrentAssignment()?.customer_name}`}
                         {getCurrentAssignment()?.assignment_type === 'project' && `Project: ${getCurrentAssignment()?.project_name}`}
                         {getCurrentAssignment()?.assignment_type === 'manual' && `Employee: ${getCurrentAssignment()?.employee_name}`}
                       </div>
-                                             <div className="text-sm text-muted-foreground">
-                         Start Date: {format(new Date(getCurrentAssignment()!.rental_start_date || getCurrentAssignment()!.start_date), 'MMM dd, yyyy')}
-                       </div>
+                      <div className="text-sm text-muted-foreground">
+                        Start Date: {getCurrentAssignment()?.rental_start_date || getCurrentAssignment()?.start_date ? 
+                          format(new Date(getCurrentAssignment()!.rental_start_date || getCurrentAssignment()!.start_date!), 'MMM dd, yyyy') : 
+                          'Not specified'
+                        }
+                      </div>
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold">${getCurrentAssignment()!.total_price.toFixed(2)}</div>
@@ -512,10 +582,13 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <div>{format(new Date(assignment.rental_start_date || assignment.start_date), 'MMM dd, yyyy')}</div>
+                            <div>{assignment.rental_start_date || assignment.start_date ? 
+                              format(new Date(assignment.rental_start_date || assignment.start_date!), 'MMM dd, yyyy') : 
+                              'Not specified'
+                            }</div>
                             {(assignment.rental_expected_end_date || assignment.expected_end_date) && (
                               <div className="text-muted-foreground">
-                                to {format(new Date(assignment.rental_expected_end_date || assignment.expected_end_date), 'MMM dd, yyyy')}
+                                to {format(new Date(assignment.rental_expected_end_date || assignment.expected_end_date!), 'MMM dd, yyyy')}
                               </div>
                             )}
                           </div>
@@ -547,18 +620,21 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                                 View Details
                               </DropdownMenuItem>
                               
-                              {assignment.status === 'active' && (
+                              {assignment.status === 'active' && assignment.assignment_type === 'manual' && (
                                 <>
                                   <DropdownMenuItem onClick={() => handleEditAssignment(assignment)}>
                                     <Edit className="h-4 w-4 mr-2" />
                                     Edit Assignment
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleCompleteAssignment(assignment)}>
-                                    <CheckCircle className="h-4 w-4 mr-2" />
-                                    Complete Assignment
-                                  </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                 </>
+                              )}
+                              
+                              {assignment.status === 'active' && (
+                                <DropdownMenuItem onClick={() => handleCompleteAssignment(assignment)}>
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  Complete Assignment
+                                </DropdownMenuItem>
                               )}
                               
                               <DropdownMenuItem 
@@ -676,13 +752,16 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                              <div className="grid grid-cols-2 gap-4">
                  <div>
                    <Label className="text-sm font-medium text-muted-foreground">Start Date</Label>
-                   <p>{format(new Date(selectedAssignment.rental_start_date || selectedAssignment.start_date), 'MMM dd, yyyy')}</p>
+                   <p>{selectedAssignment.rental_start_date || selectedAssignment.start_date ? 
+                    format(new Date(selectedAssignment.rental_start_date || selectedAssignment.start_date!), 'MMM dd, yyyy') : 
+                    'Not specified'
+                  }</p>
                  </div>
                  <div>
                    <Label className="text-sm font-medium text-muted-foreground">Expected End Date</Label>
                    <p>
                      {(selectedAssignment.rental_expected_end_date || selectedAssignment.expected_end_date)
-                       ? format(new Date(selectedAssignment.rental_expected_end_date || selectedAssignment.expected_end_date), 'MMM dd, yyyy')
+                       ? format(new Date(selectedAssignment.rental_expected_end_date || selectedAssignment.expected_end_date!), 'MMM dd, yyyy')
                        : 'Not specified'
                      }
                    </p>
@@ -690,7 +769,10 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                  {(selectedAssignment.rental_actual_end_date || selectedAssignment.actual_end_date) && (
                    <div>
                      <Label className="text-sm font-medium text-muted-foreground">Actual End Date</Label>
-                     <p>{format(new Date(selectedAssignment.rental_actual_end_date || selectedAssignment.actual_end_date), 'MMM dd, yyyy')}</p>
+                     <p>{selectedAssignment.rental_actual_end_date || selectedAssignment.actual_end_date ? 
+                      format(new Date(selectedAssignment.rental_actual_end_date || selectedAssignment.actual_end_date!), 'MMM dd, yyyy') : 
+                      'Not specified'
+                    }</p>
                    </div>
                  )}
                 <div>
@@ -863,6 +945,128 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                    <Plus className="h-4 w-4 mr-2" />
                  )}
                  Create Manual Assignment
+               </Button>
+             </div>
+           </form>
+         </DialogContent>
+       </Dialog>
+
+       {/* Edit Assignment Dialog */}
+       <Dialog open={showEditAssignmentDialog} onOpenChange={setShowEditAssignmentDialog}>
+         <DialogContent className="max-w-2xl">
+           <DialogHeader>
+             <DialogTitle>Edit Assignment</DialogTitle>
+             <DialogDescription>
+               Modify the details of this manual assignment
+             </DialogDescription>
+           </DialogHeader>
+           
+           <form onSubmit={handleEditAssignmentSubmit} className="space-y-4">
+             {/* Employee Selection */}
+             <div className="space-y-2">
+               <Label htmlFor="edit-employee">Employee *</Label>
+               <Select 
+                 value={editAssignmentForm.employeeId} 
+                 onValueChange={(value) => setEditAssignmentForm(prev => ({ ...prev, employeeId: value }))}
+               >
+                 <SelectTrigger>
+                   <SelectValue placeholder="Select an employee" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   {employees.map((employee) => (
+                     <SelectItem key={employee.id} value={employee.id.toString()}>
+                       <div className="flex flex-col">
+                         <span className="font-medium">
+                           {employee.first_name} {employee.last_name}
+                         </span>
+                         <span className="text-sm text-muted-foreground">
+                           ID: {employee.employee_id}
+                         </span>
+                       </div>
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+             </div>
+
+             {/* Date Range */}
+             <div className="grid grid-cols-2 gap-4">
+               <div className="space-y-2">
+                 <Label htmlFor="edit-start-date">Start Date *</Label>
+                 <Input
+                   id="edit-start-date"
+                   type="date"
+                   value={editAssignmentForm.startDate}
+                   onChange={(e) => setEditAssignmentForm(prev => ({ ...prev, startDate: e.target.value }))}
+                   required
+                 />
+               </div>
+               <div className="space-y-2">
+                 <Label htmlFor="edit-end-date">End Date (Optional)</Label>
+                 <Input
+                   id="edit-end-date"
+                   type="date"
+                   value={editAssignmentForm.endDate}
+                   onChange={(e) => setEditAssignmentForm(prev => ({ ...prev, endDate: e.target.value }))}
+                   min={editAssignmentForm.startDate}
+                 />
+               </div>
+             </div>
+
+             {/* Financial Information */}
+             <div className="grid grid-cols-2 gap-4">
+               <div className="space-y-2">
+                 <Label htmlFor="edit-daily-rate">Daily Rate</Label>
+                 <Input
+                   id="edit-daily-rate"
+                   type="number"
+                   step="0.01"
+                   placeholder="0.00"
+                   value={editAssignmentForm.dailyRate}
+                   onChange={(e) => setEditAssignmentForm(prev => ({ ...prev, dailyRate: e.target.value }))}
+                 />
+               </div>
+               <div className="space-y-2">
+                 <Label htmlFor="edit-total-amount">Total Amount (Optional)</Label>
+                 <Input
+                   id="edit-total-amount"
+                   type="number"
+                   step="0.01"
+                   placeholder="0.00"
+                   value={editAssignmentForm.totalAmount}
+                   onChange={(e) => setEditAssignmentForm(prev => ({ ...prev, totalAmount: e.target.value }))}
+                 />
+               </div>
+             </div>
+
+             {/* Notes */}
+             <div className="space-y-2">
+               <Label htmlFor="edit-notes">Notes</Label>
+               <Textarea
+                 id="edit-notes"
+                 placeholder="Add any additional notes about this assignment..."
+                 value={editAssignmentForm.notes}
+                 onChange={(e) => setEditAssignmentForm(prev => ({ ...prev, notes: e.target.value }))}
+                 rows={3}
+               />
+             </div>
+
+             {/* Dialog Footer */}
+             <div className="flex justify-end space-x-2 pt-4">
+               <Button
+                 type="button"
+                 variant="outline"
+                 onClick={() => setShowEditAssignmentDialog(false)}
+               >
+                 Cancel
+               </Button>
+               <Button type="submit" disabled={submittingEditAssignment}>
+                 {submittingEditAssignment ? (
+                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                 ) : (
+                   <Edit className="h-4 w-4 mr-2" />
+                 )}
+                 Update Assignment
                </Button>
              </div>
            </form>

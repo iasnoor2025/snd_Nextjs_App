@@ -330,6 +330,31 @@ export class ApiService {
     });
   }
 
+  static async updateEquipmentAssignment(assignmentId: number, data: {
+    assignment_type?: 'rental' | 'project' | 'manual';
+    project_id?: number;
+    employee_id?: number;
+    rental_id?: number;
+    start_date?: string;
+    end_date?: string;
+    daily_rate?: number;
+    total_amount?: number;
+    notes?: string;
+    status?: string;
+  }) {
+    return this.put(`/equipment/assignments/${assignmentId}`, data, {
+      toastMessage: 'Equipment assignment updated successfully',
+      errorMessage: 'Failed to update equipment assignment',
+    });
+  }
+
+  static async deleteEquipmentAssignment(assignmentId: number) {
+    return this.delete(`/equipment/assignments/${assignmentId}`, {
+      toastMessage: 'Equipment assignment deleted successfully',
+      errorMessage: 'Failed to delete equipment assignment',
+    });
+  }
+
   // ========================================
   // ERPNext EQUIPMENT INTEGRATION
   // ========================================

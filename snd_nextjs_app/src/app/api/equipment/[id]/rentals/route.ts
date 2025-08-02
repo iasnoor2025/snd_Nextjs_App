@@ -94,7 +94,6 @@ export async function GET(
       unit_price: item.daily_rate || 0,
       total_price: item.total_amount || 0,
       rate_type: 'daily', // Default for manual/project assignments
-      days: item.days || null,
       status: item.status,
       notes: item.notes,
       rental_start_date: item.start_date,
