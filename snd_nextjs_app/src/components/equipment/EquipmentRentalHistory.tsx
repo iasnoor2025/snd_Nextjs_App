@@ -180,7 +180,7 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
   };
 
   const getTotalRevenue = () => {
-    return assignmentHistory.reduce((total, assignment) => total + Number(assignment.total_price), 0);
+    return assignmentHistory.reduce((total, assignment) => total + (Number(assignment.total_price) || 0), 0);
   };
 
   const fetchEmployees = async () => {
@@ -475,9 +475,9 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold">${getCurrentAssignment()!.total_price.toFixed(2)}</div>
+                      <div className="text-lg font-bold">${(Number(getCurrentAssignment()!.total_price) || 0).toFixed(2)}</div>
                       <div className="text-sm text-muted-foreground">
-                        {getCurrentAssignment()!.quantity} × ${getCurrentAssignment()!.unit_price.toFixed(2)} {getCurrentAssignment()!.rate_type}
+                        {getCurrentAssignment()!.quantity} × ${(Number(getCurrentAssignment()!.unit_price) || 0).toFixed(2)} {getCurrentAssignment()!.rate_type}
                       </div>
                     </div>
                   </div>
@@ -595,9 +595,9 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                         </TableCell>
                         <TableCell>
                           <div>
-                            <div className="font-medium">${assignment.total_price.toFixed(2)}</div>
+                            <div className="font-medium">${(Number(assignment.total_price) || 0).toFixed(2)}</div>
                             <div className="text-sm text-muted-foreground">
-                              {assignment.quantity} × ${assignment.unit_price.toFixed(2)} {getRateTypeBadge(assignment.rate_type)}
+                              {assignment.quantity} × ${(Number(assignment.unit_price) || 0).toFixed(2)} {getRateTypeBadge(assignment.rate_type)}
                             </div>
                           </div>
                         </TableCell>
@@ -794,11 +794,11 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Unit Price</Label>
-                  <p>${selectedAssignment.unit_price.toFixed(2)}</p>
+                  <p>${(Number(selectedAssignment.unit_price) || 0).toFixed(2)}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Total Price</Label>
-                  <p className="font-bold">${selectedAssignment.total_price.toFixed(2)}</p>
+                  <p className="font-bold">${(Number(selectedAssignment.total_price) || 0).toFixed(2)}</p>
                 </div>
               </div>
 
