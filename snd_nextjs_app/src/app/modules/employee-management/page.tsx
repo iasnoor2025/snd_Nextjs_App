@@ -86,6 +86,14 @@ export default function EmployeeManagementPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Statistics state
+  const [statistics, setStatistics] = useState({
+    totalEmployees: 0,
+    currentlyAssigned: 0,
+    projectAssignments: 0,
+    rentalAssignments: 0
+  });
 
   // Get allowed actions for employee management
   const allowedActions = getAllowedActions('Employee');
@@ -94,12 +102,17 @@ export default function EmployeeManagementPage() {
   
 
   useEffect(() => {
-    fetchEmployees();
+    const loadData = async () => {
+      await fetchEmployees();
+      await fetchStatistics();
+    };
+    loadData();
   }, []);
 
   const fetchEmployees = async () => {
     try {
-      const response = await fetch('/api/employees');
+      // Fetch all employees for search and sorting functionality
+      const response = await fetch('/api/employees?all=true');
       if (response.ok) {
         const result = await response.json() as { success: boolean; data?: Employee[] };
         if (result.success && Array.isArray(result.data)) {
@@ -121,6 +134,36 @@ export default function EmployeeManagementPage() {
       toast.error(t('employee:messages.fetchError'));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchStatistics = async () => {
+    try {
+      const response = await fetch('/api/employees/statistics');
+      if (response.ok) {
+        const result = await response.json() as { success: boolean; data?: any };
+        if (result.success && result.data) {
+          setStatistics(result.data);
+        }
+      } else {
+        console.error('Statistics API returned error:', response.status);
+        // Fallback: use employees array length for total count
+        setStatistics({
+          totalEmployees: employees.length,
+          currentlyAssigned: employees.filter(emp => emp.current_assignment).length,
+          projectAssignments: employees.filter(emp => emp.current_assignment?.type === 'project').length,
+          rentalAssignments: employees.filter(emp => emp.current_assignment?.type === 'rental').length
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching statistics:', error);
+      // Fallback: use employees array length for total count
+      setStatistics({
+        totalEmployees: employees.length,
+        currentlyAssigned: employees.filter(emp => emp.current_assignment).length,
+        projectAssignments: employees.filter(emp => emp.current_assignment?.type === 'project').length,
+        rentalAssignments: employees.filter(emp => emp.current_assignment?.type === 'rental').length
+      });
     }
   };
 
@@ -285,11 +328,11 @@ export default function EmployeeManagementPage() {
 
       const matchesStatus = statusFilter === 'all' || employee.status === statusFilter;
       const matchesDepartment = departmentFilter === 'all' || employee.department === departmentFilter;
-      // const matchesAssignment = assignmentFilter === 'all' || 
-      //   (assignmentFilter === 'assigned' && employee.current_assignment) ||
-      //   (assignmentFilter === 'unassigned' && !employee.current_assignment);
+      const matchesAssignment = assignmentFilter === 'all' || 
+        (assignmentFilter === 'assigned' && employee.current_assignment) ||
+        (assignmentFilter === 'unassigned' && !employee.current_assignment);
 
-      return matchesSearch && matchesStatus && matchesDepartment;
+      return matchesSearch && matchesStatus && matchesDepartment && matchesAssignment;
     });
 
     filtered.sort((a, b) => {
@@ -338,7 +381,7 @@ export default function EmployeeManagementPage() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, departmentFilter, sortField, sortDirection, itemsPerPage]);
+  }, [searchTerm, statusFilter, departmentFilter, assignmentFilter, sortField, sortDirection, itemsPerPage]);
 
   if (isLoading) {
     return (
@@ -414,14 +457,14 @@ export default function EmployeeManagementPage() {
           </div>
         </div>
 
-        {/* Assignment Statistics - Temporarily disabled */}
-        {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {/* Assignment Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Total Employees</p>
-                  <p className="text-2xl font-bold">{employees.length}</p>
+                  <p className="text-2xl font-bold">{statistics.totalEmployees}</p>
                 </div>
                 <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
                   <span className="text-blue-600 text-sm">👥</span>
@@ -435,7 +478,7 @@ export default function EmployeeManagementPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Currently Assigned</p>
-                  <p className="text-2xl font-bold">{employees.filter(emp => emp.current_assignment).length}</p>
+                  <p className="text-2xl font-bold">{statistics.currentlyAssigned}</p>
                 </div>
                 <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
                   <span className="text-green-600 text-sm">📋</span>
@@ -449,9 +492,7 @@ export default function EmployeeManagementPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Project Assignments</p>
-                  <p className="text-2xl font-bold">
-                    {employees.filter(emp => emp.current_assignment?.type === 'project').length}
-                  </p>
+                  <p className="text-2xl font-bold">{statistics.projectAssignments}</p>
                 </div>
                 <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
                   <span className="text-purple-600 text-sm">🏗️</span>
@@ -465,9 +506,7 @@ export default function EmployeeManagementPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Rental Assignments</p>
-                  <p className="text-2xl font-bold">
-                    {employees.filter(emp => emp.current_assignment?.type === 'rental').length}
-                  </p>
+                  <p className="text-2xl font-bold">{statistics.rentalAssignments}</p>
                 </div>
                 <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
                   <span className="text-orange-600 text-sm">🚛</span>
@@ -475,7 +514,7 @@ export default function EmployeeManagementPage() {
               </div>
             </CardContent>
           </Card>
-        </div> */}
+        </div>
 
         <Card>
           <CardHeader>
@@ -525,7 +564,7 @@ export default function EmployeeManagementPage() {
                   </SelectContent>
                 </Select>
 
-                {/* <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
+                <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
                   <SelectTrigger className="w-48">
                     <SelectValue placeholder="Assignment Status" />
                   </SelectTrigger>
@@ -534,7 +573,7 @@ export default function EmployeeManagementPage() {
                     <SelectItem value="assigned">Currently Assigned</SelectItem>
                     <SelectItem value="unassigned">Not Assigned</SelectItem>
                   </SelectContent>
-                </Select> */}
+                </Select>
               </div>
 
             <div className="rounded-md border">
@@ -577,11 +616,11 @@ export default function EmployeeManagementPage() {
                         {getSortIcon('department')}
                       </div>
                     </TableHead>
-                    {/* <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                    <TableHead className={isRTL ? 'text-right' : 'text-left'}>
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
                         Current Assignment
                       </div>
-                    </TableHead> */}
+                    </TableHead>
                     <TableHead
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleSort('status')}
@@ -606,9 +645,9 @@ export default function EmployeeManagementPage() {
                 <TableBody>
                   {currentEmployees.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
+                      <TableCell colSpan={8} className="text-center py-8">
                         <div className="text-muted-foreground">
-                          {searchTerm || statusFilter !== 'all' || departmentFilter !== 'all'
+                          {searchTerm || statusFilter !== 'all' || departmentFilter !== 'all' || assignmentFilter !== 'all'
                             ? t('employee:messages.noEmployeesFilter')
                             : t('employee:messages.noEmployees')}
                         </div>
@@ -622,12 +661,13 @@ export default function EmployeeManagementPage() {
                           <div>
                             <div className="font-medium flex items-center gap-2">
                               {employee.full_name || 'N/A'}
-                              {/* {employee.current_assignment && (
+                              {employee.current_assignment && (
                                 <Badge variant="outline" className="text-xs">
                                   {employee.current_assignment.type === 'project' ? '📋 Project' : 
-                                   employee.current_assignment.type === 'rental' ? '🚛 Rental' : '📋 Assigned'}
+                                   employee.current_assignment.type === 'rental' ? '🚛 Rental' : 
+                                   employee.current_assignment.type === 'manual' ? '🔧 Equipment' : '📋 Assigned'}
                                 </Badge>
-                              )} */}
+                              )}
                             </div>
                             <div className="text-sm text-muted-foreground">
                               {employee.designation || 'N/A'}
@@ -636,7 +676,7 @@ export default function EmployeeManagementPage() {
                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.email || 'N/A'}</TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.department || 'N/A'}</TableCell>
-                        {/* <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           {employee.current_assignment ? (
                             <div className="space-y-1">
                               <div className="font-medium text-sm">
@@ -647,6 +687,8 @@ export default function EmployeeManagementPage() {
                                   <span>Project: {employee.current_assignment.project.name}</span>
                                 ) : employee.current_assignment.type === 'rental' && employee.current_assignment.rental ? (
                                   <span>Rental: {employee.current_assignment.rental.project_name} - {employee.current_assignment.rental.rental_number}</span>
+                                ) : employee.current_assignment.type === 'manual' ? (
+                                  <span>Equipment Assignment: {employee.current_assignment.name}</span>
                                 ) : (
                                   <span>{employee.current_assignment.type}</span>
                                 )}
@@ -658,14 +700,14 @@ export default function EmployeeManagementPage() {
                               )}
                               {employee.current_assignment.start_date && (
                                 <div className="text-xs text-muted-foreground">
-                                  Since: {new Date(employee.current_assignment.start_date).toLocaleDateString())
+                                  Since: {new Date(employee.current_assignment.start_date).toLocaleDateString()}
                                 </div>
                               )}
                             </div>
                           ) : (
                             <span className="text-muted-foreground text-sm">No assignment</span>
                           )}
-                        </TableCell> */}
+                        </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
                             {employee.status || 'N/A'}
@@ -682,15 +724,15 @@ export default function EmployeeManagementPage() {
                               </Link>
                             </Can>
 
-                            {/* <Can action="read" subject="Employee">
-                              <Link href={`/modules/employee-management/${employee.id}/assignments`}>
+                            <Can action="read" subject="Employee">
+                              <Link href={`/modules/employee-management/${employee.id}`}>
                                 <Button variant="ghost" size="sm" title="Manage Assignments">
                                   <div className="h-4 w-4 flex items-center justify-center">
                                     <span className="text-xs">📋</span>
                                   </div>
                                 </Button>
                               </Link>
-                            </Can> */}
+                            </Can>
 
                             <Can action="update" subject="Employee">
                               <Link href={`/modules/employee-management/${employee.id}/edit`}>

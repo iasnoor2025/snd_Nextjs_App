@@ -62,8 +62,8 @@ export function AssignmentDialog({
         toast.error('Please select assignment type');
         return;
       }
-      if (!formData.employee_id) {
-        toast.error('Please select an employee');
+      if (formData.assignment_type === 'manual' && !formData.employee_id) {
+        toast.error('Please select an employee for manual assignment');
         return;
       }
       if (!formData.start_date) {
@@ -72,7 +72,7 @@ export function AssignmentDialog({
       }
 
       // Submit assignment
-      const response = await fetch(`/api/equipment/${equipmentId}/assignments`, {
+      const response = await fetch(`/api/equipment/${equipmentId}/rentals`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -81,7 +81,9 @@ export function AssignmentDialog({
       });
 
       if (response.ok) {
-        toast.success('Equipment assigned successfully');
+        const result = await response.json();
+        const message = result.message || 'Equipment assigned successfully';
+        toast.success(message);
         onSuccess();
         onOpenChange(false);
       } else {
@@ -141,7 +143,7 @@ export function AssignmentDialog({
               onValueChange={(value) => handleInputChange('employee_id', value)}
               label="Employee"
               placeholder="Select an employee"
-              required={true}
+              required={formData.assignment_type === 'manual'}
             />
           </div>
 

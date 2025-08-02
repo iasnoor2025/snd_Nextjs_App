@@ -28,12 +28,9 @@ export async function GET(request: NextRequest) {
     // Get current assignments for equipment that have them
     const currentAssignments = await prisma.equipmentRentalHistory.findMany({
       where: {
-        status: 'active',
-        end_date: null
+        status: 'active'
       },
-      select: {
-        equipment_id: true,
-        assignment_type: true,
+      include: {
         project: {
           select: {
             name: true
@@ -42,6 +39,12 @@ export async function GET(request: NextRequest) {
         rental: {
           select: {
             rental_number: true
+          }
+        },
+        employee: {
+          select: {
+            first_name: true,
+            last_name: true
           }
         }
       }
@@ -57,16 +60,25 @@ export async function GET(request: NextRequest) {
     const equipmentWithAssignments = equipment.map(item => {
       const assignment = assignmentMap.get(item.id);
       
+      let assignmentName = '';
+      if (assignment) {
+        if (assignment.assignment_type === 'project' && assignment.project) {
+          assignmentName = assignment.project.name;
+        } else if (assignment.assignment_type === 'rental' && assignment.rental) {
+          assignmentName = `Rental: ${assignment.rental.rental_number}`;
+        } else if (assignment.assignment_type === 'manual' && assignment.employee) {
+          assignmentName = `${assignment.employee.first_name} ${assignment.employee.last_name}`.trim();
+        } else {
+          assignmentName = assignment.assignment_type;
+        }
+      }
+      
       return {
         ...item,
         current_assignment: assignment ? {
-          id: assignment.equipment_id,
+          id: assignment.id,
           type: assignment.assignment_type,
-          name: assignment.assignment_type === 'project' && assignment.project 
-            ? assignment.project.name 
-            : assignment.assignment_type === 'rental' && assignment.rental
-            ? `Rental: ${assignment.rental.rental_number}`
-            : assignment.assignment_type,
+          name: assignmentName,
           status: 'active'
         } : null
       };

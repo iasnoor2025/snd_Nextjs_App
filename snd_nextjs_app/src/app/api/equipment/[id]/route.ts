@@ -47,12 +47,9 @@ export async function GET(
     const currentAssignment = await prisma.equipmentRentalHistory.findFirst({
       where: {
         equipment_id: id,
-        status: 'active',
-        end_date: null
+        status: 'active'
       },
-      select: {
-        id: true,
-        assignment_type: true,
+      include: {
         project: {
           select: {
             name: true
@@ -62,20 +59,35 @@ export async function GET(
           select: {
             rental_number: true
           }
+        },
+        employee: {
+          select: {
+            first_name: true,
+            last_name: true
+          }
         }
       }
     });
+    
+    let assignmentName = '';
+    if (currentAssignment) {
+      if (currentAssignment.assignment_type === 'project' && currentAssignment.project) {
+        assignmentName = currentAssignment.project.name;
+      } else if (currentAssignment.assignment_type === 'rental' && currentAssignment.rental) {
+        assignmentName = `Rental: ${currentAssignment.rental.rental_number}`;
+      } else if (currentAssignment.assignment_type === 'manual' && currentAssignment.employee) {
+        assignmentName = `${currentAssignment.employee.first_name} ${currentAssignment.employee.last_name}`.trim();
+      } else {
+        assignmentName = currentAssignment.assignment_type;
+      }
+    }
     
     const equipmentWithAssignment = {
       ...equipment,
       current_assignment: currentAssignment ? {
         id: currentAssignment.id,
         type: currentAssignment.assignment_type,
-        name: currentAssignment.assignment_type === 'project' && currentAssignment.project 
-          ? currentAssignment.project.name 
-          : currentAssignment.assignment_type === 'rental' && currentAssignment.rental
-          ? `Rental: ${currentAssignment.rental.rental_number}`
-          : currentAssignment.assignment_type,
+        name: assignmentName,
         status: 'active'
       } : null
     };

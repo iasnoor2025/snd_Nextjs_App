@@ -3,6 +3,15 @@ import { prisma } from '@/lib/db';
 
 // Helper function to format employee data for frontend
 function formatEmployeeForFrontend(employee: any) {
+  // Debug: Log assignment info for first few employees
+  if (employee.id <= 5) {
+    console.log(`Employee ${employee.id} (${employee.first_name} ${employee.last_name}):`, {
+      hasAssignments: employee.employee_assignments && employee.employee_assignments.length > 0,
+      assignmentCount: employee.employee_assignments ? employee.employee_assignments.length : 0,
+      firstAssignment: employee.employee_assignments && employee.employee_assignments.length > 0 ? employee.employee_assignments[0] : null
+    });
+  }
+
   return {
     id: employee.id,
     employee_id: employee.employee_id,
@@ -78,8 +87,28 @@ function formatEmployeeForFrontend(employee: any) {
     access_restriction_reason: employee.access_restriction_reason,
     created_at: employee.created_at?.toISOString().split('T')[0] || null,
     updated_at: employee.updated_at?.toISOString().split('T')[0] || null,
-    // Current assignment information (temporarily disabled)
-    current_assignment: null
+    // Current assignment information
+    current_assignment: employee.employee_assignments && employee.employee_assignments.length > 0 ? {
+      id: employee.employee_assignments[0].id,
+      type: employee.employee_assignments[0].type,
+      name: employee.employee_assignments[0].name,
+      location: employee.employee_assignments[0].location,
+      start_date: employee.employee_assignments[0].start_date?.toISOString().split('T')[0] || null,
+      end_date: employee.employee_assignments[0].end_date?.toISOString().split('T')[0] || null,
+      status: employee.employee_assignments[0].status,
+      notes: employee.employee_assignments[0].notes,
+      project: employee.employee_assignments[0].project ? {
+        id: employee.employee_assignments[0].project.id,
+        name: employee.employee_assignments[0].project.name,
+        location: null
+      } : null,
+      rental: employee.employee_assignments[0].rental ? {
+        id: employee.employee_assignments[0].rental.id,
+        project_name: employee.employee_assignments[0].rental.customer?.name || 'Unknown Customer',
+        rental_number: employee.employee_assignments[0].rental.rental_number,
+        location: null
+      } : null
+    } : null
   };
 }
 
@@ -109,19 +138,48 @@ export async function GET(request: NextRequest) {
     const department = searchParams.get('department');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
-    const offset = (page - 1) * limit;
+    const getAll = searchParams.get('all') === 'true';
+    const offset = getAll ? 0 : (page - 1) * limit;
 
     console.log('Query parameters:', { search, status, department, page, limit });
 
-    // Fetch employees from database (temporarily without assignments to debug)
+    // Fetch employees from database with assignments
     const employees = await prisma.employee.findMany({
       include: {
         department: true,
         designation: true,
-        unit: true
+        unit: true,
+        employee_assignments: {
+          where: {
+            status: 'active'
+          },
+          include: {
+            project: {
+              select: {
+                id: true,
+                name: true
+              }
+            },
+            rental: {
+              select: {
+                id: true,
+                rental_number: true,
+                customer: {
+                  select: {
+                    name: true
+                  }
+                }
+              }
+            }
+          },
+          orderBy: {
+            start_date: 'desc'
+          },
+          take: 1 // Get only the most recent active assignment
+        }
       },
       skip: offset,
-      take: limit,
+      take: getAll ? undefined : limit,
       orderBy: [
         { first_name: 'asc' },
         { last_name: 'asc' }
@@ -129,6 +187,10 @@ export async function GET(request: NextRequest) {
     });
 
     console.log(`Found ${employees.length} employees`);
+
+    // Debug: Check if any employees have assignments
+    const employeesWithAssignments = employees.filter(emp => emp.employee_assignments && emp.employee_assignments.length > 0);
+    console.log(`Employees with assignments: ${employeesWithAssignments.length}`);
 
     // Format employees for frontend
     const formattedEmployees = employees.map(employee => formatEmployeeForFrontend(employee));

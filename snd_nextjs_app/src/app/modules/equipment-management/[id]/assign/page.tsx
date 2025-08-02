@@ -71,6 +71,7 @@ interface Assignment {
   end_date?: string;
   status: string;
   notes?: string;
+  location?: string;
   daily_rate?: number;
   total_amount?: number;
   project?: {
@@ -343,11 +344,13 @@ export default function EquipmentAssignmentPage() {
                       <TableCell>
                         <div>
                           <div className="font-medium">
-                                                         {assignment.assignment_type === 'project' && assignment.project 
-                               ? assignment.project.name 
-                               : assignment.assignment_type === 'rental' && assignment.rental
-                               ? `${assignment.rental.project?.name || 'Unknown Project'} - ${assignment.rental.rental_number}`
-                               : assignment.assignment_type}
+                            {assignment.assignment_type === 'project' && assignment.project 
+                              ? assignment.project.name 
+                              : assignment.assignment_type === 'rental' && assignment.rental
+                              ? `${assignment.rental.project?.name || 'Unknown Project'} - ${assignment.rental.rental_number}`
+                              : assignment.assignment_type === 'manual'
+                              ? `Manual Assignment${assignment.employee ? ` - ${assignment.employee.name}` : ''}`
+                              : assignment.assignment_type}
                           </div>
                           {assignment.location && (
                             <div className="text-xs text-muted-foreground">

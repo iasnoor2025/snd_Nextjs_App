@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
@@ -311,10 +309,53 @@ export async function POST(
       }
     });
 
+    // If this is a manual assignment with an employee, also create an employee assignment
+    let employeeAssignment = null;
+    if (assignment_type === 'manual' && employee_id) {
+      try {
+        employeeAssignment = await prisma.employeeAssignment.create({
+          data: {
+            employee_id: parseInt(employee_id),
+            name: `Equipment Assignment - ${equipment.name}`,
+            type: 'manual',
+            location: body.location || null,
+            start_date: new Date(start_date),
+            end_date: end_date ? new Date(end_date) : null,
+            status: 'active',
+            notes: `Manual equipment assignment: ${notes || 'No additional notes'}`,
+            project_id: null,
+            rental_id: null
+          },
+          include: {
+            project: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            rental: {
+              select: {
+                id: true,
+                rental_number: true,
+              },
+            },
+          },
+        });
+
+        console.log('Employee assignment created automatically:', employeeAssignment);
+      } catch (assignmentError) {
+        console.error('Error creating employee assignment:', assignmentError);
+        // Don't fail the equipment assignment if employee assignment creation fails
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      data: rentalHistory,
-      message: 'Equipment assignment created successfully'
+      data: {
+        rentalHistory,
+        employeeAssignment
+      },
+      message: 'Equipment assignment created successfully' + (employeeAssignment ? ' and employee assignment created automatically' : '')
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating equipment assignment:', error);
