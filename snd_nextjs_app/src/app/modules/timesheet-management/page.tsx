@@ -465,6 +465,50 @@ function TimesheetManagementContent() {
     });
   };
 
+  const handleAllPendingAction = async (action: 'approve' | 'reject') => {
+    // Get all pending timesheets from the current filtered data
+    const pendingTimesheets = filteredTimesheets.filter(timesheet => {
+      const canProcess = ['pending', 'draft', 'submitted', 'foreman_approved', 'incharge_approved', 'checking_approved'].includes(timesheet.status);
+      return canProcess;
+    });
+
+    if (pendingTimesheets.length === 0) {
+      toast.error('No pending timesheets found to process');
+      return;
+    }
+
+    setBulkActionLoading(true);
+    try {
+      const response = await fetch('/api/timesheets/bulk-approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          timesheetIds: pendingTimesheets.map(t => t.id),
+          action: action,
+          notes: `Bulk ${action} of all pending timesheets`
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to process timesheets');
+      }
+
+      toast.success(data.message);
+      setSelectedTimesheets([]);
+      fetchTimesheets(); // Refresh the list
+    } catch (error) {
+      console.error('🔍 ALL PENDING ACTION - Error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to process timesheets');
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
   const executeBulkAction = async () => {
     if (!bulkActionDialog.action || selectedTimesheets.length === 0) return;
 
@@ -1349,13 +1393,29 @@ function TimesheetManagementContent() {
           </CardHeader>
           <CardContent>
             <div className="flex gap-2">
-              <Button variant="outline">
-                <CheckCircle className="h-4 w-4 mr-2" />
+              <Button 
+                variant="outline"
+                onClick={() => handleAllPendingAction('approve')}
+                disabled={bulkActionLoading}
+              >
+                {bulkActionLoading ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                )}
                 Approve All Pending
               </Button>
 
-              <Button variant="outline">
-                <XCircle className="h-4 w-4 mr-2" />
+              <Button 
+                variant="outline"
+                onClick={() => handleAllPendingAction('reject')}
+                disabled={bulkActionLoading}
+              >
+                {bulkActionLoading ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <XCircle className="h-4 w-4 mr-2" />
+                )}
                 Reject All Pending
               </Button>
 

@@ -1,19 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import puppeteer from 'puppeteer';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    console.log('🔍 PAYSLIP API - Starting request');
+    
     const { id: idParam } = await params;
     const id = parseInt(idParam);
+    
+    console.log('🔍 PAYSLIP API - Payroll ID:', id);
 
     // Connect to database
+    console.log('🔍 PAYSLIP API - Connecting to database...');
     await prisma.$connect();
+    console.log('🔍 PAYSLIP API - Database connected');
 
     // Get payroll with employee and items
+    console.log('🔍 PAYSLIP API - Fetching payroll data...');
     const payroll = await prisma.payroll.findUnique({
       where: { id: id },
       include: {
@@ -24,7 +30,10 @@ export async function GET(
       }
     });
 
+    console.log('🔍 PAYSLIP API - Payroll found:', !!payroll);
+
     if (!payroll) {
+      console.log('🔍 PAYSLIP API - Payroll not found for ID:', id);
       return NextResponse.json(
         {
           success: false,
@@ -34,63 +43,72 @@ export async function GET(
       );
     }
 
-    // Get the payslip page HTML from the frontend
-    const payslipPageUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/modules/payroll-management/${id}/payslip`;
+    // Get attendance data for the payroll month
+    console.log('🔍 PAYSLIP API - Fetching attendance data...');
+    const startDate = new Date(payroll.year, payroll.month - 1, 1);
+    const endDate = new Date(payroll.year, payroll.month, 0);
     
-    // Generate PDF using Puppeteer
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    console.log('🔍 PAYSLIP API - Date range:', { startDate, endDate, employeeId: payroll.employee_id });
 
-    const page = await browser.newPage();
-    
-    // Set viewport for better rendering
-    await page.setViewport({ width: 1200, height: 800 });
-    
-    // Navigate to the payslip page
-    await page.goto(payslipPageUrl, { 
-      waitUntil: 'networkidle0',
-      timeout: 30000 
+    const attendanceData = await prisma.timesheet.findMany({
+      where: {
+        employee_id: payroll.employee_id,
+        date: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      orderBy: {
+        date: 'asc'
+      }
     });
     
-    // Wait for the content to load
-    await page.waitForSelector('.payslip-container', { timeout: 10000 });
-    
-    // Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '20mm',
-        right: '20mm',
-        bottom: '20mm',
-        left: '20mm'
+    console.log('🔍 PAYSLIP API - Attendance records found:', attendanceData.length);
+
+    // Transform attendance data
+    const transformedAttendanceData = attendanceData.map(attendance => ({
+      date: attendance.date.toISOString().split('T')[0],
+      day: attendance.date.getDate(),
+      status: attendance.status,
+      hours: attendance.hours_worked || 0,
+      overtime: attendance.overtime_hours || 0
+    }));
+
+    // Mock company data (you can replace this with actual company data from your database)
+    const company = {
+      name: "Your Company Name",
+      address: "Company Address",
+      phone: "+1234567890",
+      email: "info@company.com",
+      website: "www.company.com"
+    };
+
+    // Return JSON data for the frontend
+    console.log('🔍 PAYSLIP API - Returning response');
+    return NextResponse.json({
+      success: true,
+      data: {
+        payroll,
+        employee: payroll.employee,
+        attendanceData: transformedAttendanceData,
+        company
       }
     });
 
-    await browser.close();
-
-    // Return the PDF as a response
-    const response = new NextResponse(pdfBuffer, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="payslip_${payroll.employee?.id || 'unknown'}_${payroll.month}_${payroll.year}.pdf"`,
-      },
-    });
-
-    return response;
   } catch (error) {
-    console.error('Error generating payslip PDF:', error);
+    console.error('🔍 PAYSLIP API - Error:', error);
+    console.error('🔍 PAYSLIP API - Error message:', (error as Error).message);
+    console.error('🔍 PAYSLIP API - Error stack:', (error as Error).stack);
+    
     return NextResponse.json(
       {
         success: false,
-        message: 'Error generating payslip PDF: ' + (error as Error).message
+        message: 'Error fetching payslip data: ' + (error as Error).message
       },
       { status: 500 }
     );
   } finally {
+    console.log('🔍 PAYSLIP API - Disconnecting from database');
     await prisma.$disconnect();
   }
 }
