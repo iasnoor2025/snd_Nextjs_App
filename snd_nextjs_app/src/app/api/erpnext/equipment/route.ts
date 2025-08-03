@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
+import { prisma } from '@/lib/db';
 // ERPNext configuration
 const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
 const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY;

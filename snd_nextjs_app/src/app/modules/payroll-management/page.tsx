@@ -587,7 +587,7 @@ export default function PayrollManagementPage() {
             <style>
               body { margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
               .payslip-container { background: white; width: 100%; max-width: none; margin: 0; padding: 0; box-shadow: none; border: none; }
-              .bg-gradient-to-br { background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 0.5rem; border-radius: 0; margin-bottom: 0.5rem; }
+                                 .bg-gradient-to-br { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 0.3rem; border-radius: 0; margin-bottom: 0.3rem; }
               .grid.grid-cols-1.lg\\:grid-cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.5rem; }
               .bg-gray-50.border.border-gray-200.rounded-lg.p-4 { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem; }
               .text-xs.font-semibold.text-gray-600.uppercase.tracking-wide.mb-3 { font-size: 0.65rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
@@ -596,18 +596,18 @@ export default function PayrollManagementPage() {
               .text-xs.text-gray-600.font-medium { font-size: 0.65rem; color: #6b7280; font-weight: 500; }
               .text-xs.font-semibold.text-gray-900 { font-size: 0.65rem; font-weight: 600; color: #111827; }
               .text-xs.font-semibold.text-green-700 { font-size: 0.65rem; font-weight: 600; color: #15803d; }
-              .text-sm.font-semibold.text-gray-900.mb-2.pb-1.border-b.border-gray-200 { font-size: 0.7rem; font-weight: 600; color: #111827; margin-bottom: 0.3rem; padding-bottom: 0.15rem; border-bottom: 1px solid #e5e7eb; }
+              .text-sm.font-semibold.text-gray-900.mb-2.pb-1.border-b.border-gray-200 { font-size: 0.75rem; font-weight: 600; color: #111827; margin-bottom: 0.4rem; padding-bottom: 0.2rem; border-bottom: 1px solid #e5e7eb; }
               .overflow-x-auto { overflow-x: auto; }
-              .w-full.border-collapse.rounded-lg.overflow-hidden.shadow-md { width: 100%; border-collapse: collapse; border-radius: 0.5rem; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-              .bg-gray-900.text-white.font-semibold.p-1.text-center.text-xs { background: #111827; color: white; font-weight: 600; padding: 0.2rem; text-align: center; font-size: 0.6rem; }
-              .bg-gray-900.text-gray-300.font-medium.p-1.text-center.text-xs { background: #111827; color: #d1d5db; font-weight: 500; padding: 0.2rem; text-align: center; font-size: 0.6rem; }
-              .p-1.text-center.text-xs.border.border-gray-200 { padding: 0.2rem; text-align: center; font-size: 0.6rem; border: 1px solid #e5e7eb; }
-              .text-green-700.font-semibold { color: #15803d; font-weight: 600; }
+              .w-full.border-collapse.rounded-lg.overflow-hidden.shadow-md { width: 100%; border-collapse: collapse; border-radius: 0.5rem; overflow: hidden; box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb; }
+              .bg-gray-900.text-white.font-semibold.p-1.text-center.text-xs { background: #111827; color: white; font-weight: 600; padding: 0.2rem 0.25rem; text-align: center; font-size: 0.65rem; vertical-align: middle; }
+              .bg-gray-900.text-gray-300.font-medium.p-1.text-center.text-xs { background: #111827; color: #d1d5db; font-weight: 500; padding: 0.2rem 0.25rem; text-align: center; font-size: 0.65rem; vertical-align: middle; }
+              .p-1.text-center.text-xs.border.border-gray-200 { padding: 0.2rem 0.25rem; text-align: center; font-size: 0.65rem; border: 1px solid #e5e7eb; vertical-align: middle; }
+              .text-green-700.font-semibold { color: #15803d; font-weight: 600; font-size: 0.65rem; vertical-align: middle; }
               .bg-blue-100 { background: #dbeafe; }
-              .bg-red-100.text-red-700.font-semibold { background: #fee2e2; color: #dc2626; font-weight: 600; }
-              .text-blue-700.font-semibold { color: #2563eb; font-weight: 600; }
+              .bg-red-100.text-red-700.font-semibold { background: #fee2e2; color: #dc2626; font-weight: 600; font-size: 0.65rem; vertical-align: middle; }
+              .text-blue-700.font-semibold { color: #2563eb; font-weight: 600; font-size: 0.65rem; vertical-align: middle; }
               .bg-red-100 { background: #fee2e2; }
-              .mt-2.p-2.bg-gray-50.rounded.text-xs.text-gray-600 { margin-top: 0.3rem; padding: 0.3rem; background: #f9fafb; border-radius: 0.25rem; font-size: 0.6rem; color: #6b7280; }
+              .mt-2.p-2.bg-gray-50.rounded.text-xs.text-gray-600 { margin-top: 0.3rem; padding: 0.4rem; background: #f9fafb; border-radius: 0.25rem; font-size: 0.65rem; color: #6b7280; line-height: 1.4; }
               .grid.grid-cols-1.lg\\:grid-cols-2.gap-4.mb-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem; }
               .text-sm.font-semibold.text-gray-900.mb-3 { font-size: 0.7rem; font-weight: 600; color: #111827; margin-bottom: 0.3rem; }
               .text-xs.font-semibold.text-gray-700.uppercase.tracking-wide.mb-2 { font-size: 0.65rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
@@ -622,6 +622,15 @@ export default function PayrollManagementPage() {
               .text-sm.font-semibold.text-gray-900.mb-4 { font-size: 0.7rem; font-weight: 600; color: #111827; margin-bottom: 0.5rem; }
               .border-t.border-gray-300.pt-1.text-xs.text-gray-500 { border-top: 1px solid #d1d5db; padding-top: 0.2rem; font-size: 0.6rem; color: #6b7280; }
               .ml-4.space-y-1.text-xs.text-gray-500 { margin-left: 0.5rem; display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.6rem; color: #6b7280; }
+              .flex.items-center.justify-between { display: flex; align-items: center; justify-content: space-between; }
+              .flex.items-center.space-x-4 { display: flex; align-items: center; gap: 0.5rem; }
+              .bg-white.p-2.rounded-lg.shadow-md { background: white; padding: 0.3rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); }
+              .w-8.h-8.object-contain { width: 2rem; height: 2rem; object-fit: contain; }
+              .text-xl.font-bold { font-size: 0.9rem; font-weight: 700; }
+              .text-sm.opacity-90 { font-size: 0.7rem; opacity: 0.9; }
+              .text-xs.opacity-90 { font-size: 0.6rem; opacity: 0.9; }
+              .text-lg.font-semibold { font-size: 0.8rem; font-weight: 600; }
+              .text-right { text-align: right; }
             </style>
           </head>
           <body>
@@ -631,7 +640,8 @@ export default function PayrollManagementPage() {
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-4">
                     <div class="bg-white p-2 rounded-lg shadow-md">
-                      <div class="w-12 h-12 flex items-center justify-center text-xs font-bold text-gray-600 bg-gray-100 rounded">SND</div>
+                      <img src="/snd-logo.png" alt="SND Logo" class="w-8 h-8 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                      <div class="w-8 h-8 flex items-center justify-center text-xs font-bold text-gray-600 bg-gray-100 rounded" style="display: none;">SND</div>
                     </div>
                     <div>
                       <h1 class="text-xl font-bold">Samhan Naser Al-Dosri Est.</h1>
@@ -739,7 +749,7 @@ export default function PayrollManagementPage() {
                     ${generateAttendanceTable()}
                   </div>
                   <div class="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">
-                    <span class="text-green-700 font-semibold">8</span> = regular hours, <span class="text-blue-700 font-semibold">More than 8</span> = overtime hours, <span class="text-red-700 font-semibold">A</span> = absent, <span class="font-semibold">F</span> = Friday (weekend)
+                    <span class="text-green-700 font-semibold">8</span> = regular hours, <span class="text-blue-700 font-semibold">More than 8</span> = overtime hours, <span class="text-red-700 font-semibold">A</span> = absent, <span class="text-blue-700 font-semibold">F</span> = Friday (weekend)
                   </div>
                 </div>
 

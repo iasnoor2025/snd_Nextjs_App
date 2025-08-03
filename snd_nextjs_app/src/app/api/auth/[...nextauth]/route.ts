@@ -1,11 +1,9 @@
 import NextAuth from "next-auth";
+import { prisma } from '@/lib/db';
 import CredentialsProvider from "next-auth/providers/credentials";
 import { JWT } from "next-auth/jwt";
 import { Session } from "next-auth";
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-
-const prisma = new PrismaClient();
 
 // Check for required environment variables
 const requiredEnvVars = {

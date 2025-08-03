@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { prisma } from '@/lib/db';
 import { getServerSession } from "next-auth";
 import { authConfig as authOptions } from "@/lib/auth-config";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; paymentId: string }> }

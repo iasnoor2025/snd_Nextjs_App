@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
-
+import { prisma } from '@/lib/db';
 // Batch size for parallel processing
 const BATCH_SIZE = 10;
 const MAX_CONCURRENT_REQUESTS = 5;
