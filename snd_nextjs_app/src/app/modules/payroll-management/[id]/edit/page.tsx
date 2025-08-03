@@ -152,6 +152,12 @@ export default function EditPayrollPage() {
     e.preventDefault();
     setLoading(true);
 
+    // Helper function to safely parse float values
+    const safeParseFloat = (value: string): number | undefined => {
+      const parsed = parseFloat(value);
+      return isNaN(parsed) ? undefined : parsed;
+    };
+
     try {
       const response = await fetch(`/api/payroll/${payrollId}`, {
         method: "PUT",
@@ -159,11 +165,11 @@ export default function EditPayrollPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          base_salary: parseFloat(formData.base_salary),
-          overtime_amount: parseFloat(formData.overtime_amount),
-          bonus_amount: parseFloat(formData.bonus_amount),
-          deduction_amount: parseFloat(formData.deduction_amount),
-          advance_deduction: parseFloat(formData.advance_deduction),
+          base_salary: safeParseFloat(formData.base_salary),
+          overtime_amount: safeParseFloat(formData.overtime_amount),
+          bonus_amount: safeParseFloat(formData.bonus_amount),
+          deduction_amount: safeParseFloat(formData.deduction_amount),
+          advance_deduction: safeParseFloat(formData.advance_deduction),
           notes: formData.notes,
           status: formData.status
         }),

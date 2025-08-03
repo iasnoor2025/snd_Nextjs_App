@@ -66,10 +66,10 @@ export async function POST(request: NextRequest) {
             year: year,
             base_salary: parseFloat(employee.basic_salary?.toString() || '0'),
             overtime_amount: Math.floor(Math.random() * 500),
-            bonus_amount: Math.floor(Math.random() * 300),
-            deduction_amount: Math.floor(Math.random() * 800),
+            bonus_amount: 0, // Manual setting only
+            deduction_amount: 0, // Manual setting only
             advance_deduction: 0,
-            final_amount: parseFloat(employee.basic_salary?.toString() || '0') + Math.floor(Math.random() * 500) - Math.floor(Math.random() * 800),
+            final_amount: parseFloat(employee.basic_salary?.toString() || '0') + Math.floor(Math.random() * 500),
             total_worked_hours: 160 + Math.floor(Math.random() * 20),
             overtime_hours: Math.floor(Math.random() * 10),
             status: 'pending',
@@ -106,16 +106,7 @@ export async function POST(request: NextRequest) {
                 tax_rate: 15,
                 order: 2
               },
-              {
-                id: Math.floor(Math.random() * 1000) + 3,
-                payroll_id: Math.floor(Math.random() * 1000) + 100,
-                type: 'deduction',
-                description: 'Tax Deduction',
-                amount: Math.floor(Math.random() * 800),
-                is_taxable: false,
-                tax_rate: 0,
-                order: 3
-              }
+
             ]
           };
 

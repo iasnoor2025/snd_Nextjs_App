@@ -130,24 +130,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Helper function to validate numeric values
+    const isValidNumber = (value: any): boolean => {
+      return value !== undefined && value !== null && !isNaN(Number(value));
+    };
+
     // Create payroll
     const newPayroll = await prisma.payroll.create({
       data: {
         employee_id: parseInt(body.employee_id),
         month: parseInt(body.month),
         year: parseInt(body.year),
-        base_salary: body.base_salary || employee.basic_salary,
-        overtime_amount: body.overtime_amount || 0,
-        bonus_amount: body.bonus_amount || 0,
-        deduction_amount: body.deduction_amount || 0,
-        advance_deduction: body.advance_deduction || 0,
-        final_amount: (body.base_salary || employee.basic_salary) +
-                     (body.overtime_amount || 0) +
-                     (body.bonus_amount || 0) -
-                     (body.deduction_amount || 0) -
-                     (body.advance_deduction || 0),
-        total_worked_hours: body.total_worked_hours || 160,
-        overtime_hours: body.overtime_hours || 0,
+        base_salary: isValidNumber(body.base_salary) ? body.base_salary : employee.basic_salary,
+        overtime_amount: isValidNumber(body.overtime_amount) ? body.overtime_amount : 0,
+        bonus_amount: isValidNumber(body.bonus_amount) ? body.bonus_amount : 0,
+        deduction_amount: isValidNumber(body.deduction_amount) ? body.deduction_amount : 0,
+        advance_deduction: isValidNumber(body.advance_deduction) ? body.advance_deduction : 0,
+        final_amount: (isValidNumber(body.base_salary) ? body.base_salary : employee.basic_salary) +
+                     (isValidNumber(body.overtime_amount) ? body.overtime_amount : 0) +
+                     (isValidNumber(body.bonus_amount) ? body.bonus_amount : 0) -
+                     (isValidNumber(body.deduction_amount) ? body.deduction_amount : 0) -
+                     (isValidNumber(body.advance_deduction) ? body.advance_deduction : 0),
+        total_worked_hours: isValidNumber(body.total_worked_hours) ? body.total_worked_hours : 160,
+        overtime_hours: isValidNumber(body.overtime_hours) ? body.overtime_hours : 0,
         status: 'pending',
         notes: body.notes || '',
         currency: 'SAR'

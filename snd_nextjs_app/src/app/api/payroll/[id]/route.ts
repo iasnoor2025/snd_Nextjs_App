@@ -81,22 +81,27 @@ export async function PUT(
       );
     }
 
+    // Helper function to validate numeric values
+    const isValidNumber = (value: any): boolean => {
+      return value !== undefined && value !== null && !isNaN(Number(value));
+    };
+
     // Calculate final amount
-    const finalAmount = (base_salary || existingPayroll.base_salary) + 
-                       (overtime_amount || existingPayroll.overtime_amount) + 
-                       (bonus_amount || existingPayroll.bonus_amount) - 
-                       (deduction_amount || existingPayroll.deduction_amount) - 
-                       (advance_deduction || existingPayroll.advance_deduction);
+    const finalAmount = (isValidNumber(base_salary) ? base_salary : existingPayroll.base_salary) + 
+                       (isValidNumber(overtime_amount) ? overtime_amount : existingPayroll.overtime_amount) + 
+                       (isValidNumber(bonus_amount) ? bonus_amount : existingPayroll.bonus_amount) - 
+                       (isValidNumber(deduction_amount) ? deduction_amount : existingPayroll.deduction_amount) - 
+                       (isValidNumber(advance_deduction) ? advance_deduction : existingPayroll.advance_deduction);
 
     // Update payroll
     const updatedPayroll = await prisma.payroll.update({
       where: { id: id },
       data: {
-        base_salary: base_salary !== undefined ? base_salary : existingPayroll.base_salary,
-        overtime_amount: overtime_amount !== undefined ? overtime_amount : existingPayroll.overtime_amount,
-        bonus_amount: bonus_amount !== undefined ? bonus_amount : existingPayroll.bonus_amount,
-        deduction_amount: deduction_amount !== undefined ? deduction_amount : existingPayroll.deduction_amount,
-        advance_deduction: advance_deduction !== undefined ? advance_deduction : existingPayroll.advance_deduction,
+        base_salary: isValidNumber(base_salary) ? base_salary : existingPayroll.base_salary,
+        overtime_amount: isValidNumber(overtime_amount) ? overtime_amount : existingPayroll.overtime_amount,
+        bonus_amount: isValidNumber(bonus_amount) ? bonus_amount : existingPayroll.bonus_amount,
+        deduction_amount: isValidNumber(deduction_amount) ? deduction_amount : existingPayroll.deduction_amount,
+        advance_deduction: isValidNumber(advance_deduction) ? advance_deduction : existingPayroll.advance_deduction,
         final_amount: finalAmount,
         notes: notes !== undefined ? notes : existingPayroll.notes,
         status: status !== undefined ? status : existingPayroll.status,

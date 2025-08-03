@@ -45,10 +45,17 @@ export async function GET(
 
     // Get attendance data for the payroll month
     console.log('🔍 PAYSLIP API - Fetching attendance data...');
-    const startDate = new Date(payroll.year, payroll.month - 1, 1);
-    const endDate = new Date(payroll.year, payroll.month, 0);
+    // Use exact payroll month without adjustments
+    const startDate = new Date(`${payroll.year}-${String(payroll.month).padStart(2, '0')}-01T00:00:00.000Z`); // First day of the month
+    const endDate = new Date(`${payroll.year}-${String(payroll.month).padStart(2, '0')}-${new Date(payroll.year, payroll.month, 0).getDate()}T23:59:59.999Z`); // Last day of the month
     
-    console.log('🔍 PAYSLIP API - Date range:', { startDate, endDate, employeeId: payroll.employee_id });
+    console.log('🔍 PAYSLIP API - Date range:', { 
+      startDate: startDate.toISOString(), 
+      endDate: endDate.toISOString(), 
+      employeeId: payroll.employee_id,
+      payrollMonth: payroll.month,
+      payrollYear: payroll.year
+    });
 
     const attendanceData = await prisma.timesheet.findMany({
       where: {
@@ -64,6 +71,13 @@ export async function GET(
     });
     
     console.log('🔍 PAYSLIP API - Attendance records found:', attendanceData.length);
+    console.log('🔍 PAYSLIP API - All attendance data:', attendanceData.map(a => ({
+      date: a.date.toISOString().split('T')[0],
+      day: a.date.getDate(),
+      hours: a.hours_worked,
+      overtime: a.overtime_hours,
+      status: a.status
+    })));
 
     // Transform attendance data - Convert Decimal to numbers
     const transformedAttendanceData = attendanceData.map(attendance => ({
@@ -73,6 +87,8 @@ export async function GET(
       hours: Number(attendance.hours_worked) || 0,
       overtime: Number(attendance.overtime_hours) || 0
     }));
+    
+    console.log('🔍 PAYSLIP API - Transformed attendance data:', transformedAttendanceData.slice(0, 3));
 
     // Mock company data (you can replace this with actual company data from your database)
     const company = {
@@ -89,7 +105,6 @@ export async function GET(
       base_salary: Number(payroll.base_salary),
       overtime_amount: Number(payroll.overtime_amount),
       bonus_amount: Number(payroll.bonus_amount),
-      deduction_amount: Number(payroll.deduction_amount),
       advance_deduction: Number(payroll.advance_deduction),
       final_amount: Number(payroll.final_amount),
       total_worked_hours: Number(payroll.total_worked_hours),

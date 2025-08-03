@@ -675,8 +675,6 @@ export default function PayrollManagementPage() {
                     <TableHead>Period</TableHead>
                     <TableHead>Basic Salary</TableHead>
                     <TableHead>Overtime</TableHead>
-                    <TableHead>Bonus</TableHead>
-                    <TableHead>Deductions</TableHead>
                     <TableHead>Final Amount</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created</TableHead>
@@ -719,8 +717,6 @@ export default function PayrollManagementPage() {
                         </TableCell>
                         <TableCell>{formatCurrency(payroll.base_salary)}</TableCell>
                         <TableCell>{formatCurrency(payroll.overtime_amount)}</TableCell>
-                        <TableCell>{formatCurrency(payroll.bonus_amount)}</TableCell>
-                        <TableCell>{formatCurrency(payroll.deduction_amount)}</TableCell>
                         <TableCell className="font-medium">{formatCurrency(payroll.final_amount)}</TableCell>
                         <TableCell>{getStatusBadge(payroll.status)}</TableCell>
                         <TableCell>{formatDate(payroll.created_at)}</TableCell>

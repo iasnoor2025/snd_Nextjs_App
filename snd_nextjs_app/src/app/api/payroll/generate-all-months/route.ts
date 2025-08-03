@@ -74,8 +74,8 @@ export async function POST(request: NextRequest) {
           const totalOvertimeHours = timesheets.reduce((sum, ts) => sum + Number(ts.overtime_hours), 0);
 
           const overtimeAmount = totalOvertimeHours * (Number(employee.basic_salary) / 160) * 1.5;
-          const bonusAmount = Math.random() * 300; // Random bonus
-          const deductionAmount = Number(employee.basic_salary) * 0.15; // 15% tax
+          const bonusAmount = 0; // Manual setting only
+          const deductionAmount = 0; // Manual setting only
           const finalAmount = Number(employee.basic_salary) + overtimeAmount + bonusAmount - deductionAmount;
 
           // Create payroll
@@ -118,24 +118,6 @@ export async function POST(request: NextRequest) {
                 is_taxable: true,
                 tax_rate: 15,
                 order: 2
-              },
-              {
-                payroll_id: payroll.id,
-                type: 'bonus',
-                description: 'Performance Bonus',
-                amount: bonusAmount,
-                is_taxable: true,
-                tax_rate: 15,
-                order: 3
-              },
-              {
-                payroll_id: payroll.id,
-                type: 'deduction',
-                description: 'Tax Deduction',
-                amount: -deductionAmount,
-                is_taxable: false,
-                tax_rate: 0,
-                order: 4
               }
             ]
           });

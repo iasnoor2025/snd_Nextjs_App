@@ -37,7 +37,6 @@ export default function CreatePayrollPage() {
     net_pay: "",
     basic_salary: "",
     allowances: "",
-    deductions: "",
     overtime_hours: "",
     overtime_rate: "",
     payment_date: undefined as Date | undefined,
@@ -73,8 +72,7 @@ export default function CreatePayrollPage() {
 
   const calculateNetPay = () => {
     const gross = parseFloat(formData.gross_pay) || 0;
-    const deductions = parseFloat(formData.deductions) || 0;
-    return gross - deductions;
+    return gross;
   };
 
   return (
@@ -211,33 +209,7 @@ export default function CreatePayrollPage() {
             </CardContent>
           </Card>
 
-          {/* Deductions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Deductions</CardTitle>
-              <CardDescription>Enter tax and other deductions</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="deductions">Total Deductions</Label>
-                <Input
-                  id="deductions"
-                  type="number"
-                  placeholder="0.00"
-                  value={formData.deductions}
-                  onChange={(e) => handleInputChange("deductions", e.target.value)}
-                />
-              </div>
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Net Pay:</span>
-                  <span className="text-lg font-bold text-green-600">
-                    ${calculateNetPay().toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+
 
           {/* Payment Information */}
           <Card>
