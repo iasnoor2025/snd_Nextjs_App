@@ -576,10 +576,18 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     );
   }
 
-  // Calculate absent days from actual attendance data
+  // Calculate absent days from actual attendance data (excluding Fridays)
   const absentDays = attendanceData.reduce((count, day) => {
-    // Consider absent if no hours worked and no overtime
-    return count + ((Number(day.hours) === 0 && Number(day.overtime) === 0) ? 1 : 0);
+    // Get the day of week for this date
+    const date = new Date(day.date);
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+    const isFriday = dayName === 'Fri';
+    
+    // Consider absent if no hours worked and no overtime, but NOT if it's Friday
+    if (Number(day.hours) === 0 && Number(day.overtime) === 0 && !isFriday) {
+      return count + 1;
+    }
+    return count;
   }, 0);
 
   // Calculate total worked hours from attendance data - Convert Decimal to numbers
@@ -592,8 +600,9 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     return total + (Number(day.overtime) || 0);
   }, 0);
 
-  // Calculate days worked from attendance data (excluding absences) - Convert Decimal to numbers
+  // Calculate days worked from attendance data (including Fridays with hours) - Convert Decimal to numbers
   const daysWorkedFromAttendance = attendanceData.reduce((count, day) => {
+    // Count as worked if there are hours or overtime, regardless of day
     return count + ((Number(day.hours) > 0 || Number(day.overtime) > 0) ? 1 : 0);
   }, 0);
 
@@ -626,7 +635,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   // Calculate totals for salary details - Convert Decimal to numbers
   const totalAllowances = (Number(employee.food_allowance) || 0) + (Number(employee.housing_allowance) || 0) + (Number(employee.transport_allowance) || 0);
   const absentDeduction = absentDays > 0 ? (basicSalary / daysInMonth) * absentDays : 0;
-  const netSalary = basicSalary + totalAllowances + overtimeAmount - absentDeduction - advanceDeduction;
+  const netSalary = basicSalary + totalAllowances + overtimeAmount + bonusAmount - absentDeduction - advanceDeduction;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -919,6 +928,10 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                     <span className="text-xs text-gray-600 font-medium">Absent Days</span>
                     <span className="text-xs font-semibold text-red-700">{absentDays} days</span>
                   </div>
+                  <div className="flex justify-between items-center py-1 border-t border-gray-200 pt-2">
+                    <span className="text-xs text-gray-600 font-medium">Absent Deduction</span>
+                    <span className="text-xs font-semibold text-red-700">{formatCurrency(absentDeduction)}</span>
+                  </div>
                 </div>
               </div>
 
@@ -958,12 +971,17 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                   </div>
 
                   <div className="flex justify-between items-center py-1 border-b border-gray-200">
+                    <span className="text-xs text-gray-600 font-medium">Absent Days Deduction</span>
+                    <span className="text-xs font-semibold text-red-700">{formatCurrency(absentDeduction)}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
                     <span className="text-xs text-gray-600 font-medium">Advance Deduction</span>
                     <span className="text-xs font-semibold text-red-700">{formatCurrency(advanceDeduction)}</span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-t-2 border-gray-300">
                     <span className="text-sm font-semibold text-gray-900">Final Amount</span>
-                    <span className="text-sm font-bold text-green-700">{formatCurrency(finalAmount)}</span>
+                    <span className="text-sm font-bold text-green-700">{formatCurrency(netSalary)}</span>
                   </div>
                 </div>
               </div>
