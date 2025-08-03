@@ -32,6 +32,8 @@
     "hireDate": "Hire Date",
     "basicSalary": "Basic Salary",
     "hourlyRate": "Hourly Rate",
+    "overtimeRateMultiplier": "Overtime Rate Multiplier",
+    "overtimeFixedRate": "Overtime Fixed Rate",
     "nationality": "Nationality",
     "address": "Address",
     "emergencyContact": "Emergency Contact",

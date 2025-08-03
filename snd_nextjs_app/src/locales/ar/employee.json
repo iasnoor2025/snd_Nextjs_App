@@ -32,6 +32,8 @@
     "hireDate": "تاريخ التعيين",
     "basicSalary": "الراتب الأساسي",
     "hourlyRate": "المعدل بالساعة",
+    "overtimeRateMultiplier": "مضاعف معدل العمل الإضافي",
+    "overtimeFixedRate": "المعدل الثابت للعمل الإضافي",
     "nationality": "الجنسية",
     "address": "العنوان",
     "emergencyContact": "جهة اتصال الطوارئ",

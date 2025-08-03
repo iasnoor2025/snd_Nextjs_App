@@ -118,7 +118,10 @@ export async function GET(
       food_allowance: Number(payroll.employee.food_allowance || 0),
       housing_allowance: Number(payroll.employee.housing_allowance || 0),
       transport_allowance: Number(payroll.employee.transport_allowance || 0),
-      advance_payment: Number(payroll.employee.advance_payment || 0)
+      overtime_rate_multiplier: Number(payroll.employee.overtime_rate_multiplier || 1.5),
+      overtime_fixed_rate: Number(payroll.employee.overtime_fixed_rate || 0),
+      contract_days_per_month: Number(payroll.employee.contract_days_per_month || 26),
+      contract_hours_per_day: Number(payroll.employee.contract_hours_per_day || 8)
     };
 
     // Return JSON data for the frontend

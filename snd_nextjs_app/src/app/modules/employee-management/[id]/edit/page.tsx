@@ -28,6 +28,8 @@ interface Employee {
   current_location?: string;
   hourly_rate?: number;
   basic_salary?: number;
+  overtime_rate_multiplier?: number;
+  overtime_fixed_rate?: number;
   contract_days_per_month?: number;
   contract_hours_per_day?: number;
   address?: string;
@@ -81,6 +83,8 @@ export default function EditEmployeePage() {
     current_location: "",
     hourly_rate: "",
     basic_salary: "",
+    overtime_rate_multiplier: "1.5",
+    overtime_fixed_rate: "",
     contract_days_per_month: "26",
     contract_hours_per_day: "8",
     address: "",
@@ -130,6 +134,8 @@ export default function EditEmployeePage() {
             current_location: emp.current_location || "",
             hourly_rate: emp.hourly_rate ? emp.hourly_rate.toString() : "",
             basic_salary: emp.basic_salary ? emp.basic_salary.toString() : "",
+            overtime_rate_multiplier: emp.overtime_fixed_rate ? "0" : (emp.overtime_rate_multiplier ? emp.overtime_rate_multiplier.toString() : "1.5"),
+            overtime_fixed_rate: emp.overtime_fixed_rate ? emp.overtime_fixed_rate.toString() : "",
             contract_days_per_month: emp.contract_days_per_month ? emp.contract_days_per_month.toString() : "26",
             contract_hours_per_day: emp.contract_hours_per_day ? emp.contract_hours_per_day.toString() : "8",
             address: emp.address || "",
@@ -190,6 +196,8 @@ export default function EditEmployeePage() {
           ...formData,
           hourly_rate: formData.hourly_rate && formData.hourly_rate.trim() !== '' ? parseFloat(formData.hourly_rate) : null,
           basic_salary: formData.basic_salary && formData.basic_salary.trim() !== '' ? parseFloat(formData.basic_salary) : null,
+          overtime_rate_multiplier: formData.overtime_fixed_rate && formData.overtime_fixed_rate.trim() !== '' ? 0 : (formData.overtime_rate_multiplier && formData.overtime_rate_multiplier.trim() !== '' ? parseFloat(formData.overtime_rate_multiplier) : 1.5),
+          overtime_fixed_rate: formData.overtime_fixed_rate && formData.overtime_fixed_rate.trim() !== '' ? parseFloat(formData.overtime_fixed_rate) : null,
           contract_days_per_month: formData.contract_days_per_month ? parseInt(formData.contract_days_per_month) : 26,
           contract_hours_per_day: formData.contract_hours_per_day ? parseInt(formData.contract_hours_per_day) : 8,
         }),
@@ -482,6 +490,55 @@ export default function EditEmployeePage() {
                   readOnly
                   className="bg-gray-50"
                 />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="text-sm text-muted-foreground">
+                Choose one overtime calculation method:
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                 <div className="space-y-2">
+                   <Label htmlFor="overtime_rate_multiplier">Overtime Rate Multiplier</Label>
+                   <Input
+                     id="overtime_rate_multiplier"
+                     type="number"
+                     step="0.01"
+                     min="0"
+                     value={parseFloat(formData.overtime_fixed_rate) > 0 ? "0" : formData.overtime_rate_multiplier}
+                     placeholder="1.5"
+                     readOnly
+                     className="bg-gray-50"
+                   />
+                   <div className="text-xs text-muted-foreground">
+                     Multiplies the hourly rate (e.g., 1.5x for time and a half) - Auto-calculated
+                   </div>
+                 </div>
+
+                                 <div className="space-y-2">
+                   <Label htmlFor="overtime_fixed_rate">Overtime Fixed Rate</Label>
+                   <Input
+                     id="overtime_fixed_rate"
+                     type="number"
+                     step="0.01"
+                     min="0"
+                     value={formData.overtime_fixed_rate}
+                     onChange={(e) => {
+                       handleInputChange('overtime_fixed_rate', e.target.value);
+                       // Set multiplier to 0 when fixed rate is used
+                       if (e.target.value && e.target.value.trim() !== '') {
+                         handleInputChange('overtime_rate_multiplier', '0');
+                       } else {
+                         handleInputChange('overtime_rate_multiplier', '1.5');
+                       }
+                     }}
+                     placeholder="Fixed rate per hour"
+                   />
+                   <div className="text-xs text-muted-foreground">
+                     Fixed amount per overtime hour (overrides multiplier)
+                   </div>
+                 </div>
               </div>
             </div>
           </CardContent>

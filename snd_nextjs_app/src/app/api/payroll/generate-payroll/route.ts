@@ -31,7 +31,15 @@ export async function POST(request: NextRequest) {
           }
         }
       },
-      include: {
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        basic_salary: true,
+        contract_days_per_month: true,
+        contract_hours_per_day: true,
+        overtime_rate_multiplier: true,
+        overtime_fixed_rate: true,
         timesheets: {
           where: {
             status: {
@@ -54,6 +62,14 @@ export async function POST(request: NextRequest) {
     for (const employee of employeesWithApprovedTimesheets) {
       try {
         console.log(`Processing employee: ${employee.first_name} ${employee.last_name}`);
+        console.log(`Employee data:`, {
+          id: employee.id,
+          basic_salary: employee.basic_salary,
+          contract_days_per_month: employee.contract_days_per_month,
+          contract_hours_per_day: employee.contract_hours_per_day,
+          overtime_rate_multiplier: employee.overtime_rate_multiplier,
+          overtime_fixed_rate: employee.overtime_fixed_rate
+        });
         
         // Group timesheets by month/year
         const timesheetsByMonth = new Map<string, any[]>();
@@ -91,7 +107,34 @@ export async function POST(request: NextRequest) {
           const totalHours = timesheets.reduce((sum, ts) => sum + Number(ts.hours_worked), 0);
           const totalOvertimeHours = timesheets.reduce((sum, ts) => sum + Number(ts.overtime_hours), 0);
 
-          const overtimeAmount = totalOvertimeHours * (Number(employee.basic_salary) / 160) * 1.5;
+          // Calculate overtime amount based on employee's overtime settings
+          let overtimeAmount = 0;
+          if (totalOvertimeHours > 0) {
+            // Use the formula: basic/30/8*overtime rate
+            const basicSalary = Number(employee.basic_salary);
+            const hourlyRate = basicSalary / 30 / 8; // basic/30/8
+
+            console.log(`Overtime calculation for ${employee.first_name} ${employee.last_name}:`);
+            console.log(`- Total overtime hours: ${totalOvertimeHours}`);
+            console.log(`- Basic salary: ${basicSalary}`);
+            console.log(`- Hourly rate (basic/30/8): ${hourlyRate}`);
+            console.log(`- Overtime fixed rate: ${employee.overtime_fixed_rate}`);
+            console.log(`- Overtime rate multiplier: ${employee.overtime_rate_multiplier}`);
+
+            // Use employee's overtime settings
+            if (employee.overtime_fixed_rate && employee.overtime_fixed_rate > 0) {
+              // Use fixed overtime rate
+              overtimeAmount = totalOvertimeHours * Number(employee.overtime_fixed_rate);
+              console.log(`- Using fixed rate: ${employee.overtime_fixed_rate} SAR/hr`);
+            } else {
+              // Use overtime multiplier with basic/30/8 formula
+              const overtimeMultiplier = employee.overtime_rate_multiplier || 1.5;
+              overtimeAmount = totalOvertimeHours * (hourlyRate * overtimeMultiplier);
+              console.log(`- Using multiplier: ${overtimeMultiplier}x (basic/30/8 formula)`);
+            }
+            
+            console.log(`- Final overtime amount: ${overtimeAmount}`);
+          }
           const bonusAmount = 0; // Manual setting only
           const deductionAmount = 0; // Manual setting only
           const finalAmount = Number(employee.basic_salary) + overtimeAmount + bonusAmount - deductionAmount;
@@ -117,27 +160,41 @@ export async function POST(request: NextRequest) {
           });
 
           // Create payroll items
+          const payrollItems = [
+            {
+              payroll_id: payroll.id,
+              type: 'earnings',
+              description: 'Basic Salary',
+              amount: Number(employee.basic_salary),
+              is_taxable: true,
+              tax_rate: 15,
+              order: 1
+            }
+          ];
+
+          // Add overtime item if there are overtime hours
+          if (totalOvertimeHours > 0) {
+            let overtimeDescription = 'Overtime Pay';
+            if (employee.overtime_fixed_rate && employee.overtime_fixed_rate > 0) {
+              overtimeDescription = `Overtime Pay (Fixed Rate: ${employee.overtime_fixed_rate} SAR/hr)`;
+            } else {
+              const overtimeMultiplier = employee.overtime_rate_multiplier || 1.5;
+              overtimeDescription = `Overtime Pay (${overtimeMultiplier}x Rate)`;
+            }
+
+            payrollItems.push({
+              payroll_id: payroll.id,
+              type: 'overtime',
+              description: overtimeDescription,
+              amount: overtimeAmount,
+              is_taxable: true,
+              tax_rate: 15,
+              order: 2
+            });
+          }
+
           await prisma.payrollItem.createMany({
-            data: [
-              {
-                payroll_id: payroll.id,
-                type: 'earnings',
-                description: 'Basic Salary',
-                amount: Number(employee.basic_salary),
-                is_taxable: true,
-                tax_rate: 15,
-                order: 1
-              },
-              {
-                payroll_id: payroll.id,
-                type: 'overtime',
-                description: 'Overtime Pay',
-                amount: overtimeAmount,
-                is_taxable: true,
-                tax_rate: 15,
-                order: 2
-              }
-            ]
+            data: payrollItems
           });
 
           console.log(`Generated payroll for ${employee.first_name} ${employee.last_name} - ${month}/${year}`);

@@ -275,7 +275,11 @@ export async function POST(request: NextRequest) {
         status: body.status || 'active',
         email: body.email,
         phone: body.phone,
-        hire_date: body.hire_date ? new Date(body.hire_date) : null
+        hire_date: body.hire_date ? new Date(body.hire_date) : null,
+        hourly_rate: body.hourly_rate || null,
+        overtime_rate_multiplier: body.overtime_rate_multiplier || 1.5,
+        overtime_fixed_rate: body.overtime_fixed_rate || null,
+        nationality: body.nationality || null
       }
     });
 

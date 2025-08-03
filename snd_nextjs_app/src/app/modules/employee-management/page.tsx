@@ -42,6 +42,8 @@ interface Employee {
   phone?: string | null;
   nationality?: string | null;
   hourly_rate: number | null;
+  overtime_rate_multiplier?: number | null;
+  overtime_fixed_rate?: number | null;
   current_assignment?: {
     id: number;
     type: string;
@@ -86,6 +88,23 @@ export default function EmployeeManagementPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Edit form state
+  const [editFormData, setEditFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    department: '',
+    designation: '',
+    status: '',
+    hire_date: '',
+    basic_salary: '',
+    hourly_rate: '',
+    overtime_rate_multiplier: '1.5',
+    overtime_fixed_rate: '',
+    nationality: ''
+  });
   
   // Statistics state
   const [statistics, setStatistics] = useState({
@@ -307,6 +326,68 @@ export default function EmployeeManagementPage() {
     } catch (error) {
       toast.error('Failed to export employees');
     }
+  };
+
+  const handleUpdateEmployee = async () => {
+    if (!selectedEmployee) return;
+
+    try {
+      const formData = {
+        first_name: editFormData.first_name,
+        last_name: editFormData.last_name,
+        email: editFormData.email,
+        phone: editFormData.phone,
+        department: editFormData.department,
+        designation: editFormData.designation,
+        status: editFormData.status,
+        hire_date: editFormData.hire_date,
+        basic_salary: parseFloat(editFormData.basic_salary || '0'),
+        hourly_rate: parseFloat(editFormData.hourly_rate || '0'),
+        overtime_rate_multiplier: parseFloat(editFormData.overtime_rate_multiplier || '1.5'),
+        overtime_fixed_rate: parseFloat(editFormData.overtime_fixed_rate || '0') || null,
+        nationality: editFormData.nationality,
+      };
+
+      const response = await fetch(`/api/employees/${selectedEmployee.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        toast.success(t('employee:messages.saveSuccess'));
+        setIsEditModalOpen(false);
+        fetchEmployees();
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.message || t('employee:messages.saveError'));
+      }
+    } catch (error) {
+      console.error('Update error:', error);
+      toast.error(t('employee:messages.saveError'));
+    }
+  };
+
+  const handleEditModalOpen = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setEditFormData({
+      first_name: employee.first_name || '',
+      last_name: employee.last_name || '',
+      email: employee.email || '',
+      phone: employee.phone || '',
+      department: employee.department || '',
+      designation: employee.designation || '',
+      status: employee.status || '',
+      hire_date: employee.hire_date || '',
+      basic_salary: employee.basic_salary?.toString() || '',
+      hourly_rate: employee.hourly_rate?.toString() || '',
+      overtime_rate_multiplier: employee.overtime_rate_multiplier?.toString() || '1.5',
+      overtime_fixed_rate: employee.overtime_fixed_rate?.toString() || '',
+      nationality: employee.nationality || ''
+    });
+    setIsEditModalOpen(true);
   };
 
   const handleSort = (field: string) => {
@@ -796,8 +877,12 @@ export default function EmployeeManagementPage() {
                             </Can>
 
                             <Can action="update" subject="Employee">
-                              <Link href={`/modules/employee-management/${employee.id}/edit`}>
-                                <Button variant="ghost" size="sm" title="Edit Employee">
+                                                            <Link href={`/modules/employee-management/${employee.id}/edit`}>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  title="Edit Employee"
+                                >
                                   <Edit className="h-4 w-4" />
                                 </Button>
                               </Link>
@@ -1039,6 +1124,14 @@ export default function EmployeeManagementPage() {
                   <Label>Hourly Rate</Label>
                   <p className="text-sm text-muted-foreground">${selectedEmployee.hourly_rate || 'N/A'}</p>
                 </div>
+                <div>
+                  <Label>{t('employee:fields.overtimeRateMultiplier')}</Label>
+                  <p className="text-sm text-muted-foreground">{selectedEmployee.overtime_rate_multiplier || 'N/A'}</p>
+                </div>
+                <div>
+                  <Label>{t('employee:fields.overtimeFixedRate')}</Label>
+                  <p className="text-sm text-muted-foreground">${selectedEmployee.overtime_fixed_rate || 'N/A'}</p>
+                </div>
               </div>
             )}
             <DialogFooter>
@@ -1050,7 +1143,7 @@ export default function EmployeeManagementPage() {
         </Dialog>
 
         {/* Edit Employee Modal */}
-        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        {/* <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Edit Employee</DialogTitle>
@@ -1123,6 +1216,14 @@ export default function EmployeeManagementPage() {
                   <Input id="hourly_rate" type="number" step="0.01" defaultValue={selectedEmployee.hourly_rate || ''} />
                 </div>
                 <div>
+                  <Label htmlFor="overtime_rate_multiplier">{t('employee:fields.overtimeRateMultiplier')}</Label>
+                  <Input id="overtime_rate_multiplier" type="number" step="0.01" defaultValue={selectedEmployee.overtime_rate_multiplier || '1.5'} />
+                </div>
+                <div>
+                  <Label htmlFor="overtime_fixed_rate">{t('employee:fields.overtimeFixedRate')}</Label>
+                  <Input id="overtime_fixed_rate" type="number" step="0.01" defaultValue={selectedEmployee.overtime_fixed_rate || ''} />
+                </div>
+                <div>
                   <Label htmlFor="nationality">Nationality</Label>
                   <Input id="nationality" defaultValue={selectedEmployee.nationality || ''} />
                 </div>
@@ -1132,16 +1233,12 @@ export default function EmployeeManagementPage() {
               <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={() => {
-                toast.success('Employee updated successfully');
-                setIsEditModalOpen(false);
-                fetchEmployees();
-              }}>
+              <Button onClick={handleUpdateEmployee}>
                 Save Changes
               </Button>
             </DialogFooter>
           </DialogContent>
-        </Dialog>
+        </Dialog> */}
 
         {/* Add Employee Modal */}
         <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
@@ -1214,6 +1311,14 @@ export default function EmployeeManagementPage() {
               <div>
                 <Label htmlFor="new_hourly_rate">Hourly Rate</Label>
                 <Input id="new_hourly_rate" type="number" step="0.01" placeholder="25.00" />
+              </div>
+              <div>
+                <Label htmlFor="new_overtime_rate_multiplier">{t('employee:fields.overtimeRateMultiplier')}</Label>
+                <Input id="new_overtime_rate_multiplier" type="number" step="0.01" placeholder="1.5" defaultValue="1.5" />
+              </div>
+              <div>
+                <Label htmlFor="new_overtime_fixed_rate">{t('employee:fields.overtimeFixedRate')}</Label>
+                <Input id="new_overtime_fixed_rate" type="number" step="0.01" placeholder="Optional fixed rate" />
               </div>
               <div>
                 <Label htmlFor="new_nationality">Nationality</Label>

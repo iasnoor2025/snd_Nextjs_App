@@ -56,7 +56,8 @@ import {
   Shield,
   CreditCard,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Calculator
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -145,6 +146,7 @@ export default function PayrollManagementPage() {
   const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null);
   const [generating, setGenerating] = useState(false);
   const [employeeFilter, setEmployeeFilter] = useState<string>("all");
+  const [recalculating, setRecalculating] = useState(false);
 
   // Get allowed actions for payroll management
   const allowedActions = getAllowedActions('Payroll');
@@ -429,6 +431,28 @@ export default function PayrollManagementPage() {
     }
   };
 
+  const handleRecalculateOvertime = async () => {
+    try {
+      setRecalculating(true);
+      const response = await fetch('/api/payroll/regenerate-overtime', {
+        method: 'POST',
+      });
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(result.message);
+        fetchPayrolls(); // Refresh the list
+      } else {
+        toast.error(result.message || 'Failed to recalculate overtime');
+      }
+    } catch (error) {
+      console.error('Error recalculating overtime:', error);
+      toast.error('Failed to recalculate overtime');
+    } finally {
+      setRecalculating(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       pending: { variant: "secondary" as const, text: "Pending" },
@@ -516,6 +540,17 @@ export default function PayrollManagementPage() {
               </DialogContent>
             </Dialog>
             </Can>
+
+            <Button
+              onClick={handleRecalculateOvertime}
+              disabled={recalculating}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Calculator className="h-4 w-4" />
+              {recalculating ? 'Recalculating...' : 'Recalculate Overtime'}
+            </Button>
 
           <Link href="/modules/payroll-management/reports">
             <Button variant="outline" size="sm">

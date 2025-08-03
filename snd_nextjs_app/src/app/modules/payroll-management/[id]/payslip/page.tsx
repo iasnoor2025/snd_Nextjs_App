@@ -327,7 +327,10 @@ interface Employee {
   food_allowance?: number;
   housing_allowance?: number;
   transport_allowance?: number;
-  advance_payment?: number;
+  overtime_rate_multiplier?: number;
+  overtime_fixed_rate?: number;
+  contract_days_per_month?: number;
+  contract_hours_per_day?: number;
 }
 
 interface Payroll {
@@ -908,29 +911,46 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Working Hours Summary</h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
-                    <span className="text-xs text-gray-600 font-medium">Total Hours Worked</span>
-                    <span className="text-xs font-semibold text-gray-900">{totalWorkedHoursFromAttendance} hrs</span>
+                  {/* Hours Breakdown */}
+                  <div className="mb-3">
+                    <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Hours Breakdown</h4>
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-xs text-gray-600 font-medium">Total Hours Worked</span>
+                        <span className="text-xs font-semibold text-gray-900">{totalWorkedHoursFromAttendance} hrs</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-xs text-gray-600 font-medium">Regular Hours</span>
+                        <span className="text-xs font-semibold text-gray-900">{totalWorkedHoursFromAttendance - overtimeHoursFromAttendance} hrs</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-xs text-gray-600 font-medium">Overtime Hours</span>
+                        <span className="text-xs font-semibold text-green-700">{overtimeHoursFromAttendance} hrs</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
-                    <span className="text-xs text-gray-600 font-medium">Regular Hours</span>
-                    <span className="text-xs font-semibold text-gray-900">{totalWorkedHoursFromAttendance - overtimeHoursFromAttendance} hrs</span>
+
+                  {/* Attendance Summary */}
+                  <div className="mb-3">
+                    <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Attendance Summary</h4>
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-xs text-gray-600 font-medium">Days Worked</span>
+                        <span className="text-xs font-semibold text-gray-900">{daysWorkedFromAttendance} days</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-xs text-gray-600 font-medium">Absent Days</span>
+                        <span className="text-xs font-semibold text-red-700">{absentDays} days</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
-                    <span className="text-xs text-gray-600 font-medium">Overtime Hours</span>
-                    <span className="text-xs font-semibold text-green-700">{overtimeHoursFromAttendance} hrs</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
-                    <span className="text-xs text-gray-600 font-medium">Days Worked</span>
-                    <span className="text-xs font-semibold text-gray-900">{daysWorkedFromAttendance} days</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-xs text-gray-600 font-medium">Absent Days</span>
-                    <span className="text-xs font-semibold text-red-700">{absentDays} days</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-t border-gray-200 pt-2">
-                    <span className="text-xs text-gray-600 font-medium">Absent Deduction</span>
-                    <span className="text-xs font-semibold text-red-700">{formatCurrency(absentDeduction)}</span>
+
+                  {/* Deductions */}
+                  <div className="border-t border-gray-200 pt-2">
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-xs text-gray-600 font-medium">Absent Deduction</span>
+                      <span className="text-xs font-semibold text-red-700">-{formatCurrency(absentDeduction)}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -939,49 +959,81 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Salary Breakdown</h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
-                    <span className="text-xs text-gray-600 font-medium">Basic Salary</span>
-                    <span className="text-xs font-semibold text-green-700">{formatCurrency(basicSalary)}</span>
-                  </div>
-                  {Number(employee?.food_allowance) > 0 && (
-                    <div className="flex justify-between items-center py-1 border-b border-gray-200">
-                      <span className="text-xs text-gray-600 font-medium">Food Allowance</span>
-                      <span className="text-xs font-semibold text-gray-900">{formatCurrency(Number(employee.food_allowance))}</span>
+                  {/* Earnings Section */}
+                  <div className="mb-3">
+                    <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Earnings</h4>
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-xs text-gray-600 font-medium">Basic Salary</span>
+                        <span className="text-xs font-semibold text-green-700">{formatCurrency(basicSalary)}</span>
+                      </div>
+                      {Number(employee?.food_allowance) > 0 && (
+                        <div className="flex justify-between items-center py-1">
+                          <span className="text-xs text-gray-600 font-medium">Food Allowance</span>
+                          <span className="text-xs font-semibold text-gray-900">{formatCurrency(Number(employee.food_allowance))}</span>
+                        </div>
+                      )}
+                      {Number(employee?.housing_allowance) > 0 && (
+                        <div className="flex justify-between items-center py-1">
+                          <span className="text-xs text-gray-600 font-medium">Housing Allowance</span>
+                          <span className="text-xs font-semibold text-gray-900">{formatCurrency(Number(employee.housing_allowance))}</span>
+                        </div>
+                      )}
+                      {Number(employee?.transport_allowance) > 0 && (
+                        <div className="flex justify-between items-center py-1">
+                          <span className="text-xs text-gray-600 font-medium">Transport Allowance</span>
+                          <span className="text-xs font-semibold text-gray-900">{formatCurrency(Number(employee.transport_allowance))}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-xs text-gray-600 font-medium">Overtime Pay</span>
+                        <span className="text-xs font-semibold text-green-700">{formatCurrency(overtimeAmount)}</span>
+                      </div>
+                      {overtimeHoursFromAttendance > 0 && (
+                        <div className="ml-4 space-y-1 text-xs text-gray-500">
+                          <div className="flex justify-between items-center">
+                            <span>Overtime Hours:</span>
+                            <span>{overtimeHoursFromAttendance} hrs</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>Overtime Rate:</span>
+                            <span>
+                              {employee?.overtime_fixed_rate && employee.overtime_fixed_rate > 0 
+                                ? `${formatCurrency(Number(employee.overtime_fixed_rate))}/hr (Fixed)`
+                                : `${employee?.overtime_rate_multiplier || 1.5}x (Basic/30/8)`
+                              }
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-xs text-gray-600 font-medium">Bonus Amount</span>
+                        <span className="text-xs font-semibold text-green-700">{formatCurrency(bonusAmount)}</span>
+                      </div>
                     </div>
-                  )}
-                  {Number(employee?.housing_allowance) > 0 && (
-                    <div className="flex justify-between items-center py-1 border-b border-gray-200">
-                      <span className="text-xs text-gray-600 font-medium">Housing Allowance</span>
-                      <span className="text-xs font-semibold text-gray-900">{formatCurrency(Number(employee.housing_allowance))}</span>
-                    </div>
-                  )}
-                  {Number(employee?.transport_allowance) > 0 && (
-                    <div className="flex justify-between items-center py-1 border-b border-gray-200">
-                      <span className="text-xs text-gray-600 font-medium">Transport Allowance</span>
-                      <span className="text-xs font-semibold text-gray-900">{formatCurrency(Number(employee.transport_allowance))}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
-                    <span className="text-xs text-gray-600 font-medium">Overtime Pay</span>
-                    <span className="text-xs font-semibold text-green-700">{formatCurrency(overtimeAmount)}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
-                    <span className="text-xs text-gray-600 font-medium">Bonus Amount</span>
-                    <span className="text-xs font-semibold text-green-700">{formatCurrency(bonusAmount)}</span>
                   </div>
 
-                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
-                    <span className="text-xs text-gray-600 font-medium">Absent Days Deduction</span>
-                    <span className="text-xs font-semibold text-red-700">{formatCurrency(absentDeduction)}</span>
+                  {/* Deductions Section */}
+                  <div className="mb-3">
+                    <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Deductions</h4>
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-xs text-gray-600 font-medium">Absent Days Deduction</span>
+                        <span className="text-xs font-semibold text-red-700">-{formatCurrency(absentDeduction)}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-1">
+                        <span className="text-xs text-gray-600 font-medium">Advance Deduction</span>
+                        <span className="text-xs font-semibold text-red-700">-{formatCurrency(advanceDeduction)}</span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex justify-between items-center py-1 border-b border-gray-200">
-                    <span className="text-xs text-gray-600 font-medium">Advance Deduction</span>
-                    <span className="text-xs font-semibold text-red-700">{formatCurrency(advanceDeduction)}</span>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-t-2 border-gray-300">
-                    <span className="text-sm font-semibold text-gray-900">Final Amount</span>
-                    <span className="text-sm font-bold text-green-700">{formatCurrency(netSalary)}</span>
+                  {/* Total Section */}
+                  <div className="border-t-2 border-gray-300 pt-2">
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-sm font-bold text-gray-900">Net Salary</span>
+                      <span className="text-sm font-bold text-green-700">{formatCurrency(netSalary)}</span>
+                    </div>
                   </div>
                 </div>
               </div>

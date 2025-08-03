@@ -69,6 +69,8 @@ export async function GET(
       basic_salary: employee.basic_salary,
       nationality: employee.nationality,
       hourly_rate: employee.hourly_rate,
+      overtime_rate_multiplier: employee.overtime_rate_multiplier,
+      overtime_fixed_rate: employee.overtime_fixed_rate,
       contract_days_per_month: employee.contract_days_per_month,
       contract_hours_per_day: employee.contract_hours_per_day,
       date_of_birth: employee.date_of_birth?.toISOString().slice(0, 10),
@@ -200,6 +202,18 @@ export async function PUT(
       updateData.basic_salary = parseFloat(updateData.basic_salary);
     } else {
       updateData.basic_salary = null;
+    }
+
+    if (updateData.overtime_rate_multiplier !== undefined && updateData.overtime_rate_multiplier !== null) {
+      updateData.overtime_rate_multiplier = parseFloat(updateData.overtime_rate_multiplier);
+    } else {
+      updateData.overtime_rate_multiplier = 1.5; // Default value
+    }
+
+    if (updateData.overtime_fixed_rate !== undefined && updateData.overtime_fixed_rate !== null) {
+      updateData.overtime_fixed_rate = parseFloat(updateData.overtime_fixed_rate);
+    } else {
+      updateData.overtime_fixed_rate = null;
     }
 
     // Handle contract fields
