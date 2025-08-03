@@ -16,7 +16,10 @@ import {
   IconEdit,
   IconCamera,
   IconCheck,
-  IconX
+  IconX,
+  IconDatabase,
+  IconLink,
+  IconInfoCircle
 } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
@@ -32,6 +35,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { toast } from "sonner"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface MatchedEmployee {
   id: number
@@ -150,9 +154,7 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-  
       const response = await fetch('/api/profile')
-      
 
       if (response.ok) {
         const data = await response.json()
@@ -283,6 +285,21 @@ export default function ProfilePage() {
     }
   }
 
+  // Helper function to format dates
+  const formatDate = (dateString: string | undefined) => {
+    if (!dateString) return 'Not specified'
+    try {
+      return new Date(dateString).toLocaleDateString()
+    } catch {
+      return 'Invalid date'
+    }
+  }
+
+  // Helper function to check if we have real employee data
+  const hasRealEmployeeData = () => {
+    return profile.firstName || profile.matchedEmployee
+  }
+
   if (isLoading) {
     return (
       <div className="h-full w-full bg-background">
@@ -318,6 +335,22 @@ export default function ProfilePage() {
           </p>
         </div>
 
+        {/* Data Source Alert */}
+        {hasRealEmployeeData() && (
+          <Alert className="mb-6">
+            <IconDatabase className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Real Database Data:</strong> Your profile is now showing actual employee information from the database. 
+              {profile.matchedEmployee && (
+                <span className="ml-2">
+                  <IconLink className="h-4 w-4 inline mr-1" />
+                  Employee matched via National ID (Iqama Number)
+                </span>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
+
         <Tabs defaultValue="profile" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -336,14 +369,14 @@ export default function ProfilePage() {
                       Update your personal details and contact information
                     </CardDescription>
                   </div>
-                                     <Button
-                     variant={isEditing ? "outline" : "default"}
-                     onClick={() => setIsEditing(!isEditing)}
-                     disabled={isSaving}
-                   >
-                     {isEditing ? <IconX className="h-4 w-4 mr-2" /> : <IconEdit className="h-4 w-4 mr-2" />}
-                     {isEditing ? "Cancel" : "Edit"}
-                   </Button>
+                  <Button
+                    variant={isEditing ? "outline" : "default"}
+                    onClick={() => setIsEditing(!isEditing)}
+                    disabled={isSaving}
+                  >
+                    {isEditing ? <IconX className="h-4 w-4 mr-2" /> : <IconEdit className="h-4 w-4 mr-2" />}
+                    {isEditing ? "Cancel" : "Edit"}
+                  </Button>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -410,93 +443,93 @@ export default function ProfilePage() {
 
                 <Separator />
 
-                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="space-y-2">
-                     <Label htmlFor="firstName">First Name</Label>
-                     <Input
-                       id="firstName"
-                       value={profile.firstName || ''}
-                       onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
-                       disabled={!isEditing}
-                     />
-                   </div>
-                   <div className="space-y-2">
-                     <Label htmlFor="lastName">Last Name</Label>
-                     <Input
-                       id="lastName"
-                       value={profile.lastName || ''}
-                       onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
-                       disabled={!isEditing}
-                     />
-                   </div>
-                   <div className="space-y-2">
-                     <Label htmlFor="role">Role</Label>
-                     <Input
-                       id="role"
-                       value={profile.role}
-                       onChange={(e) => setProfile({ ...profile, role: e.target.value })}
-                       disabled={!isEditing}
-                     />
-                   </div>
-                   <div className="space-y-2">
-                     <Label htmlFor="department">Department</Label>
-                     <Input
-                       id="department"
-                       value={profile.department}
-                       onChange={(e) => setProfile({ ...profile, department: e.target.value })}
-                       disabled={!isEditing}
-                     />
-                   </div>
-                   <div className="space-y-2">
-                     <Label htmlFor="nationalId">National ID</Label>
-                     <Input
-                       id="nationalId"
-                       value={profile.nationalId || ''}
-                       onChange={(e) => setProfile({ ...profile, nationalId: e.target.value })}
-                       disabled={!isEditing}
-                       placeholder="Enter your national ID"
-                     />
-                   </div>
-                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName">First Name</Label>
+                    <Input
+                      id="firstName"
+                      value={profile.firstName || ''}
+                      onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      value={profile.lastName || ''}
+                      onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Role</Label>
+                    <Input
+                      id="role"
+                      value={profile.role}
+                      onChange={(e) => setProfile({ ...profile, role: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="department">Department</Label>
+                    <Input
+                      id="department"
+                      value={profile.department}
+                      onChange={(e) => setProfile({ ...profile, department: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nationalId">National ID</Label>
+                    <Input
+                      id="nationalId"
+                      value={profile.nationalId || ''}
+                      onChange={(e) => setProfile({ ...profile, nationalId: e.target.value })}
+                      disabled={!isEditing}
+                      placeholder="Enter your national ID"
+                    />
+                  </div>
+                </div>
 
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <div className="space-y-2">
-                     <Label htmlFor="address">Address</Label>
-                     <Input
-                       id="address"
-                       value={profile.address || ''}
-                       onChange={(e) => setProfile({ ...profile, address: e.target.value })}
-                       disabled={!isEditing}
-                     />
-                   </div>
-                   <div className="space-y-2">
-                     <Label htmlFor="city">City</Label>
-                     <Input
-                       id="city"
-                       value={profile.city || ''}
-                       onChange={(e) => setProfile({ ...profile, city: e.target.value })}
-                       disabled={!isEditing}
-                     />
-                   </div>
-                   <div className="space-y-2">
-                     <Label htmlFor="state">State</Label>
-                     <Input
-                       id="state"
-                       value={profile.state || ''}
-                       onChange={(e) => setProfile({ ...profile, state: e.target.value })}
-                       disabled={!isEditing}
-                     />
-                   </div>
-                   <div className="space-y-2">
-                     <Label htmlFor="country">Country</Label>
-                     <Input
-                       id="country"
-                       value={profile.country || ''}
-                       onChange={(e) => setProfile({ ...profile, country: e.target.value })}
-                       disabled={!isEditing}
-                     />
-                   </div>
-                 </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input
+                      id="address"
+                      value={profile.address || ''}
+                      onChange={(e) => setProfile({ ...profile, address: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      value={profile.city || ''}
+                      onChange={(e) => setProfile({ ...profile, city: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State</Label>
+                    <Input
+                      id="state"
+                      value={profile.state || ''}
+                      onChange={(e) => setProfile({ ...profile, state: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="country">Country</Label>
+                    <Input
+                      id="country"
+                      value={profile.country || ''}
+                      onChange={(e) => setProfile({ ...profile, country: e.target.value })}
+                      disabled={!isEditing}
+                    />
+                  </div>
+                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="bio">Bio</Label>
@@ -509,244 +542,252 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                                 {isEditing && (
-                   <div className="flex justify-end space-x-2">
-                     <Button
-                       variant="outline"
-                       onClick={() => setIsEditing(false)}
-                       disabled={isSaving}
-                     >
-                       Cancel
-                     </Button>
-                     <Button
-                       onClick={handleSaveProfile}
-                       disabled={isSaving}
-                     >
-                       {isSaving ? "Saving..." : "Save Changes"}
-                     </Button>
-                   </div>
-                 )}
+                {isEditing && (
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditing(false)}
+                      disabled={isSaving}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSaveProfile}
+                      disabled={isSaving}
+                    >
+                      {isSaving ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <Card>
-                 <CardHeader>
-                   <CardTitle className="flex items-center gap-2">
-                     <IconUser className="h-5 w-5" />
-                     Account Information
-                   </CardTitle>
-                 </CardHeader>
-                 <CardContent className="space-y-4">
-                   <div className="flex justify-between">
-                     <span className="text-sm text-muted-foreground">User ID</span>
-                     <span className="text-sm font-medium">{profile.id}</span>
-                   </div>
-                   <div className="flex justify-between">
-                     <span className="text-sm text-muted-foreground">Join Date</span>
-                     <span className="text-sm font-medium">
-                       {new Date(profile.joinDate).toLocaleDateString()}
-                     </span>
-                   </div>
-                   <div className="flex justify-between">
-                     <span className="text-sm text-muted-foreground">Last Login</span>
-                     <span className="text-sm font-medium">
-                       {new Date(profile.lastLogin).toLocaleString()}
-                     </span>
-                   </div>
-                   <div className="flex justify-between">
-                     <span className="text-sm text-muted-foreground">National ID</span>
-                     <span className="text-sm font-medium">
-                       {profile.nationalId || 'Not set'}
-                     </span>
-                   </div>
-                   <div className="flex justify-between">
-                     <span className="text-sm text-muted-foreground">Status</span>
-                     <Badge variant={profile.status === "active" ? "default" : "secondary"}>
-                       {profile.status}
-                     </Badge>
-                   </div>
-                 </CardContent>
-               </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <IconUser className="h-5 w-5" />
+                    Account Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">User ID</span>
+                    <span className="text-sm font-medium">{profile.id}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Join Date</span>
+                    <span className="text-sm font-medium">
+                      {formatDate(profile.joinDate)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Last Login</span>
+                    <span className="text-sm font-medium">
+                      {formatDate(profile.lastLogin)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">National ID</span>
+                    <span className="text-sm font-medium">
+                      {profile.nationalId || 'Not set'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Status</span>
+                    <Badge variant={profile.status === "active" ? "default" : "secondary"}>
+                      {profile.status}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
 
-               {profile.firstName && (
-                 <Card>
-                   <CardHeader>
-                     <CardTitle className="flex items-center gap-2">
-                       <IconUser className="h-5 w-5" />
-                       Employee Information
-                     </CardTitle>
-                   </CardHeader>
-                   <CardContent className="space-y-4">
-                     <div className="flex justify-between">
-                       <span className="text-sm text-muted-foreground">Full Name</span>
-                       <span className="text-sm font-medium">
-                         {profile.firstName} {profile.middleName} {profile.lastName}
-                       </span>
-                     </div>
-                     <div className="flex justify-between">
-                       <span className="text-sm text-muted-foreground">Phone</span>
-                       <span className="text-sm font-medium">{profile.phone}</span>
-                     </div>
-                     <div className="flex justify-between">
-                       <span className="text-sm text-muted-foreground">Designation</span>
-                       <span className="text-sm font-medium">{profile.designation || 'Not assigned'}</span>
-                     </div>
-                     <div className="flex justify-between">
-                       <span className="text-sm text-muted-foreground">Location</span>
-                       <span className="text-sm font-medium">
-                         {profile.city && profile.state ? `${profile.city}, ${profile.state}` : profile.country || 'Not specified'}
-                       </span>
-                     </div>
-                   </CardContent>
-                 </Card>
-               )}
+              {hasRealEmployeeData() && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <IconUser className="h-5 w-5" />
+                      Employee Information
+                      <Badge variant="outline" className="ml-2">
+                        <IconDatabase className="h-3 w-3 mr-1" />
+                        Database
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Full Name</span>
+                      <span className="text-sm font-medium">
+                        {profile.firstName} {profile.middleName} {profile.lastName}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Phone</span>
+                      <span className="text-sm font-medium">{profile.phone}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Designation</span>
+                      <span className="text-sm font-medium">{profile.designation || 'Not assigned'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Location</span>
+                      <span className="text-sm font-medium">
+                        {profile.city && profile.state ? `${profile.city}, ${profile.state}` : profile.country || 'Not specified'}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
-               {profile.matchedEmployee && (
-                 <Card>
-                   <CardHeader>
-                     <CardTitle className="flex items-center gap-2">
-                       <IconUser className="h-5 w-5" />
-                       Matched Employee Details
-                     </CardTitle>
-                     <CardDescription>
-                       Employee information matched with your Nation ID (Iqama Number)
-                     </CardDescription>
-                   </CardHeader>
-                   <CardContent className="space-y-4">
-                     <div className="flex justify-between">
-                       <span className="text-sm text-muted-foreground">Employee ID</span>
-                       <span className="text-sm font-medium">{profile.matchedEmployee.employee_id}</span>
-                     </div>
-                     <div className="flex justify-between">
-                       <span className="text-sm text-muted-foreground">Full Name</span>
-                       <span className="text-sm font-medium">
-                         {profile.matchedEmployee.first_name} {profile.matchedEmployee.middle_name} {profile.matchedEmployee.last_name}
-                       </span>
-                     </div>
-                     <div className="flex justify-between">
-                       <span className="text-sm text-muted-foreground">Nationality</span>
-                       <span className="text-sm font-medium">{profile.matchedEmployee.nationality || 'Not specified'}</span>
-                     </div>
-                     <div className="flex justify-between">
-                       <span className="text-sm text-muted-foreground">Date of Birth</span>
-                       <span className="text-sm font-medium">
-                         {profile.matchedEmployee.date_of_birth ? new Date(profile.matchedEmployee.date_of_birth).toLocaleDateString() : 'Not specified'}
-                       </span>
-                     </div>
-                     <div className="flex justify-between">
-                       <span className="text-sm text-muted-foreground">Hire Date</span>
-                       <span className="text-sm font-medium">
-                         {profile.matchedEmployee.hire_date ? new Date(profile.matchedEmployee.hire_date).toLocaleDateString() : 'Not specified'}
-                       </span>
-                     </div>
-                     <div className="flex justify-between">
-                       <span className="text-sm text-muted-foreground">Designation</span>
-                       <span className="text-sm font-medium">{profile.matchedEmployee.designation?.name || 'Not assigned'}</span>
-                     </div>
-                     <div className="flex justify-between">
-                       <span className="text-sm text-muted-foreground">Department</span>
-                       <span className="text-sm font-medium">{profile.matchedEmployee.department?.name || 'Not assigned'}</span>
-                     </div>
-                     <div className="flex justify-between">
-                       <span className="text-sm text-muted-foreground">Phone</span>
-                       <span className="text-sm font-medium">{profile.matchedEmployee.phone || 'Not specified'}</span>
-                     </div>
-                     <div className="flex justify-between">
-                       <span className="text-sm text-muted-foreground">Email</span>
-                       <span className="text-sm font-medium">{profile.matchedEmployee.email || 'Not specified'}</span>
-                     </div>
-                     <div className="flex justify-between">
-                       <span className="text-sm text-muted-foreground">Address</span>
-                       <span className="text-sm font-medium">{profile.matchedEmployee.address || 'Not specified'}</span>
-                     </div>
-                     <div className="flex justify-between">
-                       <span className="text-sm text-muted-foreground">Location</span>
-                       <span className="text-sm font-medium">
-                         {profile.matchedEmployee.city && profile.matchedEmployee.state 
-                           ? `${profile.matchedEmployee.city}, ${profile.matchedEmployee.state}` 
-                           : profile.matchedEmployee.country || 'Not specified'}
-                       </span>
-                     </div>
-                     
-                     {/* Iqama Information */}
-                     <Separator />
-                     <div className="space-y-2">
-                       <h4 className="text-sm font-medium">Iqama Information</h4>
-                       <div className="flex justify-between">
-                         <span className="text-sm text-muted-foreground">Iqama Number</span>
-                         <span className="text-sm font-medium">{profile.matchedEmployee.iqama_number}</span>
-                       </div>
-                       <div className="flex justify-between">
-                         <span className="text-sm text-muted-foreground">Iqama Expiry</span>
-                         <span className="text-sm font-medium">
-                           {profile.matchedEmployee.iqama_expiry ? new Date(profile.matchedEmployee.iqama_expiry).toLocaleDateString() : 'Not specified'}
-                         </span>
-                       </div>
-                     </div>
+              {profile.matchedEmployee && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <IconUser className="h-5 w-5" />
+                      Matched Employee Details
+                      <Badge variant="outline" className="ml-2">
+                        <IconLink className="h-3 w-3 mr-1" />
+                        Matched
+                      </Badge>
+                    </CardTitle>
+                    <CardDescription>
+                      Employee information matched with your National ID (Iqama Number)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Employee ID</span>
+                      <span className="text-sm font-medium">{profile.matchedEmployee.employee_id}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Full Name</span>
+                      <span className="text-sm font-medium">
+                        {profile.matchedEmployee.first_name} {profile.matchedEmployee.middle_name} {profile.matchedEmployee.last_name}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Nationality</span>
+                      <span className="text-sm font-medium">{profile.matchedEmployee.nationality || 'Not specified'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Date of Birth</span>
+                      <span className="text-sm font-medium">
+                        {formatDate(profile.matchedEmployee.date_of_birth)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Hire Date</span>
+                      <span className="text-sm font-medium">
+                        {formatDate(profile.matchedEmployee.hire_date)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Designation</span>
+                      <span className="text-sm font-medium">{profile.matchedEmployee.designation?.name || 'Not assigned'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Department</span>
+                      <span className="text-sm font-medium">{profile.matchedEmployee.department?.name || 'Not assigned'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Phone</span>
+                      <span className="text-sm font-medium">{profile.matchedEmployee.phone || 'Not specified'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Email</span>
+                      <span className="text-sm font-medium">{profile.matchedEmployee.email || 'Not specified'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Address</span>
+                      <span className="text-sm font-medium">{profile.matchedEmployee.address || 'Not specified'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Location</span>
+                      <span className="text-sm font-medium">
+                        {profile.matchedEmployee.city && profile.matchedEmployee.state 
+                          ? `${profile.matchedEmployee.city}, ${profile.matchedEmployee.state}` 
+                          : profile.matchedEmployee.country || 'Not specified'}
+                      </span>
+                    </div>
+                    
+                    {/* Iqama Information */}
+                    <Separator />
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Iqama Information</h4>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Iqama Number</span>
+                        <span className="text-sm font-medium">{profile.matchedEmployee.iqama_number}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-sm text-muted-foreground">Iqama Expiry</span>
+                        <span className="text-sm font-medium">
+                          {formatDate(profile.matchedEmployee.iqama_expiry)}
+                        </span>
+                      </div>
+                    </div>
 
-                     {/* Passport Information */}
-                     {profile.matchedEmployee.passport_number && (
-                       <>
-                         <Separator />
-                         <div className="space-y-2">
-                           <h4 className="text-sm font-medium">Passport Information</h4>
-                           <div className="flex justify-between">
-                             <span className="text-sm text-muted-foreground">Passport Number</span>
-                             <span className="text-sm font-medium">{profile.matchedEmployee.passport_number}</span>
-                           </div>
-                           <div className="flex justify-between">
-                             <span className="text-sm text-muted-foreground">Passport Expiry</span>
-                             <span className="text-sm font-medium">
-                               {profile.matchedEmployee.passport_expiry ? new Date(profile.matchedEmployee.passport_expiry).toLocaleDateString() : 'Not specified'}
-                             </span>
-                           </div>
-                         </div>
-                       </>
-                     )}
+                    {/* Passport Information */}
+                    {profile.matchedEmployee.passport_number && (
+                      <>
+                        <Separator />
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium">Passport Information</h4>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Passport Number</span>
+                            <span className="text-sm font-medium">{profile.matchedEmployee.passport_number}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Passport Expiry</span>
+                            <span className="text-sm font-medium">
+                              {formatDate(profile.matchedEmployee.passport_expiry)}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    )}
 
-                     {/* Driving License Information */}
-                     {profile.matchedEmployee.driving_license_number && (
-                       <>
-                         <Separator />
-                         <div className="space-y-2">
-                           <h4 className="text-sm font-medium">Driving License</h4>
-                           <div className="flex justify-between">
-                             <span className="text-sm text-muted-foreground">License Number</span>
-                             <span className="text-sm font-medium">{profile.matchedEmployee.driving_license_number}</span>
-                           </div>
-                           <div className="flex justify-between">
-                             <span className="text-sm text-muted-foreground">Expiry Date</span>
-                             <span className="text-sm font-medium">
-                               {profile.matchedEmployee.driving_license_expiry ? new Date(profile.matchedEmployee.driving_license_expiry).toLocaleDateString() : 'Not specified'}
-                             </span>
-                           </div>
-                         </div>
-                       </>
-                     )}
+                    {/* Driving License Information */}
+                    {profile.matchedEmployee.driving_license_number && (
+                      <>
+                        <Separator />
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium">Driving License</h4>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">License Number</span>
+                            <span className="text-sm font-medium">{profile.matchedEmployee.driving_license_number}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Expiry Date</span>
+                            <span className="text-sm font-medium">
+                              {formatDate(profile.matchedEmployee.driving_license_expiry)}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    )}
 
-                     {/* Operator License Information */}
-                     {profile.matchedEmployee.operator_license_number && (
-                       <>
-                         <Separator />
-                         <div className="space-y-2">
-                           <h4 className="text-sm font-medium">Operator License</h4>
-                           <div className="flex justify-between">
-                             <span className="text-sm text-muted-foreground">License Number</span>
-                             <span className="text-sm font-medium">{profile.matchedEmployee.operator_license_number}</span>
-                           </div>
-                           <div className="flex justify-between">
-                             <span className="text-sm text-muted-foreground">Expiry Date</span>
-                             <span className="text-sm font-medium">
-                               {profile.matchedEmployee.operator_license_expiry ? new Date(profile.matchedEmployee.operator_license_expiry).toLocaleDateString() : 'Not specified'}
-                             </span>
-                           </div>
-                         </div>
-                       </>
-                     )}
-                   </CardContent>
-                 </Card>
-               )}
+                    {/* Operator License Information */}
+                    {profile.matchedEmployee.operator_license_number && (
+                      <>
+                        <Separator />
+                        <div className="space-y-2">
+                          <h4 className="text-sm font-medium">Operator License</h4>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">License Number</span>
+                            <span className="text-sm font-medium">{profile.matchedEmployee.operator_license_number}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Expiry Date</span>
+                            <span className="text-sm font-medium">
+                              {formatDate(profile.matchedEmployee.operator_license_expiry)}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               <Card>
                 <CardHeader>
@@ -881,11 +922,11 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                                 <div className="flex justify-end">
-                   <Button onClick={handleSaveNotifications} disabled={isSaving}>
-                     {isSaving ? "Saving..." : "Save Preferences"}
-                   </Button>
-                 </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveNotifications} disabled={isSaving}>
+                    {isSaving ? "Saving..." : "Save Preferences"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -984,11 +1025,11 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
-                                 <div className="flex justify-end">
-                   <Button onClick={handleSaveAppearance} disabled={isSaving}>
-                     {isSaving ? "Saving..." : "Save Settings"}
-                   </Button>
-                 </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveAppearance} disabled={isSaving}>
+                    {isSaving ? "Saving..." : "Save Settings"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -1083,13 +1124,13 @@ export default function ProfilePage() {
                         </DialogHeader>
                         <DialogFooter>
                           <Button variant="outline">Cancel</Button>
-                                                     <Button
-                             variant="destructive"
-                             onClick={handleDeleteAccount}
-                             disabled={isSaving}
-                           >
-                             {isSaving ? "Deleting..." : "Delete Account"}
-                           </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={handleDeleteAccount}
+                            disabled={isSaving}
+                          >
+                            {isSaving ? "Deleting..." : "Delete Account"}
+                          </Button>
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>

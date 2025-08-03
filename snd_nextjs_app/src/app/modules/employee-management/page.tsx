@@ -44,6 +44,8 @@ interface Employee {
   hourly_rate: number | null;
   overtime_rate_multiplier?: number | null;
   overtime_fixed_rate?: number | null;
+  iqama_number?: string | null;
+  iqama_expiry?: string | null;
   current_assignment?: {
     id: number;
     type: string;
@@ -701,6 +703,15 @@ export default function EmployeeManagementPage() {
                         {getSortIcon('department')}
                       </div>
                     </TableHead>
+                    <TableHead
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleSort('iqama_number')}
+                    >
+                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        Iqama Number
+                        {getSortIcon('iqama_number')}
+                      </div>
+                    </TableHead>
                     <TableHead className={isRTL ? 'text-right' : 'text-left'}>
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
                         Current Assignment
@@ -730,7 +741,7 @@ export default function EmployeeManagementPage() {
                 <TableBody>
                   {currentEmployees.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8">
+                      <TableCell colSpan={9} className="text-center py-8">
                         <div className="text-muted-foreground">
                           {searchTerm || statusFilter !== 'all' || departmentFilter !== 'all' || assignmentFilter !== 'all'
                             ? t('employee:messages.noEmployeesFilter')
@@ -761,6 +772,7 @@ export default function EmployeeManagementPage() {
                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.email || 'N/A'}</TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.department || 'N/A'}</TableCell>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.iqama_number || 'N/A'}</TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           {employee.current_assignment ? (
                             <div className="space-y-1">
