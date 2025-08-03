@@ -65,22 +65,45 @@ export async function GET(
     
     console.log('🔍 PAYSLIP API - Attendance records found:', attendanceData.length);
 
-    // Transform attendance data
+    // Transform attendance data - Convert Decimal to numbers
     const transformedAttendanceData = attendanceData.map(attendance => ({
       date: attendance.date.toISOString().split('T')[0],
       day: attendance.date.getDate(),
       status: attendance.status,
-      hours: attendance.hours_worked || 0,
-      overtime: attendance.overtime_hours || 0
+      hours: Number(attendance.hours_worked) || 0,
+      overtime: Number(attendance.overtime_hours) || 0
     }));
 
     // Mock company data (you can replace this with actual company data from your database)
     const company = {
-      name: "Your Company Name",
-      address: "Company Address",
-      phone: "+1234567890",
-      email: "info@company.com",
-      website: "www.company.com"
+      name: "Samhan Naser Al-Dosri Est.",
+      address: "For Gen. Contracting & Rent. Equipments",
+      phone: "+966501234567",
+      email: "info@snd.com",
+      website: "www.snd.com"
+    };
+
+    // Transform payroll data to convert Decimal to numbers
+    const transformedPayroll = {
+      ...payroll,
+      base_salary: Number(payroll.base_salary),
+      overtime_amount: Number(payroll.overtime_amount),
+      bonus_amount: Number(payroll.bonus_amount),
+      deduction_amount: Number(payroll.deduction_amount),
+      advance_deduction: Number(payroll.advance_deduction),
+      final_amount: Number(payroll.final_amount),
+      total_worked_hours: Number(payroll.total_worked_hours),
+      overtime_hours: Number(payroll.overtime_hours)
+    };
+
+    // Transform employee data to convert Decimal to numbers
+    const transformedEmployee = {
+      ...payroll.employee,
+      basic_salary: Number(payroll.employee.basic_salary || 0),
+      food_allowance: Number(payroll.employee.food_allowance || 0),
+      housing_allowance: Number(payroll.employee.housing_allowance || 0),
+      transport_allowance: Number(payroll.employee.transport_allowance || 0),
+      advance_payment: Number(payroll.employee.advance_payment || 0)
     };
 
     // Return JSON data for the frontend
@@ -88,8 +111,8 @@ export async function GET(
     return NextResponse.json({
       success: true,
       data: {
-        payroll,
-        employee: payroll.employee,
+        payroll: transformedPayroll,
+        employee: transformedEmployee,
         attendanceData: transformedAttendanceData,
         company
       }

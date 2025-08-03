@@ -547,34 +547,34 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     (employee.full_name || `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || 'Unknown Employee') : 
     'Unknown Employee';
 
-  // Calculate pay details
-  const basicSalary = payroll.base_salary || 0;
-  const overtimeAmount = payroll.overtime_amount || 0;
-  const bonusAmount = payroll.bonus_amount || 0;
-  const deductionAmount = payroll.deduction_amount || 0;
-  const advanceDeduction = payroll.advance_deduction || 0;
-  const finalAmount = payroll.final_amount || 0;
-  const totalWorkedHours = payroll.total_worked_hours || 0;
-  const overtimeHours = payroll.overtime_hours || 0;
+  // Calculate pay details - Convert Decimal to numbers
+  const basicSalary = Number(payroll.base_salary) || 0;
+  const overtimeAmount = Number(payroll.overtime_amount) || 0;
+  const bonusAmount = Number(payroll.bonus_amount) || 0;
+  const deductionAmount = Number(payroll.deduction_amount) || 0;
+  const advanceDeduction = Number(payroll.advance_deduction) || 0;
+  const finalAmount = Number(payroll.final_amount) || 0;
+  const totalWorkedHours = Number(payroll.total_worked_hours) || 0;
+  const overtimeHours = Number(payroll.overtime_hours) || 0;
 
   // Calculate absent days from actual attendance data
   const absentDays = attendanceData.reduce((count, day) => {
     return count + (day.status === 'A' ? 1 : 0);
   }, 0);
 
-  // Calculate total worked hours from attendance data
+  // Calculate total worked hours from attendance data - Convert Decimal to numbers
   const totalWorkedHoursFromAttendance = attendanceData.reduce((total, day) => {
-    return total + (day.hours || 0) + (day.overtime || 0);
+    return total + (Number(day.hours) || 0) + (Number(day.overtime) || 0);
   }, 0);
 
-  // Calculate overtime hours from attendance data
+  // Calculate overtime hours from attendance data - Convert Decimal to numbers
   const overtimeHoursFromAttendance = attendanceData.reduce((total, day) => {
-    return total + (day.overtime || 0);
+    return total + (Number(day.overtime) || 0);
   }, 0);
 
-  // Calculate days worked from attendance data (excluding absences)
+  // Calculate days worked from attendance data (excluding absences) - Convert Decimal to numbers
   const daysWorkedFromAttendance = attendanceData.reduce((count, day) => {
-    return count + (day.status !== 'A' && (day.hours > 0 || day.overtime > 0) ? 1 : 0);
+    return count + (day.status !== 'A' && (Number(day.hours) > 0 || Number(day.overtime) > 0) ? 1 : 0);
   }, 0);
 
   // Format dates
@@ -590,10 +590,10 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   // Create calendar data for the month
   const calendarDays = attendanceData || [];
 
-  // Calculate totals for salary details
-  const totalAllowances = (employee.food_allowance || 0) + (employee.housing_allowance || 0) + (employee.transport_allowance || 0);
+  // Calculate totals for salary details - Convert Decimal to numbers
+  const totalAllowances = (Number(employee.food_allowance) || 0) + (Number(employee.housing_allowance) || 0) + (Number(employee.transport_allowance) || 0);
   const absentDeduction = absentDays > 0 ? (basicSalary / daysInMonth) * absentDays : 0;
-  const netSalary = basicSalary + totalAllowances + overtimeAmount - absentDeduction - (employee.advance_payment || 0);
+  const netSalary = basicSalary + totalAllowances + overtimeAmount - absentDeduction - (Number(employee.advance_payment) || 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -782,14 +782,14 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                         const dayData = calendarDays.find(d => d.date === dateString);
                         const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
                         const isFriday = dayName === 'Fri';
-                        const isAbsent = dayData && dayData.hours === 0 && dayData.overtime === 0 && !isFriday;
+                        const isAbsent = dayData && Number(dayData.hours) === 0 && Number(dayData.overtime) === 0 && !isFriday;
                         
                         return (
                           <td key={`regular-${day}`} className={`p-1 text-center text-xs border border-gray-200 ${
                             isFriday ? 'bg-blue-100' : isAbsent ? 'bg-red-100 text-red-700 font-semibold' : 'bg-white'
                           }`}>
                             {isFriday ? 'F' : isAbsent ? 'A' : dayData ? (
-                              <span className="text-green-700 font-semibold">{dayData.hours}</span>
+                              <span className="text-green-700 font-semibold">{Number(dayData.hours)}</span>
                             ) : '-'}
                           </td>
                         );
@@ -807,7 +807,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                           <td key={`overtime-${day}`} className={`p-1 text-center text-xs border border-gray-200 ${
                             isFriday ? 'bg-blue-100' : 'bg-white'
                           }`}>
-                            <span className="text-blue-700 font-semibold">{dayData && dayData.overtime > 0 ? dayData.overtime : '0'}</span>
+                            <span className="text-blue-700 font-semibold">{dayData && Number(dayData.overtime) > 0 ? Number(dayData.overtime) : '0'}</span>
                           </td>
                         );
                       })}
@@ -855,45 +855,45 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                 <div className="space-y-2">
                   <div className="flex justify-between items-center py-1 border-b border-gray-200">
                     <span className="text-xs text-gray-600 font-medium">Basic Salary</span>
-                    <span className="text-xs font-semibold text-green-700">{formatCurrency(payroll.base_salary || 0)}</span>
+                    <span className="text-xs font-semibold text-green-700">{formatCurrency(basicSalary)}</span>
                   </div>
-                  {employee?.food_allowance && employee.food_allowance > 0 && (
+                  {Number(employee?.food_allowance) > 0 && (
                     <div className="flex justify-between items-center py-1 border-b border-gray-200">
                       <span className="text-xs text-gray-600 font-medium">Food Allowance</span>
-                      <span className="text-xs font-semibold text-gray-900">{formatCurrency(employee.food_allowance)}</span>
+                      <span className="text-xs font-semibold text-gray-900">{formatCurrency(Number(employee.food_allowance))}</span>
                     </div>
                   )}
-                  {employee?.housing_allowance && employee.housing_allowance > 0 && (
+                  {Number(employee?.housing_allowance) > 0 && (
                     <div className="flex justify-between items-center py-1 border-b border-gray-200">
                       <span className="text-xs text-gray-600 font-medium">Housing Allowance</span>
-                      <span className="text-xs font-semibold text-gray-900">{formatCurrency(employee.housing_allowance)}</span>
+                      <span className="text-xs font-semibold text-gray-900">{formatCurrency(Number(employee.housing_allowance))}</span>
                     </div>
                   )}
-                  {employee?.transport_allowance && employee.transport_allowance > 0 && (
+                  {Number(employee?.transport_allowance) > 0 && (
                     <div className="flex justify-between items-center py-1 border-b border-gray-200">
                       <span className="text-xs text-gray-600 font-medium">Transport Allowance</span>
-                      <span className="text-xs font-semibold text-gray-900">{formatCurrency(employee.transport_allowance)}</span>
+                      <span className="text-xs font-semibold text-gray-900">{formatCurrency(Number(employee.transport_allowance))}</span>
                     </div>
                   )}
                   <div className="flex justify-between items-center py-1 border-b border-gray-200">
                     <span className="text-xs text-gray-600 font-medium">Overtime Pay</span>
-                    <span className="text-xs font-semibold text-green-700">{formatCurrency(payroll.overtime_amount || 0)}</span>
+                    <span className="text-xs font-semibold text-green-700">{formatCurrency(overtimeAmount)}</span>
                   </div>
                   <div className="flex justify-between items-center py-1 border-b border-gray-200">
                     <span className="text-xs text-gray-600 font-medium">Bonus Amount</span>
-                    <span className="text-xs font-semibold text-green-700">{formatCurrency(payroll.bonus_amount || 0)}</span>
+                    <span className="text-xs font-semibold text-green-700">{formatCurrency(bonusAmount)}</span>
                   </div>
                   <div className="flex justify-between items-center py-1 border-b border-gray-200">
                     <span className="text-xs text-gray-600 font-medium">Deduction Amount</span>
-                    <span className="text-xs font-semibold text-red-700">{formatCurrency(payroll.deduction_amount || 0)}</span>
+                    <span className="text-xs font-semibold text-red-700">{formatCurrency(deductionAmount)}</span>
                   </div>
                   <div className="flex justify-between items-center py-1 border-b border-gray-200">
                     <span className="text-xs text-gray-600 font-medium">Advance Deduction</span>
-                    <span className="text-xs font-semibold text-red-700">{formatCurrency(payroll.advance_deduction || 0)}</span>
+                    <span className="text-xs font-semibold text-red-700">{formatCurrency(advanceDeduction)}</span>
                   </div>
                   <div className="flex justify-between items-center py-2 border-t-2 border-gray-300">
                     <span className="text-sm font-semibold text-gray-900">Final Amount</span>
-                    <span className="text-sm font-bold text-green-700">{formatCurrency(payroll.final_amount || 0)}</span>
+                    <span className="text-sm font-bold text-green-700">{formatCurrency(finalAmount)}</span>
                   </div>
                 </div>
               </div>
