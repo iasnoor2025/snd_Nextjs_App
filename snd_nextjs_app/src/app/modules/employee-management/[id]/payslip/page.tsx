@@ -68,7 +68,7 @@ interface PayslipData {
   assignment_location?: string;
 }
 
-// Professional print styles
+// Professional print styles to match the exact payslip layout
 const printStyles = `
   @media print {
     @page {
@@ -81,6 +81,8 @@ const printStyles = `
       print-color-adjust: exact !important;
       background-color: white !important;
       font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+      font-size: 12px !important;
+      line-height: 1.4 !important;
     }
 
     .sidebar-wrapper,
@@ -104,113 +106,127 @@ const printStyles = `
       border: none !important;
     }
 
-    /* Header Section */
+    /* Header Section - Compact */
     .bg-gradient-to-br {
       background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
       color: white !important;
-      padding: 1.5rem !important;
+      padding: 0.75rem !important;
       border-radius: 0 !important;
-      margin-bottom: 1.5rem !important;
+      margin-bottom: 0.75rem !important;
     }
 
     .bg-white.p-2.rounded-lg.shadow-md {
       background: white !important;
-      padding: 0.5rem !important;
-      border-radius: 0.5rem !important;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+      padding: 0.25rem !important;
+      border-radius: 0.25rem !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .w-12.h-12 {
+      width: 2rem !important;
+      height: 2rem !important;
     }
 
     .text-xl.font-bold {
-      font-size: 1.25rem !important;
+      font-size: 1rem !important;
       font-weight: 700 !important;
-      margin-bottom: 0.25rem !important;
+      margin-bottom: 0.125rem !important;
     }
 
     .text-sm.opacity-90 {
-      font-size: 0.875rem !important;
+      font-size: 0.75rem !important;
       opacity: 0.9 !important;
     }
 
     .text-lg.font-semibold {
-      font-size: 1.125rem !important;
+      font-size: 0.875rem !important;
       font-weight: 600 !important;
     }
 
-    /* Employee Information Grid */
+    /* Employee Information Grid - Compact */
     .grid.grid-cols-1.lg\\:grid-cols-3 {
       display: grid !important;
       grid-template-columns: repeat(3, 1fr) !important;
-      gap: 1rem !important;
-      margin-bottom: 1.5rem !important;
+      gap: 0.5rem !important;
+      margin-bottom: 0.75rem !important;
     }
 
-    .bg-gray-50.border.border-gray-200.rounded-lg.p-4 {
-      background: #f9fafb !important;
+    .bg-white.border.border-gray-200.rounded-lg.p-4 {
+      background: white !important;
       border: 1px solid #e5e7eb !important;
-      border-radius: 0.5rem !important;
-      padding: 1rem !important;
+      border-radius: 0.25rem !important;
+      padding: 0.5rem !important;
     }
 
     .text-xs.font-semibold.text-gray-600.uppercase.tracking-wide.mb-3 {
-      font-size: 0.75rem !important;
+      font-size: 0.625rem !important;
       font-weight: 600 !important;
       color: #6b7280 !important;
       text-transform: uppercase !important;
       letter-spacing: 0.05em !important;
-      margin-bottom: 0.75rem !important;
+      margin-bottom: 0.375rem !important;
     }
 
     .space-y-2 {
       display: flex !important;
       flex-direction: column !important;
-      gap: 0.5rem !important;
+      gap: 0.25rem !important;
     }
 
-    .flex.justify-between.items-center.py-1.border-b.border-gray-100 {
+    .flex.justify-between.items-center {
       display: flex !important;
       justify-content: space-between !important;
       align-items: center !important;
-      padding: 0.25rem 0 !important;
+      padding: 0.125rem 0 !important;
       border-bottom: 1px solid #f3f4f6 !important;
     }
 
     .text-xs.text-gray-600.font-medium {
-      font-size: 0.75rem !important;
+      font-size: 0.625rem !important;
       color: #6b7280 !important;
       font-weight: 500 !important;
     }
 
     .text-xs.font-semibold.text-gray-900 {
-      font-size: 0.75rem !important;
+      font-size: 0.625rem !important;
       font-weight: 600 !important;
       color: #111827 !important;
     }
 
     .text-xs.font-semibold.text-green-700 {
-      font-size: 0.75rem !important;
+      font-size: 0.625rem !important;
       font-weight: 600 !important;
       color: #15803d !important;
     }
 
-    /* Working Hours Summary */
+    /* Working Hours Summary and Salary Breakdown - Two column layout */
+    .grid.grid-cols-1.gap-6.md\\:grid-cols-2 {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 2rem !important;
+      margin-bottom: 1.5rem !important;
+    }
+
+    /* Working Hours Summary - Left column */
     .bg-blue-50.border.border-blue-200.rounded-lg.p-4 {
       background: #eff6ff !important;
       border: 1px solid #bfdbfe !important;
       border-radius: 0.5rem !important;
       padding: 1rem !important;
-      margin-bottom: 1.5rem !important;
+      margin: 0 !important;
     }
 
     .text-sm.font-semibold.text-blue-800 {
       font-size: 0.875rem !important;
       font-weight: 600 !important;
       color: #1e40af !important;
+      margin-bottom: 0.5rem !important;
     }
 
     .grid.grid-cols-2.gap-y-2 {
       display: grid !important;
       grid-template-columns: 1fr 1fr !important;
-      gap: 0.5rem !important;
+      gap: 0.75rem !important;
     }
 
     .text-sm.font-medium {
@@ -239,6 +255,22 @@ const printStyles = `
       font-size: 0.875rem !important;
       text-align: right !important;
       color: #dc2626 !important;
+    }
+
+    /* Salary Breakdown - Right column */
+    .bg-gray-50.border.border-gray-200.rounded-lg.p-4 {
+      background: #f9fafb !important;
+      border: 1px solid #e5e7eb !important;
+      border-radius: 0.5rem !important;
+      padding: 1rem !important;
+      margin: 0 !important;
+    }
+
+    .text-sm.font-semibold.text-gray-800 {
+      font-size: 0.875rem !important;
+      font-weight: 600 !important;
+      color: #1f2937 !important;
+      margin-bottom: 0.5rem !important;
     }
 
     /* Attendance Record */

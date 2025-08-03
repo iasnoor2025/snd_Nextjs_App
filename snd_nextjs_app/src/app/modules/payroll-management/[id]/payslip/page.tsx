@@ -13,7 +13,7 @@ import { usePrint } from "@/hooks/use-print";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 
-// Professional print styles
+// Professional print styles to match the exact payslip layout
 const printStyles = `
   @media print {
     @page {
@@ -26,6 +26,8 @@ const printStyles = `
       print-color-adjust: exact !important;
       background-color: white !important;
       font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+      font-size: 12px !important;
+      line-height: 1.4 !important;
     }
 
     .sidebar-wrapper,
@@ -49,13 +51,13 @@ const printStyles = `
       border: none !important;
     }
 
-    /* Header Section */
+    /* Header Section - Match the blue banner */
     .bg-gradient-to-br {
       background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
       color: white !important;
-      padding: 1.5rem !important;
+      padding: 1rem !important;
       border-radius: 0 !important;
-      margin-bottom: 1.5rem !important;
+      margin-bottom: 1rem !important;
     }
 
     .bg-white.p-2.rounded-lg.shadow-md {
@@ -63,6 +65,11 @@ const printStyles = `
       padding: 0.5rem !important;
       border-radius: 0.5rem !important;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .w-12.h-12 {
+      width: 3rem !important;
+      height: 3rem !important;
     }
 
     .text-xl.font-bold {
@@ -81,16 +88,16 @@ const printStyles = `
       font-weight: 600 !important;
     }
 
-    /* Employee Information Grid */
+    /* Employee Information Grid - Three columns layout */
     .grid.grid-cols-1.lg\\:grid-cols-3 {
       display: grid !important;
       grid-template-columns: repeat(3, 1fr) !important;
       gap: 1rem !important;
-      margin-bottom: 1.5rem !important;
+      margin-bottom: 1rem !important;
     }
 
-    .bg-gray-50.border.border-gray-200.rounded-lg.p-4 {
-      background: #f9fafb !important;
+    .bg-white.border.border-gray-200.rounded-lg.p-4 {
+      background: white !important;
       border: 1px solid #e5e7eb !important;
       border-radius: 0.5rem !important;
       padding: 1rem !important;
@@ -111,7 +118,7 @@ const printStyles = `
       gap: 0.5rem !important;
     }
 
-    .flex.justify-between.items-center.py-1.border-b.border-gray-100 {
+    .flex.justify-between.items-center {
       display: flex !important;
       justify-content: space-between !important;
       align-items: center !important;
@@ -137,25 +144,26 @@ const printStyles = `
       color: #15803d !important;
     }
 
-    /* Working Hours Summary */
+    /* Working Hours Summary - Left section */
     .bg-blue-50.border.border-blue-200.rounded-lg.p-4 {
       background: #eff6ff !important;
       border: 1px solid #bfdbfe !important;
       border-radius: 0.5rem !important;
       padding: 1rem !important;
-      margin-bottom: 1.5rem !important;
+      margin-bottom: 1rem !important;
     }
 
     .text-sm.font-semibold.text-blue-800 {
       font-size: 0.875rem !important;
       font-weight: 600 !important;
       color: #1e40af !important;
+      margin-bottom: 0.5rem !important;
     }
 
-    .grid.grid-cols-2.gap-y-2 {
+    .grid.grid-cols-2.gap-3 {
       display: grid !important;
       grid-template-columns: 1fr 1fr !important;
-      gap: 0.5rem !important;
+      gap: 0.75rem !important;
     }
 
     .text-sm.font-medium {
@@ -186,7 +194,7 @@ const printStyles = `
       color: #dc2626 !important;
     }
 
-    /* Attendance Record */
+    /* Attendance Record - Calendar grid */
     .overflow-x-auto.rounded-md.border {
       overflow-x: auto !important;
       border-radius: 0.375rem !important;
@@ -194,6 +202,16 @@ const printStyles = `
       margin-bottom: 1rem !important;
     }
 
+    .text-xs.font-semibold.text-gray-600.uppercase.tracking-wide.mb-2 {
+      font-size: 0.75rem !important;
+      font-weight: 600 !important;
+      color: #6b7280 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      margin-bottom: 0.5rem !important;
+    }
+
+    /* Calendar table styles */
     .min-w-full.divide-y.divide-gray-200 {
       min-width: 100% !important;
       border-collapse: collapse !important;
@@ -303,12 +321,78 @@ const printStyles = `
       color: #dc2626 !important;
     }
 
-    /* Salary Breakdown */
+    /* Working Hours Summary and Salary Breakdown - Two column layout */
     .grid.grid-cols-1.gap-6.md\\:grid-cols-2 {
       display: grid !important;
       grid-template-columns: 1fr 1fr !important;
-      gap: 1.5rem !important;
+      gap: 2rem !important;
       margin-bottom: 1.5rem !important;
+    }
+
+    /* Working Hours Summary - Left column */
+    .bg-blue-50.border.border-blue-200.rounded-lg.p-4 {
+      background: #eff6ff !important;
+      border: 1px solid #bfdbfe !important;
+      border-radius: 0.5rem !important;
+      padding: 1rem !important;
+      margin: 0 !important;
+    }
+
+    .text-sm.font-semibold.text-blue-800 {
+      font-size: 0.875rem !important;
+      font-weight: 600 !important;
+      color: #1e40af !important;
+      margin-bottom: 0.5rem !important;
+    }
+
+    .grid.grid-cols-2.gap-3 {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 0.75rem !important;
+    }
+
+    .text-sm.font-medium {
+      font-size: 0.875rem !important;
+      font-weight: 500 !important;
+    }
+
+    .text-sm.text-right {
+      font-size: 0.875rem !important;
+      text-align: right !important;
+    }
+
+    .text-sm.text-right.font-semibold {
+      font-size: 0.875rem !important;
+      text-align: right !important;
+      font-weight: 600 !important;
+    }
+
+    .text-sm.text-right.text-green-600 {
+      font-size: 0.875rem !important;
+      text-align: right !important;
+      color: #16a34a !important;
+    }
+
+    .text-sm.text-right.text-red-600 {
+      font-size: 0.875rem !important;
+      text-align: right !important;
+      color: #dc2626 !important;
+    }
+
+    /* Salary Breakdown - Right column */
+    .bg-gray-50.border.border-gray-200.rounded-lg.p-4 {
+      background: #f9fafb !important;
+      border: 1px solid #e5e7eb !important;
+      border-radius: 0.5rem !important;
+      padding: 1rem !important;
+      margin: 0 !important;
+    }
+
+    .text-sm.font-semibold.text-gray-800 {
+      font-size: 0.875rem !important;
+      font-weight: 600 !important;
+      color: #1f2937 !important;
+      margin-bottom: 0.5rem !important;
     }
 
     .space-y-4 {
@@ -338,7 +422,7 @@ const printStyles = `
       border: 1px solid #bbf7d0 !important;
       border-radius: 0.5rem !important;
       padding: 1rem !important;
-      margin-bottom: 1.5rem !important;
+      margin-top: 1rem !important;
     }
 
     .text-lg.font-bold.text-green-800 {
@@ -348,11 +432,11 @@ const printStyles = `
     }
 
     /* Signatures */
-    .flex.justify-end.border-t.pt-6 {
+    .flex.justify-between.items-end {
       display: flex !important;
-      justify-content: flex-end !important;
-      border-top: 1px solid #e5e7eb !important;
-      padding-top: 1.5rem !important;
+      justify-content: space-between !important;
+      align-items: flex-end !important;
+      margin-top: 1.5rem !important;
     }
 
     .grid.grid-cols-3.gap-x-12.text-sm {
@@ -376,10 +460,10 @@ const printStyles = `
       font-style: italic !important;
     }
 
-    .mt-8.border-t.border-gray-300.pt-1 {
-      margin-top: 2rem !important;
+    .border-t.border-gray-300 {
       border-top: 1px solid #d1d5db !important;
       padding-top: 0.25rem !important;
+      margin-top: 0.25rem !important;
     }
 
     /* Ensure all content is visible */
@@ -400,6 +484,31 @@ const printStyles = `
     /* Hide print button in print */
     .print\\:hidden {
       display: none !important;
+    }
+
+    /* Ensure colors print correctly */
+    .text-green-600,
+    .text-green-700,
+    .text-green-800 {
+      color: #16a34a !important;
+    }
+
+    .text-red-600 {
+      color: #dc2626 !important;
+    }
+
+    .text-blue-600,
+    .text-blue-800 {
+      color: #2563eb !important;
+    }
+
+    /* Ensure proper spacing */
+    .mt-8 {
+      margin-top: 2rem !important;
+    }
+
+    .pt-6 {
+      padding-top: 1.5rem !important;
     }
   }
 `;
@@ -587,7 +696,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
         const data = await response.json();
         if (data.success) {
           toast.info('Using UI PDF generation instead of backend PDF');
-          handleDownloadPDF();
+          await handleDownloadPDF();
         } else {
           toast.error(data.message || 'Failed to download PDF');
         }
@@ -626,7 +735,9 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       heightLeft -= pageHeight;
     }
 
-            pdf.save(`payslip_${payslipData?.employee?.id}_${payslipData?.payroll.month}_${payslipData?.payroll.year}.pdf`);
+            const monthName = new Date(payslipData?.payroll.year || 0, (payslipData?.payroll.month || 1) - 1).toLocaleDateString("en-US", { month: "long" });
+        pdf.save(`payslip_${payslipData?.employee?.file_number || payslipData?.employee?.id}_${monthName}_${payslipData?.payroll.year}.pdf`);
+            toast.success('Payslip PDF generated successfully');
   };
 
   const formatCurrency = (amount: number) => {
@@ -802,11 +913,21 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
             <Button
               variant="outline"
               size="sm"
-              onClick={handleDownloadPDF}
+              onClick={handleDownload}
+              disabled={isLoading}
               className="flex items-center space-x-2"
             >
-              <Download className="h-4 w-4" />
-              <span>Download PDF</span>
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                  <span>Generating...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4" />
+                  <span>Download PDF</span>
+                </>
+              )}
             </Button>
           </div>
         </div>
