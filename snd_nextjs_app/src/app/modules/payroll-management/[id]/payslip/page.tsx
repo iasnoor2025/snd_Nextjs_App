@@ -392,6 +392,11 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   const [isLoading, setIsLoading] = useState(false);
   const { printRef: payslipRef, handlePrint } = usePrint({
     documentTitle: `Payslip-${id}`,
+    waitForImages: true,
+    onPrintError: (error) => {
+      console.error('Print error details:', error);
+      // Continue with print even if there are image errors
+    }
   });
 
   useEffect(() => {
@@ -693,7 +698,20 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="bg-white p-2 rounded-lg shadow-md">
-                  <img src="/snd%20logo.png" alt="SND Logo" className="w-12 h-12 object-contain" />
+                  <img 
+                    src="/snd-logo.png" 
+                    alt="SND Logo" 
+                    className="w-12 h-12 object-contain"
+                    onError={(e) => {
+                      console.warn('Logo failed to load, hiding image');
+                      e.currentTarget.style.display = 'none';
+                      // Add fallback text
+                      const fallback = document.createElement('div');
+                      fallback.className = 'w-12 h-12 flex items-center justify-center text-xs font-bold text-gray-600 bg-gray-100 rounded';
+                      fallback.textContent = 'SND';
+                      e.currentTarget.parentNode?.appendChild(fallback);
+                    }}
+                  />
                 </div>
                 <div>
                   <h1 className="text-xl font-bold">Samhan Naser Al-Dosri Est.</h1>

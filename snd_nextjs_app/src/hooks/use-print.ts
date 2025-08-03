@@ -7,6 +7,7 @@ interface UsePrintOptions {
   onBeforePrint?: () => void;
   onAfterPrint?: () => void;
   onPrintError?: (error: any) => void;
+  waitForImages?: boolean;
 }
 
 export const usePrint = (options: UsePrintOptions = {}) => {
@@ -16,12 +17,36 @@ export const usePrint = (options: UsePrintOptions = {}) => {
     documentTitle = "Document",
     onBeforePrint,
     onAfterPrint,
-    onPrintError
+    onPrintError,
+    waitForImages = true
   } = options;
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle,
+    onBeforeGetContent: () => {
+      onBeforePrint?.();
+      
+      // Preload images if waitForImages is true
+      if (waitForImages && printRef.current) {
+        const images = printRef.current.querySelectorAll('img');
+        const imagePromises = Array.from(images).map((img) => {
+          return new Promise((resolve, reject) => {
+            if (img.complete) {
+              resolve(img);
+            } else {
+              img.onload = () => resolve(img);
+              img.onerror = () => {
+                console.warn('Image failed to load for printing:', img.src);
+                resolve(img); // Resolve anyway to continue printing
+              };
+            }
+          });
+        });
+        
+        return Promise.all(imagePromises);
+      }
+    },
     onAfterPrint: () => {
       onAfterPrint?.();
       toast.success("Print completed successfully");
@@ -31,6 +56,8 @@ export const usePrint = (options: UsePrintOptions = {}) => {
       console.error("Print error:", error);
       toast.error("Print failed. Please try again.");
     },
+    removeAfterPrint: false,
+    suppressErrors: false,
   });
 
   return {

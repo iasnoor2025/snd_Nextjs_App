@@ -159,6 +159,11 @@ export default function PayrollDetailsPage() {
 
   const { printRef, handlePrint } = usePrint({
     documentTitle: `Payroll-${payrollId}`,
+    waitForImages: true,
+    onPrintError: (error) => {
+      console.error('Print error details:', error);
+      // Continue with print even if there are image errors
+    }
   });
 
   const handleShare = () => {

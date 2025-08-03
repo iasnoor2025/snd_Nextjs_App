@@ -144,6 +144,11 @@ export default function EmployeePayslipPage() {
   const [selectedMonthState, setSelectedMonthState] = useState(selectedMonth);
   const { printRef: payslipRef, handlePrint } = usePrint({
     documentTitle: `Employee-Payslip-${employeeId}`,
+    waitForImages: true,
+    onPrintError: (error) => {
+      console.error('Print error details:', error);
+      // Continue with print even if there are image errors
+    }
   });
   const [isLoadingPDF, setIsLoadingPDF] = useState(false);
 
@@ -391,7 +396,20 @@ export default function EmployeePayslipPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="flex h-16 w-16 items-center justify-center rounded-md bg-gray-100">
-                    <img src="/snd%20logo.png" alt="SND Logo" className="h-14 w-14 object-contain bg-white border border-gray-200 rounded" />
+                    <img 
+                  src="/snd-logo.png" 
+                  alt="SND Logo" 
+                  className="h-14 w-14 object-contain bg-white border border-gray-200 rounded"
+                  onError={(e) => {
+                    console.warn('Logo failed to load, hiding image');
+                    e.currentTarget.style.display = 'none';
+                    // Add fallback text
+                    const fallback = document.createElement('div');
+                    fallback.className = 'h-14 w-14 flex items-center justify-center text-xs font-bold text-gray-600 bg-gray-100 rounded';
+                    fallback.textContent = 'SND';
+                    e.currentTarget.parentNode?.appendChild(fallback);
+                  }}
+                />
                   </div>
                   <div>
                     <CardTitle className="company-name text-xl">Samhan Naser Al-Dosri Est.</CardTitle>

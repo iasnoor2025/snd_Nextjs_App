@@ -91,6 +91,11 @@ export default function QuotationManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const { printRef, handlePrint } = usePrint({
     documentTitle: "Quotation-List",
+    waitForImages: true,
+    onPrintError: (error) => {
+      console.error('Print error details:', error);
+      // Continue with print even if there are image errors
+    }
   });
 
   useEffect(() => {

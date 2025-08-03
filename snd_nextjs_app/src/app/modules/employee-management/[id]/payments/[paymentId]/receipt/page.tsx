@@ -49,6 +49,11 @@ export default function ReceiptPage() {
   const paymentId = params.paymentId as string;
   const { printRef, handlePrint } = usePrint({
     documentTitle: `Payment-Receipt-${employeeId}-${paymentId}`,
+    waitForImages: true,
+    onPrintError: (error) => {
+      console.error('Print error details:', error);
+      // Continue with print even if there are image errors
+    }
   });
 
   useEffect(() => {

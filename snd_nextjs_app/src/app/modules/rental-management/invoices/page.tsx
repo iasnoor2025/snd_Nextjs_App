@@ -111,6 +111,11 @@ export default function InvoicesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const { printRef, handlePrint } = usePrint({
     documentTitle: "Rental-Invoices-List",
+    waitForImages: true,
+    onPrintError: (error) => {
+      console.error('Print error details:', error);
+      // Continue with print even if there are image errors
+    }
   });
   const [showFilters, setShowFilters] = useState(false);
 
