@@ -33,6 +33,33 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { toast } from "sonner"
 
+interface MatchedEmployee {
+  id: number
+  first_name: string
+  middle_name?: string
+  last_name: string
+  employee_id: string
+  phone?: string
+  email?: string
+  address?: string
+  city?: string
+  state?: string
+  country?: string
+  nationality?: string
+  date_of_birth?: string
+  hire_date?: string
+  iqama_number?: string
+  iqama_expiry?: string
+  passport_number?: string
+  passport_expiry?: string
+  driving_license_number?: string
+  driving_license_expiry?: string
+  operator_license_number?: string
+  operator_license_expiry?: string
+  designation?: { name: string }
+  department?: { name: string }
+}
+
 interface UserProfile {
   id: string
   name: string
@@ -54,6 +81,8 @@ interface UserProfile {
   city?: string
   state?: string
   country?: string
+  nationalId?: string
+  matchedEmployee?: MatchedEmployee
 }
 
 interface NotificationSettings {
@@ -127,7 +156,8 @@ export default function ProfilePage() {
 
       if (response.ok) {
         const data = await response.json()
-
+        console.log('Profile data received:', data)
+        console.log('Matched employee data:', data.matchedEmployee)
         setProfile(data)
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
@@ -163,6 +193,7 @@ export default function ProfilePage() {
           country: profile.country,
           designation: profile.designation,
           department: profile.department,
+          nationalId: profile.nationalId,
         }),
       })
 
@@ -416,6 +447,16 @@ export default function ProfilePage() {
                        disabled={!isEditing}
                      />
                    </div>
+                   <div className="space-y-2">
+                     <Label htmlFor="nationalId">National ID</Label>
+                     <Input
+                       id="nationalId"
+                       value={profile.nationalId || ''}
+                       onChange={(e) => setProfile({ ...profile, nationalId: e.target.value })}
+                       disabled={!isEditing}
+                       placeholder="Enter your national ID"
+                     />
+                   </div>
                  </div>
 
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -514,6 +555,12 @@ export default function ProfilePage() {
                      </span>
                    </div>
                    <div className="flex justify-between">
+                     <span className="text-sm text-muted-foreground">National ID</span>
+                     <span className="text-sm font-medium">
+                       {profile.nationalId || 'Not set'}
+                     </span>
+                   </div>
+                   <div className="flex justify-between">
                      <span className="text-sm text-muted-foreground">Status</span>
                      <Badge variant={profile.status === "active" ? "default" : "secondary"}>
                        {profile.status}
@@ -551,6 +598,152 @@ export default function ProfilePage() {
                          {profile.city && profile.state ? `${profile.city}, ${profile.state}` : profile.country || 'Not specified'}
                        </span>
                      </div>
+                   </CardContent>
+                 </Card>
+               )}
+
+               {profile.matchedEmployee && (
+                 <Card>
+                   <CardHeader>
+                     <CardTitle className="flex items-center gap-2">
+                       <IconUser className="h-5 w-5" />
+                       Matched Employee Details
+                     </CardTitle>
+                     <CardDescription>
+                       Employee information matched with your Nation ID (Iqama Number)
+                     </CardDescription>
+                   </CardHeader>
+                   <CardContent className="space-y-4">
+                     <div className="flex justify-between">
+                       <span className="text-sm text-muted-foreground">Employee ID</span>
+                       <span className="text-sm font-medium">{profile.matchedEmployee.employee_id}</span>
+                     </div>
+                     <div className="flex justify-between">
+                       <span className="text-sm text-muted-foreground">Full Name</span>
+                       <span className="text-sm font-medium">
+                         {profile.matchedEmployee.first_name} {profile.matchedEmployee.middle_name} {profile.matchedEmployee.last_name}
+                       </span>
+                     </div>
+                     <div className="flex justify-between">
+                       <span className="text-sm text-muted-foreground">Nationality</span>
+                       <span className="text-sm font-medium">{profile.matchedEmployee.nationality || 'Not specified'}</span>
+                     </div>
+                     <div className="flex justify-between">
+                       <span className="text-sm text-muted-foreground">Date of Birth</span>
+                       <span className="text-sm font-medium">
+                         {profile.matchedEmployee.date_of_birth ? new Date(profile.matchedEmployee.date_of_birth).toLocaleDateString() : 'Not specified'}
+                       </span>
+                     </div>
+                     <div className="flex justify-between">
+                       <span className="text-sm text-muted-foreground">Hire Date</span>
+                       <span className="text-sm font-medium">
+                         {profile.matchedEmployee.hire_date ? new Date(profile.matchedEmployee.hire_date).toLocaleDateString() : 'Not specified'}
+                       </span>
+                     </div>
+                     <div className="flex justify-between">
+                       <span className="text-sm text-muted-foreground">Designation</span>
+                       <span className="text-sm font-medium">{profile.matchedEmployee.designation?.name || 'Not assigned'}</span>
+                     </div>
+                     <div className="flex justify-between">
+                       <span className="text-sm text-muted-foreground">Department</span>
+                       <span className="text-sm font-medium">{profile.matchedEmployee.department?.name || 'Not assigned'}</span>
+                     </div>
+                     <div className="flex justify-between">
+                       <span className="text-sm text-muted-foreground">Phone</span>
+                       <span className="text-sm font-medium">{profile.matchedEmployee.phone || 'Not specified'}</span>
+                     </div>
+                     <div className="flex justify-between">
+                       <span className="text-sm text-muted-foreground">Email</span>
+                       <span className="text-sm font-medium">{profile.matchedEmployee.email || 'Not specified'}</span>
+                     </div>
+                     <div className="flex justify-between">
+                       <span className="text-sm text-muted-foreground">Address</span>
+                       <span className="text-sm font-medium">{profile.matchedEmployee.address || 'Not specified'}</span>
+                     </div>
+                     <div className="flex justify-between">
+                       <span className="text-sm text-muted-foreground">Location</span>
+                       <span className="text-sm font-medium">
+                         {profile.matchedEmployee.city && profile.matchedEmployee.state 
+                           ? `${profile.matchedEmployee.city}, ${profile.matchedEmployee.state}` 
+                           : profile.matchedEmployee.country || 'Not specified'}
+                       </span>
+                     </div>
+                     
+                     {/* Iqama Information */}
+                     <Separator />
+                     <div className="space-y-2">
+                       <h4 className="text-sm font-medium">Iqama Information</h4>
+                       <div className="flex justify-between">
+                         <span className="text-sm text-muted-foreground">Iqama Number</span>
+                         <span className="text-sm font-medium">{profile.matchedEmployee.iqama_number}</span>
+                       </div>
+                       <div className="flex justify-between">
+                         <span className="text-sm text-muted-foreground">Iqama Expiry</span>
+                         <span className="text-sm font-medium">
+                           {profile.matchedEmployee.iqama_expiry ? new Date(profile.matchedEmployee.iqama_expiry).toLocaleDateString() : 'Not specified'}
+                         </span>
+                       </div>
+                     </div>
+
+                     {/* Passport Information */}
+                     {profile.matchedEmployee.passport_number && (
+                       <>
+                         <Separator />
+                         <div className="space-y-2">
+                           <h4 className="text-sm font-medium">Passport Information</h4>
+                           <div className="flex justify-between">
+                             <span className="text-sm text-muted-foreground">Passport Number</span>
+                             <span className="text-sm font-medium">{profile.matchedEmployee.passport_number}</span>
+                           </div>
+                           <div className="flex justify-between">
+                             <span className="text-sm text-muted-foreground">Passport Expiry</span>
+                             <span className="text-sm font-medium">
+                               {profile.matchedEmployee.passport_expiry ? new Date(profile.matchedEmployee.passport_expiry).toLocaleDateString() : 'Not specified'}
+                             </span>
+                           </div>
+                         </div>
+                       </>
+                     )}
+
+                     {/* Driving License Information */}
+                     {profile.matchedEmployee.driving_license_number && (
+                       <>
+                         <Separator />
+                         <div className="space-y-2">
+                           <h4 className="text-sm font-medium">Driving License</h4>
+                           <div className="flex justify-between">
+                             <span className="text-sm text-muted-foreground">License Number</span>
+                             <span className="text-sm font-medium">{profile.matchedEmployee.driving_license_number}</span>
+                           </div>
+                           <div className="flex justify-between">
+                             <span className="text-sm text-muted-foreground">Expiry Date</span>
+                             <span className="text-sm font-medium">
+                               {profile.matchedEmployee.driving_license_expiry ? new Date(profile.matchedEmployee.driving_license_expiry).toLocaleDateString() : 'Not specified'}
+                             </span>
+                           </div>
+                         </div>
+                       </>
+                     )}
+
+                     {/* Operator License Information */}
+                     {profile.matchedEmployee.operator_license_number && (
+                       <>
+                         <Separator />
+                         <div className="space-y-2">
+                           <h4 className="text-sm font-medium">Operator License</h4>
+                           <div className="flex justify-between">
+                             <span className="text-sm text-muted-foreground">License Number</span>
+                             <span className="text-sm font-medium">{profile.matchedEmployee.operator_license_number}</span>
+                           </div>
+                           <div className="flex justify-between">
+                             <span className="text-sm text-muted-foreground">Expiry Date</span>
+                             <span className="text-sm font-medium">
+                               {profile.matchedEmployee.operator_license_expiry ? new Date(profile.matchedEmployee.operator_license_expiry).toLocaleDateString() : 'Not specified'}
+                             </span>
+                           </div>
+                         </div>
+                       </>
+                     )}
                    </CardContent>
                  </Card>
                )}

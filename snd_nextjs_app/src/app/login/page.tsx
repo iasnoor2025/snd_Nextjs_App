@@ -12,12 +12,10 @@ export default function LoginPage() {
 
   // Redirect to home if already authenticated
   useEffect(() => {
-
-    
     if (status === "loading") return
 
     if (session) {
-
+      // Let the conditional layout handle the Nation ID check
       router.push("/dashboard")
     }
   }, [session, status, router])

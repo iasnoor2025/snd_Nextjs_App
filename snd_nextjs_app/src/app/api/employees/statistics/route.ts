@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { PrismaClient } from '@prisma/client';
 
 export async function GET(request: NextRequest) {
+  const prisma = new PrismaClient();
+  
   try {
     console.log('Employee Statistics API called');
 
@@ -24,7 +26,7 @@ export async function GET(request: NextRequest) {
     const totalEmployees = await prisma.employee.count();
     console.log('Total employees:', totalEmployees);
 
-    // Get employees with current assignments - more efficient approach
+    // Get employees with current assignments
     const currentlyAssigned = await prisma.employee.count({
       where: {
         employee_assignments: {

@@ -40,6 +40,7 @@ export function LoginForm({
         toast.error("Invalid email or password")
       } else {
         toast.success("Login successful!")
+        // Let the conditional layout handle the Nation ID check and redirect
         router.push("/")
       }
     } catch (error) {
