@@ -119,6 +119,14 @@ export default function EmployeeManagementPage() {
   // Get allowed actions for employee management
   const allowedActions = getAllowedActions('Employee');
   
+  // Helper function to check if Iqama is expired
+  const isIqamaExpired = (expiryDate: string | null | undefined): boolean => {
+    if (!expiryDate) return false;
+    const today = new Date();
+    const expiry = new Date(expiryDate);
+    return expiry < today;
+  };
+  
   // Debug function for assignment data
   const debugAssignments = () => {
     console.log('=== Assignment Debug Info ===');
@@ -772,7 +780,18 @@ export default function EmployeeManagementPage() {
                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.email || 'N/A'}</TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.department || 'N/A'}</TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.iqama_number || 'N/A'}</TableCell>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                          {employee.iqama_number ? (
+                            <span className={isIqamaExpired(employee.iqama_expiry) ? 'text-red-600 font-medium' : ''}>
+                              {employee.iqama_number}
+                              {isIqamaExpired(employee.iqama_expiry) && (
+                                <span className="ml-1 text-xs text-red-500">(Expired)</span>
+                              )}
+                            </span>
+                          ) : (
+                            'N/A'
+                          )}
+                        </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           {employee.current_assignment ? (
                             <div className="space-y-1">

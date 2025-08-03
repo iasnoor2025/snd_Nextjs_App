@@ -101,6 +101,14 @@ export default function EmployeeShowPage() {
   const router = useRouter();
   const employeeId = params.id as string;
 
+  // Helper function to check if Iqama is expired
+  const isIqamaExpired = (expiryDate: string | null | undefined): boolean => {
+    if (!expiryDate) return false;
+    const today = new Date();
+    const expiry = new Date(expiryDate);
+    return expiry < today;
+  };
+
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("personal-info");
@@ -460,7 +468,12 @@ export default function EmployeeShowPage() {
                       {employee.iqama_number && (
                         <div className="flex justify-between border-b pb-2">
                           <dt className="text-sm font-medium">Iqama Number</dt>
-                          <dd className="text-sm">{employee.iqama_number}</dd>
+                          <dd className={`text-sm ${isIqamaExpired(employee.iqama_expiry) ? 'text-red-600 font-medium' : ''}`}>
+                            {employee.iqama_number}
+                            {isIqamaExpired(employee.iqama_expiry) && (
+                              <span className="ml-1 text-xs text-red-500">(Expired)</span>
+                            )}
+                          </dd>
                         </div>
                       )}
                       {employee.iqama_expiry && (
