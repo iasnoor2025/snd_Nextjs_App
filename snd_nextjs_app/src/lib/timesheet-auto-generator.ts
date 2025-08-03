@@ -14,11 +14,10 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Get all employee assignments (all statuses, not just active)
+    // Get all employee assignments regardless of status
     const assignments = await prisma.employeeAssignment.findMany({
       where: {
-        status: "active",
-        // Remove status filter to include all statuses: active, completed, pending, etc.
+        // Remove status filter to include all assignments: active, completed, pending, etc.
       },
       include: {
         employee: true,
@@ -39,8 +38,13 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
       }
 
       const start = new Date(assignment.start_date);
-      // Use assignment end date if set, otherwise use today
+      // Use assignment end date if set, otherwise use today (never future dates)
       const end = assignment.end_date ? new Date(assignment.end_date) : today;
+      
+      // If assignment end date is in the future, use today instead
+      if (end > today) {
+        end.setTime(today.getTime());
+      }
 
       // If start is after end, skip
       if (start > end) {
@@ -51,9 +55,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
       // Generate timesheets for each day in the period
       const currentDate = new Date(start);
       while (currentDate <= end) {
-        // Check for existing timesheet with comprehensive duplicate detection
-
-        // Check for any existing timesheet for this employee on this date
+        // Check for existing timesheet for this employee on this date
         const existingTimesheet = await prisma.timesheet.findFirst({
           where: {
             employee_id: employeeId,
@@ -82,20 +84,6 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
           hoursWorked = 8;
           overtimeHours = 0;
         }
-
-        // Create timesheet data
-        const timesheetData: Record<string, unknown> = {
-          employee_id: employeeId,
-          date: currentDate,
-          status: 'draft',
-          hours_worked: hoursWorked,
-          overtime_hours: overtimeHours,
-          start_time: new Date(currentDate.getTime() + 6 * 60 * 60 * 1000), // 6 AM
-          end_time: new Date(currentDate.getTime() + 16 * 60 * 60 * 1000), // 4 PM
-          assignment_id: assignment.id,
-        };
-
-        // Add project or rental assignment based on available IDs
 
         // Create the timesheet
         await prisma.timesheet.create({

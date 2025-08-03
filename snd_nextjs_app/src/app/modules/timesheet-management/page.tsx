@@ -120,9 +120,10 @@ function TimesheetManagementContent() {
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const [timesheets, setTimesheets] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [autoGenerating, setAutoGenerating] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [projectFilter, setProjectFilter] = useState("all");
+  const [assignmentFilter, setAssignmentFilter] = useState("all");
   const [month, setMonth] = useState(() => {
     const now = new Date();
     const year = now.getFullYear();
@@ -163,6 +164,40 @@ function TimesheetManagementContent() {
   const [monthSelectOpen, setMonthSelectOpen] = useState(false);
   const currentMonthRef = useRef<HTMLDivElement>(null);
 
+  // Auto-generate timesheets when page loads
+  useEffect(() => {
+    const autoGenerateOnLoad = async () => {
+      setAutoGenerating(true);
+      try {
+        const response = await fetch('/api/timesheets/auto-generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.created > 0) {
+          toast.success(`Auto-generated ${result.created} new timesheets`);
+        } else if (result.success && result.created === 0) {
+          // No new timesheets created, which is fine
+          console.log('No new timesheets needed to be generated');
+        } else if (result.errors && result.errors.length > 0) {
+          console.warn('Auto-generation completed with some errors:', result.errors);
+        }
+      } catch (error) {
+        console.error('Error during auto-generation on page load:', error);
+        // Don't show error toast to user as this is a background process
+      } finally {
+        setAutoGenerating(false);
+      }
+    };
+
+    // Run auto-generation when component mounts
+    autoGenerateOnLoad();
+  }, []);
+
   const fetchTimesheets = async () => {
     try {
       setLoading(true);
@@ -171,7 +206,7 @@ function TimesheetManagementContent() {
         limit: '10',
         ...(searchTerm && { search: searchTerm }),
         ...(statusFilter && statusFilter !== 'all' && { status: statusFilter }),
-        ...(projectFilter && projectFilter !== 'all' && { project: projectFilter }),
+        ...(assignmentFilter && assignmentFilter !== 'all' && { assignment: assignmentFilter }),
         ...(month && month !== 'all' && { month }),
       });
 
@@ -194,7 +229,7 @@ function TimesheetManagementContent() {
 
   useEffect(() => {
     fetchTimesheets();
-  }, [searchTerm, statusFilter, projectFilter, month, currentPage]);
+  }, [searchTerm, statusFilter, assignmentFilter, month, currentPage]);
 
   // Scroll to current month when dropdown opens
   useEffect(() => {
@@ -509,16 +544,20 @@ function TimesheetManagementContent() {
   // Get user role from RBAC context
   const userRole = user?.role || 'USER';
 
-  // Extract unique projects for filter
-  const projects = useMemo(() => {
+  // Extract unique assignments for filter
+  const assignments = useMemo(() => {
     if (!timesheets?.data) return [];
-    const projectSet = new Set<string>();
+    const assignmentSet = new Set<string>();
     timesheets.data.forEach(timesheet => {
-      if (timesheet.project?.name) {
-        projectSet.add(timesheet.project.name);
+      if (timesheet.assignment?.name) {
+        assignmentSet.add(timesheet.assignment.name);
+      } else if (timesheet.project?.name) {
+        assignmentSet.add(timesheet.project.name);
+      } else if (timesheet.rental?.rentalNumber) {
+        assignmentSet.add(timesheet.rental.rentalNumber);
       }
     });
-    return Array.from(projectSet).sort();
+    return Array.from(assignmentSet).sort();
   }, [timesheets?.data]);
 
     // Generate month options for the last 2 years and next 2 years
@@ -588,7 +627,15 @@ function TimesheetManagementContent() {
     <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Timesheet' }}>
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Timesheet Management</h1>
+          <div className="flex items-center space-x-3">
+            <h1 className="text-2xl font-bold">Timesheet Management</h1>
+            {autoGenerating && (
+              <div className="flex items-center space-x-2 text-sm text-blue-600">
+                <RefreshCw className="h-4 w-4 animate-spin" />
+                <span>Auto-generating timesheets...</span>
+              </div>
+            )}
+          </div>
           <div className="flex space-x-2">
             <Can action="export" subject="Timesheet">
               <Button variant="outline" size="sm">
@@ -605,7 +652,7 @@ function TimesheetManagementContent() {
             </Can>
 
             <Can action="create" subject="Timesheet">
-              <AutoGenerateButton />
+              <AutoGenerateButton isAutoGenerating={autoGenerating} />
             </Can>
 
             <Can action="create" subject="Timesheet">
@@ -702,14 +749,14 @@ function TimesheetManagementContent() {
               <SelectItem value="rejected">Rejected</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={projectFilter} onValueChange={setProjectFilter}>
+          <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Filter by project" />
+              <SelectValue placeholder="Filter by assignment" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Projects</SelectItem>
-              {projects.map(project => (
-                <SelectItem key={project} value={project}>{project}</SelectItem>
+              <SelectItem value="all">All Assignments</SelectItem>
+              {assignments.map(assignment => (
+                <SelectItem key={assignment} value={assignment}>{assignment}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -767,7 +814,7 @@ function TimesheetManagementContent() {
                   />
                 </TableHead>
                 <TableHead>Employee</TableHead>
-                <TableHead>Project</TableHead>
+                <TableHead>Assignment</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Hours</TableHead>
                 <TableHead>Status</TableHead>
@@ -796,7 +843,16 @@ function TimesheetManagementContent() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {timesheet.project ? (
+                    {timesheet.assignment ? (
+                      <div className="text-sm">
+                        <div className="font-medium capitalize">{timesheet.assignment.type}</div>
+                        <div className="text-muted-foreground">
+                          {timesheet.assignment.name || 
+                           (timesheet.project ? timesheet.project.name : 
+                            timesheet.rental ? timesheet.rental.rentalNumber : 'No name')}
+                        </div>
+                      </div>
+                    ) : timesheet.project ? (
                       <div className="text-sm">
                         <div className="font-medium">Project</div>
                         <div className="text-muted-foreground">{timesheet.project.name}</div>

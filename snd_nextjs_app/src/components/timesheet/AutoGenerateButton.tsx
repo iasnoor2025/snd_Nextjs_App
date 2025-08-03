@@ -12,7 +12,11 @@ interface AutoGenerateResult {
   message: string;
 }
 
-export default function AutoGenerateButton() {
+interface AutoGenerateButtonProps {
+  isAutoGenerating?: boolean;
+}
+
+export default function AutoGenerateButton({ isAutoGenerating = false }: AutoGenerateButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAutoGenerate = async () => {
@@ -52,11 +56,11 @@ export default function AutoGenerateButton() {
   return (
     <Button
       onClick={handleAutoGenerate}
-      disabled={isLoading}
+      disabled={isLoading || isAutoGenerating}
       variant="outline"
       size="sm"
     >
-      {isLoading ? (
+      {isLoading || isAutoGenerating ? (
         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
       ) : (
         <Play className="mr-2 h-4 w-4" />
