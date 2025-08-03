@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const userId = session.user.id;
     console.log('Current user ID from session:', userId);
 
-        // Test database connection first
+    // Test database connection first
     try {
       await prisma.$connect();
       console.log('Database connected successfully');
@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(sessionProfile);
     }
 
+    // Get user from database
     const user = await prisma.user.findUnique({
       where: { id: parseInt(userId) },
       select: {
@@ -65,62 +66,20 @@ export async function GET(request: NextRequest) {
         isActive: true,
         created_at: true,
         updated_at: true,
+        national_id: true,
       },
     });
 
     if (!user) {
-      // Create a test user if none exists
-      console.log('No user found, creating test user...');
-      const testUser = await prisma.user.create({
-        data: {
-          name: 'Test User',
-          email: 'test@example.com',
-          password: 'password123',
-          role_id: 1,
-          isActive: true,
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role_id: true,
-          avatar: true,
-          locale: true,
-          last_login_at: true,
-          isActive: true,
-          created_at: true,
-          updated_at: true,
-        },
-      });
-
-      // Use the created test user
-      const profile = {
-        id: testUser.id,
-        name: testUser.name || 'Test User',
-        email: testUser.email,
-        phone: '',
-        avatar: testUser.avatar || '',
-        role: testUser.role_id,
-        department: 'General',
-        location: '',
-        bio: 'This is a test user created for demonstration purposes.',
-        joinDate: testUser.created_at.toISOString(),
-        lastLogin: testUser.last_login_at?.toISOString() || testUser.created_at.toISOString(),
-        status: testUser.isActive ? 'active' : 'inactive',
-        firstName: '',
-        middleName: '',
-        lastName: '',
-        designation: '',
-        address: '',
-        city: '',
-        state: '',
-        country: '',
-      };
-
-      return NextResponse.json(profile);
+      return NextResponse.json(
+        { error: 'User not found in database' },
+        { status: 404 }
+      );
     }
 
-    // Get employee data if exists (only for exact user_id match)
+    console.log('Found user:', user);
+
+    // Get employee data if exists (direct user_id match)
     const employee = await prisma.employee.findFirst({
       where: { user_id: parseInt(user.id.toString()) },  
       select: {
@@ -128,11 +87,24 @@ export async function GET(request: NextRequest) {
         first_name: true,
         middle_name: true,
         last_name: true,
+        employee_id: true,
         phone: true,
+        email: true,
         address: true,
         city: true,
         state: true,
         country: true,
+        nationality: true,
+        date_of_birth: true,
+        hire_date: true,
+        iqama_number: true,
+        iqama_expiry: true,
+        passport_number: true,
+        passport_expiry: true,
+        driving_license_number: true,
+        driving_license_expiry: true,
+        operator_license_number: true,
+        operator_license_expiry: true,
         designation: {
           select: {
             name: true,
@@ -148,7 +120,7 @@ export async function GET(request: NextRequest) {
 
     console.log('Found employee data:', employee);
 
-    // Check if user's nation ID matches any employee's Iqama number
+    // Check if user's national ID matches any employee's Iqama number
     let matchedEmployee = null;
     if (user.national_id) {
       console.log('Checking for Nation ID match:', user.national_id);
@@ -188,32 +160,75 @@ export async function GET(request: NextRequest) {
       console.log('Matched employee found:', matchedEmployee);
     }
 
+    // If no direct employee record, try to find by email match
+    let emailMatchedEmployee = null;
+    if (!employee && user.email) {
+      console.log('Checking for email match:', user.email);
+      emailMatchedEmployee = await prisma.employee.findFirst({
+        where: { email: user.email },
+        select: {
+          id: true,
+          first_name: true,
+          middle_name: true,
+          last_name: true,
+          employee_id: true,
+          phone: true,
+          email: true,
+          address: true,
+          city: true,
+          state: true,
+          country: true,
+          nationality: true,
+          date_of_birth: true,
+          hire_date: true,
+          iqama_number: true,
+          iqama_expiry: true,
+          passport_number: true,
+          passport_expiry: true,
+          driving_license_number: true,
+          driving_license_expiry: true,
+          operator_license_number: true,
+          operator_license_expiry: true,
+          designation: {
+            select: { name: true }
+          },
+          department: {
+            select: { name: true }
+          }
+        }
+      });
+      console.log('Email matched employee found:', emailMatchedEmployee);
+    }
+
+    // Use the best available employee data
+    const bestEmployee = employee || emailMatchedEmployee || matchedEmployee;
+
     // Format the response
     const profile = {
       id: user.id,
       name: user.name || 'Unknown User',
       email: user.email,
-      phone: employee?.phone || '',
+      phone: bestEmployee?.phone || '',
       avatar: user.avatar || '',
       role: user.role_id,
-      department: employee?.department?.name || 'General',
-      location: employee?.city && employee?.state
-        ? `${employee.city}, ${employee.state}`
-        : employee?.country || '',
+      department: bestEmployee?.department?.name || 'General',
+      location: bestEmployee?.city && bestEmployee?.state
+        ? `${bestEmployee.city}, ${bestEmployee.state}`
+        : bestEmployee?.country || '',
       bio: '', // Could be added to user model later
       joinDate: user.created_at.toISOString(),
       lastLogin: user.last_login_at?.toISOString() || user.created_at.toISOString(),
       status: user.isActive ? 'active' : 'inactive',
       nationalId: user.national_id || '',
-      // Employee specific fields (only if user has direct employee record)
-      firstName: employee?.first_name || '',
-      middleName: employee?.middle_name || '',
-      lastName: employee?.last_name || '',
-      designation: employee?.designation?.name || '',
-      address: employee?.address || '',
-      city: employee?.city || '',
-      state: employee?.state || '',
-      country: employee?.country || '',
+      // Employee specific fields (from best available employee data)
+      firstName: bestEmployee?.first_name || '',
+      middleName: bestEmployee?.middle_name || '',
+      lastName: bestEmployee?.last_name || '',
+      designation: bestEmployee?.designation?.name || '',
+      address: bestEmployee?.address || '',
+      city: bestEmployee?.city || '',
+      state: bestEmployee?.state || '',
+      country: bestEmployee?.country || '',
       // Matched employee details (only if Nation ID matches Iqama)
       matchedEmployee: matchedEmployee,
     };
@@ -225,7 +240,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching profile:', error);
 
-        // Return session user data on any error
+    // Return session user data on any error
     const sessionProfile = {
       id: session?.user?.id || "error-user",  
       name: session?.user?.name || "Authenticated User",

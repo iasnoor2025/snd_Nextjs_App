@@ -237,44 +237,7 @@ export default function EmployeeManagementPage() {
     }
   };
 
-  const handleTestERPNext = async () => {
-    setIsSyncing(true);
-    try {
-      const response = await fetch('/api/test-erpnext');
-      const result = await response.json();
 
-      if (result.success) {
-        toast.success('ERPNext test completed - check console for details');
-
-      } else {
-        toast.error(`ERPNext test failed: ${result.message}`);
-        console.error('ERPNext test failed:', result);
-      }
-    } catch (_error) {
-      toast.error('Failed to test ERPNext connection');
-      console.error('ERPNext test error:', _error);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  const handleCheckEnvironment = async () => {
-    try {
-      const response = await fetch('/api/debug/env');
-      const result = await response.json();
-
-      if (result.success) {
-        toast.success('Environment check completed - check console for details');
-
-      } else {
-        toast.error(`Environment check failed: ${result.message}`);
-        console.error('Environment check failed:', result);
-      }
-    } catch (_error) {
-      toast.error('Failed to check environment');
-      console.error('Environment check error:', _error);
-    }
-  };
 
 
 
@@ -530,27 +493,7 @@ export default function EmployeeManagementPage() {
               </Button>
             </Can>
 
-            <Can action="sync" subject="Employee">
-              <Button
-                onClick={handleTestERPNext}
-                disabled={isSyncing}
-                variant="outline"
-              >
-                <Eye className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                {isSyncing ? 'Testing...' : 'Test ERPNext Connection'}
-              </Button>
-            </Can>
 
-            <Can action="sync" subject="Employee">
-              <Button
-                onClick={handleCheckEnvironment}
-                disabled={isSyncing}
-                variant="outline"
-              >
-                <Upload className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                {isSyncing ? 'Checking...' : 'Check Environment'}
-              </Button>
-            </Can>
 
             <Can action="create" subject="Employee">
               <Link href="/modules/employee-management/create">

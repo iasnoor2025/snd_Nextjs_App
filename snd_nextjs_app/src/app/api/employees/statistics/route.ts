@@ -51,13 +51,15 @@ export async function GET(request: NextRequest) {
     });
     console.log('Project assignments:', projectAssignments);
 
-    // Count rental assignments
+    // Count rental assignments (including both 'rental' and 'rental_item' types)
     const rentalAssignments = await prisma.employee.count({
       where: {
         employee_assignments: {
           some: {
             status: 'active',
-            type: 'rental'
+            type: {
+              in: ['rental', 'rental_item']
+            }
           }
         }
       }
