@@ -1,6 +1,16 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client'); 
 
-const prisma = new PrismaClient();
+// Singleton pattern for Prisma client
+let prisma;
+
+if (global.__prisma) {
+  prisma = global.__prisma;
+} else {
+  prisma = new PrismaClient({
+    log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error']
+  });
+  global.__prisma = prisma;
+}
 
 async function monitorConnections() {
   try {
@@ -82,10 +92,10 @@ async function monitorConnections() {
       console.log('   ✅ Connection count looks healthy');
     }
     
+    console.log('\n✅ Using singleton Prisma client - no need to disconnect');
+    
   } catch (error) {
     console.error('❌ Error monitoring connections:', error);
-  } finally {
-    await prisma.$disconnect();
   }
 }
 

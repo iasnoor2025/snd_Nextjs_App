@@ -5,11 +5,6 @@ declare global {
   var __prisma: PrismaClient | undefined
 }
 
-// Set default database URL if not provided
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = 'postgres://postgres:fAfab9Ckow7o3yp2EhryEYKzHbyeMifPBHxi8Xb4f9sdnBgMI47Ytdaq2NWDCxy5@192.168.8.4:5432/snd_nextjs_db'
-}
-
 /**
  * Singleton Prisma Client
  * 
@@ -18,24 +13,21 @@ if (!process.env.DATABASE_URL) {
  * 
  * How it works:
  * 1. Check if a client already exists in global scope
- * 2. If exists, reuse it (no new connection)
+ * 2. If exists, reuse it
  * 3. If not exists, create new one and store it globally
  * 4. In development, store in global to prevent multiple instances
  */
-function getPrismaClient(): PrismaClient {
+export function getPrismaClient(): PrismaClient {
   // Check if client already exists
   if (global.__prisma) {
+    console.log('🔄 Reusing existing Prisma client');
     return global.__prisma;
   }
 
   // Create new client if none exists
+  console.log('🆕 Creating new Prisma client');
   const client = new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error'],
-    datasources: {
-      db: {
-        url: process.env.DATABASE_URL
-      }
-    }
+    log: process.env.NODE_ENV === 'development' ? ['query', 'info', 'warn', 'error'] : ['error']
   });
 
   // Store in global scope to prevent multiple instances
@@ -46,3 +38,27 @@ function getPrismaClient(): PrismaClient {
 
 // Export the singleton instance
 export const prisma = getPrismaClient();
+
+// Cleanup function for graceful shutdown
+export async function disconnectPrisma() {
+  if (global.__prisma) {
+    await global.__prisma.$disconnect();
+    global.__prisma = undefined;
+    console.log('🔌 Prisma client disconnected');
+  }
+}
+
+// Handle process termination
+process.on('beforeExit', async () => {
+  await disconnectPrisma();
+});
+
+process.on('SIGINT', async () => {
+  await disconnectPrisma();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  await disconnectPrisma();
+  process.exit(0);
+}); 

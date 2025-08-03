@@ -285,33 +285,6 @@ export default function ProfilePage() {
           <p className="text-muted-foreground">
             Manage your account settings, preferences, and personal information.
           </p>
-          <div className="mt-4 p-4 bg-muted rounded-lg">
-            <p className="text-sm font-medium">Debug Info:</p>
-            <p className="text-sm text-muted-foreground">Profile ID: {profile.id}</p>
-            <p className="text-sm text-muted-foreground">Name: {profile.name}</p>
-            <p className="text-sm text-muted-foreground">Email: {profile.email}</p>
-            <p className="text-sm text-muted-foreground">Status: {profile.status}</p>
-            <div className="mt-2 flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${profile.id.startsWith('demo') || profile.id.startsWith('error') ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
-              <span className="text-xs text-muted-foreground">
-                {profile.id.startsWith('demo') || profile.id.startsWith('error') ? 'Session Mode (Database not connected)' : 'Connected to Database'}
-              </span>
-            </div>
-            {(profile.id.startsWith('demo') || profile.id.startsWith('error')) && (
-              <div className="mt-2 p-2 bg-yellow-100 border border-yellow-300 rounded text-xs">
-                <p className="font-medium text-yellow-800">Database Setup Required</p>
-                <p className="text-yellow-700">See DATABASE_SETUP_QUICK.md for instructions</p>
-              </div>
-            )}
-            {profile.firstName && (
-              <div className="mt-2 p-2 bg-blue-100 border border-blue-300 rounded text-xs">
-                <p className="font-medium text-blue-800">Employee Data Available</p>
-                <p className="text-blue-700">Name: {profile.firstName} {profile.lastName}</p>
-                <p className="text-blue-700">Phone: {profile.phone}</p>
-                <p className="text-blue-700">Location: {profile.city}, {profile.state}</p>
-              </div>
-            )}
-          </div>
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">

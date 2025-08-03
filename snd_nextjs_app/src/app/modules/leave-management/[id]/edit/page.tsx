@@ -1,0 +1,771 @@
+"use client";
+
+import React from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  ArrowLeft, 
+  Save, 
+  X, 
+  AlertTriangle,
+  Calendar,
+  User,
+  FileText,
+  Upload,
+  Trash2,
+  Eye,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Info,
+  AlertCircle
+} from "lucide-react";
+import { toast } from "sonner";
+import { useI18n } from "@/hooks/use-i18n";
+import { useRBAC } from "@/lib/rbac/rbac-context";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { 
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, ControllerRenderProps } from "react-hook-form";
+import * as z from "zod";
+
+interface LeaveRequest {
+  id: string;
+  employee_name: string;
+  employee_id: string;
+  employee_avatar?: string;
+  leave_type: string;
+  start_date: string;
+  end_date: string;
+  days_requested: number;
+  reason: string;
+  status: string;
+  submitted_date: string;
+  approved_by: string | null;
+  approved_date: string | null;
+  comments: string | null;
+  created_at: string;
+  updated_at: string;
+  department?: string;
+  position?: string;
+  total_leave_balance?: number;
+  leave_taken_this_year?: number;
+  attachments?: Array<{
+    id: string;
+    name: string;
+    url: string;
+    type: string;
+  }>;
+}
+
+// Form validation schema
+const leaveRequestSchema = z.object({
+  leave_type: z.string().min(1, "Leave type is required"),
+  start_date: z.string().min(1, "Start date is required"),
+  end_date: z.string().min(1, "End date is required"),
+  days_requested: z.number().min(1, "Days requested must be at least 1"),
+  reason: z.string().min(10, "Reason must be at least 10 characters"),
+  status: z.string().min(1, "Status is required"),
+  comments: z.string().optional(),
+  notify_employee: z.boolean(),
+  send_approval_notification: z.boolean()
+});
+
+type LeaveRequestFormData = z.infer<typeof leaveRequestSchema>;
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+class ErrorBoundary extends React.Component<
+  React.PropsWithChildren<{}>,
+  ErrorBoundaryState
+> {
+  constructor(props: React.PropsWithChildren<{}>) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Leave Request Edit Error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center space-y-4">
+            <AlertTriangle className="h-16 w-16 text-red-500 mx-auto" />
+            <h2 className="text-2xl font-bold">Something went wrong</h2>
+            <p className="text-muted-foreground">
+              We encountered an error while loading the edit form.
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="container mx-auto py-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-20" />
+          <div>
+            <Skeleton className="h-8 w-64 mb-2" />
+            <Skeleton className="h-4 w-32" />
+          </div>
+        </div>
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i}>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {Array.from({ length: 3 }).map((_, j) => (
+                <div key={j} className="space-y-2">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function EditLeaveRequestPage() {
+  const { t } = useI18n();
+  const { hasPermission, user } = useRBAC();
+  const params = useParams();
+  const router = useRouter();
+  const leaveId = params.id as string;
+
+  const [leaveRequest, setLeaveRequest] = useState<LeaveRequest | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const form = useForm<LeaveRequestFormData>({
+    resolver: zodResolver(leaveRequestSchema),
+    defaultValues: {
+      leave_type: '',
+      start_date: '',
+      end_date: '',
+      days_requested: 0,
+      reason: '',
+      status: '',
+      comments: '',
+      notify_employee: false,
+      send_approval_notification: false
+    }
+  });
+
+  const fetchLeaveRequest = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Simulate API call with better error handling
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const mockLeaveRequest: LeaveRequest = {
+        id: leaveId,
+        employee_name: "John Smith",
+        employee_id: "EMP001",
+        employee_avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+        leave_type: "Annual Leave",
+        start_date: "2024-02-15",
+        end_date: "2024-02-20",
+        days_requested: 5,
+        reason: "Family vacation to Europe. Planning to visit multiple countries including France, Italy, and Spain. This is a long-planned trip that has been postponed twice due to work commitments.",
+        status: "Pending",
+        submitted_date: "2024-01-15T10:00:00Z",
+        approved_by: null,
+        approved_date: null,
+        comments: null,
+        created_at: "2024-01-15T10:00:00Z",
+        updated_at: "2024-01-15T10:00:00Z",
+        department: "Engineering",
+        position: "Senior Software Engineer",
+        total_leave_balance: 25,
+        leave_taken_this_year: 8,
+        attachments: [
+          {
+            id: "1",
+            name: "Travel_Itinerary.pdf",
+            url: "#",
+            type: "application/pdf"
+          }
+        ]
+      };
+      
+      setLeaveRequest(mockLeaveRequest);
+      
+      // Set form values
+      form.reset({
+        leave_type: mockLeaveRequest.leave_type,
+        start_date: mockLeaveRequest.start_date,
+        end_date: mockLeaveRequest.end_date,
+        days_requested: mockLeaveRequest.days_requested,
+        reason: mockLeaveRequest.reason,
+        status: mockLeaveRequest.status,
+        comments: mockLeaveRequest.comments || '',
+        notify_employee: false,
+        send_approval_notification: false
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load leave request';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [leaveId, form]);
+
+  useEffect(() => {
+    if (leaveId) {
+      fetchLeaveRequest();
+    }
+  }, [leaveId, fetchLeaveRequest]);
+
+  // Watch for form changes
+  useEffect(() => {
+    const subscription = form.watch(() => {
+      setHasUnsavedChanges(true);
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
+  // Warn before leaving with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  const calculateDays = useCallback((startDate: string, endDate: string) => {
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      form.setValue('days_requested', diffDays);
+    }
+  }, [form]);
+
+  const handleDateChange = useCallback((field: 'start_date' | 'end_date', value: string) => {
+    form.setValue(field, value);
+    const startDate = field === 'start_date' ? value : form.getValues('start_date');
+    const endDate = field === 'end_date' ? value : form.getValues('end_date');
+    calculateDays(startDate, endDate);
+  }, [form, calculateDays]);
+
+      const onSubmit = useCallback(async (data: any) => {
+    if (!hasPermission('leave-requests.edit', 'leave-request')) {
+      toast.error('You do not have permission to edit leave requests');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Validate business rules
+      if (data.start_date > data.end_date) {
+        toast.error('Start date cannot be after end date');
+        return;
+      }
+
+      if (data.days_requested < 1) {
+        toast.error('Days requested must be at least 1');
+        return;
+      }
+
+      // Check leave balance
+      const remainingBalance = (leaveRequest?.total_leave_balance || 0) - (leaveRequest?.leave_taken_this_year || 0);
+      if (data.days_requested > remainingBalance) {
+        toast.error(`Insufficient leave balance. Available: ${remainingBalance} days`);
+        return;
+      }
+
+      toast.success('Leave request updated successfully');
+      setHasUnsavedChanges(false);
+      router.push(`/modules/leave-management/${leaveId}`);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update leave request';
+      toast.error(errorMessage);
+    } finally {
+      setSaving(false);
+    }
+  }, [hasPermission, leaveRequest, leaveId, router]);
+
+  const handleCancel = useCallback(() => {
+    if (hasUnsavedChanges) {
+      setShowConfirmDialog(true);
+    } else {
+      router.push(`/modules/leave-management/${leaveId}`);
+    }
+  }, [hasUnsavedChanges, router, leaveId]);
+
+  const handleConfirmCancel = useCallback(() => {
+    setShowConfirmDialog(false);
+    setHasUnsavedChanges(false);
+    router.push(`/modules/leave-management/${leaveId}`);
+  }, [router, leaveId]);
+
+  const getStatusBadge = useCallback((status: string) => {
+    const statusConfig = {
+      'Pending': { variant: 'secondary' as const, icon: Clock, color: 'bg-yellow-100 text-yellow-800' },
+      'Approved': { variant: 'default' as const, icon: CheckCircle, color: 'bg-green-100 text-green-800' },
+      'Rejected': { variant: 'destructive' as const, icon: XCircle, color: 'bg-red-100 text-red-800' }
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.Pending;
+    const Icon = config.icon;
+
+    return (
+      <Badge variant={config.variant} className={`flex items-center gap-1 ${config.color}`}>
+        <Icon className="h-3 w-3" />
+        {status}
+      </Badge>
+    );
+  }, []);
+
+  const formatDate = useCallback((dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }, []);
+
+  if (loading) {
+    return <LoadingSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-6">
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {error}. Please try refreshing the page or contact support if the problem persists.
+          </AlertDescription>
+        </Alert>
+        <div className="mt-4 flex gap-2">
+          <Button onClick={fetchLeaveRequest} variant="outline">
+            Retry
+          </Button>
+          <Button onClick={() => router.push('/modules/leave-management')}>
+            Back to Leave Management
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!leaveRequest) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <AlertTriangle className="h-16 w-16 text-yellow-500 mx-auto" />
+          <h2 className="text-2xl font-bold">Leave Request Not Found</h2>
+          <p className="text-muted-foreground">
+            The leave request you're trying to edit doesn't exist or has been removed.
+          </p>
+          <Button onClick={() => router.push('/modules/leave-management')}>
+            Back to Leave Management
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <ErrorBoundary>
+      <div className="container mx-auto py-6 space-y-6">
+        {/* Enhanced Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCancel}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back
+            </Button>
+            <div>
+              <h1 className="text-3xl font-bold">Edit Leave Request</h1>
+              <p className="text-muted-foreground">ID: {leaveRequest.id}</p>
+            </div>
+          </div>
+          {hasUnsavedChanges && (
+            <Badge variant="outline" className="text-orange-600 border-orange-200">
+              <AlertCircle className="h-3 w-3 mr-1" />
+              Unsaved Changes
+            </Badge>
+          )}
+        </div>
+
+        {/* Employee Information Banner */}
+        <Card className="border-l-4 border-l-blue-500">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-12 w-12">
+                <AvatarImage src={leaveRequest.employee_avatar} />
+                <AvatarFallback>{leaveRequest.employee_name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <h3 className="font-semibold">{leaveRequest.employee_name}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {leaveRequest.employee_id} • {leaveRequest.department} • {leaveRequest.position}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground">Leave Balance</p>
+                <p className="font-semibold">
+                  {(leaveRequest.total_leave_balance || 0) - (leaveRequest.leave_taken_this_year || 0)} days remaining
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Leave Details */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Leave Details
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="leave_type"
+                    render={({ field }: { field: ControllerRenderProps<LeaveRequestFormData, "leave_type"> }) => (
+                      <FormItem>
+                        <FormLabel>Leave Type</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select leave type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Annual Leave">Annual Leave</SelectItem>
+                            <SelectItem value="Sick Leave">Sick Leave</SelectItem>
+                            <SelectItem value="Personal Leave">Personal Leave</SelectItem>
+                            <SelectItem value="Maternity Leave">Maternity Leave</SelectItem>
+                            <SelectItem value="Paternity Leave">Paternity Leave</SelectItem>
+                            <SelectItem value="Unpaid Leave">Unpaid Leave</SelectItem>
+                            <SelectItem value="Study Leave">Study Leave</SelectItem>
+                            <SelectItem value="Bereavement Leave">Bereavement Leave</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="start_date"
+                      render={({ field }: { field: ControllerRenderProps<LeaveRequestFormData, "start_date"> }) => (
+                        <FormItem>
+                          <FormLabel>Start Date</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              {...field}
+                              onChange={(e) => handleDateChange('start_date', e.target.value)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="end_date"
+                      render={({ field }: { field: ControllerRenderProps<LeaveRequestFormData, "end_date"> }) => (
+                        <FormItem>
+                          <FormLabel>End Date</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="date"
+                              {...field}
+                              onChange={(e) => handleDateChange('end_date', e.target.value)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="days_requested"
+                    render={({ field }: { field: ControllerRenderProps<LeaveRequestFormData, "days_requested"> }) => (
+                      <FormItem>
+                        <FormLabel>Days Requested</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value))}
+                            min="1"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Automatically calculated based on start and end dates
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Status and Approval */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Status & Approval
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }: { field: ControllerRenderProps<LeaveRequestFormData, "status"> }) => (
+                      <FormItem>
+                        <FormLabel>Status</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Pending">Pending</SelectItem>
+                            <SelectItem value="Approved">Approved</SelectItem>
+                            <SelectItem value="Rejected">Rejected</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="notify_employee"
+                    render={({ field }: { field: ControllerRenderProps<LeaveRequestFormData, "notify_employee"> }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">Notify Employee</FormLabel>
+                          <FormDescription>
+                            Send email notification to employee about status changes
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="send_approval_notification"
+                    render={({ field }: { field: ControllerRenderProps<LeaveRequestFormData, "send_approval_notification"> }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">Send Approval Notification</FormLabel>
+                          <FormDescription>
+                            Notify relevant managers about approval decisions
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Reason and Comments */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Reason & Comments
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="reason"
+                  render={({ field }: { field: ControllerRenderProps<LeaveRequestFormData, "reason"> }) => (
+                    <FormItem>
+                      <FormLabel>Reason for Leave</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Please provide a detailed reason for the leave request..."
+                          className="min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Provide a clear and detailed explanation for the leave request
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="comments"
+                  render={({ field }: { field: ControllerRenderProps<LeaveRequestFormData, "comments"> }) => (
+                    <FormItem>
+                      <FormLabel>Additional Comments</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Any additional comments or notes..."
+                          className="min-h-[80px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Optional comments for approval/rejection reasons
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-4 pt-6 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={saving}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving}>
+                <Save className="h-4 w-4 mr-2" />
+                {saving ? 'Saving Changes...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </Form>
+
+        {/* Confirmation Dialog */}
+        <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Unsaved Changes</DialogTitle>
+              <DialogDescription>
+                You have unsaved changes. Are you sure you want to leave? All changes will be lost.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
+                Continue Editing
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmCancel}>
+                Discard Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </ErrorBoundary>
+  );
+}
+
+export default function EditLeaveRequestPageWrapper() {
+  return (
+    <Suspense fallback={<LoadingSkeleton />}>
+      <EditLeaveRequestPage />
+    </Suspense>
+  );
+} 
