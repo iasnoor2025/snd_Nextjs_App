@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
       try {
         // Get the timesheet
         const timesheet = await (prisma.timesheet as any).findUnique({
-          where: { id: timesheetId },
+          where: { id: parseInt(timesheetId) },
           include: {
             employee: {
               include: {
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
               try {
                 // Approve the draft timesheet directly (skip submission step)
                 const updatedTimesheet = await (prisma.timesheet as any).update({
-                  where: { id: timesheetId },
+                  where: { id: parseInt(timesheetId) },
                   data: {
                     status: 'foreman_approved', // Move directly to approved
                     approved_by: parseInt(session.user.id),
@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
               try {
                 // Submit the draft timesheet
                 const updatedTimesheet = await (prisma.timesheet as any).update({
-                  where: { id: timesheetId },
+                  where: { id: parseInt(timesheetId) },
                   data: {
                     status: 'submitted',
                     submittedAt: new Date(),
@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
             try {
               // Approve the pending timesheet directly (treat as submitted)
               const updatedTimesheet = await (prisma.timesheet as any).update({
-                where: { id: timesheetId },
+                where: { id: parseInt(timesheetId) },
                 data: {
                   status: 'foreman_approved', // Move to next stage
                   approvedBy: parseInt(session.user.id),
@@ -307,7 +307,7 @@ export async function POST(request: NextRequest) {
             }
 
             const updatedTimesheet = await (prisma.timesheet as any).update({
-              where: { id: timesheetId },
+              where: { id: parseInt(timesheetId) },
               data: updateData,
               include: {
                 employee: {
@@ -354,7 +354,7 @@ export async function POST(request: NextRequest) {
 
           // Reject the timesheet
           const updatedTimesheet = await (prisma.timesheet as any).update({
-            where: { id: timesheetId },
+            where: { id: parseInt(timesheetId) },
             data: {
               status: 'rejected',
               rejectedBy: session.user.id,
