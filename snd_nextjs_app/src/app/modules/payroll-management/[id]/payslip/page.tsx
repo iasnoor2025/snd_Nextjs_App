@@ -18,7 +18,7 @@ const printStyles = `
   @media print {
     @page {
       size: A4 landscape;
-      margin: 15mm;
+      margin: 10mm;
     }
 
     body {
@@ -49,256 +49,357 @@ const printStyles = `
       border: none !important;
     }
 
-    .payslip-header {
+    /* Header Section */
+    .bg-gradient-to-br {
       background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
       color: white !important;
-      padding: 2rem !important;
+      padding: 1.5rem !important;
       border-radius: 0 !important;
-      margin-bottom: 2rem !important;
+      margin-bottom: 1.5rem !important;
     }
 
-    .company-logo {
-      width: 80px !important;
-      height: 80px !important;
-      border-radius: 12px !important;
+    .bg-white.p-2.rounded-lg.shadow-md {
       background: white !important;
-      padding: 8px !important;
+      padding: 0.5rem !important;
+      border-radius: 0.5rem !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
     }
 
-    .company-name {
-      font-size: 2rem !important;
+    .text-xl.font-bold {
+      font-size: 1.25rem !important;
       font-weight: 700 !important;
-      margin-bottom: 0.5rem !important;
+      margin-bottom: 0.25rem !important;
     }
 
-    .company-subtitle {
-      font-size: 1rem !important;
+    .text-sm.opacity-90 {
+      font-size: 0.875rem !important;
       opacity: 0.9 !important;
     }
 
-    .payslip-title {
-      font-size: 1.5rem !important;
+    .text-lg.font-semibold {
+      font-size: 1.125rem !important;
       font-weight: 600 !important;
+    }
+
+    /* Employee Information Grid */
+    .grid.grid-cols-1.lg\\:grid-cols-3 {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 1rem !important;
+      margin-bottom: 1.5rem !important;
+    }
+
+    .bg-gray-50.border.border-gray-200.rounded-lg.p-4 {
+      background: #f9fafb !important;
+      border: 1px solid #e5e7eb !important;
+      border-radius: 0.5rem !important;
+      padding: 1rem !important;
+    }
+
+    .text-xs.font-semibold.text-gray-600.uppercase.tracking-wide.mb-3 {
+      font-size: 0.75rem !important;
+      font-weight: 600 !important;
+      color: #6b7280 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      margin-bottom: 0.75rem !important;
+    }
+
+    .space-y-2 {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 0.5rem !important;
+    }
+
+    .flex.justify-between.items-center.py-1.border-b.border-gray-100 {
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      padding: 0.25rem 0 !important;
+      border-bottom: 1px solid #f3f4f6 !important;
+    }
+
+    .text-xs.text-gray-600.font-medium {
+      font-size: 0.75rem !important;
+      color: #6b7280 !important;
+      font-weight: 500 !important;
+    }
+
+    .text-xs.font-semibold.text-gray-900 {
+      font-size: 0.75rem !important;
+      font-weight: 600 !important;
+      color: #111827 !important;
+    }
+
+    .text-xs.font-semibold.text-green-700 {
+      font-size: 0.75rem !important;
+      font-weight: 600 !important;
+      color: #15803d !important;
+    }
+
+    /* Working Hours Summary */
+    .bg-blue-50.border.border-blue-200.rounded-lg.p-4 {
+      background: #eff6ff !important;
+      border: 1px solid #bfdbfe !important;
+      border-radius: 0.5rem !important;
+      padding: 1rem !important;
+      margin-bottom: 1.5rem !important;
+    }
+
+    .text-sm.font-semibold.text-blue-800 {
+      font-size: 0.875rem !important;
+      font-weight: 600 !important;
+      color: #1e40af !important;
+    }
+
+    .grid.grid-cols-2.gap-y-2 {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 0.5rem !important;
+    }
+
+    .text-sm.font-medium {
+      font-size: 0.875rem !important;
+      font-weight: 500 !important;
+    }
+
+    .text-sm.text-right {
+      font-size: 0.875rem !important;
       text-align: right !important;
     }
 
-    .employee-info-grid {
-      display: grid !important;
-      grid-template-columns: repeat(3, 1fr) !important;
-      gap: 2rem !important;
-      margin-bottom: 2rem !important;
-    }
-
-    .info-card {
-      background: #f8fafc !important;
-      border: 1px solid #e2e8f0 !important;
-      border-radius: 12px !important;
-      padding: 1.5rem !important;
-    }
-
-    .info-card-title {
+    .text-sm.text-right.font-semibold {
       font-size: 0.875rem !important;
+      text-align: right !important;
       font-weight: 600 !important;
-      color: #64748b !important;
-      text-transform: uppercase !important;
-      letter-spacing: 0.05em !important;
-      margin-bottom: 1rem !important;
     }
 
-    .info-row {
-      display: flex !important;
-      justify-content: space-between !important;
-      align-items: center !important;
-      padding: 0.5rem 0 !important;
-      border-bottom: 1px solid #f1f5f9 !important;
-    }
-
-    .info-row:last-child {
-      border-bottom: none !important;
-    }
-
-    .info-label {
+    .text-sm.text-right.text-green-600 {
       font-size: 0.875rem !important;
-      color: #64748b !important;
-      font-weight: 500 !important;
+      text-align: right !important;
+      color: #16a34a !important;
     }
 
-    .info-value {
+    .text-sm.text-right.text-red-600 {
       font-size: 0.875rem !important;
-      font-weight: 600 !important;
-      color: #1e293b !important;
-    }
-
-    .info-value-green {
-      color: #059669 !important;
-    }
-
-    .info-value-red {
+      text-align: right !important;
       color: #dc2626 !important;
     }
 
-    .attendance-section {
-      margin-bottom: 2rem !important;
-    }
-
-    .section-title {
-      font-size: 1.25rem !important;
-      font-weight: 600 !important;
-      color: #1e293b !important;
+    /* Attendance Record */
+    .overflow-x-auto.rounded-md.border {
+      overflow-x: auto !important;
+      border-radius: 0.375rem !important;
+      border: 1px solid #e5e7eb !important;
       margin-bottom: 1rem !important;
-      padding-bottom: 0.5rem !important;
-      border-bottom: 2px solid #e2e8f0 !important;
     }
 
-    .attendance-table {
-      width: 100% !important;
+    .min-w-full.divide-y.divide-gray-200 {
+      min-width: 100% !important;
       border-collapse: collapse !important;
-      border-radius: 12px !important;
-      overflow: hidden !important;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
     }
 
-    .attendance-table th {
-      background: #1e293b !important;
+    .bg-gray-50 {
+      background: #f9fafb !important;
+    }
+
+    .border.bg-black.text-center.align-middle.text-xs.font-bold.text-white.h-10 {
+      border: 1px solid #000 !important;
+      background: #000 !important;
+      text-align: center !important;
+      vertical-align: middle !important;
+      font-size: 0.75rem !important;
+      font-weight: 700 !important;
       color: white !important;
-      font-weight: 600 !important;
-      padding: 0.75rem 0.5rem !important;
+      height: 2.5rem !important;
+      padding: 0.25rem !important;
+    }
+
+    .text-center.border.p-1.text-xs {
       text-align: center !important;
+      border: 1px solid #e5e7eb !important;
+      padding: 0.25rem !important;
       font-size: 0.75rem !important;
     }
 
-    .attendance-table td {
-      padding: 0.5rem !important;
+    .text-center.bg-blue-100.border.p-1.text-xs {
       text-align: center !important;
-      font-size: 0.75rem !important;
-      border: 1px solid #e2e8f0 !important;
-      background: white !important;
-    }
-
-    .attendance-table .friday {
       background: #dbeafe !important;
+      border: 1px solid #e5e7eb !important;
+      padding: 0.25rem !important;
+      font-size: 0.75rem !important;
     }
 
-    .attendance-table .absent {
-      background: #fecaca !important;
+    .text-center.bg-blue-100.text-red-600.border.p-1.text-xs {
+      text-align: center !important;
+      background: #dbeafe !important;
       color: #dc2626 !important;
-      font-weight: 600 !important;
+      border: 1px solid #e5e7eb !important;
+      padding: 0.25rem !important;
+      font-size: 0.75rem !important;
     }
 
-    .attendance-table .regular {
-      color: #059669 !important;
-      font-weight: 600 !important;
+    .text-center.bg-blue-100.text-green-600.border.p-1.text-xs {
+      text-align: center !important;
+      background: #dbeafe !important;
+      color: #16a34a !important;
+      border: 1px solid #e5e7eb !important;
+      padding: 0.25rem !important;
+      font-size: 0.75rem !important;
     }
 
-    .attendance-table .overtime {
+    .text-center.bg-blue-100.text-blue-600.border.p-1.text-xs {
+      text-align: center !important;
+      background: #dbeafe !important;
       color: #2563eb !important;
-      font-weight: 600 !important;
+      border: 1px solid #e5e7eb !important;
+      padding: 0.25rem !important;
+      font-size: 0.75rem !important;
     }
 
-    .summary-section {
+    .text-center.text-red-600.border.p-1.text-xs {
+      text-align: center !important;
+      color: #dc2626 !important;
+      border: 1px solid #e5e7eb !important;
+      padding: 0.25rem !important;
+      font-size: 0.75rem !important;
+    }
+
+    .text-center.text-green-600.border.p-1.text-xs {
+      text-align: center !important;
+      color: #16a34a !important;
+      border: 1px solid #e5e7eb !important;
+      padding: 0.25rem !important;
+      font-size: 0.75rem !important;
+    }
+
+    .text-center.text-blue-600.border.p-1.text-xs {
+      text-align: center !important;
+      color: #2563eb !important;
+      border: 1px solid #e5e7eb !important;
+      padding: 0.25rem !important;
+      font-size: 0.75rem !important;
+    }
+
+    /* Legend */
+    .mt-1.text-xs.text-gray-500 {
+      margin-top: 0.25rem !important;
+      font-size: 0.75rem !important;
+      color: #6b7280 !important;
+    }
+
+    .font-semibold.text-green-600 {
+      font-weight: 600 !important;
+      color: #16a34a !important;
+    }
+
+    .font-semibold.text-blue-600 {
+      font-weight: 600 !important;
+      color: #2563eb !important;
+    }
+
+    .font-semibold.text-red-600 {
+      font-weight: 600 !important;
+      color: #dc2626 !important;
+    }
+
+    /* Salary Breakdown */
+    .grid.grid-cols-1.gap-6.md\\:grid-cols-2 {
       display: grid !important;
       grid-template-columns: 1fr 1fr !important;
-      gap: 2rem !important;
-      margin-bottom: 2rem !important;
+      gap: 1.5rem !important;
+      margin-bottom: 1.5rem !important;
     }
 
-    .summary-card {
-      background: #f8fafc !important;
-      border: 1px solid #e2e8f0 !important;
-      border-radius: 12px !important;
-      padding: 1.5rem !important;
-    }
-
-    .summary-card-title {
-      font-size: 1.125rem !important;
-      font-weight: 600 !important;
-      color: #1e293b !important;
-      margin-bottom: 1rem !important;
-    }
-
-    .summary-row {
+    .space-y-4 {
       display: flex !important;
-      justify-content: space-between !important;
-      align-items: center !important;
-      padding: 0.75rem 0 !important;
-      border-bottom: 1px solid #f1f5f9 !important;
+      flex-direction: column !important;
+      gap: 1rem !important;
     }
 
-    .summary-row:last-child {
-      border-bottom: none !important;
-      font-weight: 700 !important;
-      font-size: 1.125rem !important;
-      padding-top: 1rem !important;
-      border-top: 2px solid #e2e8f0 !important;
-    }
-
-    .summary-label {
-      font-size: 0.875rem !important;
-      color: #64748b !important;
-      font-weight: 500 !important;
-    }
-
-    .summary-value {
-      font-size: 0.875rem !important;
+    .font-semibold {
       font-weight: 600 !important;
-      color: #1e293b !important;
     }
 
-    .summary-value-green {
-      color: #059669 !important;
+    .grid.grid-cols-2.gap-y-2.rounded-md.border.bg-gray-50.p-4.text-sm {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 0.5rem !important;
+      border-radius: 0.375rem !important;
+      border: 1px solid #e5e7eb !important;
+      background: #f9fafb !important;
+      padding: 1rem !important;
+      font-size: 0.875rem !important;
     }
 
-    .summary-value-red {
-      color: #dc2626 !important;
+    /* Net Salary Section */
+    .bg-green-50.border.border-green-200.rounded-lg.p-4 {
+      background: #f0fdf4 !important;
+      border: 1px solid #bbf7d0 !important;
+      border-radius: 0.5rem !important;
+      padding: 1rem !important;
+      margin-bottom: 1.5rem !important;
     }
 
-    .signatures-section {
+    .text-lg.font-bold.text-green-800 {
+      font-size: 1.125rem !important;
+      font-weight: 700 !important;
+      color: #166534 !important;
+    }
+
+    /* Signatures */
+    .flex.justify-end.border-t.pt-6 {
+      display: flex !important;
+      justify-content: flex-end !important;
+      border-top: 1px solid #e5e7eb !important;
+      padding-top: 1.5rem !important;
+    }
+
+    .grid.grid-cols-3.gap-x-12.text-sm {
       display: grid !important;
       grid-template-columns: repeat(3, 1fr) !important;
-      gap: 2rem !important;
-      margin-top: 3rem !important;
-      padding-top: 2rem !important;
-      border-top: 2px solid #e2e8f0 !important;
-    }
-
-    .signature-card {
-      text-align: center !important;
-      padding: 1.5rem !important;
-      background: #f8fafc !important;
-      border: 1px solid #e2e8f0 !important;
-      border-radius: 12px !important;
-    }
-
-    .signature-title {
+      gap: 3rem !important;
       font-size: 0.875rem !important;
+    }
+
+    .text-center {
+      text-align: center !important;
+    }
+
+    .mb-1.font-semibold {
+      margin-bottom: 0.25rem !important;
       font-weight: 600 !important;
-      color: #64748b !important;
-      margin-bottom: 1rem !important;
-      text-transform: uppercase !important;
-      letter-spacing: 0.05em !important;
     }
 
-    .signature-name {
-      font-size: 1rem !important;
-      font-weight: 600 !important;
-      color: #1e293b !important;
-      margin-bottom: 2rem !important;
+    .text-muted-foreground.italic {
+      color: #6b7280 !important;
+      font-style: italic !important;
     }
 
-    .signature-line {
-      border-top: 2px solid #cbd5e1 !important;
-      padding-top: 0.5rem !important;
-      font-size: 0.75rem !important;
-      color: #64748b !important;
+    .mt-8.border-t.border-gray-300.pt-1 {
+      margin-top: 2rem !important;
+      border-top: 1px solid #d1d5db !important;
+      padding-top: 0.25rem !important;
     }
 
-    .legend {
-      margin-top: 1rem !important;
+    /* Ensure all content is visible */
+    .p-4 {
       padding: 1rem !important;
-      background: #f8fafc !important;
-      border-radius: 8px !important;
-      font-size: 0.75rem !important;
-      color: #64748b !important;
+    }
+
+    .mb-4 {
+      margin-bottom: 1rem !important;
+    }
+
+    .space-y-6 {
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 1.5rem !important;
+    }
+
+    /* Hide print button in print */
+    .print\\:hidden {
+      display: none !important;
     }
   }
 `;
@@ -402,20 +503,29 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   useEffect(() => {
     const fetchPayslipData = async () => {
       try {
+        console.log('🔍 PAYSLIP FRONTEND - Starting fetch for payroll ID:', id);
         setLoading(true);
         const response = await fetch(`/api/payroll/${id}/payslip`);
+        console.log('🔍 PAYSLIP FRONTEND - Response status:', response.status);
+        
         if (!response.ok) {
-          throw new Error('Failed to fetch payslip data');
+          const errorText = await response.text();
+          console.error('🔍 PAYSLIP FRONTEND - Response not ok:', errorText);
+          throw new Error(`Failed to fetch payslip data: ${response.status} ${errorText}`);
         }
+        
         const data = await response.json();
+        console.log('🔍 PAYSLIP FRONTEND - Response data:', data);
+        
         if (data.success) {
-          console.log('Payslip data received:', data.data);
+          console.log('🔍 PAYSLIP FRONTEND - Payslip data received:', data.data);
           setPayslipData(data.data);
         } else {
+          console.error('🔍 PAYSLIP FRONTEND - API returned success: false:', data.message);
           throw new Error(data.message || 'Failed to fetch payslip data');
         }
       } catch (error) {
-        console.error('Error fetching payslip data:', error);
+        console.error('🔍 PAYSLIP FRONTEND - Error fetching payslip data:', error);
         toast.error('Failed to load payslip data');
       } finally {
         setLoading(false);
@@ -466,7 +576,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `payslip_${payslipData?.employee.id}_${payslipData?.payroll.month}_${payslipData?.payroll.year}.pdf`;
+        a.download = `payslip_${payslipData?.employee?.id}_${payslipData?.payroll.month}_${payslipData?.payroll.year}.pdf`;
         document.body.appendChild(a);
         a.click();
         a.remove();
@@ -516,7 +626,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       heightLeft -= pageHeight;
     }
 
-    pdf.save(`payslip_${payslipData?.employee.id}_${payslipData?.payroll.month}_${payslipData?.payroll.year}.pdf`);
+            pdf.save(`payslip_${payslipData?.employee?.id}_${payslipData?.payroll.month}_${payslipData?.payroll.year}.pdf`);
   };
 
   const formatCurrency = (amount: number) => {
@@ -530,8 +640,12 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     return (
       <div className="flex h-full flex-1 flex-col gap-4 p-4">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <span className="ml-2">Loading payslip data...</span>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-lg font-semibold">Loading payslip data...</p>
+            <p className="text-sm text-gray-500 mt-2">Payroll ID: {id}</p>
+            <p className="text-xs text-gray-400 mt-1">This may take a few seconds</p>
+          </div>
         </div>
       </div>
     );
@@ -543,6 +657,14 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
         <div className="text-center">
           <h2 className="text-xl font-semibold">Payslip not found</h2>
           <p className="text-gray-600">The requested payslip could not be found.</p>
+          <p className="text-sm text-gray-500 mt-2">Payroll ID: {id}</p>
+          <Button 
+            variant="outline" 
+            onClick={() => window.location.reload()} 
+            className="mt-4"
+          >
+            Retry
+          </Button>
         </div>
       </div>
     );
@@ -663,7 +785,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Payslip</h1>
               <p className="text-sm text-gray-600">
-                Employee: {payslipData?.employee?.full_name || 'Loading...'}
+                Employee: {loading ? 'Loading...' : (payslipData?.employee?.file_number|| 'Unknown Employee')}
               </p>
             </div>
           </div>
