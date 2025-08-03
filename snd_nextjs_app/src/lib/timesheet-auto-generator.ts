@@ -19,6 +19,8 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
     threeMonthsAgo.setHours(0, 0, 0, 0);
 
+    console.log(`Auto-generating timesheets from ${threeMonthsAgo.toDateString()} to ${today.toDateString()}`);
+
     // Get all employee assignments regardless of status
     const assignments = await prisma.employeeAssignment.findMany({
       where: {
@@ -30,6 +32,8 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
         rental: true,
       },
     });
+
+    console.log(`Found ${assignments.length} assignments to process`);
 
     let created = 0;
     const errors: string[] = [];
@@ -43,31 +47,48 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
       }
 
       const start = new Date(assignment.start_date);
-      // Use assignment end date if set, otherwise use today (never future dates)
-      const end = assignment.end_date ? new Date(assignment.end_date) : today;
       
-      // If assignment end date is in the future, use today instead
-      if (end > today) {
-        end.setTime(today.getTime());
+      // Determine the effective end date
+      let effectiveEnd = today; // Default to today
+      
+      if (assignment.end_date) {
+        const assignmentEnd = new Date(assignment.end_date);
+        // If assignment end date is in the future, use today instead
+        if (assignmentEnd > today) {
+          effectiveEnd = today;
+        } else {
+          effectiveEnd = assignmentEnd;
+        }
       }
+      // If no end date, use today (last 3 months)
 
-      // If start is after end, skip
-      if (start > end) {
+      // If start is after effective end, skip
+      if (start > effectiveEnd) {
         errors.push(`Assignment ${assignment.id}: start date after end date`);
         continue;
       }
 
-      // Only generate timesheets for the last 3 months up to today
-      const effectiveStart = start > threeMonthsAgo ? start : threeMonthsAgo;
-      const effectiveEnd = end < today ? end : today;
+      // Determine the effective start date
+      let effectiveStart = start;
+      
+      // If start date is more than 3 months ago, use 3 months ago
+      if (start < threeMonthsAgo) {
+        effectiveStart = threeMonthsAgo;
+      }
+      // If start date is less than 3 months ago, use start date (already set above)
 
       // If effective start is after effective end, skip
       if (effectiveStart > effectiveEnd) {
+        console.log(`Skipping assignment ${assignment.id}: effective start (${effectiveStart.toDateString()}) after effective end (${effectiveEnd.toDateString()})`);
         continue;
       }
 
+      console.log(`Processing assignment ${assignment.id} for employee ${employeeId}: ${effectiveStart.toDateString()} to ${effectiveEnd.toDateString()}`);
+
       // Generate timesheets for each day in the period
       const currentDate = new Date(effectiveStart);
+      let assignmentCreated = 0;
+      
       while (currentDate <= effectiveEnd) {
         // Check for existing timesheet for this employee on this date
         const existingTimesheet = await prisma.timesheet.findFirst({
@@ -116,9 +137,16 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
         });
 
         created++;
+        assignmentCreated++;
         currentDate.setDate(currentDate.getDate() + 1);
       }
+
+      if (assignmentCreated > 0) {
+        console.log(`Created ${assignmentCreated} timesheets for assignment ${assignment.id}`);
+      }
     }
+
+    console.log(`Auto-generation completed. Total created: ${created}, Errors: ${errors.length}`);
 
     return {
       success: true,

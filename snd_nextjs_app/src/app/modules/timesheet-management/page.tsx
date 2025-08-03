@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { ProtectedRoute } from '@/components/protected-route';
 import { Can, RoleBased } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { Button } from "@/components/ui/button";
@@ -54,7 +53,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import AutoGenerateButton from "@/components/timesheet/AutoGenerateButton";
-import { ProtectedRoute as OriginalProtectedRoute } from "@/components/protected-route";
+import { ProtectedRoute } from "@/components/protected-route";
 
 interface Timesheet {
   id: string;
@@ -126,12 +125,7 @@ function TimesheetManagementContent() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [assignmentFilter, setAssignmentFilter] = useState("all");
-  const [month, setMonth] = useState(() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const monthStr = (now.getMonth() + 1).toString().padStart(2, '0');
-    return `${year}-${monthStr}`;
-  });
+  const [month, setMonth] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [selectedTimesheets, setSelectedTimesheets] = useState<string[]>([]);
@@ -205,11 +199,7 @@ function TimesheetManagementContent() {
     try {
       setLoading(true);
       const params = new URLSearchParams({
-        limit: '1000', // Fetch all timesheets for client-side pagination
-        ...(searchTerm && { search: searchTerm }),
-        ...(statusFilter && statusFilter !== 'all' && { status: statusFilter }),
-        ...(assignmentFilter && assignmentFilter !== 'all' && { assignment: assignmentFilter }),
-        ...(month && month !== 'all' && { month }),
+        limit: '1000', // Fetch all timesheets for client-side filtering
       });
 
       const response = await fetch(`/api/timesheets?${params}`, {
@@ -231,10 +221,59 @@ function TimesheetManagementContent() {
 
   useEffect(() => {
     fetchTimesheets();
-  }, [searchTerm, statusFilter, assignmentFilter, month]);
+  }, []); // Only fetch once, filtering is done client-side
 
-  // Client-side pagination calculations
-  const filteredTimesheets = timesheets?.data || [];
+  // Client-side filtering and pagination calculations
+  const filteredTimesheets = useMemo(() => {
+    if (!timesheets?.data) return [];
+
+    return timesheets.data.filter(timesheet => {
+      // Search filter
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const employeeName = `${timesheet.employee.firstName} ${timesheet.employee.lastName}`.toLowerCase();
+        const employeeId = timesheet.employee.employeeId.toLowerCase();
+        if (!employeeName.includes(searchLower) && !employeeId.includes(searchLower)) {
+          return false;
+        }
+      }
+
+      // Status filter
+      if (statusFilter && statusFilter !== 'all') {
+        if (timesheet.status !== statusFilter) {
+          return false;
+        }
+      }
+
+      // Assignment filter
+      if (assignmentFilter && assignmentFilter !== 'all') {
+        const assignmentName = timesheet.assignment?.name ||
+          timesheet.project?.name ||
+          timesheet.rental?.rentalNumber || '';
+        if (!assignmentName.toLowerCase().includes(assignmentFilter.toLowerCase())) {
+          return false;
+        }
+      }
+
+      // Month filter
+      if (month && month !== 'all') {
+        const timesheetDate = new Date(timesheet.date);
+        const [year, monthNum] = month.split('-');
+        if (year && monthNum) {
+          const filterYear = parseInt(year);
+          const filterMonth = parseInt(monthNum) - 1; // JavaScript months are 0-based
+
+          if (timesheetDate.getFullYear() !== filterYear ||
+            timesheetDate.getMonth() !== filterMonth) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    });
+  }, [timesheets?.data, searchTerm, statusFilter, assignmentFilter, month]);
+
   const totalItems = filteredTimesheets.length;
   const totalPages = Math.ceil(totalItems / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
@@ -274,8 +313,8 @@ function TimesheetManagementContent() {
         if (selectContent) {
           // Try different attribute selectors
           currentMonthElement = selectContent.querySelector(`[data-value="${month}"]`) ||
-                               selectContent.querySelector(`[value="${month}"]`) ||
-                               selectContent.querySelector(`[data-state="checked"]`);
+            selectContent.querySelector(`[value="${month}"]`) ||
+            selectContent.querySelector(`[data-state="checked"]`);
 
           if (currentMonthElement) {
             currentMonthElement.scrollIntoView({
@@ -298,7 +337,7 @@ function TimesheetManagementContent() {
     }
   };
 
-    const handleDelete = async (timesheet: Timesheet) => {
+  const handleDelete = async (timesheet: Timesheet) => {
     // Get user role from session or context
     const userRole = 'USER' as string; // This should come from your auth context/session
 
@@ -341,7 +380,7 @@ function TimesheetManagementContent() {
     }
   };
 
-    const handleBulkDelete = () => {
+  const handleBulkDelete = () => {
     const selectedTimesheetsData = timesheets?.data.filter(t => selectedTimesheets.includes(t.id)) || [];
 
     // Get user role from session or context
@@ -579,7 +618,7 @@ function TimesheetManagementContent() {
     return Array.from(assignmentSet).sort();
   }, [timesheets?.data]);
 
-    // Generate month options for the last 2 years and next 2 years
+  // Generate month options for the last 2 years and next 2 years
   const monthOptions = useMemo(() => {
     const options = [];
     const currentDate = new Date();
@@ -631,59 +670,56 @@ function TimesheetManagementContent() {
 
   if (loading) {
     return (
-      <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Timesheet' }}>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading timesheets...</p>
-          </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading timesheets...</p>
         </div>
-      </ProtectedRoute>
+      </div>
     );
   }
 
   return (
-    <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Timesheet' }}>
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <h1 className="text-2xl font-bold">Timesheet Management</h1>
-            {autoGenerating && (
-              <div className="flex items-center space-x-2 text-sm text-blue-600">
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                <span>Auto-generating timesheets...</span>
-              </div>
-            )}
-          </div>
-          <div className="flex space-x-2">
-            <Can action="export" subject="Timesheet">
-              <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            </Can>
-
-            <Can action="sync" subject="Timesheet">
-              <Button variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Sync Timesheets
-              </Button>
-            </Can>
-
-            <Can action="create" subject="Timesheet">
-              <AutoGenerateButton isAutoGenerating={autoGenerating} />
-            </Can>
-
-            <Can action="create" subject="Timesheet">
-              <Link href="/modules/timesheet-management/create">
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Timesheet
-                </Button>
-              </Link>
-            </Can>
-          </div>
+    <div className="p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <h1 className="text-2xl font-bold">Timesheet Management</h1>
+          {autoGenerating && (
+            <div className="flex items-center space-x-2 text-sm text-blue-600">
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              <span>Auto-generating timesheets...</span>
+            </div>
+          )}
         </div>
+        <div className="flex space-x-2">
+          <Can action="export" subject="Timesheet">
+            <Button variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </Can>
+
+          <Can action="sync" subject="Timesheet">
+            <Button variant="outline" size="sm">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Sync Timesheets
+            </Button>
+          </Can>
+
+          <Can action="create" subject="Timesheet">
+            <AutoGenerateButton isAutoGenerating={autoGenerating} />
+          </Can>
+
+          <Can action="create" subject="Timesheet">
+            <Link href="/modules/timesheet-management/create">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Timesheet
+              </Button>
+            </Link>
+          </Can>
+        </div>
+      </div>
 
       {/* Bulk Actions */}
       {selectedTimesheets.length > 0 && (
@@ -779,7 +815,7 @@ function TimesheetManagementContent() {
               ))}
             </SelectContent>
           </Select>
-                              <Select
+          <Select
             value={month}
             onValueChange={setMonth}
             open={monthSelectOpen}
@@ -788,7 +824,7 @@ function TimesheetManagementContent() {
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Filter by month" />
             </SelectTrigger>
-                        <SelectContent className="max-h-60">
+            <SelectContent className="max-h-60">
               <SelectItem value="all">All Months</SelectItem>
               {monthOptions.map(option => (
                 <SelectItem
@@ -803,6 +839,14 @@ function TimesheetManagementContent() {
               ))}
             </SelectContent>
           </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setMonth(currentMonth)}
+            title="Filter by current month"
+          >
+            Current Month
+          </Button>
           <Select value={pageSize.toString()} onValueChange={(value) => handlePageSizeChange(parseInt(value))}>
             <SelectTrigger className="w-full sm:w-32">
               <SelectValue placeholder="Page size" />
@@ -882,9 +926,9 @@ function TimesheetManagementContent() {
                       <div className="text-sm">
                         <div className="font-medium capitalize">{timesheet.assignment.type}</div>
                         <div className="text-muted-foreground">
-                          {timesheet.assignment.name || 
-                           (timesheet.project ? timesheet.project.name : 
-                            timesheet.rental ? timesheet.rental.rentalNumber : 'No name')}
+                          {timesheet.assignment.name ||
+                            (timesheet.project ? timesheet.project.name :
+                              timesheet.rental ? timesheet.rental.rentalNumber : 'No name')}
                         </div>
                       </div>
                     ) : timesheet.project ? (
@@ -945,7 +989,7 @@ function TimesheetManagementContent() {
                           </Button>
                         </>
                       )}
-                                                                  <Button
+                      <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDelete(timesheet)}
@@ -1186,92 +1230,116 @@ function TimesheetManagementContent() {
         </DialogContent>
       </Dialog>
 
-      {totalPages > 1 && (
-        <div className="mt-6 flex justify-center">
-          <Pagination>
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious 
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-
-              {/* First page */}
-              {currentPage > 2 && (
-                <PaginationItem>
-                  <PaginationLink
-                    onClick={() => setCurrentPage(1)}
-                    isActive={currentPage === 1}
-                  >
-                    1
-                  </PaginationLink>
-                </PaginationItem>
-              )}
-
-              {/* Ellipsis after first page */}
-              {currentPage > 3 && (
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )}
-
-              {/* Current page and surrounding pages */}
-              {(() => {
-                const pages = [];
-                const startPage = Math.max(1, currentPage - 1);
-                const endPage = Math.min(totalPages, currentPage + 1);
-
-                for (let page = startPage; page <= endPage; page++) {
-                  if (page !== 1 && page !== totalPages) {
-                    pages.push(page);
-                  }
-                }
-
-                return pages.map((page) => (
-                  <PaginationItem key={page}>
-                    <PaginationLink
-                      onClick={() => setCurrentPage(page)}
-                      isActive={currentPage === page}
-                    >
-                      {page}
-                    </PaginationLink>
-                  </PaginationItem>
-                ));
-              })()}
-
-              {/* Ellipsis before last page */}
-              {currentPage < totalPages - 2 && (
-                <PaginationItem>
-                  <PaginationEllipsis />
-                </PaginationItem>
-              )}
-
-              {/* Last page */}
-              {currentPage < totalPages - 1 && (
-                <PaginationItem>
-                  <PaginationLink
-                    onClick={() => setCurrentPage(totalPages)}
-                    isActive={currentPage === totalPages}
-                  >
-                    {totalPages}
-                  </PaginationLink>
-                </PaginationItem>
-              )}
-
-              <PaginationItem>
-                <PaginationNext 
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+      {/* Pagination */}
+      <div className="mt-6 flex items-center justify-between">
+        {/* Left side - Showing results info */}
+        <div className="text-sm text-gray-600">
+          Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} results
         </div>
-      )}
 
+        {/* Right side - Pagination controls */}
+        <div className="flex items-center space-x-1">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+            className="h-8 px-3"
+          >
+            &lt; Previous
+          </Button>
+
+          {/* Page numbers */}
+          {(() => {
+            const pages = [];
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+            // Adjust start page if we're near the end
+            if (endPage - startPage + 1 < maxVisiblePages) {
+              startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            // First page
+            if (startPage > 1) {
+              pages.push(
+                <Button
+                  key={1}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(1)}
+                  className="h-8 w-8 p-0"
+                >
+                  1
+                </Button>
+              );
+
+              // Ellipsis after first page
+              if (startPage > 2) {
+                pages.push(
+                  <span key="ellipsis1" className="px-2 text-gray-500">
+                    ...
+                  </span>
+                );
+              }
+            }
+
+            // Visible pages
+            for (let page = startPage; page <= endPage; page++) {
+              pages.push(
+                <Button
+                  key={page}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(page)}
+                  className="h-8 w-8 p-0"
+                >
+                  {page}
+                </Button>
+              );
+            }
+
+            // Ellipsis before last page
+            if (endPage < totalPages - 1) {
+              pages.push(
+                <span key="ellipsis2" className="px-2 text-gray-500">
+                  ...
+                </span>
+              );
+            }
+
+            // Last page
+            if (endPage < totalPages) {
+              pages.push(
+                <Button
+                  key={totalPages}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(totalPages)}
+                  className="h-8 w-8 p-0"
+                >
+                  {totalPages}
+                </Button>
+              );
+            }
+
+            return pages;
+          })()}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+            className="h-8 px-3"
+          >
+            Next &gt;
+          </Button>
+        </div>
+      </div>
       {/* Role-based content example */}
-      <RoleBased roles={['ADMIN', 'MANAGER', 'SUPERVISOR']}>
+      <div>
         <Card>
           <CardHeader>
             <CardTitle>Timesheet Administration</CardTitle>
@@ -1281,38 +1349,29 @@ function TimesheetManagementContent() {
           </CardHeader>
           <CardContent>
             <div className="flex gap-2">
-              <Can action="approve" subject="Timesheet">
-                <Button variant="outline">
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Approve All Pending
-                </Button>
-              </Can>
+              <Button variant="outline">
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Approve All Pending
+              </Button>
 
-              <Can action="reject" subject="Timesheet">
-                <Button variant="outline">
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Reject All Pending
-                </Button>
-              </Can>
+              <Button variant="outline">
+                <XCircle className="h-4 w-4 mr-2" />
+                Reject All Pending
+              </Button>
 
-              <Can action="manage" subject="Timesheet">
-                <Button variant="outline">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Timesheet Settings
-                </Button>
-              </Can>
+              <Button variant="outline">
+                <Settings className="h-4 w-4 mr-2" />
+                Timesheet Settings
+              </Button>
 
-              <Can action="export" subject="Timesheet">
-                <Button variant="outline">
-                  <FileText className="h-4 w-4 mr-2" />
-                  Generate Reports
-                </Button>
-              </Can>
+              <Button variant="outline">
+                <FileText className="h-4 w-4 mr-2" />
+                Generate Reports
+              </Button>
             </div>
           </CardContent>
         </Card>
-      </RoleBased>
+      </div>
     </div>
-  </ProtectedRoute>
   );
 }
