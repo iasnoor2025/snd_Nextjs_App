@@ -7,8 +7,12 @@ import { authConfig } from '@/lib/auth-config';
 export async function GET(request: NextRequest) {
   // Get the current user session
   const session = await getServerSession(authConfig);
+  
+  console.log('🔍 Session data:', session);
+  console.log('🔍 Session user:', session?.user);
 
   if (!session?.user?.id) {
+    console.log('❌ No session or user ID found');
     return NextResponse.json(
       { error: 'Not authenticated' },
       { status: 401 }
@@ -17,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const userId = session.user.id;
-    console.log('Current user ID from session:', userId);
+    console.log('✅ Current user ID from session:', userId);
 
     // Test database connection first
     try {

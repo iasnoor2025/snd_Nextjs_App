@@ -107,18 +107,18 @@ interface AppearanceSettings {
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile>({
-    id: "1",
-    name: "Demo User",
-    email: "demo@example.com",
-    phone: "+1 (555) 123-4567",
+    id: "",
+    name: "",
+    email: "",
+    phone: "",
     avatar: "",
-    role: "ADMIN",
-    department: "General",
-    location: "Demo Location",
-    bio: "This is a demo profile. Connect to the backend to see real data.",
-    joinDate: new Date().toISOString(),
-    lastLogin: new Date().toISOString(),
-    status: "active"
+    role: "",
+    department: "",
+    location: "",
+    bio: "",
+    joinDate: "",
+    lastLogin: "",
+    status: "inactive"
   })
 
   const [isLoading, setIsLoading] = useState(true)
@@ -154,20 +154,21 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
+      console.log('🔄 Fetching profile data from API...')
       const response = await fetch('/api/profile')
 
       if (response.ok) {
         const data = await response.json()
-        console.log('Profile data received:', data)
-        console.log('Matched employee data:', data.matchedEmployee)
+        console.log('✅ Profile data received:', data)
+        console.log('✅ Matched employee data:', data.matchedEmployee)
         setProfile(data)
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-        console.error('Profile fetch error:', errorData)
+        console.error('❌ Profile fetch error:', errorData)
         toast.error(errorData.error || 'Failed to load profile')
       }
     } catch (error) {
-      console.error('Error fetching profile:', error)
+      console.error('❌ Error fetching profile:', error)
       toast.error('Failed to load profile - check console for details')
     } finally {
       setIsLoading(false)
