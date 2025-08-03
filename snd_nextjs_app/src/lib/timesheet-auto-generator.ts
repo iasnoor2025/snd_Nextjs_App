@@ -14,6 +14,11 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    // Calculate start date as 3 months ago
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+    threeMonthsAgo.setHours(0, 0, 0, 0);
+
     // Get all employee assignments regardless of status
     const assignments = await prisma.employeeAssignment.findMany({
       where: {
@@ -52,9 +57,18 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
         continue;
       }
 
+      // Only generate timesheets for the last 3 months up to today
+      const effectiveStart = start > threeMonthsAgo ? start : threeMonthsAgo;
+      const effectiveEnd = end < today ? end : today;
+
+      // If effective start is after effective end, skip
+      if (effectiveStart > effectiveEnd) {
+        continue;
+      }
+
       // Generate timesheets for each day in the period
-      const currentDate = new Date(start);
-      while (currentDate <= end) {
+      const currentDate = new Date(effectiveStart);
+      while (currentDate <= effectiveEnd) {
         // Check for existing timesheet for this employee on this date
         const existingTimesheet = await prisma.timesheet.findFirst({
           where: {
@@ -110,7 +124,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
       success: true,
       created,
       errors,
-      message: `Auto-generation completed. Created: ${created} timesheets`,
+      message: `Auto-generation completed. Created: ${created} timesheets for the last 3 months`,
     };
   } catch (error) {
     console.error('Error auto-generating timesheets:', error);

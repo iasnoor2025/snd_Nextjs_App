@@ -35,6 +35,8 @@ import { toast } from "sonner";
 import Link from "next/link";
 import {
   Pagination,
+  PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
   PaginationNext,
@@ -131,6 +133,7 @@ function TimesheetManagementContent() {
     return `${year}-${monthStr}`;
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
   const [selectedTimesheets, setSelectedTimesheets] = useState<string[]>([]);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [bulkActionDialog, setBulkActionDialog] = useState<{
@@ -179,10 +182,10 @@ function TimesheetManagementContent() {
         const result = await response.json();
 
         if (result.success && result.created > 0) {
-          toast.success(`Auto-generated ${result.created} new timesheets`);
+          toast.success(`Auto-generated ${result.created} new timesheets for the last 3 months`);
         } else if (result.success && result.created === 0) {
           // No new timesheets created, which is fine
-          console.log('No new timesheets needed to be generated');
+          console.log('No new timesheets needed to be generated for the last 3 months');
         } else if (result.errors && result.errors.length > 0) {
           console.warn('Auto-generation completed with some errors:', result.errors);
         }
@@ -202,8 +205,7 @@ function TimesheetManagementContent() {
     try {
       setLoading(true);
       const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: '10',
+        limit: '1000', // Fetch all timesheets for client-side pagination
         ...(searchTerm && { search: searchTerm }),
         ...(statusFilter && statusFilter !== 'all' && { status: statusFilter }),
         ...(assignmentFilter && assignmentFilter !== 'all' && { assignment: assignmentFilter }),
@@ -229,7 +231,24 @@ function TimesheetManagementContent() {
 
   useEffect(() => {
     fetchTimesheets();
-  }, [searchTerm, statusFilter, assignmentFilter, month, currentPage]);
+  }, [searchTerm, statusFilter, assignmentFilter, month]);
+
+  // Client-side pagination calculations
+  const filteredTimesheets = timesheets?.data || [];
+  const totalItems = filteredTimesheets.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const currentTimesheets = filteredTimesheets.slice(startIndex, endIndex);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
 
   // Scroll to current month when dropdown opens
   useEffect(() => {
@@ -784,6 +803,17 @@ function TimesheetManagementContent() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={pageSize.toString()} onValueChange={(value) => handlePageSizeChange(parseInt(value))}>
+            <SelectTrigger className="w-full sm:w-32">
+              <SelectValue placeholder="Page size" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="5">5 per page</SelectItem>
+              <SelectItem value="10">10 per page</SelectItem>
+              <SelectItem value="20">20 per page</SelectItem>
+              <SelectItem value="50">50 per page</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -800,6 +830,11 @@ function TimesheetManagementContent() {
               <span className="text-sm text-gray-500">
                 {timesheets?.total || 0} timesheets
               </span>
+              {totalPages > 1 && (
+                <span className="text-sm text-gray-500">
+                  Page {currentPage} of {totalPages}
+                </span>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -824,7 +859,7 @@ function TimesheetManagementContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {timesheets?.data.map((timesheet) => (
+              {currentTimesheets.map((timesheet) => (
                 <TableRow key={timesheet.id}>
                   <TableCell>
                     <Checkbox
@@ -1151,88 +1186,87 @@ function TimesheetManagementContent() {
         </DialogContent>
       </Dialog>
 
-      {timesheets && timesheets.last_page > 1 && (
+      {totalPages > 1 && (
         <div className="mt-6 flex justify-center">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.max(1, timesheets.current_page - 1))}
-              disabled={timesheets.current_page === 1}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
-            </Button>
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
 
-            <div className="flex items-center gap-1">
               {/* First page */}
-              {timesheets.current_page > 2 && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
+              {currentPage > 2 && (
+                <PaginationItem>
+                  <PaginationLink
                     onClick={() => setCurrentPage(1)}
-                    className="w-8 h-8 p-0"
+                    isActive={currentPage === 1}
                   >
                     1
-                  </Button>
-                  {timesheets.current_page > 3 && (
-                    <span className="px-2 text-muted-foreground">...</span>
-                  )}
-                </>
+                  </PaginationLink>
+                </PaginationItem>
+              )}
+
+              {/* Ellipsis after first page */}
+              {currentPage > 3 && (
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
               )}
 
               {/* Current page and surrounding pages */}
               {(() => {
                 const pages = [];
-                const startPage = Math.max(1, timesheets.current_page - 1);
-                const endPage = Math.min(timesheets.last_page, timesheets.current_page + 1);
+                const startPage = Math.max(1, currentPage - 1);
+                const endPage = Math.min(totalPages, currentPage + 1);
 
                 for (let page = startPage; page <= endPage; page++) {
-                  pages.push(page);
+                  if (page !== 1 && page !== totalPages) {
+                    pages.push(page);
+                  }
                 }
 
                 return pages.map((page) => (
-                  <Button
-                    key={page}
-                    variant={timesheets.current_page === page ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(page)}
-                    className="w-8 h-8 p-0"
-                  >
-                    {page}
-                  </Button>
+                  <PaginationItem key={page}>
+                    <PaginationLink
+                      onClick={() => setCurrentPage(page)}
+                      isActive={currentPage === page}
+                    >
+                      {page}
+                    </PaginationLink>
+                  </PaginationItem>
                 ));
               })()}
 
-              {/* Last page */}
-              {timesheets.current_page < timesheets.last_page - 1 && (
-                <>
-                  {timesheets.current_page < timesheets.last_page - 2 && (
-                    <span className="px-2 text-muted-foreground">...</span>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(timesheets.last_page)}
-                    className="w-8 h-8 p-0"
-                  >
-                    {timesheets.last_page}
-                  </Button>
-                </>
+              {/* Ellipsis before last page */}
+              {currentPage < totalPages - 2 && (
+                <PaginationItem>
+                  <PaginationEllipsis />
+                </PaginationItem>
               )}
-            </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(Math.min(timesheets.last_page, timesheets.current_page + 1))}
-              disabled={timesheets.current_page === timesheets.last_page}
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
+              {/* Last page */}
+              {currentPage < totalPages - 1 && (
+                <PaginationItem>
+                  <PaginationLink
+                    onClick={() => setCurrentPage(totalPages)}
+                    isActive={currentPage === totalPages}
+                  >
+                    {totalPages}
+                  </PaginationLink>
+                </PaginationItem>
+              )}
+
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
         </div>
       )}
 
