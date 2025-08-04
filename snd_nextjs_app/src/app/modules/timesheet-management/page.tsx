@@ -1459,6 +1459,7 @@ export default function TimesheetManagementPage() {
           </CardContent>
         </Card>
       </div>
+    </div>
     </ProtectedRoute>
   );
 }

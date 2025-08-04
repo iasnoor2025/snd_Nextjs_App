@@ -1,10 +1,15 @@
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { NextAuthOptions } from "next-auth";
 import { prisma } from "./db";
 import bcrypt from "bcryptjs";
 
 export const authConfig: NextAuthOptions = {
   providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -132,13 +137,122 @@ export const authConfig: NextAuthOptions = {
     error: '/login',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account, profile }) {
+      // Handle Google OAuth sign in
+      if (account?.provider === 'google') {
+        try {
+          // Check if user exists in database
+          const existingUser = await prisma.user.findUnique({
+            where: { email: user.email! },
+            include: {
+              user_roles: {
+                include: {
+                  role: true
+                }
+              }
+            }
+          });
+
+          if (existingUser) {
+            // User exists, check if active
+            if (!existingUser.isActive) {
+              console.log('🔍 GOOGLE AUTH - User is inactive:', user.email);
+              return false;
+            }
+            console.log('🔍 GOOGLE AUTH - Existing user signed in:', user.email);
+            return true;
+          } else {
+            // Create new user for Google OAuth
+            const newUser = await prisma.user.create({
+              data: {
+                email: user.email!,
+                name: user.name || user.email!.split('@')[0],
+                password: '', // No password for OAuth users
+                isActive: true,
+                email_verified_at: new Date(), // Google accounts are verified
+                role_id: 7, // Default to USER role
+              },
+            });
+            console.log('🔍 GOOGLE AUTH - New user created:', user.email);
+            return true;
+          }
+        } catch (error) {
+          console.error('🔍 GOOGLE AUTH - Error during sign in:', error);
+          return false;
+        }
+      }
+      return true;
+    },
+    async jwt({ token, user, account }) {
       if (user) {
         // Set token data from user
         token.role = user.role;
         token.isActive = user.isActive;
         token.id = user.id;
         console.log('🔍 JWT - Setting token role:', user.role);
+      }
+      
+      // For Google OAuth users, determine role
+      if (account?.provider === 'google' && token.email) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: token.email },
+            include: {
+              user_roles: {
+                include: {
+                  role: true
+                }
+              }
+            }
+          });
+
+          if (dbUser) {
+            // Determine role for Google user
+            let role = "USER";
+            
+            if (dbUser.user_roles && dbUser.user_roles.length > 0) {
+              const roleHierarchy = {
+                'SUPER_ADMIN': 1,
+                'ADMIN': 2,
+                'MANAGER': 3,
+                'SUPERVISOR': 4,
+                'OPERATOR': 5,
+                'EMPLOYEE': 6,
+                'USER': 7
+              };
+              
+              let highestRole = 'USER';
+              let highestPriority = 7;
+              
+              dbUser.user_roles.forEach(userRole => {
+                const roleName = userRole.role.name.toUpperCase();
+                const priority = roleHierarchy[roleName as keyof typeof roleHierarchy] || 7;
+                if (priority < highestPriority) {
+                  highestPriority = priority;
+                  highestRole = roleName;
+                }
+              });
+              
+              role = highestRole;
+            } else {
+              // Fallback to role_id mapping
+              if (dbUser.role_id === 1) role = "SUPER_ADMIN";
+              else if (dbUser.role_id === 2) role = "ADMIN";
+              else if (dbUser.role_id === 3) role = "MANAGER";
+              else if (dbUser.role_id === 4) role = "SUPERVISOR";
+              else if (dbUser.role_id === 5) role = "OPERATOR";
+              else if (dbUser.role_id === 6) role = "EMPLOYEE";
+              else if (dbUser.role_id === 7) role = "USER";
+            }
+            
+            token.role = role;
+            token.isActive = dbUser.isActive;
+            token.id = dbUser.id.toString();
+            console.log('🔍 JWT - Google user role set to:', role);
+          }
+        } catch (error) {
+          console.error('🔍 JWT - Error setting Google user role:', error);
+        }
       }
       
       // ALWAYS ensure admin@ias.com has SUPER_ADMIN role in token

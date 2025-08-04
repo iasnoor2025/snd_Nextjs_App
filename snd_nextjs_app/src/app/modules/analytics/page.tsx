@@ -352,21 +352,21 @@ export default function AnalyticsPage() {
             <h1 className="text-2xl font-bold">{t('analytics_management')}</h1>
           </div>
           <div className="flex space-x-2">
-            <Can action="export" subject="Report">
+            <PermissionContent action="export" subject="Report">
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
                 {t('export_reports')}
               </Button>
-            </Can>
+            </PermissionContent>
 
-            <Can action="create" subject="Report">
+            <PermissionContent action="create" subject="Report">
               <Link href="/modules/analytics/create">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
                   {t('create_report')}
                 </Button>
               </Link>
-            </Can>
+            </PermissionContent>
           </div>
         </div>
 
@@ -451,15 +451,15 @@ export default function AnalyticsPage() {
                     <TableCell>{report.created_by}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
-                        <Can action="read" subject="Report">
+                        <PermissionContent action="read" subject="Report">
                           <Link href={`/modules/analytics/${report.id}`}>
                             <Button variant="ghost" size="sm">
                               <Eye className="h-4 w-4" />
                             </Button>
                           </Link>
-                        </Can>
+                        </PermissionContent>
 
-                        <Can action="manage" subject="Report">
+                        <PermissionContent action="manage" subject="Report">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -468,17 +468,17 @@ export default function AnalyticsPage() {
                           >
                             <Activity className="h-4 w-4" />
                           </Button>
-                        </Can>
+                        </PermissionContent>
 
-                        <Can action="update" subject="Report">
+                        <PermissionContent action="update" subject="Report">
                           <Link href={`/modules/analytics/${report.id}/edit`}>
                             <Button variant="ghost" size="sm">
                               <Edit className="h-4 w-4" />
                             </Button>
                           </Link>
-                        </Can>
+                        </PermissionContent>
 
-                        <Can action="delete" subject="Report">
+                        <PermissionContent action="delete" subject="Report">
                           <Button
                             variant="ghost"
                             size="sm"
@@ -486,7 +486,7 @@ export default function AnalyticsPage() {
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        </Can>
+                        </PermissionContent>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -600,26 +600,26 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             <div className="flex gap-2">
-              <Can action="manage" subject="Report">
+              <PermissionContent action="manage" subject="Report">
                 <Button variant="outline">
                   <Settings className="h-4 w-4 mr-2" />
                   {t('analytics_settings')}
                 </Button>
-              </Can>
+              </PermissionContent>
 
-              <Can action="export" subject="Report">
+              <PermissionContent action="export" subject="Report">
                 <Button variant="outline">
                   <Download className="h-4 w-4 mr-2" />
                   {t('generate_all_reports')}
                 </Button>
-              </Can>
+              </PermissionContent>
 
-              <Can action="manage" subject="Report">
+              <PermissionContent action="manage" subject="Report">
                 <Button variant="outline">
                   <BarChart3 className="h-4 w-4 mr-2" />
                   {t('schedule_reports')}
                 </Button>
-              </Can>
+              </PermissionContent>
             </div>
           </CardContent>
         </Card>

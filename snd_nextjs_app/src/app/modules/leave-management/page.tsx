@@ -614,6 +614,7 @@ export default function LeaveManagementPage() {
           </CardContent>
         </Card>
       </RoleContent>
+    </div>
     </ProtectedRoute>
   );
 }

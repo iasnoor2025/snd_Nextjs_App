@@ -20,6 +20,7 @@ export type Subject =
   | 'Report' 
   | 'Settings'
   | 'Company'
+  | 'Location'
   | 'all';
 
 export interface User {

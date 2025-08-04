@@ -61,35 +61,35 @@ export default function ReportingPage() {
   const mockReports = useMemo(() => [
     {
       id: "1",
-      name: "Monthly Revenue Report",
+      name: t('monthly_revenue_report'),
       type: "financial",
       status: "active",
-      created_by: "John Doe",
+      created_by: t('john_doe'),
       created_at: "2024-01-01",
       last_generated: "2024-01-31",
       schedule: "monthly"
     },
     {
       id: "2",
-      name: "Equipment Utilization Report",
+      name: t('equipment_utilization_report'),
       type: "operational",
       status: "active",
-      created_by: "Jane Smith",
+      created_by: t('jane_smith'),
       created_at: "2024-01-15",
       last_generated: "2024-01-30",
       schedule: "weekly"
     },
     {
       id: "3",
-      name: "Project Progress Report",
+      name: t('project_progress_report'),
       type: "project",
       status: "draft",
-      created_by: "Bob Johnson",
+      created_by: t('bob_johnson'),
       created_at: "2024-01-20",
       last_generated: "2024-01-29",
       schedule: "daily"
     }
-  ], []);
+  ], [t]);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -112,7 +112,7 @@ export default function ReportingPage() {
         setReports(data);
       } catch (error) {
         console.error('Error fetching reports:', error);
-        toast.error('Failed to fetch reports');
+        toast.error(t('failed_to_fetch_reports'));
       } finally {
         setLoading(false);
       }
@@ -123,34 +123,34 @@ export default function ReportingPage() {
 
   const handleDelete = async () => {
     try {
-      toast.loading("Deleting report...");
+      toast.loading(t('deleting_report'));
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success("Report deleted successfully");
+      toast.success(t('report_deleted_successfully'));
     } catch {
-      toast.error("Failed to delete report");
+      toast.error(t('failed_to_delete_report'));
     }
   };
 
   const handleGenerate = async () => {
     try {
-      toast.loading("Generating report...");
+      toast.loading(t('generating_report'));
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
-      toast.success("Report generated successfully");
+      toast.success(t('report_generated_successfully'));
     } catch {
-      toast.error("Failed to generate report");
+      toast.error(t('failed_to_generate_report'));
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('active')}</Badge>;
       case "draft":
-        return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t('draft')}</Badge>;
       case "archived":
-        return <Badge className="bg-red-100 text-red-800">Archived</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('archived')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
@@ -159,11 +159,11 @@ export default function ReportingPage() {
   const getTypeBadge = (type: string) => {
     switch (type) {
       case "financial":
-        return <Badge className="bg-blue-100 text-blue-800">Financial</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t('financial')}</Badge>;
       case "operational":
-        return <Badge className="bg-green-100 text-green-800">Operational</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('operational')}</Badge>;
       case "project":
-        return <Badge className="bg-purple-100 text-purple-800">Project</Badge>;
+        return <Badge className="bg-purple-100 text-purple-800">{t('project')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{type}</Badge>;
     }
@@ -191,19 +191,19 @@ export default function ReportingPage() {
     <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Report' }}>
       <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{t('reporting.page_title')}</h1>
+        <h1 className="text-2xl font-bold">{t('page_title')}</h1>
         <div className="flex space-x-2">
           <PermissionContent action="export" subject="Report">
             <Button onClick={handleGenerate} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
-              {t('reporting.generate_reports_button')}
+              {t('generate_reports_button')}
             </Button>
           </PermissionContent>
           <PermissionContent action="create" subject="Report">
             <Link href="/modules/reporting/create">
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                {t('reporting.create_report_button')}
+                {t('create_report_button')}
               </Button>
             </Link>
           </PermissionContent>
@@ -216,7 +216,7 @@ export default function ReportingPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder={t('reporting.search_reports_placeholder')}
+                placeholder={t('search_reports_placeholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -225,21 +225,21 @@ export default function ReportingPage() {
           </div>
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder={t('reporting.filter_by_status_placeholder')} />
+              <SelectValue placeholder={t('filter_by_status_placeholder')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('reporting.all_status')}</SelectItem>
-              <SelectItem value="active">{t('reporting.active')}</SelectItem>
-              <SelectItem value="draft">{t('reporting.draft')}</SelectItem>
-              <SelectItem value="archived">{t('reporting.archived')}</SelectItem>
+              <SelectItem value="all">{t('all_status')}</SelectItem>
+              <SelectItem value="active">{t('active')}</SelectItem>
+              <SelectItem value="draft">{t('draft')}</SelectItem>
+              <SelectItem value="archived">{t('archived')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={type} onValueChange={setType}>
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder={t('reporting.filter_by_type_placeholder')} />
+              <SelectValue placeholder={t('filter_by_type_placeholder')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('reporting.all_types')}</SelectItem>
+              <SelectItem value="all">{t('all_types')}</SelectItem>
               {types.map(type => (
                 <SelectItem key={type} value={type}>{type}</SelectItem>
               ))}
@@ -252,14 +252,14 @@ export default function ReportingPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>{t('reporting.reports_title')}</CardTitle>
+              <CardTitle>{t('reports_title')}</CardTitle>
               <CardDescription>
-                {t('reporting.manage_automated_reports_description')}
+                {t('manage_automated_reports_description')}
               </CardDescription>
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-500">
-                {t('reporting.total_reports', { count: reports?.total || 0 })}
+                {t('total_reports', { count: reports?.total || 0 })}
               </span>
             </div>
           </div>
@@ -268,58 +268,72 @@ export default function ReportingPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('reporting.report_name')}</TableHead>
-                <TableHead>{t('reporting.type')}</TableHead>
-                <TableHead>{t('reporting.status')}</TableHead>
-                <TableHead>{t('reporting.created_by')}</TableHead>
-                <TableHead>{t('reporting.schedule')}</TableHead>
-                <TableHead>{t('reporting.last_generated')}</TableHead>
-                <TableHead className="text-right">{t('reporting.actions')}</TableHead>
+                <TableHead>{t('report_name')}</TableHead>
+                <TableHead>{t('type')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
+                <TableHead>{t('created_by')}</TableHead>
+                <TableHead>{t('schedule')}</TableHead>
+                <TableHead>{t('last_generated')}</TableHead>
+                <TableHead className="text-right">{t('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {reports?.data.map((report) => (
-                <TableRow key={report.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{report.name}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{getTypeBadge(report.type)}</TableCell>
-                  <TableCell>{getStatusBadge(report.status)}</TableCell>
-                  <TableCell>{report.created_by}</TableCell>
-                  <TableCell>{report.schedule}</TableCell>
-                  <TableCell>{new Date(report.last_generated).toLocaleDateString()}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      <PermissionContent action="read" subject="Report">
-                        <Link href={`/modules/reporting/${report.id}`}>
+              {reports?.data && reports.data.length > 0 ? (
+                reports.data.map((report) => (
+                  <TableRow key={report.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{report.name}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getTypeBadge(report.type)}</TableCell>
+                    <TableCell>{getStatusBadge(report.status)}</TableCell>
+                    <TableCell>{report.created_by}</TableCell>
+                    <TableCell>{t(`schedule_${report.schedule}`)}</TableCell>
+                    <TableCell>{new Date(report.last_generated).toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end space-x-2">
+                        <PermissionContent action="read" subject="Report">
+                          <Link href={`/modules/reporting/${report.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </PermissionContent>
+                        <PermissionContent action="update" subject="Report">
+                          <Link href={`/modules/reporting/${report.id}/edit`}>
+                            <Button variant="ghost" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </PermissionContent>
+                        <PermissionContent action="export" subject="Report">
                           <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
+                            <Download className="h-4 w-4" />
                           </Button>
-                        </Link>
-                      </PermissionContent>
-                      <PermissionContent action="update" subject="Report">
-                        <Link href={`/modules/reporting/${report.id}/edit`}>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
+                        </PermissionContent>
+                        <PermissionContent action="delete" subject="Report">
+                          <Button variant="ghost" size="sm" onClick={handleDelete}>
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        </Link>
-                      </PermissionContent>
-                      <PermissionContent action="export" subject="Report">
-                        <Button variant="ghost" size="sm">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </PermissionContent>
-                      <PermissionContent action="delete" subject="Report">
-                        <Button variant="ghost" size="sm" onClick={handleDelete}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </PermissionContent>
+                        </PermissionContent>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8">
+                    <div className="text-gray-500">
+                      {t('no_reports_found')}
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -329,9 +343,9 @@ export default function ReportingPage() {
       <RoleContent role="ADMIN">
         <Card>
           <CardHeader>
-            <CardTitle>{t('reporting.administration')}</CardTitle>
+            <CardTitle>{t('administration')}</CardTitle>
             <CardDescription>
-              {t('reporting.advanced_reporting_features_for_administrators')}
+              {t('advanced_reporting_features_for_administrators')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -339,25 +353,26 @@ export default function ReportingPage() {
               <PermissionContent action="manage" subject="Report">
                 <Button variant="outline">
                   <Download className="h-4 w-4 mr-2" />
-                  {t('reporting.exportAllReports')}
+                  {t('exportAllReports')}
                 </Button>
               </PermissionContent>
               <PermissionContent action="manage" subject="Report">
                 <Button variant="outline">
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  {t('reporting.scheduleReports')}
+                  {t('scheduleReports')}
                 </Button>
               </PermissionContent>
               <PermissionContent action="manage" subject="Report">
                 <Button variant="outline">
                   <Edit className="h-4 w-4 mr-2" />
-                  {t('reporting.reportTemplates')}
+                  {t('reportTemplates')}
                 </Button>
               </PermissionContent>
             </div>
           </CardContent>
         </Card>
       </RoleContent>
+    </div>
     </ProtectedRoute>
   );
 }

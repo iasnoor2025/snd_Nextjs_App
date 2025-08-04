@@ -342,6 +342,7 @@ export default function CompanyManagementPage() {
           </CardContent>
         </Card>
       </RoleContent>
+    </div>
     </ProtectedRoute>
   );
 }

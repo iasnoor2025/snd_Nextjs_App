@@ -540,6 +540,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </RoleContent>
+    </div>
     </ProtectedRoute>
   );
 }
