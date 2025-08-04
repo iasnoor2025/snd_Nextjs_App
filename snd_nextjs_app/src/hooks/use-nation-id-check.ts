@@ -67,14 +67,20 @@ export function useNationIdCheck() {
           console.log('✅ User has nation ID, no modal needed')
           setHasChecked(true)
         }
+      } else if (response.status === 401) {
+        // User is not authenticated, don't show modal
+        console.log('🔒 User not authenticated, skipping nation ID check')
+        setHasChecked(true)
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
         console.error('❌ Failed to check nation ID:', response.status, errorData)
         // Don't show modal on error, just log it
+        setHasChecked(true)
       }
     } catch (error) {
       console.error('❌ Error checking nation ID:', error)
       // Don't show modal on error, just log it
+      setHasChecked(true)
     } finally {
       setIsChecking(false)
     }

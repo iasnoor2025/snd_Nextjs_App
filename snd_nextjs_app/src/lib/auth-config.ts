@@ -29,14 +29,19 @@ export const authConfig: NextAuthOptions = {
           });
 
           if (!user) {
-      
+            console.log('🔍 AUTH - User not found:', credentials.email);
+            return null;
+          }
+
+          if (!user.isActive) {
+            console.log('🔍 AUTH - User is inactive:', credentials.email);
             return null;
           }
 
           const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
 
           if (!isPasswordValid) {
-    
+            console.log('🔍 AUTH - Invalid password for user:', credentials.email);
             return null;
           }
 
@@ -45,50 +50,68 @@ export const authConfig: NextAuthOptions = {
           
           // Check if user has roles assigned through the role system
           if (user.user_roles && user.user_roles.length > 0) {
-            // Get the highest priority role (ADMIN > MANAGER > SUPERVISOR > OPERATOR > USER)
+            if (process.env.NODE_ENV === 'development') {
+              console.log('🔍 AUTH - User has roles:', user.user_roles.map(ur => ur.role.name));
+            }
+            
+            // Get the highest priority role (SUPER_ADMIN > ADMIN > MANAGER > SUPERVISOR > OPERATOR > EMPLOYEE > USER)
             const roleHierarchy = {
-              'admin': 5,
-              'manager': 4,
-              'supervisor': 3,
-              'operator': 2,
-              'user': 1
+              'SUPER_ADMIN': 1,  // Highest priority
+              'ADMIN': 2,
+              'MANAGER': 3,
+              'SUPERVISOR': 4,
+              'OPERATOR': 5,
+              'EMPLOYEE': 6,
+              'USER': 7  // Lowest priority
             };
             
-            let highestRole = 'user';
-            let highestPriority = 1;
+            let highestRole = 'USER';
+            let highestPriority = 7; // Start with lowest priority
             
             user.user_roles.forEach(userRole => {
-              const roleName = userRole.role.name.toLowerCase();
-              const priority = roleHierarchy[roleName as keyof typeof roleHierarchy] || 1;
-              if (priority > highestPriority) {
+              const roleName = userRole.role.name.toUpperCase();
+              const priority = roleHierarchy[roleName as keyof typeof roleHierarchy] || 7;
+              if (priority < highestPriority) { // Lower number = higher priority
                 highestPriority = priority;
                 highestRole = roleName;
               }
             });
             
-            role = highestRole.toUpperCase();
+            role = highestRole;
+            if (process.env.NODE_ENV === 'development') {
+              console.log('🔍 AUTH - Assigned role from user_roles:', role);
+            }
           } else {
-            // Fallback to role_id mapping
+            if (process.env.NODE_ENV === 'development') {
+              console.log('🔍 AUTH - Using role_id fallback, role_id:', user.role_id);
+            }
+            
+            // Fallback to role_id mapping - based on actual database structure
             if (user.role_id === 1) {
-              role = "USER";
-            } else if (user.role_id === 2) {
-              role = "OPERATOR";
-            } else if (user.role_id === 3) {
-              role = "SUPERVISOR";
-            } else if (user.role_id === 4) {
-              role = "MANAGER";
-            } else if (user.role_id === 5) {
-              role = "ADMIN";
-            } else if (user.role_id === 6) {
               role = "SUPER_ADMIN";
+            } else if (user.role_id === 2) {
+              role = "ADMIN";
+            } else if (user.role_id === 3) {
+              role = "MANAGER";
+            } else if (user.role_id === 4) {
+              role = "SUPERVISOR";
+            } else if (user.role_id === 5) {
+              role = "OPERATOR";
+            } else if (user.role_id === 6) {
+              role = "EMPLOYEE";
+            } else if (user.role_id === 7) {
+              role = "USER";
+            }
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log('🔍 AUTH - Assigned role from role_id:', role);
             }
           }
           
-          // PERMANENT FIX: Force correct role based on email
-          if (credentials.email === 'admin@ias.com') {
-            role = "SUPER_ADMIN";
-    
-          }
+          // Remove hardcoded role assignment - use proper role system
+          // if (credentials.email === 'admin@ias.com') {
+          //   role = "SUPER_ADMIN";
+          // }
           
           
           
@@ -100,7 +123,10 @@ export const authConfig: NextAuthOptions = {
             isActive: user.isActive || true,
           };
           
-  
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 AUTH - Login successful:', user.email, 'Role:', role);
+          }
+          
           return userData;
         } catch (error) {
           console.error("Auth error:", error);
@@ -134,36 +160,25 @@ export const authConfig: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-
-      
       if (user) {
         token.role = user.role;
         token.isActive = user.isActive;
         token.id = user.id;
-        
       }
-      
-      
       return token;
     },
+    
     async session({ session, token }) {
-
-      
       if (token) {
         session.user.role = token.role || "USER";
         session.user.isActive = token.isActive || true;
         session.user.id = String(token.id || token.sub || 'unknown');
         
-        // PERMANENT FIX: Force correct role based on email
-        if (session.user.email === 'admin@ias.com') {
-          session.user.role = "SUPER_ADMIN";
-
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 SESSION - Token role:', token.role);
+          console.log('🔍 SESSION - Session role:', session.user.role);
         }
-        
-        
       }
-      
-      
       return session;
     },
   },

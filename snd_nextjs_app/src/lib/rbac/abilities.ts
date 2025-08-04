@@ -97,6 +97,10 @@ const permissionMapping: Record<string, { action: Actions; subject: Subjects }> 
   'timesheets.delete': { action: 'delete', subject: 'Timesheet' },
   'timesheets.approve': { action: 'approve', subject: 'Timesheet' },
   'timesheets.reject': { action: 'reject', subject: 'Timesheet' },
+  'timesheets.approve.foreman': { action: 'approve', subject: 'Timesheet' },
+  'timesheets.approve.incharge': { action: 'approve', subject: 'Timesheet' },
+  'timesheets.approve.checking': { action: 'approve', subject: 'Timesheet' },
+  'timesheets.approve.manager': { action: 'approve', subject: 'Timesheet' },
   
   'projects.read': { action: 'read', subject: 'Project' },
   'projects.create': { action: 'create', subject: 'Project' },

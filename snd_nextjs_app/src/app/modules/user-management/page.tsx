@@ -424,13 +424,13 @@ export default function UserManagementPage() {
                               {user.role}
                             </Badge>
                             <span className="text-xs text-muted-foreground">
-                              {user.role === 'SUPER_ADMIN' && '(7)'}
-                              {user.role === 'ADMIN' && '(6)'}
-                              {user.role === 'MANAGER' && '(5)'}
+                              {user.role === 'SUPER_ADMIN' && '(1)'}
+                              {user.role === 'ADMIN' && '(2)'}
+                              {user.role === 'MANAGER' && '(3)'}
                               {user.role === 'SUPERVISOR' && '(4)'}
-                              {user.role === 'OPERATOR' && '(3)'}
-                              {user.role === 'EMPLOYEE' && '(2)'}
-                              {user.role === 'USER' && '(1)'}
+                              {user.role === 'OPERATOR' && '(5)'}
+                              {user.role === 'EMPLOYEE' && '(6)'}
+                              {user.role === 'USER' && '(7)'}
                             </span>
                           </div>
                         </TableCell>
@@ -601,21 +601,21 @@ export default function UserManagementPage() {
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <Badge variant="destructive" className="text-xs">SUPER_ADMIN</Badge>
-                      <span className="text-muted-foreground">(7)</span>
+                      <span className="text-muted-foreground">(1)</span>
                     </span>
                     <span className="text-xs text-muted-foreground">{t('fullSystemAccess')}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <Badge variant="default" className="text-xs">ADMIN</Badge>
-                      <span className="text-muted-foreground">(6)</span>
+                      <span className="text-muted-foreground">(2)</span>
                     </span>
                     <span className="text-xs text-muted-foreground">{t('systemAdministration')}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <Badge variant="secondary" className="text-xs">MANAGER</Badge>
-                      <span className="text-muted-foreground">(5)</span>
+                      <span className="text-muted-foreground">(3)</span>
                     </span>
                     <span className="text-xs text-muted-foreground">{t('departmentManagement')}</span>
                   </div>
@@ -629,21 +629,21 @@ export default function UserManagementPage() {
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <Badge variant="secondary" className="text-xs">OPERATOR</Badge>
-                      <span className="text-muted-foreground">(3)</span>
+                      <span className="text-muted-foreground">(5)</span>
                     </span>
                     <span className="text-xs text-muted-foreground">{t('basicOperations')}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <Badge variant="default" className="text-xs">EMPLOYEE</Badge>
-                      <span className="text-muted-foreground">(2)</span>
+                      <span className="text-muted-foreground">(6)</span>
                     </span>
                     <span className="text-xs text-muted-foreground">{t('employeeAccess')}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
                       <Badge variant="outline" className="text-xs">USER</Badge>
-                      <span className="text-muted-foreground">(1)</span>
+                      <span className="text-muted-foreground">(7)</span>
                     </span>
                     <span className="text-xs text-muted-foreground">{t('readOnlyAccess')}</span>
                   </div>

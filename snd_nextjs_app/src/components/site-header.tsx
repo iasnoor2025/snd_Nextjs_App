@@ -26,7 +26,11 @@ export function SiteHeader() {
   const { isRTL } = useI18n();
   
   // Debug session state
-  
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 HEADER - Session:', session);
+    console.log('🔍 HEADER - Session user:', session?.user);
+    console.log('🔍 HEADER - Session role:', session?.user?.role);
+  }
 
   const handleForceLogout = async () => {
     await signOut({ redirect: false });
@@ -54,8 +58,16 @@ export function SiteHeader() {
             <div className="text-sm text-muted-foreground">Loading...</div>
           ) : session ? (
             <div className="flex items-center gap-2">
-              <Badge variant={session?.user?.role === "ADMIN" ? "default" : "secondary"}>
-                {session?.user?.role || "User"}
+              <Badge variant={
+                session?.user?.role === "SUPER_ADMIN" ? "destructive" :
+                session?.user?.role === "ADMIN" ? "default" :
+                session?.user?.role === "MANAGER" ? "secondary" :
+                session?.user?.role === "SUPERVISOR" ? "outline" :
+                session?.user?.role === "OPERATOR" ? "secondary" :
+                session?.user?.role === "EMPLOYEE" ? "default" :
+                "secondary"
+              }>
+                {session?.user?.role || "USER"}
               </Badge>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

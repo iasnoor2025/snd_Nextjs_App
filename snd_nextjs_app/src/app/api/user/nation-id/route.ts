@@ -12,9 +12,17 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Session data:', session);
 
     if (!session?.user?.id) {
-      console.log('❌ No session or user ID found');
+      console.log('❌ No session or user ID found - returning 401');
       return NextResponse.json(
-        { error: 'Not authenticated' },
+        { 
+          error: 'Not authenticated',
+          hasNationId: false,
+          nationId: null,
+          userId: null,
+          userName: null,
+          userEmail: null,
+          matchedEmployee: null
+        },
         { status: 401 }
       );
     }
@@ -29,7 +37,15 @@ export async function GET(request: NextRequest) {
     } catch (dbError) {
       console.error('❌ Database connection failed:', dbError);
       return NextResponse.json(
-        { error: 'Database connection failed' },
+        { 
+          error: 'Database connection failed',
+          hasNationId: false,
+          nationId: null,
+          userId: null,
+          userName: null,
+          userEmail: null,
+          matchedEmployee: null
+        },
         { status: 503 }
       );
     }
@@ -49,7 +65,15 @@ export async function GET(request: NextRequest) {
     if (!user) {
       console.log('❌ User not found in database');
       return NextResponse.json(
-        { error: 'User not found' },
+        { 
+          error: 'User not found',
+          hasNationId: false,
+          nationId: null,
+          userId: null,
+          userName: null,
+          userEmail: null,
+          matchedEmployee: null
+        },
         { status: 404 }
       );
     }
