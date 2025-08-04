@@ -122,13 +122,13 @@ export async function POST(request: NextRequest) {
             console.log(`- Overtime rate multiplier: ${employee.overtime_rate_multiplier}`);
 
             // Use employee's overtime settings
-            if (employee.overtime_fixed_rate && employee.overtime_fixed_rate > 0) {
+            if (employee.overtime_fixed_rate && Number(employee.overtime_fixed_rate) > 0) {
               // Use fixed overtime rate
               overtimeAmount = totalOvertimeHours * Number(employee.overtime_fixed_rate);
               console.log(`- Using fixed rate: ${employee.overtime_fixed_rate} SAR/hr`);
             } else {
               // Use overtime multiplier with basic/30/8 formula
-              const overtimeMultiplier = employee.overtime_rate_multiplier || 1.5;
+              const overtimeMultiplier = Number(employee.overtime_rate_multiplier) || 1.5;
               overtimeAmount = totalOvertimeHours * (hourlyRate * overtimeMultiplier);
               console.log(`- Using multiplier: ${overtimeMultiplier}x (basic/30/8 formula)`);
             }
@@ -175,10 +175,10 @@ export async function POST(request: NextRequest) {
           // Add overtime item if there are overtime hours
           if (totalOvertimeHours > 0) {
             let overtimeDescription = 'Overtime Pay';
-            if (employee.overtime_fixed_rate && employee.overtime_fixed_rate > 0) {
+            if (employee.overtime_fixed_rate && Number(employee.overtime_fixed_rate) > 0) {
               overtimeDescription = `Overtime Pay (Fixed Rate: ${employee.overtime_fixed_rate} SAR/hr)`;
             } else {
-              const overtimeMultiplier = employee.overtime_rate_multiplier || 1.5;
+              const overtimeMultiplier = Number(employee.overtime_rate_multiplier) || 1.5;
               overtimeDescription = `Overtime Pay (${overtimeMultiplier}x Rate)`;
             }
 

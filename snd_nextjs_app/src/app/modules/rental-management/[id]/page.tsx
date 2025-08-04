@@ -1314,7 +1314,7 @@ export default function RentalDetailPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {(rental.rentalItems || rental.rental_items)?.map((item) => {
+                      {rental.rentalItems?.map((item) => {
                         // Find operator name from employees list
                         const operatorId = item.operator_id || item.operatorId;
                         const operator = employees.find(emp => emp.id.toString() === operatorId?.toString());
@@ -1357,7 +1357,7 @@ export default function RentalDetailPage() {
                       })}
                     </TableBody>
                   </Table>
-                  {(!(rental.rentalItems || rental.rental_items) || (rental.rentalItems || rental.rental_items).length === 0) && (
+                  {(!rental.rentalItems || rental.rentalItems.length === 0) && (
                     <div className="text-center py-8 text-muted-foreground">
                       No rental items found
                     </div>

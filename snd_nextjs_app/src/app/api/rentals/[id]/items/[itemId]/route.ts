@@ -79,7 +79,7 @@ export async function PUT(
               employee_id: newOperatorId,
               name: `${customerName} - ${body.equipmentName} Rental`,
               type: 'rental_item',
-              location: rental?.location?.name || 'Unknown Location',
+              location: 'Rental Site',
               start_date: new Date(),
               end_date: null,
               status: 'active',

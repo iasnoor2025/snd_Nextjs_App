@@ -126,7 +126,7 @@ export default function ExpenseDialog({
       const submitData = {
         ...formData,
         type: 'expense',
-        name: formData.name || `${formData.category} Expense`,
+        name: `${formData.category} Expense`,
         total_cost: formData.amount || 0
       };
 

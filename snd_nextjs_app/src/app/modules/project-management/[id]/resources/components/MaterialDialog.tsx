@@ -161,7 +161,7 @@ export default function MaterialDialog({
       const submitData = {
         ...formData,
         type: 'material',
-        name: formData.name || formData.material_name || (formData.material_id ? materials.find(mat => mat.id === formData.material_id)?.name : ''),
+        name: formData.name || formData.material_name || (formData.material_id ? MATERIALS.find(mat => mat.id === formData.material_id)?.name : ''),
         total_cost: (formData.quantity || 0) * (formData.unit_price || 0)
       };
 

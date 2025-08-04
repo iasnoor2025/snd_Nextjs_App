@@ -352,7 +352,7 @@ export default function EquipmentManagementPage() {
                                   {getTranslatedName(item.current_assignment.employee?.full_name, isRTL, translatedNames, setTranslatedNames) || t('equipment_management.no_assignment')}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
-                                  {item.current_assignment.project?.name || item.current_assignment.rental?.project_name || '-'}
+                                  {item.current_assignment.project?.name || item.current_assignment.rental?.project?.name || '-'}
                                 </div>
                               </div>
                             ) : (

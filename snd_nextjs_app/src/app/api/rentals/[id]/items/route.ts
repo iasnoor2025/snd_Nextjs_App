@@ -66,7 +66,7 @@ export async function POST(
             employee_id: parseInt(body.operatorId),
             name: `${customerName} - ${body.equipmentName} Rental`,
             type: 'rental_item',
-            location: rental?.location?.name || 'Unknown Location',
+            location: 'Rental Site',
             start_date: new Date(),
             end_date: null,
             status: 'active',

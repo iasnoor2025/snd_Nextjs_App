@@ -105,7 +105,11 @@ const authOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile }: { 
+      user: any; 
+      account: any; 
+      profile?: any; 
+    }) {
       // Handle Google OAuth sign in
       if (account?.provider === 'google') {
         try {

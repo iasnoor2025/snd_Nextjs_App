@@ -71,6 +71,32 @@ export default function DebugSessionPage() {
     console.log('🔍 DEBUG - Session update triggered');
   };
 
+  const handleRefreshSession = async () => {
+    try {
+      const response = await fetch('/api/auth/refresh-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const data = await response.json();
+      console.log('🔍 DEBUG - Session refresh result:', data);
+      
+      if (data.success) {
+        alert(`Session refreshed successfully!\nRole: ${data.user.role}\nName: ${data.user.name}\n\nDebug Info:\nRole ID: ${data.debug.role_id}\nUser Roles: ${data.debug.user_roles?.join(', ')}\nAssigned Role: ${data.debug.assigned_role}`);
+        // Force session update after refresh
+        await update();
+        window.location.reload();
+      } else {
+        alert(`Session refresh failed: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('🔍 DEBUG - Session refresh error:', error);
+      alert('Session refresh failed');
+    }
+  };
+
   const handleTestAuth = async () => {
     try {
       const response = await fetch('/api/test-auth', {
@@ -118,6 +144,10 @@ export default function DebugSessionPage() {
           <Button onClick={handleForceUpdate} variant="secondary">
             <RotateCcw className="h-4 w-4 mr-2" />
             Force Update
+          </Button>
+          <Button onClick={handleRefreshSession} variant="default">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh Session
           </Button>
           <Button onClick={handleTestAuth} variant="outline">
             <LogIn className="h-4 w-4 mr-2" />

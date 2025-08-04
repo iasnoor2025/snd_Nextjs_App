@@ -68,8 +68,8 @@ export async function POST(request: NextRequest) {
     console.error('Translation error:', error);
     return NextResponse.json({ 
       error: 'Translation failed',
-      translatedText: text || '',
-      originalText: text || ''
+      translatedText: '',
+      originalText: ''
     }, { status: 500 });
   }
 } 

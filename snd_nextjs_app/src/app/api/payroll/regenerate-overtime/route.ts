@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
         
                  // Calculate overtime amount based on employee's overtime settings
          let overtimeAmount = 0;
-         if (payroll.overtime_hours > 0) {
+         if (Number(payroll.overtime_hours) > 0) {
            // Use the formula: basic/30/8*overtime rate
            const basicSalary = Number(payroll.employee.basic_salary);
            const hourlyRate = basicSalary / 30 / 8; // basic/30/8
@@ -68,14 +68,14 @@ export async function POST(request: NextRequest) {
            console.log(`- Overtime rate multiplier: ${payroll.employee.overtime_rate_multiplier}`);
 
            // Use employee's overtime settings
-           if (payroll.employee.overtime_fixed_rate && payroll.employee.overtime_fixed_rate > 0) {
+           if (payroll.employee.overtime_fixed_rate && Number(payroll.employee.overtime_fixed_rate) > 0) {
              // Use fixed overtime rate
-             overtimeAmount = payroll.overtime_hours * Number(payroll.employee.overtime_fixed_rate);
+             overtimeAmount = Number(payroll.overtime_hours) * Number(payroll.employee.overtime_fixed_rate);
              console.log(`- Using fixed rate: ${payroll.employee.overtime_fixed_rate} SAR/hr`);
            } else {
              // Use overtime multiplier with basic/30/8 formula
-             const overtimeMultiplier = payroll.employee.overtime_rate_multiplier || 1.5;
-             overtimeAmount = payroll.overtime_hours * (hourlyRate * overtimeMultiplier);
+             const overtimeMultiplier = Number(payroll.employee.overtime_rate_multiplier) || 1.5;
+             overtimeAmount = Number(payroll.overtime_hours) * (hourlyRate * overtimeMultiplier);
              console.log(`- Using multiplier: ${overtimeMultiplier}x (basic/30/8 formula)`);
            }
            
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
           where: { id: payroll.id },
           data: {
             overtime_amount: overtimeAmount,
-            final_amount: payroll.base_salary + overtimeAmount + payroll.bonus_amount - payroll.deduction_amount
+            final_amount: Number(payroll.base_salary) + overtimeAmount + Number(payroll.bonus_amount) - Number(payroll.deduction_amount)
           }
         });
 
@@ -105,9 +105,9 @@ export async function POST(request: NextRequest) {
             where: { id: existingOvertimeItem.id },
             data: {
               amount: overtimeAmount,
-              description: payroll.employee.overtime_fixed_rate && payroll.employee.overtime_fixed_rate > 0 
+              description: payroll.employee.overtime_fixed_rate && Number(payroll.employee.overtime_fixed_rate) > 0 
                 ? `Overtime Pay (Fixed Rate: ${payroll.employee.overtime_fixed_rate} SAR/hr)`
-                : `Overtime Pay (${payroll.employee.overtime_rate_multiplier || 1.5}x Rate)`
+                : `Overtime Pay (${Number(payroll.employee.overtime_rate_multiplier) || 1.5}x Rate)`
             }
           });
         } else if (overtimeAmount > 0) {
@@ -116,9 +116,9 @@ export async function POST(request: NextRequest) {
             data: {
               payroll_id: payroll.id,
               type: 'overtime',
-              description: payroll.employee.overtime_fixed_rate && payroll.employee.overtime_fixed_rate > 0 
+              description: payroll.employee.overtime_fixed_rate && Number(payroll.employee.overtime_fixed_rate) > 0 
                 ? `Overtime Pay (Fixed Rate: ${payroll.employee.overtime_fixed_rate} SAR/hr)`
-                : `Overtime Pay (${payroll.employee.overtime_rate_multiplier || 1.5}x Rate)`,
+                : `Overtime Pay (${Number(payroll.employee.overtime_rate_multiplier) || 1.5}x Rate)`,
               amount: overtimeAmount,
               is_taxable: true,
               tax_rate: 15,

@@ -55,11 +55,11 @@ export async function GET(request: NextRequest) {
      let overtimeAmount = 0;
      let calculationMethod = '';
 
-     if (employee.overtime_fixed_rate && employee.overtime_fixed_rate > 0) {
+     if (employee.overtime_fixed_rate && Number(employee.overtime_fixed_rate) > 0) {
        overtimeAmount = testOvertimeHours * Number(employee.overtime_fixed_rate);
        calculationMethod = `Fixed Rate: ${employee.overtime_fixed_rate} SAR/hr`;
      } else {
-       const overtimeMultiplier = employee.overtime_rate_multiplier || 1.5;
+       const overtimeMultiplier = Number(employee.overtime_rate_multiplier) || 1.5;
        overtimeAmount = testOvertimeHours * (hourlyRate * overtimeMultiplier);
        calculationMethod = `Multiplier: ${overtimeMultiplier}x (Hourly Rate: ${hourlyRate.toFixed(2)} SAR/hr - basic/30/8 formula)`;
      }
