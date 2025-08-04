@@ -18,6 +18,12 @@ import { Plus, Edit, Trash2, Eye, User, Building, Mail, Phone, Download, Upload,
 
 // i18n refactor: All user-facing strings now use useTranslation('customer')
 import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
+import { 
+  convertToArabicNumerals, 
+  getTranslatedName, 
+  batchTranslateNames 
+} from '@/lib/translation-utils';
 
 interface Customer {
   id: string;
@@ -55,6 +61,7 @@ interface CustomerStatistics {
 export default function CustomerManagementPage() {
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const { t } = useTranslation('customer');
+  const { isRTL } = useI18n();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +69,7 @@ export default function CustomerManagementPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isShowDialogOpen, setIsShowDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({});
   const [formData, setFormData] = useState({
     name: '',
     contactPerson: '',
@@ -407,8 +415,15 @@ export default function CustomerManagementPage() {
 
   useEffect(() => {
     fetchCustomers();
-
   }, []);
+
+  // Trigger batch translation when customers data changes
+  useEffect(() => {
+    if (customers.length > 0 && isRTL) {
+      const names = customers.map(customer => customer.name).filter(Boolean) as string[];
+      batchTranslateNames(names, isRTL, setTranslatedNames);
+    }
+  }, [customers, isRTL]);
 
   if (loading) {
     return (
@@ -672,7 +687,7 @@ export default function CustomerManagementPage() {
                           <User className="h-4 w-4 text-primary" />
                         </div>
                         <div>
-                          <div className="font-semibold">{customer.name}</div>
+                          <div className="font-semibold">{getTranslatedName(customer.name, isRTL, translatedNames, setTranslatedNames)}</div>
                           {customer.erpnext_id && (
                             <div className="text-xs text-muted-foreground">{t('id')}: {customer.erpnext_id}</div>
                           )}
@@ -680,16 +695,18 @@ export default function CustomerManagementPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Building className="h-4 w-4 text-muted-foreground" />
-                        <span>{customer.companyName || customer.name}</span>
+                      <div>
+                        <div className="font-semibold">{getTranslatedName(customer.name, isRTL, translatedNames, setTranslatedNames)}</div>
+                        <div className="text-sm text-muted-foreground">
+                          <span>{customer.companyName || customer.name}</span>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       {customer.contactPerson ? (
                         <div className="flex items-center gap-2">
                           <User className="h-4 w-4 text-muted-foreground" />
-                          <span>{customer.contactPerson}</span>
+                          <span>{getTranslatedName(customer.contactPerson, isRTL, translatedNames, setTranslatedNames)}</span>
                         </div>
                       ) : (
                         <span className="text-muted-foreground">-</span>
@@ -699,9 +716,7 @@ export default function CustomerManagementPage() {
                       {customer.email ? (
                         <div className="flex items-center gap-2">
                           <Mail className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-blue-600 hover:underline cursor-pointer">
-                            {customer.email}
-                          </span>
+                          <span>{customer.email}</span>
                         </div>
                       ) : (
                         <span className="text-muted-foreground">-</span>
@@ -711,7 +726,7 @@ export default function CustomerManagementPage() {
                       {customer.phone ? (
                         <div className="flex items-center gap-2">
                           <Phone className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-green-600">{customer.phone}</span>
+                          <span className="text-green-600">{convertToArabicNumerals(customer.phone, isRTL)}</span>
                         </div>
                       ) : (
                         <span className="text-muted-foreground">-</span>
@@ -1140,7 +1155,7 @@ export default function CustomerManagementPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label className="text-sm font-medium text-gray-500">{t('name')}</Label>
-                  <p className="text-lg font-semibold">{selectedCustomer.name}</p>
+                  <p className="text-lg font-semibold">{getTranslatedName(selectedCustomer.name, isRTL, translatedNames, setTranslatedNames)}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">{t('companyName')}</Label>
@@ -1148,7 +1163,7 @@ export default function CustomerManagementPage() {
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">{t('contactPerson')}</Label>
-                  <p className="text-lg">{selectedCustomer.contactPerson || 'N/A'}</p>
+                  <p className="text-lg">{getTranslatedName(selectedCustomer.contactPerson, isRTL, translatedNames, setTranslatedNames) || t('common.na')}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">{t('email')}</Label>
@@ -1156,7 +1171,7 @@ export default function CustomerManagementPage() {
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">{t('phone')}</Label>
-                  <p className="text-lg">{selectedCustomer.phone || 'N/A'}</p>
+                  <p className="text-lg">{convertToArabicNumerals(selectedCustomer.phone, isRTL) || t('common.na')}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">{t('status')}</Label>

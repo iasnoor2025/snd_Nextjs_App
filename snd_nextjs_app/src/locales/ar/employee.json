@@ -60,6 +60,7 @@
   "fields": {
     "fileNumber": "رقم الملف",
     "firstName": "الاسم الأول",
+    "middleName": "الاسم الأوسط",
     "lastName": "اسم العائلة",
     "fullName": "الاسم الكامل",
     "email": "البريد الإلكتروني",
@@ -75,7 +76,24 @@
     "nationality": "الجنسية",
     "address": "العنوان",
     "emergencyContact": "جهة اتصال الطوارئ",
-    "notes": "ملاحظات"
+    "notes": "ملاحظات",
+    "dateOfBirth": "تاريخ الميلاد",
+    "selectDepartment": "اختر القسم",
+    "selectDesignation": "اختر المنصب",
+    "supervisor": "المشرف",
+    "contractHoursPerDay": "ساعات العقد في اليوم",
+    "contractDaysPerMonth": "أيام العقد في الشهر",
+    "foodAllowance": "بدل الطعام",
+    "housingAllowance": "بدل السكن",
+    "transportAllowance": "بدل النقل",
+    "absentDeductionRate": "معدل خصم الغياب",
+    "bankName": "اسم البنك",
+    "bankAccountNumber": "رقم الحساب البنكي",
+    "bankIban": "الآيبان البنكي",
+    "iqamaNumber": "رقم الإقامة",
+    "iqamaExpiry": "تاريخ انتهاء الإقامة",
+    "iqamaCost": "تكلفة الإقامة",
+    "iqamaFile": "ملف الإقامة"
   },
   
   "status": {
@@ -94,7 +112,8 @@
     "sales": "المبيعات",
     "marketing": "التسويق",
     "engineering": "الهندسة",
-    "maintenance": "الصيانة"
+    "maintenance": "الصيانة",
+    "general": "عام"
   },
   
   "messages": {
@@ -109,8 +128,13 @@
     "deleteError": "فشل في حذف الموظف",
     "saveSuccess": "تم حفظ الموظف بنجاح",
     "saveError": "فشل في حفظ الموظف",
+    "createSuccess": "تم إنشاء الموظف بنجاح",
+    "createError": "فشل في إنشاء الموظف",
+    "fetchError": "فشل في جلب الموظفين",
     "confirmDelete": "هل أنت متأكد من حذف هذا الموظف؟",
-    "fetchError": "فشل في جلب الموظفين"
+    "noCreatePermission": "ليس لديك صلاحية لإنشاء موظفين",
+    "fileUploadSuccess": "تم رفع الملف بنجاح",
+    "fileUploadError": "فشل في رفع الملف"
   },
   
   "pagination": {
@@ -146,5 +170,55 @@
     "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صحيح",
     "invalidPhone": "يرجى إدخال رقم هاتف صحيح",
     "invalidSalary": "يرجى إدخال مبلغ راتب صحيح"
+  },
+  
+  "documents": {
+    "iqama": "مستندات الإقامة"
+  },
+  
+  "iqama": {
+    "expired": "منتهي الصلاحية"
+  },
+  
+  "assignment": {
+    "project": "مشروع",
+    "rental": "إيجار",
+    "equipment": "معدات",
+    "assigned": "مخصص",
+    "noAssignment": "لا يوجد تخصيص"
+  },
+  
+  "statistics": {
+    "totalEmployees": "إجمالي الموظفين",
+    "currentlyAssigned": "المخصصون حالياً",
+    "projectAssignments": "تخصيصات المشاريع",
+    "rentalAssignments": "تخصيصات الإيجار"
+  },
+  
+  "sync": {
+    "button": "مزامنة مع ERPNext",
+    "syncing": "جاري المزامنة..."
+  },
+  
+  "table": {
+    "headers": {
+      "fileNumber": "رقم الملف",
+      "name": "الاسم",
+      "email": "البريد الإلكتروني",
+      "department": "القسم",
+      "iqamaNumber": "رقم الإقامة",
+      "currentAssignment": "التخصيص الحالي",
+      "status": "الحالة",
+      "hireDate": "تاريخ التعيين",
+      "actions": "الإجراءات"
+    }
+  },
+  
+  "pagination": {
+    "showing": "عرض {start}-{end} من {total} موظف",
+    "show": "عرض",
+    "perPage": "في الصفحة",
+    "previous": "السابق",
+    "next": "التالي"
   }
 }

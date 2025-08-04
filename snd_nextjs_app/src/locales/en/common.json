@@ -60,7 +60,8 @@
     "updatedAt": "Updated At",
     "actions": "Actions",
     "description": "Description",
-    "notes": "Notes"
+    "notes": "Notes",
+    "na": "N/A"
   },
   "messages": {
     "success": "Operation completed successfully",

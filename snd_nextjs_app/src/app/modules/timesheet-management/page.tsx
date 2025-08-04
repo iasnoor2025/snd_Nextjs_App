@@ -55,6 +55,12 @@ import { Label } from "@/components/ui/label";
 import AutoGenerateButton from "@/components/timesheet/AutoGenerateButton";
 import { ProtectedRoute } from "@/components/protected-route";
 import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
+import { 
+  convertToArabicNumerals, 
+  getTranslatedName, 
+  batchTranslateNames 
+} from '@/lib/translation-utils';
 
 interface Timesheet {
   id: string;
@@ -112,26 +118,19 @@ interface PaginatedResponse {
 
 export default function TimesheetManagementPage() {
   const { t } = useTranslation('timesheet');
-  return (
-    <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Timesheet' }}>
-      <TimesheetManagementContent />
-    </ProtectedRoute>
-  );
-}
-
-function TimesheetManagementContent() {
-  const { t } = useTranslation('timesheet');
+  const { isRTL } = useI18n();
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const [timesheets, setTimesheets] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [autoGenerating, setAutoGenerating] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [assignmentFilter, setAssignmentFilter] = useState("all");
-  const [month, setMonth] = useState("all");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedTimesheets, setSelectedTimesheets] = useState<Set<string>>(new Set());
+  const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({});
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
-  const [selectedTimesheets, setSelectedTimesheets] = useState<string[]>([]);
+  const [pageSize, setPageSize] = useState(10);
+  const [assignmentFilter, setAssignmentFilter] = useState('all');
+  const [month, setMonth] = useState('all');
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [bulkActionDialog, setBulkActionDialog] = useState<{
     open: boolean;
@@ -202,8 +201,22 @@ function TimesheetManagementContent() {
     try {
       setLoading(true);
       const params = new URLSearchParams({
-        limit: '1000', // Fetch all timesheets for client-side filtering
+        limit: pageSize.toString(),
+        page: currentPage.toString(),
       });
+
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+      if (statusFilter && statusFilter !== 'all') {
+        params.append('status', statusFilter);
+      }
+      if (assignmentFilter && assignmentFilter !== 'all') {
+        params.append('assignment', assignmentFilter);
+      }
+      if (month && month !== 'all') {
+        params.append('month', month);
+      }
 
       const response = await fetch(`/api/timesheets?${params}`, {
         credentials: 'include',
@@ -224,7 +237,17 @@ function TimesheetManagementContent() {
 
   useEffect(() => {
     fetchTimesheets();
-  }, []); // Only fetch once, filtering is done client-side
+  }, [currentPage, pageSize, searchTerm, statusFilter, assignmentFilter, month]); // Add dependencies
+
+  // Trigger batch translation when timesheets data changes
+  useEffect(() => {
+    if (timesheets?.data && timesheets.data.length > 0 && isRTL) {
+      const names = timesheets.data.map(timesheet => 
+        `${timesheet.employee.firstName} ${timesheet.employee.lastName}`
+      ).filter(Boolean) as string[];
+      batchTranslateNames(names, isRTL, setTranslatedNames);
+    }
+  }, [timesheets, isRTL]);
 
   // Client-side filtering and pagination calculations
   const filteredTimesheets = useMemo(() => {
@@ -384,7 +407,7 @@ function TimesheetManagementContent() {
   };
 
   const handleBulkDelete = () => {
-    const selectedTimesheetsData = timesheets?.data.filter(t => selectedTimesheets.includes(t.id)) || [];
+    const selectedTimesheetsData = timesheets?.data.filter(t => selectedTimesheets.has(t.id)) || [];
 
     // Get user role from session or context
     const userRole = 'USER' as string; // This should come from your auth context/session
@@ -435,7 +458,7 @@ function TimesheetManagementContent() {
       }
 
       toast.success(data.message);
-      setSelectedTimesheets([]);
+      setSelectedTimesheets(new Set());
       setBulkDeleteDialog({ open: false, timesheets: [] });
       fetchTimesheets(); // Refresh the list
     } catch (error) {
@@ -456,7 +479,7 @@ function TimesheetManagementContent() {
 
 
   const handleBulkAction = async (action: 'approve' | 'reject') => {
-    if (selectedTimesheets.length === 0) {
+    if (selectedTimesheets.size === 0) {
       toast.error(t('please_select_timesheets_to_process'));
       return;
     }
@@ -502,7 +525,7 @@ function TimesheetManagementContent() {
       }
 
       toast.success(data.message);
-      setSelectedTimesheets([]);
+      setSelectedTimesheets(new Set());
       fetchTimesheets(); // Refresh the list
     } catch (error) {
       console.error('🔍 ALL PENDING ACTION - Error:', error);
@@ -513,7 +536,7 @@ function TimesheetManagementContent() {
   };
 
   const executeBulkAction = async () => {
-    if (!bulkActionDialog.action || selectedTimesheets.length === 0) return;
+    if (!bulkActionDialog.action || selectedTimesheets.size === 0) return;
 
     setBulkActionLoading(true);
     try {
@@ -524,7 +547,7 @@ function TimesheetManagementContent() {
         },
         credentials: 'include',
         body: JSON.stringify({
-          timesheetIds: selectedTimesheets,
+          timesheetIds: Array.from(selectedTimesheets),
           action: bulkActionDialog.action,
           notes: bulkActionDialog.notes
         }),
@@ -538,7 +561,7 @@ function TimesheetManagementContent() {
       }
 
       toast.success(data.message);
-      setSelectedTimesheets([]);
+      setSelectedTimesheets(new Set());
       setBulkActionDialog({ open: false, action: null, notes: '' });
       fetchTimesheets(); // Refresh the list
     } catch (error) {
@@ -551,17 +574,17 @@ function TimesheetManagementContent() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedTimesheets(timesheets?.data.map(t => t.id) || []);
+      setSelectedTimesheets(new Set(timesheets?.data.map(t => t.id) || []));
     } else {
-      setSelectedTimesheets([]);
+      setSelectedTimesheets(new Set());
     }
   };
 
   const handleSelectTimesheet = (timesheetId: string, checked: boolean) => {
     if (checked) {
-      setSelectedTimesheets(prev => [...prev, timesheetId]);
+      setSelectedTimesheets(prev => new Set([...prev, timesheetId]));
     } else {
-      setSelectedTimesheets(prev => prev.filter(id => id !== timesheetId));
+      setSelectedTimesheets(prev => new Set([...prev].filter(id => id !== timesheetId)));
     }
   };
 
@@ -642,7 +665,7 @@ function TimesheetManagementContent() {
     return stageProgression[currentStatus as keyof typeof stageProgression] || 'Unknown';
   };
 
-  const selectedTimesheetsData = timesheets?.data.filter(t => selectedTimesheets.includes(t.id)) || [];
+  const selectedTimesheetsData = timesheets?.data.filter(t => selectedTimesheets.has(t.id)) || [];
   const canApproveSelected = selectedTimesheetsData.some(t => canApproveTimesheet(t));
   const canRejectSelected = selectedTimesheetsData.some(t => canRejectTimesheet(t));
 
@@ -769,18 +792,18 @@ function TimesheetManagementContent() {
       </div>
 
       {/* Bulk Actions */}
-      {selectedTimesheets.length > 0 && (
+      {selectedTimesheets.size > 0 && (
         <Card className="mb-6">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <span className="text-sm font-medium">
-                  {selectedTimesheets.length} {t('timesheet_selected', { count: selectedTimesheets.length })}
+                  {selectedTimesheets.size} {t('timesheet_selected', { count: selectedTimesheets.size })}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setSelectedTimesheets([])}
+                  onClick={() => setSelectedTimesheets(new Set())}
                 >
                   {t('clear_selection')}
                 </Button>
@@ -935,7 +958,7 @@ function TimesheetManagementContent() {
               <TableRow>
                 <TableHead className="w-12">
                   <Checkbox
-                    checked={selectedTimesheets.length === timesheets?.data.length && timesheets.data.length > 0}
+                    checked={selectedTimesheets.size === timesheets?.data.length && timesheets.data.length > 0}
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
@@ -954,17 +977,24 @@ function TimesheetManagementContent() {
                 <TableRow key={timesheet.id}>
                   <TableCell>
                     <Checkbox
-                      checked={selectedTimesheets.includes(timesheet.id)}
+                      checked={selectedTimesheets.has(timesheet.id)}
                       onCheckedChange={(checked) => handleSelectTimesheet(timesheet.id, checked as boolean)}
                     />
                   </TableCell>
                   <TableCell>
-                    <div>
-                      <div className="font-medium">
-                        {timesheet.employee.firstName} {timesheet.employee.lastName}
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                          <span className="text-sm font-medium text-gray-600">
+                            {getTranslatedName(`${timesheet.employee.firstName} ${timesheet.employee.lastName}`, isRTL, translatedNames, setTranslatedNames).charAt(0).toUpperCase()}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-sm text-muted-foreground">
-                        {timesheet.employee.employeeId}
+                      <div>
+                        <div className="font-medium">
+                          {getTranslatedName(`${timesheet.employee.firstName} ${timesheet.employee.lastName}`, isRTL, translatedNames, setTranslatedNames)}
+                        </div>
+                        <div className="text-sm text-gray-500">{timesheet.employee.employeeId}</div>
                       </div>
                     </div>
                   </TableCell>
@@ -1000,10 +1030,10 @@ function TimesheetManagementContent() {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <div>{timesheet.hoursWorked}h</div>
+                      <div>{convertToArabicNumerals(timesheet.hoursWorked.toString(), isRTL)}h</div>
                       {timesheet.overtimeHours > 0 && (
-                        <div className="text-sm text-muted-foreground">
-                          +{timesheet.overtimeHours}h {t('ot')}
+                        <div className="text-sm text-orange-600">
+                          +{convertToArabicNumerals(timesheet.overtimeHours.toString(), isRTL)}h {t('overtime')}
                         </div>
                       )}
                     </div>
@@ -1120,31 +1150,24 @@ function TimesheetManagementContent() {
                 <span className="font-medium">{t('summary')}</span>
               </div>
               <div className="text-sm text-gray-700 space-y-1">
-                <p>• {selectedTimesheets.length} {t('timesheet_selected', { count: selectedTimesheets.length })}</p>
+                <p>• {selectedTimesheets.size} {t('timesheet_selected', { count: selectedTimesheets.size })}</p>
                 <p>• {t('action')}: {bulkActionDialog.action === 'approve' ? t('approve') : t('reject')}</p>
                 {bulkActionDialog.action === 'approve' && (
-                  <div>
-                    <p>{t('workflow')}: {t('following_approval_stages')}</p>
-                    {selectedTimesheetsData.length > 0 && (
-                      <div className="mt-2">
-                        <p className="font-medium">{t('status_breakdown')}:</p>
-                        <div className="space-y-1 mt-1">
-                          {Object.entries(
-                            selectedTimesheetsData.reduce((acc, t) => {
-                              acc[t.status] = (acc[t.status] || 0) + 1;
-                              return acc;
-                            }, {} as Record<string, number>)
-                          ).map(([status, count]) => (
-                            <p key={status}>• {status}: {count} {t('timesheet_s', { count: count })}</p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <p>• {t('next_approval_stage')}: {getNextApprovalStage('pending')}</p>
                 )}
-                {bulkActionDialog.notes && (
-                  <p>• {t('notes')}: {bulkActionDialog.notes}</p>
-                )}
+                <p>• {t('employees')}:</p>
+                <ul className="ml-4 space-y-1">
+                  {selectedTimesheetsData.slice(0, 3).map(timesheet => (
+                    <li key={timesheet.id} className="text-xs">
+                      {getTranslatedName(`${timesheet.employee.firstName} ${timesheet.employee.lastName}`, isRTL, translatedNames, setTranslatedNames)} - {new Date(timesheet.date).toLocaleDateString()} - {convertToArabicNumerals(timesheet.hoursWorked.toString(), isRTL)}h
+                    </li>
+                  ))}
+                  {selectedTimesheetsData.length > 3 && (
+                    <li className="text-xs text-gray-500">
+                      ... and {selectedTimesheetsData.length - 3} more
+                    </li>
+                  )}
+                </ul>
               </div>
             </div>
           </div>

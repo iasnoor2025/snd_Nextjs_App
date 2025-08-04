@@ -150,3 +150,243 @@ export function formatForForm(
   
   return result;
 } 
+
+// Common name mappings for Arabic translation
+const nameMappings: { [key: string]: string } = {
+  'MOHAMAD': 'محمد', 'MOHAMMAD': 'محمد', 'MUHAMMAD': 'محمد',
+  'AHMED': 'أحمد', 'AHMAD': 'أحمد', 'ALI': 'علي',
+  'HASSAN': 'حسن', 'HUSSEIN': 'حسين', 'OMAR': 'عمر',
+  'KHALID': 'خالد', 'ABDULLAH': 'عبدالله', 'ABDUL': 'عبد',
+  'YOUSEF': 'يوسف', 'YUSUF': 'يوسف', 'IBRAHIM': 'إبراهيم',
+  'ISMAIL': 'إسماعيل', 'MUSTAFA': 'مصطفى', 'MAHMOUD': 'محمود',
+  'SALEM': 'سالم', 'SALEH': 'صالح', 'NADER': 'نادر',
+  'NADEEM': 'نديم', 'FARIS': 'فارس', 'TAREK': 'طارق',
+  'WALEED': 'وليد', 'SAMER': 'سامر', 'SAMI': 'سامي',
+  'ADEL': 'عادل', 'ADIL': 'عادل', 'KAMAL': 'كمال',
+  'JAMAL': 'جمال', 'RAHIM': 'رحيم', 'RAHEEM': 'رحيم',
+  'AKBAR': 'أكبر', 'KAWSAR': 'كوثر', 'AIUB': 'أيوب',
+  'MD': 'محمد', 'MR': 'السيد', 'MS': 'السيدة',
+  'DR': 'دكتور', 'PROF': 'أستاذ', 'ENG': 'مهندس'
+};
+
+// Phonetic transliteration mapping for English to Arabic
+const phoneticMapping: { [key: string]: string } = {
+  'A': 'أ', 'B': 'ب', 'C': 'ك', 'D': 'د', 'E': 'إ',
+  'F': 'ف', 'G': 'ج', 'H': 'ه', 'I': 'ي', 'J': 'ج',
+  'K': 'ك', 'L': 'ل', 'M': 'م', 'N': 'ن', 'O': 'و',
+  'P': 'ب', 'Q': 'ق', 'R': 'ر', 'S': 'س', 'T': 'ت',
+  'U': 'و', 'V': 'ف', 'W': 'و', 'X': 'كس', 'Y': 'ي',
+  'Z': 'ز', 'TH': 'ث', 'CH': 'تش', 'SH': 'ش', 'PH': 'ف'
+};
+
+// In-memory cache for translations
+const translationCache = new Map<string, string>();
+
+/**
+ * Convert English numerals to Arabic numerals
+ * @param text - The text containing numbers to convert
+ * @param isRTL - Whether the interface is in RTL (Arabic) mode
+ * @returns The text with converted numerals
+ */
+export const convertToArabicNumerals = (text: string | null | undefined, isRTL: boolean): string => {
+  if (!text) return '';
+  
+  // Only convert numerals when interface is in Arabic mode
+  if (!isRTL) {
+    return text; // Return original text for English mode
+  }
+  
+  return text.replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[parseInt(d)]);
+};
+
+/**
+ * Translate a name to Arabic using multiple methods
+ * @param name - The name to translate
+ * @param isRTL - Whether the interface is in RTL (Arabic) mode
+ * @returns The translated name or original if not in Arabic mode
+ */
+export const translateNameToArabic = async (name: string | null | undefined, isRTL: boolean): Promise<string> => {
+  if (!name || !isRTL) return name || '';
+  
+  // Check cache first
+  if (translationCache.has(name)) {
+    return translationCache.get(name)!;
+  }
+
+  // Convert to uppercase for matching
+  const upperName = name.toUpperCase();
+  
+  // Split the name into parts
+  const nameParts = upperName.split(' ');
+  
+  // Check if all parts are in our mappings
+  const allPartsMapped = nameParts.every(part => {
+    const cleanPart = part.replace(/[^A-Z]/g, '');
+    return nameMappings[cleanPart];
+  });
+
+  // If all parts are mapped, use our mappings
+  if (allPartsMapped) {
+    const translatedParts = nameParts.map(part => {
+      const cleanPart = part.replace(/[^A-Z]/g, '');
+      return nameMappings[cleanPart] || part;
+    });
+    const result = translatedParts.join(' ');
+    translationCache.set(name, result);
+    return result;
+  }
+
+  // If not all parts are mapped, try Google Translate API
+  try {
+    const response = await fetch('/api/translate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: name,
+        targetLang: 'ar'
+      })
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      if (result.translatedText && result.translatedText !== name) {
+        translationCache.set(name, result.translatedText);
+        return result.translatedText;
+      }
+    }
+  } catch (error) {
+    console.log('Translation failed, trying phonetic transliteration:', error);
+  }
+
+  // Fallback: phonetic transliteration
+  const transliteratedParts = nameParts.map(part => {
+    const cleanPart = part.replace(/[^A-Z]/g, '');
+    let transliterated = '';
+    
+    for (let i = 0; i < cleanPart.length; i++) {
+      const char = cleanPart[i];
+      const nextChar = cleanPart[i + 1];
+      
+      // Handle common digraphs
+      if (i < cleanPart.length - 1) {
+        const digraph = char + nextChar;
+        if (phoneticMapping[digraph]) {
+          transliterated += phoneticMapping[digraph];
+          i++; // Skip next character
+          continue;
+        }
+      }
+      
+      // Handle single characters
+      transliterated += phoneticMapping[char] || char;
+    }
+    
+    return transliterated;
+  });
+
+  const result = transliteratedParts.join(' ');
+  translationCache.set(name, result);
+  return result;
+};
+
+/**
+ * Get translated name with caching (for React components)
+ * @param name - The name to translate
+ * @param isRTL - Whether the interface is in RTL (Arabic) mode
+ * @param translatedNames - State object for caching translations
+ * @param setTranslatedNames - State setter for caching translations
+ * @returns The translated name or original if not in Arabic mode
+ */
+export const getTranslatedName = (
+  name: string | null | undefined, 
+  isRTL: boolean,
+  translatedNames: { [key: string]: string },
+  setTranslatedNames: React.Dispatch<React.SetStateAction<{ [key: string]: string }>>
+): string => {
+  if (!name) return '';
+  
+  // Only translate names when interface is in Arabic mode
+  if (!isRTL) {
+    return name; // Return original name for English mode
+  }
+  
+  // Check if we have a cached translation
+  if (translatedNames[name]) {
+    return translatedNames[name];
+  }
+
+  // For common names, use immediate translation without API call
+  const upperName = name.toUpperCase();
+  
+  // Check if it's a simple name we can translate immediately
+  const cleanName = upperName.replace(/[^A-Z\s]/g, '');
+  if (nameMappings[cleanName]) {
+    const translated = nameMappings[cleanName];
+    setTranslatedNames(prev => ({ ...prev, [name]: translated }));
+    return translated;
+  }
+
+  // For complex names, trigger background translation
+  if (!translatedNames[name]) {
+    translateNameToArabic(name, isRTL).then(translated => {
+      setTranslatedNames(prev => ({ ...prev, [name]: translated }));
+    });
+  }
+
+  return name;
+};
+
+/**
+ * Batch translate multiple names efficiently
+ * @param names - Array of names to translate
+ * @param isRTL - Whether the interface is in RTL (Arabic) mode
+ * @param setTranslatedNames - State setter for caching translations
+ */
+export const batchTranslateNames = async (
+  names: string[],
+  isRTL: boolean,
+  setTranslatedNames: React.Dispatch<React.SetStateAction<{ [key: string]: string }>>
+) => {
+  if (!isRTL) return; // Don't translate in English mode
+  
+  const uniqueNames = [...new Set(names.filter(Boolean))];
+  const untranslatedNames = uniqueNames.filter(name => !translationCache.has(name));
+  
+  if (untranslatedNames.length === 0) return;
+
+  console.log(`Translating ${untranslatedNames.length} unique names...`);
+
+  // Process names in batches of 5 to avoid overwhelming the API
+  const batchSize = 5;
+  for (let i = 0; i < untranslatedNames.length; i += batchSize) {
+    const batch = untranslatedNames.slice(i, i + batchSize);
+    
+    await Promise.all(
+      batch.map(async (name) => {
+        try {
+          const translated = await translateNameToArabic(name, isRTL);
+          setTranslatedNames(prev => ({
+            ...prev,
+            [name]: translated
+          }));
+        } catch (error) {
+          console.log(`Failed to translate name: ${name}`, error);
+        }
+      })
+    );
+
+    // Add a small delay between batches to be respectful to the API
+    if (i + batchSize < untranslatedNames.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+};
+
+/**
+ * Clear translation cache (useful when switching languages)
+ */
+export const clearTranslationCache = () => {
+  translationCache.clear();
+}; 

@@ -45,6 +45,12 @@ import { ApiService } from "@/lib/api-service";
 import { useRouter } from "next/navigation";
 // i18n refactor: All user-facing strings now use useTranslation('equipment')
 import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
+import { 
+  convertToArabicNumerals, 
+  getTranslatedName, 
+  batchTranslateNames 
+} from '@/lib/translation-utils';
 
 interface Equipment {
   id: number;
@@ -85,18 +91,21 @@ interface Equipment {
       id: number;
       name: string;
       file_number: string;
+      full_name?: string; // Added for translated name
     } | null;
   } | null;
 }
 
 export default function EquipmentManagementPage() {
   const { t } = useTranslation('equipment');
+  const { isRTL } = useI18n();
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterAssignment, setFilterAssignment] = useState("all");
+  const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({});
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -107,6 +116,14 @@ export default function EquipmentManagementPage() {
   useEffect(() => {
     fetchEquipment();
   }, []);
+
+  // Trigger batch translation when equipment data changes
+  useEffect(() => {
+    if (equipment.length > 0 && isRTL) {
+      const names = equipment.map(eq => eq.name).filter(Boolean) as string[];
+      batchTranslateNames(names, isRTL, setTranslatedNames);
+    }
+  }, [equipment, isRTL]);
 
   const fetchEquipment = async () => {
     setLoading(true);
@@ -324,51 +341,26 @@ export default function EquipmentManagementPage() {
                     ) : (
                       currentEquipment.map((item) => (
                         <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.name}</TableCell>
-                          <TableCell>{item.model_number || '-'}</TableCell>
-                          <TableCell>{item.manufacturer || '-'}</TableCell>
+                          <TableCell className="font-medium">{getTranslatedName(item.name, isRTL, translatedNames, setTranslatedNames)}</TableCell>
+                          <TableCell>{convertToArabicNumerals(item.model_number, isRTL) || '-'}</TableCell>
+                          <TableCell>{getTranslatedName(item.manufacturer, isRTL, translatedNames, setTranslatedNames) || '-'}</TableCell>
                           <TableCell>{getStatusBadge(item)}</TableCell>
                           <TableCell>
                             {item.current_assignment ? (
                               <div className="space-y-1">
-                                <div className="font-medium text-sm">
-                                  {item.current_assignment.name}
+                                <div className="text-sm font-medium">
+                                  {getTranslatedName(item.current_assignment.employee?.full_name, isRTL, translatedNames, setTranslatedNames) || t('equipment_management.no_assignment')}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
-                                                                   {item.current_assignment.type === 'project' && item.current_assignment.project ? (
-                                   <span>{t('equipment_management.project')}: {item.current_assignment.project.name}</span>
-                                 ) : item.current_assignment.type === 'rental' && item.current_assignment.rental ? (
-                                   <span>{t('equipment_management.rental')}: {item.current_assignment.rental.project?.name || t('equipment_management.unknown_project')} - {item.current_assignment.rental.rental_number}</span>
-                                 ) : (
-                                   <span>{item.current_assignment.type}</span>
-                                 )}
+                                  {item.current_assignment.project?.name || item.current_assignment.rental?.project_name || '-'}
                                 </div>
-                                {item.current_assignment.employee && (
-                                  <div className="text-xs text-muted-foreground">
-                                    👤 {item.current_assignment.employee.name} ({item.current_assignment.employee.file_number})
-                                  </div>
-                                )}
-                                {item.current_assignment.location && (
-                                  <div className="text-xs text-muted-foreground">
-                                    📍 {item.current_assignment.location}
-                                  </div>
-                                )}
-                                {item.current_assignment.start_date && (
-                                  <div className="text-xs text-muted-foreground">
-                                    {t('equipment_management.since')}: {new Date(item.current_assignment.start_date).toLocaleDateString()}
-                                  </div>
-                                )}
                               </div>
                             ) : (
-                              <span className="text-muted-foreground text-sm">{t('equipment_management.no_assignment')}</span>
+                              <span className="text-muted-foreground">{t('equipment_management.no_assignment')}</span>
                             )}
                           </TableCell>
-                          <TableCell>
-                            {item.daily_rate ? `$${item.daily_rate.toFixed(2)}` : '-'}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">
-                            {item.erpnext_id || '-'}
-                          </TableCell>
+                          <TableCell>{convertToArabicNumerals(item.daily_rate?.toString(), isRTL) || '-'}</TableCell>
+                          <TableCell>{convertToArabicNumerals(item.erpnext_id?.toString(), isRTL) || '-'}</TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
                               <Button 

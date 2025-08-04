@@ -26,6 +26,11 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { 
+  convertToArabicNumerals, 
+  getTranslatedName, 
+  batchTranslateNames 
+} from '@/lib/translation-utils';
 
 interface Employee {
   id: number;
@@ -122,10 +127,21 @@ export default function EmployeeManagementPage() {
   // Helper function to check if Iqama is expired
   const isIqamaExpired = (expiryDate: string | null | undefined): boolean => {
     if (!expiryDate) return false;
-    const today = new Date();
     const expiry = new Date(expiryDate);
+    const today = new Date();
     return expiry < today;
   };
+
+  // State for translated names
+  const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({});
+
+  // Trigger batch translation when employees data changes
+  useEffect(() => {
+    if (employees.length > 0 && isRTL) {
+      const names = employees.map(emp => emp.full_name).filter(Boolean) as string[];
+      batchTranslateNames(names, isRTL, setTranslatedNames);
+    }
+  }, [employees, isRTL]);
   
   // Debug function for assignment data
   const debugAssignments = () => {
@@ -494,12 +510,13 @@ export default function EmployeeManagementPage() {
           <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
             <Can action="sync" subject="Employee">
               <Button
+                variant="outline"
                 onClick={handleSync}
                 disabled={isSyncing}
-                variant="outline"
+                className="flex items-center gap-2"
               >
                 <Upload className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                {isSyncing ? 'Syncing...' : 'Sync with ERPNext'}
+                {isSyncing ? t('employee:sync.syncing') : t('employee:sync.button')}
               </Button>
             </Can>
 
@@ -517,7 +534,7 @@ export default function EmployeeManagementPage() {
             <Can action="export" subject="Employee">
               <Button variant="outline" onClick={handleExport}>
                 <Download className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                Export
+                {t('employee:actions.export')}
               </Button>
             </Can>
           </div>
@@ -529,7 +546,7 @@ export default function EmployeeManagementPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Employees</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('employee:statistics.totalEmployees')}</p>
                   <p className="text-2xl font-bold">{statistics.totalEmployees}</p>
                 </div>
                 <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -543,7 +560,7 @@ export default function EmployeeManagementPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Currently Assigned</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('employee:statistics.currentlyAssigned')}</p>
                   <p className="text-2xl font-bold">{statistics.currentlyAssigned}</p>
                 </div>
                 <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -557,7 +574,7 @@ export default function EmployeeManagementPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Project Assignments</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('employee:statistics.projectAssignments')}</p>
                   <p className="text-2xl font-bold">{statistics.projectAssignments}</p>
                 </div>
                 <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
@@ -571,7 +588,7 @@ export default function EmployeeManagementPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Rental Assignments</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('employee:statistics.rentalAssignments')}</p>
                   <p className="text-2xl font-bold">{statistics.rentalAssignments}</p>
                 </div>
                 <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
@@ -716,13 +733,13 @@ export default function EmployeeManagementPage() {
                       onClick={() => handleSort('iqama_number')}
                     >
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        Iqama Number
+                        {t('employee:table.headers.iqamaNumber')}
                         {getSortIcon('iqama_number')}
                       </div>
                     </TableHead>
                     <TableHead className={isRTL ? 'text-right' : 'text-left'}>
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                        Current Assignment
+                        {t('employee:table.headers.currentAssignment')}
                       </div>
                     </TableHead>
                     <TableHead
@@ -760,76 +777,74 @@ export default function EmployeeManagementPage() {
                   ) : (
                     currentEmployees.map((employee) => (
                       <TableRow key={employee.id}>
-                        <TableCell className={`font-mono ${isRTL ? 'text-right' : 'text-left'}`}>{employee.file_number || 'N/A'}</TableCell>
+                        <TableCell className={`font-mono ${isRTL ? 'text-right' : 'text-left'}`}>{convertToArabicNumerals(employee.file_number, isRTL) || t('common.na')}</TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           <div>
                             <div className="font-medium flex items-center gap-2">
-                              {employee.full_name || 'N/A'}
+                              {getTranslatedName(employee.full_name, isRTL, translatedNames, setTranslatedNames) || t('common.na')}
                               {employee.current_assignment && (
                                 <Badge variant="outline" className="text-xs">
-                                  {employee.current_assignment.type === 'project' ? '📋 Project' : 
-                                   employee.current_assignment.type === 'rental' ? '🚛 Rental' : 
-                                   employee.current_assignment.type === 'manual' ? '🔧 Equipment' : '📋 Assigned'}
+                                  {employee.current_assignment.type === 'project' ? `📋 ${t('employee:assignment.project')}` : 
+                                   employee.current_assignment.type === 'rental' ? `🚛 ${t('employee:assignment.rental')}` : 
+                                   employee.current_assignment.type === 'manual' ? `🔧 ${t('employee:assignment.equipment')}` : 
+                                   `📋 ${t('employee:assignment.assigned')}`}
                                 </Badge>
                               )}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {employee.designation || 'N/A'}
+                              {employee.designation || t('common.na')}
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.email || 'N/A'}</TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.department || 'N/A'}</TableCell>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.email || t('common.na')}</TableCell>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                          {employee.department ? 
+                            (employee.department.toLowerCase() === 'general' ? t('employee:departments.general') :
+                             employee.department.toLowerCase() === 'hr' ? t('employee:departments.hr') :
+                             employee.department.toLowerCase() === 'it' ? t('employee:departments.it') :
+                             employee.department.toLowerCase() === 'finance' ? t('employee:departments.finance') :
+                             employee.department.toLowerCase() === 'operations' ? t('employee:departments.operations') :
+                             employee.department.toLowerCase() === 'sales' ? t('employee:departments.sales') :
+                             employee.department.toLowerCase() === 'marketing' ? t('employee:departments.marketing') :
+                             employee.department.toLowerCase() === 'engineering' ? t('employee:departments.engineering') :
+                             employee.department.toLowerCase() === 'maintenance' ? t('employee:departments.maintenance') :
+                             employee.department) : t('common.na')}
+                        </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           {employee.iqama_number ? (
-                            <span className={isIqamaExpired(employee.iqama_expiry) ? 'text-red-600 font-medium' : ''}>
-                              {employee.iqama_number}
-                              {isIqamaExpired(employee.iqama_expiry) && (
-                                <span className="ml-1 text-xs text-red-500">(Expired)</span>
+                            <div>
+                              <div className="font-medium">{convertToArabicNumerals(employee.iqama_number, isRTL)}</div>
+                              {employee.iqama_expiry && isIqamaExpired(employee.iqama_expiry) && (
+                                <div className="text-sm text-red-500">({t('employee:iqama.expired')})</div>
                               )}
-                            </span>
+                            </div>
                           ) : (
-                            'N/A'
+                            t('common.na')
                           )}
                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           {employee.current_assignment ? (
-                            <div className="space-y-1">
-                              <div className="font-medium text-sm">
-                                {employee.current_assignment.name}
+                            <div>
+                              <div className="font-medium">{employee.current_assignment.name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {employee.current_assignment.type === 'project' ? t('employee:assignment.project') :
+                                 employee.current_assignment.type === 'rental' ? t('employee:assignment.rental') :
+                                 employee.current_assignment.type === 'manual' ? t('employee:assignment.equipment') :
+                                 t('employee:assignment.assigned')}
                               </div>
-                              <div className="text-xs text-muted-foreground">
-                                {employee.current_assignment.type === 'project' && employee.current_assignment.project ? (
-                                  <span>Project: {employee.current_assignment.project.name}</span>
-                                ) : employee.current_assignment.type === 'rental' && employee.current_assignment.rental ? (
-                                  <span>Rental: {employee.current_assignment.rental.project_name} - {employee.current_assignment.rental.rental_number}</span>
-                                ) : employee.current_assignment.type === 'manual' ? (
-                                  <span>Equipment Assignment: {employee.current_assignment.name}</span>
-                                ) : (
-                                  <span>{employee.current_assignment.type}</span>
-                                )}
-                              </div>
-                              {employee.current_assignment.location && (
-                                <div className="text-xs text-muted-foreground">
-                                  📍 {employee.current_assignment.location}
-                                </div>
-                              )}
-                              {employee.current_assignment.start_date && (
-                                <div className="text-xs text-muted-foreground">
-                                  Since: {new Date(employee.current_assignment.start_date).toLocaleDateString()}
-                                </div>
-                              )}
                             </div>
                           ) : (
-                            <span className="text-muted-foreground text-sm">No assignment</span>
+                            <span className="text-muted-foreground">{t('employee:assignment.noAssignment')}</span>
                           )}
                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
-                            {employee.status || 'N/A'}
+                            {employee.status === 'active' ? t('employee:status.active') :
+                             employee.status === 'inactive' ? t('employee:status.inactive') :
+                             employee.status || t('common.na')}
                           </Badge>
                         </TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.hire_date || 'N/A'}</TableCell>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.hire_date || t('common.na')}</TableCell>
                         <TableCell className={isRTL ? 'text-left' : 'text-right'}>
                           <div className={`flex items-center gap-2 ${isRTL ? 'justify-start' : 'justify-end'}`}>
                             <Can action="read" subject="Employee">
@@ -888,12 +903,20 @@ export default function EmployeeManagementPage() {
               <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
                 <div className={`text-sm text-muted-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
                   {totalPages > 1 
-                    ? `Showing ${startIndex + 1}-${Math.min(endIndex, totalItems)} of ${totalItems} employees`
-                    : `Showing ${totalItems} employees`
+                    ? t('employee:pagination.showing', { 
+                        start: startIndex + 1, 
+                        end: Math.min(endIndex, totalItems), 
+                        total: totalItems 
+                      })
+                    : t('employee:pagination.showing', { 
+                        start: totalItems, 
+                        end: totalItems, 
+                        total: totalItems 
+                      })
                   }
                 </div>
                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <span className="text-sm text-muted-foreground">Show:</span>
+                  <span className="text-sm text-muted-foreground">{t('employee:pagination.show')}:</span>
                   <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
                     <SelectTrigger className="w-20">
                       <SelectValue />
@@ -906,7 +929,7 @@ export default function EmployeeManagementPage() {
                       <SelectItem value="100">100</SelectItem>
                     </SelectContent>
                   </Select>
-                  <span className="text-sm text-muted-foreground">per page</span>
+                  <span className="text-sm text-muted-foreground">{t('employee:pagination.perPage')}</span>
                 </div>
               </div>
               {totalPages > 1 && (
@@ -919,13 +942,13 @@ export default function EmployeeManagementPage() {
                   >
                     {isRTL ? (
                       <>
-                        Next
+                        {t('employee:pagination.next')}
                         <ChevronRight className="h-4 w-4 ml-1" />
                       </>
                     ) : (
                       <>
                         <ChevronLeft className="h-4 w-4 mr-1" />
-                        Previous
+                        {t('employee:pagination.previous')}
                       </>
                     )}
                   </Button>
@@ -997,12 +1020,12 @@ export default function EmployeeManagementPage() {
                   >
                     {isRTL ? (
                       <>
-                        Previous
+                        {t('employee:pagination.previous')}
                         <ChevronLeft className="h-4 w-4 ml-1" />
                       </>
                     ) : (
                       <>
-                        Next
+                        {t('employee:pagination.next')}
                         <ChevronRight className="h-4 w-4 ml-1" />
                       </>
                     )}
@@ -1054,57 +1077,72 @@ export default function EmployeeManagementPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>File Number</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.file_number || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground">{convertToArabicNumerals(selectedEmployee.file_number, isRTL) || t('common.na')}</p>
                 </div>
                 <div>
                   <Label>Full Name</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.full_name || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground">{getTranslatedName(selectedEmployee.full_name, isRTL, translatedNames, setTranslatedNames) || t('common.na')}</p>
                 </div>
                 <div>
                   <Label>Email</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.email || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground">{selectedEmployee.email || t('common.na')}</p>
                 </div>
                 <div>
                   <Label>Phone</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.phone || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground">{convertToArabicNumerals(selectedEmployee.phone, isRTL) || t('common.na')}</p>
+                </div>
+                <div>
+                  <Label>{t('employee:fields.iqamaNumber')}</Label>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedEmployee.iqama_number ? (
+                      <span>
+                        {convertToArabicNumerals(selectedEmployee.iqama_number, isRTL)}
+                        {selectedEmployee.iqama_expiry && isIqamaExpired(selectedEmployee.iqama_expiry) && (
+                          <span className="text-red-500 ml-1">({t('employee:iqama.expired')})</span>
+                        )}
+                      </span>
+                    ) : t('common.na')}
+                  </p>
                 </div>
                 <div>
                   <Label>Department</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.department || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground">{selectedEmployee.department || t('common.na')}</p>
                 </div>
                 <div>
                   <Label>Designation</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.designation || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground">{selectedEmployee.designation || t('common.na')}</p>
                 </div>
                 <div>
                   <Label>Status</Label>
                   <Badge variant={selectedEmployee.status === 'active' ? 'default' : 'secondary'}>
-                    {selectedEmployee.status || 'N/A'}
+                    {selectedEmployee.status === 'active' ? t('employee:status.active') :
+                     selectedEmployee.status === 'inactive' ? t('employee:status.inactive') :
+                     selectedEmployee.status || t('common.na')}
                   </Badge>
                 </div>
                 <div>
                   <Label>Hire Date</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.hire_date || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground">{selectedEmployee.hire_date || t('common.na')}</p>
                 </div>
                 <div>
                   <Label>Basic Salary</Label>
-                  <p className="text-sm text-muted-foreground">${selectedEmployee.basic_salary || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground">${selectedEmployee.basic_salary || t('common.na')}</p>
                 </div>
                 <div>
                   <Label>Nationality</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.nationality || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground">{selectedEmployee.nationality || t('common.na')}</p>
                 </div>
                 <div>
                   <Label>Hourly Rate</Label>
-                  <p className="text-sm text-muted-foreground">${selectedEmployee.hourly_rate || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground">${selectedEmployee.hourly_rate || t('common.na')}</p>
                 </div>
                 <div>
                   <Label>{t('employee:fields.overtimeRateMultiplier')}</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.overtime_rate_multiplier || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground">{selectedEmployee.overtime_rate_multiplier || t('common.na')}</p>
                 </div>
                 <div>
                   <Label>{t('employee:fields.overtimeFixedRate')}</Label>
-                  <p className="text-sm text-muted-foreground">${selectedEmployee.overtime_fixed_rate || 'N/A'}</p>
+                  <p className="text-sm text-muted-foreground">${selectedEmployee.overtime_fixed_rate || t('common.na')}</p>
                 </div>
               </div>
             )}

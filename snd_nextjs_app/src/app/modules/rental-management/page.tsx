@@ -19,6 +19,12 @@ import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
 // i18n refactor: All user-facing strings now use useTranslation('rental')
 import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
+import { 
+  convertToArabicNumerals, 
+  getTranslatedName, 
+  batchTranslateNames 
+} from '@/lib/translation-utils';
 
 interface RentalItem {
   id: string;
@@ -79,15 +85,24 @@ interface Filters {
 export default function RentalManagementPage() {
   const router = useRouter();
   const { user, hasPermission, getAllowedActions } = useRBAC();
+  const { t } = useTranslation('rental');
+  const { isRTL } = useI18n();
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
+  const [customerFilter, setCustomerFilter] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
+  const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [error, setError] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedRental, setSelectedRental] = useState<Rental | null>(null);
   const [filters, setFilters] = useState<Filters>({});
-  const [showFilters, setShowFilters] = useState(false);
   const [formData, setFormData] = useState({
     customerId: '',
     rentalNumber: '',
@@ -109,8 +124,6 @@ export default function RentalManagementPage() {
     finalAmount: 0
   });
 
-  const { t } = useTranslation('rental');
-
   // Get allowed actions for rental management
   const allowedActions = getAllowedActions('Rental');
 
@@ -124,18 +137,18 @@ export default function RentalManagementPage() {
   // Get status badge color
   const getStatusBadge = (status?: string) => {
     if (!status) {
-      return <Badge variant="outline">{t('rental.unknown')}</Badge>;
+      return <Badge variant="outline">{t('unknown')}</Badge>;
     }
     
     switch (status.toLowerCase()) {
       case 'pending':
-        return <Badge variant="secondary">{t('rental.pending')}</Badge>;
+        return <Badge variant="secondary">{t('pending')}</Badge>;
       case 'active':
-        return <Badge variant="default">{t('rental.active')}</Badge>;
+        return <Badge variant="default">{t('active')}</Badge>;
       case 'completed':
-        return <Badge variant="default">{t('rental.completed')}</Badge>;
+        return <Badge variant="default">{t('completed')}</Badge>;
       case 'cancelled':
-        return <Badge variant="destructive">{t('rental.cancelled')}</Badge>;
+        return <Badge variant="destructive">{t('cancelled')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -144,18 +157,18 @@ export default function RentalManagementPage() {
   // Get payment status badge
   const getPaymentStatusBadge = (status?: string) => {
     if (!status) {
-      return <Badge variant="outline">{t('rental.unknown')}</Badge>;
+      return <Badge variant="outline">{t('unknown')}</Badge>;
     }
     
     switch (status.toLowerCase()) {
       case 'pending':
-        return <Badge variant="secondary">{t('rental.pending')}</Badge>;
+        return <Badge variant="secondary">{t('pending')}</Badge>;
       case 'partial':
-        return <Badge variant="default">{t('rental.partial')}</Badge>;
+        return <Badge variant="default">{t('partial')}</Badge>;
       case 'paid':
-        return <Badge variant="default">{t('rental.paid')}</Badge>;
+        return <Badge variant="default">{t('paid')}</Badge>;
       case 'overdue':
-        return <Badge variant="destructive">{t('rental.overdue')}</Badge>;
+        return <Badge variant="destructive">{t('overdue')}</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -377,6 +390,14 @@ export default function RentalManagementPage() {
     fetchCustomers();
   }, []);
 
+  // Trigger batch translation when rentals data changes
+  useEffect(() => {
+    if (rentals.length > 0 && isRTL) {
+      const names = rentals.map(rental => rental.customer?.name).filter(Boolean) as string[];
+      batchTranslateNames(names, isRTL, setTranslatedNames);
+    }
+  }, [rentals, isRTL]);
+
   useEffect(() => {
     if (isCreateDialogOpen && !formData.rentalNumber) {
       setFormData(prev => ({ ...prev, rentalNumber: generateRentalNumber() }));
@@ -389,7 +410,7 @@ export default function RentalManagementPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">{t('rental.loading')}</p>
+            <p className="text-muted-foreground">{t('loading')}</p>
           </div>
         </div>
       </ProtectedRoute>
@@ -402,21 +423,21 @@ export default function RentalManagementPage() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">{t('rental.rentalManagement')}</h1>
-            <p className="text-muted-foreground">{t('rental.manageEquipmentRentals')}</p>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
+            <p className="text-muted-foreground">{t('description')}</p>
           </div>
           <div className="flex items-center gap-2">
             <Can action="export" subject="Rental">
               <Button variant="outline">
                 <Download className="h-4 w-4 mr-2" />
-                {t('rental.export')}
+                {t('actions.export')}
               </Button>
             </Can>
 
             <Can action="create" subject="Rental">
               <Button onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
-                {t('rental.newRental')}
+                {t('actions.add')}
               </Button>
             </Can>
           </div>
@@ -426,14 +447,14 @@ export default function RentalManagementPage() {
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>{t('rental.filters')}</CardTitle>
+              <CardTitle>{t('filterTitle')}</CardTitle>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowFilters(!showFilters)}
               >
                 <Filter className="w-4 h-4 mr-2" />
-                {showFilters ? t('rental.hideFilters') : t('rental.showFilters')}
+                {showFilters ? t('hideFilters') : t('showFilters')}
               </Button>
             </div>
           </CardHeader>
@@ -516,52 +537,45 @@ export default function RentalManagementPage() {
         {/* Rentals Table */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('rental.rentals')}</CardTitle>
+            <CardTitle>{t('title')}</CardTitle>
             <CardDescription>
-              {t('rental.manageAllEquipmentRentals')}
+              {t('description')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('rental.rentalNumber')}</TableHead>
-                  <TableHead>{t('rental.customer')}</TableHead>
-                  <TableHead>{t('rental.startDate')}</TableHead>
-                  <TableHead>{t('rental.endDate')}</TableHead>
-                  <TableHead>{t('rental.status')}</TableHead>
-                  <TableHead>{t('rental.payment')}</TableHead>
-                  <TableHead>{t('rental.totalAmount')}</TableHead>
-                  <TableHead>{t('rental.actions')}</TableHead>
+                  <TableHead>{t('table.headers.rentalNumber')}</TableHead>
+                  <TableHead>{t('table.headers.customer')}</TableHead>
+                  <TableHead>{t('table.headers.startDate')}</TableHead>
+                  <TableHead>{t('table.headers.endDate')}</TableHead>
+                  <TableHead>{t('table.headers.status')}</TableHead>
+                  <TableHead>{t('table.headers.paymentStatus')}</TableHead>
+                  <TableHead>{t('table.headers.totalAmount')}</TableHead>
+                  <TableHead>{t('table.headers.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {(rentals || []).map((rental) => (
                   <TableRow key={rental.id}>
-                    <TableCell className="font-medium">{rental.rentalNumber}</TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{rental.customer?.name || t('rental.na')}</div>
-                        {rental.customer?.email && (
-                          <div className="text-sm text-muted-foreground">{rental.customer.email}</div>
-                        )}
-                      </div>
-                    </TableCell>
+                    <TableCell className="font-medium">{convertToArabicNumerals(rental.rentalNumber, isRTL)}</TableCell>
+                    <TableCell>{getTranslatedName(rental.customer?.name, isRTL, translatedNames, setTranslatedNames)}</TableCell>
                     <TableCell>
                       {rental.startDate && !isNaN(new Date(rental.startDate).getTime())
                         ? format(new Date(rental.startDate), 'MMM dd, yyyy')
-                        : t('rental.na')
+                        : t('na')
                       }
                     </TableCell>
                     <TableCell>
                       {rental.expectedEndDate && !isNaN(new Date(rental.expectedEndDate).getTime())
                         ? format(new Date(rental.expectedEndDate), 'MMM dd, yyyy')
-                        : t('rental.na')
+                        : t('na')
                       }
                     </TableCell>
                     <TableCell>{getStatusBadge(rental.status)}</TableCell>
                     <TableCell>{getPaymentStatusBadge(rental.paymentStatus)}</TableCell>
-                    <TableCell>${formatAmount(rental.totalAmount)}</TableCell>
+                    <TableCell>{convertToArabicNumerals(formatAmount(rental.totalAmount), isRTL)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Can action="read" subject="Rental">
@@ -601,7 +615,7 @@ export default function RentalManagementPage() {
             </Table>
             {(rentals || []).length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                {t('rental.noRentalsFound')}
+                {t('noRentalsFound')}
               </div>
             )}
           </CardContent>
@@ -611,14 +625,14 @@ export default function RentalManagementPage() {
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{t('rental.createNewRental')}</DialogTitle>
+              <DialogTitle>{t('createNewRental')}</DialogTitle>
               <DialogDescription>
-                {t('rental.createEquipmentRentalContract')}
+                {t('createEquipmentRentalContract')}
               </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="rentalNumber">{t('rental.rentalNumber')}</Label>
+                <Label htmlFor="rentalNumber">{t('rentalNumber')}</Label>
                 <Input
                   id="rentalNumber"
                   value={formData.rentalNumber}
@@ -626,13 +640,13 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="customerId">{t('rental.customer')}</Label>
+                <Label htmlFor="customerId">{t('customer')}</Label>
                 <Select
                   value={formData.customerId}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, customerId: value }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t('rental.selectCustomer')} />
+                    <SelectValue placeholder={t('selectCustomer')} />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
                     {(customers || []).map((customer) => (
@@ -644,7 +658,7 @@ export default function RentalManagementPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="startDate">{t('rental.startDate')}</Label>
+                <Label htmlFor="startDate">{t('startDate')}</Label>
                 <Input
                   id="startDate"
                   type="date"
@@ -653,7 +667,7 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="expectedEndDate">{t('rental.expectedEndDate')}</Label>
+                <Label htmlFor="expectedEndDate">{t('expectedEndDate')}</Label>
                 <Input
                   id="expectedEndDate"
                   type="date"
@@ -662,7 +676,7 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="depositAmount">{t('rental.depositAmount')}</Label>
+                <Label htmlFor="depositAmount">{t('depositAmount')}</Label>
                 <Input
                   id="depositAmount"
                   type="number"
@@ -672,7 +686,7 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="paymentTermsDays">{t('rental.paymentTermsDays')}</Label>
+                <Label htmlFor="paymentTermsDays">{t('paymentTermsDays')}</Label>
                 <Input
                   id="paymentTermsDays"
                   type="number"
@@ -681,7 +695,7 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="status">{t('rental.status')}</Label>
+                <Label htmlFor="status">{t('status')}</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
@@ -690,15 +704,15 @@ export default function RentalManagementPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
-                    <SelectItem value="pending">{t('rental.pending')}</SelectItem>
-                    <SelectItem value="active">{t('rental.active')}</SelectItem>
-                    <SelectItem value="completed">{t('rental.completed')}</SelectItem>
-                    <SelectItem value="cancelled">{t('rental.cancelled')}</SelectItem>
+                    <SelectItem value="pending">{t('pending')}</SelectItem>
+                    <SelectItem value="active">{t('active')}</SelectItem>
+                    <SelectItem value="completed">{t('completed')}</SelectItem>
+                    <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="paymentStatus">{t('rental.paymentStatus')}</Label>
+                <Label htmlFor="paymentStatus">{t('paymentStatus')}</Label>
                 <Select
                   value={formData.paymentStatus}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, paymentStatus: value }))}
@@ -707,10 +721,10 @@ export default function RentalManagementPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
-                    <SelectItem value="pending">{t('rental.pending')}</SelectItem>
-                    <SelectItem value="partial">{t('rental.partial')}</SelectItem>
-                    <SelectItem value="paid">{t('rental.paid')}</SelectItem>
-                    <SelectItem value="overdue">{t('rental.overdue')}</SelectItem>
+                    <SelectItem value="pending">{t('pending')}</SelectItem>
+                    <SelectItem value="partial">{t('partial')}</SelectItem>
+                    <SelectItem value="paid">{t('paid')}</SelectItem>
+                    <SelectItem value="overdue">{t('overdue')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -723,7 +737,7 @@ export default function RentalManagementPage() {
                   checked={formData.hasTimesheet}
                   onChange={(e) => setFormData(prev => ({ ...prev, hasTimesheet: e.target.checked }))}
                 />
-                <Label htmlFor="hasTimesheet">{t('rental.hasTimesheet')}</Label>
+                <Label htmlFor="hasTimesheet">{t('hasTimesheet')}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <input
@@ -732,11 +746,11 @@ export default function RentalManagementPage() {
                   checked={formData.hasOperators}
                   onChange={(e) => setFormData(prev => ({ ...prev, hasOperators: e.target.checked }))}
                 />
-                <Label htmlFor="hasOperators">{t('rental.hasOperators')}</Label>
+                <Label htmlFor="hasOperators">{t('hasOperators')}</Label>
               </div>
             </div>
             <div>
-              <Label htmlFor="notes">{t('rental.notes')}</Label>
+              <Label htmlFor="notes">{t('notes')}</Label>
               <Textarea
                 id="notes"
                 value={formData.notes}
@@ -745,8 +759,8 @@ export default function RentalManagementPage() {
               />
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>{t('rental.cancel')}</Button>
-              <Button onClick={createRental}>{t('rental.createRental')}</Button>
+              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>{t('cancel')}</Button>
+              <Button onClick={createRental}>{t('createRental')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -755,14 +769,14 @@ export default function RentalManagementPage() {
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>{t('rental.editRental')}</DialogTitle>
+              <DialogTitle>{t('editRental')}</DialogTitle>
               <DialogDescription>
-                {t('rental.updateRentalContractDetails')}
+                {t('updateRentalContractDetails')}
               </DialogDescription>
             </DialogHeader>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="editRentalNumber">{t('rental.rentalNumber')}</Label>
+                <Label htmlFor="editRentalNumber">{t('rentalNumber')}</Label>
                 <Input
                   id="editRentalNumber"
                   value={formData.rentalNumber}
@@ -770,13 +784,13 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="editCustomerId">{t('rental.customer')}</Label>
+                <Label htmlFor="editCustomerId">{t('customer')}</Label>
                 <Select
                   value={formData.customerId}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, customerId: value }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t('rental.selectCustomer')} />
+                    <SelectValue placeholder={t('selectCustomer')} />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
                     {(customers || []).map((customer) => (
@@ -788,7 +802,7 @@ export default function RentalManagementPage() {
                 </Select>
               </div>
               <div>
-                <Label htmlFor="editStartDate">{t('rental.startDate')}</Label>
+                <Label htmlFor="editStartDate">{t('startDate')}</Label>
                 <Input
                   id="editStartDate"
                   type="date"
@@ -797,7 +811,7 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="editExpectedEndDate">{t('rental.expectedEndDate')}</Label>
+                <Label htmlFor="editExpectedEndDate">{t('expectedEndDate')}</Label>
                 <Input
                   id="editExpectedEndDate"
                   type="date"
@@ -806,7 +820,7 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="editDepositAmount">{t('rental.depositAmount')}</Label>
+                <Label htmlFor="editDepositAmount">{t('depositAmount')}</Label>
                 <Input
                   id="editDepositAmount"
                   type="number"
@@ -816,7 +830,7 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="editPaymentTermsDays">{t('rental.paymentTermsDays')}</Label>
+                <Label htmlFor="editPaymentTermsDays">{t('paymentTermsDays')}</Label>
                 <Input
                   id="editPaymentTermsDays"
                   type="number"
@@ -825,7 +839,7 @@ export default function RentalManagementPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="editStatus">{t('rental.status')}</Label>
+                <Label htmlFor="editStatus">{t('status')}</Label>
                 <Select
                   value={formData.status}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
@@ -834,15 +848,15 @@ export default function RentalManagementPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
-                    <SelectItem value="pending">{t('rental.pending')}</SelectItem>
-                    <SelectItem value="active">{t('rental.active')}</SelectItem>
-                    <SelectItem value="completed">{t('rental.completed')}</SelectItem>
-                    <SelectItem value="cancelled">{t('rental.cancelled')}</SelectItem>
+                    <SelectItem value="pending">{t('pending')}</SelectItem>
+                    <SelectItem value="active">{t('active')}</SelectItem>
+                    <SelectItem value="completed">{t('completed')}</SelectItem>
+                    <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="editPaymentStatus">{t('rental.paymentStatus')}</Label>
+                <Label htmlFor="editPaymentStatus">{t('paymentStatus')}</Label>
                 <Select
                   value={formData.paymentStatus}
                   onValueChange={(value) => setFormData(prev => ({ ...prev, paymentStatus: value }))}
@@ -851,10 +865,10 @@ export default function RentalManagementPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
-                    <SelectItem value="pending">{t('rental.pending')}</SelectItem>
-                    <SelectItem value="partial">{t('rental.partial')}</SelectItem>
-                    <SelectItem value="paid">{t('rental.paid')}</SelectItem>
-                    <SelectItem value="overdue">{t('rental.overdue')}</SelectItem>
+                    <SelectItem value="pending">{t('pending')}</SelectItem>
+                    <SelectItem value="partial">{t('partial')}</SelectItem>
+                    <SelectItem value="paid">{t('paid')}</SelectItem>
+                    <SelectItem value="overdue">{t('overdue')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -867,7 +881,7 @@ export default function RentalManagementPage() {
                   checked={formData.hasTimesheet}
                   onChange={(e) => setFormData(prev => ({ ...prev, hasTimesheet: e.target.checked }))}
                 />
-                <Label htmlFor="editHasTimesheet">{t('rental.hasTimesheet')}</Label>
+                <Label htmlFor="editHasTimesheet">{t('hasTimesheet')}</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <input
@@ -876,11 +890,11 @@ export default function RentalManagementPage() {
                   checked={formData.hasOperators}
                   onChange={(e) => setFormData(prev => ({ ...prev, hasOperators: e.target.checked }))}
                 />
-                <Label htmlFor="editHasOperators">{t('rental.hasOperators')}</Label>
+                <Label htmlFor="editHasOperators">{t('hasOperators')}</Label>
               </div>
             </div>
             <div>
-              <Label htmlFor="editNotes">{t('rental.notes')}</Label>
+              <Label htmlFor="editNotes">{t('notes')}</Label>
               <Textarea
                 id="editNotes"
                 value={formData.notes}
@@ -889,8 +903,8 @@ export default function RentalManagementPage() {
               />
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>{t('rental.cancel')}</Button>
-              <Button onClick={updateRental}>{t('rental.updateRental')}</Button>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>{t('cancel')}</Button>
+              <Button onClick={updateRental}>{t('updateRental')}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -899,9 +913,9 @@ export default function RentalManagementPage() {
         <RoleBased roles={['ADMIN', 'MANAGER']}>
           <Card>
             <CardHeader>
-              <CardTitle>{t('rental.rentalAdministration')}</CardTitle>
+              <CardTitle>{t('rentalAdministration')}</CardTitle>
               <CardDescription>
-                {t('rental.advancedRentalManagementFeatures')}
+                {t('advancedRentalManagementFeatures')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -909,21 +923,21 @@ export default function RentalManagementPage() {
                 <Can action="approve" subject="Rental">
                   <Button variant="outline">
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    {t('rental.approveRentals')}
+                    {t('approveRentals')}
                   </Button>
                 </Can>
 
                 <Can action="reject" subject="Rental">
                   <Button variant="outline">
                     <XCircle className="h-4 w-4 mr-2" />
-                    {t('rental.rejectRentals')}
+                    {t('rejectRentals')}
                   </Button>
                 </Can>
 
                 <Can action="manage" subject="Rental">
                   <Button variant="outline">
                     <Settings className="h-4 w-4 mr-2" />
-                    {t('rental.rentalSettings')}
+                    {t('rentalSettings')}
                   </Button>
                 </Can>
               </div>
