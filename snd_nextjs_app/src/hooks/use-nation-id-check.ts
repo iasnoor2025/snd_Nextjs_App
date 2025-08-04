@@ -49,25 +49,32 @@ export function useNationIdCheck() {
 
     setIsChecking(true)
     try {
+      console.log('🔄 Checking nation ID for user:', session.user.id)
       const response = await fetch('/api/user/nation-id')
       
       if (response.ok) {
         const data = await response.json()
+        console.log('✅ Nation ID check successful:', data)
         setNationIdData(data)
         
         // Show modal if user doesn't have a nation ID
         if (!data.hasNationId && !hasChecked) {
+          console.log('📋 User has no nation ID, showing modal')
           setIsModalOpen(true)
           setHasChecked(true)
         } else if (data.hasNationId && !hasChecked) {
           // User has Nation ID, mark as checked but don't show modal
+          console.log('✅ User has nation ID, no modal needed')
           setHasChecked(true)
         }
       } else {
-        console.error('Failed to check nation ID:', response.statusText)
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('❌ Failed to check nation ID:', response.status, errorData)
+        // Don't show modal on error, just log it
       }
     } catch (error) {
-      console.error('Error checking nation ID:', error)
+      console.error('❌ Error checking nation ID:', error)
+      // Don't show modal on error, just log it
     } finally {
       setIsChecking(false)
     }

@@ -143,11 +143,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "/modules/audit-compliance",
         icon: IconDatabase,
       },
-      {
-        name: t('localization'),
-        url: "/modules/localization",
-        icon: IconFileDescription,
-      },
+
     ],
   };
   

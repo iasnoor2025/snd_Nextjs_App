@@ -5,17 +5,34 @@ import { authConfig } from '@/lib/auth-config';
 
 // GET /api/user/nation-id - Check if user has nation ID
 export async function GET(request: NextRequest) {
-  const session = await getServerSession(authConfig);
-
-  if (!session?.user?.id) {
-    return NextResponse.json(
-      { error: 'Not authenticated' },
-      { status: 401 }
-    );
-  }
-
   try {
+    console.log('🔍 Nation ID check started...');
+    
+    const session = await getServerSession(authConfig);
+    console.log('🔍 Session data:', session);
+
+    if (!session?.user?.id) {
+      console.log('❌ No session or user ID found');
+      return NextResponse.json(
+        { error: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+
     const userId = parseInt(session.user.id);
+    console.log('✅ User ID from session:', userId);
+
+    // Test database connection
+    try {
+      await prisma.$connect();
+      console.log('✅ Database connected successfully');
+    } catch (dbError) {
+      console.error('❌ Database connection failed:', dbError);
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 503 }
+      );
+    }
     
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -27,7 +44,10 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    console.log('🔍 Found user:', user);
+
     if (!user) {
+      console.log('❌ User not found in database');
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -37,6 +57,7 @@ export async function GET(request: NextRequest) {
     // Check if nation ID matches any employee's Iqama number
     let matchedEmployee = null;
     if (user.national_id) {
+      console.log('🔍 Checking for employee match with nation ID:', user.national_id);
       matchedEmployee = await prisma.employee.findFirst({
         where: { iqama_number: user.national_id },
         select: {
@@ -70,22 +91,32 @@ export async function GET(request: NextRequest) {
           }
         }
       });
+      console.log('🔍 Matched employee:', matchedEmployee);
     }
 
-    return NextResponse.json({
+    const result = {
       hasNationId: !!user.national_id,
       nationId: user.national_id,
       userId: user.id,
       userName: user.name,
       userEmail: user.email,
       matchedEmployee: matchedEmployee,
-    });
+    };
+
+    console.log('✅ Nation ID check result:', result);
+    return NextResponse.json(result);
+    
   } catch (error) {
-    console.error('Error checking nation ID:', error);
+    console.error('❌ Error checking nation ID:', error);
     return NextResponse.json(
-      { error: 'Failed to check nation ID' },
+      { 
+        error: 'Failed to check nation ID',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
 
