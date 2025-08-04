@@ -991,7 +991,7 @@ export default function RentalDetailPage() {
       totalPrice: item.total_price || item.totalPrice || 0,
       days: item.days || 1,
       rateType: item.rate_type || item.rateType || 'daily',
-      operatorId: item.operator_id?.toString() || item.operatorId?.toString() || '',
+      operatorId: item.operatorId?.toString() || '',
       status: item.status || 'active',
       notes: item.notes || '',
     });
@@ -1316,18 +1316,18 @@ export default function RentalDetailPage() {
                     <TableBody>
                       {rental.rentalItems?.map((item) => {
                         // Find operator name from employees list
-                        const operatorId = item.operator_id || item.operatorId;
+                        const operatorId = item.operatorId;
                         const operator = employees.find(emp => emp.id.toString() === operatorId?.toString());
                         const operatorName = operator ? `${operator.first_name} ${operator.last_name}` : 'N/A';
                         
                         return (
                           <TableRow key={item.id}>
-                            <TableCell>{item.equipment_name || item.equipmentName}</TableCell>
+                            <TableCell>{item.equipmentName}</TableCell>
                             <TableCell>{item.quantity}</TableCell>
-                            <TableCell>${formatAmount(item.unit_price || item.unitPrice)}</TableCell>
-                            <TableCell>${formatAmount(item.total_price || item.totalPrice)}</TableCell>
+                            <TableCell>${formatAmount(item.unitPrice)}</TableCell>
+                            <TableCell>${formatAmount(item.totalPrice)}</TableCell>
                             <TableCell>{item.days || 1}</TableCell>
-                            <TableCell>{item.rate_type || item.rateType}</TableCell>
+                            <TableCell>{item.rateType}</TableCell>
                             <TableCell>{operatorName}</TableCell>
                             <TableCell>
                               <Badge variant={item.status === 'active' ? 'default' : 'secondary'}>

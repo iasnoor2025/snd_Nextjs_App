@@ -97,6 +97,48 @@ export default function DebugSessionPage() {
     }
   };
 
+  const handleForceUpdateSession = async () => {
+    try {
+      // First, get the updated user data
+      const response = await fetch('/api/auth/force-update-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      const data = await response.json();
+      console.log('🔍 DEBUG - Force update result:', data);
+      
+      if (data.success) {
+        alert(`Force update successful!\nNew Role: ${data.user.role}\nPrevious Role: ${data.debug.previous_role}\nName: ${data.user.name}\n\nDebug Info:\nRole ID: ${data.debug.role_id}\nUser Roles: ${data.debug.user_roles?.join(', ')}\nAssigned Role: ${data.debug.assigned_role}`);
+        
+        // Clear session and force re-authentication
+        await signOut({ redirect: false });
+        
+        // Wait a moment then sign back in
+        setTimeout(async () => {
+          await signIn('credentials', {
+            email: session?.user?.email || 'ias.snd2024@gmail.com',
+            password: 'password123',
+            redirect: false,
+          });
+          
+          // Force page reload after sign in
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }, 500);
+        
+      } else {
+        alert(`Force update failed: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('🔍 DEBUG - Force update error:', error);
+      alert('Force update failed');
+    }
+  };
+
   const handleTestAuth = async () => {
     try {
       const response = await fetch('/api/test-auth', {
@@ -148,6 +190,10 @@ export default function DebugSessionPage() {
           <Button onClick={handleRefreshSession} variant="default">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh Session
+          </Button>
+          <Button onClick={handleForceUpdateSession} variant="destructive">
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Force Update Session
           </Button>
           <Button onClick={handleTestAuth} variant="outline">
             <LogIn className="h-4 w-4 mr-2" />
