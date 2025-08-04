@@ -43,6 +43,7 @@ import arTimesheet from '@/locales/ar/timesheet.json';
 import arAdmin from '@/locales/ar/admin.json';
 import arCompany from '@/locales/ar/company.json';
 import arNotifications from '@/locales/ar/notifications.json';
+import arProject from '@/locales/ar/project.json';
 import arSafety from '@/locales/ar/safety.json';
 import arUser from '@/locales/ar/user.json';
 import arLocation from '@/locales/ar/location.json';
@@ -93,6 +94,7 @@ const resources = {
     admin: arAdmin,
     company: arCompany,
     notifications: arNotifications,
+    project: arProject,
     safety: arSafety,
     user: arUser,
     location: arLocation,

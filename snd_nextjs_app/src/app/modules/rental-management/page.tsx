@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/protected-route';
-import { Can, RoleBased } from '@/lib/rbac/rbac-components';
+import { PermissionContent, RoleContent, RoleBased } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -427,19 +427,19 @@ export default function RentalManagementPage() {
             <p className="text-muted-foreground">{t('description')}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Can action="export" subject="Rental">
+            <PermissionContent action="export" subject="Rental">
               <Button variant="outline">
                 <Download className="h-4 w-4 mr-2" />
                 {t('actions.export')}
               </Button>
-            </Can>
+            </PermissionContent>
 
-            <Can action="create" subject="Rental">
+            <PermissionContent action="create" subject="Rental">
               <Button onClick={() => setIsCreateDialogOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 {t('actions.add')}
               </Button>
-            </Can>
+            </PermissionContent>
           </div>
         </div>
 
@@ -578,7 +578,7 @@ export default function RentalManagementPage() {
                     <TableCell>{convertToArabicNumerals(formatAmount(rental.totalAmount), isRTL)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        <Can action="read" subject="Rental">
+                        <PermissionContent action="read" subject="Rental">
                           <Button
                             variant="outline"
                             size="sm"
@@ -586,9 +586,9 @@ export default function RentalManagementPage() {
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
-                        </Can>
+                        </PermissionContent>
 
-                        <Can action="update" subject="Rental">
+                        <PermissionContent action="update" subject="Rental">
                           <Button
                             variant="outline"
                             size="sm"
@@ -596,9 +596,9 @@ export default function RentalManagementPage() {
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
-                        </Can>
+                        </PermissionContent>
 
-                        <Can action="delete" subject="Rental">
+                        <PermissionContent action="delete" subject="Rental">
                           <Button
                             variant="outline"
                             size="sm"
@@ -606,7 +606,7 @@ export default function RentalManagementPage() {
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
-                        </Can>
+                        </PermissionContent>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -920,26 +920,26 @@ export default function RentalManagementPage() {
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
-                <Can action="approve" subject="Rental">
+                <PermissionContent action="approve" subject="Rental">
                   <Button variant="outline">
                     <CheckCircle className="h-4 w-4 mr-2" />
                     {t('approveRentals')}
                   </Button>
-                </Can>
+                </PermissionContent>
 
-                <Can action="reject" subject="Rental">
+                <PermissionContent action="reject" subject="Rental">
                   <Button variant="outline">
                     <XCircle className="h-4 w-4 mr-2" />
                     {t('rejectRentals')}
                   </Button>
-                </Can>
+                </PermissionContent>
 
-                <Can action="manage" subject="Rental">
+                <PermissionContent action="manage" subject="Rental">
                   <Button variant="outline">
                     <Settings className="h-4 w-4 mr-2" />
                     {t('rentalSettings')}
                   </Button>
-                </Can>
+                </PermissionContent>
               </div>
             </CardContent>
           </Card>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ProtectedRoute } from '@/components/protected-route';
-import { Can, RoleBased } from '@/lib/rbac/rbac-components';
+import { PermissionContent, RoleContent, RoleBased } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { useI18n } from '@/hooks/use-i18n';
 import { Button } from '@/components/ui/button';
@@ -508,7 +508,7 @@ export default function EmployeeManagementPage() {
           </div>
 
           <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-            <Can action="sync" subject="Employee">
+            <PermissionContent action="sync" subject="Employee">
               <Button
                 variant="outline"
                 onClick={handleSync}
@@ -518,25 +518,25 @@ export default function EmployeeManagementPage() {
                 <Upload className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                 {isSyncing ? t('employee:sync.syncing') : t('employee:sync.button')}
               </Button>
-            </Can>
+            </PermissionContent>
 
 
 
-            <Can action="create" subject="Employee">
+            <PermissionContent action="create" subject="Employee">
               <Link href="/modules/employee-management/create">
                 <Button>
                   <Plus className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                   {t('employee:actions.add')}
                 </Button>
               </Link>
-            </Can>
+            </PermissionContent>
 
-            <Can action="export" subject="Employee">
+            <PermissionContent action="export" subject="Employee">
               <Button variant="outline" onClick={handleExport}>
                 <Download className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                 {t('employee:actions.export')}
               </Button>
-            </Can>
+            </PermissionContent>
           </div>
         </div>
 
@@ -847,15 +847,15 @@ export default function EmployeeManagementPage() {
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.hire_date || t('common.na')}</TableCell>
                         <TableCell className={isRTL ? 'text-left' : 'text-right'}>
                           <div className={`flex items-center gap-2 ${isRTL ? 'justify-start' : 'justify-end'}`}>
-                            <Can action="read" subject="Employee">
+                            <PermissionContent action="read" subject="Employee">
                               <Link href={`/modules/employee-management/${employee.id}`}>
                                 <Button variant="ghost" size="sm" title="View Details">
                                   <Eye className="h-4 w-4" />
                                 </Button>
                               </Link>
-                            </Can>
+                            </PermissionContent>
 
-                            <Can action="read" subject="Employee">
+                            <PermissionContent action="read" subject="Employee">
                               <Link href={`/modules/employee-management/${employee.id}`}>
                                 <Button variant="ghost" size="sm" title="Manage Assignments">
                                   <div className="h-4 w-4 flex items-center justify-center">
@@ -863,9 +863,9 @@ export default function EmployeeManagementPage() {
                                   </div>
                                 </Button>
                               </Link>
-                            </Can>
+                            </PermissionContent>
 
-                            <Can action="update" subject="Employee">
+                            <PermissionContent action="update" subject="Employee">
                                                             <Link href={`/modules/employee-management/${employee.id}/edit`}>
                                 <Button 
                                   variant="ghost" 
@@ -875,9 +875,9 @@ export default function EmployeeManagementPage() {
                                   <Edit className="h-4 w-4" />
                                 </Button>
                               </Link>
-                            </Can>
+                            </PermissionContent>
 
-                            <Can action="delete" subject="Employee">
+                            <PermissionContent action="delete" subject="Employee">
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -888,7 +888,7 @@ export default function EmployeeManagementPage() {
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
-                            </Can>
+                            </PermissionContent>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1047,18 +1047,18 @@ export default function EmployeeManagementPage() {
             </CardHeader>
             <CardContent>
               <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <Can action="import" subject="Employee">
+                <PermissionContent action="import" subject="Employee">
                   <Button variant="outline">
                     <Upload className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
                     Import Employees
                   </Button>
-                </Can>
+                </PermissionContent>
 
-                <Can action="manage" subject="Department">
+                <PermissionContent action="manage" subject="Department">
                   <Button variant="outline">
                     Manage Departments
                   </Button>
-                </Can>
+                </PermissionContent>
               </div>
             </CardContent>
           </Card>

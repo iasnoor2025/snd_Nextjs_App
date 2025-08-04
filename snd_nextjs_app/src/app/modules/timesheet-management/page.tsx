@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { Can, RoleBased } from '@/lib/rbac/rbac-components';
+import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -750,7 +750,8 @@ export default function TimesheetManagementPage() {
   }
 
   return (
-    <div className="p-6">
+    <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Timesheet' }}>
+      <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <h1 className="text-2xl font-bold">{t('timesheet_management')}</h1>
@@ -762,32 +763,32 @@ export default function TimesheetManagementPage() {
           )}
         </div>
         <div className="flex space-x-2">
-          <Can action="export" subject="Timesheet">
+          <PermissionContent action="export" subject="Timesheet">
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" />
               {t('export')}
             </Button>
-          </Can>
+          </PermissionContent>
 
-          <Can action="sync" subject="Timesheet">
+          <PermissionContent action="sync" subject="Timesheet">
             <Button variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
               {t('sync_timesheets')}
             </Button>
-          </Can>
+          </PermissionContent>
 
-          <Can action="create" subject="Timesheet">
+          <PermissionContent action="create" subject="Timesheet">
             <AutoGenerateButton isAutoGenerating={autoGenerating} />
-          </Can>
+          </PermissionContent>
 
-          <Can action="create" subject="Timesheet">
+          <PermissionContent action="create" subject="Timesheet">
             <Link href="/modules/timesheet-management/create">
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 {t('create_timesheet')}
               </Button>
             </Link>
-          </Can>
+          </PermissionContent>
         </div>
       </div>
 
@@ -1458,6 +1459,6 @@ export default function TimesheetManagementPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/protected-route';
-import { Can, RoleBased } from '@/lib/rbac/rbac-components';
+import { PermissionContent, RoleContent, RoleBased } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -469,19 +469,19 @@ export default function CustomerManagementPage() {
               {syncLoading ? t('syncing') : t('syncFromERPNext')}
             </Button>
 
-            <Can action="export" subject="Customer">
+            <PermissionContent action="export" subject="Customer">
               <Button variant="outline">
                 <Download className="h-4 w-4 mr-2" />
                 {t('export')}
               </Button>
-            </Can>
+            </PermissionContent>
 
-            <Can action="import" subject="Customer">
+            <PermissionContent action="import" subject="Customer">
               <Button variant="outline">
                 <Upload className="h-4 w-4 mr-2" />
                 {t('import')}
               </Button>
-            </Can>
+            </PermissionContent>
 
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
@@ -913,17 +913,17 @@ export default function CustomerManagementPage() {
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
-                <Can action="manage" subject="Customer">
+                <PermissionContent action="manage" subject="Customer">
                   <Button variant="outline">
                     {t('bulkOperations')}
                   </Button>
-                </Can>
+                </PermissionContent>
 
-                <Can action="export" subject="Customer">
+                <PermissionContent action="export" subject="Customer">
                   <Button variant="outline">
                     {t('generateReports')}
                   </Button>
-                </Can>
+                </PermissionContent>
               </div>
             </CardContent>
           </Card>
@@ -1209,14 +1209,14 @@ export default function CustomerManagementPage() {
                 <Button variant="outline" onClick={() => setIsShowDialogOpen(false)}>
                   {t('close')}
                 </Button>
-                <Can action="update" subject="Customer">
+                <PermissionContent action="update" subject="Customer">
                   <Button onClick={() => {
                     setIsShowDialogOpen(false);
                     openEditDialog(selectedCustomer);
                   }}>
                     {t('editCustomer')}
                   </Button>
-                </Can>
+                </PermissionContent>
               </div>
             </div>
           </div>

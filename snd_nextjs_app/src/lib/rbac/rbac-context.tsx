@@ -2,10 +2,18 @@
 
 import React, { createContext, useContext, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import { createAbilityFor, AppAbility, User, hasPermission, getAllowedActions, canAccessRoute } from './abilities';
+import { 
+  User, 
+  UserRole, 
+  Action, 
+  Subject,
+  hasPermission, 
+  getAllowedActions, 
+  canAccessRoute, 
+  createUserFromSession 
+} from './custom-rbac';
 
 interface RBACContextType {
-  ability: AppAbility;
   user: User | null;
   hasPermission: (action: string, subject: string) => boolean;
   getAllowedActions: (subject: string) => string[];
@@ -40,102 +48,25 @@ export function RBACProvider({ children }: RBACProviderProps) {
       return null;
     }
 
-    let role = session.user.role || 'USER';
-
-    // Remove hardcoded admin check - use proper role system
-    // if (session.user.email === 'admin@ias.com') {
-    //   role = 'SUPER_ADMIN';
-    // }
-
-    return {
-      id: session.user.id || '',
-      email: session.user.email || '',
-      name: session.user.name || '',
-      role: role,
-      isActive: session.user.isActive || true,
-      department: undefined, // Department will be fetched separately if needed
-      permissions: undefined,
-    };
+    return createUserFromSession(session);
   }, [session, status]);
 
-  // Create ability for the user - only if user exists
-  const ability = useMemo(() => {
-    if (!user) {
-      // Return a default ability for unauthenticated users
-      return createAbilityFor({
-        id: '',
-        email: '',
-        name: '',
-        role: 'USER',
-        isActive: false,
-      });
-    }
-    
-    return createAbilityFor({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      isActive: user.isActive || true,
-    });
-  }, [user]);
-
-  // Remove hardcoded admin check - use proper role system
-  // if (session.user.email === 'admin@ias.com') {
-  //   // Grant all permissions for admin
-  //   return {
-  //     user: session.user,
-  //     hasPermission: () => true,
-  //     getAllowedActions: () => ['all'],
-  //     canAccessRoute: () => true,
-  //   };
-  // }
-
-  const contextValue: RBACContextType = useMemo(() => {
-    // Debug logging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 RBAC - Creating context value');
-      console.log('🔍 RBAC - User:', user);
-      console.log('🔍 RBAC - Status:', status);
-    }
-    
-    return {
-      ability,
-      user,
-      hasPermission: (action: string, subject: string) => {
-        try {
-          if (!user) {
-            return false;
-          }
-          const result = hasPermission(user, action as any, subject as any);
-          return result;
-        } catch (error) {
-          console.error('🔍 RBAC - hasPermission error:', error);
-          return false;
-        }
-      },
-      getAllowedActions: (subject: string) => {
-        try {
-          if (!user) return [];
-          const actions = getAllowedActions(user, subject as any);
-          return actions;
-        } catch (error) {
-          console.error('🔍 RBAC - getAllowedActions error:', error);
-          return [];
-        }
-      },
-      canAccessRoute: (route: string) => {
-        try {
-          if (!user) return false;
-          return canAccessRoute(user, route);
-        } catch (error) {
-          console.error('🔍 RBAC - canAccessRoute error:', error);
-          return false;
-        }
-      },
-      isLoading: status === 'loading',
-    };
-  }, [ability, user, status]);
+  const contextValue: RBACContextType = useMemo(() => ({
+    user,
+    hasPermission: (action: string, subject: string) => {
+      if (!user) return false;
+      return hasPermission(user, action as Action, subject as Subject);
+    },
+    getAllowedActions: (subject: string) => {
+      if (!user) return [];
+      return getAllowedActions(user, subject as Subject);
+    },
+    canAccessRoute: (route: string) => {
+      if (!user) return false;
+      return canAccessRoute(user, route);
+    },
+    isLoading: status === 'loading',
+  }), [user, status]);
 
   return (
     <RBACContext.Provider value={contextValue}>
@@ -152,20 +83,17 @@ export function useRBAC() {
   return context;
 }
 
-// Hook for checking specific permissions
-export function usePermission(action: string, subject: string) {
+export function usePermission() {
   const { hasPermission } = useRBAC();
-  return hasPermission(action, subject);
+  return { hasPermission };
 }
 
-// Hook for checking route access
-export function useRouteAccess(route: string) {
+export function useRouteAccess() {
   const { canAccessRoute } = useRBAC();
-  return canAccessRoute(route);
+  return { canAccessRoute };
 }
 
-// Hook for getting allowed actions for a subject
-export function useAllowedActions(subject: string) {
+export function useAllowedActions() {
   const { getAllowedActions } = useRBAC();
-  return getAllowedActions(subject);
+  return { getAllowedActions };
 }

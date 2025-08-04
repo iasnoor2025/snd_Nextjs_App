@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ProtectedRoute } from '@/components/protected-route';
+import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
+import { useRBAC } from '@/lib/rbac/rbac-context';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +16,8 @@ import { Eye, Edit, Trash2, Plus, Calendar, CheckCircle, XCircle, Clock, Chevron
 import { toast } from "sonner";
 // i18n refactor: All user-facing strings now use useTranslation('leave')
 import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
+import { getTranslatedName } from '@/lib/translation-utils';
 
 interface LeaveRequest {
   id: string;
@@ -133,6 +138,8 @@ const mockLeaveRequests: LeaveRequest[] = [
 
 export default function LeaveManagementPage() {
   const { t } = useTranslation('leave');
+  const { isRTL } = useI18n();
+  const { user, hasPermission, getAllowedActions } = useRBAC();
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequestResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -140,6 +147,10 @@ export default function LeaveManagementPage() {
   const [leaveType, setLeaveType] = useState("all");
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({});
+
+  // Get allowed actions for leave management
+  const allowedActions = getAllowedActions('Leave');
 
   useEffect(() => {
     // Simulate API call
@@ -173,10 +184,10 @@ export default function LeaveManagementPage() {
   }, [search, status, leaveType, perPage, currentPage]);
 
   const handleDelete = (id: string) => {
-    if (confirm(t('leave.confirm_delete_leave_request'))) {
+    if (confirm(t('confirm_delete_leave_request'))) {
       // Simulate API call
       setTimeout(() => {
-        toast.success(t('leave.leave_request_deleted_successfully'));
+        toast.success(t('leave_request_deleted_successfully'));
         // Refresh data
         setLoading(true);
         setTimeout(() => {
@@ -214,7 +225,7 @@ export default function LeaveManagementPage() {
   const handleApprove = (id: string) => {
     // Simulate API call
     setTimeout(() => {
-      toast.success(t('leave.leave_request_approved_successfully'));
+      toast.success(t('leave_request_approved_successfully'));
       // Update the status in mock data
       const updatedData = mockLeaveRequests.map(request =>
         request.id === id
@@ -257,7 +268,7 @@ export default function LeaveManagementPage() {
   const handleReject = (id: string) => {
     // Simulate API call
     setTimeout(() => {
-      toast.success(t('leave.leave_request_rejected'));
+      toast.success(t('leave_request_rejected'));
       // Update the status in mock data
       const updatedData = mockLeaveRequests.map(request =>
         request.id === id
@@ -325,35 +336,38 @@ export default function LeaveManagementPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">{t('leave.loading_leave_requests')}</div>
+        <div className="text-lg">{t('loading_leave_requests')}</div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Leave' }}>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Calendar className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">{t('leave.leave_management')}</h1>
+          <h1 className="text-2xl font-bold">{t('leave_management')}</h1>
         </div>
-        <Link href="/modules/leave-management/create">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('leave.request_leave')}
-          </Button>
-        </Link>
+        <PermissionContent action="create" subject="Leave">
+          <Link href="/modules/leave-management/create">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              {t('request_leave')}
+            </Button>
+          </Link>
+        </PermissionContent>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('leave.leave_requests')}</CardTitle>
+          <CardTitle>{t('leave_requests')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="flex-1">
               <Input
-                placeholder={t('leave.search_leave_requests')}
+                placeholder={t('search_leave_requests')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="max-w-sm"
@@ -365,11 +379,11 @@ export default function LeaveManagementPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('leave.all_status')}</SelectItem>
-                  <SelectItem value="Pending">{t('leave.pending')}</SelectItem>
-                  <SelectItem value="Approved">{t('leave.approved')}</SelectItem>
-                  <SelectItem value="Rejected">{t('leave.rejected')}</SelectItem>
-                  <SelectItem value="Cancelled">{t('leave.cancelled')}</SelectItem>
+                  <SelectItem value="all">{t('all_status')}</SelectItem>
+                  <SelectItem value="Pending">{t('pending')}</SelectItem>
+                  <SelectItem value="Approved">{t('approved')}</SelectItem>
+                  <SelectItem value="Rejected">{t('rejected')}</SelectItem>
+                  <SelectItem value="Cancelled">{t('cancelled')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={leaveType} onValueChange={setLeaveType}>
@@ -377,12 +391,12 @@ export default function LeaveManagementPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">{t('leave.all_types')}</SelectItem>
-                  <SelectItem value="Annual Leave">{t('leave.annual_leave')}</SelectItem>
-                  <SelectItem value="Sick Leave">{t('leave.sick_leave')}</SelectItem>
-                  <SelectItem value="Personal Leave">{t('leave.personal_leave')}</SelectItem>
-                  <SelectItem value="Maternity Leave">{t('leave.maternity_leave')}</SelectItem>
-                  <SelectItem value="Study Leave">{t('leave.study_leave')}</SelectItem>
+                  <SelectItem value="all">{t('all_types')}</SelectItem>
+                  <SelectItem value="Annual Leave">{t('annual_leave')}</SelectItem>
+                  <SelectItem value="Sick Leave">{t('sick_leave')}</SelectItem>
+                  <SelectItem value="Personal Leave">{t('personal_leave')}</SelectItem>
+                  <SelectItem value="Maternity Leave">{t('maternity_leave')}</SelectItem>
+                  <SelectItem value="Study Leave">{t('study_leave')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -392,13 +406,13 @@ export default function LeaveManagementPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('leave.employee')}</TableHead>
-                  <TableHead>{t('leave.leave_type')}</TableHead>
-                  <TableHead>{t('leave.dates')}</TableHead>
-                  <TableHead>{t('leave.days')}</TableHead>
-                  <TableHead>{t('leave.status')}</TableHead>
-                  <TableHead>{t('leave.submitted')}</TableHead>
-                  <TableHead className="text-right">{t('leave.actions')}</TableHead>
+                  <TableHead>{t('employee')}</TableHead>
+                  <TableHead>{t('leave_type')}</TableHead>
+                  <TableHead>{t('dates')}</TableHead>
+                  <TableHead>{t('days')}</TableHead>
+                  <TableHead>{t('status')}</TableHead>
+                  <TableHead>{t('submitted')}</TableHead>
+                  <TableHead className="text-right">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -406,7 +420,7 @@ export default function LeaveManagementPage() {
                   <TableRow key={request.id}>
                     <TableCell>
                       <div>
-                        <div className="font-medium">{request.employee_name}</div>
+                        <div className="font-medium">{getTranslatedName(request.employee_name, isRTL, translatedNames, setTranslatedNames) || request.employee_name}</div>
                         <div className="text-sm text-gray-500">{request.employee_id}</div>
                       </div>
                     </TableCell>
@@ -416,48 +430,58 @@ export default function LeaveManagementPage() {
                         <div>{formatDate(request.start_date)} - {formatDate(request.end_date)}</div>
                       </div>
                     </TableCell>
-                    <TableCell>{request.days_requested} {t('leave.days')}</TableCell>
+                    <TableCell>{request.days_requested} {t('days')}</TableCell>
                     <TableCell>{getStatusBadge(request.status)}</TableCell>
                     <TableCell>{formatDate(request.submitted_date)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
-                        <Link href={`/modules/leave-management/${request.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
+                        <PermissionContent action="read" subject="Leave">
+                          <Link href={`/modules/leave-management/${request.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </PermissionContent>
                         {request.status === "Pending" && (
                           <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleApprove(request.id)}
-                              className="text-green-600 hover:text-green-700"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleReject(request.id)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </Button>
+                            <PermissionContent action="approve" subject="Leave">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleApprove(request.id)}
+                                className="text-green-600 hover:text-green-700"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                            </PermissionContent>
+                            <PermissionContent action="reject" subject="Leave">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleReject(request.id)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </Button>
+                            </PermissionContent>
                           </>
                         )}
-                        <Link href={`/modules/leave-management/${request.id}/edit`}>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
+                        <PermissionContent action="update" subject="Leave">
+                          <Link href={`/modules/leave-management/${request.id}/edit`}>
+                            <Button variant="ghost" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </PermissionContent>
+                        <PermissionContent action="delete" subject="Leave">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(request.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(request.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        </PermissionContent>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -469,7 +493,7 @@ export default function LeaveManagementPage() {
           {leaveRequests && leaveRequests.last_page > 1 && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-gray-500">
-                {t('leave.showing_results', {
+                {t('showing_results', {
                   start: ((leaveRequests.current_page - 1) * leaveRequests.per_page) + 1,
                   end: Math.min(leaveRequests.current_page * leaveRequests.per_page, leaveRequests.total),
                   total: leaveRequests.total
@@ -483,7 +507,7 @@ export default function LeaveManagementPage() {
                   disabled={leaveRequests.current_page === 1}
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
-                  {t('leave.previous')}
+                  {t('previous')}
                 </Button>
 
                 <div className="flex items-center gap-1">
@@ -551,7 +575,7 @@ export default function LeaveManagementPage() {
                   onClick={() => setCurrentPage(Math.min(leaveRequests.last_page, leaveRequests.current_page + 1))}
                   disabled={leaveRequests.current_page === leaveRequests.last_page}
                 >
-                  {t('leave.next')}
+                  {t('next')}
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
@@ -559,6 +583,37 @@ export default function LeaveManagementPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+
+      {/* Role-based content for HR managers and administrators */}
+      <RoleContent role="ADMIN">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('leave_administration')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <PermissionContent action="manage" subject="Leave">
+                <Button variant="outline">
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  {t('approve_all_pending')}
+                </Button>
+              </PermissionContent>
+              <PermissionContent action="manage" subject="Leave">
+                <Button variant="outline">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {t('leave_settings')}
+                </Button>
+              </PermissionContent>
+              <PermissionContent action="manage" subject="Leave">
+                <Button variant="outline">
+                  <Clock className="h-4 w-4 mr-2" />
+                  {t('leave_policies')}
+                </Button>
+              </PermissionContent>
+            </div>
+          </CardContent>
+        </Card>
+      </RoleContent>
+    </ProtectedRoute>
   );
 }

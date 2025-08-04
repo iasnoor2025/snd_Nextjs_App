@@ -8,10 +8,8 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authConfig);
     
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'No active session found' }, { status: 401 });
+      return NextResponse.json({ error: 'No session found' }, { status: 401 });
     }
-
-    console.log('🔄 Refreshing session for user:', session.user.email);
 
     // Get fresh user data from database
     const user = await prisma.user.findUnique({
@@ -58,46 +56,35 @@ export async function POST(request: NextRequest) {
       role = highestRole;
     } else {
       // Fallback to role_id mapping
-      if (user.role_id === 1) {
-        role = "SUPER_ADMIN";
-      } else if (user.role_id === 2) {
-        role = "ADMIN";
-      } else if (user.role_id === 3) {
-        role = "MANAGER";
-      } else if (user.role_id === 4) {
-        role = "SUPERVISOR";
-      } else if (user.role_id === 5) {
-        role = "OPERATOR";
-      } else if (user.role_id === 6) {
-        role = "EMPLOYEE";
-      } else if (user.role_id === 7) {
-        role = "USER";
-      }
+      if (user.role_id === 1) role = "SUPER_ADMIN";
+      else if (user.role_id === 2) role = "ADMIN";
+      else if (user.role_id === 3) role = "MANAGER";
+      else if (user.role_id === 4) role = "SUPERVISOR";
+      else if (user.role_id === 5) role = "OPERATOR";
+      else if (user.role_id === 6) role = "EMPLOYEE";
+      else if (user.role_id === 7) role = "USER";
+    }
+    
+    // Special case for admin@ias.com
+    if (user.email === 'admin@ias.com') {
+      role = "SUPER_ADMIN";
     }
 
-    console.log('🔍 User role_id:', user.role_id);
-    console.log('🔍 User roles:', user.user_roles?.map(ur => ur.role.name));
-    console.log('🔍 Assigned role:', role);
+    console.log('🔍 REFRESH - User:', user.email, 'Role:', role);
 
     return NextResponse.json({
       success: true,
-      message: 'Session refreshed successfully',
       user: {
         id: user.id.toString(),
         email: user.email,
         name: user.name,
         role: role,
-        isActive: user.isActive || true,
-      },
-      debug: {
-        role_id: user.role_id,
-        user_roles: user.user_roles?.map(ur => ur.role.name),
-        assigned_role: role
+        isActive: user.isActive
       }
     });
 
   } catch (error) {
     console.error('Session refresh error:', error);
-    return NextResponse.json({ error: 'Failed to refresh session' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 

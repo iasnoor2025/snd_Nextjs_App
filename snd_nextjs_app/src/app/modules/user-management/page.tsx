@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/protected-route';
-import { Can, RoleBased } from '@/lib/rbac/rbac-components';
+import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -387,12 +387,12 @@ export default function UserManagementPage() {
                     <CardTitle>{t('users')}</CardTitle>
                     <CardDescription>{t('manageSystemUsersAndRoles')}</CardDescription>
                   </div>
-                  <Can action="create" subject="User">
+                  <PermissionContent action="create" subject="User">
                     <Button onClick={() => setIsCreateUserDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
                       {t('newUser')}
                     </Button>
-                  </Can>
+                  </PermissionContent>
                 </div>
               </CardHeader>
               <CardContent>
@@ -460,16 +460,16 @@ export default function UserManagementPage() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Can action="update" subject="User">
+                            <PermissionContent action="update" subject="User">
                               <Button size="sm" variant="outline" onClick={() => openEditUserDialog(user)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
-                            </Can>
-                            <Can action="delete" subject="User">
+                            </PermissionContent>
+                            <PermissionContent action="delete" subject="User">
                               <Button size="sm" variant="outline" onClick={() => deleteUser(user.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
-                            </Can>
+                            </PermissionContent>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -489,12 +489,12 @@ export default function UserManagementPage() {
                     <CardTitle>{t('roles')}</CardTitle>
                     <CardDescription>{t('manageSystemRolesAndPermissions')}</CardDescription>
                   </div>
-                  <Can action="create" subject="User">
+                  <PermissionContent action="create" subject="User">
                     <Button onClick={() => setIsCreateRoleDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
                       {t('newRole')}
                     </Button>
-                  </Can>
+                  </PermissionContent>
                 </div>
               </CardHeader>
               <CardContent>
@@ -560,12 +560,12 @@ export default function UserManagementPage() {
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
-                            <Can action="update" subject="User">
+                            <PermissionContent action="update" subject="User">
                               <Button size="sm" variant="outline" onClick={() => openEditRoleDialog(role)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
-                            </Can>
-                            <Can action="delete" subject="User">
+                            </PermissionContent>
+                            <PermissionContent action="delete" subject="User">
                               <Button 
                                 size="sm" 
                                 variant="outline" 
@@ -574,7 +574,7 @@ export default function UserManagementPage() {
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
-                            </Can>
+                            </PermissionContent>
                           </div>
                         </TableCell>
                       </TableRow>

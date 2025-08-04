@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ProtectedRoute } from '@/components/protected-route';
+import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
+import { useRBAC } from '@/lib/rbac/rbac-context';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -152,6 +155,7 @@ const mockSettings: Setting[] = [
 
 export default function SettingsPage() {
   const { t } = useTranslation('settings');
+  const { user, hasPermission, getAllowedActions } = useRBAC();
   const [settings, setSettings] = useState<SettingResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -159,6 +163,9 @@ export default function SettingsPage() {
   const [status, setStatus] = useState("all");
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Get allowed actions for settings management
+  const allowedActions = getAllowedActions('Settings');
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -283,18 +290,21 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'Settings' }}>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Settings className="h-6 w-6" />
           <h1 className="text-2xl font-bold">{t('settings.title')}</h1>
         </div>
-        <Link href="/modules/settings/create">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('settings.addSetting')}
-          </Button>
-        </Link>
+        <PermissionContent action="create" subject="Settings">
+          <Link href="/modules/settings/create">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              {t('settings.addSetting')}
+            </Button>
+          </Link>
+        </PermissionContent>
       </div>
 
       <Card>
@@ -375,23 +385,29 @@ export default function SettingsPage() {
                     <TableCell>{getStatusBadge(setting.is_active)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
-                        <Link href={`/modules/settings/${setting.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
+                        <PermissionContent action="read" subject="Settings">
+                          <Link href={`/modules/settings/${setting.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </PermissionContent>
+                        <PermissionContent action="update" subject="Settings">
+                          <Link href={`/modules/settings/${setting.id}/edit`}>
+                            <Button variant="ghost" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </PermissionContent>
+                        <PermissionContent action="delete" subject="Settings">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(setting.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        </Link>
-                        <Link href={`/modules/settings/${setting.id}/edit`}>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(setting.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        </PermissionContent>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -493,6 +509,37 @@ export default function SettingsPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+
+      {/* Role-based content for administrators */}
+      <RoleContent role="ADMIN"> 
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('settings.administration')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <PermissionContent action="manage" subject="Settings">
+                <Button variant="outline">
+                  <Shield className="h-4 w-4 mr-2" />
+                  {t('settings.systemConfiguration')}
+                </Button>
+              </PermissionContent>
+              <PermissionContent action="manage" subject="Settings">
+                <Button variant="outline">
+                  <Database className="h-4 w-4 mr-2" />
+                  {t('settings.databaseSettings')}
+                </Button>
+              </PermissionContent>
+              <PermissionContent action="manage" subject="Settings">
+                <Button variant="outline">
+                  <Globe className="h-4 w-4 mr-2" />
+                  {t('settings.localizationSettings')}
+                </Button>
+              </PermissionContent>
+            </div>
+          </CardContent>
+        </Card>
+      </RoleContent>
+    </ProtectedRoute>
   );
 }

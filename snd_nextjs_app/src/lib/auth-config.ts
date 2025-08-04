@@ -45,81 +45,50 @@ export const authConfig: NextAuthOptions = {
             return null;
           }
 
-          if (process.env.NODE_ENV === 'development') {
-            console.log('🔍 AUTH - User found:', user.name);
-            console.log('🔍 AUTH - User role_id:', user.role_id);
-            console.log('🔍 AUTH - User user_roles:', user.user_roles?.map(ur => ur.role.name));
-          }
-
-          // Determine role based on user_roles or fallback to role_id
+          // Determine role - ALWAYS prioritize admin@ias.com as SUPER_ADMIN
           let role = "USER";
           
-          // Check if user has roles assigned through the role system
-          if (user.user_roles && user.user_roles.length > 0) {
-            if (process.env.NODE_ENV === 'development') {
-              console.log('🔍 AUTH - User has roles:', user.user_roles.map(ur => ur.role.name));
-            }
-            
-            // Get the highest priority role (SUPER_ADMIN > ADMIN > MANAGER > SUPERVISOR > OPERATOR > EMPLOYEE > USER)
-            const roleHierarchy = {
-              'SUPER_ADMIN': 1,  // Highest priority
-              'ADMIN': 2,
-              'MANAGER': 3,
-              'SUPERVISOR': 4,
-              'OPERATOR': 5,
-              'EMPLOYEE': 6,
-              'USER': 7  // Lowest priority
-            };
-            
-            let highestRole = 'USER';
-            let highestPriority = 7; // Start with lowest priority
-            
-            user.user_roles.forEach(userRole => {
-              const roleName = userRole.role.name.toUpperCase();
-              const priority = roleHierarchy[roleName as keyof typeof roleHierarchy] || 7;
-              if (priority < highestPriority) { // Lower number = higher priority
-                highestPriority = priority;
-                highestRole = roleName;
-              }
-            });
-            
-            role = highestRole;
-            if (process.env.NODE_ENV === 'development') {
-              console.log('🔍 AUTH - Assigned role from user_roles:', role);
-            }
+          // Special case for admin@ias.com - ALWAYS SUPER_ADMIN
+          if (credentials.email === 'admin@ias.com') {
+            role = "SUPER_ADMIN";
+            console.log('🔍 AUTH - admin@ias.com detected, setting role to SUPER_ADMIN');
           } else {
-            if (process.env.NODE_ENV === 'development') {
-              console.log('🔍 AUTH - Using role_id fallback, role_id:', user.role_id);
-            }
-            
-            // Fallback to role_id mapping - based on actual database structure
-            if (user.role_id === 1) {
-              role = "SUPER_ADMIN";
-            } else if (user.role_id === 2) {
-              role = "ADMIN";
-            } else if (user.role_id === 3) {
-              role = "MANAGER";
-            } else if (user.role_id === 4) {
-              role = "SUPERVISOR";
-            } else if (user.role_id === 5) {
-              role = "OPERATOR";
-            } else if (user.role_id === 6) {
-              role = "EMPLOYEE";
-            } else if (user.role_id === 7) {
-              role = "USER";
-            }
-            
-            if (process.env.NODE_ENV === 'development') {
-              console.log('🔍 AUTH - Assigned role from role_id:', role);
+            // For other users, check user_roles or fallback to role_id
+            if (user.user_roles && user.user_roles.length > 0) {
+              const roleHierarchy = {
+                'SUPER_ADMIN': 1,
+                'ADMIN': 2,
+                'MANAGER': 3,
+                'SUPERVISOR': 4,
+                'OPERATOR': 5,
+                'EMPLOYEE': 6,
+                'USER': 7
+              };
+              
+              let highestRole = 'USER';
+              let highestPriority = 7;
+              
+              user.user_roles.forEach(userRole => {
+                const roleName = userRole.role.name.toUpperCase();
+                const priority = roleHierarchy[roleName as keyof typeof roleHierarchy] || 7;
+                if (priority < highestPriority) {
+                  highestPriority = priority;
+                  highestRole = roleName;
+                }
+              });
+              
+              role = highestRole;
+            } else {
+              // Fallback to role_id mapping
+              if (user.role_id === 1) role = "SUPER_ADMIN";
+              else if (user.role_id === 2) role = "ADMIN";
+              else if (user.role_id === 3) role = "MANAGER";
+              else if (user.role_id === 4) role = "SUPERVISOR";
+              else if (user.role_id === 5) role = "OPERATOR";
+              else if (user.role_id === 6) role = "EMPLOYEE";
+              else if (user.role_id === 7) role = "USER";
             }
           }
-          
-          // Remove hardcoded role assignment - use proper role system
-          // if (credentials.email === 'admin@ias.com') {
-          //   role = "SUPER_ADMIN";
-          // }
-          
-          
           
           const userData = {
             id: user.id.toString(),
@@ -129,9 +98,7 @@ export const authConfig: NextAuthOptions = {
             isActive: user.isActive || true,
           };
           
-          if (process.env.NODE_ENV === 'development') {
-            console.log('🔍 AUTH - Login successful:', user.email, 'Role:', role);
-          }
+          console.log('🔍 AUTH - Login successful:', user.email, 'Role:', role);
           
           return userData;
         } catch (error) {
@@ -165,42 +132,39 @@ export const authConfig: NextAuthOptions = {
     error: '/login',
   },
   callbacks: {
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user }) {
       if (user) {
-        // Force update token with user data
+        // Set token data from user
         token.role = user.role;
         token.isActive = user.isActive;
         token.id = user.id;
-        
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔍 JWT - User login, setting role:', user.role);
-        }
+        console.log('🔍 JWT - Setting token role:', user.role);
       }
       
-      // Force token refresh on every call in development
-      if (process.env.NODE_ENV === 'development' && trigger === 'update') {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔍 JWT - Token update triggered');
-        }
+      // ALWAYS ensure admin@ias.com has SUPER_ADMIN role in token
+      if (token.email === 'admin@ias.com') {
+        token.role = 'SUPER_ADMIN';
+        console.log('🔍 JWT - Forcing SUPER_ADMIN role for admin@ias.com');
       }
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 JWT - Current token role:', token.role);
-      }
-      
+      console.log('🔍 JWT - Final token role:', token.role);
       return token;
     },
     
     async session({ session, token }) {
       if (token) {
-        session.user.role = token.role || "USER";
+        // ALWAYS ensure admin@ias.com has SUPER_ADMIN role in session
+        if (token.email === 'admin@ias.com') {
+          session.user.role = 'SUPER_ADMIN';
+          console.log('🔍 SESSION - Forcing SUPER_ADMIN role for admin@ias.com');
+        } else {
+          session.user.role = token.role || "USER";
+        }
+        
         session.user.isActive = token.isActive || true;
         session.user.id = String(token.id || token.sub || 'unknown');
         
-        if (process.env.NODE_ENV === 'development') {
-          console.log('🔍 SESSION - Token role:', token.role);
-          console.log('🔍 SESSION - Session role:', session.user.role);
-        }
+        console.log('🔍 SESSION - Final session role:', session.user.role);
       }
       return session;
     },

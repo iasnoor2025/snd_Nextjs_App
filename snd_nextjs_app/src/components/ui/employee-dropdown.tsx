@@ -60,15 +60,35 @@ export function EmployeeDropdown({
     setErrorMessage(null);
 
     try {
-      // Request all employees with a high limit to get all data
-      const response = await apiService.get<{ data: Employee[] }>('/employees?limit=1000&per_page=1000');
-      const employeeData = response.data || [];
+      // Use the API service method instead of direct fetch
+      const response = await apiService.getEmployees({ 
+        per_page: 1000, 
+        page: 1 
+      });
+      
+      // Handle different response formats
+      const employeeData = (response as any)?.data || response || [];
       
       console.log(`Loaded ${employeeData.length} employees from database`);
       setEmployees(employeeData);
     } catch (error) {
       console.error('Error loading employees:', error);
-      setErrorMessage('Failed to load employees. Please try again.');
+      
+      // Provide more specific error messages
+      let errorMsg = 'Failed to load employees. Please try again.';
+      if (error instanceof Error) {
+        if (error.message.includes('Network error')) {
+          errorMsg = 'Network error: Unable to connect to the server. Please check your connection.';
+        } else if (error.message.includes('500')) {
+          errorMsg = 'Server error: Database connection issue. Please contact support.';
+        } else if (error.message.includes('404')) {
+          errorMsg = 'API endpoint not found. Please check the server configuration.';
+        } else {
+          errorMsg = `Error: ${error.message}`;
+        }
+      }
+      
+      setErrorMessage(errorMsg);
       setEmployees([]);
     } finally {
       const currentLoading = false;
@@ -85,8 +105,8 @@ export function EmployeeDropdown({
   // Filter employees based on search term
   const filteredEmployees = employees.filter(employee => 
     !searchTerm || 
-    employee.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    employee.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    employee.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.employee_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     employee.file_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -198,12 +218,21 @@ export function useEmployees() {
     setError(null);
 
     try {
-      const response = await apiService.get<{ data: Employee[] }>('/employees?limit=1000&per_page=1000');
-      const employeeData = response.data || [];
+      const response = await apiService.getEmployees({ 
+        per_page: 1000, 
+        page: 1 
+      });
+      const employeeData = (response as any)?.data || response || [];
       setEmployees(employeeData);
     } catch (err) {
       console.error('Error loading employees:', err);
-      setError('Failed to load employees');
+      
+      let errorMsg = 'Failed to load employees';
+      if (err instanceof Error) {
+        errorMsg = err.message;
+      }
+      
+      setError(errorMsg);
       setEmployees([]);
     } finally {
       setLoading(false);

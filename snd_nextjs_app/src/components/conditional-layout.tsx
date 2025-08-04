@@ -12,6 +12,7 @@ import { useNationIdCheck } from "@/hooks/use-nation-id-check";
 import { NationIdModal } from "@/components/nation-id-modal";
 import { NationIdRequired } from "@/components/nation-id-required";
 
+
 interface ConditionalLayoutProps {
   children: React.ReactNode;
 }

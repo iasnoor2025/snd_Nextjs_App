@@ -122,10 +122,25 @@ export async function GET(request: NextRequest) {
       console.log('Database connection successful');
     } catch (dbError) {
       console.error('Database connection failed:', dbError);
+      
+      let errorMessage = 'Database connection failed';
+      if (dbError instanceof Error) {
+        if (dbError.message.includes('DATABASE_URL')) {
+          errorMessage = 'Database URL not configured. Please check your .env.local file.';
+        } else if (dbError.message.includes('ECONNREFUSED')) {
+          errorMessage = 'Database server not accessible. Please check if PostgreSQL is running.';
+        } else if (dbError.message.includes('authentication')) {
+          errorMessage = 'Database authentication failed. Please check your credentials.';
+        } else {
+          errorMessage = `Database error: ${dbError.message}`;
+        }
+      }
+      
       return NextResponse.json(
         {
           success: false,
-          message: 'Database connection failed: ' + (dbError instanceof Error ? dbError.message : 'Unknown error'),
+          message: errorMessage,
+          error: dbError instanceof Error ? dbError.message : 'Unknown database error'
         },
         { status: 500 }
       );
@@ -217,10 +232,23 @@ export async function GET(request: NextRequest) {
       stack: error instanceof Error ? error.stack : 'No stack trace'
     });
 
+    let errorMessage = 'Failed to fetch employees';
+    if (error instanceof Error) {
+      if (error.message.includes('DATABASE_URL')) {
+        errorMessage = 'Database not configured. Please check your environment variables.';
+      } else if (error.message.includes('ECONNREFUSED')) {
+        errorMessage = 'Database server not accessible. Please check if PostgreSQL is running.';
+      } else if (error.message.includes('authentication')) {
+        errorMessage = 'Database authentication failed. Please check your credentials.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to fetch employees: ' + (error as Error).message,
+        message: errorMessage,
         error: {
           name: error instanceof Error ? error.name : 'Unknown',
           message: error instanceof Error ? error.message : 'Unknown error',

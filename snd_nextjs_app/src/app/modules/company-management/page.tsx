@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { ProtectedRoute } from '@/components/protected-route';
+import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
+import { useRBAC } from '@/lib/rbac/rbac-context';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,11 +43,15 @@ interface CompanyResponse {
 
 export default function CompanyManagementPage() {
   const { t } = useTranslation('company');
+  const { user, hasPermission, getAllowedActions } = useRBAC();
   const [companies, setCompanies] = useState<CompanyResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Get allowed actions for company management
+  const allowedActions = getAllowedActions('Company');
 
   useEffect(() => {
     const fetchCompanies = async () => {
@@ -107,18 +114,21 @@ export default function CompanyManagementPage() {
   }
 
   return (
-    <div className="w-full space-y-6">
+    <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'Company' }}>
+      <div className="w-full space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Building2 className="h-6 w-6" />
           <h1 className="text-2xl font-bold">{t('companyManagementTitle')}</h1>
         </div>
-        <Link href="/modules/company-management/create">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('addCompanyButton')}
-          </Button>
-        </Link>
+        <PermissionContent action="create" subject="Company">
+          <Link href="/modules/company-management/create">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              {t('addCompanyButton')}
+            </Button>
+          </Link>
+        </PermissionContent>
       </div>
 
       <Card>
@@ -183,23 +193,29 @@ export default function CompanyManagementPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Link href={`/modules/company-management/${company.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
+                        <PermissionContent action="read" subject="Company">
+                          <Link href={`/modules/company-management/${company.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </PermissionContent>
+                        <PermissionContent action="update" subject="Company">
+                          <Link href={`/modules/company-management/${company.id}/edit`}>
+                            <Button variant="ghost" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </PermissionContent>
+                        <PermissionContent action="delete" subject="Company">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(company.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
-                        </Link>
-                        <Link href={`/modules/company-management/${company.id}/edit`}>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(company.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        </PermissionContent>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -301,7 +317,32 @@ export default function CompanyManagementPage() {
           )}
         </CardContent>
       </Card>
-    </div>
+
+      {/* Role-based content for administrators */}
+      <RoleContent role="ADMIN">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('companyAdministration')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-2">
+              <PermissionContent action="manage" subject="Company">
+                <Button variant="outline">
+                  <Building2 className="h-4 w-4 mr-2" />
+                  {t('companySettings')}
+                </Button>
+              </PermissionContent>
+              <PermissionContent action="manage" subject="Company">
+                <Button variant="outline">
+                  <Edit className="h-4 w-4 mr-2" />
+                  {t('systemConfiguration')}
+                </Button>
+              </PermissionContent>
+            </div>
+          </CardContent>
+        </Card>
+      </RoleContent>
+    </ProtectedRoute>
   );
 }
 

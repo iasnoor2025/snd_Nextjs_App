@@ -20,27 +20,45 @@ class ApiService {
       },
     };
 
-    const response = await fetch(url, {
-      ...defaultOptions,
-      ...options,
-    });
+    try {
+      const response = await fetch(url, {
+        ...defaultOptions,
+        ...options,
+      });
 
-    if (!response.ok) {
-      let errorMessage = `API request failed: ${response.status} ${response.statusText}`;
-      
-      try {
-        const errorData = await response.json();
-        if (errorData.error) {
-          errorMessage += ` - ${errorData.error}`;
+      if (!response.ok) {
+        let errorMessage = `API request failed: ${response.status} ${response.statusText}`;
+        
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage += ` - ${errorData.message}`;
+          } else if (errorData.error) {
+            errorMessage += ` - ${errorData.error}`;
+          }
+        } catch (e) {
+          // If we can't parse the error response, use the default message
+          console.warn('Could not parse error response:', e);
         }
-      } catch (e) {
-        // If we can't parse the error response, use the default message
+        
+        throw new Error(errorMessage);
+      }
+
+      return response.json();
+    } catch (error) {
+      // Handle network errors and other fetch failures
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Network error: Unable to connect to the server. Please check your internet connection.');
       }
       
-      throw new Error(errorMessage);
+      // Re-throw the error if it's already an Error instance
+      if (error instanceof Error) {
+        throw error;
+      }
+      
+      // Handle unknown errors
+      throw new Error(`Request failed: ${error}`);
     }
-
-    return response.json();
   }
 
   // GET request

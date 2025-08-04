@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ProtectedRoute } from '@/components/protected-route';
-import { Can, RoleBased } from '@/lib/rbac/rbac-components';
+import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { useI18n } from '@/hooks/use-i18n';
 import { Button } from '@/components/ui/button';
@@ -349,12 +349,12 @@ export default function LocationManagementPage() {
             <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
             <p className="text-gray-600 mt-2">{t('description')}</p>
           </div>
-          <Can action="create" subject="Location">
+          <PermissionContent action="create" subject="Location">
             <Button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               {t('addLocation')}
             </Button>
-          </Can>
+          </PermissionContent>
         </div>
 
         {/* Filters */}
@@ -490,7 +490,7 @@ export default function LocationManagementPage() {
                       </TableCell>
                       <TableCell>
                                                  <div className="flex items-center gap-2">
-                           <Can action="read" subject="Location">
+                           <PermissionContent action="read" subject="Location">
                              <Button
                                variant="ghost"
                                size="sm"
@@ -498,8 +498,8 @@ export default function LocationManagementPage() {
                              >
                                <Eye className="h-4 w-4" />
                              </Button>
-                           </Can>
-                           <Can action="update" subject="Location">
+                           </PermissionContent>
+                           <PermissionContent action="update" subject="Location">
                              <Button
                                variant="ghost"
                                size="sm"
@@ -507,8 +507,8 @@ export default function LocationManagementPage() {
                              >
                                <Edit className="h-4 w-4" />
                              </Button>
-                           </Can>
-                           <Can action="delete" subject="Location">
+                           </PermissionContent>
+                           <PermissionContent action="delete" subject="Location">
                              <Button
                                variant="ghost"
                                size="sm"
@@ -517,7 +517,7 @@ export default function LocationManagementPage() {
                              >
                                <Trash2 className="h-4 w-4" />
                              </Button>
-                           </Can>
+                           </PermissionContent>
                          </div>
                       </TableCell>
                     </TableRow>

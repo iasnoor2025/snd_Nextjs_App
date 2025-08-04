@@ -5,11 +5,6 @@ declare global {
   var __prisma: PrismaClient | undefined
 }
 
-// Set default database URL if not provided
-if (!process.env.DATABASE_URL) {
-  process.env.DATABASE_URL = 'postgres://postgres:fAfab9Ckow7o3yp2EhryEYKzHbyeMifPBHxi8Xb4f9sdnBgMI47Ytdaq2NWDCxy5@192.168.8.4:5432/snd_nextjs_db'
-}
-
 /**
  * Singleton Prisma Client
  * 
@@ -26,6 +21,11 @@ function getPrismaClient(): PrismaClient {
   // Check if client already exists
   if (global.__prisma) {
     return global.__prisma;
+  }
+
+  // Validate DATABASE_URL environment variable
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL environment variable is not set. Please check your .env.local file.');
   }
 
   // Create new client if none exists

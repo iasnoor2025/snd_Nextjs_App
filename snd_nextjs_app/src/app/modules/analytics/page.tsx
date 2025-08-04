@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ProtectedRoute } from '@/components/protected-route';
-import { Can, RoleBased } from '@/lib/rbac/rbac-components';
+import { PermissionContent, RoleContent, RoleBased } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";

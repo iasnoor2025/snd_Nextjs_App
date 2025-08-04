@@ -6,11 +6,12 @@ import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { AccessDenied, RBACLoading } from '@/lib/rbac/rbac-components';
+import { UserRole, Action, Subject } from '@/lib/rbac/custom-rbac';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'SUPERVISOR' | 'OPERATOR' | 'USER';
-  requiredPermission?: { action: string; subject: string };
+  requiredRole?: UserRole;
+  requiredPermission?: { action: Action; subject: Subject };
   requiredRoute?: string;
   fallback?: React.ReactNode;
 }
@@ -22,9 +23,10 @@ export function ProtectedRoute({
   requiredRoute,
   fallback
 }: ProtectedRouteProps) {
-  const { data: session, status } = useSession();
+  
   const { user, isLoading, hasPermission, canAccessRoute } = useRBAC();
   const router = useRouter();
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     if (status === 'loading') return;
@@ -47,23 +49,24 @@ export function ProtectedRoute({
 
   // Check role-based access
   if (requiredRole && user) {
-    const userRole = user.role?.toUpperCase();
-    const requiredRoleUpper = requiredRole.toUpperCase();
+    const userRole = user.role;
+    const requiredRoleUpper = requiredRole;
 
     // Define role hierarchy
     const roleHierarchy = {
-      'SUPER_ADMIN': 6,
-      'ADMIN': 5,
-      'MANAGER': 4,
-      'SUPERVISOR': 3,
-      'OPERATOR': 2,
-      'USER': 1,
+      'SUPER_ADMIN': 1,
+      'ADMIN': 2,
+      'MANAGER': 3,
+      'SUPERVISOR': 4,
+      'OPERATOR': 5,
+      'EMPLOYEE': 6,
+      'USER': 7,
     };
 
-    const userRoleLevel = roleHierarchy[userRole as keyof typeof roleHierarchy] || 0;
-    const requiredRoleLevel = roleHierarchy[requiredRoleUpper as keyof typeof roleHierarchy] || 0;
+    const userRoleLevel = roleHierarchy[userRole as keyof typeof roleHierarchy] || 7;
+    const requiredRoleLevel = roleHierarchy[requiredRoleUpper as keyof typeof roleHierarchy] || 7;
 
-    if (userRoleLevel < requiredRoleLevel) {
+    if (userRoleLevel > requiredRoleLevel) {
       return (
         <AccessDenied
           message={`This page requires ${requiredRole} role or higher. Your current role is ${userRole}.`}

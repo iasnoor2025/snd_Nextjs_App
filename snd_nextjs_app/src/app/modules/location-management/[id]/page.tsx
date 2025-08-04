@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { ProtectedRoute } from '@/components/protected-route';
-import { Can } from '@/lib/rbac/rbac-components';
+import { PermissionContent } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { useI18n } from '@/hooks/use-i18n';
 import { Button } from '@/components/ui/button';
@@ -115,14 +115,14 @@ export default function LocationDetailPage() {
               <p className="text-gray-600 mt-2">{t('location:description')}</p>
             </div>
           </div>
-          <Can action="update" subject="Location">
+          <PermissionContent action="update" subject="Location">
             <Link href={`/modules/location-management/${location.id}/edit`}>
               <Button className="flex items-center gap-2">
                 <Edit className="h-4 w-4" />
                 {t('location:editLocation')}
               </Button>
             </Link>
-          </Can>
+          </PermissionContent>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -246,14 +246,14 @@ export default function LocationDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <Can action="update" subject="Location">
-                    <Link href={`/modules/location-management/${location.id}/edit`}>
-                      <Button variant="outline" className="w-full justify-start">
-                        <Edit className="h-4 w-4 mr-2" />
-                        {t('location:editLocation')}
-                      </Button>
-                    </Link>
-                  </Can>
+                                     <PermissionContent action="update" subject="Location">
+                     <Link href={`/modules/location-management/${location.id}/edit`}>
+                       <Button variant="outline" className="w-full justify-start">
+                         <Edit className="h-4 w-4 mr-2" />
+                         {t('location:editLocation')}
+                       </Button>
+                     </Link>
+                   </PermissionContent>
                   <Link href="/modules/location-management">
                     <Button variant="outline" className="w-full justify-start">
                       <ArrowLeft className="h-4 w-4 mr-2" />

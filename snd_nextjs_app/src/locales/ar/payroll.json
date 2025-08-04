@@ -52,7 +52,6 @@
   "filters": "المرشحات",
   "search": "البحث",
   "searchPlaceholder": "البحث في الرواتب...",
-  "status": "الحالة",
   "selectStatus": "اختر الحالة",
   "allStatus": "جميع الحالات",
   "pending": "في الانتظار",
@@ -65,7 +64,6 @@
   "selectEmployee": "اختر الموظف",
   "payrolls": "الرواتب ({{total}} إجمالي)",
   "selectAll": "اختر الكل",
-  "employee": "الموظف",
   "period": "الفترة",
   "basicSalary": "الراتب الأساسي",
   "overtime": "الساعات الإضافية",
@@ -87,5 +85,9 @@
   "administrationDescription": "ميزات إدارة الرواتب المتقدمة للمشرفين",
   "approveAllPending": "اعتماد جميع المعلقة",
   "payrollSettings": "إعدادات الرواتب",
-  "generateReports": "إنشاء التقارير"
+  "generateReports": "إنشاء التقارير",
+  "selectedPayrolls": "راتب محدد",
+  "deleteSelected": "حذف المحدد",
+  "clearSelection": "مسح التحديد",
+  "loadingPayrolls": "جاري تحميل الرواتب..."
 } 

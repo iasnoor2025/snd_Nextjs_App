@@ -25,21 +25,13 @@ export function SiteHeader() {
   const router = useRouter();
   const { isRTL } = useI18n();
   
-  // Debug session state
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔍 HEADER - Session:', session);
-    console.log('🔍 HEADER - Session user:', session?.user);
-    console.log('🔍 HEADER - Session role:', session?.user?.role);
+  // Debug session state (only log once per session change)
+  if (process.env.NODE_ENV === 'development' && session?.user) {
+    console.log('🔍 HEADER - Session user:', session.user);
+    console.log('🔍 HEADER - Session role:', session.user.role);
   }
 
-  const handleForceLogout = async () => {
-    await signOut({ redirect: false });
-    // Clear any local storage or session storage
-    localStorage.clear();
-    sessionStorage.clear();
-    // Force redirect to login
-    router.push('/login');
-  };
+
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background">
@@ -97,10 +89,7 @@ export function SiteHeader() {
                     <LogOut className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
                     <span>Log out</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleForceLogout}>
-                    <LogOut className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
-                    <span>Force Log out</span>
-                  </DropdownMenuItem>
+
                 </DropdownMenuContent>
               </DropdownMenu>
               <ThemeToggle />

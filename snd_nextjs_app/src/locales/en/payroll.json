@@ -52,7 +52,6 @@
   "filters": "Filters",
   "search": "Search",
   "searchPlaceholder": "Search payrolls...",
-  "status": "Status",
   "selectStatus": "Select status",
   "allStatus": "All Status",
   "pending": "Pending",
@@ -65,7 +64,6 @@
   "selectEmployee": "Select employee",
   "payrolls": "Payrolls ({{total}} total)",
   "selectAll": "Select All",
-  "employee": "Employee",
   "period": "Period",
   "basicSalary": "Basic Salary",
   "overtime": "Overtime",
@@ -87,5 +85,9 @@
   "administrationDescription": "Advanced payroll management features for administrators",
   "approveAllPending": "Approve All Pending",
   "payrollSettings": "Payroll Settings",
-  "generateReports": "Generate Reports"
+  "generateReports": "Generate Reports",
+  "selectedPayrolls": "selected payroll(s)",
+  "deleteSelected": "Delete Selected",
+  "clearSelection": "Clear Selection",
+  "loadingPayrolls": "Loading payrolls..."
 } 
