@@ -20,9 +20,18 @@ export default function TestAuthPage() {
   };
 
   const handleLogin = async () => {
+    // Remove hardcoded credentials - let user input them
+    const email = prompt('Enter email:');
+    const password = prompt('Enter password:');
+    
+    if (!email || !password) {
+      console.log('🔍 TEST AUTH - Login cancelled');
+      return;
+    }
+    
     await signIn('credentials', {
-      email: 'admin@ias.com',
-      password: 'password123',
+      email,
+      password,
       redirect: false
     });
     console.log('🔍 TEST AUTH - Login attempt');

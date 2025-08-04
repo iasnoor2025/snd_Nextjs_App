@@ -22,16 +22,30 @@ interface RBACProviderProps {
 export function RBACProvider({ children }: RBACProviderProps) {
   const { data: session, status } = useSession();
 
+  // Debug logging for development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 RBAC - Status:', status);
+    console.log('🔍 RBAC - Session:', session);
+    console.log('🔍 RBAC - Session user:', session?.user);
+  }
+
   const user: User | null = useMemo(() => {
-    if (!session?.user) return null;
+    // Handle loading state
+    if (status === 'loading') {
+      return null;
+    }
+
+    // Handle unauthenticated state
+    if (!session?.user) {
+      return null;
+    }
 
     let role = session.user.role || 'USER';
-    
-    // PERMANENT FIX: Force correct role based on email
-    if (session.user.email === 'admin@ias.com') {
-      role = 'SUPER_ADMIN';
-    
-    }
+
+    // Remove hardcoded admin check - use proper role system
+    // if (session.user.email === 'admin@ias.com') {
+    //   role = 'SUPER_ADMIN';
+    // }
 
     return {
       id: session.user.id || '',
@@ -42,10 +56,12 @@ export function RBACProvider({ children }: RBACProviderProps) {
       department: undefined, // Department will be fetched separately if needed
       permissions: undefined,
     };
-  }, [session]);
+  }, [session, status]);
 
+  // Create ability for the user - only if user exists
   const ability = useMemo(() => {
     if (!user) {
+      // Return a default ability for unauthenticated users
       return createAbilityFor({
         id: '',
         email: '',
@@ -54,34 +70,68 @@ export function RBACProvider({ children }: RBACProviderProps) {
         isActive: false,
       });
     }
-    return createAbilityFor(user);
+    
+    return createAbilityFor({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      isActive: user.isActive || true,
+    });
   }, [user]);
+
+  // Remove hardcoded admin check - use proper role system
+  // if (session.user.email === 'admin@ias.com') {
+  //   // Grant all permissions for admin
+  //   return {
+  //     user: session.user,
+  //     hasPermission: () => true,
+  //     getAllowedActions: () => ['all'],
+  //     canAccessRoute: () => true,
+  //   };
+  // }
 
   const contextValue: RBACContextType = useMemo(() => {
     // Debug logging
-
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 RBAC - Creating context value');
+      console.log('🔍 RBAC - User:', user);
+      console.log('🔍 RBAC - Status:', status);
+    }
     
     return {
       ability,
       user,
       hasPermission: (action: string, subject: string) => {
-        if (!user) {
-    
+        try {
+          if (!user) {
+            return false;
+          }
+          const result = hasPermission(user, action as any, subject as any);
+          return result;
+        } catch (error) {
+          console.error('🔍 RBAC - hasPermission error:', error);
           return false;
         }
-        const result = hasPermission(user, action as any, subject as any);
-        
-        return result;
       },
       getAllowedActions: (subject: string) => {
-        if (!user) return [];
-        const actions = getAllowedActions(user, subject as any);
-
-        return actions;
+        try {
+          if (!user) return [];
+          const actions = getAllowedActions(user, subject as any);
+          return actions;
+        } catch (error) {
+          console.error('🔍 RBAC - getAllowedActions error:', error);
+          return [];
+        }
       },
       canAccessRoute: (route: string) => {
-        if (!user) return false;
-        return canAccessRoute(user, route);
+        try {
+          if (!user) return false;
+          return canAccessRoute(user, route);
+        } catch (error) {
+          console.error('🔍 RBAC - canAccessRoute error:', error);
+          return false;
+        }
       },
       isLoading: status === 'loading',
     };

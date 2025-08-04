@@ -56,11 +56,11 @@ export default function SignInPage() {
               <Label htmlFor="email">{t('signin.email')}</Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@snd.com"
+                autoComplete="email"
                 required
+                placeholder="Enter your email"
               />
             </div>
             <div className="space-y-2">
@@ -80,10 +80,9 @@ export default function SignInPage() {
           </form>
 
           <div className="mt-4 text-sm text-gray-600">
-            <p className="font-semibold">Test Credentials:</p>
-            <p>Admin: admin@snd.com / password123</p>
-            <p>Manager: manager@snd.com / password123</p>
-            <p>User: user@snd.com / password123</p>
+            <div className="text-center text-sm text-muted-foreground">
+              <p>Enter your credentials to sign in</p>
+            </div>
           </div>
         </CardContent>
       </Card>

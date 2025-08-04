@@ -5,10 +5,47 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, RefreshCw, Trash2 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { useState } from 'react';
+import { toast } from 'react-toastify';
 
 export function ForceSessionRefresh() {
+  const { data: session } = useSession();
+  const [refreshing, setRefreshing] = useState(false);
+
   const handleForceRefresh = async () => {
     try {
+      setRefreshing(true);
+      
+      // Get current user email from session instead of hardcoded
+      const currentUserEmail = session?.user?.email;
+      if (!currentUserEmail) {
+        toast.error('No user session found');
+        return;
+      }
+      
+      const response = await fetch(`/api/debug-user?email=${encodeURIComponent(currentUserEmail)}`);
+      const data = await response.json();
+      
+      alert(`Database Check Results:\n\n` +
+            `Role ID: ${data.user.role_id}\n` +
+            `Calculated Role: ${data.user.role}\n` +
+            `Should be ADMIN: ${data.user.role === 'ADMIN' ? 'YES' : 'NO'}\n\n` +
+            `Check browser console for full details.`);
+      
+      console.log('🔍 Database Check Results:', data);
+      
+    } catch (error) {
+      console.error('Database check error:', error);
+      alert('Error checking database. Check console for details.');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleCompleteRefresh = async () => {
+    try {
+      setRefreshing(true);
       console.log('🔍 Starting force refresh...');
       
       // Step 1: Clear all browser data first
@@ -44,25 +81,8 @@ export function ForceSessionRefresh() {
       console.error('Force refresh error:', error);
       // Fallback: just reload the page
       window.location.reload();
-    }
-  };
-
-  const handleDatabaseCheck = async () => {
-    try {
-      const response = await fetch('/api/debug-user?email=admin@ias.com');
-      const data = await response.json();
-      
-      alert(`Database Check Results:\n\n` +
-            `Role ID: ${data.user.role_id}\n` +
-            `Calculated Role: ${data.user.role}\n` +
-            `Should be ADMIN: ${data.user.role === 'ADMIN' ? 'YES' : 'NO'}\n\n` +
-            `Check browser console for full details.`);
-      
-      console.log('🔍 Database Check Results:', data);
-      
-    } catch (error) {
-      console.error('Database check error:', error);
-      alert('Error checking database. Check console for details.');
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -84,18 +104,20 @@ export function ForceSessionRefresh() {
         
         <div className="flex gap-2">
           <Button 
-            onClick={handleDatabaseCheck}
+            onClick={handleForceRefresh}
             variant="outline"
             className="flex items-center gap-2"
+            disabled={refreshing}
           >
             <RefreshCw className="h-4 w-4" />
             Check Database
           </Button>
           
           <Button 
-            onClick={handleForceRefresh}
+            onClick={handleCompleteRefresh}
             variant="destructive"
             className="flex items-center gap-2"
+            disabled={refreshing}
           >
             <Trash2 className="h-4 w-4" />
             Force Complete Refresh

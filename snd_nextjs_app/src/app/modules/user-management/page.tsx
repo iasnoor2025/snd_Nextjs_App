@@ -526,13 +526,13 @@ export default function UserManagementPage() {
                               {role.name}
                             </Badge>
                             <span className="text-xs text-muted-foreground">
-                              {role.name === 'SUPER_ADMIN' && '(Full system access)'}
-                              {role.name === 'ADMIN' && '(System administration)'}
-                              {role.name === 'MANAGER' && '(Department management)'}
-                              {role.name === 'SUPERVISOR' && '(Team supervision)'}
-                              {role.name === 'OPERATOR' && '(Basic operations)'}
-                              {role.name === 'EMPLOYEE' && '(Employee access)'}
-                              {role.name === 'USER' && '(Read-only access)'}
+                              {role.name === 'SUPER_ADMIN' && t('fullSystemAccess')}
+                              {role.name === 'ADMIN' && t('systemAdministration')}
+                              {role.name === 'MANAGER' && t('departmentManagement')}
+                              {role.name === 'SUPERVISOR' && t('teamSupervision')}
+                              {role.name === 'OPERATOR' && t('basicOperations')}
+                              {role.name === 'EMPLOYEE' && t('employeeAccess')}
+                              {role.name === 'USER' && t('readOnlyAccess')}
                             </span>
                           </div>
                         </TableCell>
@@ -598,55 +598,32 @@ export default function UserManagementPage() {
               <div className="space-y-3">
                 <h4 className="font-semibold text-sm">{t('roleHierarchy')}</h4>
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Badge variant="destructive" className="text-xs">SUPER_ADMIN</Badge>
-                      <span className="text-muted-foreground">(1)</span>
-                    </span>
-                    <span className="text-xs text-muted-foreground">{t('fullSystemAccess')}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Badge variant="default" className="text-xs">ADMIN</Badge>
-                      <span className="text-muted-foreground">(2)</span>
-                    </span>
-                    <span className="text-xs text-muted-foreground">{t('systemAdministration')}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">MANAGER</Badge>
-                      <span className="text-muted-foreground">(3)</span>
-                    </span>
-                    <span className="text-xs text-muted-foreground">{t('departmentManagement')}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">SUPERVISOR</Badge>
-                      <span className="text-muted-foreground">(4)</span>
-                    </span>
-                    <span className="text-xs text-muted-foreground">{t('teamSupervision')}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Badge variant="secondary" className="text-xs">OPERATOR</Badge>
-                      <span className="text-muted-foreground">(5)</span>
-                    </span>
-                    <span className="text-xs text-muted-foreground">{t('basicOperations')}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Badge variant="default" className="text-xs">EMPLOYEE</Badge>
-                      <span className="text-muted-foreground">(6)</span>
-                    </span>
-                    <span className="text-xs text-muted-foreground">{t('employeeAccess')}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">USER</Badge>
-                      <span className="text-muted-foreground">(7)</span>
-                    </span>
-                    <span className="text-xs text-muted-foreground">{t('readOnlyAccess')}</span>
-                  </div>
+                  {roles.map((role, index) => (
+                    <div key={role.id} className="flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Badge variant={
+                          role.name === 'SUPER_ADMIN' ? 'destructive' :
+                          role.name === 'ADMIN' ? 'default' :
+                          role.name === 'MANAGER' ? 'secondary' :
+                          role.name === 'SUPERVISOR' ? 'outline' :
+                          role.name === 'OPERATOR' ? 'secondary' :
+                          role.name === 'EMPLOYEE' ? 'default' : 'outline'
+                        } className="text-xs">
+                          {role.name}
+                        </Badge>
+                        <span className="text-muted-foreground">({index + 1})</span>
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {role.name === 'SUPER_ADMIN' && t('fullSystemAccess')}
+                        {role.name === 'ADMIN' && t('systemAdministration')}
+                        {role.name === 'MANAGER' && t('departmentManagement')}
+                        {role.name === 'SUPERVISOR' && t('teamSupervision')}
+                        {role.name === 'OPERATOR' && t('basicOperations')}
+                        {role.name === 'EMPLOYEE' && t('employeeAccess')}
+                        {role.name === 'USER' && t('readOnlyAccess')}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
