@@ -8,10 +8,13 @@ import { useSidebar } from "@/components/ui/sidebar"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
+// i18n refactor: All user-facing strings now use useTranslation('dashboard')
+import { useTranslation } from 'react-i18next'
 
 import data from "./data.json"
 
 export default function Page() {
+  const { t } = useTranslation('dashboard');
   const { state, open } = useSidebar()
   const router = useRouter()
 
@@ -33,7 +36,7 @@ export default function Page() {
       <div className="flex h-full w-full items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">{t('loading')}</p>
         </div>
       </div>
     )
@@ -51,18 +54,18 @@ export default function Page() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">
-                Dashboard Overview
+                {t('dashboard_overview')}
               </h1>
               <p className="text-muted-foreground">
-                Welcome back, {session?.user?.name || "User"}! Monitor your business performance and manage operations.
+                {t('welcome_back', { name: session?.user?.name || t('user') })} {t('monitor_business_performance')}
               </p>
             </div>
             <SSEStatusCompact />
           </div>
           <div className="mt-4 p-4 bg-muted rounded-lg">
-            <p className="text-sm font-medium">Sidebar State: <span className="text-primary">{state}</span></p>
-            <p className="text-sm text-muted-foreground">Open: {open ? 'Yes' : 'No'}</p>
-            <p className="text-sm text-muted-foreground">Content should flush to the right when sidebar is collapsed.</p>
+            <p className="text-sm font-medium">{t('sidebar_state')}: <span className="text-primary">{state}</span></p>
+            <p className="text-sm text-muted-foreground">{t('open')}: {open ? t('yes') : t('no')}</p>
+            <p className="text-sm text-muted-foreground">{t('content_flush_description')}</p>
           </div>
         </div>
 
@@ -70,12 +73,12 @@ export default function Page() {
           <SectionCards />
 
           <div className="bg-card border rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Analytics Overview</h2>
+            <h2 className="text-xl font-semibold mb-4">{t('analytics_overview')}</h2>
             <ChartAreaSimple />
           </div>
 
           <div className="bg-card border rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Recent Activities</h2>
+            <h2 className="text-xl font-semibold mb-4">{t('recent_activities')}</h2>
             <DataTable data={data} />
           </div>
         </div>

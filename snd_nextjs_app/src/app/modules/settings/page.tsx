@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Eye, Edit, Trash2, Plus, Settings, Bell, Shield, Globe, Database, Palette, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+// i18n refactor: All user-facing strings now use useTranslation('settings')
+import { useTranslation } from 'react-i18next';
 
 interface Setting {
   id: string;
@@ -149,6 +151,7 @@ const mockSettings: Setting[] = [
 ];
 
 export default function SettingsPage() {
+  const { t } = useTranslation('settings');
   const [settings, setSettings] = useState<SettingResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -230,9 +233,9 @@ export default function SettingsPage() {
 
   const getStatusBadge = (isActive: boolean) => {
     return isActive ? (
-      <Badge className="bg-green-100 text-green-800">Active</Badge>
+      <Badge className="bg-green-100 text-green-800">{t('settings.active')}</Badge>
     ) : (
-      <Badge variant="secondary">Inactive</Badge>
+      <Badge variant="secondary">{t('settings.inactive')}</Badge>
     );
   };
 
@@ -274,7 +277,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading settings...</div>
+        <div className="text-lg">{t('settings.loading')}</div>
       </div>
     );
   }
@@ -284,25 +287,25 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Settings className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">Settings Management</h1>
+          <h1 className="text-2xl font-bold">{t('settings.title')}</h1>
         </div>
         <Link href="/modules/settings/create">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Add Setting
+            {t('settings.addSetting')}
           </Button>
         </Link>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Application Settings</CardTitle>
+          <CardTitle>{t('settings.applicationSettings')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="flex-1">
               <Input
-                placeholder="Search settings..."
+                placeholder={t('settings.searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="max-w-sm"
@@ -311,26 +314,26 @@ export default function SettingsPage() {
             <div className="flex gap-2">
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger className="w-40">
-                  <SelectValue />
+                  <SelectValue placeholder={t('settings.allCategories')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="general">General</SelectItem>
-                  <SelectItem value="notifications">Notifications</SelectItem>
-                  <SelectItem value="security">Security</SelectItem>
-                  <SelectItem value="localization">Localization</SelectItem>
-                  <SelectItem value="appearance">Appearance</SelectItem>
-                  <SelectItem value="database">Database</SelectItem>
+                  <SelectItem value="all">{t('settings.allCategories')}</SelectItem>
+                  <SelectItem value="general">{t('settings.general')}</SelectItem>
+                  <SelectItem value="notifications">{t('settings.notifications')}</SelectItem>
+                  <SelectItem value="security">{t('settings.security')}</SelectItem>
+                  <SelectItem value="localization">{t('settings.localization')}</SelectItem>
+                  <SelectItem value="appearance">{t('settings.appearance')}</SelectItem>
+                  <SelectItem value="database">{t('settings.database')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger className="w-32">
-                  <SelectValue />
+                  <SelectValue placeholder={t('settings.allStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="all">{t('settings.allStatus')}</SelectItem>
+                  <SelectItem value="active">{t('settings.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('settings.inactive')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -340,12 +343,12 @@ export default function SettingsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Setting</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Value</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('settings.setting')}</TableHead>
+                  <TableHead>{t('settings.category')}</TableHead>
+                  <TableHead>{t('settings.value')}</TableHead>
+                  <TableHead>{t('settings.type')}</TableHead>
+                  <TableHead>{t('settings.status')}</TableHead>
+                  <TableHead className="text-right">{t('settings.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -400,9 +403,11 @@ export default function SettingsPage() {
           {settings && settings.last_page > 1 && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-gray-500">
-                Showing {((settings.current_page - 1) * settings.per_page) + 1} to{" "}
-                {Math.min(settings.current_page * settings.per_page, settings.total)} of{" "}
-                {settings.total} results
+                {t('settings.showingResults', {
+                  start: ((settings.current_page - 1) * settings.per_page) + 1,
+                  end: Math.min(settings.current_page * settings.per_page, settings.total),
+                  total: settings.total
+                })}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -412,7 +417,7 @@ export default function SettingsPage() {
                   disabled={settings.current_page === 1}
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
+                  {t('settings.previous')}
                 </Button>
 
                 <div className="flex items-center gap-1">
@@ -480,7 +485,7 @@ export default function SettingsPage() {
                   onClick={() => setCurrentPage(Math.min(settings.last_page, settings.current_page + 1))}
                   disabled={settings.current_page === settings.last_page}
                 >
-                  Next
+                  {t('settings.next')}
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>

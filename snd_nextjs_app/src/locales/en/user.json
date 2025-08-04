@@ -1,0 +1,104 @@
+{
+  "title": "User Management",
+  "description": "Manage system users and their roles",
+  "users": "Users",
+  "roles": "Roles",
+  "createUser": "Create User",
+  "editUser": "Edit User",
+  "deleteUser": "Delete User",
+  "createRole": "Create Role",
+  "editRole": "Edit Role",
+  "deleteRole": "Delete Role",
+  "userDetails": "User Details",
+  "roleDetails": "Role Details",
+  "name": "Name",
+  "email": "Email",
+  "password": "Password",
+  "confirmPassword": "Confirm Password",
+  "role": "Role",
+  "status": "Status",
+  "active": "Active",
+  "inactive": "Inactive",
+  "createdAt": "Created At",
+  "lastLogin": "Last Login",
+  "permissions": "Permissions",
+  "description": "Description",
+  "userCount": "User Count",
+  "actions": "Actions",
+  "view": "View",
+  "edit": "Edit",
+  "delete": "Delete",
+  "save": "Save",
+  "cancel": "Cancel",
+  "close": "Close",
+  "search": "Search users...",
+  "filterByRole": "Filter by role",
+  "filterByStatus": "Filter by status",
+  "allRoles": "All Roles",
+  "allStatus": "All Status",
+  "noUsersFound": "No users found",
+  "noRolesFound": "No roles found",
+  "userCreatedSuccess": "User created successfully",
+  "userUpdatedSuccess": "User updated successfully",
+  "userDeletedSuccess": "User deleted successfully",
+  "roleCreatedSuccess": "Role created successfully",
+  "roleUpdatedSuccess": "Role updated successfully",
+  "roleDeletedSuccess": "Role deleted successfully",
+  "confirmDeleteUser": "Are you sure you want to delete this user?",
+  "confirmDeleteRole": "Are you sure you want to delete this role?",
+  "passwordMismatch": "Passwords do not match",
+  "emailRequired": "Email is required",
+  "nameRequired": "Name is required",
+  "roleRequired": "Role is required",
+  "permissions": {
+    "users": {
+      "read": "View users",
+      "create": "Create users",
+      "update": "Update users",
+      "delete": "Delete users"
+    },
+    "roles": {
+      "read": "View roles",
+      "create": "Create roles",
+      "update": "Update roles",
+      "delete": "Delete roles"
+    },
+    "equipment": {
+      "read": "View equipment",
+      "create": "Create equipment",
+      "update": "Update equipment",
+      "delete": "Delete equipment"
+    },
+    "rentals": {
+      "read": "View rentals",
+      "create": "Create rentals",
+      "update": "Update rentals",
+      "delete": "Delete rentals"
+    },
+    "employees": {
+      "read": "View employees",
+      "create": "Create employees",
+      "update": "Update employees",
+      "delete": "Delete employees"
+    },
+    "projects": {
+      "read": "View projects",
+      "create": "Create projects",
+      "update": "Update projects",
+      "delete": "Delete projects"
+    },
+    "reports": {
+      "read": "View reports",
+      "create": "Create reports",
+      "update": "Update reports",
+      "delete": "Delete reports"
+    },
+    "settings": {
+      "read": "View settings",
+      "update": "Update settings"
+    },
+    "analytics": {
+      "read": "View analytics"
+    }
+  }
+} 

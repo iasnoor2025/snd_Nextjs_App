@@ -17,6 +17,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Eye, User, Shield, Mail, Calendar, CheckCircle, XCircle, Settings } from 'lucide-react';
+// i18n refactor: All user-facing strings now use useTranslation('user')
+import { useTranslation } from 'react-i18next';
 
 interface User {
   id: string;
@@ -39,6 +41,7 @@ interface Role {
 }
 
 export default function UserManagementPage() {
+  const { t } = useTranslation('user');
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
@@ -178,12 +181,12 @@ export default function UserManagementPage() {
         throw new Error('Failed to create user');
       }
 
-      toast.success('User created successfully');
+      toast.success(t('userCreatedSuccess'));
       setIsCreateUserDialogOpen(false);
       resetUserForm();
       fetchUsers();
     } catch (err) {
-      toast.error('Failed to create user');
+      toast.error(t('userCreateFailed'));
     }
   };
 
@@ -205,18 +208,18 @@ export default function UserManagementPage() {
         throw new Error('Failed to update user');
       }
 
-      toast.success('User updated successfully');
+      toast.success(t('userUpdatedSuccess'));
       setIsEditUserDialogOpen(false);
       resetUserForm();
       fetchUsers();
     } catch (err) {
-      toast.error('Failed to update user');
+      toast.error(t('userUpdateFailed'));
     }
   };
 
   // Delete user
   const deleteUser = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+    if (!confirm(t('confirmDeleteUser'))) return;
 
     try {
       const response = await fetch('/api/users', {
@@ -229,10 +232,10 @@ export default function UserManagementPage() {
         throw new Error('Failed to delete user');
       }
 
-      toast.success('User deleted successfully');
+      toast.success(t('userDeletedSuccess'));
       fetchUsers();
     } catch (err) {
-      toast.error('Failed to delete user');
+      toast.error(t('userDeleteFailed'));
     }
   };
 
@@ -249,12 +252,12 @@ export default function UserManagementPage() {
         throw new Error('Failed to create role');
       }
 
-      toast.success('Role created successfully');
+      toast.success(t('roleCreatedSuccess'));
       setIsCreateRoleDialogOpen(false);
       resetRoleForm();
       fetchRoles();
     } catch (err) {
-      toast.error('Failed to create role');
+      toast.error(t('roleCreateFailed'));
     }
   };
 
@@ -276,18 +279,18 @@ export default function UserManagementPage() {
         throw new Error('Failed to update role');
       }
 
-      toast.success('Role updated successfully');
+      toast.success(t('roleUpdatedSuccess'));
       setIsEditRoleDialogOpen(false);
       resetRoleForm();
       fetchRoles();
     } catch (err) {
-      toast.error('Failed to update role');
+      toast.error(t('roleUpdateFailed'));
     }
   };
 
   // Delete role
   const deleteRole = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this role?')) return;
+    if (!confirm(t('confirmDeleteRole'))) return;
 
     try {
       const response = await fetch('/api/roles', {
@@ -300,10 +303,10 @@ export default function UserManagementPage() {
         throw new Error('Failed to delete role');
       }
 
-      toast.success('Role deleted successfully');
+      toast.success(t('roleDeletedSuccess'));
       fetchRoles();
     } catch (err) {
-      toast.error('Failed to delete role');
+      toast.error(t('roleDeleteFailed'));
     }
   };
 
@@ -368,7 +371,7 @@ export default function UserManagementPage() {
         
       } catch (err) {
         console.error('Error in fetchData:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load data');
+        setError(err instanceof Error ? err.message : t('loadDataFailed'));
       } finally {
         setLoading(false);
       }
@@ -380,7 +383,7 @@ export default function UserManagementPage() {
     return (
       <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'User' }}>
         <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Loading user management...</div>
+          <div className="text-lg">{t('loadingUserManagement')}</div>
         </div>
       </ProtectedRoute>
     );
@@ -390,7 +393,7 @@ export default function UserManagementPage() {
     return (
       <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'User' }}>
         <div className="flex items-center justify-center h-64">
-          <div className="text-red-500">Error: {error}</div>
+          <div className="text-red-500">{t('error')}: {error}</div>
         </div>
       </ProtectedRoute>
     );
@@ -402,17 +405,17 @@ export default function UserManagementPage() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">User & Role Management</h1>
-            <p className="text-muted-foreground">Manage users, roles, and permissions</p>
+            <h1 className="text-3xl font-bold">{t('userRoleManagementTitle')}</h1>
+            <p className="text-muted-foreground">{t('userRoleManagementDescription')}</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm">
               <Shield className="h-4 w-4 mr-2" />
-              Export Users
+              {t('exportUsers')}
             </Button>
             <Button variant="outline" size="sm">
               <Settings className="h-4 w-4 mr-2" />
-              User Settings
+              {t('userSettings')}
             </Button>
           </div>
         </div>
@@ -422,11 +425,11 @@ export default function UserManagementPage() {
           <TabsList>
             <TabsTrigger value="users" className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              Users ({users.length})
+              {t('users')} ({users.length})
             </TabsTrigger>
             <TabsTrigger value="roles" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
-              Roles ({roles.length})
+              {t('roles')} ({roles.length})
             </TabsTrigger>
           </TabsList>
 
@@ -436,13 +439,13 @@ export default function UserManagementPage() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle>Users</CardTitle>
-                    <CardDescription>Manage system users and their roles</CardDescription>
+                    <CardTitle>{t('users')}</CardTitle>
+                    <CardDescription>{t('manageSystemUsersAndRoles')}</CardDescription>
                   </div>
                   <Can action="create" subject="User">
                     <Button onClick={() => setIsCreateUserDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
-                      New User
+                      {t('newUser')}
                     </Button>
                   </Can>
                 </div>
@@ -451,13 +454,13 @@ export default function UserManagementPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Last Login</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>{t('name')}</TableHead>
+                      <TableHead>{t('email')}</TableHead>
+                      <TableHead>{t('role')}</TableHead>
+                      <TableHead>{t('status')}</TableHead>
+                      <TableHead>{t('lastLogin')}</TableHead>
+                      <TableHead>{t('created')}</TableHead>
+                      <TableHead>{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -474,17 +477,17 @@ export default function UserManagementPage() {
                           {user.isActive ? (
                             <Badge variant="default" className="flex items-center gap-1">
                               <CheckCircle className="h-3 w-3" />
-                              Active
+                              {t('active')}
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="flex items-center gap-1">
                               <XCircle className="h-3 w-3" />
-                              Inactive
+                              {t('inactive')}
                             </Badge>
                           )}
                         </TableCell>
                         <TableCell>
-                          {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}
+                          {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : t('never')}
                         </TableCell>
                         <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell>
@@ -522,13 +525,13 @@ export default function UserManagementPage() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
-                    <CardTitle>Roles</CardTitle>
-                    <CardDescription>Manage system roles and their permissions</CardDescription>
+                    <CardTitle>{t('roles')}</CardTitle>
+                    <CardDescription>{t('manageSystemRolesAndPermissions')}</CardDescription>
                   </div>
                   <Can action="create" subject="User">
                     <Button onClick={() => setIsCreateRoleDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
-                      New Role
+                      {t('newRole')}
                     </Button>
                   </Can>
                 </div>
@@ -537,13 +540,13 @@ export default function UserManagementPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Role Name</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Permissions</TableHead>
-                      <TableHead>Users</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>{t('roleName')}</TableHead>
+                      <TableHead>{t('description')}</TableHead>
+                      <TableHead>{t('permissions')}</TableHead>
+                      <TableHead>{t('users')}</TableHead>
+                      <TableHead>{t('status')}</TableHead>
+                      <TableHead>{t('created')}</TableHead>
+                      <TableHead>{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -560,22 +563,22 @@ export default function UserManagementPage() {
                             ))}
                             {role.permissions.length > 3 && (
                               <Badge variant="outline" className="text-xs">
-                                +{role.permissions.length - 3} more
+                                +{role.permissions.length - 3} {t('more')}
                               </Badge>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>{role.userCount} users</TableCell>
+                        <TableCell>{role.userCount} {t('users')}</TableCell>
                         <TableCell>
                           {role.isActive ? (
                             <Badge variant="default" className="flex items-center gap-1">
                               <CheckCircle className="h-3 w-3" />
-                              Active
+                              {t('active')}
                             </Badge>
                           ) : (
                             <Badge variant="outline" className="flex items-center gap-1">
                               <XCircle className="h-3 w-3" />
-                              Inactive
+                              {t('inactive')}
                             </Badge>
                           )}
                         </TableCell>
@@ -613,22 +616,22 @@ export default function UserManagementPage() {
         {/* User Administration Section */}
         <Card>
           <CardHeader>
-            <CardTitle>User Administration</CardTitle>
-            <CardDescription>Advanced user management features for administrators</CardDescription>
+            <CardTitle>{t('userAdministration')}</CardTitle>
+            <CardDescription>{t('advancedUserManagementFeaturesForAdministrators')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex gap-4">
               <Button variant="outline">
                 <Settings className="h-4 w-4 mr-2" />
-                User Settings
+                {t('userSettings')}
               </Button>
               <Button variant="outline">
                 <Shield className="h-4 w-4 mr-2" />
-                Export All Users
+                {t('exportAllUsers')}
               </Button>
               <Button variant="outline">
                 <User className="h-4 w-4 mr-2" />
-                Bulk User Operations
+                {t('bulkUserOperations')}
               </Button>
             </div>
           </CardContent>

@@ -3,6 +3,44 @@
   "subtitle": "Manage employee information and records",
   "description": "View, add, edit, and manage employee data",
   
+  "create": {
+    "title": "Create New Employee",
+    "description": "Add a new employee to the system",
+    "tabs": {
+      "basic": "Basic Info",
+      "employment": "Employment",
+      "salary": "Salary",
+      "documents": "Documents",
+      "address": "Address",
+      "settings": "Settings"
+    },
+    "basic": {
+      "title": "Basic Information",
+      "description": "Enter the employee's basic personal information"
+    },
+    "employment": {
+      "title": "Employment Details",
+      "description": "Set employment status and contract details"
+    },
+    "salary": {
+      "title": "Salary Information",
+      "description": "Configure salary and compensation details"
+    },
+    "documents": {
+      "title": "Documents",
+      "description": "Upload and manage employee documents"
+    },
+    "address": {
+      "title": "Address Information",
+      "description": "Enter residential and emergency contact details"
+    },
+    "settings": {
+      "title": "Account Settings",
+      "description": "Configure account access and preferences"
+    },
+    "emergencyContact": "Emergency Contact"
+  },
+  
   "actions": {
     "add": "Add Employee",
     "edit": "Edit Employee",

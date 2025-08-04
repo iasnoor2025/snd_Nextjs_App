@@ -1,0 +1,104 @@
+{
+  "title": "إدارة المستخدمين",
+  "description": "إدارة مستخدمي النظام وأدوارهم",
+  "users": "المستخدمين",
+  "roles": "الأدوار",
+  "createUser": "إنشاء مستخدم",
+  "editUser": "تعديل المستخدم",
+  "deleteUser": "حذف المستخدم",
+  "createRole": "إنشاء دور",
+  "editRole": "تعديل الدور",
+  "deleteRole": "حذف الدور",
+  "userDetails": "تفاصيل المستخدم",
+  "roleDetails": "تفاصيل الدور",
+  "name": "الاسم",
+  "email": "البريد الإلكتروني",
+  "password": "كلمة المرور",
+  "confirmPassword": "تأكيد كلمة المرور",
+  "role": "الدور",
+  "status": "الحالة",
+  "active": "نشط",
+  "inactive": "غير نشط",
+  "createdAt": "تاريخ الإنشاء",
+  "lastLogin": "آخر تسجيل دخول",
+  "permissions": "الصلاحيات",
+  "description": "الوصف",
+  "userCount": "عدد المستخدمين",
+  "actions": "الإجراءات",
+  "view": "عرض",
+  "edit": "تعديل",
+  "delete": "حذف",
+  "save": "حفظ",
+  "cancel": "إلغاء",
+  "close": "إغلاق",
+  "search": "البحث في المستخدمين...",
+  "filterByRole": "تصفية حسب الدور",
+  "filterByStatus": "تصفية حسب الحالة",
+  "allRoles": "جميع الأدوار",
+  "allStatus": "جميع الحالات",
+  "noUsersFound": "لم يتم العثور على مستخدمين",
+  "noRolesFound": "لم يتم العثور على أدوار",
+  "userCreatedSuccess": "تم إنشاء المستخدم بنجاح",
+  "userUpdatedSuccess": "تم تحديث المستخدم بنجاح",
+  "userDeletedSuccess": "تم حذف المستخدم بنجاح",
+  "roleCreatedSuccess": "تم إنشاء الدور بنجاح",
+  "roleUpdatedSuccess": "تم تحديث الدور بنجاح",
+  "roleDeletedSuccess": "تم حذف الدور بنجاح",
+  "confirmDeleteUser": "هل أنت متأكد من حذف هذا المستخدم؟",
+  "confirmDeleteRole": "هل أنت متأكد من حذف هذا الدور؟",
+  "passwordMismatch": "كلمات المرور غير متطابقة",
+  "emailRequired": "البريد الإلكتروني مطلوب",
+  "nameRequired": "الاسم مطلوب",
+  "roleRequired": "الدور مطلوب",
+  "permissions": {
+    "users": {
+      "read": "عرض المستخدمين",
+      "create": "إنشاء مستخدمين",
+      "update": "تحديث المستخدمين",
+      "delete": "حذف المستخدمين"
+    },
+    "roles": {
+      "read": "عرض الأدوار",
+      "create": "إنشاء أدوار",
+      "update": "تحديث الأدوار",
+      "delete": "حذف الأدوار"
+    },
+    "equipment": {
+      "read": "عرض المعدات",
+      "create": "إنشاء معدات",
+      "update": "تحديث المعدات",
+      "delete": "حذف المعدات"
+    },
+    "rentals": {
+      "read": "عرض الإيجارات",
+      "create": "إنشاء إيجارات",
+      "update": "تحديث الإيجارات",
+      "delete": "حذف الإيجارات"
+    },
+    "employees": {
+      "read": "عرض الموظفين",
+      "create": "إنشاء موظفين",
+      "update": "تحديث الموظفين",
+      "delete": "حذف الموظفين"
+    },
+    "projects": {
+      "read": "عرض المشاريع",
+      "create": "إنشاء مشاريع",
+      "update": "تحديث المشاريع",
+      "delete": "حذف المشاريع"
+    },
+    "reports": {
+      "read": "عرض التقارير",
+      "create": "إنشاء تقارير",
+      "update": "تحديث التقارير",
+      "delete": "حذف التقارير"
+    },
+    "settings": {
+      "read": "عرض الإعدادات",
+      "update": "تحديث الإعدادات"
+    },
+    "analytics": {
+      "read": "عرض التحليلات"
+    }
+  }
+} 

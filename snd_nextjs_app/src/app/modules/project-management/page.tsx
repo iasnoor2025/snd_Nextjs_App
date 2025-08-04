@@ -47,6 +47,9 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
+// i18n refactor: All user-facing strings now use useTranslation('project')
+import { useTranslation } from 'react-i18next';
+
 interface Project {
   id: string;
   name: string;
@@ -82,6 +85,7 @@ export default function ProjectManagementPage() {
   const [priority, setPriority] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState("table");
+  const { t } = useTranslation('project');
 
   // Get allowed actions for project management
   const allowedActions = getAllowedActions('Project');
@@ -228,15 +232,15 @@ export default function ProjectManagementPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "planning":
-        return <Badge className="bg-blue-100 text-blue-800">Planning</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t('project.status.planning')}</Badge>;
       case "in_progress":
-        return <Badge className="bg-yellow-100 text-yellow-800">In Progress</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t('project.status.in_progress')}</Badge>;
       case "completed":
-        return <Badge className="bg-green-100 text-green-800">Completed</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('project.status.completed')}</Badge>;
       case "on_hold":
-        return <Badge className="bg-gray-100 text-gray-800">On Hold</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t('project.status.on_hold')}</Badge>;
       case "cancelled":
-        return <Badge className="bg-red-100 text-red-800">Cancelled</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('project.status.cancelled')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
@@ -245,13 +249,13 @@ export default function ProjectManagementPage() {
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
       case "high":
-        return <Badge className="bg-red-100 text-red-800">High</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('project.priority.high')}</Badge>;
       case "medium":
-        return <Badge className="bg-yellow-100 text-yellow-800">Medium</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t('project.priority.medium')}</Badge>;
       case "low":
-        return <Badge className="bg-green-100 text-green-800">Low</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('project.priority.low')}</Badge>;
       case "critical":
-        return <Badge className="bg-purple-100 text-purple-800">Critical</Badge>;
+        return <Badge className="bg-purple-100 text-purple-800">{t('project.priority.critical')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{priority}</Badge>;
     }
@@ -278,7 +282,7 @@ export default function ProjectManagementPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading projects...</p>
+            <p className="text-muted-foreground">{t('project.loading')}</p>
           </div>
         </div>
       </ProtectedRoute>
@@ -291,21 +295,21 @@ export default function ProjectManagementPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Project Management</h1>
-            <p className="text-muted-foreground">Manage construction projects and timelines</p>
+            <h1 className="text-3xl font-bold">{t('project.title')}</h1>
+            <p className="text-muted-foreground">{t('project.description')}</p>
           </div>
           <div className="flex space-x-2">
             <Can action="export" subject="Project">
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
-                Export
+                {t('project.export')}
               </Button>
             </Can>
 
             <Can action="sync" subject="Project">
               <Button variant="outline" size="sm">
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Sync Projects
+                {t('project.sync_projects')}
               </Button>
             </Can>
 
@@ -313,7 +317,7 @@ export default function ProjectManagementPage() {
               <Link href="/modules/project-management/templates">
                 <Button variant="outline" size="sm">
                   <FileText className="h-4 w-4 mr-2" />
-                  Templates
+                  {t('project.templates')}
                 </Button>
               </Link>
             </Can>
@@ -322,7 +326,7 @@ export default function ProjectManagementPage() {
               <Link href="/modules/project-management/create">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Project
+                  {t('project.add_project')}
                 </Button>
               </Link>
             </Can>
@@ -333,52 +337,52 @@ export default function ProjectManagementPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Projects</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('project.total_projects')}</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.total}</div>
             <p className="text-xs text-muted-foreground">
-              All project types
+              {t('project.all_project_types')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('project.active_projects')}</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{stats.active}</div>
             <p className="text-xs text-muted-foreground">
-              Currently in progress
+              {t('project.currently_in_progress')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Completed</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('project.completed')}</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
             <p className="text-xs text-muted-foreground">
-              Successfully delivered
+              {t('project.successfully_delivered')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Delayed</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('project.delayed')}</CardTitle>
             <AlertCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">{stats.delayed}</div>
             <p className="text-xs text-muted-foreground">
-              Behind schedule
+              {t('project.behind_schedule')}
             </p>
           </CardContent>
         </Card>
@@ -391,7 +395,7 @@ export default function ProjectManagementPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search projects..."
+                placeholder={t('project.search_projects')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -400,23 +404,23 @@ export default function ProjectManagementPage() {
           </div>
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Filter by status" />
+              <SelectValue placeholder={t('project.filter_by_status')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="planning">Planning</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="on_hold">On Hold</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="all">{t('project.all_status')}</SelectItem>
+              <SelectItem value="planning">{t('project.planning')}</SelectItem>
+              <SelectItem value="in_progress">{t('project.in_progress')}</SelectItem>
+              <SelectItem value="completed">{t('project.completed')}</SelectItem>
+              <SelectItem value="on_hold">{t('project.on_hold')}</SelectItem>
+              <SelectItem value="cancelled">{t('project.cancelled')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={priority} onValueChange={setPriority}>
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Filter by priority" />
+              <SelectValue placeholder={t('project.filter_by_priority')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Priorities</SelectItem>
+              <SelectItem value="all">{t('project.all_priorities')}</SelectItem>
               {priorities.map(priority => (
                 <SelectItem key={priority} value={priority}>{priority}</SelectItem>
               ))}
@@ -433,19 +437,19 @@ export default function ProjectManagementPage() {
             size="sm"
             onClick={() => setViewMode("table")}
           >
-            Table View
+            {t('project.table_view')}
           </Button>
           <Button
             variant={viewMode === "cards" ? "default" : "outline"}
             size="sm"
             onClick={() => setViewMode("cards")}
           >
-            Card View
+            {t('project.card_view')}
           </Button>
         </div>
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-500">
-            {projects?.total || 0} projects
+            {projects?.total || 0} {t('project.projects')}
           </span>
         </div>
       </div>
@@ -456,9 +460,9 @@ export default function ProjectManagementPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Projects</CardTitle>
+              <CardTitle>{t('project.projects')}</CardTitle>
               <CardDescription>
-                Manage construction projects and timelines
+                {t('project.manage_projects_description')}
               </CardDescription>
             </div>
           </div>
@@ -467,15 +471,15 @@ export default function ProjectManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Project Name</TableHead>
-                <TableHead>Client</TableHead>
-                  <TableHead>Manager</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead>Budget</TableHead>
-                <TableHead>Timeline</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('project.project_name')}</TableHead>
+                <TableHead>{t('project.client')}</TableHead>
+                  <TableHead>{t('project.manager')}</TableHead>
+                <TableHead>{t('project.status')}</TableHead>
+                <TableHead>{t('project.priority')}</TableHead>
+                <TableHead>{t('project.progress')}</TableHead>
+                <TableHead>{t('project.budget')}</TableHead>
+                <TableHead>{t('project.timeline')}</TableHead>
+                <TableHead className="text-right">{t('project.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -579,26 +583,26 @@ export default function ProjectManagementPage() {
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Client</span>
+                    <span className="text-muted-foreground">{t('project.client')}</span>
                     <span className="font-medium">{project.client}</span>
                   </div>
                   {project.manager && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Manager</span>
+                      <span className="text-muted-foreground">{t('project.manager')}</span>
                       <span className="font-medium">{project.manager}</span>
                     </div>
                   )}
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Progress</span>
+                    <span className="text-muted-foreground">{t('project.progress')}</span>
                     <span className="font-medium">{project.progress}%</span>
                   </div>
                   <Progress value={project.progress} className="h-2" />
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Budget</span>
+                    <span className="text-muted-foreground">{t('project.budget')}</span>
                     <span className="font-medium">${project.budget.toLocaleString()}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Timeline</span>
+                    <span className="text-muted-foreground">{t('project.timeline')}</span>
                     <span className="font-medium">
                       {new Date(project.start_date).toLocaleDateString()} - {new Date(project.end_date).toLocaleDateString()}
                     </span>
@@ -621,7 +625,7 @@ export default function ProjectManagementPage() {
               disabled={projects.current_page === 1}
             >
               <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
+              {t('project.previous')}
             </Button>
 
             <div className="flex items-center gap-1">
@@ -689,7 +693,7 @@ export default function ProjectManagementPage() {
               onClick={() => setCurrentPage(Math.min(projects.last_page, projects.current_page + 1))}
               disabled={projects.current_page === projects.last_page}
             >
-              Next
+              {t('project.next')}
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           </div>
@@ -700,17 +704,17 @@ export default function ProjectManagementPage() {
         <Card>
           <CardContent className="text-center py-8">
             <BarChart3 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium mb-2">No projects found</h3>
+            <h3 className="text-lg font-medium mb-2">{t('project.no_projects_found')}</h3>
             <p className="text-muted-foreground mb-4">
               {search || status !== 'all' || priority !== 'all'
-                ? 'No projects match your current filters.'
-                : 'Get started by creating your first project.'}
+                ? t('project.no_projects_match_filters')
+                : t('project.get_started_by_creating_project')}
             </p>
             {!search && status === 'all' && priority === 'all' && (
               <Link href="/modules/project-management/create">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Project
+                  {t('project.create_project')}
                 </Button>
               </Link>
             )}
@@ -722,9 +726,9 @@ export default function ProjectManagementPage() {
       <RoleBased roles={['ADMIN', 'MANAGER']}>
         <Card>
           <CardHeader>
-            <CardTitle>Project Administration</CardTitle>
+            <CardTitle>{t('project.project_administration')}</CardTitle>
             <CardDescription>
-              Advanced project management features for administrators
+              {t('project.advanced_project_management_features')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -732,21 +736,21 @@ export default function ProjectManagementPage() {
               <Can action="manage" subject="Project">
                 <Button variant="outline">
                   <Settings className="h-4 w-4 mr-2" />
-                  Project Settings
+                  {t('project.project_settings')}
                 </Button>
               </Can>
 
               <Can action="export" subject="Project">
                 <Button variant="outline">
                   <FileText className="h-4 w-4 mr-2" />
-                  Generate Reports
+                  {t('project.generate_reports')}
                 </Button>
               </Can>
 
               <Can action="import" subject="Project">
                 <Button variant="outline">
                   <Upload className="h-4 w-4 mr-2" />
-                  Import Projects
+                  {t('project.import_projects')}
                 </Button>
               </Can>
             </div>

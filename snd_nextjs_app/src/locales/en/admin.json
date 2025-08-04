@@ -1,0 +1,22 @@
+{
+  "super_admin_approval_center": "Super Admin Approval Center",
+  "manage_all_system_approvals": "Manage all system approvals with full administrative privileges",
+  "total_approvals": "Total Approvals",
+  "across_all_modules": "Across all modules",
+  "pending": "Pending",
+  "awaiting_approval": "Awaiting approval",
+  "approved": "Approved",
+  "successfully_processed": "Successfully processed",
+  "rejected": "Rejected",
+  "declined_requests": "Declined requests",
+  "approval_modules": "Approval Modules",
+  "overview_of_approval_types": "Overview of approval types across different system modules",
+  "rental_management": "Rental Management",
+  "equipment_requests": "Equipment requests",
+  "timesheet": "Timesheet",
+  "time_tracking": "Time tracking",
+  "payroll": "Payroll",
+  "salary_processing": "Salary processing",
+  "leave_management": "Leave Management",
+  "vacation_requests": "Vacation requests"
+} 

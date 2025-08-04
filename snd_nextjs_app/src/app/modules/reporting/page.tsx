@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+// i18n refactor: All user-facing strings now use useTranslation('reporting')
+import { useTranslation } from 'react-i18next';
 
 interface Report {
   id: string;
@@ -41,6 +43,7 @@ interface PaginatedResponse {
 }
 
 export default function ReportingPage() {
+  const { t } = useTranslation('reporting');
   const [reports, setReports] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -180,16 +183,16 @@ export default function ReportingPage() {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Reporting</h1>
+        <h1 className="text-2xl font-bold">{t('reporting.page_title')}</h1>
         <div className="flex space-x-2">
           <Button onClick={handleGenerate} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
-            Generate Reports
+            {t('reporting.generate_reports_button')}
           </Button>
           <Link href="/modules/reporting/create">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Create Report
+              {t('reporting.create_report_button')}
             </Button>
           </Link>
         </div>
@@ -201,7 +204,7 @@ export default function ReportingPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search reports..."
+                placeholder={t('reporting.search_reports_placeholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -210,21 +213,21 @@ export default function ReportingPage() {
           </div>
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Filter by status" />
+              <SelectValue placeholder={t('reporting.filter_by_status_placeholder')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="archived">Archived</SelectItem>
+              <SelectItem value="all">{t('reporting.all_status')}</SelectItem>
+              <SelectItem value="active">{t('reporting.active')}</SelectItem>
+              <SelectItem value="draft">{t('reporting.draft')}</SelectItem>
+              <SelectItem value="archived">{t('reporting.archived')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={type} onValueChange={setType}>
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Filter by type" />
+              <SelectValue placeholder={t('reporting.filter_by_type_placeholder')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="all">{t('reporting.all_types')}</SelectItem>
               {types.map(type => (
                 <SelectItem key={type} value={type}>{type}</SelectItem>
               ))}
@@ -237,14 +240,14 @@ export default function ReportingPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Reports</CardTitle>
+              <CardTitle>{t('reporting.reports_title')}</CardTitle>
               <CardDescription>
-                Manage automated reports and analytics
+                {t('reporting.manage_automated_reports_description')}
               </CardDescription>
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-500">
-                {reports?.total || 0} reports
+                {t('reporting.total_reports', { count: reports?.total || 0 })}
               </span>
             </div>
           </div>
@@ -253,13 +256,13 @@ export default function ReportingPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Report Name</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created By</TableHead>
-                <TableHead>Schedule</TableHead>
-                <TableHead>Last Generated</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('reporting.report_name')}</TableHead>
+                <TableHead>{t('reporting.type')}</TableHead>
+                <TableHead>{t('reporting.status')}</TableHead>
+                <TableHead>{t('reporting.created_by')}</TableHead>
+                <TableHead>{t('reporting.schedule')}</TableHead>
+                <TableHead>{t('reporting.last_generated')}</TableHead>
+                <TableHead className="text-right">{t('reporting.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

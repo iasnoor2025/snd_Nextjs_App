@@ -41,7 +41,12 @@
     "approved": "موافق عليه",
     "rejected": "مرفوض",
     "completed": "مكتمل",
-    "cancelled": "ملغي"
+    "cancelled": "ملغي",
+    "assigned": "معين",
+    "available": "متاح",
+    "in_use": "قيد الاستخدام",
+    "maintenance": "صيانة",
+    "out_of_service": "خارج الخدمة"
   },
   "common": {
     "name": "الاسم",
@@ -71,5 +76,20 @@
     "showing": "عرض",
     "to": "إلى",
     "results": "نتيجة"
-  }
+  },
+  "loading": "جاري التحميل...",
+  "welcome_back": "مرحباً بعودتك، {{name}}!",
+  "user": "المستخدم",
+  "dashboard": {
+    "description": "عرض تحليلات التأجير ومقاييس الأداء"
+  },
+  "customers": {
+    "description": "إدارة معلومات العملاء والعلاقات"
+  },
+  "equipment": {
+    "description": "تتبع وإدارة مخزون معدات التأجير"
+  },
+  "go_to_employee_management": "الذهاب إلى إدارة الموظفين",
+  "layout_test": "اختبار التخطيط",
+  "layout_test_description": "إذا كنت تستطيع رؤية هذا المحتوى موضع بشكل صحيح على يمين الشريط الجانبي، فإن التخطيط يعمل بشكل صحيح. لا يجب أن يكون المحتوى مخفي تحت الشريط الجانبي."
 }

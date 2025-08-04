@@ -1,0 +1,53 @@
+{
+  "status": {
+    "draft": "Draft",
+    "sent": "Sent",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "expired": "Expired"
+  },
+  "quotation_management": {
+    "title": "Quotation Management",
+    "refresh": "Refresh",
+    "export": "Export",
+    "print": "Print",
+    "create_quotation": "Create Quotation",
+    "search_placeholder": "Search quotations by number or customer...",
+    "filter_status_placeholder": "Filter by status",
+    "all_status": "All Status",
+    "status": {
+      "draft": "Draft",
+      "sent": "Sent",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "expired": "Expired"
+    },
+    "filter_by_assignment_placeholder": "Filter by assignment",
+    "all_assignments": "All Assignments",
+    "filter_by_month_placeholder": "Filter by month",
+    "all_months": "All Months",
+    "current_month": "Current",
+    "filter_by_current_month": "Filter by current month",
+    "page_size": "Page size",
+    "5_per_page": "5 per page",
+    "10_per_page": "10 per page",
+    "20_per_page": "20 per page",
+    "50_per_page": "50 per page",
+    "quotations": "Quotations",
+    "manage_quotations_description": "Manage quotations and proposals",
+    "showing_quotations": "Showing {{from}} to {{to}} of {{total}} quotations",
+    "quotation_number": "Quotation #",
+    "customer": "Customer",
+    "status": "Status",
+    "issue_date": "Issue Date",
+    "valid_until": "Valid Until",
+    "total_amount": "Total Amount",
+    "items": "Items",
+    "actions": "Actions",
+    "items_count": "items",
+    "showing_results": "Showing {{from}} to {{to}} of {{total}} results",
+    "previous": "Previous",
+    "next": "Next",
+    "page_of": "Page {{current}} of {{total}}"
+  }
+} 

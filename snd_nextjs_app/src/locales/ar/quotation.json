@@ -1,0 +1,53 @@
+{
+  "status": {
+    "draft": "مسودة",
+    "sent": "مُرسل",
+    "approved": "معتمد",
+    "rejected": "مرفوض",
+    "expired": "منتهي الصلاحية"
+  },
+  "quotation_management": {
+    "title": "إدارة العروض",
+    "refresh": "تحديث",
+    "export": "تصدير",
+    "print": "طباعة",
+    "create_quotation": "إنشاء عرض",
+    "search_placeholder": "البحث في العروض بالرقم أو العميل...",
+    "filter_status_placeholder": "تصفية حسب الحالة",
+    "all_status": "جميع الحالات",
+    "status": {
+      "draft": "مسودة",
+      "sent": "مُرسل",
+      "approved": "معتمد",
+      "rejected": "مرفوض",
+      "expired": "منتهي الصلاحية"
+    },
+    "filter_by_assignment_placeholder": "تصفية حسب المهمة",
+    "all_assignments": "جميع المهام",
+    "filter_by_month_placeholder": "تصفية حسب الشهر",
+    "all_months": "جميع الشهور",
+    "current_month": "الحالي",
+    "filter_by_current_month": "تصفية حسب الشهر الحالي",
+    "page_size": "حجم الصفحة",
+    "5_per_page": "5 في الصفحة",
+    "10_per_page": "10 في الصفحة",
+    "20_per_page": "20 في الصفحة",
+    "50_per_page": "50 في الصفحة",
+    "quotations": "العروض",
+    "manage_quotations_description": "إدارة العروض والاقتراحات",
+    "showing_quotations": "عرض {{from}} إلى {{to}} من {{total}} عرض",
+    "quotation_number": "رقم العرض",
+    "customer": "العميل",
+    "status": "الحالة",
+    "issue_date": "تاريخ الإصدار",
+    "valid_until": "صالح حتى",
+    "total_amount": "المبلغ الإجمالي",
+    "items": "العناصر",
+    "actions": "الإجراءات",
+    "items_count": "عناصر",
+    "showing_results": "عرض {{from}} إلى {{to}} من {{total}} نتيجة",
+    "previous": "السابق",
+    "next": "التالي",
+    "page_of": "الصفحة {{current}} من {{total}}"
+  }
+} 

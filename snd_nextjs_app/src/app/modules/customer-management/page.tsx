@@ -16,6 +16,9 @@ import { Pagination } from '@/components/ui/pagination';
 import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Eye, User, Building, Mail, Phone, Download, Upload, Search, Filter, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
+// i18n refactor: All user-facing strings now use useTranslation('customer')
+import { useTranslation } from 'react-i18next';
+
 interface Customer {
   id: string;
   name: string;
@@ -51,6 +54,7 @@ interface CustomerStatistics {
 
 export default function CustomerManagementPage() {
   const { user, hasPermission, getAllowedActions } = useRBAC();
+  const { t } = useTranslation('customer');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -434,9 +438,9 @@ export default function CustomerManagementPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Customer Management</h1>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
             <p className="text-muted-foreground">
-              Manage customer information and relationships
+              {t('description')}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -447,26 +451,26 @@ export default function CustomerManagementPage() {
               className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${syncLoading ? 'animate-spin' : ''}`} />
-              {syncLoading ? 'Syncing...' : 'Sync from ERPNext'}
+              {syncLoading ? t('syncing') : t('syncFromERPNext')}
             </Button>
 
             <Can action="export" subject="Customer">
               <Button variant="outline">
                 <Download className="h-4 w-4 mr-2" />
-                Export
+                {t('export')}
               </Button>
             </Can>
 
             <Can action="import" subject="Customer">
               <Button variant="outline">
                 <Upload className="h-4 w-4 mr-2" />
-                Import
+                {t('import')}
               </Button>
             </Can>
 
             <Button onClick={() => setIsCreateDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Add
+              {t('addCustomer')}
             </Button>
           </div>
         </div>
@@ -480,7 +484,7 @@ export default function CustomerManagementPage() {
                   <User className="h-4 w-4 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Total Customers</p>
+                  <p className="text-sm text-muted-foreground">{t('totalCustomers')}</p>
                   <p className="text-2xl font-bold">{statistics.totalCustomers}</p>
                 </div>
               </div>
@@ -494,7 +498,7 @@ export default function CustomerManagementPage() {
                   <div className="w-2 h-2 bg-green-600 rounded-full"></div>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Active Customers</p>
+                  <p className="text-sm text-muted-foreground">{t('activeCustomers')}</p>
                   <p className="text-2xl font-bold">{statistics.activeCustomers}</p>
                 </div>
               </div>
@@ -508,7 +512,7 @@ export default function CustomerManagementPage() {
                   <RefreshCw className="h-4 w-4 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">ERPNext Synced</p>
+                  <p className="text-sm text-muted-foreground">{t('erpnextSynced')}</p>
                   <p className="text-2xl font-bold">{statistics.erpnextSyncedCustomers}</p>
                 </div>
               </div>
@@ -522,7 +526,7 @@ export default function CustomerManagementPage() {
                   <Building className="h-4 w-4 text-orange-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Local Only</p>
+                  <p className="text-sm text-muted-foreground">{t('localOnly')}</p>
                   <p className="text-2xl font-bold">{statistics.localOnlyCustomers}</p>
                 </div>
               </div>
@@ -532,9 +536,9 @@ export default function CustomerManagementPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Customers</CardTitle>
+            <CardTitle>{t('customers')}</CardTitle>
             <CardDescription>
-              All customer records and their current status
+              {t('allCustomerRecordsDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -544,7 +548,7 @@ export default function CustomerManagementPage() {
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
-                    placeholder="Search customers..."
+                    placeholder={t('search')}
                     value={searchTerm}
                     onChange={(e) => handleSearch(e.target.value)}
                     className="pl-10"
@@ -561,12 +565,12 @@ export default function CustomerManagementPage() {
                 <Select value={statusFilter} onValueChange={handleStatusFilter}>
                   <SelectTrigger className="w-[180px]">
                     <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Filter by status" />
+                    <SelectValue placeholder={t('filterByStatus')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="all">{t('allStatus')}</SelectItem>
+                    <SelectItem value="active">{t('active')}</SelectItem>
+                    <SelectItem value="inactive">{t('inactive')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -579,7 +583,7 @@ export default function CustomerManagementPage() {
                     onClick={() => handleSort('name')}
                   >
                     <div className="flex items-center gap-1">
-                      Name
+                      {t('name')}
                       {sortBy === 'name' && (
                         <span className="text-xs">
                           {sortOrder === 'asc' ? '↑' : '↓'}
@@ -592,7 +596,7 @@ export default function CustomerManagementPage() {
                     onClick={() => handleSort('company_name')}
                   >
                     <div className="flex items-center gap-1">
-                      Company
+                      {t('company')}
                       {sortBy === 'company_name' && (
                         <span className="text-xs">
                           {sortOrder === 'asc' ? '↑' : '↓'}
@@ -600,13 +604,13 @@ export default function CustomerManagementPage() {
                       )}
                     </div>
                   </TableHead>
-                  <TableHead>Contact Person</TableHead>
+                  <TableHead>{t('contactPerson')}</TableHead>
                   <TableHead 
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('email')}
                   >
                     <div className="flex items-center gap-1">
-                      Email
+                      {t('email')}
                       {sortBy === 'email' && (
                         <span className="text-xs">
                           {sortOrder === 'asc' ? '↑' : '↓'}
@@ -614,14 +618,14 @@ export default function CustomerManagementPage() {
                       )}
                     </div>
                   </TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Location</TableHead>
+                  <TableHead>{t('phone')}</TableHead>
+                  <TableHead>{t('location')}</TableHead>
                   <TableHead 
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => handleSort('status')}
                   >
                     <div className="flex items-center gap-1">
-                      Status
+                      {t('status')}
                       {sortBy === 'status' && (
                         <span className="text-xs">
                           {sortOrder === 'asc' ? '↑' : '↓'}
@@ -629,8 +633,8 @@ export default function CustomerManagementPage() {
                       )}
                     </div>
                   </TableHead>
-                  <TableHead>Sync</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>{t('sync')}</TableHead>
+                  <TableHead>{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -642,18 +646,18 @@ export default function CustomerManagementPage() {
                           <User className="h-6 w-6 text-muted-foreground" />
                         </div>
                         <div>
-                          <p className="text-lg font-semibold">No customers found</p>
+                          <p className="text-lg font-semibold">{t('noCustomersFound')}</p>
                           <p className="text-muted-foreground">
                             {searchTerm || statusFilter !== 'all' 
-                              ? 'Try adjusting your search or filter criteria'
-                              : 'Get started by adding your first customer'
+                              ? t('tryAdjustingSearchOrFilter')
+                              : t('getStartedByAddingFirstCustomer')
                             }
                           </p>
                         </div>
                         {!searchTerm && statusFilter === 'all' && (
                           <Button onClick={() => setIsCreateDialogOpen(true)} className="mt-2">
                             <Plus className="h-4 w-4 mr-2" />
-                            Add First Customer
+                            {t('addFirstCustomer')}
                           </Button>
                         )}
                       </div>
@@ -670,7 +674,7 @@ export default function CustomerManagementPage() {
                         <div>
                           <div className="font-semibold">{customer.name}</div>
                           {customer.erpnext_id && (
-                            <div className="text-xs text-muted-foreground">ID: {customer.erpnext_id}</div>
+                            <div className="text-xs text-muted-foreground">{t('id')}: {customer.erpnext_id}</div>
                           )}
                         </div>
                       </div>
@@ -739,11 +743,11 @@ export default function CustomerManagementPage() {
                       {customer.erpnext_id ? (
                         <Badge variant="outline" className="text-blue-600 border-blue-600">
                           <RefreshCw className="h-3 w-3 mr-1" />
-                          ERPNext
+                          {t('erpnext')}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="text-gray-500">
-                          Local
+                          {t('local')}
                         </Badge>
                       )}
                     </TableCell>
@@ -754,7 +758,7 @@ export default function CustomerManagementPage() {
                           variant="ghost" 
                           onClick={() => openShowDialog(customer)}
                           className="h-8 w-8 p-0"
-                          title="View Details"
+                          title={t('viewDetails')}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -764,7 +768,7 @@ export default function CustomerManagementPage() {
                           variant="ghost" 
                           onClick={() => openEditDialog(customer)}
                           className="h-8 w-8 p-0"
-                          title="Edit Customer"
+                          title={t('editCustomer')}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -774,7 +778,7 @@ export default function CustomerManagementPage() {
                           variant="ghost" 
                           onClick={() => deleteCustomer(customer.id)}
                           className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                          title="Delete Customer"
+                          title={t('deleteCustomer')}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -791,9 +795,11 @@ export default function CustomerManagementPage() {
               <div className="mt-6">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-500">
-                    Showing {((pagination.page - 1) * pagination.limit) + 1} to{" "}
-                    {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
-                    {pagination.total} results
+                    {t('showingResults', {
+                      start: ((pagination.page - 1) * pagination.limit) + 1,
+                      end: Math.min(pagination.page * pagination.limit, pagination.total),
+                      total: pagination.total
+                    })}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -803,7 +809,7 @@ export default function CustomerManagementPage() {
                       disabled={pagination.page === 1}
                     >
                       <ChevronLeft className="h-4 w-4 mr-1" />
-                      Previous
+                      {t('previous')}
                     </Button>
 
                     <div className="flex items-center gap-1">
@@ -871,7 +877,7 @@ export default function CustomerManagementPage() {
                       onClick={() => handlePageChange(Math.min(pagination.totalPages, pagination.page + 1))}
                       disabled={pagination.page === pagination.totalPages}
                     >
-                      Next
+                      {t('next')}
                       <ChevronRight className="h-4 w-4 ml-1" />
                     </Button>
                   </div>
@@ -885,22 +891,22 @@ export default function CustomerManagementPage() {
         <RoleBased roles={['ADMIN', 'MANAGER']}>
           <Card>
             <CardHeader>
-              <CardTitle>Admin Actions</CardTitle>
+              <CardTitle>{t('adminActionsTitle')}</CardTitle>
               <CardDescription>
-                Additional actions available for administrators
+                {t('additionalActionsDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
                 <Can action="manage" subject="Customer">
                   <Button variant="outline">
-                    Bulk Operations
+                    {t('bulkOperations')}
                   </Button>
                 </Can>
 
                 <Can action="export" subject="Customer">
                   <Button variant="outline">
-                    Generate Reports
+                    {t('generateReports')}
                   </Button>
                 </Can>
               </div>
@@ -912,10 +918,10 @@ export default function CustomerManagementPage() {
         {isCreateDialogOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg w-full max-w-md">
-              <h2 className="text-xl font-bold mb-4">Create New Customer</h2>
+              <h2 className="text-xl font-bold mb-4">{t('createNewCustomer')}</h2>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Name</Label>
+                  <Label htmlFor="name">{t('name')}</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -923,7 +929,7 @@ export default function CustomerManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="companyName">Company Name</Label>
+                  <Label htmlFor="companyName">{t('companyName')}</Label>
                   <Input
                     id="companyName"
                     value={formData.companyName}
@@ -931,7 +937,7 @@ export default function CustomerManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="contactPerson">Contact Person</Label>
+                  <Label htmlFor="contactPerson">{t('contactPerson')}</Label>
                   <Input
                     id="contactPerson"
                     value={formData.contactPerson}
@@ -939,7 +945,7 @@ export default function CustomerManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t('email')}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -948,7 +954,7 @@ export default function CustomerManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">{t('phone')}</Label>
                   <Input
                     id="phone"
                     value={formData.phone}
@@ -956,7 +962,7 @@ export default function CustomerManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address">{t('address')}</Label>
                   <Textarea
                     id="address"
                     value={formData.address}
@@ -965,7 +971,7 @@ export default function CustomerManagementPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="city">City</Label>
+                    <Label htmlFor="city">{t('city')}</Label>
                     <Input
                       id="city"
                       value={formData.city}
@@ -973,7 +979,7 @@ export default function CustomerManagementPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="state">State</Label>
+                    <Label htmlFor="state">{t('state')}</Label>
                     <Input
                       id="state"
                       value={formData.state}
@@ -982,7 +988,7 @@ export default function CustomerManagementPage() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="country">Country</Label>
+                  <Label htmlFor="country">{t('country')}</Label>
                   <Input
                     id="country"
                     value={formData.country}
@@ -990,24 +996,24 @@ export default function CustomerManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status">{t('status')}</Label>
                   <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="active">{t('active')}</SelectItem>
+                      <SelectItem value="inactive">{t('inactive')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="flex justify-end space-x-2 mt-6">
                 <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancel
+                  {t('cancel')}
                 </Button>
                 <Button onClick={createCustomer}>
-                  Create Customer
+                  {t('createCustomer')}
                 </Button>
               </div>
             </div>
@@ -1018,10 +1024,10 @@ export default function CustomerManagementPage() {
         {isEditDialogOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-lg w-full max-w-md">
-              <h2 className="text-xl font-bold mb-4">Edit Customer</h2>
+              <h2 className="text-xl font-bold mb-4">{t('editCustomer')}</h2>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="edit-name">Name</Label>
+                  <Label htmlFor="edit-name">{t('name')}</Label>
                   <Input
                     id="edit-name"
                     value={formData.name}
@@ -1029,7 +1035,7 @@ export default function CustomerManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-companyName">Company Name</Label>
+                  <Label htmlFor="edit-companyName">{t('companyName')}</Label>
                   <Input
                     id="edit-companyName"
                     value={formData.companyName}
@@ -1037,7 +1043,7 @@ export default function CustomerManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-contactPerson">Contact Person</Label>
+                  <Label htmlFor="edit-contactPerson">{t('contactPerson')}</Label>
                   <Input
                     id="edit-contactPerson"
                     value={formData.contactPerson}
@@ -1045,7 +1051,7 @@ export default function CustomerManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-email">Email</Label>
+                  <Label htmlFor="edit-email">{t('email')}</Label>
                   <Input
                     id="edit-email"
                     type="email"
@@ -1054,7 +1060,7 @@ export default function CustomerManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-phone">Phone</Label>
+                  <Label htmlFor="edit-phone">{t('phone')}</Label>
                   <Input
                     id="edit-phone"
                     value={formData.phone}
@@ -1062,7 +1068,7 @@ export default function CustomerManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-address">Address</Label>
+                  <Label htmlFor="edit-address">{t('address')}</Label>
                   <Textarea
                     id="edit-address"
                     value={formData.address}
@@ -1071,7 +1077,7 @@ export default function CustomerManagementPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="edit-city">City</Label>
+                    <Label htmlFor="edit-city">{t('city')}</Label>
                     <Input
                       id="edit-city"
                       value={formData.city}
@@ -1079,7 +1085,7 @@ export default function CustomerManagementPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="edit-state">State</Label>
+                    <Label htmlFor="edit-state">{t('state')}</Label>
                     <Input
                       id="edit-state"
                       value={formData.state}
@@ -1088,7 +1094,7 @@ export default function CustomerManagementPage() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="edit-country">Country</Label>
+                  <Label htmlFor="edit-country">{t('country')}</Label>
                   <Input
                     id="edit-country"
                     value={formData.country}
@@ -1096,24 +1102,24 @@ export default function CustomerManagementPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit-status">Status</Label>
+                  <Label htmlFor="edit-status">{t('status')}</Label>
                   <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
+                      <SelectItem value="active">{t('active')}</SelectItem>
+                      <SelectItem value="inactive">{t('inactive')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="flex justify-end space-x-2 mt-6">
                 <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                  Cancel
+                  {t('cancel')}
                 </Button>
                 <Button onClick={updateCustomer}>
-                  Update Customer
+                  {t('updateCustomer')}
                 </Button>
               </div>
             </div>
@@ -1125,7 +1131,7 @@ export default function CustomerManagementPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">Customer Details</h2>
+                <h2 className="text-2xl font-bold">{t('customerDetails')}</h2>
                 <Button variant="outline" size="sm" onClick={() => setIsShowDialogOpen(false)}>
                   ×
                 </Button>
@@ -1133,67 +1139,67 @@ export default function CustomerManagementPage() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Name</Label>
+                  <Label className="text-sm font-medium text-gray-500">{t('name')}</Label>
                   <p className="text-lg font-semibold">{selectedCustomer.name}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Company Name</Label>
+                  <Label className="text-sm font-medium text-gray-500">{t('companyName')}</Label>
                   <p className="text-lg">{selectedCustomer.companyName || 'N/A'}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Contact Person</Label>
+                  <Label className="text-sm font-medium text-gray-500">{t('contactPerson')}</Label>
                   <p className="text-lg">{selectedCustomer.contactPerson || 'N/A'}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Email</Label>
+                  <Label className="text-sm font-medium text-gray-500">{t('email')}</Label>
                   <p className="text-lg">{selectedCustomer.email || 'N/A'}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Phone</Label>
+                  <Label className="text-sm font-medium text-gray-500">{t('phone')}</Label>
                   <p className="text-lg">{selectedCustomer.phone || 'N/A'}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Status</Label>
+                  <Label className="text-sm font-medium text-gray-500">{t('status')}</Label>
                   <Badge variant={selectedCustomer.isActive ? 'default' : 'secondary'}>
                     {selectedCustomer.status}
                   </Badge>
                 </div>
                 <div className="md:col-span-2">
-                  <Label className="text-sm font-medium text-gray-500">Address</Label>
+                  <Label className="text-sm font-medium text-gray-500">{t('address')}</Label>
                   <p className="text-lg whitespace-pre-wrap">{selectedCustomer.address || 'N/A'}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">City</Label>
+                  <Label className="text-sm font-medium text-gray-500">{t('city')}</Label>
                   <p className="text-lg">{selectedCustomer.city || 'N/A'}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">State</Label>
+                  <Label className="text-sm font-medium text-gray-500">{t('state')}</Label>
                   <p className="text-lg">{selectedCustomer.state || 'N/A'}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Country</Label>
+                  <Label className="text-sm font-medium text-gray-500">{t('country')}</Label>
                   <p className="text-lg">{selectedCustomer.country || 'N/A'}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">ERPNext ID</Label>
+                  <Label className="text-sm font-medium text-gray-500">{t('erpnextId')}</Label>
                   <p className="text-lg">{selectedCustomer.erpnext_id || 'N/A'}</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">Created At</Label>
+                  <Label className="text-sm font-medium text-gray-500">{t('createdAt')}</Label>
                   <p className="text-lg">{new Date(selectedCustomer.createdAt).toLocaleDateString()}</p>
                 </div>
               </div>
 
               <div className="flex justify-end space-x-2 mt-6">
                 <Button variant="outline" onClick={() => setIsShowDialogOpen(false)}>
-                  Close
+                  {t('close')}
                 </Button>
                 <Can action="update" subject="Customer">
                   <Button onClick={() => {
                     setIsShowDialogOpen(false);
                     openEditDialog(selectedCustomer);
                   }}>
-                    Edit Customer
+                    {t('editCustomer')}
                   </Button>
                 </Can>
               </div>

@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Eye, Edit, Trash2, Plus, Building2, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+// i18n refactor: All user-facing strings now use useTranslation('company')
+import { useTranslation } from 'react-i18next';
 
 interface Company {
   id: number;
@@ -37,6 +39,7 @@ interface CompanyResponse {
 }
 
 export default function CompanyManagementPage() {
+  const { t } = useTranslation('company');
   const [companies, setCompanies] = useState<CompanyResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -108,25 +111,25 @@ export default function CompanyManagementPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Building2 className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">Company Management</h1>
+          <h1 className="text-2xl font-bold">{t('companyManagementTitle')}</h1>
         </div>
         <Link href="/modules/company-management/create">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Add Company
+            {t('addCompanyButton')}
           </Button>
         </Link>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Companies</CardTitle>
+          <CardTitle>{t('companiesTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="flex-1">
               <Input
-                placeholder="Search companies..."
+                placeholder={t('searchCompaniesPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="max-w-sm"
@@ -138,11 +141,11 @@ export default function CompanyManagementPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[200px]">Company</TableHead>
-                  <TableHead className="min-w-[150px]">Contact</TableHead>
-                  <TableHead className="min-w-[120px]">Address</TableHead>
-                  <TableHead className="min-w-[100px]">Created</TableHead>
-                  <TableHead className="text-right min-w-[120px]">Actions</TableHead>
+                  <TableHead className="min-w-[200px]">{t('companyName')}</TableHead>
+                  <TableHead className="min-w-[150px]">{t('contact')}</TableHead>
+                  <TableHead className="min-w-[120px]">{t('address')}</TableHead>
+                  <TableHead className="min-w-[100px]">{t('createdAt')}</TableHead>
+                  <TableHead className="text-right min-w-[120px]">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -152,7 +155,7 @@ export default function CompanyManagementPage() {
                       <div>
                         <div className="font-medium">{company.name}</div>
                         {company.logo && (
-                          <div className="text-xs text-gray-500">Has Logo</div>
+                          <div className="text-xs text-gray-500">{t('hasLogo')}</div>
                         )}
                       </div>
                     </TableCell>
@@ -166,7 +169,7 @@ export default function CompanyManagementPage() {
                       {company.address ? (
                         <div className="text-sm text-gray-600">{company.address}</div>
                       ) : (
-                        <div className="text-sm text-gray-400">No address</div>
+                        <div className="text-sm text-gray-400">{t('noAddress')}</div>
                       )}
                     </TableCell>
                     <TableCell>
@@ -208,9 +211,11 @@ export default function CompanyManagementPage() {
           {companies && companies.pagination.total > 0 && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-gray-500">
-                Showing {((companies.pagination.page - 1) * companies.pagination.limit) + 1} to{" "}
-                {Math.min(companies.pagination.page * companies.pagination.limit, companies.pagination.total)} of{" "}
-                {companies.pagination.total} results
+                {t('showingResults', {
+                  start: ((companies.pagination.page - 1) * companies.pagination.limit) + 1,
+                  end: Math.min(companies.pagination.page * companies.pagination.limit, companies.pagination.total),
+                  total: companies.pagination.total,
+                })}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -220,7 +225,7 @@ export default function CompanyManagementPage() {
                   disabled={companies.pagination.page === 1}
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
+                  {t('previous')}
                 </Button>
 
                 <div className="flex items-center gap-1">
@@ -288,7 +293,7 @@ export default function CompanyManagementPage() {
                   onClick={() => setCurrentPage(Math.min(companies.pagination.totalPages, companies.pagination.page + 1))}
                   disabled={companies.pagination.page === companies.pagination.totalPages}
                 >
-                  Next
+                  {t('next')}
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>

@@ -26,5 +26,17 @@
   "viewAll": "عرض الكل",
   "noRecentActivity": "لا يوجد نشاط حديث",
   "noUpcomingEvents": "لا توجد أحداث قادمة",
-  "noNotifications": "لا توجد إشعارات"
+  "noNotifications": "لا توجد إشعارات",
+  "loading": "جاري التحميل...",
+  "dashboard_overview": "نظرة عامة على لوحة التحكم",
+  "welcome_back": "مرحباً بعودتك، {{name}}!",
+  "user": "المستخدم",
+  "monitor_business_performance": "راقب أداء عملك وأدر العمليات.",
+  "sidebar_state": "حالة الشريط الجانبي",
+  "open": "مفتوح",
+  "yes": "نعم",
+  "no": "لا",
+  "content_flush_description": "يجب أن يتدفق المحتوى إلى اليمين عند طي الشريط الجانبي.",
+  "analytics_overview": "نظرة عامة على التحليلات",
+  "recent_activities": "الأنشطة الأخيرة"
 }

@@ -16,10 +16,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-
+import { useTranslation } from 'react-i18next';
 
 
 export default function SafetyManagementPage() {
+  const { t } = useTranslation('safety');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [severity, setSeverity] = useState("all");
@@ -140,11 +141,11 @@ export default function SafetyManagementPage() {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Safety Management</h1>
+        <h1 className="text-2xl font-bold">{t('title')}</h1>
         <Link href="/modules/safety-management/create">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Report Safety Issue
+            {t('reportSafetyIssue')}
           </Button>
         </Link>
       </div>
@@ -155,7 +156,7 @@ export default function SafetyManagementPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search safety reports..."
+                placeholder={t('searchSafetyReportsPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -164,24 +165,24 @@ export default function SafetyManagementPage() {
           </div>
           <Select value={severity} onValueChange={setSeverity}>
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Filter by severity" />
+              <SelectValue placeholder={t('filterBySeverityPlaceholder')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Severities</SelectItem>
-              <SelectItem value="high">High</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="low">Low</SelectItem>
+              <SelectItem value="all">{t('allSeverities')}</SelectItem>
+              <SelectItem value="high">{t('high')}</SelectItem>
+              <SelectItem value="medium">{t('medium')}</SelectItem>
+              <SelectItem value="low">{t('low')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Filter by status" />
+              <SelectValue placeholder={t('filterByStatusPlaceholder')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="open">Open</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="resolved">Resolved</SelectItem>
+              <SelectItem value="all">{t('allStatus')}</SelectItem>
+              <SelectItem value="open">{t('open')}</SelectItem>
+              <SelectItem value="in_progress">{t('inProgress')}</SelectItem>
+              <SelectItem value="resolved">{t('resolved')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -191,14 +192,14 @@ export default function SafetyManagementPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Safety Reports</CardTitle>
+              <CardTitle>{t('safetyReportsTitle')}</CardTitle>
               <CardDescription>
-                Manage safety incidents and compliance reports
+                {t('manageSafetyIncidentsAndComplianceReports')}
               </CardDescription>
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-500">
-                {total} reports
+                {total} {t('reports')}
               </span>
             </div>
           </div>
@@ -207,14 +208,14 @@ export default function SafetyManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Severity</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Reported By</TableHead>
-                <TableHead>Assigned To</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Reported Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('title')}</TableHead>
+                <TableHead>{t('severity')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
+                <TableHead>{t('reportedBy')}</TableHead>
+                <TableHead>{t('assignedTo')}</TableHead>
+                <TableHead>{t('location')}</TableHead>
+                <TableHead>{t('reportedDate')}</TableHead>
+                <TableHead className="text-right">{t('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

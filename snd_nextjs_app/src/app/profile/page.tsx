@@ -37,6 +37,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "sonner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
+// i18n refactor: All user-facing strings now use useTranslation('profile')
+import { useTranslation } from 'react-i18next';
+
 interface MatchedEmployee {
   id: number
   first_name: string
@@ -106,6 +109,7 @@ interface AppearanceSettings {
 }
 
 export default function ProfilePage() {
+  const { t } = useTranslation('profile');
   const [profile, setProfile] = useState<UserProfile>({
     id: "",
     name: "",
@@ -203,7 +207,7 @@ export default function ProfilePage() {
       if (response.ok) {
         const updatedProfile = await response.json()
         setProfile(updatedProfile)
-        toast.success("Profile updated successfully")
+        toast.success(t('updateSuccess'))
         setIsEditing(false)
       } else {
         const error = await response.json()
@@ -232,7 +236,7 @@ export default function ProfilePage() {
       })
 
       if (response.ok) {
-        toast.success("Notification settings updated")
+        toast.success(t('notificationSettingsUpdated'))
       } else {
         const error = await response.json()
         toast.error(error.error || "Failed to update notification settings")
@@ -260,7 +264,7 @@ export default function ProfilePage() {
       })
 
       if (response.ok) {
-        toast.success("Appearance settings updated")
+        toast.success(t('appearanceSettingsUpdated'))
       } else {
         const error = await response.json()
         toast.error(error.error || "Failed to update appearance settings")
@@ -278,7 +282,7 @@ export default function ProfilePage() {
     try {
       // In a real app, you would call the delete account API
       await new Promise(resolve => setTimeout(resolve, 2000))
-      toast.success("Account deletion initiated")
+      toast.success(t('accountDeletionInitiated'))
     } catch (error) {
       toast.error("Failed to delete account")
     } finally {
@@ -402,7 +406,7 @@ export default function ProfilePage() {
                   <div className="flex-1">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
+                        <Label htmlFor="name">{t('fullName')}</Label>
                         <Input
                           id="name"
                           value={profile.name}
@@ -411,7 +415,7 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">{t('email')}</Label>
                         <Input
                           id="email"
                           type="email"
@@ -421,7 +425,7 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="phone">Phone</Label>
+                        <Label htmlFor="phone">{t('phone')}</Label>
                         <Input
                           id="phone"
                           value={profile.phone}
@@ -430,7 +434,7 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="location">Location</Label>
+                        <Label htmlFor="location">{t('location')}</Label>
                         <Input
                           id="location"
                           value={profile.location}
@@ -446,7 +450,7 @@ export default function ProfilePage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
+                    <Label htmlFor="firstName">{t('firstName')}</Label>
                     <Input
                       id="firstName"
                       value={profile.firstName || ''}
@@ -455,7 +459,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
+                    <Label htmlFor="lastName">{t('lastName')}</Label>
                     <Input
                       id="lastName"
                       value={profile.lastName || ''}
@@ -464,7 +468,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="role">Role</Label>
+                    <Label htmlFor="role">{t('role')}</Label>
                     <Input
                       id="role"
                       value={profile.role}
@@ -473,7 +477,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="department">Department</Label>
+                    <Label htmlFor="department">{t('department')}</Label>
                     <Input
                       id="department"
                       value={profile.department}
@@ -482,20 +486,20 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="nationalId">National ID</Label>
+                    <Label htmlFor="nationalId">{t('nationalId')}</Label>
                     <Input
                       id="nationalId"
                       value={profile.nationalId || ''}
                       onChange={(e) => setProfile({ ...profile, nationalId: e.target.value })}
                       disabled={!isEditing}
-                      placeholder="Enter your national ID"
+                      placeholder={t('nationalIdPlaceholder')}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
+                    <Label htmlFor="address">{t('address')}</Label>
                     <Input
                       id="address"
                       value={profile.address || ''}
@@ -504,7 +508,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="city">City</Label>
+                    <Label htmlFor="city">{t('city')}</Label>
                     <Input
                       id="city"
                       value={profile.city || ''}
@@ -513,7 +517,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="state">State</Label>
+                    <Label htmlFor="state">{t('state')}</Label>
                     <Input
                       id="state"
                       value={profile.state || ''}
@@ -522,7 +526,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="country">Country</Label>
+                    <Label htmlFor="country">{t('country')}</Label>
                     <Input
                       id="country"
                       value={profile.country || ''}
@@ -533,7 +537,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
+                  <Label htmlFor="bio">{t('bio')}</Label>
                   <Textarea
                     id="bio"
                     value={profile.bio}
@@ -573,29 +577,29 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">User ID</span>
+                    <span className="text-sm text-muted-foreground">{t('userId')}</span>
                     <span className="text-sm font-medium">{profile.id}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Join Date</span>
+                    <span className="text-sm text-muted-foreground">{t('joinDate')}</span>
                     <span className="text-sm font-medium">
                       {formatDate(profile.joinDate)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Last Login</span>
+                    <span className="text-sm text-muted-foreground">{t('lastLogin')}</span>
                     <span className="text-sm font-medium">
                       {formatDate(profile.lastLogin)}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">National ID</span>
+                    <span className="text-sm text-muted-foreground">{t('nationalId')}</span>
                     <span className="text-sm font-medium">
                       {profile.nationalId || 'Not set'}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Status</span>
+                    <span className="text-sm text-muted-foreground">{t('status')}</span>
                     <Badge variant={profile.status === "active" ? "default" : "secondary"}>
                       {profile.status}
                     </Badge>
@@ -617,21 +621,21 @@ export default function ProfilePage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Full Name</span>
+                      <span className="text-sm text-muted-foreground">{t('fullName')}</span>
                       <span className="text-sm font-medium">
                         {profile.firstName} {profile.middleName} {profile.lastName}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Phone</span>
+                      <span className="text-sm text-muted-foreground">{t('phone')}</span>
                       <span className="text-sm font-medium">{profile.phone}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Designation</span>
+                      <span className="text-sm text-muted-foreground">{t('designation')}</span>
                       <span className="text-sm font-medium">{profile.designation || 'Not assigned'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Location</span>
+                      <span className="text-sm text-muted-foreground">{t('location')}</span>
                       <span className="text-sm font-medium">
                         {profile.city && profile.state ? `${profile.city}, ${profile.state}` : profile.country || 'Not specified'}
                       </span>
@@ -657,53 +661,53 @@ export default function ProfilePage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Employee ID</span>
+                      <span className="text-sm text-muted-foreground">{t('employeeId')}</span>
                       <span className="text-sm font-medium">{profile.matchedEmployee.employee_id}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Full Name</span>
+                      <span className="text-sm text-muted-foreground">{t('fullName')}</span>
                       <span className="text-sm font-medium">
                         {profile.matchedEmployee.first_name} {profile.matchedEmployee.middle_name} {profile.matchedEmployee.last_name}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Nationality</span>
+                      <span className="text-sm text-muted-foreground">{t('nationality')}</span>
                       <span className="text-sm font-medium">{profile.matchedEmployee.nationality || 'Not specified'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Date of Birth</span>
+                      <span className="text-sm text-muted-foreground">{t('dateOfBirth')}</span>
                       <span className="text-sm font-medium">
                         {formatDate(profile.matchedEmployee.date_of_birth)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Hire Date</span>
+                      <span className="text-sm text-muted-foreground">{t('hireDate')}</span>
                       <span className="text-sm font-medium">
                         {formatDate(profile.matchedEmployee.hire_date)}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Designation</span>
+                      <span className="text-sm text-muted-foreground">{t('designation')}</span>
                       <span className="text-sm font-medium">{profile.matchedEmployee.designation?.name || 'Not assigned'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Department</span>
+                      <span className="text-sm text-muted-foreground">{t('department')}</span>
                       <span className="text-sm font-medium">{profile.matchedEmployee.department?.name || 'Not assigned'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Phone</span>
+                      <span className="text-sm text-muted-foreground">{t('phone')}</span>
                       <span className="text-sm font-medium">{profile.matchedEmployee.phone || 'Not specified'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Email</span>
+                      <span className="text-sm text-muted-foreground">{t('email')}</span>
                       <span className="text-sm font-medium">{profile.matchedEmployee.email || 'Not specified'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Address</span>
+                      <span className="text-sm text-muted-foreground">{t('address')}</span>
                       <span className="text-sm font-medium">{profile.matchedEmployee.address || 'Not specified'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Location</span>
+                      <span className="text-sm text-muted-foreground">{t('location')}</span>
                       <span className="text-sm font-medium">
                         {profile.matchedEmployee.city && profile.matchedEmployee.state 
                           ? `${profile.matchedEmployee.city}, ${profile.matchedEmployee.state}` 
@@ -714,13 +718,13 @@ export default function ProfilePage() {
                     {/* Iqama Information */}
                     <Separator />
                     <div className="space-y-2">
-                      <h4 className="text-sm font-medium">Iqama Information</h4>
+                      <h4 className="text-sm font-medium">{t('iqamaInformation')}</h4>
                       <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Iqama Number</span>
+                        <span className="text-sm text-muted-foreground">{t('iqamaNumber')}</span>
                         <span className="text-sm font-medium">{profile.matchedEmployee.iqama_number}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">Iqama Expiry</span>
+                        <span className="text-sm text-muted-foreground">{t('iqamaExpiry')}</span>
                         <span className="text-sm font-medium">
                           {formatDate(profile.matchedEmployee.iqama_expiry)}
                         </span>
@@ -732,13 +736,13 @@ export default function ProfilePage() {
                       <>
                         <Separator />
                         <div className="space-y-2">
-                          <h4 className="text-sm font-medium">Passport Information</h4>
+                          <h4 className="text-sm font-medium">{t('passportInformation')}</h4>
                           <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Passport Number</span>
+                            <span className="text-sm text-muted-foreground">{t('passportNumber')}</span>
                             <span className="text-sm font-medium">{profile.matchedEmployee.passport_number}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Passport Expiry</span>
+                            <span className="text-sm text-muted-foreground">{t('passportExpiry')}</span>
                             <span className="text-sm font-medium">
                               {formatDate(profile.matchedEmployee.passport_expiry)}
                             </span>
@@ -752,13 +756,13 @@ export default function ProfilePage() {
                       <>
                         <Separator />
                         <div className="space-y-2">
-                          <h4 className="text-sm font-medium">Driving License</h4>
+                          <h4 className="text-sm font-medium">{t('drivingLicense')}</h4>
                           <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">License Number</span>
+                            <span className="text-sm text-muted-foreground">{t('licenseNumber')}</span>
                             <span className="text-sm font-medium">{profile.matchedEmployee.driving_license_number}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Expiry Date</span>
+                            <span className="text-sm text-muted-foreground">{t('expiryDate')}</span>
                             <span className="text-sm font-medium">
                               {formatDate(profile.matchedEmployee.driving_license_expiry)}
                             </span>
@@ -772,13 +776,13 @@ export default function ProfilePage() {
                       <>
                         <Separator />
                         <div className="space-y-2">
-                          <h4 className="text-sm font-medium">Operator License</h4>
+                          <h4 className="text-sm font-medium">{t('operatorLicense')}</h4>
                           <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">License Number</span>
+                            <span className="text-sm text-muted-foreground">{t('licenseNumber')}</span>
                             <span className="text-sm font-medium">{profile.matchedEmployee.operator_license_number}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Expiry Date</span>
+                            <span className="text-sm text-muted-foreground">{t('expiryDate')}</span>
                             <span className="text-sm font-medium">
                               {formatDate(profile.matchedEmployee.operator_license_expiry)}
                             </span>
@@ -799,19 +803,19 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Company</span>
+                    <span className="text-sm text-muted-foreground">{t('company')}</span>
                     <span className="text-sm font-medium">SND Rental Management</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Department</span>
+                    <span className="text-sm text-muted-foreground">{t('department')}</span>
                     <span className="text-sm font-medium">{profile.department}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Role</span>
+                    <span className="text-sm text-muted-foreground">{t('role')}</span>
                     <span className="text-sm font-medium">{profile.role}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Location</span>
+                    <span className="text-sm text-muted-foreground">{t('location')}</span>
                     <span className="text-sm font-medium">{profile.location}</span>
                   </div>
                 </CardContent>
@@ -834,9 +838,9 @@ export default function ProfilePage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Email Notifications</Label>
+                      <Label>{t('emailNotifications')}</Label>
                       <p className="text-sm text-muted-foreground">
-                        Receive notifications via email
+                        {t('emailNotificationsDescription')}
                       </p>
                     </div>
                     <Switch
@@ -849,9 +853,9 @@ export default function ProfilePage() {
 
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Push Notifications</Label>
+                      <Label>{t('pushNotifications')}</Label>
                       <p className="text-sm text-muted-foreground">
-                        Receive push notifications in the browser
+                        {t('pushNotificationsDescription')}
                       </p>
                     </div>
                     <Switch
@@ -864,9 +868,9 @@ export default function ProfilePage() {
 
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>SMS Notifications</Label>
+                      <Label>{t('smsNotifications')}</Label>
                       <p className="text-sm text-muted-foreground">
-                        Receive notifications via SMS
+                        {t('smsNotificationsDescription')}
                       </p>
                     </div>
                     <Switch
@@ -879,9 +883,9 @@ export default function ProfilePage() {
 
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Marketing Emails</Label>
+                      <Label>{t('marketingEmails')}</Label>
                       <p className="text-sm text-muted-foreground">
-                        Receive marketing and promotional emails
+                        {t('marketingEmailsDescription')}
                       </p>
                     </div>
                     <Switch
@@ -894,9 +898,9 @@ export default function ProfilePage() {
 
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Security Alerts</Label>
+                      <Label>{t('securityAlerts')}</Label>
                       <p className="text-sm text-muted-foreground">
-                        Receive security and account alerts
+                        {t('securityAlertsDescription')}
                       </p>
                     </div>
                     <Switch
@@ -909,9 +913,9 @@ export default function ProfilePage() {
 
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label>Weekly Reports</Label>
+                      <Label>{t('weeklyReports')}</Label>
                       <p className="text-sm text-muted-foreground">
-                        Receive weekly performance reports
+                        {t('weeklyReportsDescription')}
                       </p>
                     </div>
                     <Switch
@@ -946,7 +950,7 @@ export default function ProfilePage() {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="theme">Theme</Label>
+                    <Label htmlFor="theme">{t('theme')}</Label>
                     <Select
                       value={appearance.theme}
                       onValueChange={(value) =>
@@ -957,15 +961,15 @@ export default function ProfilePage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="light">Light</SelectItem>
-                        <SelectItem value="dark">Dark</SelectItem>
-                        <SelectItem value="system">System</SelectItem>
+                        <SelectItem value="light">{t('lightTheme')}</SelectItem>
+                        <SelectItem value="dark">{t('darkTheme')}</SelectItem>
+                        <SelectItem value="system">{t('systemTheme')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="language">Language</Label>
+                    <Label htmlFor="language">{t('language')}</Label>
                     <Select
                       value={appearance.language}
                       onValueChange={(value) =>
@@ -976,17 +980,17 @@ export default function ProfilePage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="es">Español</SelectItem>
-                        <SelectItem value="fr">Français</SelectItem>
-                        <SelectItem value="de">Deutsch</SelectItem>
-                        <SelectItem value="ar">العربية</SelectItem>
+                        <SelectItem value="en">{t('english')}</SelectItem>
+                        <SelectItem value="es">{t('spanish')}</SelectItem>
+                        <SelectItem value="fr">{t('french')}</SelectItem>
+                        <SelectItem value="de">{t('german')}</SelectItem>
+                        <SelectItem value="ar">{t('arabic')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="timezone">Timezone</Label>
+                    <Label htmlFor="timezone">{t('timezone')}</Label>
                     <Select
                       value={appearance.timezone}
                       onValueChange={(value) =>
@@ -997,17 +1001,17 @@ export default function ProfilePage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="America/New_York">Eastern Time</SelectItem>
-                        <SelectItem value="America/Chicago">Central Time</SelectItem>
-                        <SelectItem value="America/Denver">Mountain Time</SelectItem>
-                        <SelectItem value="America/Los_Angeles">Pacific Time</SelectItem>
-                        <SelectItem value="UTC">UTC</SelectItem>
+                        <SelectItem value="America/New_York">{t('easternTime')}</SelectItem>
+                        <SelectItem value="America/Chicago">{t('centralTime')}</SelectItem>
+                        <SelectItem value="America/Denver">{t('mountainTime')}</SelectItem>
+                        <SelectItem value="America/Los_Angeles">{t('pacificTime')}</SelectItem>
+                        <SelectItem value="UTC">{t('utc')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="dateFormat">Date Format</Label>
+                    <Label htmlFor="dateFormat">{t('dateFormat')}</Label>
                     <Select
                       value={appearance.dateFormat}
                       onValueChange={(value) =>
@@ -1018,9 +1022,9 @@ export default function ProfilePage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="MM/DD/YYYY">MM/DD/YYYY</SelectItem>
-                        <SelectItem value="DD/MM/YYYY">DD/MM/YYYY</SelectItem>
-                        <SelectItem value="YYYY-MM-DD">YYYY-MM-DD</SelectItem>
+                        <SelectItem value="MM/DD/YYYY">{t('mmddyyyy')}</SelectItem>
+                        <SelectItem value="DD/MM/YYYY">{t('ddmmyyyy')}</SelectItem>
+                        <SelectItem value="YYYY-MM-DD">{t('yyyyMmdd')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -1050,51 +1054,51 @@ export default function ProfilePage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="space-y-1">
-                      <h4 className="text-sm font-medium">Change Password</h4>
+                      <h4 className="text-sm font-medium">{t('changePassword')}</h4>
                       <p className="text-sm text-muted-foreground">
-                        Update your account password
+                        {t('changePasswordDescription')}
                       </p>
                     </div>
                     <Button variant="outline" size="sm">
                       <IconKey className="h-4 w-4 mr-2" />
-                      Change
+                      {t('change')}
                     </Button>
                   </div>
 
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="space-y-1">
-                      <h4 className="text-sm font-medium">Two-Factor Authentication</h4>
+                      <h4 className="text-sm font-medium">{t('twoFactorAuthentication')}</h4>
                       <p className="text-sm text-muted-foreground">
-                        Add an extra layer of security to your account
+                        {t('twoFactorAuthenticationDescription')}
                       </p>
                     </div>
                     <Button variant="outline" size="sm">
                       <IconShield className="h-4 w-4 mr-2" />
-                      Enable
+                      {t('enable')}
                     </Button>
                   </div>
 
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="space-y-1">
-                      <h4 className="text-sm font-medium">Active Sessions</h4>
+                      <h4 className="text-sm font-medium">{t('activeSessions')}</h4>
                       <p className="text-sm text-muted-foreground">
-                        View and manage your active sessions
+                        {t('activeSessionsDescription')}
                       </p>
                     </div>
                     <Button variant="outline" size="sm">
-                      View
+                      {t('view')}
                     </Button>
                   </div>
 
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div className="space-y-1">
-                      <h4 className="text-sm font-medium">Login History</h4>
+                      <h4 className="text-sm font-medium">{t('loginHistory')}</h4>
                       <p className="text-sm text-muted-foreground">
-                        Review your recent login activity
+                        {t('loginHistoryDescription')}
                       </p>
                     </div>
                     <Button variant="outline" size="sm">
-                      View
+                      {t('view')}
                     </Button>
                   </div>
                 </div>
@@ -1104,27 +1108,27 @@ export default function ProfilePage() {
                 <div className="p-4 border border-destructive rounded-lg">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                      <h4 className="text-sm font-medium text-destructive">Delete Account</h4>
+                      <h4 className="text-sm font-medium text-destructive">{t('deleteAccount')}</h4>
                       <p className="text-sm text-muted-foreground">
-                        Permanently delete your account and all associated data
+                        {t('deleteAccountDescription')}
                       </p>
                     </div>
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button variant="destructive" size="sm">
                           <IconTrash className="h-4 w-4 mr-2" />
-                          Delete
+                          {t('delete')}
                         </Button>
                       </DialogTrigger>
                       <DialogContent>
                         <DialogHeader>
-                          <DialogTitle>Delete Account</DialogTitle>
+                          <DialogTitle>{t('deleteAccountTitle')}</DialogTitle>
                           <DialogDescription>
-                            This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                            {t('deleteAccountConfirmation')}
                           </DialogDescription>
                         </DialogHeader>
                         <DialogFooter>
-                          <Button variant="outline">Cancel</Button>
+                          <Button variant="outline">{t('cancel')}</Button>
                           <Button
                             variant="destructive"
                             onClick={handleDeleteAccount}

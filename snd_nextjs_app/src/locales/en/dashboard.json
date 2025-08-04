@@ -26,5 +26,17 @@
   "viewAll": "View All",
   "noRecentActivity": "No recent activity",
   "noUpcomingEvents": "No upcoming events",
-  "noNotifications": "No notifications"
+  "noNotifications": "No notifications",
+  "loading": "Loading...",
+  "dashboard_overview": "Dashboard Overview",
+  "welcome_back": "Welcome back, {{name}}!",
+  "user": "User",
+  "monitor_business_performance": "Monitor your business performance and manage operations.",
+  "sidebar_state": "Sidebar State",
+  "open": "Open",
+  "yes": "Yes",
+  "no": "No",
+  "content_flush_description": "Content should flush to the right when sidebar is collapsed.",
+  "analytics_overview": "Analytics Overview",
+  "recent_activities": "Recent Activities"
 }

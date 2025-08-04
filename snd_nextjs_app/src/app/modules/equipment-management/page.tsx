@@ -43,6 +43,8 @@ import {
 import { toast } from "sonner";
 import { ApiService } from "@/lib/api-service";
 import { useRouter } from "next/navigation";
+// i18n refactor: All user-facing strings now use useTranslation('equipment')
+import { useTranslation } from 'react-i18next';
 
 interface Equipment {
   id: number;
@@ -88,6 +90,7 @@ interface Equipment {
 }
 
 export default function EquipmentManagementPage() {
+  const { t } = useTranslation('equipment');
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -167,20 +170,20 @@ export default function EquipmentManagementPage() {
     if (equipment.current_assignment) {
       const assignment = equipment.current_assignment;
       if (assignment.status === 'active') {
-        return <Badge variant="secondary">Assigned</Badge>;
+        return <Badge variant="secondary">{t('status.assigned')}</Badge>;
       } else if (assignment.status === 'completed') {
-        return <Badge variant="default">Available</Badge>;
+        return <Badge variant="default">{t('status.available')}</Badge>;
       } else if (assignment.status === 'pending') {
-        return <Badge variant="outline">Pending</Badge>;
+        return <Badge variant="outline">{t('status.pending')}</Badge>;
       }
     }
     
     // Fall back to equipment status if no assignment
     const statusConfig = {
-      available: { variant: 'default' as const, label: 'Available' },
-      rented: { variant: 'secondary' as const, label: 'Rented' },
-      maintenance: { variant: 'destructive' as const, label: 'Maintenance' },
-      out_of_service: { variant: 'destructive' as const, label: 'Out of Service' },
+      available: { variant: 'default' as const, label: t('status.available') },
+      rented: { variant: 'secondary' as const, label: t('status.rented') },
+      maintenance: { variant: 'destructive' as const, label: t('status.maintenance') },
+      out_of_service: { variant: 'destructive' as const, label: t('status.out_of_service') },
     };
     
     const config = statusConfig[equipment.status as keyof typeof statusConfig] || { variant: 'outline' as const, label: equipment.status };
@@ -201,9 +204,9 @@ export default function EquipmentManagementPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Equipment Management</h1>
+          <h1 className="text-2xl font-bold">{t('equipment_management.title')}</h1>
           <p className="text-muted-foreground">
-            Manage equipment inventory synced from ERPNext
+            {t('equipment_management.description')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -213,11 +216,11 @@ export default function EquipmentManagementPage() {
             ) : (
               <RotateCw className="h-4 w-4 mr-2" />
             )}
-            Sync from ERPNext
+            {t('equipment_management.sync_erpnext')}
           </Button>
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Add Equipment
+            {t('equipment_management.add_equipment')}
           </Button>
         </div>
       </div>
@@ -230,7 +233,7 @@ export default function EquipmentManagementPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Search equipment..."
+                  placeholder={t('equipment_management.search_placeholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -239,7 +242,7 @@ export default function EquipmentManagementPage() {
             </div>
             <div className="flex items-center gap-2">
               <Label htmlFor="status-filter" className="text-sm font-medium">
-                Status:
+                {t('equipment_management.status_filter_label')}:
               </Label>
               <select
                 id="status-filter"
@@ -247,16 +250,16 @@ export default function EquipmentManagementPage() {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="border rounded-md px-3 py-2 text-sm"
               >
-                <option value="all">All Status</option>
-                <option value="available">Available</option>
-                <option value="rented">Rented</option>
-                <option value="maintenance">Maintenance</option>
-                <option value="out_of_service">Out of Service</option>
+                <option value="all">{t('equipment_management.all_status')}</option>
+                <option value="available">{t('status.available')}</option>
+                <option value="rented">{t('status.rented')}</option>
+                <option value="maintenance">{t('status.maintenance')}</option>
+                <option value="out_of_service">{t('status.out_of_service')}</option>
               </select>
             </div>
             <div className="flex items-center gap-2">
               <Label htmlFor="assignment-filter" className="text-sm font-medium">
-                Assignment:
+                {t('equipment_management.assignment_filter_label')}:
               </Label>
               <select
                 id="assignment-filter"
@@ -264,9 +267,9 @@ export default function EquipmentManagementPage() {
                 onChange={(e) => setFilterAssignment(e.target.value)}
                 className="border rounded-md px-3 py-2 text-sm"
               >
-                <option value="all">All Assignments</option>
-                <option value="assigned">Currently Assigned</option>
-                <option value="unassigned">Not Assigned</option>
+                <option value="all">{t('equipment_management.all_assignments')}</option>
+                <option value="assigned">{t('equipment_management.currently_assigned')}</option>
+                <option value="unassigned">{t('equipment_management.not_assigned')}</option>
               </select>
             </div>
           </div>
@@ -278,14 +281,14 @@ export default function EquipmentManagementPage() {
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Database className="h-5 w-5" />
-            <span>Equipment Inventory</span>
+            <span>{t('equipment_management.equipment_inventory')}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin" />
-              <span className="ml-2">Loading equipment...</span>
+              <span className="ml-2">{t('equipment_management.loading_equipment')}</span>
             </div>
           ) : (
             <>
@@ -293,14 +296,14 @@ export default function EquipmentManagementPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Model</TableHead>
-                      <TableHead>Manufacturer</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Current Assignment</TableHead>
-                      <TableHead>Daily Rate</TableHead>
-                      <TableHead>ERPNext ID</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>{t('equipment_management.name')}</TableHead>
+                      <TableHead>{t('equipment_management.model')}</TableHead>
+                      <TableHead>{t('equipment_management.manufacturer')}</TableHead>
+                      <TableHead>{t('equipment_management.status')}</TableHead>
+                      <TableHead>{t('equipment_management.current_assignment')}</TableHead>
+                      <TableHead>{t('equipment_management.daily_rate')}</TableHead>
+                      <TableHead>{t('equipment_management.erpnext_id')}</TableHead>
+                      <TableHead>{t('equipment_management.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -310,11 +313,11 @@ export default function EquipmentManagementPage() {
                           {equipment.length === 0 ? (
                             <div className="flex flex-col items-center space-y-2">
                               <Package className="h-8 w-8 text-muted-foreground" />
-                              <p>No equipment found</p>
-                              <p className="text-sm">Sync from ERPNext to get started</p>
+                              <p>{t('equipment_management.no_equipment_found')}</p>
+                              <p className="text-sm">{t('equipment_management.sync_erpnext_to_get_started')}</p>
                             </div>
                           ) : (
-                            "No equipment matches your search criteria"
+                            t('equipment_management.no_equipment_matches_search_criteria')
                           )}
                         </TableCell>
                       </TableRow>
@@ -333,9 +336,9 @@ export default function EquipmentManagementPage() {
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                                                    {item.current_assignment.type === 'project' && item.current_assignment.project ? (
-                                   <span>Project: {item.current_assignment.project.name}</span>
+                                   <span>{t('equipment_management.project')}: {item.current_assignment.project.name}</span>
                                  ) : item.current_assignment.type === 'rental' && item.current_assignment.rental ? (
-                                   <span>Rental: {item.current_assignment.rental.project?.name || 'Unknown Project'} - {item.current_assignment.rental.rental_number}</span>
+                                   <span>{t('equipment_management.rental')}: {item.current_assignment.rental.project?.name || t('equipment_management.unknown_project')} - {item.current_assignment.rental.rental_number}</span>
                                  ) : (
                                    <span>{item.current_assignment.type}</span>
                                  )}
@@ -352,12 +355,12 @@ export default function EquipmentManagementPage() {
                                 )}
                                 {item.current_assignment.start_date && (
                                   <div className="text-xs text-muted-foreground">
-                                    Since: {new Date(item.current_assignment.start_date).toLocaleDateString()}
+                                    {t('equipment_management.since')}: {new Date(item.current_assignment.start_date).toLocaleDateString()}
                                   </div>
                                 )}
                               </div>
                             ) : (
-                              <span className="text-muted-foreground text-sm">No assignment</span>
+                              <span className="text-muted-foreground text-sm">{t('equipment_management.no_assignment')}</span>
                             )}
                           </TableCell>
                           <TableCell>
@@ -386,7 +389,7 @@ export default function EquipmentManagementPage() {
                                 variant="ghost" 
                                 size="sm"
                                 onClick={() => router.push(`/modules/equipment-management/${item.id}/assign`)}
-                                title="Manage Assignments"
+                                title={t('equipment_management.manage_assignments')}
                               >
                                 <div className="h-4 w-4 flex items-center justify-center">
                                   <span className="text-xs">📋</span>
@@ -408,13 +411,13 @@ export default function EquipmentManagementPage() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-2 py-4">
                   <div className="flex-1 text-sm text-muted-foreground">
-                    Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} results
+                    {t('equipment_management.showing_results', { start: startIndex + 1, end: Math.min(endIndex, totalItems), total: totalItems })}
                   </div>
                   
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                       <Label htmlFor="items-per-page" className="text-sm font-medium">
-                        Show:
+                        {t('equipment_management.show')}:
                       </Label>
                       <select
                         id="items-per-page"

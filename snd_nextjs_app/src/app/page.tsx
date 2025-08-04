@@ -7,17 +7,17 @@ import Link from 'next/link';
 
 
 export default function HomePage() {
-  const { t } = useTranslation(['common']);
+  const { t } = useTranslation('common');
   const { data: session, status } = useSession();
 
   // Show loading while checking authentication
   if (status === 'loading') {
     return (
       <div className="flex h-full w-full items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+                  <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">{t('loading')}</p>
+          </div>
       </div>
     );
   }
@@ -31,7 +31,7 @@ export default function HomePage() {
               {t('app.name')}
             </h1>
             <p className="text-muted-foreground mb-8">
-              Welcome back, {session?.user?.name || "User"}! {t('app.welcome')}
+              {t('welcome_back', { name: session?.user?.name || t('user') })} {t('app.welcome')}
             </p>
           </div>
 
@@ -39,21 +39,21 @@ export default function HomePage() {
             <div className="bg-card border rounded-lg p-6 shadow-sm">
               <h2 className="text-xl font-semibold mb-2">{t('navigation.dashboard')}</h2>
               <p className="text-muted-foreground">
-                View your rental analytics and performance metrics
+                {t('dashboard.description')}
               </p>
             </div>
 
             <div className="bg-card border rounded-lg p-6 shadow-sm">
               <h2 className="text-xl font-semibold mb-2">{t('navigation.customers')}</h2>
               <p className="text-muted-foreground">
-                Manage customer information and relationships
+                {t('customers.description')}
               </p>
             </div>
 
             <div className="bg-card border rounded-lg p-6 shadow-sm">
               <h2 className="text-xl font-semibold mb-2">{t('navigation.equipment')}</h2>
               <p className="text-muted-foreground">
-                Track and manage rental equipment inventory
+                {t('equipment.description')}
               </p>
             </div>
           </div>
@@ -63,15 +63,14 @@ export default function HomePage() {
               href="/modules/employee-management"
               className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
             >
-              Go to Employee Management
+              {t('go_to_employee_management')}
             </Link>
           </div>
 
           <div className="mt-8 p-4 bg-secondary rounded-lg">
-            <h3 className="text-lg font-semibold mb-2">Layout Test</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('layout_test')}</h3>
             <p className="text-secondary-foreground">
-              If you can see this content properly positioned to the right of the sidebar,
-              the layout is working correctly. The content should not be hidden under the sidebar.
+              {t('layout_test_description')}
             </p>
           </div>
         </div>

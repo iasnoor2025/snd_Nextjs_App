@@ -63,6 +63,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useTranslation } from 'react-i18next';
 
 interface PayrollItem {
   id: number;
@@ -150,6 +151,7 @@ export default function PayrollManagementPage() {
   const [employeeFilter, setEmployeeFilter] = useState<string>("all");
   const [recalculating, setRecalculating] = useState(false);
   const [downloadingPayslip, setDownloadingPayslip] = useState<number | null>(null);
+  const { t } = useTranslation('payroll');
 
   // Get allowed actions for payroll management
   const allowedActions = getAllowedActions('Payroll');
@@ -182,7 +184,7 @@ export default function PayrollManagementPage() {
         // Handle the nested data structure from the API
         setPayrolls(data.data);
       } else {
-        toast.error("Failed to fetch payrolls");
+        toast.error(t('payroll.error.fetchPayrolls'));
         // Set empty data structure to prevent errors
         setPayrolls({
           data: [],
@@ -201,7 +203,7 @@ export default function PayrollManagementPage() {
         });
       }
     } catch (error) {
-      toast.error("Error fetching payrolls");
+      toast.error(t('payroll.error.fetchPayrolls'));
       console.error("Error:", error);
       // Set empty data structure to prevent errors
       setPayrolls({
@@ -259,10 +261,10 @@ export default function PayrollManagementPage() {
         setIsApproveDialogOpen(false);
         fetchPayrolls(); // Refresh the list
       } else {
-        toast.error(data.message || "Failed to generate payroll for approved timesheets");
+        toast.error(data.message || t('payroll.error.generateApproved'));
       }
     } catch (error) {
-      toast.error("Error generating payroll for approved timesheets");
+      toast.error(t('payroll.error.generateApproved'));
       console.error("Error:", error);
     } finally {
       setGenerating(false);
@@ -278,13 +280,13 @@ export default function PayrollManagementPage() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success("Payroll approved successfully");
+        toast.success(t('payroll.success.approve'));
         fetchPayrolls(); // Refresh the list
       } else {
-        toast.error(data.message || "Failed to approve payroll");
+        toast.error(data.message || t('payroll.error.approve'));
       }
     } catch (error) {
-      toast.error("Error approving payroll");
+      toast.error(t('payroll.error.approve'));
       console.error("Error:", error);
     }
   };
@@ -305,19 +307,19 @@ export default function PayrollManagementPage() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success("Payment processed successfully");
+        toast.success(t('payroll.success.processPayment'));
         fetchPayrolls(); // Refresh the list
       } else {
-        toast.error(data.message || "Failed to process payment");
+        toast.error(data.message || t('payroll.error.processPayment'));
       }
     } catch (error) {
-      toast.error("Error processing payment");
+      toast.error(t('payroll.error.processPayment'));
       console.error("Error:", error);
     }
   };
 
   const handleCancel = async (payrollId: number) => {
-    if (!confirm("Are you sure you want to cancel this payroll?")) {
+    if (!confirm(t('payroll.confirm.cancel'))) {
       return;
     }
 
@@ -329,19 +331,19 @@ export default function PayrollManagementPage() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success("Payroll cancelled successfully");
+        toast.success(t('payroll.success.cancel'));
         fetchPayrolls(); // Refresh the list
       } else {
-        toast.error(data.message || "Failed to cancel payroll");
+        toast.error(data.message || t('payroll.error.cancel'));
       }
     } catch (error) {
-      toast.error("Error cancelling payroll");
+      toast.error(t('payroll.error.cancel'));
       console.error("Error:", error);
     }
   };
 
   const handleDelete = async (payrollId: number) => {
-    if (!confirm("Are you sure you want to delete this payroll?")) {
+    if (!confirm(t('payroll.confirm.delete'))) {
       return;
     }
 
@@ -353,24 +355,24 @@ export default function PayrollManagementPage() {
       const data = await response.json();
 
       if (data.success) {
-        toast.success("Payroll deleted successfully");
+        toast.success(t('payroll.success.delete'));
         fetchPayrolls(); // Refresh the list
       } else {
-        toast.error(data.message || "Failed to delete payroll");
+        toast.error(data.message || t('payroll.error.delete'));
       }
     } catch (error) {
-      toast.error("Error deleting payroll");
+      toast.error(t('payroll.error.delete'));
       console.error("Error:", error);
     }
   };
 
   const handleBulkDelete = async () => {
     if (selectedPayrolls.size === 0) {
-      toast.error("Please select payrolls to delete");
+      toast.error(t('payroll.error.selectPayrolls'));
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${selectedPayrolls.size} payroll(s)?`)) {
+    if (!confirm(t('payroll.confirm.bulkDelete', { count: selectedPayrolls.size }))) {
       return;
     }
 
@@ -390,10 +392,10 @@ export default function PayrollManagementPage() {
         setSelectedPayrolls(new Set());
         fetchPayrolls(); // Refresh the list
       } else {
-        toast.error(data.message || "Failed to delete payrolls");
+        toast.error(data.message || t('payroll.error.bulkDelete'));
       }
     } catch (error) {
-      toast.error("Error deleting payrolls");
+      toast.error(t('payroll.error.bulkDelete'));
       console.error("Error:", error);
     }
   };
@@ -421,9 +423,9 @@ export default function PayrollManagementPage() {
     try {
       // Navigate to the payslip page for this payroll
       window.open(`/modules/payroll-management/${payrollId}/payslip`, '_blank');
-      toast.success("Opening payslip in new tab");
+      toast.success(t('payroll.success.payslipOpen'));
     } catch (error) {
-      toast.error("Error opening payslip");
+      toast.error(t('payroll.error.payslipOpen'));
       console.error("Error:", error);
     }
   };
@@ -969,19 +971,19 @@ export default function PayrollManagementPage() {
             
             // Clean up
             document.body.removeChild(iframe);
-            toast.success('Payslip PDF downloaded successfully');
+            toast.success(t('payroll.success.payslipDownload'));
           } catch (error) {
             console.error('PDF generation error:', error);
             document.body.removeChild(iframe);
-            toast.error('Failed to generate PDF');
+            toast.error(t('payroll.error.payslipDownload'));
           }
         }, 1500);
 
       } else {
-        toast.error(data.message || "Failed to download payslip");
+        toast.error(data.message || t('payroll.error.payslipDownload'));
       }
     } catch (error) {
-      toast.error("Error downloading payslip");
+      toast.error(t('payroll.error.payslipDownload'));
       console.error("Error:", error);
       } finally {
         setDownloadingPayslip(null);
@@ -1000,11 +1002,11 @@ export default function PayrollManagementPage() {
         toast.success(result.message);
         fetchPayrolls(); // Refresh the list
       } else {
-        toast.error(result.message || 'Failed to recalculate overtime');
+        toast.error(result.message || t('payroll.error.recalculateOvertime'));
       }
     } catch (error) {
       console.error('Error recalculating overtime:', error);
-      toast.error('Failed to recalculate overtime');
+      toast.error(t('payroll.error.recalculateOvertime'));
     } finally {
       setRecalculating(false);
     }
@@ -1012,11 +1014,11 @@ export default function PayrollManagementPage() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      pending: { variant: "secondary" as const, text: "Pending" },
-      approved: { variant: "default" as const, text: "Approved" },
-      paid: { variant: "default" as const, text: "Paid" },
-      cancelled: { variant: "destructive" as const, text: "Cancelled" },
-      processed: { variant: "default" as const, text: "Processed" },
+      pending: { variant: "secondary" as const, text: t('payroll.status.pending') },
+      approved: { variant: "default" as const, text: t('payroll.status.approved') },
+      paid: { variant: "default" as const, text: t('payroll.status.paid') },
+      cancelled: { variant: "destructive" as const, text: t('payroll.status.cancelled') },
+      processed: { variant: "default" as const, text: t('payroll.status.processed') },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || { variant: "secondary" as const, text: status };
@@ -1040,7 +1042,7 @@ export default function PayrollManagementPage() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading payrolls...</p>
+            <p className="text-muted-foreground">{t('payroll.loading')}</p>
           </div>
         </div>
       </ProtectedRoute>
@@ -1053,14 +1055,14 @@ export default function PayrollManagementPage() {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Payroll Management</h1>
-            <p className="text-muted-foreground">Manage employee payrolls and payments</p>
+            <h1 className="text-3xl font-bold">{t('payroll.title')}</h1>
+            <p className="text-muted-foreground">{t('payroll.description')}</p>
           </div>
           <div className="flex gap-2">
             <Can action="export" subject="Payroll">
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
-                Export
+                {t('payroll.export')}
               </Button>
             </Can>
 
@@ -1069,28 +1071,28 @@ export default function PayrollManagementPage() {
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm">
                     <Zap className="h-4 w-4 mr-2" />
-                    Generate for Approved
+                    {t('payroll.generateApproved')}
                   </Button>
                 </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Generate Payroll for Approved Timesheets</DialogTitle>
+                  <DialogTitle>{t('payroll.generateApprovedTitle')}</DialogTitle>
                   <DialogDescription>
-                    Generate payroll for all employees who have manager-approved timesheets
+                    {t('payroll.generateApprovedDescription')}
                   </DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setIsApproveDialogOpen(false)} disabled={generating}>
-                    Cancel
+                    {t('payroll.cancel')}
                   </Button>
                   <Button onClick={handleGenerateApproved} disabled={generating}>
                     {generating ? (
                       <>
                         <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Generating...
+                        {t('payroll.generating')}
                       </>
                     ) : (
-                      "Generate Payroll"
+                      t('payroll.generatePayroll')
                     )}
                   </Button>
                 </DialogFooter>
@@ -1106,31 +1108,31 @@ export default function PayrollManagementPage() {
               className="flex items-center gap-2"
             >
               <Calculator className="h-4 w-4" />
-              {recalculating ? 'Recalculating...' : 'Recalculate Overtime'}
+              {recalculating ? t('payroll.recalculating') : t('payroll.recalculateOvertime')}
             </Button>
 
           <Link href="/modules/payroll-management/reports">
             <Button variant="outline" size="sm">
               <BarChart3 className="h-4 w-4 mr-2" />
-              Reports
+              {t('payroll.reports')}
             </Button>
           </Link>
           <Link href="/modules/payroll-management/salary-advances">
             <Button variant="outline" size="sm">
               <TrendingUp className="h-4 w-4 mr-2" />
-              Salary Advances
+              {t('payroll.salaryAdvances')}
             </Button>
           </Link>
           <Link href="/modules/payroll-management/settings">
             <Button variant="outline" size="sm">
               <Settings className="h-4 w-4 mr-2" />
-              Settings
+              {t('payroll.settings')}
             </Button>
           </Link>
           <Link href="/modules/payroll-management/create">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Create Payroll
+              {t('payroll.createPayroll')}
             </Button>
           </Link>
         </div>
@@ -1139,17 +1141,17 @@ export default function PayrollManagementPage() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle>{t('payroll.filters')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="search">Search</Label>
+              <Label htmlFor="search">{t('payroll.search')}</Label>
               <div className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="search"
-                  placeholder="Search payrolls..."
+                  placeholder={t('payroll.searchPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-8"
@@ -1158,23 +1160,23 @@ export default function PayrollManagementPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status">{t('payroll.status')}</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
+                  <SelectValue placeholder={t('payroll.selectStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                  <SelectItem value="all">{t('payroll.allStatus')}</SelectItem>
+                  <SelectItem value="pending">{t('payroll.pending')}</SelectItem>
+                  <SelectItem value="approved">{t('payroll.approved')}</SelectItem>
+                  <SelectItem value="paid">{t('payroll.paid')}</SelectItem>
+                  <SelectItem value="cancelled">{t('payroll.cancelled')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="month">Month</Label>
+              <Label htmlFor="month">{t('payroll.month')}</Label>
               <Input
                 id="month"
                 type="month"
@@ -1184,19 +1186,19 @@ export default function PayrollManagementPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="employee">Employee</Label>
+              <Label htmlFor="employee">{t('payroll.employee')}</Label>
               <div className="flex items-center space-x-2">
                 <Button
                   variant={employeeFilter === "all" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setEmployeeFilter("all")}
                 >
-                  All Employees
+                  {t('payroll.allEmployees')}
                 </Button>
                 <EmployeeDropdown
                   value={employeeFilter === "all" ? "" : employeeFilter}
                   onValueChange={(value) => setEmployeeFilter(value || "all")}
-                  placeholder="Select employee"
+                  placeholder={t('payroll.selectEmployee')}
                   showSearch={true}
                 />
               </div>
@@ -1212,7 +1214,7 @@ export default function PayrollManagementPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">
-                  {selectedPayrolls.size} payroll(s) selected
+                  {selectedPayrolls.size} {t('payroll.selectedPayrolls', { count: selectedPayrolls.size })}
                 </span>
               </div>
               <div className="flex gap-2">
@@ -1222,7 +1224,7 @@ export default function PayrollManagementPage() {
                   onClick={handleBulkDelete}
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Selected
+                  {t('payroll.deleteSelected')}
                 </Button>
                 <Button
                   variant="outline"
@@ -1230,7 +1232,7 @@ export default function PayrollManagementPage() {
                   onClick={() => setSelectedPayrolls(new Set())}
                 >
                   <XCircle className="h-4 w-4 mr-2" />
-                  Clear Selection
+                  {t('payroll.clearSelection')}
                 </Button>
               </div>
             </div>
@@ -1242,13 +1244,13 @@ export default function PayrollManagementPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Payrolls ({payrolls?.total || 0} total)</CardTitle>
+            <CardTitle>{t('payroll.payrolls', { total: payrolls?.total || 0 })}</CardTitle>
             <div className="flex items-center gap-2">
               <Checkbox
                 checked={selectedPayrolls.size === (payrolls?.data && Array.isArray(payrolls.data) ? payrolls.data.length : 0) && (payrolls?.data && Array.isArray(payrolls.data) ? payrolls.data.length : 0) > 0}
                 onCheckedChange={handleSelectAll}
               />
-              <span className="text-sm text-muted-foreground">Select All</span>
+              <span className="text-sm text-muted-foreground">{t('payroll.selectAll')}</span>
             </div>
           </div>
         </CardHeader>
@@ -1263,14 +1265,14 @@ export default function PayrollManagementPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12"></TableHead>
-                    <TableHead>Employee</TableHead>
-                    <TableHead>Period</TableHead>
-                    <TableHead>Basic Salary</TableHead>
-                    <TableHead>Overtime</TableHead>
-                    <TableHead>Final Amount</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t('payroll.employee')}</TableHead>
+                    <TableHead>{t('payroll.period')}</TableHead>
+                    <TableHead>{t('payroll.basicSalary')}</TableHead>
+                    <TableHead>{t('payroll.overtime')}</TableHead>
+                    <TableHead>{t('payroll.finalAmount')}</TableHead>
+                    <TableHead>{t('payroll.status')}</TableHead>
+                    <TableHead>{t('payroll.created')}</TableHead>
+                    <TableHead className="text-right">{t('payroll.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1290,13 +1292,13 @@ export default function PayrollManagementPage() {
                             <div className="font-medium">
                               {payroll.employee ? 
                                 (payroll.employee.full_name || `${payroll.employee.first_name} ${payroll.employee.last_name}`) : 
-                                'Unknown Employee'
+                                t('payroll.unknownEmployee')
                               }
                             </div>
                             <div className="text-sm text-muted-foreground">
                               {payroll.employee ? 
-                                `${payroll.employee.department || 'N/A'} • ${payroll.employee.designation || 'N/A'}` : 
-                                'No details available'
+                                `${payroll.employee.department || t('payroll.na')} • ${payroll.employee.designation || t('payroll.na')}` : 
+                                t('payroll.noDetails')
                               }
                             </div>
                           </div>
@@ -1328,7 +1330,7 @@ export default function PayrollManagementPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleDownloadPayslip(payroll.id)}
-                              title="View Payslip"
+                              title={t('payroll.viewPayslip')}
                             >
                               <FileText className="h-4 w-4" />
                             </Button>
@@ -1337,12 +1339,12 @@ export default function PayrollManagementPage() {
                               size="sm"
                               onClick={() => handleDirectDownloadPayslip(payroll.id)}
                               disabled={downloadingPayslip === payroll.id}
-                              title="Download PDF"
+                              title={t('payroll.downloadPdf')}
                             >
                               {downloadingPayslip === payroll.id ? (
                                 <>
                                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                                  <span className="sr-only">Generating...</span>
+                                  <span className="sr-only">{t('payroll.generating')}</span>
                                 </>
                               ) : (
                               <FileDown className="h-4 w-4" />
@@ -1393,10 +1395,10 @@ export default function PayrollManagementPage() {
                           {loading ? (
                             <div className="flex items-center justify-center">
                               <RefreshCw className="h-6 w-6 animate-spin mr-2" />
-                              Loading payrolls...
+                              {t('payroll.loadingPayrolls')}
                             </div>
                           ) : (
-                            "No payrolls found"
+                            t('payroll.noPayrollsFound')
                           )}
                         </div>
                       </TableCell>
@@ -1410,9 +1412,11 @@ export default function PayrollManagementPage() {
                 <div className="mt-4">
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-gray-500">
-                      Showing {((currentPage - 1) * payrolls.per_page) + 1} to{" "}
-                      {Math.min(currentPage * payrolls.per_page, payrolls.total)} of{" "}
-                      {payrolls.total} results
+                      {t('payroll.showing', {
+                        from: ((currentPage - 1) * payrolls.per_page) + 1,
+                        to: Math.min(currentPage * payrolls.per_page, payrolls.total),
+                        total: payrolls.total
+                      })}
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
@@ -1422,7 +1426,7 @@ export default function PayrollManagementPage() {
                         disabled={currentPage === 1}
                       >
                         <ChevronLeft className="h-4 w-4 mr-1" />
-                        Previous
+                        {t('payroll.previous')}
                       </Button>
 
                       <div className="flex items-center gap-1">
@@ -1490,7 +1494,7 @@ export default function PayrollManagementPage() {
                         onClick={() => setCurrentPage(Math.min(payrolls.last_page, currentPage + 1))}
                         disabled={currentPage === payrolls.last_page}
                       >
-                        Next
+                        {t('payroll.next')}
                         <ChevronRight className="h-4 w-4 ml-1" />
                       </Button>
                     </div>
@@ -1506,9 +1510,9 @@ export default function PayrollManagementPage() {
       <RoleBased roles={['ADMIN', 'MANAGER']}>
         <Card>
           <CardHeader>
-            <CardTitle>Payroll Administration</CardTitle>
+            <CardTitle>{t('payroll.administration')}</CardTitle>
             <CardDescription>
-              Advanced payroll management features for administrators
+              {t('payroll.administrationDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -1516,21 +1520,21 @@ export default function PayrollManagementPage() {
               <Can action="approve" subject="Payroll">
                 <Button variant="outline">
                   <CheckCircle className="h-4 w-4 mr-2" />
-                  Approve All Pending
+                  {t('payroll.approveAllPending')}
                 </Button>
               </Can>
 
               <Can action="manage" subject="Payroll">
                 <Button variant="outline">
                   <Shield className="h-4 w-4 mr-2" />
-                  Payroll Settings
+                  {t('payroll.payrollSettings')}
                 </Button>
               </Can>
 
               <Can action="export" subject="Payroll">
                 <Button variant="outline">
                   <FileText className="h-4 w-4 mr-2" />
-                  Generate Reports
+                  {t('payroll.generateReports')}
                 </Button>
               </Can>
             </div>

@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Eye, Edit, Trash2, Plus, BarChart3, TrendingUp, PieChart, Activity, Download, Settings, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from 'react-i18next';
 
 interface AnalyticsReport {
   id: string;
@@ -158,6 +159,7 @@ const mockAnalyticsReports: AnalyticsReport[] = [
 
 export default function AnalyticsPage() {
   const { user, hasPermission, getAllowedActions } = useRBAC();
+  const { t } = useTranslation('analytics');
   const [reports, setReports] = useState<AnalyticsReportResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -336,7 +338,7 @@ export default function AnalyticsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading analytics reports...</div>
+        <div className="text-lg">{t('loading_reports')}</div>
       </div>
     );
   }
@@ -347,13 +349,13 @@ export default function AnalyticsPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <BarChart3 className="h-6 w-6" />
-            <h1 className="text-2xl font-bold">Analytics Management</h1>
+            <h1 className="text-2xl font-bold">{t('analytics_management')}</h1>
           </div>
           <div className="flex space-x-2">
             <Can action="export" subject="Report">
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
-                Export
+                {t('export_reports')}
               </Button>
             </Can>
 
@@ -361,7 +363,7 @@ export default function AnalyticsPage() {
               <Link href="/modules/analytics/create">
                 <Button>
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Report
+                  {t('create_report')}
                 </Button>
               </Link>
             </Can>
@@ -370,13 +372,13 @@ export default function AnalyticsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Analytics Reports</CardTitle>
+          <CardTitle>{t('analytics_reports')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="flex-1">
               <Input
-                placeholder="Search reports..."
+                placeholder={t('search_reports')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="max-w-sm"
@@ -388,11 +390,11 @@ export default function AnalyticsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Error">Error</SelectItem>
+                  <SelectItem value="all">{t('all_status')}</SelectItem>
+                  <SelectItem value="Active">{t('active')}</SelectItem>
+                  <SelectItem value="Inactive">{t('inactive')}</SelectItem>
+                  <SelectItem value="Pending">{t('pending')}</SelectItem>
+                  <SelectItem value="Error">{t('error')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={type} onValueChange={setType}>
@@ -400,14 +402,14 @@ export default function AnalyticsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="Revenue Analysis">Revenue Analysis</SelectItem>
-                  <SelectItem value="Equipment Analysis">Equipment Analysis</SelectItem>
-                  <SelectItem value="Customer Analysis">Customer Analysis</SelectItem>
-                  <SelectItem value="HR Analytics">HR Analytics</SelectItem>
-                  <SelectItem value="Safety Analytics">Safety Analytics</SelectItem>
-                  <SelectItem value="Inventory Analysis">Inventory Analysis</SelectItem>
-                  <SelectItem value="Project Analytics">Project Analytics</SelectItem>
+                  <SelectItem value="all">{t('all_types')}</SelectItem>
+                  <SelectItem value="Revenue Analysis">{t('revenue_analysis')}</SelectItem>
+                  <SelectItem value="Equipment Analysis">{t('equipment_analysis')}</SelectItem>
+                  <SelectItem value="Customer Analysis">{t('customer_analysis')}</SelectItem>
+                  <SelectItem value="HR Analytics">{t('hr_analytics')}</SelectItem>
+                  <SelectItem value="Safety Analytics">{t('safety_analytics')}</SelectItem>
+                  <SelectItem value="Inventory Analysis">{t('inventory_analysis')}</SelectItem>
+                  <SelectItem value="Project Analytics">{t('project_analytics')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -417,13 +419,13 @@ export default function AnalyticsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Report</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Schedule</TableHead>
-                  <TableHead>Last Generated</TableHead>
-                  <TableHead>Created By</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('report')}</TableHead>
+                  <TableHead>{t('type')}</TableHead>
+                  <TableHead>{t('status')}</TableHead>
+                  <TableHead>{t('schedule')}</TableHead>
+                  <TableHead>{t('last_generated')}</TableHead>
+                  <TableHead>{t('created_by')}</TableHead>
+                  <TableHead className="text-right">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -444,7 +446,7 @@ export default function AnalyticsPage() {
                     <TableCell>{getStatusBadge(report.status)}</TableCell>
                     <TableCell>{getScheduleBadge(report.schedule)}</TableCell>
                     <TableCell>
-                      {report.last_generated ? formatDate(report.last_generated) : "Never"}
+                      {report.last_generated ? formatDate(report.last_generated) : t('never_generated')}
                     </TableCell>
                     <TableCell>{report.created_by}</TableCell>
                     <TableCell className="text-right">
@@ -496,9 +498,11 @@ export default function AnalyticsPage() {
           {reports && reports.last_page > 1 && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-gray-500">
-                Showing {((reports.current_page - 1) * reports.per_page) + 1} to{" "}
-                {Math.min(reports.current_page * reports.per_page, reports.total)} of{" "}
-                {reports.total} results
+                {t('showing_results', {
+                  start: ((reports.current_page - 1) * reports.per_page) + 1,
+                  end: Math.min(reports.current_page * reports.per_page, reports.total),
+                  total: reports.total
+                })}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -508,7 +512,7 @@ export default function AnalyticsPage() {
                   disabled={reports.current_page === 1}
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
+                  {t('previous')}
                 </Button>
 
                 <div className="flex items-center gap-1">
@@ -576,7 +580,7 @@ export default function AnalyticsPage() {
                   onClick={() => setCurrentPage(Math.min(reports.last_page, reports.current_page + 1))}
                   disabled={reports.current_page === reports.last_page}
                 >
-                  Next
+                  {t('next')}
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
@@ -589,9 +593,9 @@ export default function AnalyticsPage() {
       <RoleBased roles={['ADMIN', 'MANAGER']}>
         <Card>
           <CardHeader>
-            <CardTitle>Analytics Administration</CardTitle>
+            <CardTitle>{t('analytics_administration')}</CardTitle>
             <CardDescription>
-              Advanced analytics management features for administrators
+              {t('advanced_analytics_management_features')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -599,21 +603,21 @@ export default function AnalyticsPage() {
               <Can action="manage" subject="Report">
                 <Button variant="outline">
                   <Settings className="h-4 w-4 mr-2" />
-                  Analytics Settings
+                  {t('analytics_settings')}
                 </Button>
               </Can>
 
               <Can action="export" subject="Report">
                 <Button variant="outline">
                   <Download className="h-4 w-4 mr-2" />
-                  Generate All Reports
+                  {t('generate_all_reports')}
                 </Button>
               </Can>
 
               <Can action="manage" subject="Report">
                 <Button variant="outline">
                   <BarChart3 className="h-4 w-4 mr-2" />
-                  Schedule Reports
+                  {t('schedule_reports')}
                 </Button>
               </Can>
             </div>

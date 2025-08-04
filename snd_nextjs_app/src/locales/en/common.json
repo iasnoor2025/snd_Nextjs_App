@@ -41,7 +41,12 @@
     "approved": "Approved",
     "rejected": "Rejected",
     "completed": "Completed",
-    "cancelled": "Cancelled"
+    "cancelled": "Cancelled",
+    "assigned": "Assigned",
+    "available": "Available",
+    "in_use": "In Use",
+    "maintenance": "Maintenance",
+    "out_of_service": "Out of Service"
   },
   "common": {
     "name": "Name",
@@ -72,5 +77,20 @@
     "to": "to",
     "of": "of",
     "results": "results"
-  }
+  },
+  "loading": "Loading...",
+  "welcome_back": "Welcome back, {{name}}!",
+  "user": "User",
+  "dashboard": {
+    "description": "View your rental analytics and performance metrics"
+  },
+  "customers": {
+    "description": "Manage customer information and relationships"
+  },
+  "equipment": {
+    "description": "Track and manage rental equipment inventory"
+  },
+  "go_to_employee_management": "Go to Employee Management",
+  "layout_test": "Layout Test",
+  "layout_test_description": "If you can see this content properly positioned to the right of the sidebar, the layout is working correctly. The content should not be hidden under the sidebar."
 }

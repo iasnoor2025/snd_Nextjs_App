@@ -11,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Eye, Edit, Trash2, Plus, Calendar, CheckCircle, XCircle, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
+// i18n refactor: All user-facing strings now use useTranslation('leave')
+import { useTranslation } from 'react-i18next';
 
 interface LeaveRequest {
   id: string;
@@ -130,6 +132,7 @@ const mockLeaveRequests: LeaveRequest[] = [
 ];
 
 export default function LeaveManagementPage() {
+  const { t } = useTranslation('leave');
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequestResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -170,10 +173,10 @@ export default function LeaveManagementPage() {
   }, [search, status, leaveType, perPage, currentPage]);
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this leave request?")) {
+    if (confirm(t('leave.confirm_delete_leave_request'))) {
       // Simulate API call
       setTimeout(() => {
-        toast.success("Leave request deleted successfully");
+        toast.success(t('leave.leave_request_deleted_successfully'));
         // Refresh data
         setLoading(true);
         setTimeout(() => {
@@ -211,7 +214,7 @@ export default function LeaveManagementPage() {
   const handleApprove = (id: string) => {
     // Simulate API call
     setTimeout(() => {
-      toast.success("Leave request approved successfully");
+      toast.success(t('leave.leave_request_approved_successfully'));
       // Update the status in mock data
       const updatedData = mockLeaveRequests.map(request =>
         request.id === id
@@ -254,7 +257,7 @@ export default function LeaveManagementPage() {
   const handleReject = (id: string) => {
     // Simulate API call
     setTimeout(() => {
-      toast.success("Leave request rejected");
+      toast.success(t('leave.leave_request_rejected'));
       // Update the status in mock data
       const updatedData = mockLeaveRequests.map(request =>
         request.id === id
@@ -322,7 +325,7 @@ export default function LeaveManagementPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading leave requests...</div>
+        <div className="text-lg">{t('leave.loading_leave_requests')}</div>
       </div>
     );
   }
@@ -332,25 +335,25 @@ export default function LeaveManagementPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Calendar className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">Leave Management</h1>
+          <h1 className="text-2xl font-bold">{t('leave.leave_management')}</h1>
         </div>
         <Link href="/modules/leave-management/create">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Request Leave
+            {t('leave.request_leave')}
           </Button>
         </Link>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Leave Requests</CardTitle>
+          <CardTitle>{t('leave.leave_requests')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <div className="flex-1">
               <Input
-                placeholder="Search leave requests..."
+                placeholder={t('leave.search_leave_requests')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="max-w-sm"
@@ -362,11 +365,11 @@ export default function LeaveManagementPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Approved">Approved</SelectItem>
-                  <SelectItem value="Rejected">Rejected</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled</SelectItem>
+                  <SelectItem value="all">{t('leave.all_status')}</SelectItem>
+                  <SelectItem value="Pending">{t('leave.pending')}</SelectItem>
+                  <SelectItem value="Approved">{t('leave.approved')}</SelectItem>
+                  <SelectItem value="Rejected">{t('leave.rejected')}</SelectItem>
+                  <SelectItem value="Cancelled">{t('leave.cancelled')}</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={leaveType} onValueChange={setLeaveType}>
@@ -374,12 +377,12 @@ export default function LeaveManagementPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="Annual Leave">Annual Leave</SelectItem>
-                  <SelectItem value="Sick Leave">Sick Leave</SelectItem>
-                  <SelectItem value="Personal Leave">Personal Leave</SelectItem>
-                  <SelectItem value="Maternity Leave">Maternity Leave</SelectItem>
-                  <SelectItem value="Study Leave">Study Leave</SelectItem>
+                  <SelectItem value="all">{t('leave.all_types')}</SelectItem>
+                  <SelectItem value="Annual Leave">{t('leave.annual_leave')}</SelectItem>
+                  <SelectItem value="Sick Leave">{t('leave.sick_leave')}</SelectItem>
+                  <SelectItem value="Personal Leave">{t('leave.personal_leave')}</SelectItem>
+                  <SelectItem value="Maternity Leave">{t('leave.maternity_leave')}</SelectItem>
+                  <SelectItem value="Study Leave">{t('leave.study_leave')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -389,13 +392,13 @@ export default function LeaveManagementPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead>Leave Type</TableHead>
-                  <TableHead>Dates</TableHead>
-                  <TableHead>Days</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t('leave.employee')}</TableHead>
+                  <TableHead>{t('leave.leave_type')}</TableHead>
+                  <TableHead>{t('leave.dates')}</TableHead>
+                  <TableHead>{t('leave.days')}</TableHead>
+                  <TableHead>{t('leave.status')}</TableHead>
+                  <TableHead>{t('leave.submitted')}</TableHead>
+                  <TableHead className="text-right">{t('leave.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -413,7 +416,7 @@ export default function LeaveManagementPage() {
                         <div>{formatDate(request.start_date)} - {formatDate(request.end_date)}</div>
                       </div>
                     </TableCell>
-                    <TableCell>{request.days_requested} days</TableCell>
+                    <TableCell>{request.days_requested} {t('leave.days')}</TableCell>
                     <TableCell>{getStatusBadge(request.status)}</TableCell>
                     <TableCell>{formatDate(request.submitted_date)}</TableCell>
                     <TableCell className="text-right">
@@ -466,9 +469,11 @@ export default function LeaveManagementPage() {
           {leaveRequests && leaveRequests.last_page > 1 && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-gray-500">
-                Showing {((leaveRequests.current_page - 1) * leaveRequests.per_page) + 1} to{" "}
-                {Math.min(leaveRequests.current_page * leaveRequests.per_page, leaveRequests.total)} of{" "}
-                {leaveRequests.total} results
+                {t('leave.showing_results', {
+                  start: ((leaveRequests.current_page - 1) * leaveRequests.per_page) + 1,
+                  end: Math.min(leaveRequests.current_page * leaveRequests.per_page, leaveRequests.total),
+                  total: leaveRequests.total
+                })}
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -478,7 +483,7 @@ export default function LeaveManagementPage() {
                   disabled={leaveRequests.current_page === 1}
                 >
                   <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
+                  {t('leave.previous')}
                 </Button>
 
                 <div className="flex items-center gap-1">
@@ -546,7 +551,7 @@ export default function LeaveManagementPage() {
                   onClick={() => setCurrentPage(Math.min(leaveRequests.last_page, leaveRequests.current_page + 1))}
                   disabled={leaveRequests.current_page === leaveRequests.last_page}
                 >
-                  Next
+                  {t('leave.next')}
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>

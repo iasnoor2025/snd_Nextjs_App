@@ -23,6 +23,8 @@ import {
 import { toast } from "sonner";
 import Link from "next/link";
 import { usePrint } from "@/hooks/use-print";
+// i18n refactor: All user-facing strings now use useTranslation('quotation')
+import { useTranslation } from 'react-i18next';
 
 interface Customer {
   id: number;
@@ -82,6 +84,7 @@ interface PaginatedResponse {
 }
 
 export default function QuotationManagementPage() {
+  const { t } = useTranslation('quotation');
   const [quotations, setQuotations] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -149,15 +152,15 @@ export default function QuotationManagementPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "draft":
-        return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t('status.draft')}</Badge>;
       case "sent":
-        return <Badge className="bg-blue-100 text-blue-800">Sent</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t('status.sent')}</Badge>;
       case "approved":
-        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('status.approved')}</Badge>;
       case "rejected":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('status.rejected')}</Badge>;
       case "expired":
-        return <Badge className="bg-orange-100 text-orange-800">Expired</Badge>;
+        return <Badge className="bg-orange-100 text-orange-800">{t('status.expired')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
@@ -203,24 +206,24 @@ export default function QuotationManagementPage() {
   return (
     <div className="p-6" ref={printRef}>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Quotation Management</h1>
+        <h1 className="text-2xl font-bold">{t('quotation_management.title')}</h1>
         <div className="flex space-x-2">
           <Button variant="outline" size="sm" onClick={handleRefresh}>
             <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
+            {t('quotation_management.refresh')}
           </Button>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
-            Export
+            {t('quotation_management.export')}
           </Button>
           <Button variant="outline" size="sm" onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-2" />
-            Print
+            {t('quotation_management.print')}
           </Button>
           <Link href="/modules/quotation-management/create">
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Create Quotation
+              {t('quotation_management.create_quotation')}
             </Button>
           </Link>
         </div>
@@ -232,7 +235,7 @@ export default function QuotationManagementPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search quotations by number or customer..."
+                placeholder={t('quotation_management.search_placeholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -241,27 +244,27 @@ export default function QuotationManagementPage() {
           </div>
           <Select value={status} onValueChange={setStatus}>
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Filter by status" />
+              <SelectValue placeholder={t('quotation_management.filter_status_placeholder')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="sent">Sent</SelectItem>
-              <SelectItem value="approved">Approved</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
-              <SelectItem value="expired">Expired</SelectItem>
+              <SelectItem value="all">{t('quotation_management.all_status')}</SelectItem>
+              <SelectItem value="draft">{t('quotation_management.status.draft')}</SelectItem>
+              <SelectItem value="sent">{t('quotation_management.status.sent')}</SelectItem>
+              <SelectItem value="approved">{t('quotation_management.status.approved')}</SelectItem>
+              <SelectItem value="rejected">{t('quotation_management.status.rejected')}</SelectItem>
+              <SelectItem value="expired">{t('quotation_management.status.expired')}</SelectItem>
             </SelectContent>
           </Select>
           <Input
             type="date"
-            placeholder="From date"
+            placeholder={t('quotation_management.from_date_placeholder')}
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             className="w-full sm:w-40"
           />
           <Input
             type="date"
-            placeholder="To date"
+            placeholder={t('quotation_management.to_date_placeholder')}
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             className="w-full sm:w-40"
@@ -273,14 +276,18 @@ export default function QuotationManagementPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Quotations</CardTitle>
+              <CardTitle>{t('quotation_management.quotations')}</CardTitle>
               <CardDescription>
-                Manage quotations and proposals
+                {t('quotation_management.manage_quotations_description')}
               </CardDescription>
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-500">
-                Showing {quotations?.from || 0} to {quotations?.to || 0} of {quotations?.total || 0} quotations
+                {t('quotation_management.showing_quotations', {
+                  from: quotations?.from || 0,
+                  to: quotations?.to || 0,
+                  total: quotations?.total || 0
+                })}
               </span>
             </div>
           </div>
@@ -289,14 +296,14 @@ export default function QuotationManagementPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Quotation #</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Issue Date</TableHead>
-                <TableHead>Valid Until</TableHead>
-                <TableHead>Total Amount</TableHead>
-                <TableHead>Items</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('quotation_management.quotation_number')}</TableHead>
+                <TableHead>{t('quotation_management.customer')}</TableHead>
+                <TableHead>{t('quotation_management.status')}</TableHead>
+                <TableHead>{t('quotation_management.issue_date')}</TableHead>
+                <TableHead>{t('quotation_management.valid_until')}</TableHead>
+                <TableHead>{t('quotation_management.total_amount')}</TableHead>
+                <TableHead>{t('quotation_management.items')}</TableHead>
+                <TableHead className="text-right">{t('quotation_management.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -326,7 +333,7 @@ export default function QuotationManagementPage() {
                   </TableCell>
                   <TableCell className="font-semibold">{formatCurrency(quotation.total_amount)}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{quotation.quotationItems.length} items</Badge>
+                    <Badge variant="outline">{quotation.quotationItems.length} {t('quotation_management.items_count')}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end space-x-2">
@@ -369,7 +376,11 @@ export default function QuotationManagementPage() {
           {quotations && quotations.last_page > 1 && (
             <div className="flex items-center justify-between mt-6">
               <div className="text-sm text-gray-500">
-                Showing {quotations.from} to {quotations.to} of {quotations.total} results
+                {t('quotation_management.showing_results', {
+                  from: quotations.from,
+                  to: quotations.to,
+                  total: quotations.total
+                })}
               </div>
               <div className="flex items-center space-x-2">
                 <Button
@@ -378,10 +389,13 @@ export default function QuotationManagementPage() {
                   disabled={!quotations.prev_page_url}
                   onClick={() => setCurrentPage(quotations.current_page - 1)}
                 >
-                  Previous
+                  {t('quotation_management.previous')}
                 </Button>
                 <span className="text-sm">
-                  Page {quotations.current_page} of {quotations.last_page}
+                  {t('quotation_management.page_of', {
+                    current: quotations.current_page,
+                    total: quotations.last_page
+                  })}
                 </span>
                 <Button
                   variant="outline"
@@ -389,7 +403,7 @@ export default function QuotationManagementPage() {
                   disabled={!quotations.next_page_url}
                   onClick={() => setCurrentPage(quotations.current_page + 1)}
                 >
-                  Next
+                  {t('quotation_management.next')}
                 </Button>
               </div>
             </div>

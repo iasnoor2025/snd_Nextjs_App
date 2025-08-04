@@ -54,6 +54,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import AutoGenerateButton from "@/components/timesheet/AutoGenerateButton";
 import { ProtectedRoute } from "@/components/protected-route";
+import { useTranslation } from 'react-i18next';
 
 interface Timesheet {
   id: string;
@@ -110,6 +111,7 @@ interface PaginatedResponse {
 }
 
 export default function TimesheetManagementPage() {
+  const { t } = useTranslation('timesheet');
   return (
     <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Timesheet' }}>
       <TimesheetManagementContent />
@@ -118,6 +120,7 @@ export default function TimesheetManagementPage() {
 }
 
 function TimesheetManagementContent() {
+  const { t } = useTranslation('timesheet');
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const [timesheets, setTimesheets] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -176,7 +179,7 @@ function TimesheetManagementContent() {
         const result = await response.json();
 
         if (result.success && result.created > 0) {
-          toast.success(`Auto-generated ${result.created} new timesheets for the last 3 months`);
+          toast.success(`${t('auto_generated_timesheets', { count: result.created })}`);
         } else if (result.success && result.created === 0) {
           // No new timesheets created, which is fine
           console.log('No new timesheets needed to be generated for the last 3 months');
@@ -213,7 +216,7 @@ function TimesheetManagementContent() {
       setTimesheets(data);
     } catch (error) {
       console.error('Error fetching timesheets:', error);
-      toast.error('Failed to fetch timesheets');
+      toast.error(t('failed_to_fetch_timesheets'));
     } finally {
       setLoading(false);
     }
@@ -343,7 +346,7 @@ function TimesheetManagementContent() {
 
     // Only admin can delete non-draft timesheets
     if (timesheet.status !== 'draft' && userRole !== 'ADMIN') {
-      toast.error('Only draft timesheets can be deleted by non-admin users');
+      toast.error(t('only_draft_timesheets_can_be_deleted_by_non_admin_users'));
       return;
     }
 
@@ -372,7 +375,7 @@ function TimesheetManagementContent() {
         throw new Error(data.error || 'Failed to delete timesheet');
       }
 
-      toast.success('Timesheet deleted successfully');
+      toast.success(t('timesheet_deleted_successfully'));
       setDeleteDialog({ open: false, timesheetId: null, timesheetData: null });
       fetchTimesheets(); // Refresh the list
     } catch (error) {
@@ -391,17 +394,17 @@ function TimesheetManagementContent() {
 
     // Only admin can delete non-draft timesheets
     if (nonDraftTimesheets.length > 0 && userRole !== 'ADMIN') {
-      toast.error(`Cannot delete ${nonDraftTimesheets.length} timesheet(s) - only draft timesheets can be deleted by non-admin users`);
+      toast.error(t('cannot_delete_timesheets_only_draft_can_be_deleted_by_non_admin_users', { count: nonDraftTimesheets.length }));
       return;
     }
 
     if (draftTimesheets.length === 0 && userRole !== 'ADMIN') {
-      toast.error('No draft timesheets selected for deletion');
+      toast.error(t('no_draft_timesheets_selected_for_deletion'));
       return;
     }
 
     if (selectedTimesheetsData.length === 0) {
-      toast.error('No timesheets selected for deletion');
+      toast.error(t('no_timesheets_selected_for_deletion'));
       return;
     }
 
@@ -442,19 +445,19 @@ function TimesheetManagementContent() {
 
   const handleApprove = async () => {
     // Implementation for individual approve functionality
-    toast.info('Individual approve functionality to be implemented');
+    toast.info(t('individual_approve_functionality_to_be_implemented'));
   };
 
   const handleReject = async () => {
     // Implementation for individual reject functionality
-    toast.info('Individual reject functionality to be implemented');
+    toast.info(t('individual_reject_functionality_to_be_implemented'));
   };
 
 
 
   const handleBulkAction = async (action: 'approve' | 'reject') => {
     if (selectedTimesheets.length === 0) {
-      toast.error('Please select timesheets to process');
+      toast.error(t('please_select_timesheets_to_process'));
       return;
     }
 
@@ -473,7 +476,7 @@ function TimesheetManagementContent() {
     });
 
     if (pendingTimesheets.length === 0) {
-      toast.error('No pending timesheets found to process');
+      toast.error(t('no_pending_timesheets_found_to_process'));
       return;
     }
 
@@ -488,7 +491,7 @@ function TimesheetManagementContent() {
         body: JSON.stringify({
           timesheetIds: pendingTimesheets.map(t => t.id),
           action: action,
-          notes: `Bulk ${action} of all pending timesheets`
+          notes: `${t('bulk_action_notes', { action: action.charAt(0).toUpperCase() + action.slice(1) })} ${t('all_pending_timesheets')}`
         }),
       });
 
@@ -628,12 +631,12 @@ function TimesheetManagementContent() {
 
   const getNextApprovalStage = (currentStatus: string) => {
     const stageProgression = {
-      draft: 'Submit for Approval',
-      submitted: 'Foreman Approval',
-      foreman_approved: 'Incharge Approval',
-      incharge_approved: 'Checking Approval',
-      checking_approved: 'Manager Approval',
-      manager_approved: 'Completed'
+      draft: t('submit_for_approval'),
+      submitted: t('foreman_approval'),
+      foreman_approved: t('incharge_approval'),
+      incharge_approved: t('checking_approval'),
+      checking_approved: t('manager_approval'),
+      manager_approved: t('completed')
     };
 
     return stageProgression[currentStatus as keyof typeof stageProgression] || 'Unknown';
@@ -694,19 +697,19 @@ function TimesheetManagementContent() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "draft":
-        return <Badge variant="secondary">Draft</Badge>;
+        return <Badge variant="secondary">{t('draft')}</Badge>;
       case "submitted":
-        return <Badge variant="default">Submitted</Badge>;
+        return <Badge variant="default">{t('submitted')}</Badge>;
       case "foreman_approved":
-        return <Badge className="bg-blue-100 text-blue-800">Foreman Approved</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t('foreman_approved')}</Badge>;
       case "incharge_approved":
-        return <Badge className="bg-purple-100 text-purple-800">Incharge Approved</Badge>;
+        return <Badge className="bg-purple-100 text-purple-800">{t('incharge_approved')}</Badge>;
       case "checking_approved":
-        return <Badge className="bg-orange-100 text-orange-800">Checking Approved</Badge>;
+        return <Badge className="bg-orange-100 text-orange-800">{t('checking_approved')}</Badge>;
       case "manager_approved":
-        return <Badge className="bg-green-100 text-green-800">Manager Approved</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t('manager_approved')}</Badge>;
       case "rejected":
-        return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t('rejected')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
     }
@@ -717,7 +720,7 @@ function TimesheetManagementContent() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading timesheets...</p>
+          <p className="text-muted-foreground">{t('loading_timesheets')}</p>
         </div>
       </div>
     );
@@ -727,11 +730,11 @@ function TimesheetManagementContent() {
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
-          <h1 className="text-2xl font-bold">Timesheet Management</h1>
+          <h1 className="text-2xl font-bold">{t('timesheet_management')}</h1>
           {autoGenerating && (
             <div className="flex items-center space-x-2 text-sm text-blue-600">
               <RefreshCw className="h-4 w-4 animate-spin" />
-              <span>Auto-generating timesheets...</span>
+              <span>{t('auto_generating_timesheets')}</span>
             </div>
           )}
         </div>
@@ -739,14 +742,14 @@ function TimesheetManagementContent() {
           <Can action="export" subject="Timesheet">
             <Button variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" />
-              Export
+              {t('export')}
             </Button>
           </Can>
 
           <Can action="sync" subject="Timesheet">
             <Button variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
-              Sync Timesheets
+              {t('sync_timesheets')}
             </Button>
           </Can>
 
@@ -758,7 +761,7 @@ function TimesheetManagementContent() {
             <Link href="/modules/timesheet-management/create">
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                Create Timesheet
+                {t('create_timesheet')}
               </Button>
             </Link>
           </Can>
@@ -772,14 +775,14 @@ function TimesheetManagementContent() {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <span className="text-sm font-medium">
-                  {selectedTimesheets.length} timesheet(s) selected
+                  {selectedTimesheets.length} {t('timesheet_selected', { count: selectedTimesheets.length })}
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setSelectedTimesheets([])}
                 >
-                  Clear Selection
+                  {t('clear_selection')}
                 </Button>
               </div>
               <div className="flex items-center space-x-2">
@@ -791,7 +794,7 @@ function TimesheetManagementContent() {
                     className="text-green-600 border-green-200 hover:bg-green-50"
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    Bulk Approve
+                    {t('bulk_approve')}
                   </Button>
                 )}
                 {canRejectSelected && (
@@ -802,7 +805,7 @@ function TimesheetManagementContent() {
                     className="text-red-600 border-red-200 hover:bg-red-50"
                   >
                     <XCircle className="h-4 w-4 mr-2" />
-                    Bulk Reject
+                    {t('bulk_reject')}
                   </Button>
                 )}
                 <Button
@@ -812,7 +815,7 @@ function TimesheetManagementContent() {
                   className="text-red-600 border-red-200 hover:bg-red-50"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Bulk Delete
+                  {t('bulk_delete')}
                 </Button>
               </div>
             </div>
@@ -826,7 +829,7 @@ function TimesheetManagementContent() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Search timesheets..."
+                placeholder={t('search_timesheets')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -835,25 +838,25 @@ function TimesheetManagementContent() {
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Filter by status" />
+              <SelectValue placeholder={t('filter_by_status')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="draft">Draft</SelectItem>
-              <SelectItem value="submitted">Submitted</SelectItem>
-              <SelectItem value="foreman_approved">Foreman Approved</SelectItem>
-              <SelectItem value="incharge_approved">Incharge Approved</SelectItem>
-              <SelectItem value="checking_approved">Checking Approved</SelectItem>
-              <SelectItem value="manager_approved">Manager Approved</SelectItem>
-              <SelectItem value="rejected">Rejected</SelectItem>
+              <SelectItem value="all">{t('all_status')}</SelectItem>
+              <SelectItem value="draft">{t('draft')}</SelectItem>
+              <SelectItem value="submitted">{t('submitted')}</SelectItem>
+              <SelectItem value="foreman_approved">{t('foreman_approved')}</SelectItem>
+              <SelectItem value="incharge_approved">{t('incharge_approved')}</SelectItem>
+              <SelectItem value="checking_approved">{t('checking_approved')}</SelectItem>
+              <SelectItem value="manager_approved">{t('manager_approved')}</SelectItem>
+              <SelectItem value="rejected">{t('rejected')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Filter by assignment" />
+              <SelectValue placeholder={t('filter_by_assignment')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Assignments</SelectItem>
+              <SelectItem value="all">{t('all_assignments')}</SelectItem>
               {assignments.map(assignment => (
                 <SelectItem key={assignment} value={assignment}>{assignment}</SelectItem>
               ))}
@@ -866,10 +869,10 @@ function TimesheetManagementContent() {
             onOpenChange={handleMonthSelectOpen}
           >
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Filter by month" />
+              <SelectValue placeholder={t('filter_by_month')} />
             </SelectTrigger>
             <SelectContent className="max-h-60">
-              <SelectItem value="all">All Months</SelectItem>
+              <SelectItem value="all">{t('all_months')}</SelectItem>
               {monthOptions.map(option => (
                 <SelectItem
                   key={option.value}
@@ -878,7 +881,7 @@ function TimesheetManagementContent() {
                   ref={option.value === currentMonth ? currentMonthRef : null}
                 >
                   {option.label}
-                  {option.value === currentMonth && " (Current)"}
+                  {option.value === currentMonth && ` (${t('current_month')})`}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -887,19 +890,19 @@ function TimesheetManagementContent() {
             variant="outline"
             size="sm"
             onClick={() => setMonth(currentMonth)}
-            title="Filter by current month"
+            title={t('filter_by_current_month')}
           >
-            Current Month
+            {t('current_month')}
           </Button>
           <Select value={pageSize.toString()} onValueChange={(value) => handlePageSizeChange(parseInt(value))}>
             <SelectTrigger className="w-full sm:w-32">
-              <SelectValue placeholder="Page size" />
+              <SelectValue placeholder={t('page_size')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="5">5 per page</SelectItem>
-              <SelectItem value="10">10 per page</SelectItem>
-              <SelectItem value="20">20 per page</SelectItem>
-              <SelectItem value="50">50 per page</SelectItem>
+              <SelectItem value="5">{t('5_per_page')}</SelectItem>
+              <SelectItem value="10">{t('10_per_page')}</SelectItem>
+              <SelectItem value="20">{t('20_per_page')}</SelectItem>
+              <SelectItem value="50">{t('50_per_page')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -909,18 +912,18 @@ function TimesheetManagementContent() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Timesheets</CardTitle>
+              <CardTitle>{t('timesheets')}</CardTitle>
               <CardDescription>
-                Manage employee timesheets and approvals
+                {t('manage_employee_timesheets_and_approvals')}
               </CardDescription>
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-500">
-                {timesheets?.total || 0} timesheets
+                {timesheets?.total || 0} {t('timesheets', { count: timesheets?.total || 0 })}
               </span>
               {totalPages > 1 && (
                 <span className="text-sm text-gray-500">
-                  Page {currentPage} of {totalPages}
+                  {t('page')} {currentPage} {t('of')} {totalPages}
                 </span>
               )}
             </div>
@@ -936,14 +939,14 @@ function TimesheetManagementContent() {
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
-                <TableHead>Employee</TableHead>
-                <TableHead>Assignment</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Hours</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Submitted</TableHead>
-                <TableHead>Approved By</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t('employee')}</TableHead>
+                <TableHead>{t('assignment')}</TableHead>
+                <TableHead>{t('date')}</TableHead>
+                <TableHead>{t('hours')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
+                <TableHead>{t('submitted')}</TableHead>
+                <TableHead>{t('approved_by')}</TableHead>
+                <TableHead className="text-right">{t('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -972,17 +975,17 @@ function TimesheetManagementContent() {
                         <div className="text-muted-foreground">
                           {timesheet.assignment.name ||
                             (timesheet.project ? timesheet.project.name :
-                              timesheet.rental ? timesheet.rental.rentalNumber : 'No name')}
+                              timesheet.rental ? timesheet.rental.rentalNumber : t('no_name'))}
                         </div>
                       </div>
                     ) : timesheet.project ? (
                       <div className="text-sm">
-                        <div className="font-medium">Project</div>
+                        <div className="font-medium">{t('project')}</div>
                         <div className="text-muted-foreground">{timesheet.project.name}</div>
                       </div>
                     ) : timesheet.rental ? (
                       <div className="text-sm">
-                        <div className="font-medium">Rental</div>
+                        <div className="font-medium">{t('rental')}</div>
                         <div className="text-muted-foreground">{timesheet.rental.rentalNumber}</div>
                       </div>
                     ) : (
@@ -1000,16 +1003,16 @@ function TimesheetManagementContent() {
                       <div>{timesheet.hoursWorked}h</div>
                       {timesheet.overtimeHours > 0 && (
                         <div className="text-sm text-muted-foreground">
-                          +{timesheet.overtimeHours}h OT
+                          +{timesheet.overtimeHours}h {t('ot')}
                         </div>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>{getStatusBadge(timesheet.status)}</TableCell>
                   <TableCell>
-                    {timesheet.submittedAt ? new Date(timesheet.submittedAt).toLocaleDateString() : "-"}
+                    {timesheet.submittedAt ? new Date(timesheet.submittedAt).toLocaleDateString() : t('not_submitted')}
                   </TableCell>
-                  <TableCell>{timesheet.approvedBy || "-"}</TableCell>
+                  <TableCell>{timesheet.approvedBy || t('not_approved')}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end space-x-2">
                       <Link href={`/modules/timesheet-management/${timesheet.id}`}>
@@ -1026,10 +1029,10 @@ function TimesheetManagementContent() {
                       {timesheet.status === "pending" && (
                         <>
                           <Button variant="ghost" size="sm" onClick={handleApprove}>
-                            <Badge className="bg-green-100 text-green-800">Approve</Badge>
+                            <Badge className="bg-green-100 text-green-800">{t('approve')}</Badge>
                           </Button>
                           <Button variant="ghost" size="sm" onClick={handleReject}>
-                            <Badge className="bg-red-100 text-red-800">Reject</Badge>
+                            <Badge className="bg-red-100 text-red-800">{t('reject')}</Badge>
                           </Button>
                         </>
                       )}
@@ -1038,7 +1041,7 @@ function TimesheetManagementContent() {
                         size="sm"
                         onClick={() => handleDelete(timesheet)}
                         disabled={timesheet.status !== 'draft' && userRole !== 'ADMIN'}
-                        title={timesheet.status !== 'draft' && userRole !== 'ADMIN' ? 'Only draft timesheets can be deleted by non-admin users' : 'Delete timesheet'}
+                        title={timesheet.status !== 'draft' && userRole !== 'ADMIN' ? t('only_draft_timesheets_can_be_deleted_by_non_admin_users') : t('delete_timesheet')}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -1056,21 +1059,21 @@ function TimesheetManagementContent() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              Bulk {bulkActionDialog.action === 'approve' ? 'Approve' : 'Reject'} Timesheets
+              {bulkActionDialog.action === 'approve' ? t('bulk_approve_timesheets') : t('bulk_reject_timesheets')}
             </DialogTitle>
             <DialogDescription>
               {bulkActionDialog.action === 'approve'
-                ? 'Approve the selected timesheets according to the approval workflow. Each timesheet will move to the next approval stage based on its current status.'
-                : 'Reject the selected timesheets. They will be marked as rejected and returned to draft status.'
+                ? t('bulk_approve_description')
+                : t('bulk_reject_description')
               }
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="notes">Notes (Optional)</Label>
+              <Label htmlFor="notes">{t('notes_optional')}</Label>
               <Textarea
                 id="notes"
-                placeholder="Add any notes about this action..."
+                placeholder={t('add_any_notes_about_this_action')}
                 value={bulkActionDialog.notes}
                 onChange={(e) => setBulkActionDialog(prev => ({ ...prev, notes: e.target.value }))}
                 rows={3}
@@ -1082,28 +1085,28 @@ function TimesheetManagementContent() {
               <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex items-center space-x-2 text-blue-800 mb-3">
                   <AlertCircle className="h-4 w-4" />
-                  <span className="font-medium">Approval Workflow</span>
+                  <span className="font-medium">{t('approval_workflow')}</span>
                 </div>
                 <div className="text-sm text-blue-700 space-y-2">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="font-medium">Current Status → Next Stage</p>
+                      <p className="font-medium">{t('current_status_next_stage')}</p>
                       <div className="space-y-1 mt-1">
-                        <p>• Draft → Submit for Approval</p>
-                        <p>• Submitted → Foreman Approval</p>
-                        <p>• Foreman Approved → Incharge Approval</p>
-                        <p>• Incharge Approved → Checking Approval</p>
-                        <p>• Checking Approved → Manager Approval</p>
+                        <p>• {t('draft')} → {t('submit_for_approval')}</p>
+                        <p>• {t('submitted')} → {t('foreman_approval')}</p>
+                        <p>• {t('foreman_approved')} → {t('incharge_approval')}</p>
+                        <p>• {t('incharge_approved')} → {t('checking_approval')}</p>
+                        <p>• {t('checking_approved')} → {t('manager_approval')}</p>
                       </div>
                     </div>
                     <div>
-                      <p className="font-medium">Required Roles</p>
+                      <p className="font-medium">{t('required_roles')}</p>
                       <div className="space-y-1 mt-1">
-                        <p>• Submit Draft: ADMIN, MANAGER</p>
-                        <p>• Foreman: FOREMAN, MANAGER, ADMIN</p>
-                        <p>• Incharge: INCHARGE, MANAGER, ADMIN</p>
-                        <p>• Checking: CHECKING, MANAGER, ADMIN</p>
-                        <p>• Manager: MANAGER, ADMIN</p>
+                        <p>• {t('submit_draft')}: ADMIN, MANAGER</p>
+                        <p>• {t('foreman')}: FOREMAN, MANAGER, ADMIN</p>
+                        <p>• {t('incharge')}: INCHARGE, MANAGER, ADMIN</p>
+                        <p>• {t('checking')}: CHECKING, MANAGER, ADMIN</p>
+                        <p>• {t('manager')}: MANAGER, ADMIN</p>
                       </div>
                     </div>
                   </div>
@@ -1114,17 +1117,17 @@ function TimesheetManagementContent() {
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-center space-x-2 text-gray-800 mb-2">
                 <AlertCircle className="h-4 w-4" />
-                <span className="font-medium">Summary</span>
+                <span className="font-medium">{t('summary')}</span>
               </div>
               <div className="text-sm text-gray-700 space-y-1">
-                <p>• {selectedTimesheets.length} timesheet(s) selected</p>
-                <p>• Action: {bulkActionDialog.action === 'approve' ? 'Approve' : 'Reject'}</p>
+                <p>• {selectedTimesheets.length} {t('timesheet_selected', { count: selectedTimesheets.length })}</p>
+                <p>• {t('action')}: {bulkActionDialog.action === 'approve' ? t('approve') : t('reject')}</p>
                 {bulkActionDialog.action === 'approve' && (
                   <div>
-                    <p>• Workflow: Following approval stages</p>
+                    <p>{t('workflow')}: {t('following_approval_stages')}</p>
                     {selectedTimesheetsData.length > 0 && (
                       <div className="mt-2">
-                        <p className="font-medium">Status Breakdown:</p>
+                        <p className="font-medium">{t('status_breakdown')}:</p>
                         <div className="space-y-1 mt-1">
                           {Object.entries(
                             selectedTimesheetsData.reduce((acc, t) => {
@@ -1132,7 +1135,7 @@ function TimesheetManagementContent() {
                               return acc;
                             }, {} as Record<string, number>)
                           ).map(([status, count]) => (
-                            <p key={status}>• {status}: {count} timesheet(s)</p>
+                            <p key={status}>• {status}: {count} {t('timesheet_s', { count: count })}</p>
                           ))}
                         </div>
                       </div>
@@ -1140,7 +1143,7 @@ function TimesheetManagementContent() {
                   </div>
                 )}
                 {bulkActionDialog.notes && (
-                  <p>• Notes: {bulkActionDialog.notes}</p>
+                  <p>• {t('notes')}: {bulkActionDialog.notes}</p>
                 )}
               </div>
             </div>
@@ -1150,7 +1153,7 @@ function TimesheetManagementContent() {
               variant="outline"
               onClick={() => setBulkActionDialog({ open: false, action: null, notes: '' })}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               onClick={executeBulkAction}
@@ -1163,7 +1166,7 @@ function TimesheetManagementContent() {
               {bulkActionLoading ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Processing...
+                  {t('processing')}...
                 </>
               ) : (
                 <>
@@ -1172,7 +1175,7 @@ function TimesheetManagementContent() {
                   ) : (
                     <XCircle className="h-4 w-4 mr-2" />
                   )}
-                  {bulkActionDialog.action === 'approve' ? 'Approve' : 'Reject'} All
+                  {bulkActionDialog.action === 'approve' ? t('approve') : t('reject')} {t('all')}
                 </>
               )}
             </Button>
@@ -1184,26 +1187,26 @@ function TimesheetManagementContent() {
       <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Delete Timesheet</DialogTitle>
+            <DialogTitle>{t('delete_timesheet')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this timesheet? This action cannot be undone.
+              {t('are_you_sure_you_want_to_delete_this_timesheet')}
             </DialogDescription>
           </DialogHeader>
           {deleteDialog.timesheetData && (
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="space-y-2">
                 <div>
-                  <span className="font-medium">Employee:</span> {deleteDialog.timesheetData.employee.firstName} {deleteDialog.timesheetData.employee.lastName}
+                  <span className="font-medium">{t('employee')}:</span> {deleteDialog.timesheetData.employee.firstName} {deleteDialog.timesheetData.employee.lastName}
                 </div>
                 <div>
-                  <span className="font-medium">Date:</span> {new Date(deleteDialog.timesheetData.date).toLocaleDateString()}
+                  <span className="font-medium">{t('date')}:</span> {new Date(deleteDialog.timesheetData.date).toLocaleDateString()}
                 </div>
                 <div>
-                  <span className="font-medium">Hours:</span> {deleteDialog.timesheetData.hoursWorked}h
-                  {deleteDialog.timesheetData.overtimeHours > 0 && ` + ${deleteDialog.timesheetData.overtimeHours}h OT`}
+                  <span className="font-medium">{t('hours')}:</span> {deleteDialog.timesheetData.hoursWorked}h
+                  {deleteDialog.timesheetData.overtimeHours > 0 && ` + ${deleteDialog.timesheetData.overtimeHours}h {t('ot')}`}
                 </div>
                 <div>
-                  <span className="font-medium">Status:</span> {getStatusBadge(deleteDialog.timesheetData.status)}
+                  <span className="font-medium">{t('status')}:</span> {getStatusBadge(deleteDialog.timesheetData.status)}
                 </div>
               </div>
             </div>
@@ -1213,13 +1216,13 @@ function TimesheetManagementContent() {
               variant="outline"
               onClick={() => setDeleteDialog({ open: false, timesheetId: null, timesheetData: null })}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={executeDelete}
             >
-              Delete Timesheet
+              {t('delete_timesheet')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1229,14 +1232,14 @@ function TimesheetManagementContent() {
       <Dialog open={bulkDeleteDialog.open} onOpenChange={(open) => setBulkDeleteDialog(prev => ({ ...prev, open }))}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Delete Multiple Timesheets</DialogTitle>
+            <DialogTitle>{t('delete_multiple_timesheets')}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete {bulkDeleteDialog.timesheets.length} timesheet(s)? This action cannot be undone.
+              {t('are_you_sure_you_want_to_delete', { count: bulkDeleteDialog.timesheets.length })}
             </DialogDescription>
           </DialogHeader>
           <div className="bg-gray-50 p-4 rounded-lg">
             <div className="space-y-2">
-              <div className="font-medium">Timesheets to be deleted:</div>
+              <div className="font-medium">{t('timesheets_to_be_deleted')}:</div>
               <div className="max-h-40 overflow-y-auto space-y-2">
                 {bulkDeleteDialog.timesheets.map((timesheet) => (
                   <div key={timesheet.id} className="flex items-center justify-between p-2 bg-white rounded border">
@@ -1246,11 +1249,11 @@ function TimesheetManagementContent() {
                       </div>
                       <div className="text-sm text-gray-600">
                         {new Date(timesheet.date).toLocaleDateString()} - {timesheet.hoursWorked}h
-                        {timesheet.overtimeHours > 0 && ` + ${timesheet.overtimeHours}h OT`}
+                        {timesheet.overtimeHours > 0 && ` + ${timesheet.overtimeHours}h {t('ot')}`}
                       </div>
                     </div>
                     <div className="text-sm text-gray-500">
-                      {timesheet.project?.name || timesheet.rental?.rentalNumber || 'No project/rental'}
+                      {timesheet.project?.name || timesheet.rental?.rentalNumber || t('no_project_rental')}
                     </div>
                   </div>
                 ))}
@@ -1262,13 +1265,13 @@ function TimesheetManagementContent() {
               variant="outline"
               onClick={() => setBulkDeleteDialog({ open: false, timesheets: [] })}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button
               variant="destructive"
               onClick={executeBulkDelete}
             >
-              Delete {bulkDeleteDialog.timesheets.length} Timesheet(s)
+              {t('delete', { count: bulkDeleteDialog.timesheets.length })} {t('timesheet_s')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1278,7 +1281,7 @@ function TimesheetManagementContent() {
       <div className="mt-6 flex items-center justify-between">
         {/* Left side - Showing results info */}
         <div className="text-sm text-gray-600">
-          Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} results
+          {t('showing_results', { start: startIndex + 1, end: Math.min(endIndex, totalItems), total: totalItems })}
         </div>
 
         {/* Right side - Pagination controls */}
@@ -1290,7 +1293,7 @@ function TimesheetManagementContent() {
             disabled={currentPage === 1}
             className="h-8 px-3"
           >
-            &lt; Previous
+            &lt; {t('previous')}
           </Button>
 
           {/* Page numbers */}
@@ -1378,7 +1381,7 @@ function TimesheetManagementContent() {
             disabled={currentPage === totalPages}
             className="h-8 px-3"
           >
-            Next &gt;
+            {t('next')} &gt;
           </Button>
         </div>
       </div>
@@ -1386,9 +1389,9 @@ function TimesheetManagementContent() {
       <div>
         <Card>
           <CardHeader>
-            <CardTitle>Timesheet Administration</CardTitle>
+            <CardTitle>{t('timesheet_administration')}</CardTitle>
             <CardDescription>
-              Advanced timesheet management features for supervisors and managers
+              {t('advanced_timesheet_management_features_for_supervisors_and_managers')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -1403,7 +1406,7 @@ function TimesheetManagementContent() {
                 ) : (
                   <CheckCircle className="h-4 w-4 mr-2" />
                 )}
-                Approve All Pending
+                {t('approve_all_pending')}
               </Button>
 
               <Button 
@@ -1416,17 +1419,17 @@ function TimesheetManagementContent() {
                 ) : (
                   <XCircle className="h-4 w-4 mr-2" />
                 )}
-                Reject All Pending
+                {t('reject_all_pending')}
               </Button>
 
               <Button variant="outline">
                 <Settings className="h-4 w-4 mr-2" />
-                Timesheet Settings
+                {t('timesheet_settings')}
               </Button>
 
               <Button variant="outline">
                 <FileText className="h-4 w-4 mr-2" />
-                Generate Reports
+                {t('generate_reports')}
               </Button>
             </div>
           </CardContent>

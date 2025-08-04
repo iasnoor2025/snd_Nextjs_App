@@ -5,8 +5,12 @@ import { ProtectedRoute } from '@/components/protected-route';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Shield, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
+// i18n refactor: All user-facing strings now use useTranslation('admin')
+import { useTranslation } from 'react-i18next';
 
 export default function SuperAdminApprovalsPage() {
+  const { t } = useTranslation('admin');
+  
   return (
     <ProtectedRoute requiredRole="SUPER_ADMIN">
       <div className="container mx-auto py-6 space-y-6">
@@ -15,10 +19,10 @@ export default function SuperAdminApprovalsPage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Shield className="h-8 w-8 text-blue-600" />
-              Super Admin Approval Center
+              {t('super_admin_approval_center')}
             </h1>
             <p className="text-muted-foreground">
-              Manage all system approvals with full administrative privileges
+              {t('manage_all_system_approvals')}
             </p>
           </div>
           <div className="flex gap-2">
@@ -33,52 +37,52 @@ export default function SuperAdminApprovalsPage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Approvals</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('total_approvals')}</CardTitle>
               <Shield className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">15</div>
               <p className="text-xs text-muted-foreground">
-                Across all modules
+                {t('across_all_modules')}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('pending')}</CardTitle>
               <Clock className="h-4 w-4 text-yellow-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">5</div>
               <p className="text-xs text-muted-foreground">
-                Awaiting approval
+                {t('awaiting_approval')}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Approved</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('approved')}</CardTitle>
               <CheckCircle className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">8</div>
               <p className="text-xs text-muted-foreground">
-                Successfully processed
+                {t('successfully_processed')}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Rejected</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('rejected')}</CardTitle>
               <XCircle className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">2</div>
               <p className="text-xs text-muted-foreground">
-                Declined requests
+                {t('declined_requests')}
               </p>
             </CardContent>
           </Card>
@@ -87,9 +91,9 @@ export default function SuperAdminApprovalsPage() {
         {/* Module Overview */}
         <Card>
           <CardHeader>
-            <CardTitle>Approval Modules</CardTitle>
+            <CardTitle>{t('approval_modules')}</CardTitle>
             <CardDescription>
-              Overview of approval types across different system modules
+              {t('overview_of_approval_types')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -97,29 +101,29 @@ export default function SuperAdminApprovalsPage() {
               <div className="flex items-center gap-2 p-3 border rounded-lg">
                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                 <div>
-                  <p className="font-medium">Rental Management</p>
-                  <p className="text-sm text-muted-foreground">Equipment requests</p>
+                  <p className="font-medium">{t('rental_management')}</p>
+                  <p className="text-sm text-muted-foreground">{t('equipment_requests')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 p-3 border rounded-lg">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 <div>
-                  <p className="font-medium">Timesheet</p>
-                  <p className="text-sm text-muted-foreground">Time tracking</p>
+                  <p className="font-medium">{t('timesheet')}</p>
+                  <p className="text-sm text-muted-foreground">{t('time_tracking')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 p-3 border rounded-lg">
                 <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
                 <div>
-                  <p className="font-medium">Payroll</p>
-                  <p className="text-sm text-muted-foreground">Salary processing</p>
+                  <p className="font-medium">{t('payroll')}</p>
+                  <p className="text-sm text-muted-foreground">{t('salary_processing')}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 p-3 border rounded-lg">
                 <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
                 <div>
-                  <p className="font-medium">Leave Management</p>
-                  <p className="text-sm text-muted-foreground">Vacation requests</p>
+                  <p className="font-medium">{t('leave_management')}</p>
+                  <p className="text-sm text-muted-foreground">{t('vacation_requests')}</p>
                 </div>
               </div>
             </div>
