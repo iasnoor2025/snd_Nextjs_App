@@ -1,99 +1,229 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
-import { useEffect } from 'react';
+import { useSession, signOut, signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
-import { signOut } from 'next-auth/react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { RefreshCw, LogOut, LogIn, RotateCcw } from 'lucide-react';
 
 export default function DebugSessionPage() {
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
 
-  useEffect(() => {
-    console.log('🔍 DEBUG SESSION - Status:', status);
-    console.log('🔍 DEBUG SESSION - Session:', session);
-    console.log('🔍 DEBUG SESSION - User:', session?.user);
-    console.log('🔍 DEBUG SESSION - Role:', session?.user?.role);
-  }, [session, status]);
-
-  const handleLogout = async () => {
+  const handleForceRefresh = async () => {
+    // Clear all session data
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Clear all cookies related to NextAuth
+    document.cookie.split(";").forEach(function(c) { 
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+    });
+    
+    // Sign out completely
     await signOut({ redirect: false });
-    console.log('🔍 DEBUG SESSION - Logged out');
+    
+    // Force page reload
+    window.location.reload();
+  };
+
+  const handleCompleteReset = async () => {
+    // Clear all session data
+    localStorage.clear();
+    sessionStorage.clear();
+    
+    // Clear all cookies
+    document.cookie.split(";").forEach(function(c) { 
+      document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+    });
+    
+    // Clear specific NextAuth cookies
+    const cookiesToClear = [
+      'next-auth.session-token',
+      'next-auth.csrf-token',
+      'next-auth.callback-url',
+      '__Secure-next-auth.session-token',
+      '__Secure-next-auth.csrf-token',
+      '__Host-next-auth.csrf-token'
+    ];
+    
+    cookiesToClear.forEach(cookieName => {
+      document.cookie = `${cookieName}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    });
+    
+    // Sign out completely
+    await signOut({ redirect: false });
+    
+    // Force redirect to login
+    window.location.href = '/login';
+  };
+
+  const handleLogin = async () => {
+    await signIn('credentials', {
+      email: 'admin@ias.com',
+      password: 'password123',
+      redirect: false,
+    });
+  };
+
+  const handleForceUpdate = async () => {
+    // Force session update
+    await update();
+    console.log('🔍 DEBUG - Session update triggered');
+  };
+
+  const handleTestAuth = async () => {
+    try {
+      const response = await fetch('/api/test-auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: 'admin@ias.com',
+          password: 'password123'
+        })
+      });
+      
+      const data = await response.json();
+      console.log('🔍 DEBUG - Auth test result:', data);
+      
+      if (data.success) {
+        alert(`Auth test successful!\nRole: ${data.user.role}\nName: ${data.user.name}`);
+      } else {
+        alert(`Auth test failed: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('🔍 DEBUG - Auth test error:', error);
+      alert('Auth test failed');
+    }
+  };
+
+  const handleLogoutAndRedirect = async () => {
+    await signOut({ redirect: true, callbackUrl: '/login' });
   };
 
   return (
-    <div className="p-8 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">Session Debug Page</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Session Information</h2>
-          
-          <div className="space-y-2">
-            <div>
-              <strong>Status:</strong> 
-              <span className={`ml-2 px-2 py-1 rounded text-sm ${
-                status === 'loading' ? 'bg-yellow-100 text-yellow-800' :
-                status === 'authenticated' ? 'bg-green-100 text-green-800' :
-                'bg-red-100 text-red-800'
-              }`}>
-                {status}
-              </span>
-            </div>
-            
-            <div>
-              <strong>User Email:</strong> {session?.user?.email || 'No email'}
-            </div>
-            
-            <div>
-              <strong>User Name:</strong> {session?.user?.name || 'No name'}
-            </div>
-            
-            <div>
-              <strong>User Role:</strong> 
-              <span className={`ml-2 px-2 py-1 rounded text-sm ${
-                session?.user?.role === 'SUPER_ADMIN' ? 'bg-red-100 text-red-800' :
-                session?.user?.role === 'ADMIN' ? 'bg-blue-100 text-blue-800' :
-                session?.user?.role === 'MANAGER' ? 'bg-green-100 text-green-800' :
-                'bg-gray-100 text-gray-800'
-              }`}>
-                {session?.user?.role || 'No role'}
-              </span>
-            </div>
-            
-            <div>
-              <strong>User ID:</strong> {session?.user?.id || 'No ID'}
-            </div>
-            
-            <div>
-              <strong>Is Active:</strong> {session?.user?.isActive ? 'Yes' : 'No'}
-            </div>
-          </div>
-          
-          <Button onClick={handleLogout} className="w-full">
-            Logout
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Session Debug Page</h1>
+        <div className="flex gap-2">
+          <Button onClick={handleForceRefresh} variant="destructive">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Force Refresh Session
+          </Button>
+          <Button onClick={handleCompleteReset} variant="outline">
+            <LogOut className="h-4 w-4 mr-2" />
+            Complete Reset
+          </Button>
+          <Button onClick={handleForceUpdate} variant="secondary">
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Force Update
+          </Button>
+          <Button onClick={handleTestAuth} variant="outline">
+            <LogIn className="h-4 w-4 mr-2" />
+            Test Auth
+          </Button>
+          <Button onClick={handleLogoutAndRedirect} variant="destructive">
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout & Redirect
+          </Button>
+          <Button onClick={handleLogin} variant="outline">
+            <LogIn className="h-4 w-4 mr-2" />
+            Login Again
           </Button>
         </div>
-        
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Raw Session Data</h2>
-          
-          <div className="bg-gray-100 p-4 rounded-lg">
-            <pre className="text-sm overflow-auto">
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Session Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Session Information</CardTitle>
+            <CardDescription>Current session state</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="font-medium">Status:</span>
+              <Badge variant={status === 'authenticated' ? 'default' : 'secondary'}>
+                {status}
+              </Badge>
+            </div>
+            
+            {session?.user && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">User Email:</span>
+                  <span className="text-sm">{session.user.email}</span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">User Name:</span>
+                  <span className="text-sm">{session.user.name}</span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">User Role:</span>
+                  <Badge variant={
+                    session.user.role === 'SUPER_ADMIN' ? 'destructive' :
+                    session.user.role === 'ADMIN' ? 'default' :
+                    session.user.role === 'MANAGER' ? 'secondary' :
+                    session.user.role === 'SUPERVISOR' ? 'outline' :
+                    session.user.role === 'OPERATOR' ? 'secondary' :
+                    session.user.role === 'EMPLOYEE' ? 'default' :
+                    'secondary'
+                  }>
+                    {session.user.role}
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">User ID:</span>
+                  <span className="text-sm">{session.user.id}</span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">Is Active:</span>
+                  <span className="text-sm">{session.user.isActive ? 'Yes' : 'No'}</span>
+                </div>
+              </>
+            )}
+            
+            <Button onClick={() => signOut()} className="w-full">
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Raw Session Data */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Raw Session Data</CardTitle>
+            <CardDescription>Complete session object</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <pre className="text-xs bg-muted p-4 rounded-md overflow-auto max-h-96">
               {JSON.stringify(session, null, 2)}
             </pre>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
-      
-      <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-        <h3 className="font-semibold mb-2">Instructions:</h3>
-        <ol className="list-decimal list-inside space-y-1 text-sm">
-          <li>Check the console for debug messages</li>
-          <li>Verify the role is correctly assigned</li>
-          <li>If role is wrong, logout and login again</li>
-          <li>Check the browser's Network tab for API calls</li>
-        </ol>
-      </div>
+
+      {/* Instructions */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Instructions</CardTitle>
+          <CardDescription>How to fix session issues</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <p>1. Check the console for debug messages</p>
+          <p>2. Verify the role is correctly assigned</p>
+          <p>3. If role is wrong, use "Force Refresh Session" button</p>
+          <p>4. Check the browser's Network tab for API calls</p>
+          <p>5. Clear browser cache and cookies if needed</p>
+          <p>6. Try logging out and logging back in</p>
+        </CardContent>
+      </Card>
     </div>
   );
 } 

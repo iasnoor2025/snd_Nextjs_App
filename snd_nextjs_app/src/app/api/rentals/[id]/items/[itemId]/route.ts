@@ -4,12 +4,12 @@ import { prisma } from '@/lib/db';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
+  const { id, itemId } = await params;
   try {
     const body = await request.json();
-    const rentalId = params.id;
-    const itemId = params.itemId;
+    const rentalId = id;
 
     console.log('Updating rental item:', { rentalId, itemId, body });
 
@@ -113,11 +113,11 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string; itemId: string } }
+  { params }: { params: Promise<{ id: string; itemId: string }> }
 ) {
+  const { id, itemId } = await params;
   try {
-    const rentalId = params.id;
-    const itemId = params.itemId;
+    const rentalId = id;
 
     console.log('Deleting rental item:', { rentalId, itemId });
 

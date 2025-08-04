@@ -4,11 +4,12 @@ import { prisma } from '@/lib/db';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     const body = await request.json();
-    const rentalId = params.id;
+    const rentalId = id;
 
     console.log('Received rental item data:', body);
 
@@ -103,10 +104,11 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
-    const rentalId = params.id;
+    const rentalId = id;
     const rentalItems = await DatabaseService.getRentalItems(parseInt(rentalId));
     return NextResponse.json(rentalItems);
   } catch (error) {

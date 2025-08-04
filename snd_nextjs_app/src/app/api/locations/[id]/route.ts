@@ -3,12 +3,13 @@ import { prisma } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
-    const id = parseInt(params.id);
+    const locationId = parseInt(id);
     
-    if (isNaN(id)) {
+    if (isNaN(locationId)) {
       return NextResponse.json(
         { error: 'Invalid location ID' },
         { status: 400 }
@@ -16,7 +17,7 @@ export async function GET(
     }
 
     const location = await prisma.location.findUnique({
-      where: { id }
+      where: { id: locationId }
     });
 
     if (!location) {
@@ -41,12 +42,13 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
-    const id = parseInt(params.id);
+    const locationId = parseInt(id);
     
-    if (isNaN(id)) {
+    if (isNaN(locationId)) {
       return NextResponse.json(
         { error: 'Invalid location ID' },
         { status: 400 }
@@ -56,7 +58,7 @@ export async function PUT(
     const body = await request.json();
     
     const location = await prisma.location.update({
-      where: { id },
+      where: { id: locationId },
       data: {
         name: body.name,
         description: body.description,
@@ -87,12 +89,13 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
-    const id = parseInt(params.id);
+    const locationId = parseInt(id);
     
-    if (isNaN(id)) {
+    if (isNaN(locationId)) {
       return NextResponse.json(
         { error: 'Invalid location ID' },
         { status: 400 }
@@ -100,7 +103,7 @@ export async function DELETE(
     }
 
     await prisma.location.delete({
-      where: { id }
+      where: { id: locationId }
     });
 
     return NextResponse.json({

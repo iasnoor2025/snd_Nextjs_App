@@ -598,32 +598,47 @@ export default function UserManagementPage() {
               <div className="space-y-3">
                 <h4 className="font-semibold text-sm">{t('roleHierarchy')}</h4>
                 <div className="space-y-2 text-sm">
-                  {roles.map((role, index) => (
-                    <div key={role.id} className="flex items-center justify-between">
-                      <span className="flex items-center gap-2">
-                        <Badge variant={
-                          role.name === 'SUPER_ADMIN' ? 'destructive' :
-                          role.name === 'ADMIN' ? 'default' :
-                          role.name === 'MANAGER' ? 'secondary' :
-                          role.name === 'SUPERVISOR' ? 'outline' :
-                          role.name === 'OPERATOR' ? 'secondary' :
-                          role.name === 'EMPLOYEE' ? 'default' : 'outline'
-                        } className="text-xs">
-                          {role.name}
-                        </Badge>
-                        <span className="text-muted-foreground">({index + 1})</span>
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {role.name === 'SUPER_ADMIN' && t('fullSystemAccess')}
-                        {role.name === 'ADMIN' && t('systemAdministration')}
-                        {role.name === 'MANAGER' && t('departmentManagement')}
-                        {role.name === 'SUPERVISOR' && t('teamSupervision')}
-                        {role.name === 'OPERATOR' && t('basicOperations')}
-                        {role.name === 'EMPLOYEE' && t('employeeAccess')}
-                        {role.name === 'USER' && t('readOnlyAccess')}
-                      </span>
-                    </div>
-                  ))}
+                  {roles.map((role) => {
+                    // Define role hierarchy priority (lower number = higher priority)
+                    const roleHierarchy = {
+                      'SUPER_ADMIN': 1,
+                      'ADMIN': 2,
+                      'MANAGER': 3,
+                      'SUPERVISOR': 4,
+                      'OPERATOR': 5,
+                      'EMPLOYEE': 6,
+                      'USER': 7
+                    };
+                    
+                    const priority = roleHierarchy[role.name as keyof typeof roleHierarchy] || 7;
+                    
+                    return (
+                      <div key={role.id} className="flex items-center justify-between">
+                        <span className="flex items-center gap-2">
+                          <Badge variant={
+                            role.name === 'SUPER_ADMIN' ? 'destructive' :
+                            role.name === 'ADMIN' ? 'default' :
+                            role.name === 'MANAGER' ? 'secondary' :
+                            role.name === 'SUPERVISOR' ? 'outline' :
+                            role.name === 'OPERATOR' ? 'secondary' :
+                            role.name === 'EMPLOYEE' ? 'default' : 'outline'
+                          } className="text-xs">
+                            {role.name}
+                          </Badge>
+                          <span className="text-muted-foreground">({priority})</span>
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {role.name === 'SUPER_ADMIN' && t('fullSystemAccess')}
+                          {role.name === 'ADMIN' && t('systemAdministration')}
+                          {role.name === 'MANAGER' && t('departmentManagement')}
+                          {role.name === 'SUPERVISOR' && t('teamSupervision')}
+                          {role.name === 'OPERATOR' && t('basicOperations')}
+                          {role.name === 'EMPLOYEE' && t('employeeAccess')}
+                          {role.name === 'USER' && t('readOnlyAccess')}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

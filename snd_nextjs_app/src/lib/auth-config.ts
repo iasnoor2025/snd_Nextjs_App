@@ -45,6 +45,12 @@ export const authConfig: NextAuthOptions = {
             return null;
           }
 
+          if (process.env.NODE_ENV === 'development') {
+            console.log('🔍 AUTH - User found:', user.name);
+            console.log('🔍 AUTH - User role_id:', user.role_id);
+            console.log('🔍 AUTH - User user_roles:', user.user_roles?.map(ur => ur.role.name));
+          }
+
           // Determine role based on user_roles or fallback to role_id
           let role = "USER";
           
@@ -159,12 +165,29 @@ export const authConfig: NextAuthOptions = {
     error: '/login',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
+        // Force update token with user data
         token.role = user.role;
         token.isActive = user.isActive;
         token.id = user.id;
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 JWT - User login, setting role:', user.role);
+        }
       }
+      
+      // Force token refresh on every call in development
+      if (process.env.NODE_ENV === 'development' && trigger === 'update') {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔍 JWT - Token update triggered');
+        }
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 JWT - Current token role:', token.role);
+      }
+      
       return token;
     },
     
