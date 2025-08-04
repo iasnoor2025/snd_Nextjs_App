@@ -544,7 +544,6 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
 
 export default function CustomerDetailPageWrapper({ params }: { params: Promise<{ id: string }> }) {
   // This wrapper is a server component
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const [id, setId] = useState<string | null>(null);
   useEffect(() => {
     params.then(({ id }) => setId(id));
