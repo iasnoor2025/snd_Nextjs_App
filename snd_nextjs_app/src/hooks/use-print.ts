@@ -24,7 +24,7 @@ export const usePrint = (options: UsePrintOptions = {}) => {
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle,
-    onBeforeGetContent: () => {
+    onBeforePrint: async () => {
       onBeforePrint?.();
       
       // Preload images if waitForImages is true
@@ -44,7 +44,7 @@ export const usePrint = (options: UsePrintOptions = {}) => {
           });
         });
         
-        return Promise.all(imagePromises);
+        await Promise.all(imagePromises);
       }
     },
     onAfterPrint: () => {
@@ -56,8 +56,6 @@ export const usePrint = (options: UsePrintOptions = {}) => {
       console.error("Print error:", error);
       toast.error("Print failed. Please try again.");
     },
-    removeAfterPrint: false,
-    suppressErrors: false,
   });
 
   return {
