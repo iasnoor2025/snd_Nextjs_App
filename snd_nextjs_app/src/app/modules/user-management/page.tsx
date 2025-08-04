@@ -60,7 +60,7 @@ export default function UserManagementPage() {
     name: '',
     email: '',
     password: '',
-    role: 'USER',
+    role: '',
     isActive: true
   });
 
@@ -263,7 +263,7 @@ export default function UserManagementPage() {
       name: '',
       email: '',
       password: '',
-      role: 'USER',
+      role: roles.length > 0 ? roles[0].name : '',
       isActive: true
     });
   };
@@ -313,6 +313,16 @@ export default function UserManagementPage() {
     };
     fetchData();
   }, []);
+
+  // Set default role when roles are loaded
+  useEffect(() => {
+    if (roles.length > 0 && !userFormData.role) {
+      setUserFormData(prev => ({
+        ...prev,
+        role: roles[0].name
+      }));
+    }
+  }, [roles, userFormData.role]);
 
   if (loading) {
     return (
@@ -404,9 +414,25 @@ export default function UserManagementPage() {
                         <TableCell className="font-medium">{user.name}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
-                          <Badge variant={user.role === 'ADMIN' ? 'destructive' : user.role === 'MANAGER' ? 'default' : 'secondary'}>
-                            {user.role}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={user.role === 'SUPER_ADMIN' ? 'destructive' : 
+                                           user.role === 'ADMIN' ? 'default' : 
+                                           user.role === 'MANAGER' ? 'secondary' :
+                                           user.role === 'SUPERVISOR' ? 'outline' :
+                                           user.role === 'OPERATOR' ? 'secondary' :
+                                           user.role === 'EMPLOYEE' ? 'default' : 'outline'}>
+                              {user.role}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {user.role === 'SUPER_ADMIN' && '(7)'}
+                              {user.role === 'ADMIN' && '(6)'}
+                              {user.role === 'MANAGER' && '(5)'}
+                              {user.role === 'SUPERVISOR' && '(4)'}
+                              {user.role === 'OPERATOR' && '(3)'}
+                              {user.role === 'EMPLOYEE' && '(2)'}
+                              {user.role === 'USER' && '(1)'}
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell>
                           {user.isActive ? (
@@ -478,6 +504,7 @@ export default function UserManagementPage() {
                       <TableHead>{t('roleName')}</TableHead>
                       <TableHead>{t('guardName')}</TableHead>
                       <TableHead>{t('users')}</TableHead>
+                      <TableHead>{t('status')}</TableHead>
                       <TableHead>{t('created')}</TableHead>
                       <TableHead>{t('updated')}</TableHead>
                       <TableHead>{t('actions')}</TableHead>
@@ -486,9 +513,42 @@ export default function UserManagementPage() {
                   <TableBody>
                     {roles.map((role) => (
                       <TableRow key={role.id}>
-                        <TableCell className="font-medium">{role.name}</TableCell>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <Badge variant={
+                              role.name === 'SUPER_ADMIN' ? 'destructive' :
+                              role.name === 'ADMIN' ? 'default' :
+                              role.name === 'MANAGER' ? 'secondary' :
+                              role.name === 'SUPERVISOR' ? 'outline' :
+                              role.name === 'OPERATOR' ? 'secondary' :
+                              role.name === 'EMPLOYEE' ? 'default' : 'outline'
+                            }>
+                              {role.name}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {role.name === 'SUPER_ADMIN' && '(Full system access)'}
+                              {role.name === 'ADMIN' && '(System administration)'}
+                              {role.name === 'MANAGER' && '(Department management)'}
+                              {role.name === 'SUPERVISOR' && '(Team supervision)'}
+                              {role.name === 'OPERATOR' && '(Basic operations)'}
+                              {role.name === 'EMPLOYEE' && '(Employee access)'}
+                              {role.name === 'USER' && '(Read-only access)'}
+                            </span>
+                          </div>
+                        </TableCell>
                         <TableCell>{role.guard_name}</TableCell>
-                        <TableCell>{role.userCount} {t('users')}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{role.userCount}</span>
+                            <span className="text-sm text-muted-foreground">{t('users')}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="default" className="flex items-center gap-1">
+                            <CheckCircle className="h-3 w-3" />
+                            {t('active')}
+                          </Badge>
+                        </TableCell>
                         <TableCell>{new Date(role.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell>{new Date(role.updatedAt).toLocaleDateString()}</TableCell>
                         <TableCell>
@@ -506,7 +566,12 @@ export default function UserManagementPage() {
                               </Button>
                             </Can>
                             <Can action="delete" subject="User">
-                              <Button size="sm" variant="outline" onClick={() => deleteRole(role.id)}>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={() => deleteRole(role.id)}
+                                disabled={role.userCount > 0}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </Can>
@@ -520,6 +585,115 @@ export default function UserManagementPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Role Summary Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('roleSummary')}</CardTitle>
+            <CardDescription>{t('roleHierarchyAndStatistics')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Role Hierarchy */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm">{t('roleHierarchy')}</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Badge variant="destructive" className="text-xs">SUPER_ADMIN</Badge>
+                      <span className="text-muted-foreground">(7)</span>
+                    </span>
+                    <span className="text-xs text-muted-foreground">{t('fullSystemAccess')}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Badge variant="default" className="text-xs">ADMIN</Badge>
+                      <span className="text-muted-foreground">(6)</span>
+                    </span>
+                    <span className="text-xs text-muted-foreground">{t('systemAdministration')}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">MANAGER</Badge>
+                      <span className="text-muted-foreground">(5)</span>
+                    </span>
+                    <span className="text-xs text-muted-foreground">{t('departmentManagement')}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">SUPERVISOR</Badge>
+                      <span className="text-muted-foreground">(4)</span>
+                    </span>
+                    <span className="text-xs text-muted-foreground">{t('teamSupervision')}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">OPERATOR</Badge>
+                      <span className="text-muted-foreground">(3)</span>
+                    </span>
+                    <span className="text-xs text-muted-foreground">{t('basicOperations')}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Badge variant="default" className="text-xs">EMPLOYEE</Badge>
+                      <span className="text-muted-foreground">(2)</span>
+                    </span>
+                    <span className="text-xs text-muted-foreground">{t('employeeAccess')}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">USER</Badge>
+                      <span className="text-muted-foreground">(1)</span>
+                    </span>
+                    <span className="text-xs text-muted-foreground">{t('readOnlyAccess')}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Role Statistics */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm">{t('roleStatistics')}</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>{t('totalRoles')}</span>
+                    <span className="font-medium">{roles.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>{t('totalUsers')}</span>
+                    <span className="font-medium">{users.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>{t('activeRoles')}</span>
+                    <span className="font-medium">{roles.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>{t('rolesWithUsers')}</span>
+                    <span className="font-medium">{roles.filter(r => r.userCount > 0).length}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm">{t('quickActions')}</h4>
+                <div className="space-y-2">
+                  <Button size="sm" variant="outline" className="w-full justify-start">
+                    <Plus className="h-4 w-4 mr-2" />
+                    {t('createNewRole')}
+                  </Button>
+                  <Button size="sm" variant="outline" className="w-full justify-start">
+                    <Shield className="h-4 w-4 mr-2" />
+                    {t('managePermissions')}
+                  </Button>
+                  <Button size="sm" variant="outline" className="w-full justify-start">
+                    <Settings className="h-4 w-4 mr-2" />
+                    {t('roleSettings')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* User Administration Section */}
         <Card>
@@ -590,9 +764,11 @@ export default function UserManagementPage() {
                   <SelectValue placeholder={t('selectRole')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="USER">{t('user')}</SelectItem>
-                  <SelectItem value="MANAGER">{t('manager')}</SelectItem>
-                  <SelectItem value="ADMIN">{t('admin')}</SelectItem>
+                  {roles.map((role) => (
+                    <SelectItem key={role.id} value={role.name}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -661,9 +837,11 @@ export default function UserManagementPage() {
                   <SelectValue placeholder={t('selectRole')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="USER">{t('user')}</SelectItem>
-                  <SelectItem value="MANAGER">{t('manager')}</SelectItem>
-                  <SelectItem value="ADMIN">{t('admin')}</SelectItem>
+                  {roles.map((role) => (
+                    <SelectItem key={role.id} value={role.name}>
+                      {role.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

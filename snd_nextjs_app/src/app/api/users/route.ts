@@ -81,8 +81,16 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Get default role ID (assuming role 1 is the default USER role)
-    const defaultRoleId = 1;
+    // Find the role by name
+    let roleId = 1; // Default to role ID 1
+    if (role) {
+      const foundRole = await prisma.role.findFirst({
+        where: { name: role },
+      });
+      if (foundRole) {
+        roleId = foundRole.id;
+      }
+    }
 
     // Create user
     const user = await prisma.user.create({
@@ -90,7 +98,7 @@ export async function POST(request: NextRequest) {
         name,
         email,
         password: hashedPassword,
-        role_id: defaultRoleId,
+        role_id: roleId,
         isActive: isActive !== undefined ? isActive : true,
       },
       select: {
@@ -100,6 +108,14 @@ export async function POST(request: NextRequest) {
         role_id: true,
         isActive: true,
         created_at: true,
+      },
+    });
+
+    // Create user role relationship
+    await prisma.userRole.create({
+      data: {
+        user_id: user.id,
+        role_id: roleId,
       },
     });
 
@@ -152,11 +168,23 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    // Find the role by name if role is provided
+    let roleId = existingUser.role_id;
+    if (role) {
+      const foundRole = await prisma.role.findFirst({
+        where: { name: role },
+      });
+      if (foundRole) {
+        roleId = foundRole.id;
+      }
+    }
+
     // Prepare update data
     const updateData: any = {
       name,
       email,
       isActive,
+      role_id: roleId,
     };
 
     // Only update password if provided
@@ -177,6 +205,22 @@ export async function PUT(request: NextRequest) {
         created_at: true,
       },
     });
+
+    // Update user role relationship if role changed
+    if (role && roleId !== existingUser.role_id) {
+      // Delete existing user role
+      await prisma.userRole.deleteMany({
+        where: { user_id: parseInt(id) },
+      });
+
+      // Create new user role
+      await prisma.userRole.create({
+        data: {
+          user_id: parseInt(id),
+          role_id: roleId,
+        },
+      });
+    }
 
     return NextResponse.json(user);
   } catch (error) {

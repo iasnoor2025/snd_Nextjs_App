@@ -326,6 +326,35 @@ const rolePermissions = {
       { action: 'read', subject: 'Project' },
     ],
   },
+  EMPLOYEE: {
+    can: [
+      // Employee can manage their own data
+      { action: 'read', subject: 'Employee' },
+      { action: 'update', subject: 'Employee' },
+      
+      // Basic customer and equipment access
+      { action: 'read', subject: 'Customer' },
+      { action: 'read', subject: 'Equipment' },
+      
+      // Rental access for their own rentals
+      { action: 'read', subject: 'Rental' },
+      { action: 'create', subject: 'Rental' },
+      { action: 'update', subject: 'Rental' },
+      
+      // Timesheet management for their own timesheets
+      { action: 'read', subject: 'Timesheet' },
+      { action: 'create', subject: 'Timesheet' },
+      { action: 'update', subject: 'Timesheet' },
+      
+      // Project access
+      { action: 'read', subject: 'Project' },
+      
+      // Leave management for their own leaves
+      { action: 'read', subject: 'Leave' },
+      { action: 'create', subject: 'Leave' },
+      { action: 'update', subject: 'Leave' },
+    ],
+  },
 };
 
 // Create ability for a user
