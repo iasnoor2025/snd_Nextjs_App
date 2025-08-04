@@ -25,6 +25,7 @@ interface User {
   name: string;
   email: string;
   role: string;
+  role_id: number;
   isActive: boolean;
   createdAt: string;
   lastLoginAt?: string;
@@ -33,10 +34,9 @@ interface User {
 interface Role {
   id: string;
   name: string;
-  description: string;
-  permissions: string[];
-  isActive: boolean;
+  guard_name: string;
   createdAt: string;
+  updatedAt: string;
   userCount: number;
 }
 
@@ -70,9 +70,7 @@ export default function UserManagementPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [roleFormData, setRoleFormData] = useState({
     name: '',
-    description: '',
-    permissions: [] as string[],
-    isActive: true
+    guard_name: 'web'
   });
 
   // Available permissions
@@ -91,37 +89,12 @@ export default function UserManagementPage() {
   // Fetch users
   const fetchUsers = async () => {
     try {
-      // Mock data for demonstration - replace with actual API call
-      const mockUsers: User[] = [
-        {
-          id: '1',
-          name: 'Admin User',
-          email: 'admin@ias.com',
-          role: 'ADMIN',
-          isActive: true,
-          createdAt: '2025-07-29',
-          lastLoginAt: undefined
-        },
-        {
-          id: '2',
-          name: 'Manager User',
-          email: 'manager@snd.com',
-          role: 'MANAGER',
-          isActive: true,
-          createdAt: '2025-07-29',
-          lastLoginAt: undefined
-        },
-        {
-          id: '3',
-          name: 'Regular User',
-          email: 'user@snd.com',
-          role: 'USER',
-          isActive: true,
-          createdAt: '2025-07-29',
-          lastLoginAt: undefined
-        }
-      ];
-      setUsers(mockUsers);
+      const response = await fetch('/api/users');
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      const usersData = await response.json();
+      setUsers(usersData);
     } catch (error) {
       console.error('Error fetching users:', error);
       throw error;
@@ -131,37 +104,12 @@ export default function UserManagementPage() {
   // Fetch roles
   const fetchRoles = async () => {
     try {
-      // Mock data for demonstration - replace with actual API call
-      const mockRoles: Role[] = [
-        {
-          id: '1',
-          name: 'ADMIN',
-          description: 'Full system access',
-          permissions: ['users.read', 'users.create', 'users.update', 'users.delete'],
-          isActive: true,
-          createdAt: '2025-07-29',
-          userCount: 1
-        },
-        {
-          id: '2',
-          name: 'MANAGER',
-          description: 'Department management access',
-          permissions: ['employees.read', 'employees.update', 'reports.read'],
-          isActive: true,
-          createdAt: '2025-07-29',
-          userCount: 1
-        },
-        {
-          id: '3',
-          name: 'USER',
-          description: 'Basic user access',
-          permissions: ['employees.read', 'projects.read'],
-          isActive: true,
-          createdAt: '2025-07-29',
-          userCount: 1
-        }
-      ];
-      setRoles(mockRoles);
+      const response = await fetch('/api/roles');
+      if (!response.ok) {
+        throw new Error('Failed to fetch roles');
+      }
+      const rolesData = await response.json();
+      setRoles(rolesData);
     } catch (error) {
       console.error('Error fetching roles:', error);
       throw error;
@@ -323,9 +271,7 @@ export default function UserManagementPage() {
   const resetRoleForm = () => {
     setRoleFormData({
       name: '',
-      description: '',
-      permissions: [],
-      isActive: true
+      guard_name: 'web'
     });
   };
 
@@ -345,20 +291,9 @@ export default function UserManagementPage() {
     setSelectedRole(role);
     setRoleFormData({
       name: role.name,
-      description: role.description,
-      permissions: role.permissions,
-      isActive: role.isActive
+      guard_name: role.guard_name
     });
     setIsEditRoleDialogOpen(true);
-  };
-
-  const handlePermissionToggle = (permission: string) => {
-    setRoleFormData(prev => ({
-      ...prev,
-      permissions: prev.permissions.includes(permission)
-        ? prev.permissions.filter(p => p !== permission)
-        : [...prev.permissions, permission]
-    }));
   };
 
   useEffect(() => {
@@ -505,7 +440,7 @@ export default function UserManagementPage() {
                               </Button>
                             </Can>
                             <Can action="delete" subject="User">
-                              <Button size="sm" variant="outline">
+                              <Button size="sm" variant="outline" onClick={() => deleteUser(user.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </Can>
@@ -541,11 +476,10 @@ export default function UserManagementPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t('roleName')}</TableHead>
-                      <TableHead>{t('description')}</TableHead>
-                      <TableHead>{t('permissions')}</TableHead>
+                      <TableHead>{t('guardName')}</TableHead>
                       <TableHead>{t('users')}</TableHead>
-                      <TableHead>{t('status')}</TableHead>
                       <TableHead>{t('created')}</TableHead>
+                      <TableHead>{t('updated')}</TableHead>
                       <TableHead>{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -553,36 +487,10 @@ export default function UserManagementPage() {
                     {roles.map((role) => (
                       <TableRow key={role.id}>
                         <TableCell className="font-medium">{role.name}</TableCell>
-                        <TableCell>{role.description}</TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {role.permissions.slice(0, 3).map((permission) => (
-                              <Badge key={permission} variant="outline" className="text-xs">
-                                {permission}
-                              </Badge>
-                            ))}
-                            {role.permissions.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{role.permissions.length - 3} {t('more')}
-                              </Badge>
-                            )}
-                          </div>
-                        </TableCell>
+                        <TableCell>{role.guard_name}</TableCell>
                         <TableCell>{role.userCount} {t('users')}</TableCell>
-                        <TableCell>
-                          {role.isActive ? (
-                            <Badge variant="default" className="flex items-center gap-1">
-                              <CheckCircle className="h-3 w-3" />
-                              {t('active')}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="flex items-center gap-1">
-                              <XCircle className="h-3 w-3" />
-                              {t('inactive')}
-                            </Badge>
-                          )}
-                        </TableCell>
                         <TableCell>{new Date(role.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(role.updatedAt).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
                             <Button
@@ -598,7 +506,7 @@ export default function UserManagementPage() {
                               </Button>
                             </Can>
                             <Can action="delete" subject="User">
-                              <Button size="sm" variant="outline">
+                              <Button size="sm" variant="outline" onClick={() => deleteRole(role.id)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </Can>
@@ -637,6 +545,224 @@ export default function UserManagementPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Create User Dialog */}
+      <Dialog open={isCreateUserDialogOpen} onOpenChange={setIsCreateUserDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('createNewUser')}</DialogTitle>
+            <DialogDescription>{t('createNewUserDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="name">{t('name')}</Label>
+              <Input
+                id="name"
+                value={userFormData.name}
+                onChange={(e) => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder={t('enterName')}
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">{t('email')}</Label>
+              <Input
+                id="email"
+                type="email"
+                value={userFormData.email}
+                onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
+                placeholder={t('enterEmail')}
+              />
+            </div>
+            <div>
+              <Label htmlFor="password">{t('password')}</Label>
+              <Input
+                id="password"
+                type="password"
+                value={userFormData.password}
+                onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                placeholder={t('enterPassword')}
+              />
+            </div>
+            <div>
+              <Label htmlFor="role">{t('role')}</Label>
+              <Select value={userFormData.role} onValueChange={(value) => setUserFormData(prev => ({ ...prev, role: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('selectRole')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USER">{t('user')}</SelectItem>
+                  <SelectItem value="MANAGER">{t('manager')}</SelectItem>
+                  <SelectItem value="ADMIN">{t('admin')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={userFormData.isActive}
+                onChange={(e) => setUserFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+              />
+              <Label htmlFor="isActive">{t('active')}</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateUserDialogOpen(false)}>
+              {t('cancel')}
+            </Button>
+            <Button onClick={createUser}>
+              {t('createUser')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('editUser')}</DialogTitle>
+            <DialogDescription>{t('editUserDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-name">{t('name')}</Label>
+              <Input
+                id="edit-name"
+                value={userFormData.name}
+                onChange={(e) => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder={t('enterName')}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-email">{t('email')}</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={userFormData.email}
+                onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
+                placeholder={t('enterEmail')}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-password">{t('password')} ({t('optional')})</Label>
+              <Input
+                id="edit-password"
+                type="password"
+                value={userFormData.password}
+                onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                placeholder={t('enterNewPassword')}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-role">{t('role')}</Label>
+              <Select value={userFormData.role} onValueChange={(value) => setUserFormData(prev => ({ ...prev, role: value }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('selectRole')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USER">{t('user')}</SelectItem>
+                  <SelectItem value="MANAGER">{t('manager')}</SelectItem>
+                  <SelectItem value="ADMIN">{t('admin')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="edit-isActive"
+                checked={userFormData.isActive}
+                onChange={(e) => setUserFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+              />
+              <Label htmlFor="edit-isActive">{t('active')}</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>
+              {t('cancel')}
+            </Button>
+            <Button onClick={updateUser}>
+              {t('updateUser')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Role Dialog */}
+      <Dialog open={isCreateRoleDialogOpen} onOpenChange={setIsCreateRoleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('createNewRole')}</DialogTitle>
+            <DialogDescription>{t('createNewRoleDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="role-name">{t('roleName')}</Label>
+              <Input
+                id="role-name"
+                value={roleFormData.name}
+                onChange={(e) => setRoleFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder={t('enterRoleName')}
+              />
+            </div>
+            <div>
+              <Label htmlFor="role-guard">{t('guardName')}</Label>
+              <Input
+                id="role-guard"
+                value={roleFormData.guard_name}
+                onChange={(e) => setRoleFormData(prev => ({ ...prev, guard_name: e.target.value }))}
+                placeholder="web"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateRoleDialogOpen(false)}>
+              {t('cancel')}
+            </Button>
+            <Button onClick={createRole}>
+              {t('createRole')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Role Dialog */}
+      <Dialog open={isEditRoleDialogOpen} onOpenChange={setIsEditRoleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('editRole')}</DialogTitle>
+            <DialogDescription>{t('editRoleDescription')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-role-name">{t('roleName')}</Label>
+              <Input
+                id="edit-role-name"
+                value={roleFormData.name}
+                onChange={(e) => setRoleFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder={t('enterRoleName')}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-role-guard">{t('guardName')}</Label>
+              <Input
+                id="edit-role-guard"
+                value={roleFormData.guard_name}
+                onChange={(e) => setRoleFormData(prev => ({ ...prev, guard_name: e.target.value }))}
+                placeholder="web"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditRoleDialogOpen(false)}>
+              {t('cancel')}
+            </Button>
+            <Button onClick={updateRole}>
+              {t('updateRole')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </ProtectedRoute>
   );
 }
