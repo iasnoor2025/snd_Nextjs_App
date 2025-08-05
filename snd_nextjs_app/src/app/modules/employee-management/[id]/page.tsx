@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { format, subMonths } from "date-fns";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +38,7 @@ import Link from "next/link";
 import { useI18n } from "@/hooks/use-i18n";
 import { useRBAC } from "@/lib/rbac/rbac-context";
 import TimesheetSummary from "@/components/employee/timesheets/TimesheetSummary";
-import TimesheetList from "@/components/employee/timesheets/TimesheetList";
+
 import PaymentHistory from "@/components/employee/PaymentHistory";
 import DocumentsTab from "@/components/employee/DocumentsTab";
 import AssignmentsTab from "@/components/employee/AssignmentsTab";
@@ -144,7 +144,7 @@ export default function EmployeeShowPage() {
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedPayslipMonth, setSelectedPayslipMonth] = useState(format(new Date(), 'yyyy-MM'));
+
   const [advances, setAdvances] = useState<any[]>([]);
   const [loadingAdvances, setLoadingAdvances] = useState(false);
   const [selectedAdvanceForReject, setSelectedAdvanceForReject] = useState<any>(null);
@@ -704,61 +704,12 @@ export default function EmployeeShowPage() {
                   <CardDescription>View and manage employee timesheet records</CardDescription>
             </CardHeader>
             <CardContent>
-                            {/* Payslip Button with Month Selector */}
-              <div className="mb-4 flex flex-wrap items-center gap-2">
-                <div className="w-full min-w-[140px] sm:w-auto">
-                  <select 
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                    value={selectedPayslipMonth}
-                    onChange={(e) => setSelectedPayslipMonth(e.target.value)}
-                  >
-                    {Array.from({ length: 24 }, (_, i) => {
-                      const date = subMonths(new Date(), i);
-                      return (
-                        <option key={i} value={format(date, 'yyyy-MM')}>
-                          {format(date, 'MMMM yyyy')}
-                        </option>
-                      );
-                    })}
-                  </select>
-                    </div>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="w-full sm:w-auto"
-                  asChild
-                >
-                  <Link 
-                    href={`/modules/employee-management/${employee?.id}/payslip?month=${selectedPayslipMonth}`}
-                    target="_blank"
-                  >
-                    View Payslip
-                  </Link>
-                      </Button>
-                    </div>
       {/* Timesheet Summary */}
       <div className="mb-4">
         <TimesheetSummary employeeId={employee?.id} />
                     </div>
-      {/* Add Timesheet Button and Dialog */}
-      {hasPermission('create', 'Timesheet') && (
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button className="mt-4 mb-4">Add Timesheet</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Timesheet</DialogTitle>
-            </DialogHeader>
-            {/* TimesheetForm component will go here */}
-            <div className="text-muted-foreground italic">Timesheet form will appear here.</div>
-          </DialogContent>
-        </Dialog>
-      )}
-      {/* Timesheet List */}
-      <div className="mt-4">
-        <TimesheetList employeeId={employee?.id} />
-                    </div>
+
+
               </CardContent>
                   </Card>
           </TabsContent>

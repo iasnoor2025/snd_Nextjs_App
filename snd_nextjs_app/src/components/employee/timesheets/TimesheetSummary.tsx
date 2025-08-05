@@ -172,7 +172,7 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
   return (
     <div className="space-y-4">
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
-        <h2 className="text-2xl font-bold">Timesheet Summary</h2>
+        {/* <h2 className="text-2xl font-bold">Timesheet Summary</h2> */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Payslip-style month/year selector */}
           <div className="flex items-center gap-2">
@@ -213,32 +213,6 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Regular Hours</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{summary.totalRegularHours.toFixed(1)}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Overtime Hours</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{summary.totalOvertimeHours.toFixed(1)}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Hours</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{(summary.totalRegularHours + summary.totalOvertimeHours).toFixed(1)}</div>
-              </CardContent>
-            </Card>
-          </div>
 
           <Card>
             <CardHeader>
