@@ -205,15 +205,10 @@ export function EmployeeDropdown({
                 .slice(0, searchTerm ? undefined : 100) // Show first 100 if no search, all if searching
                 .map((employee) => (
                   <SelectItem key={employee.id} value={employee.id} className="cursor-pointer hover:bg-gray-100">
-                    <div className="flex flex-col">
-                      <span className="font-medium">{employee.first_name} {employee.last_name}</span>
-                      <div className="flex gap-2 text-sm text-gray-500">
-                        <span>{employee.designation}</span>
-                        {employee.employee_number && <span>• {employee.employee_number}</span>}
-                        {employee.file_number && <span>• {employee.file_number}</span>}
-                        {employee.department && <span>• {employee.department}</span>}
-                      </div>
-                    </div>
+                    <span className="font-medium">
+                      {employee.first_name} {employee.last_name}
+                      {employee.file_number && ` (File: ${employee.file_number})`}
+                    </span>
                   </SelectItem>
                 ))}
               {!searchTerm && employees.length > 100 && (
@@ -242,7 +237,7 @@ export function EmployeeDropdown({
       {selectedEmployee && (
         <div className="text-xs text-gray-500">
           Selected: {selectedEmployee.first_name} {selectedEmployee.last_name}
-          {selectedEmployee.employee_number && ` (${selectedEmployee.employee_number})`}
+          {selectedEmployee.file_number && ` (File: ${selectedEmployee.file_number})`}
         </div>
       )}
     </div>

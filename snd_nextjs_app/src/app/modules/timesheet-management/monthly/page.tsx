@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { EmployeeDropdown } from "@/components/ui/employee-dropdown";
+import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Calendar,
   ChevronLeft,
@@ -22,7 +24,9 @@ import {
   FileText,
   Download,
   RefreshCw,
-  ArrowLeft
+  ArrowLeft,
+  Plus,
+  CalendarDays
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from 'react-i18next';
@@ -130,24 +134,12 @@ export default function MonthlyTimesheetPage() {
         ...(selectedEmployee && selectedEmployee !== "all" && { employeeId: selectedEmployee }),
       });
 
-      console.log('Frontend - Selected employee:', selectedEmployee);
-      console.log('Frontend - Employee type:', typeof selectedEmployee);
-      console.log('Fetching monthly data with params:', params.toString());
       const response = await fetch(`/api/timesheets/monthly?${params}`);
       if (!response.ok) {
         throw new Error('Failed to fetch monthly data');
       }
 
       const data = await response.json();
-      console.log('Monthly data received:', data);
-      console.log('Summary data:', data.summary);
-      console.log('Regular hours:', data.summary?.regularHours, typeof data.summary?.regularHours);
-      console.log('Overtime hours:', data.summary?.overtimeHours, typeof data.summary?.overtimeHours);
-
-      if (!data.summary) {
-        console.warn('No summary data received from API');
-      }
-
       setMonthlyData(data);
     } catch (error) {
       console.error('Error fetching monthly data:', error);
@@ -213,14 +205,14 @@ export default function MonthlyTimesheetPage() {
       toast.success(isNewTimesheet ? t('timesheet_created_successfully') : t('timesheet_updated_successfully'));
       setEditDialog(false);
       setEditingTimesheet(null);
-      fetchMonthlyData(); // Refresh data
+      fetchMonthlyData();
     } catch (error) {
       console.error('Error saving timesheet:', error);
       toast.error(t('failed_to_save_timesheet'));
     }
   };
 
-  // Generate calendar grid - Show only current month like payslip
+  // Generate calendar grid
   const calendarGrid = useMemo(() => {
     if (!monthlyData?.calendar) return [];
 
@@ -231,27 +223,13 @@ export default function MonthlyTimesheetPage() {
     const currentMonthNum = today.getMonth() + 1;
     const currentDay = today.getDate();
 
-    console.log('Frontend calendar debug:', {
-      year,
-      month,
-      daysInMonth,
-      currentMonth,
-      currentYear,
-      currentMonthNum,
-      currentDay
-    });
-
-    // Create grid with only current month days (1 to daysInMonth)
-    const grid = Array.from({ length: daysInMonth }, (_, i) => {
+    return Array.from({ length: daysInMonth }, (_, i) => {
       const day = i + 1;
       const dateStr = `${year}-${month.padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
       const currentDate = new Date(parseInt(year), parseInt(month) - 1, day);
-      const dayOfWeek = currentDate.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
-
-      // Convert to Saturday-start week (0=Saturday, 1=Sunday, ..., 6=Friday)
+      const dayOfWeek = currentDate.getDay();
       const saturdayStartDayOfWeek = (dayOfWeek + 1) % 7;
 
-      // Check if this is a future date
       const isFutureDate = parseInt(year) > currentYear || 
                           (parseInt(year) === currentYear && parseInt(month) > currentMonthNum) ||
                           (parseInt(year) === currentYear && parseInt(month) === currentMonthNum && day > currentDay);
@@ -267,47 +245,18 @@ export default function MonthlyTimesheetPage() {
 
       return {
         ...dayData,
-        isCurrentMonth: true, // Always true since we're only showing current month
+        isCurrentMonth: true,
         isToday: dateStr === new Date().toISOString().split('T')[0],
         isFutureDate,
       };
     });
-
-    console.log('Frontend grid dates:', grid.map(day => ({
-      date: day.date,
-      isCurrentMonth: day.isCurrentMonth,
-      hasTimesheets: day.timesheets.length > 0
-    })));
-
-    return grid;
   }, [monthlyData, currentMonth]);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "draft":
-        return <Badge variant="secondary">{t('draft')}</Badge>;
-      case "submitted":
-        return <Badge variant="default">{t('submitted')}</Badge>;
-      case "foreman_approved":
-        return <Badge className="bg-blue-100 text-blue-800">{t('foreman_approved')}</Badge>;
-      case "incharge_approved":
-        return <Badge className="bg-purple-100 text-purple-800">{t('incharge_approved')}</Badge>;
-      case "checking_approved":
-        return <Badge className="bg-orange-100 text-orange-800">{t('checking_approved')}</Badge>;
-      case "manager_approved":
-        return <Badge className="bg-green-100 text-green-800">{t('manager_approved')}</Badge>;
-      case "rejected":
-        return <Badge className="bg-red-100 text-red-800">{t('rejected')}</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
-    }
-  };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="text-muted-foreground">{t('loading_monthly_data')}</p>
         </div>
       </div>
@@ -316,21 +265,22 @@ export default function MonthlyTimesheetPage() {
 
   return (
     <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Timesheet' }}>
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="container mx-auto p-4 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link href="/modules/timesheet-management">
-              <Button variant="outline" size="sm">
+              <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 {t('back')}
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold">{t('monthly_timesheet_view')}</h1>
+              <h1 className="text-2xl font-bold tracking-tight">{t('monthly_timesheet_view')}</h1>
               <p className="text-muted-foreground">{t('view_and_edit_monthly_timesheets')}</p>
             </div>
           </div>
-          <div className="flex space-x-2">
+          <div className="flex items-center space-x-2">
             <PermissionContent action="export" subject="Timesheet">
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4 mr-2" />
@@ -344,245 +294,235 @@ export default function MonthlyTimesheetPage() {
           </div>
         </div>
 
-        {/* Enhanced Filters Section */}
-        <Card className="mb-6 border-0 shadow-sm bg-gradient-to-r from-blue-50 to-indigo-50">
-          <CardContent className="pt-6">
-            <div className="flex flex-col lg:flex-row gap-6 items-center justify-between">
-              {/* Month Navigation */}
-              <div className="flex items-center space-x-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleMonthChange('prev')}
-                  className="hover:bg-white hover:shadow-sm transition-all"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <div className="text-center min-w-[160px]">
-                  <div className="text-xl font-semibold text-gray-800">
-                    {monthlyData?.summary.month || currentMonth}
-                  </div>
-                  {selectedEmployee && selectedEmployee !== "" && (
-                    <div className="text-sm text-blue-600 font-medium mt-1">
-                      Selected Employee
-                    </div>
-                  )}
+        {/* Compact Filters */}
+        <Card className="p-4">
+          <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
+            {/* Month Navigation */}
+            <div className="flex items-center space-x-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleMonthChange('prev')}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="text-center min-w-[140px]">
+                <div className="text-lg font-semibold">
+                  {monthlyData?.summary.month || currentMonth}
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleMonthChange('next')}
-                  className="hover:bg-white hover:shadow-sm transition-all"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
               </div>
-
-              {/* Employee Filter */}
-              <div className="flex items-center space-x-3">
-                <div className="min-w-[200px] max-w-[400px] w-auto">
-                  <EmployeeDropdown
-                    value={selectedEmployee}
-                    onValueChange={(value) => setSelectedEmployee(value)}
-                    placeholder={t('filter_by_employee')}
-                    showSearch={true}
-                    className=""
-                  />
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedEmployee('all')}
-                  className="hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all"
-                >
-                  Clear
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleMonthChange('next')}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
-          </CardContent>
+
+            {/* Employee Filter */}
+            <div className="flex items-center space-x-2">
+              <div className="w-64">
+                <EmployeeDropdown
+                  value={selectedEmployee}
+                  onValueChange={(value) => setSelectedEmployee(value)}
+                  placeholder={t('filter_by_employee')}
+                  showSearch={true}
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedEmployee('all')}
+              >
+                Clear
+              </Button>
+            </div>
+          </div>
         </Card>
 
-        {/* Enhanced Summary */}
+        {/* Compact Summary Cards */}
         {(monthlyData?.summary || !monthlyData) && (
-          <Card className="mb-6 border-0 shadow-sm">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center">
-                <Clock className="h-5 w-5 mr-2 text-blue-600" />
-                {t('monthly_summary')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 text-center border border-blue-200">
-                  <div className="text-3xl font-bold text-blue-700 mb-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{t('regular_hours')}</p>
+                  <p className="text-2xl font-bold text-blue-600">
                     {convertToArabicNumerals((Number(monthlyData?.summary?.regularHours || 0)).toFixed(1), isRTL)}
-                  </div>
-                  <div className="text-sm font-medium text-blue-600">{t('regular_hours')}</div>
-                </div>
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 text-center border border-orange-200">
-                  <div className="text-3xl font-bold text-orange-700 mb-2">
-                    {convertToArabicNumerals((Number(monthlyData?.summary?.overtimeHours || 0)).toFixed(1), isRTL)}
-                  </div>
-                  <div className="text-sm font-medium text-orange-600">{t('overtime_hours')}</div>
-                </div>
-                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 text-center border border-green-200">
-                  <div className="text-3xl font-bold text-green-700 mb-2">
-                    {convertToArabicNumerals((Number(monthlyData?.summary?.totalHours || 0)).toFixed(1), isRTL)}
-                  </div>
-                  <div className="text-sm font-medium text-green-600">{t('total_hours')}</div>
-                </div>
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 text-center border border-purple-200">
-                  <div className="text-3xl font-bold text-purple-700 mb-2">
-                    {convertToArabicNumerals((Number(monthlyData?.summary?.totalDays || 0)).toString(), isRTL)}
-                  </div>
-                  <div className="text-sm font-medium text-purple-600">{t('days_worked')}</div>
+                  </p>
                 </div>
               </div>
+            </Card>
 
+            <Card className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Clock className="h-4 w-4 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{t('overtime_hours')}</p>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {convertToArabicNumerals((Number(monthlyData?.summary?.overtimeHours || 0)).toFixed(1), isRTL)}
+                  </p>
+                </div>
+              </div>
+            </Card>
 
-            </CardContent>
-          </Card>
+            <Card className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Clock className="h-4 w-4 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{t('total_hours')}</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {convertToArabicNumerals((Number(monthlyData?.summary?.totalHours || 0)).toFixed(1), isRTL)}
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <CalendarDays className="h-4 w-4 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{t('days_worked')}</p>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {convertToArabicNumerals((Number(monthlyData?.summary?.totalDays || 0)).toString(), isRTL)}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
         )}
 
-        {/* Enhanced Calendar Grid */}
-        <Card className="border-0 shadow-sm">
+        {/* Compact Calendar */}
+        <Card>
           <CardHeader className="pb-4">
-            <CardTitle className="flex items-center">
-              <Calendar className="h-5 w-5 mr-2 text-green-600" />
-              {t('monthly_calendar')}
-            </CardTitle>
-            <CardDescription className="flex items-center">
-              <Edit className="h-4 w-4 mr-1" />
-              {t('click_on_timesheet_to_edit_overtime')}
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Calendar className="h-5 w-5 text-green-600" />
+                <CardTitle>{t('monthly_calendar')}</CardTitle>
+              </div>
+              <CardDescription className="flex items-center space-x-1">
+                <Edit className="h-4 w-4" />
+                {t('click_on_timesheet_to_edit_overtime')}
+              </CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-7 gap-2">
-              {/* Enhanced Day headers - Start with Saturday */}
-              {['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day, index) => (
-                <div key={day} className={`p-3 text-center font-semibold text-sm rounded-lg ${
-                  day === 'Fri' ? 'bg-blue-100 text-blue-700 border border-blue-200' : 'bg-gray-50 text-gray-700 border border-gray-200'
+            <div className="grid grid-cols-7 gap-1">
+              {/* Day headers */}
+              {['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day) => (
+                <div key={day} className={`p-2 text-center text-xs font-medium rounded ${
+                  day === 'Fri' ? 'bg-blue-50 text-blue-700' : 'bg-muted'
                 }`}>
                   {day}
                 </div>
               ))}
 
-              {/* Empty cells for days before the first day of the month - Adjusted for Saturday start */}
+              {/* Empty cells */}
               {Array.from({ length: (calendarGrid[0]?.day_of_week + 1) % 7 || 0 }, (_, i) => (
-                <div key={`empty-${i}`} className="p-2 border border-gray-200 rounded-lg min-h-[120px] bg-gray-50"></div>
+                <div key={`empty-${i}`} className="p-1 border rounded min-h-[80px] bg-muted/30"></div>
               ))}
 
-              {/* Calendar days - Show only current month like payslip */}
-              {calendarGrid.map((day, index) => {
-                const isFriday = day.day_of_week === 5; // Friday in Saturday-start week
+              {/* Calendar days */}
+              {calendarGrid.map((day) => {
+                const isFriday = day.day_of_week === 5;
                 
-                // Skip future dates
                 if (day.isFutureDate) {
                   return (
-                    <div
-                      key={day.date}
-                      className="p-2 border rounded min-h-[100px] bg-gray-100 opacity-50"
-                    >
-                      <div className="text-sm font-medium mb-1 text-gray-400">
+                    <div key={day.date} className="p-1 border rounded min-h-[80px] bg-muted/50 opacity-50">
+                      <div className="text-xs font-medium text-muted-foreground">
                         {new Date(day.date).getDate()}
-                      </div>
-                      <div className="text-gray-300 text-xs text-center mt-2">
-                        -
                       </div>
                     </div>
                   );
                 }
                 
-                // Check if any timesheet has 0 hours worked (except Fridays)
-                const hasZeroHours = day.timesheets.some(timesheet => 
-                  (Number(timesheet.hoursWorked) || 0) === 0 && 
-                  (Number(timesheet.overtimeHours) || 0) === 0
-                );
-                
                 return (
                   <div
                     key={day.date}
-                    className={`p-3 border border-gray-200 rounded-lg min-h-[120px] shadow-sm hover:shadow-md transition-shadow ${
-                      isFriday ? 'bg-blue-50 border-blue-300' : 'bg-white'
-                    } ${
-                      day.isToday ? 'ring-2 ring-blue-500 shadow-lg' : ''
-                    }`}
+                    className={`p-1 border rounded min-h-[80px] ${
+                      isFriday ? 'bg-blue-50 border-blue-200' : 'bg-background'
+                    } ${day.isToday ? 'ring-2 ring-blue-500' : ''}`}
                   >
-                    <div className={`text-sm font-semibold mb-2 ${
-                      isFriday ? 'text-blue-700' : 'text-gray-800'
+                    <div className={`text-xs font-medium mb-1 ${
+                      isFriday ? 'text-blue-700' : 'text-foreground'
                     }`}>
                       {new Date(day.date).getDate()}
-                      {isFriday && <span className="text-xs text-blue-600 ml-1 font-medium">(Holiday)</span>}
+                      {isFriday && <span className="text-xs text-blue-600 ml-1">(H)</span>}
                     </div>
 
-                                          {day.timesheets.length > 0 ? (
-                        // Show all timesheet data, but mark 0-hour entries differently
-                        <div className="space-y-1">
-                          {day.timesheets.map((timesheet) => {
-                            const hasZeroHours = (Number(timesheet.hoursWorked) || 0) === 0 && 
-                                               (Number(timesheet.overtimeHours) || 0) === 0;
-                            
-                            return (
-                              <div
-                                key={timesheet.id}
-                                className={`text-xs p-2 rounded-lg cursor-pointer hover:shadow-sm transition-all ${
-                                  hasZeroHours && !isFriday ? 'bg-red-50 border border-red-200 hover:bg-red-100' : 'bg-blue-50 border border-blue-200 hover:bg-blue-100'
-                                }`}
-                                onClick={() => handleEditOvertime(timesheet)}
-                                title={t('click_to_edit_overtime')}
-                              >
-                                <div className="font-semibold truncate text-gray-800">
-                                  {timesheet.employee.firstName} {timesheet.employee.lastName}
-                                </div>
-                                <div className="text-gray-700 mt-1">
-                                  {hasZeroHours && !isFriday ? (
-                                    <span className="text-red-600 font-bold text-sm">A</span>
-                                  ) : (
-                                    <>
-                                      <span className="font-medium">{convertToArabicNumerals((Number(timesheet.hoursWorked) || 0).toString(), isRTL)}h</span>
-                                      {(Number(timesheet.overtimeHours) || 0) > 0 && (
-                                        <span className="text-orange-600 ml-1 font-medium">
-                                          +{convertToArabicNumerals((Number(timesheet.overtimeHours) || 0).toString(), isRTL)}h
-                                        </span>
-                                      )}
-                                    </>
-                                  )}
-                                </div>
-                                <div className="text-gray-500 truncate text-xs mt-1">
-                                  {timesheet.project?.name || timesheet.assignment?.name || t('no_project')}
-                                </div>
+                    {day.timesheets.length > 0 ? (
+                      <div className="space-y-1">
+                        {day.timesheets.map((timesheet) => {
+                          const hasZeroHours = (Number(timesheet.hoursWorked) || 0) === 0 && 
+                                             (Number(timesheet.overtimeHours) || 0) === 0;
+                          
+                          return (
+                            <div
+                              key={timesheet.id}
+                              className={`text-xs p-1 rounded cursor-pointer hover:bg-accent transition-colors ${
+                                hasZeroHours && !isFriday ? 'bg-red-50 border border-red-200' : 'bg-blue-50 border border-blue-200'
+                              }`}
+                              onClick={() => handleEditOvertime(timesheet)}
+                              title={t('click_to_edit_overtime')}
+                            >
+                              <div className="font-medium truncate">
+                                {timesheet.employee.firstName} {timesheet.employee.lastName}
                               </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div 
-                          className={`text-xs text-center mt-2 cursor-pointer hover:bg-gray-50 rounded p-1 ${
-                            isFriday ? 'text-blue-500' : 'text-red-500'
-                          }`}
-                          onClick={() => {
-                            // Create a new timesheet entry for this day
-                                                          const newTimesheet = {
-                                id: `temp-${day.date}`,
-                                employeeId: selectedEmployee || '',
-                                date: day.date,
-                                hoursWorked: 0,
-                                overtimeHours: 0,
-                                status: 'draft',
-                                employee: {
-                                  id: selectedEmployee || '',
-                                  firstName: 'Employee',
-                                  lastName: '',
-                                  employeeId: ''
-                                }
-                              };
-                            handleEditOvertime(newTimesheet);
-                          }}
-                          title={t('click_to_add_timesheet')}
-                        >
-                          {isFriday ? 'F' : 'A'}
-                        </div>
-                      )}
+                              <div className="text-xs">
+                                {hasZeroHours && !isFriday ? (
+                                  <span className="text-red-600 font-bold">A</span>
+                                ) : (
+                                  <>
+                                    <span className="font-medium">{convertToArabicNumerals((Number(timesheet.hoursWorked) || 0).toString(), isRTL)}h</span>
+                                    {(Number(timesheet.overtimeHours) || 0) > 0 && (
+                                      <span className="text-orange-600 ml-1">
+                                        +{convertToArabicNumerals((Number(timesheet.overtimeHours) || 0).toString(), isRTL)}h
+                                      </span>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div 
+                        className={`text-xs text-center mt-2 cursor-pointer hover:bg-accent rounded p-1 ${
+                          isFriday ? 'text-blue-500' : 'text-red-500'
+                        }`}
+                        onClick={() => {
+                          const newTimesheet = {
+                            id: `temp-${day.date}`,
+                            employeeId: selectedEmployee || '',
+                            date: day.date,
+                            hoursWorked: 0,
+                            overtimeHours: 0,
+                            status: 'draft',
+                            employee: {
+                              id: selectedEmployee || '',
+                              firstName: 'Employee',
+                              lastName: '',
+                              employeeId: ''
+                            }
+                          };
+                          handleEditOvertime(newTimesheet);
+                        }}
+                        title={t('click_to_add_timesheet')}
+                      >
+                        {isFriday ? 'F' : 'A'}
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -594,27 +534,36 @@ export default function MonthlyTimesheetPage() {
         <Dialog open={editDialog} onOpenChange={setEditDialog}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>{t('edit_timesheet')}</DialogTitle>
+              <DialogTitle className="flex items-center space-x-2">
+                <Edit className="h-4 w-4" />
+                {t('edit_timesheet')}
+              </DialogTitle>
               <DialogDescription>
                 {t('edit_timesheet_hours_and_overtime')}
               </DialogDescription>
             </DialogHeader>
             {editingTimesheet && (
               <div className="space-y-4">
-                <div className="bg-gray-50 p-3 rounded">
-                  <div className="text-sm font-medium">
-                    {editingTimesheet.employee.firstName} {editingTimesheet.employee.lastName}
+                <Card className="p-3">
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>
+                        {editingTimesheet.employee.firstName.charAt(0)}{editingTimesheet.employee.lastName.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">
+                        {editingTimesheet.employee.firstName} {editingTimesheet.employee.lastName}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {new Date(editingTimesheet.date).toLocaleDateString()}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {new Date(editingTimesheet.date).toLocaleDateString()}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {editingTimesheet.project?.name || editingTimesheet.assignment?.name || t('no_project')}
-                  </div>
-                </div>
+                </Card>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="hoursWorked">{t('regular_hours')}</Label>
                     <Input
                       id="hoursWorked"
@@ -625,7 +574,7 @@ export default function MonthlyTimesheetPage() {
                       onChange={(e) => setEditForm(prev => ({ ...prev, hoursWorked: parseFloat(e.target.value) || 0 }))}
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="overtimeHours">{t('overtime_hours')}</Label>
                     <Input
                       id="overtimeHours"
@@ -638,8 +587,11 @@ export default function MonthlyTimesheetPage() {
                   </div>
                 </div>
 
-                <div className="text-sm text-gray-600">
-                  <div>{t('total_hours')}: {editForm.hoursWorked + editForm.overtimeHours}h</div>
+                <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                  <span className="text-sm font-medium">{t('total_hours')}:</span>
+                  <span className="text-lg font-bold text-primary">
+                    {editForm.hoursWorked + editForm.overtimeHours}h
+                  </span>
                 </div>
               </div>
             )}
