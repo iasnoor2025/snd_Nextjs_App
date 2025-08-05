@@ -737,6 +737,15 @@ export default function TimesheetManagementPage() {
               </Button>
             </Link>
           </PermissionContent>
+
+          <PermissionContent action="read" subject="Timesheet">
+            <Link href="/modules/timesheet-management/monthly">
+              <Button variant="outline">
+                <Calendar className="h-4 w-4 mr-2" />
+                {t('monthly_report')}
+              </Button>
+            </Link>
+          </PermissionContent>
         </div>
       </div>
 

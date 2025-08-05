@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-config';
 
 // Helper function to format employee data for frontend
 function formatEmployeeForFrontend(employee: any) {
@@ -114,151 +116,85 @@ function formatEmployeeForFrontend(employee: any) {
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Employees API called');
-
-    // Test database connection first
-    try {
-      await prisma.$connect();
-      console.log('Database connection successful');
-    } catch (dbError) {
-      console.error('Database connection failed:', dbError);
-      
-      let errorMessage = 'Database connection failed';
-      if (dbError instanceof Error) {
-        if (dbError.message.includes('DATABASE_URL')) {
-          errorMessage = 'Database URL not configured. Please check your .env.local file.';
-        } else if (dbError.message.includes('ECONNREFUSED')) {
-          errorMessage = 'Database server not accessible. Please check if PostgreSQL is running.';
-        } else if (dbError.message.includes('authentication')) {
-          errorMessage = 'Database authentication failed. Please check your credentials.';
-        } else {
-          errorMessage = `Database error: ${dbError.message}`;
-        }
-      }
-      
-      return NextResponse.json(
-        {
-          success: false,
-          message: errorMessage,
-          error: dbError instanceof Error ? dbError.message : 'Unknown database error'
-        },
-        { status: 500 }
-      );
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get query parameters for filtering
     const { searchParams } = new URL(request.url);
-    const search = searchParams.get('search');
-    const status = searchParams.get('status');
-    const department = searchParams.get('department');
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
-    const getAll = searchParams.get('all') === 'true';
-    const offset = getAll ? 0 : (page - 1) * limit;
+    const search = searchParams.get('search') || '';
 
-    console.log('Query parameters:', { search, status, department, page, limit });
+    const skip = (page - 1) * limit;
 
-    // Fetch employees from database with assignments
-    const employees = await prisma.employee.findMany({
-      include: {
-        department: true,
-        designation: true,
-        unit: true,
-        employee_assignments: {
-          where: {
-            status: 'active'
-          },
-          include: {
-            project: {
-              select: {
-                id: true,
-                name: true
-              }
-            },
-            rental: {
-              select: {
-                id: true,
-                rental_number: true,
-                customer: {
-                  select: {
-                    name: true
-                  }
-                }
-              }
-            }
-          },
-          orderBy: {
-            start_date: 'desc'
-          },
-          take: 1 // Get only the most recent active assignment
-        }
-      },
-      skip: offset,
-      take: getAll ? undefined : limit,
-      orderBy: [
-        { first_name: 'asc' },
-        { last_name: 'asc' }
-      ]
-    });
+    const where: any = {
+      deleted_at: null,
+    };
 
-    console.log(`Found ${employees.length} employees`);
-
-    // Debug: Check if any employees have assignments
-    const employeesWithAssignments = employees.filter(emp => emp.employee_assignments && emp.employee_assignments.length > 0);
-    console.log(`Employees with assignments: ${employeesWithAssignments.length}`);
-
-    // Format employees for frontend
-    const formattedEmployees = employees.map(employee => formatEmployeeForFrontend(employee));
-
-    // Get total count for pagination
-    const totalCount = await prisma.employee.count();
-
-    return NextResponse.json({
-      success: true,
-      data: formattedEmployees,
-      pagination: {
-        page,
-        limit,
-        total: totalCount,
-        totalPages: Math.ceil(totalCount / limit)
-      },
-      message: 'Employees retrieved successfully'
-    });
-  } catch (error) {
-    console.error('Error in GET /api/employees:', error);
-    console.error('Error details:', {
-      name: error instanceof Error ? error.name : 'Unknown',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : 'No stack trace'
-    });
-
-    let errorMessage = 'Failed to fetch employees';
-    if (error instanceof Error) {
-      if (error.message.includes('DATABASE_URL')) {
-        errorMessage = 'Database not configured. Please check your environment variables.';
-      } else if (error.message.includes('ECONNREFUSED')) {
-        errorMessage = 'Database server not accessible. Please check if PostgreSQL is running.';
-      } else if (error.message.includes('authentication')) {
-        errorMessage = 'Database authentication failed. Please check your credentials.';
-      } else {
-        errorMessage = error.message;
-      }
+    if (search) {
+      where.OR = [
+        { first_name: { contains: search, mode: 'insensitive' } },
+        { last_name: { contains: search, mode: 'insensitive' } },
+        { employee_id: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
+    const [employees, total] = await Promise.all([
+      prisma.employee.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { first_name: 'asc' },
+        select: {
+          id: true,
+          first_name: true,
+          last_name: true,
+          employee_id: true,
+          designation: true,
+          department: true,
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
+          },
+        },
+      }),
+      prisma.employee.count({ where }),
+    ]);
+
+    // Transform the response to match frontend interface
+    const transformedEmployees = employees.map(employee => ({
+      id: employee.id.toString(),
+      firstName: employee.first_name,
+      lastName: employee.last_name,
+      employeeId: employee.employee_id,
+      designation: employee.designation,
+      department: employee.department,
+      user: employee.user ? {
+        name: employee.user.name,
+        email: employee.user.email,
+      } : undefined,
+    }));
+
+    const totalPages = Math.ceil(total / limit);
+
+    return NextResponse.json({
+      data: transformedEmployees,
+      current_page: page,
+      last_page: totalPages,
+      per_page: limit,
+      total,
+      next_page_url: page < totalPages ? `/api/employees?page=${page + 1}` : null,
+      prev_page_url: page > 1 ? `/api/employees?page=${page - 1}` : null,
+    });
+  } catch (error) {
+    console.error('Error fetching employees:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: errorMessage,
-        error: {
-          name: error instanceof Error ? error.name : 'Unknown',
-          message: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : 'No stack trace'
-        }
-      },
+      { error: 'Failed to fetch employees', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
