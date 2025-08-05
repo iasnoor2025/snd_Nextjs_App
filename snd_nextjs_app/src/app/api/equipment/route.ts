@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  async (request: NextRequest) => {
   try {
     console.log('Fetching equipment from database...');
     
@@ -101,9 +103,12 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.equipment.read
+);
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -136,10 +141,13 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.equipment.create
+);
 
-export async function PUT(request: NextRequest) {
-  try {
+export const PUT = withPermission(
+  async (request: NextRequest) => {
+    try {
     const body = await request.json();
     const {
       id,
@@ -179,7 +187,7 @@ export async function PUT(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ success: true, data: equipment });
+        return NextResponse.json({ success: true, data: equipment });
   } catch (error) {
     console.error('Error updating equipment:', error);
     return NextResponse.json(
@@ -190,10 +198,13 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.equipment.update
+);
 
-export async function DELETE(request: NextRequest) {
-  try {
+export const DELETE = withPermission(
+  async (request: NextRequest) => {
+    try {
     const body = await request.json();
     const { id } = body;
 
@@ -212,4 +223,6 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.equipment.delete
+);

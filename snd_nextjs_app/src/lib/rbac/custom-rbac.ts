@@ -21,6 +21,8 @@ export type Subject =
   | 'Settings'
   | 'Company'
   | 'Location'
+  | 'Advance'
+  | 'Assignment'
   | 'all';
 
 export interface User {

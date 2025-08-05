@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 // GET /api/users - Get all users
-export async function GET() {
-  try {
+export const GET = withPermission(
+  async () => {
+    try {
     const users = await prisma.user.findMany({
       select: {
         id: true,
@@ -99,11 +101,14 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.user.read
+);
 
 // POST /api/users - Create new user
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withPermission(
+  async (request: NextRequest) => {
+    try {
     const body = await request.json();
     const { name, email, password, role, isActive } = body;
 
@@ -176,11 +181,14 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.user.create
+);
 
 // PUT /api/users - Update user
-export async function PUT(request: NextRequest) {
-  try {
+export const PUT = withPermission(
+  async (request: NextRequest) => {
+    try {
     const body = await request.json();
     const { id, name, email, password, role, isActive } = body;
 
@@ -279,10 +287,13 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.user.update
+);
 
 // DELETE /api/users - Delete user
-export async function DELETE(request: NextRequest) {
+export const DELETE = withPermission(
+  async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { id } = body;
@@ -319,4 +330,6 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.user.delete
+);

@@ -1,321 +1,158 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
 
-// Helper function to format employee data for frontend
-function formatEmployeeForFrontend(employee: any) {
-  // Debug: Log assignment info for first few employees
-  if (employee.id <= 5) {
-    console.log(`Employee ${employee.id} (${employee.first_name} ${employee.last_name}):`, {
-      hasAssignments: employee.employee_assignments && employee.employee_assignments.length > 0,
-      assignmentCount: employee.employee_assignments ? employee.employee_assignments.length : 0,
-      firstAssignment: employee.employee_assignments && employee.employee_assignments.length > 0 ? employee.employee_assignments[0] : null
-    });
-  }
-
-  return {
-    id: employee.id,
-    employee_id: employee.employee_id,
-    erpnext_id: employee.erpnext_id,
-    file_number: employee.file_number,
-    first_name: employee.first_name,
-    middle_name: employee.middle_name,
-    last_name: employee.last_name,
-    full_name: `${employee.first_name || ''} ${employee.middle_name ? employee.middle_name + ' ' : ''}${employee.last_name || ''}`.trim(),
-    email: employee.email,
-    phone: employee.phone,
-    address: employee.address,
-    city: employee.city,
-    state: employee.state,
-    postal_code: employee.postal_code,
-    country: employee.country,
-    nationality: employee.nationality,
-    date_of_birth: employee.date_of_birth?.toISOString().split('T')[0] || null,
-    hire_date: employee.hire_date?.toISOString().split('T')[0] || null,
-    department: employee.department?.name || 'General',
-    designation: employee.designation?.name || 'Employee',
-    unit: employee.unit?.name || null,
-    supervisor: employee.supervisor,
-    status: employee.status,
-    current_location: employee.current_location,
-    basic_salary: parseFloat(employee.basic_salary?.toString() || '0'),
-    food_allowance: parseFloat(employee.food_allowance?.toString() || '0'),
-    housing_allowance: parseFloat(employee.housing_allowance?.toString() || '0'),
-    transport_allowance: parseFloat(employee.transport_allowance?.toString() || '0'),
-    hourly_rate: parseFloat(employee.hourly_rate?.toString() || '0'),
-    absent_deduction_rate: parseFloat(employee.absent_deduction_rate?.toString() || '0'),
-    overtime_rate_multiplier: parseFloat(employee.overtime_rate_multiplier?.toString() || '1.5'),
-    overtime_fixed_rate: parseFloat(employee.overtime_fixed_rate?.toString() || '0'),
-    bank_name: employee.bank_name,
-    bank_account_number: employee.bank_account_number,
-    bank_iban: employee.bank_iban,
-    contract_hours_per_day: employee.contract_hours_per_day || 8,
-    contract_days_per_month: employee.contract_days_per_month || 26,
-    emergency_contact_name: employee.emergency_contact_name,
-    emergency_contact_phone: employee.emergency_contact_phone,
-    emergency_contact_relationship: employee.emergency_contact_relationship,
-    notes: employee.notes,
-    advance_salary_eligible: employee.advance_salary_eligible,
-    advance_salary_approved_this_month: employee.advance_salary_approved_this_month,
-    iqama_number: employee.iqama_number,
-    iqama_expiry: employee.iqama_expiry?.toISOString().split('T')[0] || null,
-    iqama_cost: parseFloat(employee.iqama_cost?.toString() || '0'),
-    passport_number: employee.passport_number,
-    passport_expiry: employee.passport_expiry?.toISOString().split('T')[0] || null,
-    driving_license_number: employee.driving_license_number,
-    driving_license_expiry: employee.driving_license_expiry?.toISOString().split('T')[0] || null,
-    driving_license_cost: parseFloat(employee.driving_license_cost?.toString() || '0'),
-    operator_license_number: employee.operator_license_number,
-    operator_license_expiry: employee.operator_license_expiry?.toISOString().split('T')[0] || null,
-    operator_license_cost: parseFloat(employee.operator_license_cost?.toString() || '0'),
-    tuv_certification_number: employee.tuv_certification_number,
-    tuv_certification_expiry: employee.tuv_certification_expiry?.toISOString().split('T')[0] || null,
-    tuv_certification_cost: parseFloat(employee.tuv_certification_cost?.toString() || '0'),
-    spsp_license_number: employee.spsp_license_number,
-    spsp_license_expiry: employee.spsp_license_expiry?.toISOString().split('T')[0] || null,
-    spsp_license_cost: parseFloat(employee.spsp_license_cost?.toString() || '0'),
-    driving_license_file: employee.driving_license_file,
-    operator_license_file: employee.operator_license_file,
-    tuv_certification_file: employee.tuv_certification_file,
-    spsp_license_file: employee.spsp_license_file,
-    passport_file: employee.passport_file,
-    iqama_file: employee.iqama_file,
-    custom_certifications: employee.custom_certifications,
-    is_operator: employee.is_operator,
-    access_restricted_until: employee.access_restricted_until?.toISOString().split('T')[0] || null,
-    access_start_date: employee.access_start_date?.toISOString().split('T')[0] || null,
-    access_end_date: employee.access_end_date?.toISOString().split('T')[0] || null,
-    access_restriction_reason: employee.access_restriction_reason,
-    created_at: employee.created_at?.toISOString().split('T')[0] || null,
-    updated_at: employee.updated_at?.toISOString().split('T')[0] || null,
-    // Current assignment information
-    current_assignment: employee.employee_assignments && employee.employee_assignments.length > 0 ? {
-      id: employee.employee_assignments[0].id,
-      type: employee.employee_assignments[0].type,
-      name: employee.employee_assignments[0].name,
-      location: employee.employee_assignments[0].location,
-      start_date: employee.employee_assignments[0].start_date?.toISOString().split('T')[0] || null,
-      end_date: employee.employee_assignments[0].end_date?.toISOString().split('T')[0] || null,
-      status: employee.employee_assignments[0].status,
-      notes: employee.employee_assignments[0].notes,
-      project: employee.employee_assignments[0].project ? {
-        id: employee.employee_assignments[0].project.id,
-        name: employee.employee_assignments[0].project.name,
-        location: null
-      } : null,
-      rental: employee.employee_assignments[0].rental ? {
-        id: employee.employee_assignments[0].rental.id,
-        project_name: employee.employee_assignments[0].rental.customer?.name || 'Unknown Customer',
-        rental_number: employee.employee_assignments[0].rental.rental_number,
-        location: null
-      } : null
-    } : null
-  };
-}
-
-export async function GET(request: NextRequest) {
+// GET /api/employees - List employees
+export const GET = async (request: NextRequest) => {
   try {
-    console.log('Employees API called');
-    const session = await getServerSession(authOptions);
-    console.log('Session:', session ? 'Found' : 'Not found');
-    if (!session?.user) {
-      console.log('Unauthorized access attempt');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const search = searchParams.get('search') || '';
+    const department = searchParams.get('department') || '';
+    const status = searchParams.get('status') || '';
     const all = searchParams.get('all') === 'true';
-    
-    console.log('API Parameters:', { page, limit, search, all });
 
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      deleted_at: null,
-    };
-
+    // Build where clause
+    const where: any = {};
     if (search) {
       where.OR = [
         { first_name: { contains: search, mode: 'insensitive' } },
         { last_name: { contains: search, mode: 'insensitive' } },
         { employee_id: { contains: search, mode: 'insensitive' } },
-        { file_number: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
       ];
     }
 
-    // If all=true, return all employees with complete data
-    if (all) {
-      console.log('Fetching all employees with complete data');
-      const employees = await prisma.employee.findMany({
+    if (department) {
+      where.department_id = parseInt(department);
+    }
+
+    if (status) {
+      where.status = status;
+    }
+
+    // Get employees with pagination
+    const [employees, total] = await Promise.all([
+      prisma.employee.findMany({
         where,
+        skip: all ? 0 : skip,
+        take: all ? undefined : limit,
         orderBy: { first_name: 'asc' },
         include: {
           department: true,
           designation: true,
-          unit: true,
-          employee_assignments: {
-            where: {
-              status: 'active'
-            },
-            include: {
-              project: true,
-              rental: {
-                include: {
-                  customer: true
-                }
-              }
-            },
-            orderBy: {
-              created_at: 'desc'
-            },
-            take: 1
-          }
-        }
-      });
-
-      console.log(`Found ${employees.length} employees in database`);
-      if (employees.length > 0) {
-        console.log('First employee sample:', employees[0]);
-      }
-
-      const formattedEmployees = employees.map(formatEmployeeForFrontend);
-
-      console.log(`Returning ${formattedEmployees.length} formatted employees`);
-      return NextResponse.json({
-        success: true,
-        data: formattedEmployees
-      });
-    }
-
-    // Regular paginated response
-    console.log('Fetching paginated employees');
-    const [employees, total] = await Promise.all([
-      prisma.employee.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { first_name: 'asc' },
-        select: {
-          id: true,
-          first_name: true,
-          last_name: true,
-          employee_id: true,
-          designation: true,
-          department: true,
           user: {
             select: {
+              id: true,
               name: true,
               email: true,
+              isActive: true,
             },
           },
         },
       }),
       prisma.employee.count({ where }),
     ]);
-    
-    console.log(`Found ${employees.length} employees (total: ${total})`);
 
-    // Transform the response to match frontend interface
+    // Transform the data to include full_name and proper department/designation names
     const transformedEmployees = employees.map(employee => ({
-      id: employee.id.toString(),
-      firstName: employee.first_name,
-      lastName: employee.last_name,
-      employeeId: employee.employee_id,
-      designation: employee.designation,
-      department: employee.department,
-      user: employee.user ? {
-        name: employee.user.name,
-        email: employee.user.email,
-      } : undefined,
+      ...employee,
+      full_name: [
+        employee.first_name,
+        employee.middle_name,
+        employee.last_name
+      ].filter(Boolean).join(' '),
+      department: employee.department?.name || null,
+      designation: employee.designation?.name || null,
     }));
 
-    const totalPages = Math.ceil(total / limit);
-
     return NextResponse.json({
+      success: true,
       data: transformedEmployees,
-      current_page: page,
-      last_page: totalPages,
-      per_page: limit,
-      total,
-      next_page_url: page < totalPages ? `/api/employees?page=${page + 1}` : null,
-      prev_page_url: page > 1 ? `/api/employees?page=${page - 1}` : null,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error('Error fetching employees:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch employees', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
-}
+};
 
-export async function POST(request: NextRequest) {
+// POST /api/employees - Create new employee
+export const POST = async (request: NextRequest) => {
   try {
     const body = await request.json();
+    const {
+      first_name,
+      last_name,
+      employee_id,
+      email,
+      phone,
+      department_id,
+      designation_id,
+      basic_salary,
+      hire_date,
+      // ... other fields
+    } = body;
 
-    // Validate required fields
-    if (!body.first_name || !body.last_name || !body.file_number) {
+    if (!first_name || !last_name || !employee_id) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'First name, last name, and file number are required'
-        },
+        { error: 'First name, last name, and employee ID are required' },
         { status: 400 }
       );
     }
 
-    // Check if employee with same file number already exists
+    // Check if employee ID already exists
     const existingEmployee = await prisma.employee.findUnique({
-      where: { file_number: body.file_number }
+      where: { employee_id },
     });
 
     if (existingEmployee) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Employee with this file number already exists'
-        },
-        { status: 400 }
+        { error: 'Employee ID already exists' },
+        { status: 409 }
       );
     }
 
-    // Create employee
-    const newEmployee = await prisma.employee.create({
+    // Create new employee
+    const employee = await prisma.employee.create({
       data: {
-        employee_id: body.file_number, // Use file_number as employeeId
-        first_name: body.first_name,
-        last_name: body.last_name,
-        file_number: body.file_number,
-        basic_salary: body.basic_salary || 0,
-        status: body.status || 'active',
-        email: body.email,
-        phone: body.phone,
-        hire_date: body.hire_date ? new Date(body.hire_date) : null,
-        hourly_rate: body.hourly_rate || null,
-        overtime_rate_multiplier: body.overtime_rate_multiplier || 1.5,
-        overtime_fixed_rate: body.overtime_fixed_rate || null,
-        nationality: body.nationality || null
-      }
+        first_name,
+        last_name,
+        employee_id,
+        email,
+        phone,
+        department_id: department_id ? parseInt(department_id) : null,
+        designation_id: designation_id ? parseInt(designation_id) : null,
+        basic_salary: basic_salary ? parseFloat(basic_salary) : 0,
+        hire_date: hire_date ? new Date(hire_date) : null,
+        status: 'active',
+        // ... other fields
+      },
+      include: {
+        department: true,
+        designation: true,
+      },
     });
 
     return NextResponse.json({
-      success: true,
       message: 'Employee created successfully',
-      data: newEmployee
-    });
+      employee,
+    }, { status: 201 });
   } catch (error) {
+    console.error('Error creating employee:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to create employee: ' + (error as Error).message
-      },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
-}
-
-
+};

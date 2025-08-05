@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { DatabaseService } from '@/lib/database'
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware'
 
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
@@ -28,9 +30,12 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+  },
+  PermissionConfigs.rental.read
+);
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  async (request: NextRequest) => {
   try {
     const body = await request.json()
 
@@ -87,4 +92,6 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+  },
+  PermissionConfigs.rental.create
+);

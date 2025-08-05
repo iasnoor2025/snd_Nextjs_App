@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { DatabaseService } from '@/lib/database'
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware'
 
-export async function GET(request: NextRequest) {
-  try {
+export const GET = withPermission(
+  async (request: NextRequest) => {
+    try {
     const { searchParams } = new URL(request.url)
     
     const page = parseInt(searchParams.get('page') || '1')
@@ -35,10 +37,13 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+  },
+  PermissionConfigs.customer.read
+);
 
-export async function POST(request: NextRequest) {
-  try {
+export const POST = withPermission(
+  async (request: NextRequest) => {
+    try {
     const body = await request.json()
     
     // Map the request body to match the database schema
@@ -63,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
     
     const customer = await DatabaseService.createCustomer(customerData)
-    return NextResponse.json(customer, { status: 201 })
+        return NextResponse.json(customer, { status: 201 })
   } catch (error) {
     console.error('Error creating customer:', error)
     return NextResponse.json(
@@ -71,4 +76,6 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+  },
+  PermissionConfigs.customer.create
+);

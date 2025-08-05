@@ -142,7 +142,7 @@ export async function POST(
       data: {
         employee_id: employeeId,
         date: new Date(body.date),
-        start_time: body.start_time ? new Date(`2000-01-01T${body.start_time}`) : null,
+        start_time: body.start_time ? new Date(`2000-01-01T${body.start_time}`) : new Date(body.date),
         end_time: body.end_time ? new Date(`2000-01-01T${body.end_time}`) : null,
         hours_worked: parseFloat(body.hours_worked || 0),
         overtime_hours: parseFloat(body.overtime_hours || 0),

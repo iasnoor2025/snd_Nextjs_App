@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  async (request: NextRequest) => {
   try {
     console.log('Designations API called');
 
@@ -63,9 +65,12 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.designation.read
+);
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { name, description, department_id } = body;
@@ -138,4 +143,6 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+  },
+  PermissionConfigs.designation.create
+); 

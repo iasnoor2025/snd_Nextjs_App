@@ -132,6 +132,21 @@ export default function EmployeeManagementPage() {
     return expiry < today;
   };
 
+  // Helper function to format dates
+  const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return t('common.na');
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      return t('common.na');
+    }
+  };
+
   // State for translated names
   const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({});
 
@@ -844,7 +859,7 @@ export default function EmployeeManagementPage() {
                              employee.status || t('common.na')}
                           </Badge>
                         </TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.hire_date || t('common.na')}</TableCell>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{formatDate(employee.hire_date)}</TableCell>
                         <TableCell className={isRTL ? 'text-left' : 'text-right'}>
                           <div className={`flex items-center gap-2 ${isRTL ? 'justify-start' : 'justify-end'}`}>
                             <PermissionContent action="read" subject="Employee">
@@ -1122,7 +1137,7 @@ export default function EmployeeManagementPage() {
                 </div>
                 <div>
                   <Label>Hire Date</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.hire_date || t('common.na')}</p>
+                  <p className="text-sm text-muted-foreground">{formatDate(selectedEmployee.hire_date)}</p>
                 </div>
                 <div>
                   <Label>Basic Salary</Label>
