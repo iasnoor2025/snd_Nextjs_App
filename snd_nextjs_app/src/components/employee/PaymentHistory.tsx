@@ -98,7 +98,7 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
   return (
     <>
       {/* Summary Section */}
-      {employeeInfo && totals && (
+      {/* {employeeInfo && totals && (
         <Card className="mb-6 shadow-sm border border-gray-200 bg-white rounded-lg">
           <CardHeader className="bg-muted/50 rounded-t-lg p-4">
             <CardTitle className="text-lg font-semibold">Payment Summary</CardTitle>
@@ -120,10 +120,10 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
             </div>
           </CardContent>
         </Card>
-      )}
+      )} */}
 
       {/* Active Advances Section */}
-      {activeAdvances.length > 0 && (
+      {/* {activeAdvances.length > 0 && (
         <Card className="mb-6 shadow-sm border border-gray-200 bg-white rounded-lg">
           <CardHeader className="bg-muted/50 rounded-t-lg p-4 flex flex-row items-center gap-2">
             <CreditCard className="h-5 w-5 text-primary" />
@@ -164,7 +164,7 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
             </div>
           </CardContent>
         </Card>
-      )}
+      )} */}
 
       {/* Payment History Section */}
       <Card className="mt-6 shadow-sm border border-gray-200 bg-white rounded-lg">

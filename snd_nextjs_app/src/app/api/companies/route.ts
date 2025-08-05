@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 // Helper function to format company data for frontend
 function formatCompanyForFrontend(company: Record<string, any>) {
@@ -16,7 +17,8 @@ function formatCompanyForFrontend(company: Record<string, any>) {
   };
 }
 
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  async (request: NextRequest) => {
   try {
     console.log('Companies API called');
 
@@ -105,9 +107,12 @@ export async function GET(request: NextRequest) {
   } finally {
     await prisma.$disconnect();
   }
-}
+  },
+  PermissionConfigs.company.read
+);
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -163,4 +168,6 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+  },
+  PermissionConfigs.company.create
+); 

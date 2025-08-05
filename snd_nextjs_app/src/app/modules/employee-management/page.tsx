@@ -31,6 +31,7 @@ import {
   getTranslatedName, 
   batchTranslateNames 
 } from '@/lib/translation-utils';
+import { useDeleteConfirmations } from "@/lib/utils/confirmation-utils";
 
 interface Employee {
   id: number;
@@ -282,28 +283,29 @@ export default function EmployeeManagementPage() {
 
 
 
+  const { confirmDeleteEmployee } = useDeleteConfirmations();
+
   const handleDeleteEmployee = async (employee: Employee) => {
-    if (!confirm(`Are you sure you want to delete ${employee.full_name || 'this employee'}?`)) {
-      return;
-    }
+    const confirmed = await confirmDeleteEmployee(employee.full_name || 'this employee');
+    if (confirmed) {
+      setIsDeleting(true);
+      try {
+        const response = await fetch(`/api/employees/${employee.id}`, {
+          method: 'DELETE',
+        });
 
-    setIsDeleting(true);
-    try {
-      const response = await fetch(`/api/employees/${employee.id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        toast.success(`Employee ${employee.full_name || 'deleted'} successfully`);
-        await fetchEmployees(); // Refresh the list
-      } else {
-        const error = await response.json();
-        toast.error(error.message || 'Failed to delete employee');
+        if (response.ok) {
+          toast.success(`Employee ${employee.full_name || 'deleted'} successfully`);
+          await fetchEmployees(); // Refresh the list
+        } else {
+          const error = await response.json();
+          toast.error(error.message || 'Failed to delete employee');
+        }
+      } catch (_error) {
+        toast.error('Failed to delete employee');
+      } finally {
+        setIsDeleting(false);
       }
-    } catch (_error) {
-      toast.error('Failed to delete employee');
-    } finally {
-      setIsDeleting(false);
     }
   };
 

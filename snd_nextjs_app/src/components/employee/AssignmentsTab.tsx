@@ -13,6 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { FileText, Plus, Edit, Trash2, RefreshCw, Briefcase, MapPin, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { useRBAC } from "@/lib/rbac/rbac-context";
 
 interface Assignment {
   id: number;
@@ -43,6 +44,7 @@ interface AssignmentsTabProps {
 }
 
 export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
+  const { hasPermission } = useRBAC();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -336,14 +338,14 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
             Manage and view employee project and rental assignments
           </p>
         </div>
-                 {!currentAssignment && (
-           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-             <DialogTrigger asChild>
-               <Button onClick={() => resetForm()}>
-                 <Plus className="mr-2 h-4 w-4" />
-                 Add Assignment
-               </Button>
-             </DialogTrigger>
+                 {!currentAssignment && hasPermission('create', 'employee-assignment') && (
+                   <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+                     <DialogTrigger asChild>
+                       <Button onClick={() => resetForm()}>
+                         <Plus className="mr-2 h-4 w-4" />
+                         Add Assignment
+                       </Button>
+                     </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Add New Assignment</DialogTitle>
@@ -466,22 +468,26 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                 Current Assignment
               </div>
               <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => openEditDialog(currentAssignment)}
-                >
-                  <Edit className="mr-1 h-4 w-4" />
-                  Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => openDeleteDialog(currentAssignment)}
-                >
-                  <Trash2 className="mr-1 h-4 w-4" />
-                  Delete
-                </Button>
+                {hasPermission('update', 'employee-assignment') && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openEditDialog(currentAssignment)}
+                  >
+                    <Edit className="mr-1 h-4 w-4" />
+                    Edit
+                  </Button>
+                )}
+                {hasPermission('delete', 'employee-assignment') && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => openDeleteDialog(currentAssignment)}
+                  >
+                    <Trash2 className="mr-1 h-4 w-4" />
+                    Delete
+                  </Button>
+                )}
               </div>
             </CardTitle>
             <CardDescription>
@@ -587,20 +593,24 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => openEditDialog(assignment)}
-                        >
-                          <Edit className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => openDeleteDialog(assignment)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        {hasPermission('update', 'employee-assignment') && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openEditDialog(assignment)}
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                        {hasPermission('delete', 'employee-assignment') && (
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => openDeleteDialog(assignment)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

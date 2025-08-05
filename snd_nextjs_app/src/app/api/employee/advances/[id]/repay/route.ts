@@ -40,9 +40,9 @@ export async function POST(
       return NextResponse.json({ error: "Advance not found" }, { status: 404 });
     }
 
-    if (advance.status !== "approved") {
+    if (advance.status !== "approved" && advance.status !== "partially_repaid") {
       return NextResponse.json(
-        { error: "Only approved advances can be repaid" },
+        { error: "Only approved and partially repaid advances can be repaid" },
         { status: 400 }
       );
     }

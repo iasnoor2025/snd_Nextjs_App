@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  async (request: NextRequest) => {
   try {
     // TODO: Implement reports when Report model is added to schema
     // For now, return empty array
@@ -20,9 +22,12 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.report.read
+);
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  async (request: NextRequest) => {
   try {
     // TODO: Implement report creation when Report model is added to schema
     return NextResponse.json(
@@ -36,9 +41,12 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.report.create
+);
 
-export async function PUT(request: NextRequest) {
+export const PUT = withPermission(
+  async (request: NextRequest) => {
   try {
     // TODO: Implement report update when Report model is added to schema
     return NextResponse.json(
@@ -52,9 +60,12 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.report.update
+);
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = withPermission(
+  async (request: NextRequest) => {
   try {
     // TODO: Implement report deletion when Report model is added to schema
     return NextResponse.json(
@@ -68,4 +79,6 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.report.delete
+);

@@ -25,6 +25,7 @@ import {
   getTranslatedName, 
   batchTranslateNames 
 } from '@/lib/translation-utils';
+import { useDeleteConfirmations } from "@/lib/utils/confirmation-utils";
 
 interface RentalItem {
   id: string;
@@ -87,6 +88,7 @@ export default function RentalManagementPage() {
   const { user, hasPermission, getAllowedActions } = useRBAC();
   const { t } = useTranslation('rental');
   const { isRTL } = useI18n();
+  const { confirmDeleteRental } = useDeleteConfirmations();
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -296,21 +298,22 @@ export default function RentalManagementPage() {
 
   // Delete rental
   const deleteRental = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this rental?')) return;
+    const confirmed = await confirmDeleteRental();
+    if (confirmed) {
+      try {
+        const response = await fetch(`/api/rentals/${id}`, {
+          method: 'DELETE',
+        });
 
-    try {
-      const response = await fetch(`/api/rentals/${id}`, {
-        method: 'DELETE',
-      });
+        if (!response.ok) {
+          throw new Error('Failed to delete rental');
+        }
 
-      if (!response.ok) {
-        throw new Error('Failed to delete rental');
+        toast.success('Rental deleted successfully');
+        fetchRentals();
+      } catch (err) {
+        toast.error('Failed to delete rental');
       }
-
-      toast.success('Rental deleted successfully');
-      fetchRentals();
-    } catch (err) {
-      toast.error('Failed to delete rental');
     }
   };
 

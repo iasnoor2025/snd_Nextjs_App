@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function GET(request: NextRequest) {
+export const GET = withPermission(
+  async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     
@@ -56,9 +58,12 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.location.read
+);
 
-export async function POST(request: NextRequest) {
+export const POST = withPermission(
+  async (request: NextRequest) => {
   try {
     const body = await request.json();
     
@@ -81,7 +86,7 @@ export async function POST(request: NextRequest) {
       success: true,
       data: location,
       message: 'Location created successfully'
-    }, { status: 201 });
+    }, { status: 201     });
   } catch (error) {
     console.error('Error creating location:', error);
     return NextResponse.json(
@@ -89,4 +94,6 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+  },
+  PermissionConfigs.location.create
+); 

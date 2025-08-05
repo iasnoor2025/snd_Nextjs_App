@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { FileText, Download, Upload, Trash2, RefreshCw, Plus, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { useRBAC } from "@/lib/rbac/rbac-context";
 
 interface Document {
   id: number;
@@ -31,6 +32,7 @@ interface DocumentsTabProps {
 }
 
 export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
+  const { hasPermission } = useRBAC();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -219,13 +221,14 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
             Manage and view employee documents
           </p>
         </div>
-        <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Upload Document
-            </Button>
-          </DialogTrigger>
+        {hasPermission('create', 'employee-document') && (
+          <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Upload Document
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Upload Document</DialogTitle>
@@ -292,6 +295,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
             </div>
           </DialogContent>
         </Dialog>
+        )}
       </div>
 
       {/* Documents Grid */}
@@ -302,10 +306,12 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
           <p className="mb-6 text-sm text-muted-foreground">
             This employee doesn't have any documents uploaded yet.
           </p>
-          <Button onClick={() => setShowUploadDialog(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Upload First Document
-          </Button>
+          {hasPermission('create', 'employee-document') && (
+            <Button onClick={() => setShowUploadDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Upload First Document
+            </Button>
+          )}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -332,34 +338,40 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                 )}
                 <div className="flex items-center justify-between">
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDownload(doc)}
-                    >
-                      <Download className="mr-1 h-3.5 w-3.5" />
-                      Download
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(doc.url, '_blank')}
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(doc.id)}
-                    disabled={deletingId === doc.id}
-                  >
-                    {deletingId === doc.id ? (
-                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-3.5 w-3.5" />
+                    {hasPermission('read', 'employee-document') && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownload(doc)}
+                      >
+                        <Download className="mr-1 h-3.5 w-3.5" />
+                        Download
+                      </Button>
                     )}
-                  </Button>
+                    {hasPermission('read', 'employee-document') && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(doc.url, '_blank')}
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                  {hasPermission('delete', 'employee-document') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(doc.id)}
+                      disabled={deletingId === doc.id}
+                    >
+                      {deletingId === doc.id ? (
+                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" />
+                      )}
+                    </Button>
+                  )}
                 </div>
                 <div className="mt-2 text-xs text-muted-foreground">
                   Uploaded: {new Date(doc.created_at).toLocaleDateString()}

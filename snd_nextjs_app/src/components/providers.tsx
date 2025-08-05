@@ -9,6 +9,7 @@ import { RBACProvider } from "@/lib/rbac/rbac-context";
 import SSEProvider from "@/contexts/sse-context";
 import { I18nProvider } from "@/components/i18n-provider";
 import { I18nWrapper } from "@/components/i18n-wrapper";
+import { ConfirmationProvider } from "@/components/providers/confirmation-provider";
 import '@/lib/i18n-client'; // Initialize i18n on client side
 
 interface ProvidersProps {
@@ -43,7 +44,9 @@ export function Providers({ children }: ProvidersProps) {
             <SSEProvider>
               <I18nWrapper>
                 <I18nProvider>
-                  {children}
+                  <ConfirmationProvider>
+                    {children}
+                  </ConfirmationProvider>
                 </I18nProvider>
               </I18nWrapper>
               <ReactQueryDevtools initialIsOpen={false} />

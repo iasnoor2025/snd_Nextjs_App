@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { ApiService } from "@/lib/api-service";
 import { Label } from "@/components/ui/label";
 import EquipmentAssignmentHistory from "@/components/equipment/EquipmentRentalHistory";
+import { useDeleteConfirmations } from "@/lib/utils/confirmation-utils";
 
 interface Equipment {
   id: number;
@@ -45,6 +46,7 @@ interface Equipment {
 export default function EquipmentShowPage() {
   const params = useParams();
   const router = useRouter();
+  const { confirmDeleteEquipment } = useDeleteConfirmations();
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -82,23 +84,22 @@ export default function EquipmentShowPage() {
   const handleDelete = async () => {
     if (!equipment) return;
     
-    if (!confirm(`Are you sure you want to delete "${equipment.name}"?`)) {
-      return;
-    }
-
-    setDeleting(true);
-    try {
-      const response = await ApiService.deleteEquipment(equipment.id);
-      if (response.success) {
-        toast.success('Equipment deleted successfully');
-        router.push('/modules/equipment-management');
-      } else {
+    const confirmed = await confirmDeleteEquipment(equipment.name);
+    if (confirmed) {
+      setDeleting(true);
+      try {
+        const response = await ApiService.deleteEquipment(equipment.id);
+        if (response.success) {
+          toast.success('Equipment deleted successfully');
+          router.push('/modules/equipment-management');
+        } else {
+          toast.error('Failed to delete equipment');
+        }
+      } catch (error) {
         toast.error('Failed to delete equipment');
+      } finally {
+        setDeleting(false);
       }
-    } catch (error) {
-      toast.error('Failed to delete equipment');
-    } finally {
-      setDeleting(false);
     }
   };
 

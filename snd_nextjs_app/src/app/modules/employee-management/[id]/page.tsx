@@ -37,9 +37,10 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { useI18n } from "@/hooks/use-i18n";
 import { useRBAC } from "@/lib/rbac/rbac-context";
+import { useConfirmationDialog } from "@/components/providers/confirmation-provider";
 import TimesheetSummary from "@/components/employee/timesheets/TimesheetSummary";
 
-import PaymentHistory from "@/components/employee/PaymentHistory";
+
 import DocumentsTab from "@/components/employee/DocumentsTab";
 import AssignmentsTab from "@/components/employee/AssignmentsTab";
 
@@ -97,6 +98,7 @@ interface Employee {
 export default function EmployeeShowPage() {
   const { t } = useI18n();
   const { hasPermission } = useRBAC();
+  const { confirm } = useConfirmationDialog();
   const params = useParams();
   const router = useRouter();
   const employeeId = params.id as string;
@@ -150,13 +152,23 @@ export default function EmployeeShowPage() {
   const [selectedAdvanceForReject, setSelectedAdvanceForReject] = useState<any>(null);
   const [selectedAdvanceForRepayment, setSelectedAdvanceForRepayment] = useState<any>(null);
 
-  // Filter approved advances for repayment
-  const approvedAdvances = advances.filter((advance: any) => advance.status === 'approved');
+  // Payment history state
+  const [payments, setPayments] = useState<any[]>([]);
+  const [loadingPayments, setLoadingPayments] = useState(false);
+  const [deletingPaymentId, setDeletingPaymentId] = useState<number | null>(null);
+  const [showDeletePaymentDialog, setShowDeletePaymentDialog] = useState(false);
+  const [selectedPaymentId, setSelectedPaymentId] = useState<number | null>(null);
+
+  // Filter advances for repayment (approved and partially repaid, but not fully repaid)
+  const approvedAdvances = advances.filter((advance: any) => 
+    advance.status === 'approved' || advance.status === 'partially_repaid'
+  );
 
   useEffect(() => {
     if (employeeId) {
       fetchEmployeeData();
       fetchAdvances();
+      fetchPaymentHistory();
     }
   }, [employeeId]);
 
@@ -181,10 +193,25 @@ export default function EmployeeShowPage() {
       const data = await response.json();
       if (data.success) {
         setAdvances(data.advances || []);
-        // Calculate current balance from approved advances only
-        const approvedAdvances = data.advances.filter((advance: any) => advance.status === 'approved');
-        const totalBalance = approvedAdvances.reduce((sum: number, advance: any) => sum + Number(advance.amount), 0);
+        
+        // Calculate current balance from approved advances minus repayments
+        const approvedAdvances = data.advances.filter((advance: any) => 
+          advance.status === 'approved' || advance.status === 'partially_repaid'
+        );
+        const totalBalance = approvedAdvances.reduce((sum: number, advance: any) => {
+          const advanceAmount = Number(advance.amount);
+          const repaidAmount = Number(advance.repaid_amount || 0);
+          return sum + (advanceAmount - repaidAmount);
+        }, 0);
         setCurrentBalance(totalBalance);
+        
+        // Set monthly deduction from the first approved advance if available
+        const firstApprovedAdvance = approvedAdvances.find((advance: any) => 
+          advance.status === 'approved' || advance.status === 'partially_repaid'
+        );
+        if (firstApprovedAdvance?.monthly_deduction) {
+          setMonthlyDeduction(firstApprovedAdvance.monthly_deduction.toString());
+        }
       }
     } catch (error) {
       console.error("Error fetching advances:", error);
@@ -251,7 +278,9 @@ export default function EmployeeShowPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ repaymentAmount: amount }),
+        body: JSON.stringify({
+          repaymentAmount: amount,
+        }),
       });
 
       const data = await response.json();
@@ -261,7 +290,8 @@ export default function EmployeeShowPage() {
         setIsRepaymentDialogOpen(false);
         setRepaymentAmount('');
         setSelectedAdvanceForRepayment(null);
-        fetchAdvances(); // Refresh the advances list
+        // Refresh the advances list
+        fetchAdvances();
       } else {
         toast.error(data.error || 'Failed to record repayment');
       }
@@ -269,6 +299,109 @@ export default function EmployeeShowPage() {
       console.error('Error recording repayment:', error);
       toast.error('Failed to record repayment');
     }
+  };
+
+  const handleUpdateMonthlyDeduction = async (newDeduction: string) => {
+    try {
+      // Find the first approved advance to update
+      const approvedAdvance = advances.find((advance: any) => 
+        advance.status === 'approved' || advance.status === 'partially_repaid'
+      );
+      
+      if (!approvedAdvance) {
+        toast.error('No approved advance found to update monthly deduction');
+        return;
+      }
+
+      const response = await fetch(`/api/employee/advances/${approvedAdvance.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          monthly_deduction: newDeduction,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('Monthly deduction updated successfully');
+        // Refresh the advances list
+        fetchAdvances();
+      } else {
+        toast.error(data.error || 'Failed to update monthly deduction');
+      }
+    } catch (error) {
+      console.error('Error updating monthly deduction:', error);
+      toast.error('Failed to update monthly deduction');
+    }
+  };
+
+  const fetchPaymentHistory = async () => {
+    setLoadingPayments(true);
+    try {
+      const response = await fetch(`/api/employee/${employeeId}/payments`);
+      const data = await response.json();
+      if (data.success) {
+        setPayments(data.payments || []);
+      }
+    } catch (error) {
+      console.error('Error fetching payment history:', error);
+      toast.error('Failed to load payment history');
+    } finally {
+      setLoadingPayments(false);
+    }
+  };
+
+  const handlePaymentDelete = async (paymentId: number) => {
+    setDeletingPaymentId(paymentId);
+    try {
+      const response = await fetch(`/api/employee/${employeeId}/payments/${paymentId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Repayment deleted successfully');
+        // Refresh the payments list
+        const updatedPayments = payments.filter(p => p.id !== paymentId);
+        setPayments(updatedPayments);
+      } else {
+        const data = await response.json();
+        toast.error(data?.message || 'Failed to delete repayment');
+      }
+    } catch (error: any) {
+      toast.error('Failed to delete repayment');
+    } finally {
+      setDeletingPaymentId(null);
+      setShowDeletePaymentDialog(false);
+    }
+  };
+
+  const handleAdvanceDelete = async (advanceId: number) => {
+    try {
+      const response = await fetch(`/api/employee/advances/${advanceId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Advance deleted successfully');
+        // Refresh the advances list
+        fetchAdvances();
+      } else {
+        const data = await response.json();
+        toast.error(data?.error || 'Failed to delete advance');
+      }
+    } catch (error) {
+      console.error('Error deleting advance:', error);
+      toast.error('Failed to delete advance');
+    }
+  };
+
+  // Check if repayment button should be disabled
+  const isRepaymentDisabled = () => {
+    // Disable only if no approved advances available for repayment
+    return approvedAdvances.length === 0;
   };
 
   const getStatusBadge = (status: string) => {
@@ -369,34 +502,48 @@ export default function EmployeeShowPage() {
             <Briefcase className="h-4 w-4" />
             <span className="hidden font-medium sm:inline">Employment</span>
           </TabsTrigger>
-          <TabsTrigger value="documents" className="flex items-center gap-2 px-3 py-2">
-            <FileBox className="h-4 w-4" />
-            <span className="hidden font-medium sm:inline">Documents</span>
-          </TabsTrigger>
-          <TabsTrigger value="assignments" className="flex items-center gap-2 px-3 py-2">
-            <Calendar className="h-4 w-4" />
-            <span className="hidden font-medium sm:inline">Assignments</span>
-          </TabsTrigger>
-          <TabsTrigger value="timesheets" className="flex items-center gap-2 px-3 py-2">
-            <Clock className="h-4 w-4" />
-            <span className="hidden font-medium sm:inline">Timesheets</span>
-          </TabsTrigger>
-          <TabsTrigger value="leaves" className="flex items-center gap-2 px-3 py-2">
-            <Calendar className="h-4 w-4" />
-            <span className="hidden font-medium sm:inline">Leaves</span>
-          </TabsTrigger>
-          <TabsTrigger value="advances" className="flex items-center gap-2 px-3 py-2">
-            <CreditCard className="h-4 w-4" />
-            <span className="hidden font-medium sm:inline">Advances</span>
-          </TabsTrigger>
-          <TabsTrigger value="resignations" className="flex items-center gap-2 px-3 py-2">
-            <FileText className="h-4 w-4" />
-            <span className="hidden font-medium sm:inline">Resignations</span>
-          </TabsTrigger>
-          <TabsTrigger value="final-settlements" className="flex items-center gap-2 px-3 py-2">
-            <Receipt className="h-4 w-4" />
-            <span className="hidden font-medium sm:inline">Final Settlements</span>
-          </TabsTrigger>
+          {hasPermission('read', 'employee-document') && (
+            <TabsTrigger value="documents" className="flex items-center gap-2 px-3 py-2">
+              <FileBox className="h-4 w-4" />
+              <span className="hidden font-medium sm:inline">Documents</span>
+            </TabsTrigger>
+          )}
+          {hasPermission('read', 'employee-assignment') && (
+            <TabsTrigger value="assignments" className="flex items-center gap-2 px-3 py-2">
+              <Calendar className="h-4 w-4" />
+              <span className="hidden font-medium sm:inline">Assignments</span>
+            </TabsTrigger>
+          )}
+          {hasPermission('read', 'Timesheet') && (
+            <TabsTrigger value="timesheets" className="flex items-center gap-2 px-3 py-2">
+              <Clock className="h-4 w-4" />
+              <span className="hidden font-medium sm:inline">Timesheets</span>
+            </TabsTrigger>
+          )}
+          {hasPermission('read', 'leave-request') && (
+            <TabsTrigger value="leaves" className="flex items-center gap-2 px-3 py-2">
+              <Calendar className="h-4 w-4" />
+              <span className="hidden font-medium sm:inline">Leaves</span>
+            </TabsTrigger>
+          )}
+          {hasPermission('read', 'advance') && (
+            <TabsTrigger value="advances" className="flex items-center gap-2 px-3 py-2">
+              <CreditCard className="h-4 w-4" />
+              <span className="hidden font-medium sm:inline">Advances</span>
+            </TabsTrigger>
+          )}
+          {hasPermission('read', 'resignation') && (
+            <TabsTrigger value="resignations" className="flex items-center gap-2 px-3 py-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden font-medium sm:inline">Resignations</span>
+            </TabsTrigger>
+          )}
+          {hasPermission('read', 'final-settlement') && (
+            <TabsTrigger value="final-settlements" className="flex items-center gap-2 px-3 py-2">
+              <Receipt className="h-4 w-4" />
+              <span className="hidden font-medium sm:inline">Final Settlements</span>
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* Personal Information Tab */}
@@ -697,22 +844,24 @@ export default function EmployeeShowPage() {
                           <AssignmentsTab employeeId={parseInt(employeeId)} />
                         </TabsContent>
 
-        <TabsContent value="timesheets" className="mt-6">
-          <Card>
-            <CardHeader>
-                  <CardTitle>Timesheet Records</CardTitle>
-                  <CardDescription>View and manage employee timesheet records</CardDescription>
-            </CardHeader>
-            <CardContent>
-      {/* Timesheet Summary */}
-      <div className="mb-4">
-        <TimesheetSummary employeeId={employee?.id} />
-                    </div>
+        {hasPermission('read', 'Timesheet') && (
+          <TabsContent value="timesheets" className="mt-6">
+            <Card>
+              <CardHeader>
+                    <CardTitle>Timesheet Records</CardTitle>
+                    <CardDescription>View and manage employee timesheet records</CardDescription>
+              </CardHeader>
+              <CardContent>
+        {/* Timesheet Summary */}
+        <div className="mb-4">
+          <TimesheetSummary employeeId={employee?.id} />
+                      </div>
 
 
-              </CardContent>
-                  </Card>
-          </TabsContent>
+                </CardContent>
+                    </Card>
+            </TabsContent>
+        )}
 
         <TabsContent value="leaves" className="mt-6 space-y-6">
                 <Card>
@@ -723,11 +872,13 @@ export default function EmployeeShowPage() {
                   <CardDescription>View and manage employee leave records</CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline">
-                    <History className="mr-2 h-4 w-4" />
-                    View All
-                      </Button>
-                    </div>
+                  {hasPermission('read', 'leave-request') && (
+                    <Button variant="outline">
+                      <History className="mr-2 h-4 w-4" />
+                      View All
+                    </Button>
+                  )}
+                </div>
               </div>
                   </CardHeader>
                   <CardContent>
@@ -793,9 +944,11 @@ export default function EmployeeShowPage() {
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                               Status
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Actions
-                            </th>
+                            {hasPermission('read', 'resignation') && (
+                              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                              </th>
+                            )}
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
@@ -823,29 +976,33 @@ export default function EmployeeShowPage() {
                   <CardDescription>Track and manage employee advance payments and deductions</CardDescription>
                 </div>
                 <div className="flex gap-2">
-                              <Button
-                    variant="outline"
-                    onClick={() => setIsAdvanceRequestDialogOpen(true)}
-                    className="flex items-center gap-2"
-                  >
-                    <CreditCard className="h-4 w-4" />
-                    New Advance
-                  </Button>
-                  <Dialog open={isRepaymentDialogOpen} onOpenChange={setIsRepaymentDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button
-                        className="flex items-center gap-2"
-                        disabled={approvedAdvances.length === 0}
-                      >
-                        <CreditCard className="h-4 w-4" />
-                        Make Repayment
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
+                  {hasPermission('create', 'AdvancePayment') && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsAdvanceRequestDialogOpen(true)}
+                      className="flex items-center gap-2"
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      New Advance
+                    </Button>
+                  )}
+                  {hasPermission('update', 'AdvancePayment') && (
+                    <Dialog open={isRepaymentDialogOpen} onOpenChange={setIsRepaymentDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button
+                          className="flex items-center gap-2"
+                          disabled={isRepaymentDisabled()}
+                          title={approvedAdvances.length === 0 ? "No advances available for repayment" : "Make repayment on approved and partially repaid advances"}
+                        >
+                          <CreditCard className="h-4 w-4" />
+                          Make Repayment
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Record Repayment</DialogTitle>
                         <DialogDescription>
-                          Enter the repayment amount. For partial repayments, the amount must be at least the total
+                          Only approved and partially repaid advances can be repaid. Enter the repayment amount. For partial repayments, the amount must be at least the total
                           monthly deduction.
                         </DialogDescription>
                       </DialogHeader>
@@ -853,9 +1010,11 @@ export default function EmployeeShowPage() {
                         {approvedAdvances.length === 0 ? (
                           <div className="p-6 text-center">
                             <AlertCircle className="mx-auto mb-4 h-12 w-12 text-amber-500" />
-                            <h3 className="mb-2 text-lg font-medium">No Active Advances</h3>
+                            <h3 className="mb-2 text-lg font-medium">
+                              No Advances Available for Repayment
+                            </h3>
                             <p className="mb-4 text-sm text-muted-foreground">
-                              There are no approved advances available for repayment.
+                              Only approved and partially repaid advances can be repaid. There are no advances available for repayment.
                             </p>
                             <Button variant="outline" onClick={() => setIsRepaymentDialogOpen(false)}>
                               Close
@@ -879,7 +1038,7 @@ export default function EmployeeShowPage() {
                   <SelectContent>
                                   {approvedAdvances.map((advance) => (
                                     <SelectItem key={advance.id} value={advance.id.toString()}>
-                                      SAR {Number(advance.amount).toFixed(2)} - {advance.reason}
+                                      SAR {Number(advance.amount).toFixed(2)} - {advance.reason} ({advance.status.replace('_', ' ')})
                         </SelectItem>
                                   ))}
                   </SelectContent>
@@ -893,7 +1052,7 @@ export default function EmployeeShowPage() {
                                     <div>Amount: SAR {Number(selectedAdvanceForRepayment.amount).toFixed(2)}</div>
                                     <div>Monthly Deduction: SAR {selectedAdvanceForRepayment.monthly_deduction ? Number(selectedAdvanceForRepayment.monthly_deduction).toFixed(2) : 'Not set'}</div>
                                     <div>Repaid Amount: SAR {selectedAdvanceForRepayment.repaid_amount ? Number(selectedAdvanceForRepayment.repaid_amount).toFixed(2) : '0.00'}</div>
-                                    <div>Remaining Balance: SAR {selectedAdvanceForRepayment.remaining_balance ? Number(selectedAdvanceForRepayment.remaining_balance).toFixed(2) : Number(selectedAdvanceForRepayment.amount).toFixed(2)}</div>
+                                    <div>Remaining Balance: SAR {(Number(selectedAdvanceForRepayment.amount) - Number(selectedAdvanceForRepayment.repaid_amount || 0)).toFixed(2)}</div>
                                   </div>
                                 </div>
                                 <div className="grid gap-2">
@@ -948,9 +1107,10 @@ export default function EmployeeShowPage() {
                       )}
                     </DialogContent>
                   </Dialog>
+                  )}
                 </div>
               </div>
-                  </CardHeader>
+            </CardHeader>
             
             {/* Advance Request Dialog */}
             <Dialog open={isAdvanceRequestDialogOpen} onOpenChange={setIsAdvanceRequestDialogOpen}>
@@ -1124,7 +1284,10 @@ export default function EmployeeShowPage() {
                     <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                       <div
                         className="h-2 rounded-full bg-destructive transition-all duration-500"
-                        style={{ width: '100%' }}
+                        style={{ 
+                          width: Number(currentBalance) > 0 ? '100%' : '0%',
+                          opacity: Number(currentBalance) > 0 ? 1 : 0.3
+                        }}
                       />
                   </div>
               </div>
@@ -1146,6 +1309,11 @@ export default function EmployeeShowPage() {
                         min="0"
                         value={monthlyDeduction}
                         onChange={(e) => setMonthlyDeduction(e.target.value)}
+                        onBlur={(e) => {
+                          if (e.target.value !== monthlyDeduction) {
+                            handleUpdateMonthlyDeduction(e.target.value);
+                          }
+                        }}
                         className="w-32 text-2xl font-bold text-primary"
                         placeholder="0.00"
                       />
@@ -1157,7 +1325,11 @@ export default function EmployeeShowPage() {
                         SAR {Number(monthlyDeduction || 0).toFixed(2)}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground">Company will decide monthly deduction</p>
+                    <p className="text-xs text-muted-foreground">
+                      {monthlyDeduction && Number(monthlyDeduction) > 0 
+                        ? 'Company will decide monthly deduction'
+                        : 'Set monthly deduction amount'}
+                    </p>
                   </div>
                 </div>
 
@@ -1173,11 +1345,17 @@ export default function EmployeeShowPage() {
                     <div className="flex items-center gap-2">
                       <Calendar className="h-5 w-5 text-muted-foreground" />
                       <p className="text-2xl font-bold text-primary">
-                        {monthlyDeduction ? Math.ceil(Number(currentBalance) / Number(monthlyDeduction)) : 0}
+                        {monthlyDeduction && Number(monthlyDeduction) > 0 && Number(currentBalance) > 0 
+                          ? Math.ceil(Number(currentBalance) / Number(monthlyDeduction))
+                          : 0}
                         <span className="ml-1 text-sm font-normal text-muted-foreground">months</span>
                       </p>
               </div>
-                    <p className="text-xs text-muted-foreground">Based on current balance and monthly deduction</p>
+                    <p className="text-xs text-muted-foreground">
+                      {monthlyDeduction && Number(monthlyDeduction) > 0 && Number(currentBalance) > 0
+                        ? `Based on current balance and monthly deduction`
+                        : `Set monthly deduction to see estimate`}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1195,6 +1373,7 @@ export default function EmployeeShowPage() {
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Monthly Deduction</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Repaid Amount</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Reason</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Date</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
@@ -1205,7 +1384,7 @@ export default function EmployeeShowPage() {
                       <tbody className="bg-white divide-y divide-gray-100">
                         {loadingAdvances ? (
                           <tr>
-                            <td colSpan={7} className="px-6 py-8 text-center">
+                            <td colSpan={8} className="px-6 py-8 text-center">
                               <div className="flex items-center justify-center gap-2">
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 <span className="text-muted-foreground">Loading advances...</span>
@@ -1214,7 +1393,7 @@ export default function EmployeeShowPage() {
                           </tr>
                         ) : advances.length === 0 ? (
                           <tr>
-                                                          <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground italic">
+                                                          <td colSpan={8} className="px-6 py-8 text-center text-muted-foreground italic">
                               No advance records found.
                             </td>
                           </tr>
@@ -1223,6 +1402,7 @@ export default function EmployeeShowPage() {
                             <tr key={advance.id} className="hover:bg-muted/50">
                               <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">SAR {Number(advance.amount).toFixed(2)}</td>
                               <td className="px-6 py-4 whitespace-nowrap">SAR {Number(advance.monthly_deduction || 0).toFixed(2)}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">SAR {Number(advance.repaid_amount || 0).toFixed(2)}</td>
                               <td className="px-6 py-4 max-w-[200px] truncate">{advance.reason}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{new Date(advance.created_at).toLocaleDateString()}</td>
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -1231,53 +1411,119 @@ export default function EmployeeShowPage() {
                                     advance.status === 'approved' ? 'default' :
                                     advance.status === 'pending' ? 'secondary' :
                                     advance.status === 'rejected' ? 'destructive' :
+                                    advance.status === 'partially_repaid' ? 'secondary' :
+                                    advance.status === 'fully_repaid' ? 'default' :
                                     'outline'
                                   }
                                   className={
                                     advance.status === 'approved' ? 'bg-green-100 text-green-800' :
                                     advance.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                                     advance.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                    advance.status === 'partially_repaid' ? 'bg-blue-100 text-blue-800' :
+                                    advance.status === 'fully_repaid' ? 'bg-green-100 text-green-800' :
                                     'bg-gray-100 text-gray-800'
                                   }
                                 >
-                                  {advance.status.charAt(0).toUpperCase() + advance.status.slice(1)}
+                                  {advance.status.replace('_', ' ')}
                             </Badge>
                               </td>
-                              <td className="px-6 py-4 capitalize">{advance.purpose === 'advance' ? 'Request' : Number(advance.amount) < 0 ? 'Repayment' : 'Payment'}</td>
+                              <td className="px-6 py-4 capitalize">
+                                {advance.purpose === 'advance' ? 'Request' : 
+                                 advance.purpose === 'repayment' ? 'Repayment' : 
+                                 Number(advance.amount) < 0 ? 'Repayment' : 'Payment'}
+                              </td>
                               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                                 <div className="flex items-center justify-end gap-2">
-                                   {advance.status === 'pending' && (
-                                     <>
-                              <Button
-                                size="sm"
-                                         variant="outline"
-                                         onClick={() => handleApproveAdvance(advance.id)}
-                              >
-                                         Approve
-                              </Button>
-                              <Button
-                                size="sm"
-                                         variant="outline"
-                                         onClick={() => {
-                                           setSelectedAdvanceForReject(advance);
-                                           setIsRejectDialogOpen(true);
-                                         }}
-                                       >
-                                         Reject
-                              </Button>
-                                     </>
+                                <div className="flex items-center justify-end gap-2">
+                                  {/* Approve/Reject buttons for pending advances */}
+                                  {advance.status === 'pending' && (
+                                    <>
+                                      {hasPermission('update', 'AdvancePayment') && (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => handleApproveAdvance(advance.id)}
+                                        >
+                                          Approve
+                                        </Button>
+                                      )}
+                                      {hasPermission('update', 'AdvancePayment') && (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          onClick={() => {
+                                            setSelectedAdvanceForReject(advance);
+                                            setIsRejectDialogOpen(true);
+                                          }}
+                                        >
+                                          Reject
+                                        </Button>
+                                      )}
+                                    </>
+                                  )}
+                                  
+                                  {/* Receipt button for all advances */}
+                                  {hasPermission('read', 'AdvancePayment') && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                                      onClick={() => window.open(`/modules/employee-management/${employeeId}/advances/${advance.id}/receipt`, '_blank')}
+                                    >
+                                      <FileText className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  
+                                  {/* View details button */}
+                                  {hasPermission('read', 'AdvancePayment') && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        // Handle view details
+                                        toast.info('View advance details');
+                                      }}
+                                    >
+                                      View
+                                    </Button>
+                                  )}
+                                  
+                                  {/* Edit button for pending advances */}
+                                  {advance.status === 'pending' && hasPermission('update', 'AdvancePayment') && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        // Handle edit advance
+                                        toast.info('Edit advance');
+                                      }}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                  
+                                                                     {/* Delete button for admin/super admin */}
+                                   {(hasPermission('delete', 'AdvancePayment') || hasPermission('delete', 'Advance')) && (
+                                     <Button
+                                       size="sm"
+                                       variant="outline"
+                                       className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                                       onClick={async () => {
+                                         const confirmed = await confirm({
+                                           title: "Delete Advance",
+                                           description: "Are you sure you want to delete this advance? This action cannot be undone.",
+                                           confirmText: "Delete",
+                                           cancelText: "Cancel",
+                                           variant: "destructive"
+                                         });
+                                         if (confirmed) {
+                                           handleAdvanceDelete(advance.id);
+                                         }
+                                       }}
+                                     >
+                                       <Trash2 className="h-4 w-4" />
+                                     </Button>
                                    )}
-                  <Button
-                                     size="sm"
-                                     variant="outline"
-                                     onClick={() => {
-                                       // Handle view details
-                                       toast.info('View advance details');
-                                     }}
-                                   >
-                                     View
-                  </Button>
-                </div>
+                                </div>
                               </td>
                             </tr>
                           ))
@@ -1289,7 +1535,112 @@ export default function EmployeeShowPage() {
           </Card>
             </CardContent>
           </Card>
-          <PaymentHistory employeeId={parseInt(employeeId)} />
+
+          {/* Repayment History Section */}
+          <Card className="mt-6 shadow-sm border border-gray-200 bg-white rounded-lg">
+            <CardHeader className="bg-muted/50 rounded-t-lg p-4 flex flex-row items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              <CardTitle className="text-lg font-semibold">Repayment History</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Amount</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Notes</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {loadingPayments ? (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-8 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span className="text-muted-foreground">Loading repayment history...</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : payments.length > 0 ? (
+                      payments.map((payment: any, i: number) => (
+                        <tr key={payment.id || i} className="hover:bg-muted/20 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap font-medium text-primary">SAR {Number(payment.amount).toFixed(2)}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{new Date(payment.payment_date).toLocaleDateString()}</td>
+                          <td className="px-6 py-4 whitespace-nowrap">{payment.notes || '-'}</td>
+                          <td className="px-6 py-4 text-right flex gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                              onClick={() => window.open(`/modules/employee-management/${employeeId}/payments/${payment.id}/receipt`, '_blank')}
+                            >
+                              <FileText className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700"
+                              onClick={() => { setSelectedPaymentId(payment.id); setShowDeletePaymentDialog(true); }}
+                              disabled={deletingPaymentId === payment.id}
+                            >
+                              {deletingPaymentId === payment.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground italic">
+                          No repayment history found.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Delete Payment Dialog */}
+          <Dialog open={showDeletePaymentDialog} onOpenChange={setShowDeletePaymentDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete Repayment</DialogTitle>
+                <DialogDescription>Are you sure you want to delete this repayment? This action cannot be undone.</DialogDescription>
+              </DialogHeader>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowDeletePaymentDialog(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  disabled={deletingPaymentId === selectedPaymentId}
+                  onClick={async () => {
+                    if (selectedPaymentId) {
+                      const confirmed = await confirm({
+                        title: "Delete Repayment",
+                        description: "Are you sure you want to delete this repayment? This action cannot be undone.",
+                        confirmText: "Delete",
+                        cancelText: "Cancel",
+                        variant: "destructive"
+                      });
+                      if (confirmed) {
+                        handlePaymentDelete(selectedPaymentId);
+                      }
+                    }
+                  }}
+                >
+                  Delete
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         <TabsContent value="resignations" className="mt-6 space-y-6">
@@ -1322,7 +1673,7 @@ export default function EmployeeShowPage() {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     <tr>
-                      <td colSpan={5} className="px-6 py-8 text-center text-sm text-muted-foreground">
+                      <td colSpan={hasPermission('read', 'resignation') ? 5 : 4} className="px-6 py-8 text-center text-sm text-muted-foreground">
                         No resignation requests found
                       </td>
                     </tr>

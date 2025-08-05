@@ -73,18 +73,12 @@ export default function UserManagementPage() {
     guard_name: 'web'
   });
 
-  // Available permissions
-  const availablePermissions = [
-    'users.read', 'users.create', 'users.update', 'users.delete',
-    'roles.read', 'roles.create', 'roles.update', 'roles.delete',
-    'equipment.read', 'equipment.create', 'equipment.update', 'equipment.delete',
-    'rentals.read', 'rentals.create', 'rentals.update', 'rentals.delete',
-    'employees.read', 'employees.create', 'employees.update', 'employees.delete',
-    'projects.read', 'projects.create', 'projects.update', 'projects.delete',
-    'reports.read', 'reports.create', 'reports.update', 'reports.delete',
-    'settings.read', 'settings.update',
-    'analytics.read'
-  ];
+  // Permissions state
+  const [permissions, setPermissions] = useState<any[]>([]);
+  const [loadingPermissions, setLoadingPermissions] = useState(false);
+  const [selectedRolePermissions, setSelectedRolePermissions] = useState<any[]>([]);
+  const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
+  const [selectedRoleForPermissions, setSelectedRoleForPermissions] = useState<Role | null>(null);
 
   // Fetch users
   const fetchUsers = async () => {
@@ -113,6 +107,74 @@ export default function UserManagementPage() {
     } catch (error) {
       console.error('Error fetching roles:', error);
       throw error;
+    }
+  };
+
+  // Fetch all permissions
+  const fetchPermissions = async () => {
+    try {
+      setLoadingPermissions(true);
+      const response = await fetch('/api/permissions');
+      if (!response.ok) {
+        throw new Error('Failed to fetch permissions');
+      }
+      const data = await response.json();
+      setPermissions(data.permissions || []);
+    } catch (error) {
+      console.error('Error fetching permissions:', error);
+      throw error;
+    } finally {
+      setLoadingPermissions(false);
+    }
+  };
+
+  // Fetch permissions for a specific role
+  const fetchRolePermissions = async (roleId: string) => {
+    try {
+      const response = await fetch(`/api/roles/${roleId}/permissions`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch role permissions');
+      }
+      const data = await response.json();
+      setSelectedRolePermissions(data.permissions || []);
+      return data;
+    } catch (error) {
+      console.error('Error fetching role permissions:', error);
+      throw error;
+    }
+  };
+
+  // Open permission management dialog
+  const openPermissionDialog = async (role: Role) => {
+    setSelectedRoleForPermissions(role);
+    setIsPermissionDialogOpen(true);
+    await fetchRolePermissions(role.id);
+  };
+
+  // Update role permissions
+  const updateRolePermissions = async (permissionIds: number[]) => {
+    if (!selectedRoleForPermissions) return;
+
+    try {
+      const response = await fetch(`/api/roles/${selectedRoleForPermissions.id}/permissions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ permissionIds }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update role permissions');
+      }
+
+      toast.success('Role permissions updated successfully');
+      setIsPermissionDialogOpen(false);
+      setSelectedRoleForPermissions(null);
+      setSelectedRolePermissions([]);
+    } catch (error) {
+      console.error('Error updating role permissions:', error);
+      toast.error('Failed to update role permissions');
     }
   };
 
@@ -302,7 +364,7 @@ export default function UserManagementPage() {
         setLoading(true);
         setError(null);
     
-        await Promise.all([fetchUsers(), fetchRoles()]);
+        await Promise.all([fetchUsers(), fetchRoles(), fetchPermissions()]);
         
       } catch (err) {
         console.error('Error in fetchData:', err);
@@ -375,6 +437,10 @@ export default function UserManagementPage() {
             <TabsTrigger value="roles" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
               {t('roles')} ({roles.length})
+            </TabsTrigger>
+            <TabsTrigger value="permissions" className="flex items-center gap-2">
+              <Shield className="h-4 w-4" />
+              {t('permissions')} ({permissions.length})
             </TabsTrigger>
           </TabsList>
 
@@ -561,6 +627,15 @@ export default function UserManagementPage() {
                               <Eye className="h-4 w-4" />
                             </Button>
                             <PermissionContent action="update" subject="User">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={() => openPermissionDialog(role)}
+                              >
+                                <Shield className="h-4 w-4" />
+                              </Button>
+                            </PermissionContent>
+                            <PermissionContent action="update" subject="User">
                               <Button size="sm" variant="outline" onClick={() => openEditRoleDialog(role)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
@@ -581,6 +656,74 @@ export default function UserManagementPage() {
                     ))}
                   </TableBody>
                 </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Permissions Tab */}
+          <TabsContent value="permissions" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>{t('permissions')}</CardTitle>
+                    <CardDescription>{t('manageSystemPermissionsAndAccess')}</CardDescription>
+                  </div>
+                  <PermissionContent action="create" subject="Settings">
+                    <Button onClick={() => {}}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t('newPermission')}
+                    </Button>
+                  </PermissionContent>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loadingPermissions ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="text-lg">{t('loadingPermissions')}</div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Permission Categories */}
+                    {(() => {
+                      // Group permissions by resource
+                      const permissionGroups: { [key: string]: any[] } = {};
+                      permissions.forEach(permission => {
+                        const [action, resource] = permission.name.split('.');
+                        if (!permissionGroups[resource]) {
+                          permissionGroups[resource] = [];
+                        }
+                        permissionGroups[resource].push(permission);
+                      });
+
+                      return Object.entries(permissionGroups).map(([resource, perms]) => (
+                        <div key={resource} className="border rounded-lg p-4">
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-lg font-semibold capitalize">
+                              {resource.replace('-', ' ')}
+                            </h3>
+                            <Badge variant="outline">{perms.length} permissions</Badge>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                            {perms.map(permission => (
+                              <div key={permission.id} className="flex items-center justify-between p-3 border rounded-lg">
+                                <div className="flex items-center space-x-2">
+                                  <div className="w-2 h-2 bg-primary rounded-full"></div>
+                                  <span className="text-sm font-medium">
+                                    {permission.name.split('.')[0]}
+                                  </span>
+                                </div>
+                                <Badge variant="secondary" className="text-xs">
+                                  {permission.name}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -661,6 +804,45 @@ export default function UserManagementPage() {
                   <div className="flex justify-between">
                     <span>{t('rolesWithUsers')}</span>
                     <span className="font-medium">{roles.filter(r => r.userCount > 0).length}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Permissions Summary */}
+              <div className="space-y-3">
+                <h4 className="font-semibold text-sm">{t('permissionsSummary')}</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>{t('totalPermissions')}</span>
+                    <span className="font-medium">{permissions.length}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>{t('permissionCategories')}</span>
+                    <span className="font-medium">
+                      {(() => {
+                        const categories = new Set();
+                        permissions.forEach(permission => {
+                          const [, resource] = permission.name.split('.');
+                          categories.add(resource);
+                        });
+                        return categories.size;
+                      })()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>{t('mostUsedPermissions')}</span>
+                    <span className="font-medium">
+                      {(() => {
+                        const permissionCounts: { [key: string]: number } = {};
+                        permissions.forEach(permission => {
+                          const [action] = permission.name.split('.');
+                          permissionCounts[action] = (permissionCounts[action] || 0) + 1;
+                        });
+                        const mostUsed = Object.entries(permissionCounts)
+                          .sort(([,a], [,b]) => b - a)[0];
+                        return mostUsed ? mostUsed[0] : 'N/A';
+                      })()}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -929,6 +1111,118 @@ export default function UserManagementPage() {
             </Button>
             <Button onClick={updateRole}>
               {t('updateRole')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Permission Management Dialog */}
+      <Dialog open={isPermissionDialogOpen} onOpenChange={setIsPermissionDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {t('managePermissions')} - {selectedRoleForPermissions?.name}
+            </DialogTitle>
+            <DialogDescription>
+              {t('selectPermissionsForRole')}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {loadingPermissions ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-lg">{t('loadingPermissions')}</div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Permission Categories */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(() => {
+                  // Group permissions by resource
+                  const permissionGroups: { [key: string]: any[] } = {};
+                  permissions.forEach(permission => {
+                    const [action, resource] = permission.name.split('.');
+                    if (!permissionGroups[resource]) {
+                      permissionGroups[resource] = [];
+                    }
+                    permissionGroups[resource].push(permission);
+                  });
+
+                  return Object.entries(permissionGroups).map(([resource, perms]) => (
+                    <div key={resource} className="border rounded-lg p-4">
+                      <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide">
+                        {resource.replace('-', ' ')}
+                      </h4>
+                      <div className="space-y-2">
+                        {perms.map(permission => {
+                          const isSelected = selectedRolePermissions.some(
+                            rp => rp.id === permission.id
+                          );
+                          
+                          return (
+                            <div key={permission.id} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`permission-${permission.id}`}
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedRolePermissions(prev => [...prev, permission]);
+                                  } else {
+                                    setSelectedRolePermissions(prev => 
+                                      prev.filter(p => p.id !== permission.id)
+                                    );
+                                  }
+                                }}
+                                className="rounded"
+                              />
+                              <Label 
+                                htmlFor={`permission-${permission.id}`}
+                                className="text-sm cursor-pointer"
+                              >
+                                {permission.name.split('.')[0]}
+                              </Label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+
+              {/* Quick Actions */}
+              <div className="flex gap-2 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedRolePermissions(permissions);
+                  }}
+                >
+                  {t('selectAll')}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedRolePermissions([]);
+                  }}
+                >
+                  {t('clearAll')}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPermissionDialogOpen(false)}>
+              {t('cancel')}
+            </Button>
+            <Button 
+              onClick={() => updateRolePermissions(selectedRolePermissions.map(p => p.id))}
+              disabled={loadingPermissions}
+            >
+              {t('updatePermissions')}
             </Button>
           </DialogFooter>
         </DialogContent>

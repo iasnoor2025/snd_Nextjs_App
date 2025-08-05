@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const GET = withPermission(
+  async (
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+  ) => {
   try {
     const { id } = await params;
 
@@ -61,12 +63,15 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.leave.read
+);
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const POST = withPermission(
+  async (
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+  ) => {
   try {
     const { id } = await params;
     const body = await request.json();
@@ -87,4 +92,6 @@ export async function POST(
       { status: 500 }
     );
   }
-}
+  },
+  PermissionConfigs.leave.create
+);
