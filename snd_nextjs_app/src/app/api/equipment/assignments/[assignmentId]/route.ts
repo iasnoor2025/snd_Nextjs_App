@@ -134,14 +134,46 @@ export async function DELETE(
       );
     }
 
-    // Delete the assignment
+    // If this is a manual assignment with an employee, also delete the corresponding employee assignment
+    let deletedEmployeeAssignment = null;
+    if (existingAssignment.assignment_type === 'manual' && existingAssignment.employee_id) {
+      try {
+        // Find and delete the corresponding employee assignment
+        const employeeAssignment = await prisma.employeeAssignment.findFirst({
+          where: {
+            employee_id: existingAssignment.employee_id,
+            type: 'manual',
+            name: {
+              contains: `Equipment Assignment -`
+            }
+          }
+        });
+
+        if (employeeAssignment) {
+          await prisma.employeeAssignment.delete({
+            where: { id: employeeAssignment.id }
+          });
+          deletedEmployeeAssignment = employeeAssignment;
+          console.log('Employee assignment deleted automatically:', employeeAssignment);
+        }
+      } catch (assignmentError) {
+        console.error('Error deleting employee assignment:', assignmentError);
+        // Don't fail the equipment assignment deletion if employee assignment deletion fails
+      }
+    }
+
+    // Delete the equipment assignment
     await prisma.equipmentRentalHistory.delete({
       where: { id: assignmentId }
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Equipment assignment deleted successfully'
+      message: 'Equipment assignment deleted successfully' + (deletedEmployeeAssignment ? ' and employee assignment deleted automatically' : ''),
+      data: {
+        deletedEquipmentAssignment: existingAssignment,
+        deletedEmployeeAssignment
+      }
     });
   } catch (error) {
     console.error('Error deleting equipment assignment:', error);

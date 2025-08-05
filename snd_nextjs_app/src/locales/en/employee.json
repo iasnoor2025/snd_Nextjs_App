@@ -187,6 +187,7 @@
   "assignment": {
     "project": "Project",
     "rental": "Rental",
+    "manual": "Manual",
     "equipment": "Equipment",
     "assigned": "Assigned",
     "noAssignment": "No Assignment"

@@ -786,7 +786,7 @@ export default function EmployeeManagementPage() {
                                 <Badge variant="outline" className="text-xs">
                                   {employee.current_assignment.type === 'project' ? `📋 ${t('employee:assignment.project')}` : 
                                    employee.current_assignment.type === 'rental' ? `🚛 ${t('employee:assignment.rental')}` : 
-                                   employee.current_assignment.type === 'manual' ? `🔧 ${t('employee:assignment.equipment')}` : 
+                                   employee.current_assignment.type === 'manual' ? `🔧 ${t('employee:assignment.manual')}` : 
                                    `📋 ${t('employee:assignment.assigned')}`}
                                 </Badge>
                               )}
@@ -829,7 +829,7 @@ export default function EmployeeManagementPage() {
                               <div className="text-sm text-muted-foreground">
                                 {employee.current_assignment.type === 'project' ? t('employee:assignment.project') :
                                  employee.current_assignment.type === 'rental' ? t('employee:assignment.rental') :
-                                 employee.current_assignment.type === 'manual' ? t('employee:assignment.equipment') :
+                                 employee.current_assignment.type === 'manual' ? t('employee:assignment.manual') :
                                  t('employee:assignment.assigned')}
                               </div>
                             </div>

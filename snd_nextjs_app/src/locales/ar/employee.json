@@ -183,6 +183,7 @@
   "assignment": {
     "project": "مشروع",
     "rental": "إيجار",
+    "manual": "يدوي",
     "equipment": "معدات",
     "assigned": "مخصص",
     "noAssignment": "لا يوجد تخصيص"
