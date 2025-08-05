@@ -166,15 +166,17 @@ export class ApiService {
   // EMPLOYEE MANAGEMENT
   // ========================================
 
-  static async getEmployees(params?: {
+  static async getEmployees(params: {
     page?: number;
     per_page?: number;
+    limit?: number;
     search?: string;
     status?: string;
     department?: string;
     sort_by?: string;
     sort_order?: 'asc' | 'desc';
-  }) {
+    all?: boolean;
+  } = {}) {
     return this.get('/employees', params, {
       toastMessage: 'Employees loaded successfully',
       errorMessage: 'Failed to load employees',

@@ -44,7 +44,12 @@ export async function GET(request: NextRequest) {
 
     // If employeeId is provided, filter by employee
     if (employeeId) {
-      where.employee_id = employeeId;
+      console.log('Filtering by employee ID:', employeeId, 'Type:', typeof employeeId);
+      // Convert to number if it's a string, since database expects number
+      where.employee_id = typeof employeeId === 'string' ? parseInt(employeeId) : employeeId;
+      console.log('Converted employee ID for database:', where.employee_id);
+    } else {
+      console.log('No employee filter applied - showing all employees');
     }
 
     // Get timesheets for the month
@@ -65,6 +70,7 @@ export async function GET(request: NextRequest) {
 
     console.log('API Debug - Query params:', { month, employeeId, startDate, endDate });
     console.log('API Debug - Found timesheets:', timesheets.length);
+    console.log('API Debug - Employee IDs in results:', [...new Set(timesheets.map(t => t.employee_id))]);
     console.log('API Debug - First few timesheets:', timesheets.slice(0, 3).map(t => ({
       id: t.id,
       date: t.date,
@@ -73,7 +79,8 @@ export async function GET(request: NextRequest) {
       hours_worked_type: typeof t.hours_worked,
       overtime_hours: t.overtime_hours,
       overtime_hours_type: typeof t.overtime_hours,
-      employee: t.employee.first_name + ' ' + t.employee.last_name
+      employee: t.employee.first_name + ' ' + t.employee.last_name,
+      employee_id: t.employee_id
     })));
     
     // Check for July 31st specifically

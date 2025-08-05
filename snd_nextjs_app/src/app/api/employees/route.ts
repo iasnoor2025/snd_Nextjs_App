@@ -116,8 +116,11 @@ function formatEmployeeForFrontend(employee: any) {
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('Employees API called');
     const session = await getServerSession(authOptions);
+    console.log('Session:', session ? 'Found' : 'Not found');
     if (!session?.user) {
+      console.log('Unauthorized access attempt');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -125,6 +128,9 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const search = searchParams.get('search') || '';
+    const all = searchParams.get('all') === 'true';
+    
+    console.log('API Parameters:', { page, limit, search, all });
 
     const skip = (page - 1) * limit;
 
@@ -137,9 +143,56 @@ export async function GET(request: NextRequest) {
         { first_name: { contains: search, mode: 'insensitive' } },
         { last_name: { contains: search, mode: 'insensitive' } },
         { employee_id: { contains: search, mode: 'insensitive' } },
+        { file_number: { contains: search, mode: 'insensitive' } },
       ];
     }
 
+    // If all=true, return all employees with complete data
+    if (all) {
+      console.log('Fetching all employees with complete data');
+      const employees = await prisma.employee.findMany({
+        where,
+        orderBy: { first_name: 'asc' },
+        include: {
+          department: true,
+          designation: true,
+          unit: true,
+          employee_assignments: {
+            where: {
+              status: 'active'
+            },
+            include: {
+              project: true,
+              rental: {
+                include: {
+                  customer: true
+                }
+              }
+            },
+            orderBy: {
+              created_at: 'desc'
+            },
+            take: 1
+          }
+        }
+      });
+
+      console.log(`Found ${employees.length} employees in database`);
+      if (employees.length > 0) {
+        console.log('First employee sample:', employees[0]);
+      }
+
+      const formattedEmployees = employees.map(formatEmployeeForFrontend);
+
+      console.log(`Returning ${formattedEmployees.length} formatted employees`);
+      return NextResponse.json({
+        success: true,
+        data: formattedEmployees
+      });
+    }
+
+    // Regular paginated response
+    console.log('Fetching paginated employees');
     const [employees, total] = await Promise.all([
       prisma.employee.findMany({
         where,
@@ -163,6 +216,8 @@ export async function GET(request: NextRequest) {
       }),
       prisma.employee.count({ where }),
     ]);
+    
+    console.log(`Found ${employees.length} employees (total: ${total})`);
 
     // Transform the response to match frontend interface
     const transformedEmployees = employees.map(employee => ({
