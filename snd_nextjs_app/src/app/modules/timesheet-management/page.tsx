@@ -249,62 +249,10 @@ export default function TimesheetManagementPage() {
     }
   }, [timesheets, isRTL]);
 
-  // Client-side filtering and pagination calculations
-  const filteredTimesheets = useMemo(() => {
-    if (!timesheets?.data) return [];
-
-    return timesheets.data.filter(timesheet => {
-      // Search filter
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        const employeeName = `${timesheet.employee.firstName} ${timesheet.employee.lastName}`.toLowerCase();
-        const employeeId = timesheet.employee.employeeId.toLowerCase();
-        if (!employeeName.includes(searchLower) && !employeeId.includes(searchLower)) {
-          return false;
-        }
-      }
-
-      // Status filter
-      if (statusFilter && statusFilter !== 'all') {
-        if (timesheet.status !== statusFilter) {
-          return false;
-        }
-      }
-
-      // Assignment filter
-      if (assignmentFilter && assignmentFilter !== 'all') {
-        const assignmentName = timesheet.assignment?.name ||
-          timesheet.project?.name ||
-          timesheet.rental?.rentalNumber || '';
-        if (!assignmentName.toLowerCase().includes(assignmentFilter.toLowerCase())) {
-          return false;
-        }
-      }
-
-      // Month filter
-      if (month && month !== 'all') {
-        const timesheetDate = new Date(timesheet.date);
-        const [year, monthNum] = month.split('-');
-        if (year && monthNum) {
-          const filterYear = parseInt(year);
-          const filterMonth = parseInt(monthNum) - 1; // JavaScript months are 0-based
-
-          if (timesheetDate.getFullYear() !== filterYear ||
-            timesheetDate.getMonth() !== filterMonth) {
-            return false;
-          }
-        }
-      }
-
-      return true;
-    });
-  }, [timesheets?.data, searchTerm, statusFilter, assignmentFilter, month]);
-
-  const totalItems = filteredTimesheets.length;
-  const totalPages = Math.ceil(totalItems / pageSize);
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const currentTimesheets = filteredTimesheets.slice(startIndex, endIndex);
+  // Server-side pagination data
+  const totalItems = timesheets?.total || 0;
+  const totalPages = timesheets?.last_page || 1;
+  const currentTimesheets = timesheets?.data || [];
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -492,8 +440,8 @@ export default function TimesheetManagementPage() {
   };
 
   const handleAllPendingAction = async (action: 'approve' | 'reject') => {
-    // Get all pending timesheets from the current filtered data
-    const pendingTimesheets = filteredTimesheets.filter(timesheet => {
+    // Get all pending timesheets from the current server data
+    const pendingTimesheets = currentTimesheets.filter(timesheet => {
       const canProcess = ['pending', 'draft', 'submitted', 'foreman_approved', 'incharge_approved', 'checking_approved'].includes(timesheet.status);
       return canProcess;
     });
@@ -674,9 +622,9 @@ export default function TimesheetManagementPage() {
 
   // Extract unique assignments for filter
   const assignments = useMemo(() => {
-    if (!timesheets?.data) return [];
+    if (!currentTimesheets) return [];
     const assignmentSet = new Set<string>();
-    timesheets.data.forEach(timesheet => {
+    currentTimesheets.forEach(timesheet => {
       if (timesheet.assignment?.name) {
         assignmentSet.add(timesheet.assignment.name);
       } else if (timesheet.project?.name) {
@@ -686,7 +634,7 @@ export default function TimesheetManagementPage() {
       }
     });
     return Array.from(assignmentSet).sort();
-  }, [timesheets?.data]);
+  }, [currentTimesheets]);
 
   // Generate month options for the last 2 years and next 2 years
   const monthOptions = useMemo(() => {
@@ -974,112 +922,122 @@ export default function TimesheetManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentTimesheets.map((timesheet) => (
-                <TableRow key={timesheet.id}>
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedTimesheets.has(timesheet.id)}
-                      onCheckedChange={(checked) => handleSelectTimesheet(timesheet.id, checked as boolean)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-medium text-gray-600">
-                            {getTranslatedName(`${timesheet.employee.firstName} ${timesheet.employee.lastName}`, isRTL, translatedNames, setTranslatedNames).charAt(0).toUpperCase()}
-                          </span>
+              {currentTimesheets.length > 0 ? (
+                currentTimesheets.map((timesheet) => (
+                  <TableRow key={timesheet.id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedTimesheets.has(timesheet.id)}
+                        onCheckedChange={(checked) => handleSelectTimesheet(timesheet.id, checked as boolean)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-gray-600">
+                              {getTranslatedName(`${timesheet.employee.firstName} ${timesheet.employee.lastName}`, isRTL, translatedNames, setTranslatedNames).charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          <div className="font-medium">
+                            {getTranslatedName(`${timesheet.employee.firstName} ${timesheet.employee.lastName}`, isRTL, translatedNames, setTranslatedNames)}
+                          </div>
+                          <div className="text-sm text-gray-500">{timesheet.employee.employeeId}</div>
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {timesheet.assignment ? (
+                        <div className="text-sm">
+                          <div className="font-medium capitalize">{timesheet.assignment.type}</div>
+                          <div className="text-muted-foreground">
+                            {timesheet.assignment.name ||
+                              (timesheet.project ? timesheet.project.name :
+                                timesheet.rental ? timesheet.rental.rentalNumber : t('no_name'))}
+                          </div>
+                        </div>
+                      ) : timesheet.project ? (
+                        <div className="text-sm">
+                          <div className="font-medium">{t('project')}</div>
+                          <div className="text-muted-foreground">{timesheet.project.name}</div>
+                        </div>
+                      ) : timesheet.rental ? (
+                        <div className="text-sm">
+                          <div className="font-medium">{t('rental')}</div>
+                          <div className="text-muted-foreground">{timesheet.rental.rentalNumber}</div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="h-3 w-3" />
+                        <span>{new Date(timesheet.date).toLocaleDateString()}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
                       <div>
-                        <div className="font-medium">
-                          {getTranslatedName(`${timesheet.employee.firstName} ${timesheet.employee.lastName}`, isRTL, translatedNames, setTranslatedNames)}
-                        </div>
-                        <div className="text-sm text-gray-500">{timesheet.employee.employeeId}</div>
+                        <div>{convertToArabicNumerals(timesheet.hoursWorked.toString(), isRTL)}h</div>
+                        {timesheet.overtimeHours > 0 && (
+                          <div className="text-sm text-orange-600">
+                            +{convertToArabicNumerals(timesheet.overtimeHours.toString(), isRTL)}h {t('overtime')}
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {timesheet.assignment ? (
-                      <div className="text-sm">
-                        <div className="font-medium capitalize">{timesheet.assignment.type}</div>
-                        <div className="text-muted-foreground">
-                          {timesheet.assignment.name ||
-                            (timesheet.project ? timesheet.project.name :
-                              timesheet.rental ? timesheet.rental.rentalNumber : t('no_name'))}
-                        </div>
-                      </div>
-                    ) : timesheet.project ? (
-                      <div className="text-sm">
-                        <div className="font-medium">{t('project')}</div>
-                        <div className="text-muted-foreground">{timesheet.project.name}</div>
-                      </div>
-                    ) : timesheet.rental ? (
-                      <div className="text-sm">
-                        <div className="font-medium">{t('rental')}</div>
-                        <div className="text-muted-foreground">{timesheet.rental.rentalNumber}</div>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="h-3 w-3" />
-                      <span>{new Date(timesheet.date).toLocaleDateString()}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div>{convertToArabicNumerals(timesheet.hoursWorked.toString(), isRTL)}h</div>
-                      {timesheet.overtimeHours > 0 && (
-                        <div className="text-sm text-orange-600">
-                          +{convertToArabicNumerals(timesheet.overtimeHours.toString(), isRTL)}h {t('overtime')}
-                        </div>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>{getStatusBadge(timesheet.status)}</TableCell>
-                  <TableCell>
-                    {timesheet.submittedAt ? new Date(timesheet.submittedAt).toLocaleDateString() : t('not_submitted')}
-                  </TableCell>
-                  <TableCell>{timesheet.approvedBy || t('not_approved')}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      <Link href={`/modules/timesheet-management/${timesheet.id}`}>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                      <Link href={`/modules/timesheet-management/${timesheet.id}/edit`}>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </Link>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(timesheet.status)}</TableCell>
+                    <TableCell>
+                      {timesheet.submittedAt ? new Date(timesheet.submittedAt).toLocaleDateString() : t('not_submitted')}
+                    </TableCell>
+                    <TableCell>{timesheet.approvedBy || t('not_approved')}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end space-x-2">
+                        <Link href={`/modules/timesheet-management/${timesheet.id}`}>
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Link href={`/modules/timesheet-management/${timesheet.id}/edit`}>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
 
-                      {timesheet.status === "pending" && (
-                        <>
-                          <Button variant="ghost" size="sm" onClick={handleApprove}>
-                            <Badge className="bg-green-100 text-green-800">{t('approve')}</Badge>
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={handleReject}>
-                            <Badge className="bg-red-100 text-red-800">{t('reject')}</Badge>
-                          </Button>
-                        </>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(timesheet)}
-                        disabled={timesheet.status !== 'draft' && userRole !== 'ADMIN'}
-                        title={timesheet.status !== 'draft' && userRole !== 'ADMIN' ? t('only_draft_timesheets_can_be_deleted_by_non_admin_users') : t('delete_timesheet')}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        {timesheet.status === "pending" && (
+                          <>
+                            <Button variant="ghost" size="sm" onClick={handleApprove}>
+                              <Badge className="bg-green-100 text-green-800">{t('approve')}</Badge>
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={handleReject}>
+                              <Badge className="bg-red-100 text-red-800">{t('reject')}</Badge>
+                            </Button>
+                          </>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(timesheet)}
+                          disabled={timesheet.status !== 'draft' && userRole !== 'ADMIN'}
+                          title={timesheet.status !== 'draft' && userRole !== 'ADMIN' ? t('only_draft_timesheets_can_be_deleted_by_non_admin_users') : t('delete_timesheet')}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8">
+                    <div className="text-gray-500">
+                      {t('no_timesheets_found')}
                     </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -1305,7 +1263,7 @@ export default function TimesheetManagementPage() {
       <div className="mt-6 flex items-center justify-between">
         {/* Left side - Showing results info */}
         <div className="text-sm text-gray-600">
-          {t('showing_results', { start: startIndex + 1, end: Math.min(endIndex, totalItems), total: totalItems })}
+          {t('showing_results', { start: (currentPage - 1) * pageSize + 1, end: Math.min(currentPage * pageSize, totalItems), total: totalItems })}
         </div>
 
         {/* Right side - Pagination controls */}
