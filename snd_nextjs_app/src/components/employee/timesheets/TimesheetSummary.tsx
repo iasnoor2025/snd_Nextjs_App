@@ -21,7 +21,8 @@ interface TimesheetSummaryProps {
 }
 
 export default function TimesheetSummary({ employeeId, showEmployeeSelector = false }: TimesheetSummaryProps) {
-  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date());
+  // Initialize with current month (July 2025)
+  const [selectedMonth, setSelectedMonth] = useState<Date>(new Date()); // Current month
   const [dailyRecords, setDailyRecords] = useState<TimesheetRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [employees, setEmployees] = useState<{ id: number; name: string }[]>([]);
@@ -55,25 +56,70 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
     setSelectedMonth(new Date(newYear, selectedMonth.getMonth(), 1));
   };
 
-  // Generate sample data for the selected month
-  const generateDailyRecords = (year: number, month: number) => {
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+  // Fetch real timesheet data for the selected month
+  const fetchTimesheetData = async (year: number, month: number) => {
+    if (!selectedEmployeeId) return;
+    
+    setIsLoading(true);
+    try {
+      const startDate = new Date(year, month, 1);
+      const endDate = new Date(year, month + 1, 0); // This gets the last day of the month
+      
+      // Fix: Use correct date range for any month
+      const startDateStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      const endDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${endDate.getDate()}`;
+      
 
-    return Array.from({ length: daysInMonth }, (_, i) => {
-      const day = i + 1;
-      const date = new Date(year, month, day);
-      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-      const isFriday = date.getDay() === 5;
-
-      return {
-        date: date.toISOString().slice(0, 10),
-        day: String(day),
-        dayName,
-        regularHours: Math.random() > 0.3 ? Math.floor(Math.random() * 8) + 6 : 0, // 6-14 hours or 0
-        overtimeHours: Math.random() > 0.7 ? Math.floor(Math.random() * 4) + 1 : 0, // 1-4 hours or 0
-        status: isFriday ? 'friday' : (Math.random() > 0.2 ? 'present' : 'absent')
-      };
-    });
+      
+      const response = await fetch(`/api/employees/${selectedEmployeeId}/timesheets?startDate=${startDateStr}&endDate=${endDateStr}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        // Create a map of existing timesheet data
+        const timesheetMap = new Map();
+        data.data.forEach((timesheet: any) => {
+          timesheetMap.set(timesheet.date, {
+            regularHours: timesheet.regular_hours || 0,
+            overtimeHours: timesheet.overtime_hours || 0,
+            status: timesheet.status || 'absent'
+          });
+        });
+        
+        // Generate daily records for the month with proper date handling
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        console.log('🔍 TimesheetSummary - Generating records for:', year, month, 'Days in month:', daysInMonth);
+        
+        const records = Array.from({ length: daysInMonth }, (_, i) => {
+          const day = i + 1;
+          // Use proper date construction to avoid timezone issues
+          const date = new Date(year, month, day);
+          const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+          const isFriday = date.getDay() === 5;
+          // Format date as YYYY-MM-DD
+          const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          
+          console.log('🔍 TimesheetSummary - Day', day, 'Date:', dateString, 'Day name:', dayName);
+          
+          // Get real data if exists, otherwise default
+          const timesheetData = timesheetMap.get(dateString);
+          
+          return {
+            date: dateString,
+            day: String(day),
+            dayName,
+            regularHours: timesheetData ? timesheetData.regularHours : 0,
+            overtimeHours: timesheetData ? timesheetData.overtimeHours : 0,
+            status: isFriday ? 'friday' : (timesheetData && timesheetData.regularHours > 0 ? 'present' : 'absent')
+          };
+        });
+       
+        setDailyRecords(records);
+      }
+    } catch (error) {
+      console.error('Error fetching timesheet data:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const calculateMonthlySummary = (records: TimesheetRecord[]) => {
@@ -107,14 +153,21 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
   useEffect(() => {
     const year = selectedMonth.getFullYear();
     const month = selectedMonth.getMonth();
-    const records = generateDailyRecords(year, month);
-    setDailyRecords(records);
-  }, [selectedMonth]);
+    console.log('🔍 TimesheetSummary - Selected month:', selectedMonth.toLocaleDateString('en-US', { year: 'numeric', month: 'long' }));
+    console.log('🔍 TimesheetSummary - Year:', year, 'Month:', month);
+    fetchTimesheetData(year, month);
+  }, [selectedMonth, selectedEmployeeId]);
 
   const summary = calculateMonthlySummary(dailyRecords);
   const year = selectedMonth.getFullYear();
   const month = selectedMonth.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  
+  console.log('🔍 TimesheetSummary - Display month:', selectedMonth.toLocaleDateString('en-US', { year: 'numeric', month: 'long' }));
+  console.log('🔍 TimesheetSummary - Display year:', year, 'Display month:', month, 'Days in month:', daysInMonth);
+  console.log('🔍 TimesheetSummary - Daily records count:', dailyRecords.length);
+  console.log('🔍 TimesheetSummary - Daily records dates:', dailyRecords.map(r => r.date));
+  console.log('🔍 TimesheetSummary - Table will show days 1 to', daysInMonth);
 
   return (
     <div className="space-y-4">
@@ -200,7 +253,7 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        {Array.from({ length: 31 }, (_, i) => {
+                        {Array.from({ length: daysInMonth }, (_, i) => {
                           const date = new Date(year, month, i + 1);
                           const isFridayDay = date.getDay() === 5;
                           return (
@@ -219,8 +272,9 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
                       {/* Days Row */}
                       <TableRow>
                         {Array.from({ length: daysInMonth }, (_, i) => {
-                          const date = new Date(year, month, i + 1);
-                          const dateString = date.toISOString().slice(0, 10);
+                          const day = i + 1;
+                          const date = new Date(year, month, day);
+                          const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                           const record = dailyRecords.find((r) => r.date === dateString);
                           const isFridayDay = date.getDay() === 5;
                           return (
@@ -235,8 +289,9 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
                       {/* Regular Hours Row */}
                       <TableRow>
                         {Array.from({ length: daysInMonth }, (_, i) => {
-                          const date = new Date(year, month, i + 1);
-                          const dateString = date.toISOString().slice(0, 10);
+                          const day = i + 1;
+                          const date = new Date(year, month, day);
+                          const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                           const record = dailyRecords.find((r) => r.date === dateString);
                           const isFridayDay = date.getDay() === 5;
                           return (
@@ -255,8 +310,9 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
                       {/* Overtime Hours Row */}
                       <TableRow>
                         {Array.from({ length: daysInMonth }, (_, i) => {
-                          const date = new Date(year, month, i + 1);
-                          const dateString = date.toISOString().slice(0, 10);
+                          const day = i + 1;
+                          const date = new Date(year, month, day);
+                          const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                           const record = dailyRecords.find((r) => r.date === dateString);
                           const isFridayDay = date.getDay() === 5;
                           return (
@@ -275,29 +331,21 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
                       {/* Status Row */}
                       <TableRow>
                         {Array.from({ length: daysInMonth }, (_, i) => {
-                          const date = new Date(year, month, i + 1);
-                          const dateString = date.toISOString().slice(0, 10);
+                          const day = i + 1;
+                          const date = new Date(year, month, day);
+                          const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                           const record = dailyRecords.find((r) => r.date === dateString);
                           const isFridayDay = date.getDay() === 5;
                           return (
                             <TableCell key={`status-${dateString}`} className={`p-1 text-center border ${isFridayDay ? 'bg-blue-900' : ''}`}>
-                              <Badge
-                                variant={
-                                  isFridayDay
-                                    ? 'secondary'
-                                    : record && record.status === 'present'
-                                      ? 'default'
-                                      : record && record.status === 'absent'
-                                        ? 'destructive'
-                                        : 'outline'
-                                }
+                              <span
                                 className={`text-[10px] font-bold ${isFridayDay
-                                    ? 'bg-blue-800 text-blue-200 border-blue-800'
+                                    ? 'text-blue-600'
                                     : record && record.status === 'present'
-                                      ? 'bg-green-600 text-white border-green-600'
+                                      ? 'text-green-600'
                                       : record && record.status === 'absent'
-                                        ? 'bg-red-600 text-white border-red-600'
-                                        : 'bg-gray-600 text-white border-gray-600'
+                                        ? 'text-red-600'
+                                        : 'text-gray-600'
                                   }`}
                               >
                                 {isFridayDay
@@ -307,7 +355,7 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
                                     : record && record.status === 'absent'
                                       ? 'A'
                                       : ''}
-                              </Badge>
+                              </span>
                             </TableCell>
                           );
                         })}

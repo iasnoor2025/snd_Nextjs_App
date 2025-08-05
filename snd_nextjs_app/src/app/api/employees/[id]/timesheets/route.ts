@@ -1,64 +1,107 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-config";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    // Mock timesheet data
-    const timesheets = [
-      {
-        id: 1,
-        date: '2024-01-15',
-        clock_in: '08:00',
-        clock_out: '17:00',
-        regular_hours: 8,
-        overtime_hours: 1,
-        status: 'approved'
+    const { id } = await params;
+    const employeeId = parseInt(id);
+
+    if (!employeeId) {
+      return NextResponse.json(
+        { error: "Invalid employee ID" },
+        { status: 400 }
+      );
+    }
+
+    // Get date range parameters if provided
+    const { searchParams } = new URL(request.url);
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    
+    // Build where clause
+    const whereClause: any = { employee_id: employeeId };
+    if (startDate && endDate) {
+      whereClause.date = {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
+      };
+    }
+
+    // Fetch real timesheet data from database
+    const timesheets = await prisma.timesheet.findMany({
+      where: whereClause,
+      include: {
+        employee: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            employee_id: true,
+          },
+        },
+        project_rel: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        rental: {
+          select: {
+            id: true,
+            rental_number: true,
+          },
+        },
+        assignment: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+          },
+        },
+        approved_by_user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
-      {
-        id: 2,
-        date: '2024-01-16',
-        clock_in: '08:30',
-        clock_out: '17:30',
-        regular_hours: 8,
-        overtime_hours: 0.5,
-        status: 'approved'
-      },
-      {
-        id: 3,
-        date: '2024-01-17',
-        clock_in: '08:00',
-        clock_out: '18:00',
-        regular_hours: 8,
-        overtime_hours: 2,
-        status: 'pending'
-      },
-      {
-        id: 4,
-        date: '2024-01-18',
-        clock_in: '08:15',
-        clock_out: '17:15',
-        regular_hours: 8,
-        overtime_hours: 0,
-        status: 'approved'
-      },
-      {
-        id: 5,
-        date: '2024-01-19',
-        clock_in: '08:00',
-        clock_out: '16:00',
-        regular_hours: 7,
-        overtime_hours: 0,
-        status: 'approved'
-      }
-    ];
+      orderBy: { date: 'asc' },
+    });
+
+    // Transform the data to match the expected format
+    const formattedTimesheets = timesheets.map(timesheet => ({
+      id: timesheet.id,
+      date: timesheet.date.toISOString().split('T')[0],
+      clock_in: timesheet.start_time?.toISOString().slice(11, 16) || null,
+      clock_out: timesheet.end_time?.toISOString().slice(11, 16) || null,
+      regular_hours: timesheet.hours_worked,
+      overtime_hours: timesheet.overtime_hours,
+      status: timesheet.status,
+      description: timesheet.description,
+      tasks: timesheet.tasks,
+      project: timesheet.project_rel,
+      rental: timesheet.rental,
+      assignment: timesheet.assignment,
+      approved_by: timesheet.approved_by_user,
+      submitted_at: timesheet.submitted_at?.toISOString() || null,
+      approved_at: timesheet.approved_at?.toISOString() || null,
+      created_at: timesheet.created_at.toISOString(),
+      updated_at: timesheet.updated_at.toISOString(),
+    }));
 
     return NextResponse.json({
       success: true,
-      data: timesheets,
+      data: formattedTimesheets,
       message: 'Timesheets retrieved successfully'
     });
   } catch (error) {
@@ -78,14 +121,67 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
+    const employeeId = parseInt(id);
     const body = await request.json();
 
-    // Mock create response
+    if (!employeeId) {
+      return NextResponse.json(
+        { error: "Invalid employee ID" },
+        { status: 400 }
+      );
+    }
+
+    // Create real timesheet in database
+    const timesheet = await prisma.timesheet.create({
+      data: {
+        employee_id: employeeId,
+        date: new Date(body.date),
+        start_time: body.start_time ? new Date(`2000-01-01T${body.start_time}`) : null,
+        end_time: body.end_time ? new Date(`2000-01-01T${body.end_time}`) : null,
+        hours_worked: parseFloat(body.hours_worked || 0),
+        overtime_hours: parseFloat(body.overtime_hours || 0),
+        status: body.status || 'draft',
+        description: body.description || '',
+        tasks: body.tasks || '',
+        project_id: body.project_id || null,
+        rental_id: body.rental_id || null,
+        assignment_id: body.assignment_id || null,
+        submitted_at: body.status === 'submitted' ? new Date() : null,
+      },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            employee_id: true,
+          },
+        },
+      },
+    });
+
     return NextResponse.json({
       success: true,
       message: 'Timesheet created successfully',
-      data: { id: Math.floor(Math.random() * 1000), employee_id: parseInt(id), ...body }
+      data: {
+        id: timesheet.id,
+        employee_id: timesheet.employee_id,
+        date: timesheet.date.toISOString().split('T')[0],
+        start_time: timesheet.start_time?.toISOString().slice(11, 16) || null,
+        end_time: timesheet.end_time?.toISOString().slice(11, 16) || null,
+        hours_worked: timesheet.hours_worked,
+        overtime_hours: timesheet.overtime_hours,
+        status: timesheet.status,
+        description: timesheet.description,
+        tasks: timesheet.tasks,
+        created_at: timesheet.created_at.toISOString(),
+      }
     });
   } catch (error) {
     console.error('Error in POST /api/employees/[id]/timesheets:', error);
