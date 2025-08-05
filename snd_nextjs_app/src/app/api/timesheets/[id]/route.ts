@@ -5,9 +5,10 @@ import { authOptions } from '@/lib/auth-config';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -32,7 +33,7 @@ export async function PUT(
 
     // Update the timesheet
     const updatedTimesheet = await prisma.timesheet.update({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       data: {
         hours_worked: parseFloat(hoursWorked),
         overtime_hours: parseFloat(overtimeHours),
@@ -110,16 +111,17 @@ export async function PUT(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const timesheet = await prisma.timesheet.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: parseInt(id) },
       include: {
         employee: {
           include: {
