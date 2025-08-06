@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
-import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
+import { withAuth } from '@/lib/rbac/api-middleware';
+import { authConfig } from '@/lib/auth-config';
 
 // GET /api/timesheets - List timesheets with employee data filtering
-const getTimesheetsHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+const getTimesheetsHandler = async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -90,9 +92,20 @@ const getTimesheetsHandler = async (request: NextRequest & { employeeAccess?: { 
       deleted_at: null,
     };
 
+    // Get session to check user role
+    const session = await getServerSession(authConfig);
+    const user = session?.user;
+    
     // For employee users, only show their own timesheets
-    if (request.employeeAccess?.ownEmployeeId) {
-      where.employee_id = request.employeeAccess.ownEmployeeId;
+    if (user?.role === 'EMPLOYEE') {
+      // Find employee record that matches user's national_id
+      const ownEmployee = await prisma.employee.findFirst({
+        where: { iqama_number: user.national_id },
+        select: { id: true },
+      });
+      if (ownEmployee) {
+        where.employee_id = ownEmployee.id;
+      }
     }
 
     if (search) {
@@ -212,12 +225,12 @@ const getTimesheetsHandler = async (request: NextRequest & { employeeAccess?: { 
 };
 
 // GET /api/timesheets - List timesheets with permission check
-export const GET = withEmployeeOwnDataAccess(
+export const GET = withAuth(
   getTimesheetsHandler
 );
 
 // POST /api/timesheets - Create timesheet with permission check
-export const POST = withEmployeeOwnDataAccess(
+export const POST = withAuth(
   async (request: NextRequest) => {
     try {
       const body = await request.json();
@@ -267,7 +280,7 @@ export const POST = withEmployeeOwnDataAccess(
 );
 
 // PUT /api/timesheets - Update timesheet with permission check
-export const PUT = withEmployeeOwnDataAccess(
+export const PUT = withAuth(
   async (request: NextRequest) => {
     try {
       const body = await request.json();
@@ -319,7 +332,7 @@ export const PUT = withEmployeeOwnDataAccess(
 );
 
 // DELETE /api/timesheets - Delete timesheet with permission check
-export const DELETE = withEmployeeOwnDataAccess(
+export const DELETE = withAuth(
   async (request: NextRequest) => {
     try {
       const body = await request.json();

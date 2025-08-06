@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
-import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
+import { withAuth } from '@/lib/rbac/api-middleware';
+import { authConfig } from '@/lib/auth-config';
 
 // GET /api/advances - List employee advances with employee data filtering
-const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+const getAdvancesHandler = async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -18,9 +20,20 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
       deleted_at: null,
     };
 
+    // Get session to check user role
+    const session = await getServerSession(authConfig);
+    const user = session?.user;
+    
     // For employee users, only show their own advances
-    if (request.employeeAccess?.ownEmployeeId) {
-      where.employee_id = request.employeeAccess.ownEmployeeId;
+    if (user?.role === 'EMPLOYEE') {
+      // Find employee record that matches user's national_id
+      const ownEmployee = await prisma.employee.findFirst({
+        where: { iqama_number: user.national_id },
+        select: { id: true },
+      });
+      if (ownEmployee) {
+        where.employee_id = ownEmployee.id;
+      }
     }
 
     if (search) {
@@ -78,7 +91,7 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
 };
 
 // POST /api/advances - Create employee advance with employee data filtering
-const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+const createAdvanceHandler = async (request: NextRequest) => {
   try {
     const body = await request.json();
     const {
@@ -134,7 +147,7 @@ const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { 
 };
 
 // PUT /api/advances - Update employee advance with permission check
-export const PUT = withEmployeeOwnDataAccess(
+export const PUT = withAuth(
   async (request: NextRequest) => {
     try {
       const body = await request.json();
@@ -180,7 +193,7 @@ export const PUT = withEmployeeOwnDataAccess(
 );
 
 // DELETE /api/advances - Delete employee advance with permission check
-export const DELETE = withEmployeeOwnDataAccess(
+export const DELETE = withAuth(
   async (request: NextRequest) => {
     try {
       const body = await request.json();
@@ -203,5 +216,5 @@ export const DELETE = withEmployeeOwnDataAccess(
 );
 
 // Export the wrapped handlers
-export const GET = withEmployeeOwnDataAccess(getAdvancesHandler);
-export const POST = withEmployeeOwnDataAccess(createAdvanceHandler); 
+export const GET = withAuth(getAdvancesHandler);
+export const POST = withAuth(createAdvanceHandler); 

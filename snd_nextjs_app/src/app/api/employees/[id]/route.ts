@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
-import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
+import { withAuth } from '@/lib/rbac/api-middleware';
+import { authConfig } from '@/lib/auth-config';
 
 // GET handler with employee data filtering
 const getEmployeeHandler = async (
@@ -333,6 +335,6 @@ const deleteEmployeeHandler = async (
 };
 
 // Export the wrapped handlers
-export const GET = withEmployeeOwnDataAccess(getEmployeeHandler);
-export const PUT = withEmployeeOwnDataAccess(updateEmployeeHandler);
-export const DELETE = withEmployeeOwnDataAccess(deleteEmployeeHandler);
+export const GET = withAuth(getEmployeeHandler);
+export const PUT = withAuth(updateEmployeeHandler);
+export const DELETE = withAuth(deleteEmployeeHandler);

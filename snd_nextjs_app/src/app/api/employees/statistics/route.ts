@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
-import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
+import { withAuth } from '@/lib/rbac/api-middleware';
+import { authConfig } from '@/lib/auth-config';
 
-const getEmployeeStatisticsHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+const getEmployeeStatisticsHandler = async (request: NextRequest) => {
   try {
     console.log('Employee Statistics API called');
 
@@ -21,10 +23,21 @@ const getEmployeeStatisticsHandler = async (request: NextRequest & { employeeAcc
       );
     }
 
+    // Get session to check user role
+    const session = await getServerSession(authConfig);
+    const user = session?.user;
+    
     // For employee users, only show statistics for their own record
     let whereClause: any = {};
-    if (request.employeeAccess?.ownEmployeeId) {
-      whereClause.id = request.employeeAccess.ownEmployeeId;
+    if (user?.role === 'EMPLOYEE') {
+      // Find employee record that matches user's national_id
+      const ownEmployee = await prisma.employee.findFirst({
+        where: { iqama_number: user.national_id },
+        select: { id: true },
+      });
+      if (ownEmployee) {
+        whereClause.id = ownEmployee.id;
+      }
     }
 
     // Get total employee count (filtered for employee users)
@@ -103,4 +116,4 @@ const getEmployeeStatisticsHandler = async (request: NextRequest & { employeeAcc
   }
 };
 
-export const GET = withEmployeeOwnDataAccess(getEmployeeStatisticsHandler); 
+export const GET = withAuth(getEmployeeStatisticsHandler); 

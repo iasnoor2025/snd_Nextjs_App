@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
-import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
+import { withAuth } from '@/lib/rbac/api-middleware';
+import { authConfig } from '@/lib/auth-config';
 
 // GET /api/assignments - List manual assignments with employee data filtering
-const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+const getAssignmentsHandler = async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -19,9 +21,20 @@ const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: {
       deleted_at: null,
     };
 
+    // Get session to check user role
+    const session = await getServerSession(authConfig);
+    const user = session?.user;
+    
     // For employee users, only show their own assignments
-    if (request.employeeAccess?.ownEmployeeId) {
-      where.employee_id = request.employeeAccess.ownEmployeeId;
+    if (user?.role === 'EMPLOYEE') {
+      // Find employee record that matches user's national_id
+      const ownEmployee = await prisma.employee.findFirst({
+        where: { iqama_number: user.national_id },
+        select: { id: true },
+      });
+      if (ownEmployee) {
+        where.employee_id = ownEmployee.id;
+      }
     }
 
     if (search) {
@@ -85,7 +98,7 @@ const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: {
 };
 
 // POST /api/assignments - Create manual assignment with employee data filtering
-const createAssignmentHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+const createAssignmentHandler = async (request: NextRequest) => {
   try {
     const body = await request.json();
     const {
@@ -145,7 +158,7 @@ const createAssignmentHandler = async (request: NextRequest & { employeeAccess?:
 };
 
 // PUT /api/assignments - Update manual assignment with permission check
-export const PUT = withEmployeeOwnDataAccess(
+export const PUT = withAuth(
   async (request: NextRequest) => {
     try {
       const body = await request.json();
@@ -191,11 +204,11 @@ export const PUT = withEmployeeOwnDataAccess(
       );
     }
   },
-  // No specific permission config for PUT, as it's handled by withEmployeeOwnDataAccess
+  // No specific permission config for PUT, as it's handled by withAuth
 );
 
 // DELETE /api/assignments - Delete manual assignment with permission check
-export const DELETE = withEmployeeOwnDataAccess(
+export const DELETE = withAuth(
   async (request: NextRequest) => {
     try {
       const body = await request.json();
@@ -214,9 +227,9 @@ export const DELETE = withEmployeeOwnDataAccess(
       );
     }
   },
-  // No specific permission config for DELETE, as it's handled by withEmployeeOwnDataAccess
+  // No specific permission config for DELETE, as it's handled by withAuth
 );
 
 // Export the wrapped handlers
-export const GET = withEmployeeOwnDataAccess(getAssignmentsHandler);
-export const POST = withEmployeeOwnDataAccess(createAssignmentHandler); 
+export const GET = withAuth(getAssignmentsHandler);
+export const POST = withAuth(createAssignmentHandler); 

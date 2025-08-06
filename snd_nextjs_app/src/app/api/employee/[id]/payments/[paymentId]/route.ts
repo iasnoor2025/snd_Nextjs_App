@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
-import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
+import { withAuth } from '@/lib/rbac/api-middleware';
+import { authConfig } from '@/lib/auth-config';
 
 const deleteEmployeePaymentHandler = async (
-  request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } },
+  request: NextRequest,
   { params }: { params: Promise<{ id: string; paymentId: string }> }
 ) => {
   try {
@@ -18,9 +20,18 @@ const deleteEmployeePaymentHandler = async (
       );
     }
 
+    // Get session to check user role
+    const session = await getServerSession(authConfig);
+    const user = session?.user;
+    
     // For employee users, ensure they can only access their own payment data
-    if (request.employeeAccess?.ownEmployeeId) {
-      if (employeeId !== request.employeeAccess.ownEmployeeId) {
+    if (user?.role === 'EMPLOYEE') {
+      // Find employee record that matches user's national_id
+      const ownEmployee = await prisma.employee.findFirst({
+        where: { iqama_number: user.national_id },
+        select: { id: true },
+      });
+      if (ownEmployee && employeeId !== ownEmployee.id) {
         return NextResponse.json(
           { error: "You can only access your own payment data" },
           { status: 403 }
@@ -63,4 +74,4 @@ const deleteEmployeePaymentHandler = async (
 };
 
 // Export the wrapped handler
-export const DELETE = withEmployeeOwnDataAccess(deleteEmployeePaymentHandler); 
+export const DELETE = withAuth(deleteEmployeePaymentHandler); 

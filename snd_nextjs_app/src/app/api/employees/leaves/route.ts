@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
-import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
+import { withAuth } from '@/lib/rbac/api-middleware';
+import { authConfig } from '@/lib/auth-config';
 
 // GET /api/employees/leaves - Get leave requests for the current employee
-const getLeavesHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+const getLeavesHandler = async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '10');
@@ -17,9 +19,20 @@ const getLeavesHandler = async (request: NextRequest & { employeeAccess?: { ownE
       deleted_at: null,
     };
 
+    // Get session to check user role
+    const session = await getServerSession(authConfig);
+    const user = session?.user;
+    
     // For employee users, only show their own leave requests
-    if (request.employeeAccess?.ownEmployeeId) {
-      where.employee_id = request.employeeAccess.ownEmployeeId;
+    if (user?.role === 'EMPLOYEE') {
+      // Find employee record that matches user's national_id
+      const ownEmployee = await prisma.employee.findFirst({
+        where: { iqama_number: user.national_id },
+        select: { id: true },
+      });
+      if (ownEmployee) {
+        where.employee_id = ownEmployee.id;
+      }
     }
 
     if (status) {
@@ -90,13 +103,24 @@ const getLeavesHandler = async (request: NextRequest & { employeeAccess?: { ownE
 };
 
 // POST /api/employees/leaves - Create a new leave request
-const createLeaveHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+const createLeaveHandler = async (request: NextRequest) => {
   try {
     const body = await request.json();
 
+    // Get session to check user role
+    const session = await getServerSession(authConfig);
+    const user = session?.user;
+    
     // For employee users, ensure they can only create leave requests for themselves
-    if (request.employeeAccess?.ownEmployeeId) {
-      body.employee_id = request.employeeAccess.ownEmployeeId;
+    if (user?.role === 'EMPLOYEE') {
+      // Find employee record that matches user's national_id
+      const ownEmployee = await prisma.employee.findFirst({
+        where: { iqama_number: user.national_id },
+        select: { id: true },
+      });
+      if (ownEmployee) {
+        body.employee_id = ownEmployee.id;
+      }
     }
 
     const leaveRequest = await prisma.employeeLeave.create({
@@ -139,5 +163,5 @@ const createLeaveHandler = async (request: NextRequest & { employeeAccess?: { ow
 };
 
 // Export the wrapped handlers
-export const GET = withEmployeeOwnDataAccess(getLeavesHandler);
-export const POST = withEmployeeOwnDataAccess(createLeaveHandler); 
+export const GET = withAuth(getLeavesHandler);
+export const POST = withAuth(createLeaveHandler); 

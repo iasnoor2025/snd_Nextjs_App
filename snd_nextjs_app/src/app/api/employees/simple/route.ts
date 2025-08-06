@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
-import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
+import { withAuth } from '@/lib/rbac/api-middleware';
+import { authConfig } from '@/lib/auth-config';
 
-const getSimpleEmployeesHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+const getSimpleEmployeesHandler = async (request: NextRequest) => {
   try {
     console.log('Simple employees API called');
 
@@ -13,9 +15,20 @@ const getSimpleEmployeesHandler = async (request: NextRequest & { employeeAccess
     let employees;
     let whereClause: any = {};
 
+    // Get session to check user role
+    const session = await getServerSession(authConfig);
+    const user = session?.user;
+    
     // For employee users, only show their own record
-    if (request.employeeAccess?.ownEmployeeId) {
-      whereClause.id = request.employeeAccess.ownEmployeeId;
+    if (user?.role === 'EMPLOYEE') {
+      // Find employee record that matches user's national_id
+      const ownEmployee = await prisma.employee.findFirst({
+        where: { iqama_number: user.national_id },
+        select: { id: true },
+      });
+      if (ownEmployee) {
+        whereClause.id = ownEmployee.id;
+      }
     }
 
     // Test simple findMany without any complex options
@@ -59,4 +72,4 @@ const getSimpleEmployeesHandler = async (request: NextRequest & { employeeAccess
   }
 };
 
-export const GET = withEmployeeOwnDataAccess(getSimpleEmployeesHandler);
+export const GET = withAuth(getSimpleEmployeesHandler);

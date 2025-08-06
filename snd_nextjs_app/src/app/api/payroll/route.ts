@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
-import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
+import { withAuth } from '@/lib/rbac/api-middleware';
+import { authConfig } from '@/lib/auth-config';
 
-const getPayrollHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+const getPayrollHandler = async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -14,9 +16,20 @@ const getPayrollHandler = async (request: NextRequest & { employeeAccess?: { own
     // Build where clause
     const where: any = {};
 
+    // Get session to check user role
+    const session = await getServerSession(authConfig);
+    const user = session?.user;
+    
     // For employee users, only show their own payroll records
-    if (request.employeeAccess?.ownEmployeeId) {
-      where.employee_id = request.employeeAccess.ownEmployeeId;
+    if (user?.role === 'EMPLOYEE') {
+      // Find employee record that matches user's national_id
+      const ownEmployee = await prisma.employee.findFirst({
+        where: { iqama_number: user.national_id },
+        select: { id: true },
+      });
+      if (ownEmployee) {
+        where.employee_id = ownEmployee.id;
+      }
     }
 
     if (status && status !== 'all') {
@@ -85,7 +98,7 @@ const getPayrollHandler = async (request: NextRequest & { employeeAccess?: { own
   }
 };
 
-const createPayrollHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+const createPayrollHandler = async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -100,16 +113,27 @@ const createPayrollHandler = async (request: NextRequest & { employeeAccess?: { 
       );
     }
 
+    // Get session to check user role
+    const session = await getServerSession(authConfig);
+    const user = session?.user;
+    
     // For employee users, ensure they can only create payroll records for themselves
-    if (request.employeeAccess?.ownEmployeeId) {
-      if (body.employee_id && parseInt(body.employee_id) !== request.employeeAccess.ownEmployeeId) {
-        return NextResponse.json(
-          { error: 'You can only create payroll records for yourself' },
-          { status: 403 }
-        );
+    if (user?.role === 'EMPLOYEE') {
+      // Find employee record that matches user's national_id
+      const ownEmployee = await prisma.employee.findFirst({
+        where: { iqama_number: user.national_id },
+        select: { id: true },
+      });
+      if (ownEmployee) {
+        if (body.employee_id && parseInt(body.employee_id) !== ownEmployee.id) {
+          return NextResponse.json(
+            { error: 'You can only create payroll records for yourself' },
+            { status: 403 }
+          );
+        }
+        // Override employee_id to ensure it's the user's own employee ID
+        body.employee_id = ownEmployee.id;
       }
-      // Override employee_id to ensure it's the user's own employee ID
-      body.employee_id = request.employeeAccess.ownEmployeeId;
     }
 
     // Check if payroll already exists for this employee, month, and year
@@ -165,5 +189,5 @@ const createPayrollHandler = async (request: NextRequest & { employeeAccess?: { 
 };
 
 // Export the wrapped handlers
-export const GET = withEmployeeOwnDataAccess(getPayrollHandler);
-export const POST = withEmployeeOwnDataAccess(createPayrollHandler);
+export const GET = withAuth(getPayrollHandler);
+export const POST = withAuth(createPayrollHandler);
