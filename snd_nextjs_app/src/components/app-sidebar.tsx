@@ -168,10 +168,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       });
     }
     
-    // For other roles, use normal permission filtering
+    // For other roles, use normal permission filtering but exclude employee dashboard
     return items.filter(item => {
       // Always show items without specific routes (like help, search)
       if (item.url === "#" || !item.url) return true;
+      
+      // Hide employee dashboard for non-EMPLOYEE roles
+      if (item.url === "/employee-dashboard") {
+        return false;
+      }
       
       // Check if user can access this route
       return canAccessRoute(item.url);
