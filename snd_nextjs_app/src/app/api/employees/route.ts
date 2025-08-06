@@ -39,6 +39,8 @@ const getEmployeesHandler = async (request: NextRequest & { employeeAccess?: { o
       where.id = request.employeeAccess.ownEmployeeId;
     }
 
+    console.log('Fetching employees with assignments...');
+
     // Get employees with pagination
     const [employees, total] = await Promise.all([
       prisma.employee.findMany({
@@ -57,22 +59,82 @@ const getEmployeesHandler = async (request: NextRequest & { employeeAccess?: { o
               isActive: true,
             },
           },
+          employee_assignments: {
+            // Include all assignments for debugging
+            include: {
+              project: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+              rental: {
+                select: {
+                  id: true,
+                  rental_number: true,
+                },
+              },
+            },
+            orderBy: {
+              start_date: 'desc',
+            },
+            take: 1, // Get only the most recent assignment
+          },
         },
       }),
       prisma.employee.count({ where }),
     ]);
 
-    // Transform the data to include full_name and proper department/designation names
-    const transformedEmployees = employees.map(employee => ({
-      ...employee,
-      full_name: [
-        employee.first_name,
-        employee.middle_name,
-        employee.last_name
-      ].filter(Boolean).join(' '),
-      department: employee.department?.name || null,
-      designation: employee.designation?.name || null,
-    }));
+    console.log(`Found ${employees.length} employees`);
+    console.log(`Total assignments found: ${employees.reduce((sum, emp) => sum + emp.employee_assignments.length, 0)}`);
+
+    // Transform the data to include full_name, proper department/designation names, and current assignment
+    const transformedEmployees = employees.map(employee => {
+      // Get the current assignment (most recent assignment)
+      const currentAssignment = employee.employee_assignments[0] || null;
+      
+      if (currentAssignment) {
+        console.log(`Employee ${employee.file_number} has assignment:`, {
+          id: currentAssignment.id,
+          type: currentAssignment.type,
+          name: currentAssignment.name,
+          status: currentAssignment.status,
+          start_date: currentAssignment.start_date,
+          end_date: currentAssignment.end_date
+        });
+      }
+      
+      // Consider an assignment active if it has status 'active' and no end date or end date is in the future
+      const isAssignmentActive = currentAssignment && 
+        currentAssignment.status === 'active' && 
+        (!currentAssignment.end_date || new Date(currentAssignment.end_date) > new Date());
+      
+      return {
+        ...employee,
+        full_name: [
+          employee.first_name,
+          employee.middle_name,
+          employee.last_name
+        ].filter(Boolean).join(' '),
+        department: employee.department?.name || null,
+        designation: employee.designation?.name || null,
+        current_assignment: isAssignmentActive ? {
+          id: currentAssignment.id,
+          type: currentAssignment.type,
+          name: currentAssignment.name || (currentAssignment.project?.name || currentAssignment.rental?.rental_number || 'Unnamed Assignment'),
+          location: currentAssignment.location || null,
+          start_date: currentAssignment.start_date?.toISOString() || null,
+          end_date: currentAssignment.end_date?.toISOString() || null,
+          status: currentAssignment.status,
+          notes: currentAssignment.notes,
+          project: currentAssignment.project,
+          rental: currentAssignment.rental,
+        } : null,
+      };
+    });
+
+    const employeesWithAssignments = transformedEmployees.filter(emp => emp.current_assignment);
+    console.log(`Employees with current assignments: ${employeesWithAssignments.length}`);
 
     return NextResponse.json({
       success: true,

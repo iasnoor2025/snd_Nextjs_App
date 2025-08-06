@@ -202,10 +202,13 @@ export default function EmployeeManagementPage() {
   const fetchEmployees = async () => {
     try {
       // Fetch all employees for search and sorting functionality
-      const response = await fetch('/api/employees?all=true');
+      const response = await fetch(`/api/employees?all=true&_t=${Date.now()}`);
       if (response.ok) {
         const result = await response.json() as { success: boolean; data?: Employee[] };
         if (result.success && Array.isArray(result.data)) {
+          console.log('Fetched employees:', result.data.length);
+          console.log('Sample employee with assignment:', result.data.find(emp => emp.current_assignment));
+          
           setEmployees(result.data);
           setFilteredEmployees(result.data);
         } else {
