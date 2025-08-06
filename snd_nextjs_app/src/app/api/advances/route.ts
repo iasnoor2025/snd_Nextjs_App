@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
-import { withAuth } from '@/lib/rbac/api-middleware';
+import { withEmployeeListPermission } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
 
 // GET /api/advances - List employee advances with employee data filtering
-const getAdvancesHandler = async (request: NextRequest) => {
+const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -91,7 +91,7 @@ const getAdvancesHandler = async (request: NextRequest) => {
 };
 
 // POST /api/advances - Create employee advance with employee data filtering
-const createAdvanceHandler = async (request: NextRequest) => {
+const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
   try {
     const body = await request.json();
     const {
@@ -147,8 +147,8 @@ const createAdvanceHandler = async (request: NextRequest) => {
 };
 
 // PUT /api/advances - Update employee advance with permission check
-export const PUT = withAuth(
-  async (request: NextRequest) => {
+export const PUT = withEmployeeListPermission(
+  async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
     try {
       const body = await request.json();
       const {
@@ -193,8 +193,8 @@ export const PUT = withAuth(
 );
 
 // DELETE /api/advances - Delete employee advance with permission check
-export const DELETE = withAuth(
-  async (request: NextRequest) => {
+export const DELETE = withEmployeeListPermission(
+  async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
     try {
       const body = await request.json();
       const { id } = body;
@@ -216,5 +216,5 @@ export const DELETE = withAuth(
 );
 
 // Export the wrapped handlers
-export const GET = withAuth(getAdvancesHandler);
-export const POST = withAuth(createAdvanceHandler); 
+export const GET = withEmployeeListPermission(getAdvancesHandler);
+export const POST = withEmployeeListPermission(createAdvanceHandler); 

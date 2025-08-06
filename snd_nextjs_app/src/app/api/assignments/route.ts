@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
-import { withAuth } from '@/lib/rbac/api-middleware';
+import { withEmployeeListPermission } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
 
 // GET /api/assignments - List manual assignments with employee data filtering
-const getAssignmentsHandler = async (request: NextRequest) => {
+const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -98,7 +98,7 @@ const getAssignmentsHandler = async (request: NextRequest) => {
 };
 
 // POST /api/assignments - Create manual assignment with employee data filtering
-const createAssignmentHandler = async (request: NextRequest) => {
+const createAssignmentHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
   try {
     const body = await request.json();
     const {
@@ -158,8 +158,8 @@ const createAssignmentHandler = async (request: NextRequest) => {
 };
 
 // PUT /api/assignments - Update manual assignment with permission check
-export const PUT = withAuth(
-  async (request: NextRequest) => {
+export const PUT = withEmployeeListPermission(
+  async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
     try {
       const body = await request.json();
       const {
@@ -208,8 +208,8 @@ export const PUT = withAuth(
 );
 
 // DELETE /api/assignments - Delete manual assignment with permission check
-export const DELETE = withAuth(
-  async (request: NextRequest) => {
+export const DELETE = withEmployeeListPermission(
+  async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
     try {
       const body = await request.json();
       const { id } = body;
@@ -231,5 +231,5 @@ export const DELETE = withAuth(
 );
 
 // Export the wrapped handlers
-export const GET = withAuth(getAssignmentsHandler);
-export const POST = withAuth(createAssignmentHandler); 
+export const GET = withEmployeeListPermission(getAssignmentsHandler);
+export const POST = withEmployeeListPermission(createAssignmentHandler); 

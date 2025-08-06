@@ -460,7 +460,7 @@ export default function ActionDialogs({ employeeId, documentDialogOpen, setDocum
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDocumentDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDocumentDialogOpen?.(false)}>
               Cancel
             </Button>
             <Button onClick={handleDocumentUpload} disabled={loading === 'document'}>
