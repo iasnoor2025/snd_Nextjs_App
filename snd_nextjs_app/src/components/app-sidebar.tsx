@@ -47,6 +47,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: IconDashboard,
     },
     {
+      title: t('employeeDashboard'),
+      url: "/employee-dashboard",
+      icon: IconUser,
+    },
+    {
       title: t('customerManagement'),
       url: "/modules/customer-management",
       icon: IconUsers,
@@ -148,6 +153,22 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const filterMenuItems = (items: any[]) => {
     if (!user) return [];
     
+    // For EMPLOYEE role, only show employee dashboard and essential items
+    if (user.role === 'EMPLOYEE') {
+      return items.filter(item => {
+        // Always show items without specific routes (like help, search)
+        if (item.url === "#" || !item.url) return true;
+        
+        // For employees, only show employee dashboard and settings
+        if (item.url === "/employee-dashboard" || item.url === "/modules/settings") {
+          return true;
+        }
+        
+        return false;
+      });
+    }
+    
+    // For other roles, use normal permission filtering
     return items.filter(item => {
       // Always show items without specific routes (like help, search)
       if (item.url === "#" || !item.url) return true;

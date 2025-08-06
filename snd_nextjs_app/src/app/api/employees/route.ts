@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
+import { withAuth } from '@/lib/rbac/api-middleware';
 
 // GET /api/employees - List employees
-const getEmployeesHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+const getEmployeesHandler = async (request: NextRequest) => {
   try {
+    console.log('🔍 Starting employee fetch...');
+    
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
@@ -12,6 +14,8 @@ const getEmployeesHandler = async (request: NextRequest & { employeeAccess?: { o
     const department = searchParams.get('department') || '';
     const status = searchParams.get('status') || '';
     const all = searchParams.get('all') === 'true';
+
+    console.log('🔍 Search params:', { page, limit, search, department, status, all });
 
     const skip = (page - 1) * limit;
 
@@ -34,17 +38,13 @@ const getEmployeesHandler = async (request: NextRequest & { employeeAccess?: { o
       where.status = status;
     }
 
-    // For employee users, only show their own record
-    if (request.employeeAccess?.ownEmployeeId) {
-      console.log('🔍 Employee filtering: ownEmployeeId =', request.employeeAccess.ownEmployeeId);
-      where.id = request.employeeAccess.ownEmployeeId;
-    } else {
-      console.log('🔍 No employee filtering applied');
-    }
+    // No employee filtering - all authenticated users can see all employees
+    console.log('🔍 No employee filtering applied');
 
-    console.log('Fetching employees with assignments...');
+    console.log('🔍 Where clause:', JSON.stringify(where, null, 2));
 
-    // Get employees with pagination
+    // Get employees with pagination - with assignments
+    console.log('🔍 Executing employee query with assignments...');
     const [employees, total] = await Promise.all([
       prisma.employee.findMany({
         where,
@@ -63,7 +63,6 @@ const getEmployeesHandler = async (request: NextRequest & { employeeAccess?: { o
             },
           },
           employee_assignments: {
-            // Include all assignments for debugging
             include: {
               project: {
                 select: {
@@ -88,22 +87,30 @@ const getEmployeesHandler = async (request: NextRequest & { employeeAccess?: { o
       prisma.employee.count({ where }),
     ]);
 
-    console.log(`Found ${employees.length} employees`);
-    console.log(`Total assignments found: ${employees.reduce((sum, emp) => sum + emp.employee_assignments.length, 0)}`);
+    console.log(`✅ Found ${employees.length} employees out of ${total} total`);
+    console.log(`📊 Total assignments found: ${employees.reduce((sum, emp) => sum + emp.employee_assignments.length, 0)}`);
 
     // Transform the data to include full_name, proper department/designation names, and current assignment
     const transformedEmployees = employees.map(employee => {
+      const fullName = [
+        employee.first_name,
+        employee.middle_name,
+        employee.last_name
+      ].filter(Boolean).join(' ');
+      
       // Get the current assignment (most recent assignment)
       const currentAssignment = employee.employee_assignments[0] || null;
       
       if (currentAssignment) {
-        console.log(`Employee ${employee.file_number} has assignment:`, {
+        console.log(`🔍 Employee ${employee.id} (${fullName}) has assignment:`, {
           id: currentAssignment.id,
           type: currentAssignment.type,
           name: currentAssignment.name,
           status: currentAssignment.status,
           start_date: currentAssignment.start_date,
-          end_date: currentAssignment.end_date
+          end_date: currentAssignment.end_date,
+          project: currentAssignment.project?.name,
+          rental: currentAssignment.rental?.rental_number
         });
       }
       
@@ -112,13 +119,11 @@ const getEmployeesHandler = async (request: NextRequest & { employeeAccess?: { o
         currentAssignment.status === 'active' && 
         (!currentAssignment.end_date || new Date(currentAssignment.end_date) > new Date());
       
+      console.log(`🔍 Employee ${employee.id}: ${fullName} - Dept: ${employee.department?.name || 'null'}, Designation: ${employee.designation?.name || 'null'}, Active Assignment: ${isAssignmentActive ? 'Yes' : 'No'}`);
+      
       return {
         ...employee,
-        full_name: [
-          employee.first_name,
-          employee.middle_name,
-          employee.last_name
-        ].filter(Boolean).join(' '),
+        full_name: fullName,
         department: employee.department?.name || null,
         designation: employee.designation?.name || null,
         current_assignment: isAssignmentActive ? {
@@ -137,9 +142,10 @@ const getEmployeesHandler = async (request: NextRequest & { employeeAccess?: { o
     });
 
     const employeesWithAssignments = transformedEmployees.filter(emp => emp.current_assignment);
-    console.log(`Employees with current assignments: ${employeesWithAssignments.length}`);
+    console.log(`✅ Employees with current assignments: ${employeesWithAssignments.length}`);
+    console.log(`✅ Transformed ${transformedEmployees.length} employees`);
 
-    return NextResponse.json({
+    const response = {
       success: true,
       data: transformedEmployees,
       pagination: {
@@ -148,18 +154,27 @@ const getEmployeesHandler = async (request: NextRequest & { employeeAccess?: { o
         total,
         pages: Math.ceil(total / limit),
       },
-    });
+    };
+
+    console.log('✅ Returning response with', transformedEmployees.length, 'employees');
+    return NextResponse.json(response);
+    
   } catch (error) {
-    console.error('Error fetching employees:', error);
+    console.error('❌ Error fetching employees:', error);
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error', 
+        details: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }
 };
 
 // POST /api/employees - Create new employee
-const createEmployeeHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+const createEmployeeHandler = async (request: NextRequest) => {
   try {
     const body = await request.json();
     const {
@@ -229,5 +244,5 @@ const createEmployeeHandler = async (request: NextRequest & { employeeAccess?: {
 };
 
 // Export the wrapped handlers
-export const GET = withEmployeeOwnDataAccess(getEmployeesHandler);
-export const POST = withEmployeeOwnDataAccess(createEmployeeHandler);
+export const GET = withAuth(getEmployeesHandler);
+export const POST = withAuth(createEmployeeHandler);

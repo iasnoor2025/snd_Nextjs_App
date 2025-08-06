@@ -49,36 +49,50 @@ export function useNationIdCheck() {
 
     setIsChecking(true)
     try {
-      console.log('🔄 Checking nation ID for user:', session.user.id)
       const response = await fetch('/api/user/nation-id')
       
       if (response.ok) {
-        const data = await response.json()
-        console.log('✅ Nation ID check successful:', data)
+        const responseText = await response.text()
+        if (!responseText) {
+          setHasChecked(true)
+          return
+        }
+        
+        let data
+        try {
+          data = JSON.parse(responseText)
+        } catch (parseError) {
+          setHasChecked(true)
+          return
+        }
+        
         setNationIdData(data)
         
         // Show modal if user doesn't have a nation ID
         if (!data.hasNationId && !hasChecked) {
-          console.log('📋 User has no nation ID, showing modal')
           setIsModalOpen(true)
           setHasChecked(true)
         } else if (data.hasNationId && !hasChecked) {
           // User has Nation ID, mark as checked but don't show modal
-          console.log('✅ User has nation ID, no modal needed')
           setHasChecked(true)
         }
       } else if (response.status === 401) {
         // User is not authenticated, don't show modal
-        console.log('🔒 User not authenticated, skipping nation ID check')
         setHasChecked(true)
       } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-        console.error('❌ Failed to check nation ID:', response.status, errorData)
+        const responseText = await response.text()
+        let errorData = { error: 'Unknown error' }
+        if (responseText) {
+          try {
+            errorData = JSON.parse(responseText)
+          } catch (parseError) {
+            // Ignore parse errors
+          }
+        }
         // Don't show modal on error, just log it
         setHasChecked(true)
       }
     } catch (error) {
-      console.error('❌ Error checking nation ID:', error)
       // Don't show modal on error, just log it
       setHasChecked(true)
     } finally {

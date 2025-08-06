@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import {
@@ -20,8 +21,12 @@ interface ConditionalLayoutProps {
 export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const pathname = usePathname();
   const { isRTL } = useI18n();
+  const { data: session } = useSession();
   const isLoginPage = pathname === "/login";
   const { isModalOpen, closeModal, nationIdData, isChecking, refreshCheck } = useNationIdCheck();
+  
+  // Check if user is an employee
+  const isEmployee = session?.user?.role === 'EMPLOYEE';
 
   if (isLoginPage) {
     return (
@@ -54,6 +59,34 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
     );
   }
 
+  // For employees, show a simplified layout without sidebar
+  if (isEmployee) {
+    return (
+      <>
+        <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : ''}`}>
+          <SiteHeader />
+          <main className="flex-1 overflow-auto p-6 transition-all duration-200 ease-linear main-content">
+            <div className="w-full h-full max-w-none content-wrapper">
+              {children}
+            </div>
+          </main>
+        </div>
+        
+        {/* Nation ID Modal - Only show if user doesn't have Nation ID */}
+        {nationIdData && !nationIdData.hasNationId && (
+          <NationIdModal
+            isOpen={isModalOpen}
+            onClose={closeModal}
+            userName={nationIdData.userName || ""}
+            userEmail={nationIdData.userEmail || ""}
+            matchedEmployee={nationIdData.matchedEmployee}
+          />
+        )}
+      </>
+    );
+  }
+
+  // For other roles, show the full layout with sidebar
   return (
     <>
       <SidebarProvider
@@ -78,16 +111,16 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
         </div>
       </SidebarProvider>
       
-             {/* Nation ID Modal - Only show if user doesn't have Nation ID */}
-       {nationIdData && !nationIdData.hasNationId && (
-         <NationIdModal
-           isOpen={isModalOpen}
-           onClose={closeModal}
-           userName={nationIdData.userName || ""}
-           userEmail={nationIdData.userEmail || ""}
-           matchedEmployee={nationIdData.matchedEmployee}
-         />
-       )}
+      {/* Nation ID Modal - Only show if user doesn't have Nation ID */}
+      {nationIdData && !nationIdData.hasNationId && (
+        <NationIdModal
+          isOpen={isModalOpen}
+          onClose={closeModal}
+          userName={nationIdData.userName || ""}
+          userEmail={nationIdData.userEmail || ""}
+          matchedEmployee={nationIdData.matchedEmployee}
+        />
+      )}
     </>
   );
 } 

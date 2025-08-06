@@ -161,19 +161,50 @@ export default function ProfilePage() {
       console.log('🔄 Fetching profile data from API...')
       const response = await fetch('/api/profile')
 
+      console.log('📊 Response status:', response.status);
+      console.log('📊 Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (response.ok) {
-        const data = await response.json()
+        const responseText = await response.text();
+        console.log('📄 Raw response text:', responseText);
+        
+        if (!responseText) {
+          console.error('❌ Empty response from profile API');
+          toast.error('Empty response from server');
+          return;
+        }
+
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('❌ JSON parse error:', parseError);
+          console.error('❌ Response text that failed to parse:', responseText);
+          toast.error('Invalid response format from server');
+          return;
+        }
+
         console.log('✅ Profile data received:', data)
         console.log('✅ Matched employee data:', data.matchedEmployee)
         setProfile(data)
       } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        const responseText = await response.text();
+        console.log('❌ Error response text:', responseText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('❌ Error parsing error response:', parseError);
+          errorData = { error: 'Unknown error', details: responseText };
+        }
+        
         console.error('❌ Profile fetch error:', errorData)
         toast.error(errorData.error || 'Failed to load profile')
       }
     } catch (error) {
-      console.error('❌ Error fetching profile:', error)
-      toast.error('Failed to load profile - check console for details')
+      console.error('❌ Network error fetching profile:', error)
+      toast.error('Network error - check console for details')
     } finally {
       setIsLoading(false)
     }

@@ -25,22 +25,22 @@ export function SiteHeader() {
   const router = useRouter();
   const { isRTL } = useI18n();
   
-  // Debug session state (only log once per session change)
-  if (process.env.NODE_ENV === 'development' && session?.user) {
-    console.log('🔍 HEADER - Session user:', session.user);
-    console.log('🔍 HEADER - Session role:', session.user.role);
-  }
-
-
+  // Check if user is an employee
+  const isEmployee = session?.user?.role === 'EMPLOYEE';
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background">
       <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <SidebarTrigger className={isRTL ? "-mr-1" : "-ml-1"} />
-        <Separator
-          orientation="vertical"
-          className="mx-2 data-[orientation=vertical]:h-4"
-        />
+        {/* Only show sidebar trigger for non-employees */}
+        {!isEmployee && (
+          <>
+            <SidebarTrigger className={isRTL ? "-mr-1" : "-ml-1"} />
+            <Separator
+              orientation="vertical"
+              className="mx-2 data-[orientation=vertical]:h-4"
+            />
+          </>
+        )}
         <h1 className="text-base font-medium">SND Rental Management</h1>
         <div className={`${isRTL ? 'mr-auto' : 'ml-auto'} flex items-center gap-2`}>
           <I18nErrorBoundary>

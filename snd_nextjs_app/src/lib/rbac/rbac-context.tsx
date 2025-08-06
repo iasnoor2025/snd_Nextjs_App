@@ -30,12 +30,7 @@ interface RBACProviderProps {
 export function RBACProvider({ children }: RBACProviderProps) {
   const { data: session, status } = useSession();
 
-  // Debug logging for development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('🔍 RBAC - Status:', status);
-    console.log('🔍 RBAC - Session:', session);
-    console.log('🔍 RBAC - Session user:', session?.user);
-  }
+  // Debug logging removed as requested
 
   const user: User | null = useMemo(() => {
     // Handle loading state

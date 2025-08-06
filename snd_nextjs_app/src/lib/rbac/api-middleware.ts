@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { authConfig } from '@/lib/auth-config';
 import { checkUserPermission } from './permission-service';
 import { Action, Subject } from './custom-rbac';
 import { prisma } from '@/lib/db';
@@ -21,7 +21,7 @@ export async function checkApiPermission(
   config: PermissionConfig
 ): Promise<{ authorized: boolean; user?: any; error?: string }> {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authConfig);
     if (!session?.user) {
       return { authorized: false, error: 'Unauthorized' };
     }
@@ -75,7 +75,7 @@ export async function checkEmployeeAccess(
   employeeId: number
 ): Promise<{ authorized: boolean; user?: any; error?: string }> {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authConfig);
     if (!session?.user) {
       return { authorized: false, error: 'Unauthorized' };
     }
@@ -185,7 +185,7 @@ export async function checkEmployeeOwnDataAccess(
   employeeId?: number
 ): Promise<{ authorized: boolean; user?: any; error?: string; ownEmployeeId?: number }> {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(authConfig);
     if (!session?.user) {
       return { authorized: false, error: 'Unauthorized' };
     }
@@ -401,7 +401,7 @@ export function withReadPermission(
     // For read operations, we'll bypass strict permission checks temporarily
     // but still check if user is authenticated
     try {
-      const session = await getServerSession(authOptions);
+      const session = await getServerSession(authConfig);
       if (!session?.user) {
         return NextResponse.json(
           { error: 'Unauthorized' },
@@ -614,12 +614,13 @@ export const PermissionConfigs = {
  * Simple middleware function for employee users to access their own data
  * This bypasses permission checks for employee role users
  */
-export function withEmployeeOwnDataAccess(
-  handler: (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }, params?: any) => Promise<NextResponse>
+// Simple authentication middleware - replaces withEmployeeOwnDataAccess
+export function withAuth(
+  handler: (request: NextRequest, params?: any) => Promise<NextResponse>
 ) {
   return async (request: NextRequest, params?: any): Promise<NextResponse> => {
     try {
-      const session = await getServerSession(authOptions);
+      const session = await getServerSession(authConfig);
       if (!session?.user) {
         return NextResponse.json(
           { error: 'Unauthorized' },
@@ -627,154 +628,9 @@ export function withEmployeeOwnDataAccess(
         );
       }
 
-      const userId = session.user.id;
-      if (!userId) {
-        return NextResponse.json(
-          { error: 'Invalid user session' },
-          { status: 401 }
-        );
-      }
-
-      // Get user with role information
-      const user = await prisma.user.findUnique({
-        where: { id: parseInt(userId) },
-        include: {
-          user_roles: {
-            include: {
-              role: true,
-            },
-          },
-        },
-      });
-
-      if (!user) {
-        return NextResponse.json(
-          { error: 'User not found' },
-          { status: 404 }
-        );
-      }
-
-      // Get user's role
-      const userRole = user.user_roles[0]?.role;
-      if (!userRole) {
-        return NextResponse.json(
-          { error: 'User has no assigned role' },
-          { status: 403 }
-        );
-      }
-
-      // If user is admin or super_admin, allow full access
-      if (userRole.name === 'admin' || userRole.name === 'super_admin') {
-        const enhancedRequest = request as NextRequest & { 
-          employeeAccess: { 
-            ownEmployeeId?: number; 
-            user: any 
-          } 
-        };
-        enhancedRequest.employeeAccess = {
-          ownEmployeeId: undefined, // No filtering for admin
-          user: session.user,
-        };
-        return handler(enhancedRequest, params);
-      }
-
-      // Check if user has manage.employee permission (full access)
-      const hasManagePermission = await checkUserPermission(
-        userId,
-        'manage' as Action,
-        'Employee' as Subject
-      );
-
-      if (hasManagePermission.hasPermission) {
-        const enhancedRequest = request as NextRequest & { 
-          employeeAccess: { 
-            ownEmployeeId?: number; 
-            user: any 
-          } 
-        };
-        enhancedRequest.employeeAccess = {
-          ownEmployeeId: undefined, // No filtering for managers
-          user: session.user,
-        };
-        return handler(enhancedRequest, params);
-      }
-
-      // For employee role users, find their own employee record
-      if (userRole.name === 'employee' || userRole.name === 'EMPLOYEE') {
-        console.log('🔍 Employee user detected:', { 
-          userId, 
-          userIdType: typeof userId,
-          userNationalId: user.national_id,
-          userData: user 
-        });
-        
-        // First try to find employee by direct user_id relationship
-        let ownEmployee = await prisma.employee.findFirst({
-          where: { user_id: parseInt(userId) },
-          select: { id: true, iqama_number: true, user_id: true },
-        });
-
-        console.log('🔍 Employee found by user_id:', ownEmployee);
-
-        // If not found by user_id, try to find by national_id matching iqama_number
-        if (!ownEmployee && user.national_id) {
-          console.log('🔍 Trying to find employee by iqama_number:', user.national_id);
-          ownEmployee = await prisma.employee.findFirst({
-            where: { iqama_number: user.national_id },
-            select: { id: true, iqama_number: true, user_id: true },
-          });
-          console.log('🔍 Employee found by iqama_number:', ownEmployee);
-        }
-
-        if (!ownEmployee) {
-          console.log('❌ No employee record found for user');
-          return NextResponse.json(
-            { error: 'No employee record found for your account. Please contact your administrator.' },
-            { status: 403 }
-          );
-        }
-
-        console.log('✅ Employee record found:', ownEmployee);
-        const enhancedRequest = request as NextRequest & { 
-          employeeAccess: { 
-            ownEmployeeId?: number; 
-            user: any 
-          } 
-        };
-        enhancedRequest.employeeAccess = {
-          ownEmployeeId: ownEmployee.id,
-          user: session.user,
-        };
-        return handler(enhancedRequest, params);
-      }
-
-      // For other roles, check read permissions
-      const hasReadPermission = await checkUserPermission(
-        userId,
-        'read' as Action,
-        'Employee' as Subject
-      );
-
-      if (hasReadPermission.hasPermission) {
-        const enhancedRequest = request as NextRequest & { 
-          employeeAccess: { 
-            ownEmployeeId?: number; 
-            user: any 
-          } 
-        };
-        enhancedRequest.employeeAccess = {
-          ownEmployeeId: undefined, // No filtering for users with read permission
-          user: session.user,
-        };
-        return handler(enhancedRequest, params);
-      }
-
-      return NextResponse.json(
-        { error: 'Insufficient permissions' },
-        { status: 403 }
-      );
+      return handler(request, params);
     } catch (error) {
-      console.error('Error in withEmployeeOwnDataAccess:', error);
+      console.error('❌ Error in withAuth:', error);
       return NextResponse.json(
         { error: 'Internal server error' },
         { status: 500 }

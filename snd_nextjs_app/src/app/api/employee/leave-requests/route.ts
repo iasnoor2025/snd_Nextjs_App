@@ -24,45 +24,44 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { employee_id, amount, reason } = body
+    const { employee_id, leave_type, start_date, end_date, reason } = body
 
     // Validate required fields
-    if (!employee_id || !amount) {
+    if (!employee_id || !leave_type || !start_date || !end_date) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
-    // Validate amount
-    const amountValue = parseFloat(amount)
-    if (isNaN(amountValue) || amountValue <= 0) {
-      return NextResponse.json(
-        { error: 'Invalid amount' },
-        { status: 400 }
-      )
-    }
+    // Calculate number of days
+    const start = new Date(start_date)
+    const end = new Date(end_date)
+    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
 
-    // Create advance request
-    const advance = await prisma.advancePayment.create({
+    // Create leave request
+    const leaveRequest = await prisma.employeeLeave.create({
       data: {
-        employee_id,
-        amount: amountValue,
-        purpose: reason || '',
+        employee_id: parseInt(employee_id),
+        leave_type,
+        start_date: new Date(start_date),
+        end_date: new Date(end_date),
+        reason: reason || '',
+        days,
         status: 'pending'
       }
     })
 
     return NextResponse.json({
-      message: 'Advance request submitted successfully',
-      advance
+      message: 'Leave request submitted successfully',
+      leaveRequest
     })
 
   } catch (error) {
-    console.error('Error creating advance request:', error)
+    console.error('Error creating leave request:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     )
   }
-} 
+}

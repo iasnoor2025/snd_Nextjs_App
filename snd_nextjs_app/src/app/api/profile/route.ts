@@ -8,11 +8,11 @@ export async function GET(request: NextRequest) {
   // Get the current user session
   const session = await getServerSession(authConfig);
   
-  console.log('🔍 Session data:', session);
-  console.log('🔍 Session user:', session?.user);
+  console.log('🔍 Profile API: Session data:', session);
+  console.log('🔍 Profile API: Session user:', session?.user);
 
   if (!session?.user?.id) {
-    console.log('❌ No session or user ID found');
+    console.log('❌ Profile API: No session or user ID found');
     return NextResponse.json(
       { error: 'Not authenticated' },
       { status: 401 }
@@ -20,15 +20,17 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    console.log('🔍 Profile API: Starting request...');
+    
     const userId = session.user.id;
-    console.log('✅ Current user ID from session:', userId);
+    console.log('✅ Profile API: Current user ID from session:', userId);
 
     // Test database connection first
     try {
       await prisma.$connect();
-      console.log('Database connected successfully');
+      console.log('✅ Profile API: Database connected successfully');
     } catch (dbError) {
-      console.error('Database connection failed:', dbError);
+      console.error('❌ Profile API: Database connection failed:', dbError);
       // Return session user data if database is not available
       const sessionProfile = {
         id: session.user.id,
@@ -53,10 +55,12 @@ export async function GET(request: NextRequest) {
         country: "",
       };
 
+      console.log('✅ Profile API: Returning session profile due to database error');
       return NextResponse.json(sessionProfile);
     }
 
     // Get user from database
+    console.log('🔍 Profile API: Fetching user from database...');
     const user = await prisma.user.findUnique({
       where: { id: parseInt(userId) },
       select: {
@@ -75,13 +79,14 @@ export async function GET(request: NextRequest) {
     });
 
     if (!user) {
+      console.log('❌ Profile API: User not found in database');
       return NextResponse.json(
         { error: 'User not found in database' },
         { status: 404 }
       );
     }
 
-    console.log('Found user:', user);
+    console.log('✅ Profile API: Found user:', user);
 
     // Get employee data if exists (direct user_id match)
     const employee = await prisma.employee.findFirst({
@@ -162,6 +167,22 @@ export async function GET(request: NextRequest) {
         }
       });
       console.log('Matched employee found:', matchedEmployee);
+
+      // Auto-update employee email if it doesn't match user's email
+      if (matchedEmployee && matchedEmployee.email !== user.email) {
+        console.log('Auto-updating employee email from', matchedEmployee.email, 'to', user.email);
+        try {
+          await prisma.employee.update({
+            where: { id: matchedEmployee.id },
+            data: { email: user.email }
+          });
+          console.log('✅ Successfully updated employee email');
+          // Update the matchedEmployee object with new email
+          matchedEmployee.email = user.email;
+        } catch (updateError) {
+          console.error('❌ Error updating employee email:', updateError);
+        }
+      }
     }
 
     // If no direct employee record, try to find by email match
@@ -242,7 +263,8 @@ export async function GET(request: NextRequest) {
     console.log('Profile nationalId field:', profile.nationalId);
     return NextResponse.json(profile);
   } catch (error) {
-    console.error('Error fetching profile:', error);
+    console.error('❌ Profile API: Error fetching profile:', error);
+    console.error('❌ Profile API: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
 
     // Return session user data on any error
     const sessionProfile = {
@@ -269,9 +291,15 @@ export async function GET(request: NextRequest) {
       country: "",
     };
 
+    console.log('✅ Profile API: Returning session profile due to error');
     return NextResponse.json(sessionProfile);
   } finally {
-    await prisma.$disconnect();
+    try {
+      await prisma.$disconnect();
+      console.log('✅ Profile API: Database disconnected');
+    } catch (disconnectError) {
+      console.error('❌ Profile API: Error disconnecting from database:', disconnectError);
+    }
   }
 }
 

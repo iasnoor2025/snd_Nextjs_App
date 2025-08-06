@@ -137,8 +137,9 @@ const createPayrollHandler = async (request: NextRequest & { employeeAccess?: { 
         employee_id: body.employee_id,
         month: body.month,
         year: body.year,
+        base_salary: body.base_salary || 0,
+        final_amount: body.final_amount || 0,
         status: body.status || 'pending',
-        total_amount: body.total_amount || 0,
         notes: body.notes || '',
       },
       include: {

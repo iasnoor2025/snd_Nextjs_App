@@ -115,10 +115,9 @@ const createAssignmentHandler = async (request: NextRequest & { employeeAccess?:
       data: {
         employee_id: parseInt(body.employeeId),
         project_id: projectId ? parseInt(projectId) : null,
-        assignment_type: assignmentType,
-        start_date: startDate ? new Date(startDate) : null,
+        type: assignmentType,
+        start_date: new Date(startDate),
         end_date: endDate ? new Date(endDate) : null,
-        hours_per_day: hoursPerDay ? parseFloat(hoursPerDay) : null,
         status,
         notes: notes || '',
       },

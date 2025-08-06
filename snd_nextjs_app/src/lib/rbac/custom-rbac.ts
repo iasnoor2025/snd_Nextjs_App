@@ -177,6 +177,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
 // Route permissions mapping
 export const routePermissions: Record<string, { action: Action; subject: Subject; roles: UserRole[] }> = {
   '/dashboard': { action: 'read', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'] },
+  '/employee-dashboard': { action: 'read', subject: 'Employee', roles: ['EMPLOYEE'] },
   '/modules/employee-management': { action: 'read', subject: 'Employee', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'] },
   '/modules/customer-management': { action: 'read', subject: 'Customer', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'] },
   '/modules/equipment-management': { action: 'read', subject: 'Equipment', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'] },
@@ -272,14 +273,7 @@ export function createUserFromSession(session: any): User | null {
   // ALWAYS ensure admin@ias.com has SUPER_ADMIN role
   if (session.user.email === 'admin@ias.com') {
     role = 'SUPER_ADMIN';
-    console.log('🔍 RBAC - Forcing SUPER_ADMIN role for admin@ias.com');
   }
-  
-  console.log('🔍 RBAC - Creating user from session:', {
-    email: session.user.email,
-    originalRole: session.user.role,
-    finalRole: role
-  });
   
   return {
     id: session.user.id || '',

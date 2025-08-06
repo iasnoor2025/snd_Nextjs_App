@@ -21,12 +21,19 @@ export default function Page() {
   // Ensure user is authenticated
   const { data: session, status } = useSession()
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated or redirect employees to their dashboard
   useEffect(() => {
     if (status === "loading") return;
 
     if (!session) {
       router.push('/login');
+      return;
+    }
+
+    // Redirect employees to their specific dashboard
+    if (session.user?.role === 'EMPLOYEE') {
+      router.push('/employee-dashboard');
+      return;
     }
   }, [session, status, router]);
 

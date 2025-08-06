@@ -99,6 +99,7 @@ export const authConfig: NextAuthOptions = {
             id: user.id.toString(),
             email: user.email,
             name: user.name,
+            national_id: user.national_id || undefined,
             role: role,
             isActive: user.isActive || true,
           };
@@ -137,6 +138,15 @@ export const authConfig: NextAuthOptions = {
     error: '/login',
   },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Redirect employees to employee dashboard
+      if (url.startsWith(baseUrl)) {
+        // Check if the user is an employee and redirect to employee dashboard
+        // This will be handled in the middleware or page level
+        return url;
+      }
+      return baseUrl;
+    },
     async signIn({ user, account, profile }) {
       // Handle Google OAuth sign in
       if (account?.provider === 'google') {
@@ -189,6 +199,7 @@ export const authConfig: NextAuthOptions = {
         token.role = user.role;
         token.isActive = user.isActive;
         token.id = user.id;
+        token.national_id = user.national_id;
         console.log('🔍 JWT - Setting token role:', user.role);
       }
       
@@ -277,6 +288,7 @@ export const authConfig: NextAuthOptions = {
         
         session.user.isActive = token.isActive || true;
         session.user.id = String(token.id || token.sub || 'unknown');
+        session.user.national_id = token.national_id;
         
         console.log('🔍 SESSION - Final session role:', session.user.role);
       }
