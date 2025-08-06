@@ -23,6 +23,7 @@ export type Subject =
   | 'Location'
   | 'Advance'
   | 'Assignment'
+  | 'Safety'
   | 'all';
 
 export interface User {
@@ -71,6 +72,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'manage', subject: 'Report' },
       { action: 'manage', subject: 'Settings' },
       { action: 'manage', subject: 'Company' },
+      { action: 'manage', subject: 'Safety' },
     ],
   },
   MANAGER: {
@@ -90,6 +92,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'read', subject: 'Report' },
       { action: 'read', subject: 'Settings' },
       { action: 'read', subject: 'Company' },
+      { action: 'read', subject: 'Safety' },
     ],
   },
   SUPERVISOR: {
@@ -109,6 +112,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'read', subject: 'Report' },
       { action: 'read', subject: 'Settings' },
       { action: 'read', subject: 'Company' },
+      { action: 'read', subject: 'Safety' },
     ],
   },
   OPERATOR: {
@@ -128,6 +132,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'read', subject: 'Report' },
       { action: 'read', subject: 'Settings' },
       { action: 'read', subject: 'Company' },
+      { action: 'read', subject: 'Safety' },
     ],
   },
   EMPLOYEE: {
@@ -184,6 +189,10 @@ export const routePermissions: Record<string, { action: Action; subject: Subject
   '/modules/location-management': { action: 'read', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR'] },
   '/modules/user-management': { action: 'read', subject: 'User', roles: ['SUPER_ADMIN', 'ADMIN'] },
   '/modules/analytics': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR'] },
+  '/modules/safety-management': { action: 'read', subject: 'Safety', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR'] },
+  '/modules/reporting': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR'] },
+  '/modules/settings': { action: 'read', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'] },
+  '/modules/audit-compliance': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR'] },
   '/admin': { action: 'manage', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN'] },
   '/reports': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR'] },
 };
