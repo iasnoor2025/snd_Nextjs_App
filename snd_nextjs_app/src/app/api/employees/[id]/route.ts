@@ -2,16 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
-export async function GET(
+import { withEmployeePermission } from '@/lib/rbac/api-middleware';
+
+// Helper function to extract employee ID from params
+const extractEmployeeId = (params: any): number => {
+  return parseInt(params.id);
+};
+
+// Original GET handler wrapped with employee permission middleware
+const getEmployeeHandler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
     const employeeId = parseInt(id);
 
@@ -120,18 +123,14 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+};
 
-export async function PUT(
+// Original PUT handler wrapped with employee permission middleware
+const updateEmployeeHandler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
     const employeeId = parseInt(id);
     const body = await request.json();
@@ -270,18 +269,14 @@ export async function PUT(
       { status: 500 }
     );
   }
-}
+};
 
-export async function DELETE(
+// Original DELETE handler wrapped with employee permission middleware
+const deleteEmployeeHandler = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
     const employeeId = parseInt(id);
 
@@ -312,4 +307,20 @@ export async function DELETE(
       { status: 500 }
     );
   }
-}
+};
+
+// Export the wrapped handlers
+export const GET = withEmployeePermission(
+  getEmployeeHandler,
+  (params) => extractEmployeeId(params)
+);
+
+export const PUT = withEmployeePermission(
+  updateEmployeeHandler,
+  (params) => extractEmployeeId(params)
+);
+
+export const DELETE = withEmployeePermission(
+  deleteEmployeeHandler,
+  (params) => extractEmployeeId(params)
+);

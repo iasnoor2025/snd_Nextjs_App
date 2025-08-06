@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/db';
+import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
 
-export async function GET(request: NextRequest) {
-  const prisma = new PrismaClient();
-  
+const getEmployeeStatisticsHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
   try {
     console.log('Employee Statistics API called');
 
@@ -22,13 +21,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get total employee count
-    const totalEmployees = await prisma.employee.count();
+    // For employee users, only show statistics for their own record
+    let whereClause: any = {};
+    if (request.employeeAccess?.ownEmployeeId) {
+      whereClause.id = request.employeeAccess.ownEmployeeId;
+    }
+
+    // Get total employee count (filtered for employee users)
+    const totalEmployees = await prisma.employee.count({ where: whereClause });
     console.log('Total employees:', totalEmployees);
 
-    // Get employees with current assignments
+    // Get employees with current assignments (filtered for employee users)
     const currentlyAssigned = await prisma.employee.count({
       where: {
+        ...whereClause,
         employee_assignments: {
           some: {
             status: 'active'
@@ -38,9 +44,10 @@ export async function GET(request: NextRequest) {
     });
     console.log('Currently assigned:', currentlyAssigned);
 
-    // Count project assignments
+    // Count project assignments (filtered for employee users)
     const projectAssignments = await prisma.employee.count({
       where: {
+        ...whereClause,
         employee_assignments: {
           some: {
             status: 'active',
@@ -51,9 +58,10 @@ export async function GET(request: NextRequest) {
     });
     console.log('Project assignments:', projectAssignments);
 
-    // Count rental assignments (including both 'rental' and 'rental_item' types)
+    // Count rental assignments (filtered for employee users)
     const rentalAssignments = await prisma.employee.count({
       where: {
+        ...whereClause,
         employee_assignments: {
           some: {
             status: 'active',
@@ -93,4 +101,6 @@ export async function GET(request: NextRequest) {
   } finally {
     await prisma.$disconnect();
   }
-} 
+};
+
+export const GET = withEmployeeOwnDataAccess(getEmployeeStatisticsHandler); 

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
 
 // GET /api/employees - List employees
-export const GET = async (request: NextRequest) => {
+const getEmployeesHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -31,6 +32,11 @@ export const GET = async (request: NextRequest) => {
 
     if (status) {
       where.status = status;
+    }
+
+    // For employee users, only show their own record
+    if (request.employeeAccess?.ownEmployeeId) {
+      where.id = request.employeeAccess.ownEmployeeId;
     }
 
     // Get employees with pagination
@@ -88,7 +94,7 @@ export const GET = async (request: NextRequest) => {
 };
 
 // POST /api/employees - Create new employee
-export const POST = async (request: NextRequest) => {
+const createEmployeeHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
   try {
     const body = await request.json();
     const {
@@ -156,3 +162,7 @@ export const POST = async (request: NextRequest) => {
     );
   }
 };
+
+// Export the wrapped handlers
+export const GET = withEmployeeOwnDataAccess(getEmployeesHandler);
+export const POST = withEmployeeOwnDataAccess(createEmployeeHandler);

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
 
-export async function GET(request: NextRequest) {
+const getSimpleEmployeesHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
   try {
     console.log('Simple employees API called');
 
@@ -9,8 +10,17 @@ export async function GET(request: NextRequest) {
     const count = await prisma.employee.count();
     console.log(`Total employees: ${count}`);
 
+    let employees;
+    let whereClause: any = {};
+
+    // For employee users, only show their own record
+    if (request.employeeAccess?.ownEmployeeId) {
+      whereClause.id = request.employeeAccess.ownEmployeeId;
+    }
+
     // Test simple findMany without any complex options
-    const employees = await prisma.employee.findMany({
+    employees = await prisma.employee.findMany({
+      where: whereClause,
       take: 5,
       select: {
         id: true,
@@ -47,4 +57,6 @@ export async function GET(request: NextRequest) {
   } finally {
     await prisma.$disconnect();
   }
-}
+};
+
+export const GET = withEmployeeOwnDataAccess(getSimpleEmployeesHandler);
