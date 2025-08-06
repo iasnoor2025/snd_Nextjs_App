@@ -1,146 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
 
-// GET /api/timesheets - List timesheets with permission check
-export const GET = withPermission(
-  async (request: NextRequest) => {
-    try {
-      const { searchParams } = new URL(request.url);
-      const page = parseInt(searchParams.get('page') || '1');
-      const limit = parseInt(searchParams.get('limit') || '10');
-      const search = searchParams.get('search') || '';
-      const status = searchParams.get('status') || '';
-      const project = searchParams.get('project') || '';
-      const month = searchParams.get('month') || '';
-      const employeeId = searchParams.get('employeeId') || '';
-      const test = searchParams.get('test') || '';
+// GET /api/timesheets - List timesheets with employee data filtering
+const getTimesheetsHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || '';
+    const project = searchParams.get('project') || '';
+    const month = searchParams.get('month') || '';
+    const employeeId = searchParams.get('employeeId') || '';
+    const test = searchParams.get('test') || '';
 
-      // Allow test access without authentication
-      if (test === 'true') {
-        const timesheets = await prisma.timesheet.findMany({
-          take: 5,
-          include: {
-            employee: {
-              include: {
-                user: true,
-              },
-            },
-            project_rel: true,
-            rental: true,
-            assignment: true,
-            approved_by_user: true,
-          },
-        });
-
-        // Transform the response to match frontend interface
-        const transformedTimesheets = timesheets.map(timesheet => ({
-          id: timesheet.id.toString(),
-          employeeId: timesheet.employee_id.toString(),
-          date: timesheet.date.toISOString().split('T')[0],
-          hoursWorked: timesheet.hours_worked,
-          overtimeHours: timesheet.overtime_hours,
-          startTime: timesheet.start_time?.toISOString() || '',
-          endTime: timesheet.end_time?.toISOString() || '',
-          status: timesheet.status,
-          projectId: timesheet.project_id?.toString(),
-          rentalId: timesheet.rental_id?.toString(),
-          assignmentId: timesheet.assignment_id?.toString(),
-          description: timesheet.description || '',
-          tasksCompleted: timesheet.tasks || '',
-          submittedAt: timesheet.submitted_at?.toISOString() || '',
-          approvedBy: timesheet.approved_by_user?.name || '',
-          approvedAt: timesheet.approved_at?.toISOString() || '',
-          createdAt: timesheet.created_at.toISOString(),
-          updatedAt: timesheet.updated_at.toISOString(),
+    // Allow test access without authentication
+    if (test === 'true') {
+      const timesheets = await prisma.timesheet.findMany({
+        take: 5,
+        include: {
           employee: {
-            id: timesheet.employee.id.toString(),
-            firstName: timesheet.employee.first_name,
-            lastName: timesheet.employee.last_name,
-            employeeId: timesheet.employee.employee_id,
-            user: timesheet.employee.user ? {
-              name: timesheet.employee.user.name,
-              email: timesheet.employee.user.email,
-            } : undefined,
-          },
-          project: timesheet.project_rel ? {
-            id: timesheet.project_rel.id.toString(),
-            name: timesheet.project_rel.name,
-          } : undefined,
-          rental: timesheet.rental ? {
-            id: timesheet.rental.id.toString(),
-            rentalNumber: timesheet.rental.rental_number,
-          } : undefined,
-          assignment: timesheet.assignment ? {
-            id: timesheet.assignment.id.toString(),
-            name: timesheet.assignment.name || '',
-            type: timesheet.assignment.type,
-          } : undefined,
-        }));
-
-        return NextResponse.json({
-          data: transformedTimesheets,
-          total: timesheets.length,
-          message: 'Test access successful'
-        });
-      }
-
-      const skip = (page - 1) * limit;
-
-      const where: any = {
-        deleted_at: null,
-      };
-
-      if (search) {
-        where.OR = [
-          { employee: { first_name: { contains: search, mode: 'insensitive' } } },
-          { employee: { last_name: { contains: search, mode: 'insensitive' } } },
-          { employee: { employee_id: { contains: search, mode: 'insensitive' } } },
-        ];
-      }
-
-      if (status && status !== 'all') {
-        where.status = status;
-      }
-
-      if (month) {
-        // Parse month filter (format: YYYY-MM)
-        const [year, monthNum] = month.split('-');
-        if (year && monthNum) {
-          const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-          const endDate = new Date(parseInt(year), parseInt(monthNum), 0);
-
-          where.date = {
-            gte: startDate,
-            lte: endDate,
-          };
-        }
-      }
-
-      if (employeeId) {
-        where.employee_id = employeeId;
-      }
-
-      const [timesheets, total] = await Promise.all([
-        prisma.timesheet.findMany({
-          where,
-          skip,
-          take: limit,
-          orderBy: { date: 'desc' },
-          include: {
-            employee: {
-              include: {
-                user: true,
-              },
+            include: {
+              user: true,
             },
-            project_rel: true,
-            rental: true,
-            assignment: true,
-            approved_by_user: true,
           },
-        }),
-        prisma.timesheet.count({ where }),
-      ]);
+          project_rel: true,
+          rental: true,
+          assignment: true,
+          approved_by_user: true,
+        },
+      });
 
       // Transform the response to match frontend interface
       const transformedTimesheets = timesheets.map(timesheet => ({
@@ -187,30 +77,147 @@ export const GET = withPermission(
         } : undefined,
       }));
 
-      const totalPages = Math.ceil(total / limit);
-
       return NextResponse.json({
         data: transformedTimesheets,
-        current_page: page,
-        last_page: totalPages,
-        per_page: limit,
-        total,
-        next_page_url: page < totalPages ? `/api/timesheets?page=${page + 1}` : null,
-        prev_page_url: page > 1 ? `/api/timesheets?page=${page - 1}` : null,
+        total: timesheets.length,
+        message: 'Test access successful'
       });
-    } catch (error) {
-      console.error('Error fetching timesheets:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch timesheets', details: error instanceof Error ? error.message : 'Unknown error' },
-        { status: 500 }
-      );
     }
-  },
-  PermissionConfigs.timesheet.read
+
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      deleted_at: null,
+    };
+
+    // For employee users, only show their own timesheets
+    if (request.employeeAccess?.ownEmployeeId) {
+      where.employee_id = request.employeeAccess.ownEmployeeId;
+    }
+
+    if (search) {
+      where.OR = [
+        { employee: { first_name: { contains: search, mode: 'insensitive' } } },
+        { employee: { last_name: { contains: search, mode: 'insensitive' } } },
+        { employee: { employee_id: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
+
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+
+    if (month) {
+      // Parse month filter (format: YYYY-MM)
+      const [year, monthNum] = month.split('-');
+      if (year && monthNum) {
+        const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
+        const endDate = new Date(parseInt(year), parseInt(monthNum), 0);
+
+        where.date = {
+          gte: startDate,
+          lte: endDate,
+        };
+      }
+    }
+
+    if (employeeId) {
+      where.employee_id = employeeId;
+    }
+
+    const [timesheets, total] = await Promise.all([
+      prisma.timesheet.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { date: 'desc' },
+        include: {
+          employee: {
+            include: {
+              user: true,
+            },
+          },
+          project_rel: true,
+          rental: true,
+          assignment: true,
+          approved_by_user: true,
+        },
+      }),
+      prisma.timesheet.count({ where }),
+    ]);
+
+    // Transform the response to match frontend interface
+    const transformedTimesheets = timesheets.map(timesheet => ({
+      id: timesheet.id.toString(),
+      employeeId: timesheet.employee_id.toString(),
+      date: timesheet.date.toISOString().split('T')[0],
+      hoursWorked: timesheet.hours_worked,
+      overtimeHours: timesheet.overtime_hours,
+      startTime: timesheet.start_time?.toISOString() || '',
+      endTime: timesheet.end_time?.toISOString() || '',
+      status: timesheet.status,
+      projectId: timesheet.project_id?.toString(),
+      rentalId: timesheet.rental_id?.toString(),
+      assignmentId: timesheet.assignment_id?.toString(),
+      description: timesheet.description || '',
+      tasksCompleted: timesheet.tasks || '',
+      submittedAt: timesheet.submitted_at?.toISOString() || '',
+      approvedBy: timesheet.approved_by_user?.name || '',
+      approvedAt: timesheet.approved_at?.toISOString() || '',
+      createdAt: timesheet.created_at.toISOString(),
+      updatedAt: timesheet.updated_at.toISOString(),
+      employee: {
+        id: timesheet.employee.id.toString(),
+        firstName: timesheet.employee.first_name,
+        lastName: timesheet.employee.last_name,
+        employeeId: timesheet.employee.employee_id,
+        user: timesheet.employee.user ? {
+          name: timesheet.employee.user.name,
+          email: timesheet.employee.user.email,
+        } : undefined,
+      },
+      project: timesheet.project_rel ? {
+        id: timesheet.project_rel.id.toString(),
+        name: timesheet.project_rel.name,
+      } : undefined,
+      rental: timesheet.rental ? {
+        id: timesheet.rental.id.toString(),
+        rentalNumber: timesheet.rental.rental_number,
+      } : undefined,
+      assignment: timesheet.assignment ? {
+        id: timesheet.assignment.id.toString(),
+        name: timesheet.assignment.name || '',
+        type: timesheet.assignment.type,
+      } : undefined,
+    }));
+
+    const totalPages = Math.ceil(total / limit);
+
+    return NextResponse.json({
+      data: transformedTimesheets,
+      current_page: page,
+      last_page: totalPages,
+      per_page: limit,
+      total,
+      next_page_url: page < totalPages ? `/api/timesheets?page=${page + 1}` : null,
+      prev_page_url: page > 1 ? `/api/timesheets?page=${page - 1}` : null,
+    });
+  } catch (error) {
+    console.error('Error fetching timesheets:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch timesheets', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+};
+
+// GET /api/timesheets - List timesheets with permission check
+export const GET = withEmployeeOwnDataAccess(
+  getTimesheetsHandler
 );
 
 // POST /api/timesheets - Create timesheet with permission check
-export const POST = withPermission(
+export const POST = withEmployeeOwnDataAccess(
   async (request: NextRequest) => {
     try {
       const body = await request.json();
@@ -256,12 +263,11 @@ export const POST = withPermission(
         { status: 500 }
       );
     }
-  },
-  PermissionConfigs.timesheet.create
+  }
 );
 
 // PUT /api/timesheets - Update timesheet with permission check
-export const PUT = withPermission(
+export const PUT = withEmployeeOwnDataAccess(
   async (request: NextRequest) => {
     try {
       const body = await request.json();
@@ -309,12 +315,11 @@ export const PUT = withPermission(
         { status: 500 }
       );
     }
-  },
-  PermissionConfigs.timesheet.update
+  }
 );
 
 // DELETE /api/timesheets - Delete timesheet with permission check
-export const DELETE = withPermission(
+export const DELETE = withEmployeeOwnDataAccess(
   async (request: NextRequest) => {
     try {
       const body = await request.json();
@@ -332,6 +337,5 @@ export const DELETE = withPermission(
         { status: 500 }
       );
     }
-  },
-  PermissionConfigs.timesheet.delete
+  }
 );

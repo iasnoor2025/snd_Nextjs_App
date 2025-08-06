@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
-import { withEmployeePermission } from '@/lib/rbac/api-middleware';
+import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
 
-// Helper function to extract employee ID from params
-const extractEmployeeId = (params: any): number => {
-  return parseInt(params.id);
-};
-
-// Original GET handler wrapped with employee permission middleware
+// GET handler with employee data filtering
 const getEmployeeHandler = async (
-  request: NextRequest,
+  request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } },
   { params }: { params: Promise<{ id: string }> }
 ) => {
   try {
@@ -23,6 +16,16 @@ const getEmployeeHandler = async (
         { error: "Invalid employee ID" },
         { status: 400 }
       );
+    }
+
+    // For employee users, ensure they can only access their own employee record
+    if (request.employeeAccess?.ownEmployeeId) {
+      if (employeeId !== request.employeeAccess.ownEmployeeId) {
+        return NextResponse.json(
+          { error: "You can only access your own employee record" },
+          { status: 403 }
+        );
+      }
     }
 
     // Fetch employee data from database
@@ -125,9 +128,9 @@ const getEmployeeHandler = async (
   }
 };
 
-// Original PUT handler wrapped with employee permission middleware
+// PUT handler with employee data filtering
 const updateEmployeeHandler = async (
-  request: NextRequest,
+  request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } },
   { params }: { params: Promise<{ id: string }> }
 ) => {
   try {
@@ -140,6 +143,16 @@ const updateEmployeeHandler = async (
         { error: "Invalid employee ID" },
         { status: 400 }
       );
+    }
+
+    // For employee users, ensure they can only update their own employee record
+    if (request.employeeAccess?.ownEmployeeId) {
+      if (employeeId !== request.employeeAccess.ownEmployeeId) {
+        return NextResponse.json(
+          { error: "You can only update your own employee record" },
+          { status: 403 }
+        );
+      }
     }
 
     // Convert date strings to Date objects for Prisma
@@ -271,9 +284,9 @@ const updateEmployeeHandler = async (
   }
 };
 
-// Original DELETE handler wrapped with employee permission middleware
+// DELETE handler with employee data filtering
 const deleteEmployeeHandler = async (
-  request: NextRequest,
+  request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } },
   { params }: { params: Promise<{ id: string }> }
 ) => {
   try {
@@ -285,6 +298,16 @@ const deleteEmployeeHandler = async (
         { error: "Invalid employee ID" },
         { status: 400 }
       );
+    }
+
+    // For employee users, ensure they can only delete their own employee record
+    if (request.employeeAccess?.ownEmployeeId) {
+      if (employeeId !== request.employeeAccess.ownEmployeeId) {
+        return NextResponse.json(
+          { error: "You can only delete your own employee record" },
+          { status: 403 }
+        );
+      }
     }
 
     // Soft delete employee
@@ -310,17 +333,6 @@ const deleteEmployeeHandler = async (
 };
 
 // Export the wrapped handlers
-export const GET = withEmployeePermission(
-  getEmployeeHandler,
-  (params) => extractEmployeeId(params)
-);
-
-export const PUT = withEmployeePermission(
-  updateEmployeeHandler,
-  (params) => extractEmployeeId(params)
-);
-
-export const DELETE = withEmployeePermission(
-  deleteEmployeeHandler,
-  (params) => extractEmployeeId(params)
-);
+export const GET = withEmployeeOwnDataAccess(getEmployeeHandler);
+export const PUT = withEmployeeOwnDataAccess(updateEmployeeHandler);
+export const DELETE = withEmployeeOwnDataAccess(deleteEmployeeHandler);

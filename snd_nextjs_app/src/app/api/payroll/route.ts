@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
 
-export const GET = withPermission(
-  async (request: NextRequest) => {
+const getPayrollHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -14,6 +13,11 @@ export const GET = withPermission(
 
     // Build where clause
     const where: any = {};
+
+    // For employee users, only show their own payroll records
+    if (request.employeeAccess?.ownEmployeeId) {
+      where.employee_id = request.employeeAccess.ownEmployeeId;
+    }
 
     if (status && status !== 'all') {
       where.status = status;
@@ -79,12 +83,9 @@ export const GET = withPermission(
       { status: 500 }
     );
   }
-  },
-  PermissionConfigs.payroll.read
-);
+};
 
-export const POST = withPermission(
-  async (request: NextRequest) => {
+const createPayrollHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
   try {
     const body = await request.json();
 
@@ -99,14 +100,24 @@ export const POST = withPermission(
       );
     }
 
-    // Check if payroll already exists for this employee and month
-    const existingPayroll = await prisma.payroll.findUnique({
+    // For employee users, ensure they can only create payroll records for themselves
+    if (request.employeeAccess?.ownEmployeeId) {
+      if (body.employee_id && parseInt(body.employee_id) !== request.employeeAccess.ownEmployeeId) {
+        return NextResponse.json(
+          { error: 'You can only create payroll records for yourself' },
+          { status: 403 }
+        );
+      }
+      // Override employee_id to ensure it's the user's own employee ID
+      body.employee_id = request.employeeAccess.ownEmployeeId;
+    }
+
+    // Check if payroll already exists for this employee, month, and year
+    const existingPayroll = await prisma.payroll.findFirst({
       where: {
-        employee_id_month_year: {
-          employee_id: parseInt(body.employee_id),
-          month: parseInt(body.month),
-          year: parseInt(body.year)
-        }
+        employee_id: body.employee_id,
+        month: body.month,
+        year: body.year,
       }
     });
 
@@ -114,53 +125,21 @@ export const POST = withPermission(
       return NextResponse.json(
         {
           success: false,
-          message: 'Payroll already exists for this employee and month'
+          message: 'Payroll record already exists for this employee, month, and year'
         },
-        { status: 400 }
+        { status: 409 }
       );
     }
 
-    // Get employee data
-    const employee = await prisma.employee.findUnique({
-      where: { id: parseInt(body.employee_id) }
-    });
-
-    if (!employee) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Employee not found'
-        },
-        { status: 404 }
-      );
-    }
-
-    // Helper function to validate numeric values
-    const isValidNumber = (value: any): boolean => {
-      return value !== undefined && value !== null && !isNaN(Number(value));
-    };
-
-    // Create payroll
-    const newPayroll = await prisma.payroll.create({
+    // Create payroll record
+    const payroll = await prisma.payroll.create({
       data: {
-        employee_id: parseInt(body.employee_id),
-        month: parseInt(body.month),
-        year: parseInt(body.year),
-        base_salary: isValidNumber(body.base_salary) ? body.base_salary : employee.basic_salary,
-        overtime_amount: isValidNumber(body.overtime_amount) ? body.overtime_amount : 0,
-        bonus_amount: isValidNumber(body.bonus_amount) ? body.bonus_amount : 0,
-        deduction_amount: isValidNumber(body.deduction_amount) ? body.deduction_amount : 0,
-        advance_deduction: isValidNumber(body.advance_deduction) ? body.advance_deduction : 0,
-        final_amount: (isValidNumber(body.base_salary) ? body.base_salary : employee.basic_salary) +
-                     (isValidNumber(body.overtime_amount) ? body.overtime_amount : 0) +
-                     (isValidNumber(body.bonus_amount) ? body.bonus_amount : 0) -
-                     (isValidNumber(body.deduction_amount) ? body.deduction_amount : 0) -
-                     (isValidNumber(body.advance_deduction) ? body.advance_deduction : 0),
-        total_worked_hours: isValidNumber(body.total_worked_hours) ? body.total_worked_hours : 160,
-        overtime_hours: isValidNumber(body.overtime_hours) ? body.overtime_hours : 0,
-        status: 'pending',
+        employee_id: body.employee_id,
+        month: body.month,
+        year: body.year,
+        status: body.status || 'pending',
+        total_amount: body.total_amount || 0,
         notes: body.notes || '',
-        currency: 'SAR'
       },
       include: {
         employee: true,
@@ -168,35 +147,22 @@ export const POST = withPermission(
       }
     });
 
-    // Create payroll items if provided
-    if (body.items && Array.isArray(body.items)) {
-      await prisma.payrollItem.createMany({
-        data: body.items.map((item: any, index: number) => ({
-          payroll_id: newPayroll.id,
-          type: item.type,
-          description: item.description,
-          amount: item.amount,
-          is_taxable: item.is_taxable !== undefined ? item.is_taxable : true,
-          tax_rate: item.tax_rate || 0,
-          order: item.order || index + 1
-        }))
-      });
-    }
-
     return NextResponse.json({
       success: true,
-      message: 'Payroll created successfully',
-      data: newPayroll
-    });
+      message: 'Payroll record created successfully',
+      data: payroll
+    }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to create payroll: ' + (error as Error).message
+        message: 'Failed to create payroll record: ' + (error as Error).message
       },
       { status: 500 }
     );
   }
-  },
-  PermissionConfigs.payroll.create
-);
+};
+
+// Export the wrapped handlers
+export const GET = withEmployeeOwnDataAccess(getPayrollHandler);
+export const POST = withEmployeeOwnDataAccess(createPayrollHandler);

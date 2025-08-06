@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from '@/lib/db';
-import { getServerSession } from "next-auth";
-import { authConfig as authOptions } from "@/lib/auth-config";
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; paymentId: string }> }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
 
+const deleteEmployeePaymentHandler = async (
+  request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } },
+  { params }: { params: Promise<{ id: string; paymentId: string }> }
+) => {
+  try {
     const resolvedParams = await params;
     const employeeId = parseInt(resolvedParams.id);
     const paymentId = parseInt(resolvedParams.paymentId);
@@ -21,6 +16,16 @@ export async function DELETE(
         { error: "Employee ID and Payment ID are required" },
         { status: 400 }
       );
+    }
+
+    // For employee users, ensure they can only access their own payment data
+    if (request.employeeAccess?.ownEmployeeId) {
+      if (employeeId !== request.employeeAccess.ownEmployeeId) {
+        return NextResponse.json(
+          { error: "You can only access your own payment data" },
+          { status: 403 }
+        );
+      }
     }
 
     // Check if payment exists and belongs to the employee
@@ -55,4 +60,7 @@ export async function DELETE(
       { status: 500 }
     );
   }
-} 
+};
+
+// Export the wrapped handler
+export const DELETE = withEmployeeOwnDataAccess(deleteEmployeePaymentHandler); 

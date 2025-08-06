@@ -1,103 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
 
-// GET /api/advances - List employee advances with permission check
-export const GET = withPermission(
-  async (request: NextRequest) => {
-    try {
-      const { searchParams } = new URL(request.url);
-      const page = parseInt(searchParams.get('page') || '1');
-      const limit = parseInt(searchParams.get('limit') || '10');
-      const search = searchParams.get('search') || '';
-      const status = searchParams.get('status') || '';
-      const employeeId = searchParams.get('employeeId') || '';
+// GET /api/advances - List employee advances with employee data filtering
+const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || '';
+    const employeeId = searchParams.get('employeeId') || '';
 
-      const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-      const where: any = {
-        deleted_at: null,
-      };
+    const where: any = {
+      deleted_at: null,
+    };
 
-      if (search) {
-        where.OR = [
-          { employee: { first_name: { contains: search, mode: 'insensitive' } } },
-          { employee: { last_name: { contains: search, mode: 'insensitive' } } },
-          { employee: { employee_id: { contains: search, mode: 'insensitive' } } },
-          { reason: { contains: search, mode: 'insensitive' } },
-        ];
-      }
-
-      if (status && status !== 'all') {
-        where.status = status;
-      }
-
-      if (employeeId) {
-        where.employee_id = employeeId;
-      }
-
-      const [advances, total] = await Promise.all([
-        prisma.advancePayment.findMany({
-          where,
-          skip,
-          take: limit,
-          orderBy: { created_at: 'desc' },
-          include: {
-            employee: {
-              include: {
-                user: true,
-              },
-            },
-          },
-        }),
-        prisma.advancePayment.count({ where }),
-      ]);
-
-      const totalPages = Math.ceil(total / limit);
-
-      return NextResponse.json({
-        data: advances,
-        current_page: page,
-        last_page: totalPages,
-        per_page: limit,
-        total,
-        next_page_url: page < totalPages ? `/api/advances?page=${page + 1}` : null,
-        prev_page_url: page > 1 ? `/api/advances?page=${page - 1}` : null,
-      });
-    } catch (error) {
-      console.error('Error fetching advances:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch advances', details: error instanceof Error ? error.message : 'Unknown error' },
-        { status: 500 }
-      );
+    // For employee users, only show their own advances
+    if (request.employeeAccess?.ownEmployeeId) {
+      where.employee_id = request.employeeAccess.ownEmployeeId;
     }
-  },
-  PermissionConfigs.advance.read
-);
 
-// POST /api/advances - Create employee advance with permission check
-export const POST = withPermission(
-  async (request: NextRequest) => {
-    try {
-      const body = await request.json();
-      const {
-        employeeId,
-        amount,
-        reason,
-        repaymentPlan,
-        status = 'pending',
-        notes,
-      } = body;
+    if (search) {
+      where.OR = [
+        { employee: { first_name: { contains: search, mode: 'insensitive' } } },
+        { employee: { last_name: { contains: search, mode: 'insensitive' } } },
+        { employee: { employee_id: { contains: search, mode: 'insensitive' } } },
+        { reason: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
-      const advance = await prisma.advancePayment.create({
-        data: {
-          employee_id: employeeId,
-          amount: parseFloat(amount),
-          purpose: reason, // Using reason as purpose
-          reason,
-          status,
-          notes: notes || '',
-        },
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+
+    if (employeeId) {
+      where.employee_id = employeeId;
+    }
+
+    const [advances, total] = await Promise.all([
+      prisma.advancePayment.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
         include: {
           employee: {
             include: {
@@ -105,22 +53,88 @@ export const POST = withPermission(
             },
           },
         },
-      });
+      }),
+      prisma.advancePayment.count({ where }),
+    ]);
 
-      return NextResponse.json(advance, { status: 201 });
-    } catch (error) {
-      console.error('Error creating advance:', error);
-      return NextResponse.json(
-        { error: 'Failed to create advance', details: error instanceof Error ? error.message : 'Unknown error' },
-        { status: 500 }
-      );
+    const totalPages = Math.ceil(total / limit);
+
+    return NextResponse.json({
+      data: advances,
+      current_page: page,
+      last_page: totalPages,
+      per_page: limit,
+      total,
+      next_page_url: page < totalPages ? `/api/advances?page=${page + 1}` : null,
+      prev_page_url: page > 1 ? `/api/advances?page=${page - 1}` : null,
+    });
+  } catch (error) {
+    console.error('Error fetching advances:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch advances', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+};
+
+// POST /api/advances - Create employee advance with employee data filtering
+const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+  try {
+    const body = await request.json();
+    const {
+      employeeId,
+      amount,
+      reason,
+      repaymentPlan,
+      status = 'pending',
+      notes,
+    } = body;
+
+    // For employee users, ensure they can only create advances for themselves
+    if (request.employeeAccess?.ownEmployeeId) {
+      if (employeeId && parseInt(employeeId) !== request.employeeAccess.ownEmployeeId) {
+        return NextResponse.json(
+          { error: 'You can only create advances for yourself' },
+          { status: 403 }
+        );
+      }
+      // Override employeeId to ensure it's the user's own employee ID
+      body.employeeId = request.employeeAccess.ownEmployeeId.toString();
     }
-  },
-  PermissionConfigs.advance.create
-);
+
+    const advance = await prisma.advancePayment.create({
+      data: {
+        employee_id: parseInt(body.employeeId),
+        amount: parseFloat(amount),
+        purpose: reason, // Using reason as purpose
+        reason,
+        status,
+        notes: notes || '',
+      },
+      include: {
+        employee: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({
+      message: 'Advance created successfully',
+      data: advance,
+    }, { status: 201 });
+  } catch (error) {
+    console.error('Error creating advance:', error);
+    return NextResponse.json(
+      { error: 'Failed to create advance', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+};
 
 // PUT /api/advances - Update employee advance with permission check
-export const PUT = withPermission(
+export const PUT = withEmployeeOwnDataAccess(
   async (request: NextRequest) => {
     try {
       const body = await request.json();
@@ -162,11 +176,11 @@ export const PUT = withPermission(
       );
     }
   },
-  PermissionConfigs.advance.update
+  // No specific permission config for PUT, as it's for own data
 );
 
 // DELETE /api/advances - Delete employee advance with permission check
-export const DELETE = withPermission(
+export const DELETE = withEmployeeOwnDataAccess(
   async (request: NextRequest) => {
     try {
       const body = await request.json();
@@ -185,5 +199,9 @@ export const DELETE = withPermission(
       );
     }
   },
-  PermissionConfigs.advance.delete
-); 
+  // No specific permission config for DELETE, as it's for own data
+);
+
+// Export the wrapped handlers
+export const GET = withEmployeeOwnDataAccess(getAdvancesHandler);
+export const POST = withEmployeeOwnDataAccess(createAdvanceHandler); 

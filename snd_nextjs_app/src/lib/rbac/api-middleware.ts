@@ -107,6 +107,13 @@ export async function checkEmployeeAccess(
       return { authorized: false, error: 'User has no assigned role' };
     }
 
+    console.log('🔍 User role:', userRole.name);
+    console.log('🔍 User role comparison:', { 
+      isEmployee: userRole.name === 'employee',
+      isEmployeeLower: userRole.name === 'employee'.toLowerCase(),
+      roleName: userRole.name 
+    });
+
     // If user is admin or has manage permissions, allow access
     if (userRole.name === 'admin' || userRole.name === 'super_admin') {
       return { authorized: true, user: session.user };
@@ -693,19 +700,41 @@ export function withEmployeeOwnDataAccess(
       }
 
       // For employee role users, find their own employee record
-      if (userRole.name === 'employee') {
-        const ownEmployee = await prisma.employee.findFirst({
-          where: { iqama_number: user.national_id },
-          select: { id: true, iqama_number: true },
+      if (userRole.name === 'employee' || userRole.name === 'EMPLOYEE') {
+        console.log('🔍 Employee user detected:', { 
+          userId, 
+          userIdType: typeof userId,
+          userNationalId: user.national_id,
+          userData: user 
+        });
+        
+        // First try to find employee by direct user_id relationship
+        let ownEmployee = await prisma.employee.findFirst({
+          where: { user_id: parseInt(userId) },
+          select: { id: true, iqama_number: true, user_id: true },
         });
 
+        console.log('🔍 Employee found by user_id:', ownEmployee);
+
+        // If not found by user_id, try to find by national_id matching iqama_number
+        if (!ownEmployee && user.national_id) {
+          console.log('🔍 Trying to find employee by iqama_number:', user.national_id);
+          ownEmployee = await prisma.employee.findFirst({
+            where: { iqama_number: user.national_id },
+            select: { id: true, iqama_number: true, user_id: true },
+          });
+          console.log('🔍 Employee found by iqama_number:', ownEmployee);
+        }
+
         if (!ownEmployee) {
+          console.log('❌ No employee record found for user');
           return NextResponse.json(
-            { error: 'No employee record found for your national ID' },
+            { error: 'No employee record found for your account. Please contact your administrator.' },
             { status: 403 }
           );
         }
 
+        console.log('✅ Employee record found:', ownEmployee);
         const enhancedRequest = request as NextRequest & { 
           employeeAccess: { 
             ownEmployeeId?: number; 

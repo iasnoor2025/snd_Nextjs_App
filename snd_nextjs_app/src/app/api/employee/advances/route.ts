@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from '@/lib/db';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
-export async function POST(request: NextRequest) {
+import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
+
+const createEmployeeAdvanceHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
   try {
     console.log("POST /api/employee/advances called");
     
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      console.log("Unauthorized - no session");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const body = await request.json();
     const { employeeId, amount, monthly_deduction, reason } = body;
 
@@ -23,6 +17,16 @@ export async function POST(request: NextRequest) {
         { error: "Missing required fields: employeeId, amount, and reason are required" },
         { status: 400 }
       );
+    }
+
+    // For employee users, ensure they can only create advances for themselves
+    if (request.employeeAccess?.ownEmployeeId) {
+      if (parseInt(employeeId) !== request.employeeAccess.ownEmployeeId) {
+        return NextResponse.json(
+          { error: "You can only create advances for yourself" },
+          { status: 403 }
+        );
+      }
     }
 
     // Test database connection first
@@ -73,15 +77,10 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+};
 
-export async function GET(request: NextRequest) {
+const getEmployeeAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(request.url);
     const employeeId = searchParams.get("employeeId");
 
@@ -90,6 +89,16 @@ export async function GET(request: NextRequest) {
         { error: "Employee ID is required" },
         { status: 400 }
       );
+    }
+
+    // For employee users, ensure they can only access their own advance data
+    if (request.employeeAccess?.ownEmployeeId) {
+      if (parseInt(employeeId) !== request.employeeAccess.ownEmployeeId) {
+        return NextResponse.json(
+          { error: "You can only access your own advance data" },
+          { status: 403 }
+        );
+      }
     }
 
     // Get advances for the employee
@@ -115,13 +124,17 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      advances: advances,
+      data: advances,
     });
   } catch (error) {
-    console.error("Error fetching advances:", error);
+    console.error("Error fetching employee advances:", error);
     return NextResponse.json(
-      { error: "Failed to fetch advances" },
+      { error: "Failed to fetch employee advances" },
       { status: 500 }
     );
   }
-} 
+};
+
+// Export the wrapped handlers
+export const POST = withEmployeeOwnDataAccess(createEmployeeAdvanceHandler);
+export const GET = withEmployeeOwnDataAccess(getEmployeeAdvancesHandler); 

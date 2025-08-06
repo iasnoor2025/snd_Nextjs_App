@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from '@/lib/db';
-import { getServerSession } from "next-auth";
-import { authConfig as authOptions } from "@/lib/auth-config";
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
 
+const getEmployeePaymentsHandler = async (
+  request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } },
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  try {
     const resolvedParams = await params;
     const employeeId = parseInt(resolvedParams.id);
 
@@ -20,6 +15,16 @@ export async function GET(
         { error: "Employee ID is required" },
         { status: 400 }
       );
+    }
+
+    // For employee users, ensure they can only access their own payment data
+    if (request.employeeAccess?.ownEmployeeId) {
+      if (employeeId !== request.employeeAccess.ownEmployeeId) {
+        return NextResponse.json(
+          { error: "You can only access your own payment data" },
+          { status: 403 }
+        );
+      }
     }
 
     // Get employee information
@@ -103,55 +108,40 @@ export async function GET(
       orderBy: {
         created_at: "desc",
       },
-      select: {
-        id: true,
-        amount: true,
-        repaid_amount: true,
-        status: true,
-        payment_date: true,
-        repayment_date: true,
-        monthly_deduction: true,
-      },
     });
 
-    // Calculate totals
-    const totalMonthlyDeduction = activeAdvances.reduce((sum, advance) => 
-      sum + Number(advance.monthly_deduction || 0), 0
-    );
-    
-    const totalRemainingBalance = activeAdvances.reduce((sum, advance) => {
-      const remaining = Number(advance.amount) - Number(advance.repaid_amount || 0);
-      return sum + remaining;
-    }, 0);
+    // Calculate summary statistics
+    const totalAdvanceAmount = activeAdvances.reduce((sum, advance) => sum + Number(advance.amount), 0);
+    const totalPaidAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
+    const remainingBalance = totalAdvanceAmount - totalPaidAmount;
 
     return NextResponse.json({
       success: true,
-      payments: payments,
-      active_advances: activeAdvances.map(advance => ({
-        id: advance.id,
-        amount: advance.amount,
-        repaid_amount: advance.repaid_amount,
-        balance: Number(advance.amount) - Number(advance.repaid_amount || 0),
-        status: advance.status,
-        payment_date: advance.payment_date?.toISOString().slice(0, 10) || null,
-        repayment_date: advance.repayment_date?.toISOString().slice(0, 10) || null,
-        monthly_deduction: advance.monthly_deduction,
-      })),
-      employee: {
-        id: employee.id,
-        name: `${employee.first_name} ${employee.last_name}`,
-        total_advance_balance: totalRemainingBalance, // Calculate from active advances
+      data: {
+        employee: {
+          id: employee.id,
+          name: `${employee.first_name} ${employee.last_name}`,
+        },
+        summary: {
+          total_advance_amount: totalAdvanceAmount,
+          total_paid_amount: totalPaidAmount,
+          remaining_balance: remainingBalance,
+          total_payments: payments.length,
+          active_advances: activeAdvances.length,
+        },
+        monthly_history: Object.values(monthlyHistory),
+        payments: payments,
+        active_advances: activeAdvances,
       },
-      totals: {
-        monthly_deduction: totalMonthlyDeduction,
-        remaining_balance: totalRemainingBalance
-      }
     });
   } catch (error) {
-    console.error("Error fetching payments:", error);
+    console.error('Error fetching employee payments:', error);
     return NextResponse.json(
-      { error: "Failed to fetch payments" },
+      { error: 'Failed to fetch employee payments' },
       { status: 500 }
     );
   }
-} 
+};
+
+// Export the wrapped handler
+export const GET = withEmployeeOwnDataAccess(getEmployeePaymentsHandler); 

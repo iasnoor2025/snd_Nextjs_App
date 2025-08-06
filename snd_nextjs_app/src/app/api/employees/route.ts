@@ -36,7 +36,10 @@ const getEmployeesHandler = async (request: NextRequest & { employeeAccess?: { o
 
     // For employee users, only show their own record
     if (request.employeeAccess?.ownEmployeeId) {
+      console.log('🔍 Employee filtering: ownEmployeeId =', request.employeeAccess.ownEmployeeId);
       where.id = request.employeeAccess.ownEmployeeId;
+    } else {
+      console.log('🔍 No employee filtering applied');
     }
 
     console.log('Fetching employees with assignments...');

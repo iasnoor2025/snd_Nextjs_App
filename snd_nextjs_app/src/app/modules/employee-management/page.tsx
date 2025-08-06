@@ -193,16 +193,36 @@ export default function EmployeeManagementPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      await fetchEmployees();
-      await fetchStatistics();
+      const isEmployeeUser = user?.role === 'EMPLOYEE';
+      
+      if (isEmployeeUser) {
+        // For employee users, fetch employees first, then calculate statistics
+        await fetchEmployees();
+        // Statistics will be calculated from the employees array in fetchStatistics
+        await fetchStatistics();
+      } else {
+        // For admin/manager users, fetch both in parallel
+        await Promise.all([fetchEmployees(), fetchStatistics()]);
+      }
     };
     loadData();
-  }, []);
+  }, [user?.role]); // Add user.role as dependency to reload when role changes
 
   const fetchEmployees = async () => {
     try {
-      // Fetch all employees for search and sorting functionality
-      const response = await fetch(`/api/employees?all=true&_t=${Date.now()}`);
+      // Check if user is an employee role - they should only see their own record
+      const isEmployeeUser = user?.role === 'EMPLOYEE';
+      
+      // For employee users, don't use the 'all=true' parameter to get filtered data
+      const url = isEmployeeUser 
+        ? `/api/employees?_t=${Date.now()}`
+        : `/api/employees?all=true&_t=${Date.now()}`;
+      
+      console.log('Fetching employees with URL:', url);
+      console.log('User role:', user?.role);
+      console.log('Is employee user:', isEmployeeUser);
+      
+      const response = await fetch(url);
       if (response.ok) {
         const result = await response.json() as { success: boolean; data?: Employee[] };
         if (result.success && Array.isArray(result.data)) {
@@ -232,21 +252,46 @@ export default function EmployeeManagementPage() {
 
   const fetchStatistics = async () => {
     try {
-      const response = await fetch('/api/employees/statistics');
-      if (response.ok) {
-        const result = await response.json() as { success: boolean; data?: any };
-        if (result.success && result.data) {
-          setStatistics(result.data);
+      // Check if user is an employee role - they should only see their own statistics
+      const isEmployeeUser = user?.role === 'EMPLOYEE';
+      
+      if (isEmployeeUser) {
+        // For employee users, calculate statistics from their own employee data
+        // This will be called after fetchEmployees, so employees array will be populated
+        const ownEmployee = employees[0]; // Employee users will only have their own record
+        if (ownEmployee) {
+          setStatistics({
+            totalEmployees: 1,
+            currentlyAssigned: ownEmployee.current_assignment ? 1 : 0,
+            projectAssignments: ownEmployee.current_assignment?.type === 'project' ? 1 : 0,
+            rentalAssignments: ownEmployee.current_assignment?.type === 'rental' ? 1 : 0
+          });
+        } else {
+          setStatistics({
+            totalEmployees: 0,
+            currentlyAssigned: 0,
+            projectAssignments: 0,
+            rentalAssignments: 0
+          });
         }
       } else {
-        console.error('Statistics API returned error:', response.status);
-        // Fallback: use employees array length for total count
-        setStatistics({
-          totalEmployees: employees.length,
-          currentlyAssigned: employees.filter(emp => emp.current_assignment).length,
-          projectAssignments: employees.filter(emp => emp.current_assignment?.type === 'project').length,
-          rentalAssignments: employees.filter(emp => emp.current_assignment?.type === 'rental').length
-        });
+        // For admin/manager users, fetch statistics from API
+        const response = await fetch('/api/employees/statistics');
+        if (response.ok) {
+          const result = await response.json() as { success: boolean; data?: any };
+          if (result.success && result.data) {
+            setStatistics(result.data);
+          }
+        } else {
+          console.error('Statistics API returned error:', response.status);
+          // Fallback: use employees array length for total count
+          setStatistics({
+            totalEmployees: employees.length,
+            currentlyAssigned: employees.filter(emp => emp.current_assignment).length,
+            projectAssignments: employees.filter(emp => emp.current_assignment?.type === 'project').length,
+            rentalAssignments: employees.filter(emp => emp.current_assignment?.type === 'rental').length
+          });
+        }
       }
     } catch (error) {
       console.error('Error fetching statistics:', error);
@@ -523,8 +568,15 @@ export default function EmployeeManagementPage() {
       <div className="space-y-6">
         <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
           <div className={isRTL ? 'text-right' : 'text-left'}>
-            <h1 className="text-3xl font-bold">{t('employee:title')}</h1>
-            <p className="text-muted-foreground">{t('employee:subtitle')}</p>
+            <h1 className="text-3xl font-bold">
+              {user?.role === 'EMPLOYEE' ? t('employee:title') + ' - My Profile' : t('employee:title')}
+            </h1>
+            <p className="text-muted-foreground">
+              {user?.role === 'EMPLOYEE' 
+                ? t('employee:subtitle') + ' - You are viewing your own employee record'
+                : t('employee:subtitle')
+              }
+            </p>
           </div>
 
           <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -708,6 +760,15 @@ export default function EmployeeManagementPage() {
                 </div>
               )}
 
+              {/* Employee User Notice */}
+              {user?.role === 'EMPLOYEE' && (
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                  <div className="text-sm text-blue-700 dark:text-blue-300">
+                    <strong>Note:</strong> You are viewing your own employee record. As an employee user, you can only see and manage your own information.
+                  </div>
+                </div>
+              )}
+
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -788,9 +849,12 @@ export default function EmployeeManagementPage() {
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-8">
                         <div className="text-muted-foreground">
-                          {searchTerm || statusFilter !== 'all' || departmentFilter !== 'all' || assignmentFilter !== 'all'
-                            ? t('employee:messages.noEmployeesFilter')
-                            : t('employee:messages.noEmployees')}
+                          {user?.role === 'EMPLOYEE' 
+                            ? "No employee record found for your account. Please contact your administrator."
+                            : searchTerm || statusFilter !== 'all' || departmentFilter !== 'all' || assignmentFilter !== 'all'
+                              ? t('employee:messages.noEmployeesFilter')
+                              : t('employee:messages.noEmployees')
+                          }
                         </div>
                       </TableCell>
                     </TableRow>
@@ -886,7 +950,7 @@ export default function EmployeeManagementPage() {
                             </PermissionContent>
 
                             <PermissionContent action="update" subject="Employee">
-                                                            <Link href={`/modules/employee-management/${employee.id}/edit`}>
+                              <Link href={`/modules/employee-management/${employee.id}/edit`}>
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
@@ -1046,7 +1110,7 @@ export default function EmployeeManagementPage() {
                     ) : (
                       <>
                         {t('employee:pagination.next')}
-                        <ChevronRight className="h-4 w-4 ml-1" />
+                        <ChevronRight className="h-4 w-4 mr-1" />
                       </>
                     )}
                   </Button>
@@ -1055,322 +1119,6 @@ export default function EmployeeManagementPage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Role-based content example */}
-        <RoleBased roles={['ADMIN', 'MANAGER']}>
-          <Card>
-            <CardHeader>
-              <CardTitle>Admin Actions</CardTitle>
-              <CardDescription>
-                Additional actions available for administrators
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <PermissionContent action="import" subject="Employee">
-                  <Button variant="outline">
-                    <Upload className={`h-4 w-4 ${isRTL ? 'ml-2' : 'mr-2'}`} />
-                    Import Employees
-                  </Button>
-                </PermissionContent>
-
-                <PermissionContent action="manage" subject="Department">
-                  <Button variant="outline">
-                    Manage Departments
-                  </Button>
-                </PermissionContent>
-              </div>
-            </CardContent>
-          </Card>
-        </RoleBased>
-
-        {/* View Employee Modal */}
-        <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Employee Details</DialogTitle>
-              <DialogDescription>
-                View detailed information about the employee
-              </DialogDescription>
-            </DialogHeader>
-            {selectedEmployee && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>File Number</Label>
-                  <p className="text-sm text-muted-foreground">{convertToArabicNumerals(selectedEmployee.file_number, isRTL) || t('common.na')}</p>
-                </div>
-                <div>
-                  <Label>Full Name</Label>
-                  <p className="text-sm text-muted-foreground">{getTranslatedName(selectedEmployee.full_name, isRTL, translatedNames, setTranslatedNames) || t('common.na')}</p>
-                </div>
-                <div>
-                  <Label>Email</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.email || t('common.na')}</p>
-                </div>
-                <div>
-                  <Label>Phone</Label>
-                  <p className="text-sm text-muted-foreground">{convertToArabicNumerals(selectedEmployee.phone, isRTL) || t('common.na')}</p>
-                </div>
-                <div>
-                  <Label>{t('employee:fields.iqamaNumber')}</Label>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedEmployee.iqama_number ? (
-                      <span>
-                        {convertToArabicNumerals(selectedEmployee.iqama_number, isRTL)}
-                        {selectedEmployee.iqama_expiry && isIqamaExpired(selectedEmployee.iqama_expiry) && (
-                          <span className="text-red-500 ml-1">({t('employee:iqama.expired')})</span>
-                        )}
-                      </span>
-                    ) : t('common.na')}
-                  </p>
-                </div>
-                <div>
-                  <Label>Department</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.department || t('common.na')}</p>
-                </div>
-                <div>
-                  <Label>Designation</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.designation || t('common.na')}</p>
-                </div>
-                <div>
-                  <Label>Status</Label>
-                  <Badge variant={selectedEmployee.status === 'active' ? 'default' : 'secondary'}>
-                    {selectedEmployee.status === 'active' ? t('employee:status.active') :
-                     selectedEmployee.status === 'inactive' ? t('employee:status.inactive') :
-                     selectedEmployee.status || t('common.na')}
-                  </Badge>
-                </div>
-                <div>
-                  <Label>Hire Date</Label>
-                  <p className="text-sm text-muted-foreground">{formatDate(selectedEmployee.hire_date)}</p>
-                </div>
-                <div>
-                  <Label>Basic Salary</Label>
-                  <p className="text-sm text-muted-foreground">${selectedEmployee.basic_salary || t('common.na')}</p>
-                </div>
-                <div>
-                  <Label>Nationality</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.nationality || t('common.na')}</p>
-                </div>
-                <div>
-                  <Label>Hourly Rate</Label>
-                  <p className="text-sm text-muted-foreground">${selectedEmployee.hourly_rate || t('common.na')}</p>
-                </div>
-                <div>
-                  <Label>{t('employee:fields.overtimeRateMultiplier')}</Label>
-                  <p className="text-sm text-muted-foreground">{selectedEmployee.overtime_rate_multiplier || t('common.na')}</p>
-                </div>
-                <div>
-                  <Label>{t('employee:fields.overtimeFixedRate')}</Label>
-                  <p className="text-sm text-muted-foreground">${selectedEmployee.overtime_fixed_rate || t('common.na')}</p>
-                </div>
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsViewModalOpen(false)}>
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Employee Modal */}
-        {/* <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Edit Employee</DialogTitle>
-              <DialogDescription>
-                Update employee information
-              </DialogDescription>
-            </DialogHeader>
-            {selectedEmployee && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="file_number">File Number</Label>
-                  <Input id="file_number" defaultValue={selectedEmployee.file_number || ''} disabled />
-                </div>
-                <div>
-                  <Label htmlFor="first_name">First Name</Label>
-                  <Input id="first_name" defaultValue={selectedEmployee.first_name || ''} />
-                </div>
-                <div>
-                  <Label htmlFor="last_name">Last Name</Label>
-                  <Input id="last_name" defaultValue={selectedEmployee.last_name || ''} />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue={selectedEmployee.email || ''} />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" defaultValue={selectedEmployee.phone || ''} />
-                </div>
-                <div>
-                  <Label htmlFor="department">Department</Label>
-                  <Select defaultValue={selectedEmployee.department || ''}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="HR">HR</SelectItem>
-                      <SelectItem value="IT">IT</SelectItem>
-                      <SelectItem value="Finance">Finance</SelectItem>
-                      <SelectItem value="General">General</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="designation">Designation</Label>
-                  <Input id="designation" defaultValue={selectedEmployee.designation || ''} />
-                </div>
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select defaultValue={selectedEmployee.status || ''}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="hire_date">Hire Date</Label>
-                  <Input id="hire_date" type="date" defaultValue={selectedEmployee.hire_date || ''} />
-                </div>
-                <div>
-                  <Label htmlFor="basic_salary">Basic Salary</Label>
-                  <Input id="basic_salary" type="number" defaultValue={selectedEmployee.basic_salary || ''} />
-                </div>
-                <div>
-                  <Label htmlFor="hourly_rate">Hourly Rate</Label>
-                  <Input id="hourly_rate" type="number" step="0.01" defaultValue={selectedEmployee.hourly_rate || ''} />
-                </div>
-                <div>
-                  <Label htmlFor="overtime_rate_multiplier">{t('employee:fields.overtimeRateMultiplier')}</Label>
-                  <Input id="overtime_rate_multiplier" type="number" step="0.01" defaultValue={selectedEmployee.overtime_rate_multiplier || '1.5'} />
-                </div>
-                <div>
-                  <Label htmlFor="overtime_fixed_rate">{t('employee:fields.overtimeFixedRate')}</Label>
-                  <Input id="overtime_fixed_rate" type="number" step="0.01" defaultValue={selectedEmployee.overtime_fixed_rate || ''} />
-                </div>
-                <div>
-                  <Label htmlFor="nationality">Nationality</Label>
-                  <Input id="nationality" defaultValue={selectedEmployee.nationality || ''} />
-                </div>
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleUpdateEmployee}>
-                Save Changes
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog> */}
-
-        {/* Add Employee Modal */}
-        <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Add New Employee</DialogTitle>
-              <DialogDescription>
-                Enter employee information to create a new employee record
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="new_file_number">File Number *</Label>
-                <Input id="new_file_number" placeholder="Enter file number" />
-              </div>
-              <div>
-                <Label htmlFor="new_first_name">First Name *</Label>
-                <Input id="new_first_name" placeholder="Enter first name" />
-              </div>
-              <div>
-                <Label htmlFor="new_last_name">Last Name *</Label>
-                <Input id="new_last_name" placeholder="Enter last name" />
-              </div>
-              <div>
-                <Label htmlFor="new_email">Email</Label>
-                <Input id="new_email" type="email" placeholder="Enter email" />
-              </div>
-              <div>
-                <Label htmlFor="new_phone">Phone</Label>
-                <Input id="new_phone" placeholder="Enter phone number" />
-              </div>
-              <div>
-                <Label htmlFor="new_department">Department</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="HR">HR</SelectItem>
-                    <SelectItem value="IT">IT</SelectItem>
-                    <SelectItem value="Finance">Finance</SelectItem>
-                    <SelectItem value="General">General</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="new_designation">Designation</Label>
-                <Input id="new_designation" placeholder="Enter designation" />
-              </div>
-              <div>
-                <Label htmlFor="new_status">Status</Label>
-                <Select defaultValue="active">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="new_hire_date">Hire Date</Label>
-                <Input id="new_hire_date" type="date" />
-              </div>
-              <div>
-                <Label htmlFor="new_basic_salary">Basic Salary</Label>
-                <Input id="new_basic_salary" type="number" placeholder="5000" />
-              </div>
-              <div>
-                <Label htmlFor="new_hourly_rate">Hourly Rate</Label>
-                <Input id="new_hourly_rate" type="number" step="0.01" placeholder="25.00" />
-              </div>
-              <div>
-                <Label htmlFor="new_overtime_rate_multiplier">{t('employee:fields.overtimeRateMultiplier')}</Label>
-                <Input id="new_overtime_rate_multiplier" type="number" step="0.01" placeholder="1.5" defaultValue="1.5" />
-              </div>
-              <div>
-                <Label htmlFor="new_overtime_fixed_rate">{t('employee:fields.overtimeFixedRate')}</Label>
-                <Input id="new_overtime_fixed_rate" type="number" step="0.01" placeholder="Optional fixed rate" />
-              </div>
-              <div>
-                <Label htmlFor="new_nationality">Nationality</Label>
-                <Input id="new_nationality" placeholder="Enter nationality" />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={() => {
-                toast.success('Employee added successfully');
-                setIsAddModalOpen(false);
-                fetchEmployees();
-              }}>
-                Add Employee
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     </ProtectedRoute>
   );

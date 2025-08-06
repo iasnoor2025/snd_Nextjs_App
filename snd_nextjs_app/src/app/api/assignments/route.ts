@@ -1,113 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
 
-// GET /api/assignments - List manual assignments with permission check
-export const GET = withPermission(
-  async (request: NextRequest) => {
-    try {
-      const { searchParams } = new URL(request.url);
-      const page = parseInt(searchParams.get('page') || '1');
-      const limit = parseInt(searchParams.get('limit') || '10');
-      const search = searchParams.get('search') || '';
-      const status = searchParams.get('status') || '';
-      const employeeId = searchParams.get('employeeId') || '';
-      const projectId = searchParams.get('projectId') || '';
+// GET /api/assignments - List manual assignments with employee data filtering
+const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || '';
+    const employeeId = searchParams.get('employeeId') || '';
+    const projectId = searchParams.get('projectId') || '';
 
-      const skip = (page - 1) * limit;
+    const skip = (page - 1) * limit;
 
-      const where: any = {
-        deleted_at: null,
-      };
+    const where: any = {
+      deleted_at: null,
+    };
 
-      if (search) {
-        where.OR = [
-          { employee: { first_name: { contains: search, mode: 'insensitive' } } },
-          { employee: { last_name: { contains: search, mode: 'insensitive' } } },
-          { employee: { employee_id: { contains: search, mode: 'insensitive' } } },
-          { project: { name: { contains: search, mode: 'insensitive' } } },
-          { assignment_type: { contains: search, mode: 'insensitive' } },
-        ];
-      }
-
-      if (status && status !== 'all') {
-        where.status = status;
-      }
-
-      if (employeeId) {
-        where.employee_id = employeeId;
-      }
-
-      if (projectId) {
-        where.project_id = projectId;
-      }
-
-      const [assignments, total] = await Promise.all([
-        prisma.employeeAssignment.findMany({
-          where,
-          skip,
-          take: limit,
-          orderBy: { created_at: 'desc' },
-          include: {
-            employee: {
-              include: {
-                user: true,
-              },
-            },
-            project: true,
-          },
-        }),
-        prisma.employeeAssignment.count({ where }),
-      ]);
-
-      const totalPages = Math.ceil(total / limit);
-
-      return NextResponse.json({
-        data: assignments,
-        current_page: page,
-        last_page: totalPages,
-        per_page: limit,
-        total,
-        next_page_url: page < totalPages ? `/api/assignments?page=${page + 1}` : null,
-        prev_page_url: page > 1 ? `/api/assignments?page=${page - 1}` : null,
-      });
-    } catch (error) {
-      console.error('Error fetching assignments:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch assignments', details: error instanceof Error ? error.message : 'Unknown error' },
-        { status: 500 }
-      );
+    // For employee users, only show their own assignments
+    if (request.employeeAccess?.ownEmployeeId) {
+      where.employee_id = request.employeeAccess.ownEmployeeId;
     }
-  },
-  PermissionConfigs.assignment.read
-);
 
-// POST /api/assignments - Create manual assignment with permission check
-export const POST = withPermission(
-  async (request: NextRequest) => {
-    try {
-      const body = await request.json();
-      const {
-        employeeId,
-        projectId,
-        assignmentType,
-        startDate,
-        endDate,
-        hoursPerDay,
-        status = 'pending',
-        notes,
-      } = body;
+    if (search) {
+      where.OR = [
+        { employee: { first_name: { contains: search, mode: 'insensitive' } } },
+        { employee: { last_name: { contains: search, mode: 'insensitive' } } },
+        { employee: { employee_id: { contains: search, mode: 'insensitive' } } },
+        { project: { name: { contains: search, mode: 'insensitive' } } },
+        { assignment_type: { contains: search, mode: 'insensitive' } },
+      ];
+    }
 
-      const assignment = await prisma.employeeAssignment.create({
-        data: {
-          employee_id: employeeId,
-          project_id: projectId,
-          type: assignmentType || 'manual',
-          start_date: new Date(startDate),
-          end_date: endDate ? new Date(endDate) : null,
-          status,
-          notes,
-        },
+    if (status && status !== 'all') {
+      where.status = status;
+    }
+
+    if (employeeId) {
+      where.employee_id = employeeId;
+    }
+
+    if (projectId) {
+      where.project_id = projectId;
+    }
+
+    const [assignments, total] = await Promise.all([
+      prisma.employeeAssignment.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { created_at: 'desc' },
         include: {
           employee: {
             include: {
@@ -116,22 +60,93 @@ export const POST = withPermission(
           },
           project: true,
         },
-      });
+      }),
+      prisma.employeeAssignment.count({ where }),
+    ]);
 
-      return NextResponse.json(assignment, { status: 201 });
-    } catch (error) {
-      console.error('Error creating assignment:', error);
-      return NextResponse.json(
-        { error: 'Failed to create assignment', details: error instanceof Error ? error.message : 'Unknown error' },
-        { status: 500 }
-      );
+    const totalPages = Math.ceil(total / limit);
+
+    return NextResponse.json({
+      data: assignments,
+      current_page: page,
+      last_page: totalPages,
+      per_page: limit,
+      total,
+      next_page_url: page < totalPages ? `/api/assignments?page=${page + 1}` : null,
+      prev_page_url: page > 1 ? `/api/assignments?page=${page - 1}` : null,
+    });
+  } catch (error) {
+    console.error('Error fetching assignments:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch assignments', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+};
+
+// POST /api/assignments - Create manual assignment with employee data filtering
+const createAssignmentHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+  try {
+    const body = await request.json();
+    const {
+      employeeId,
+      projectId,
+      assignmentType,
+      startDate,
+      endDate,
+      hoursPerDay,
+      status = 'pending',
+      notes,
+    } = body;
+
+    // For employee users, ensure they can only create assignments for themselves
+    if (request.employeeAccess?.ownEmployeeId) {
+      if (employeeId && parseInt(employeeId) !== request.employeeAccess.ownEmployeeId) {
+        return NextResponse.json(
+          { error: 'You can only create assignments for yourself' },
+          { status: 403 }
+        );
+      }
+      // Override employeeId to ensure it's the user's own employee ID
+      body.employeeId = request.employeeAccess.ownEmployeeId.toString();
     }
-  },
-  PermissionConfigs.assignment.create
-);
+
+    const assignment = await prisma.employeeAssignment.create({
+      data: {
+        employee_id: parseInt(body.employeeId),
+        project_id: projectId ? parseInt(projectId) : null,
+        assignment_type: assignmentType,
+        start_date: startDate ? new Date(startDate) : null,
+        end_date: endDate ? new Date(endDate) : null,
+        hours_per_day: hoursPerDay ? parseFloat(hoursPerDay) : null,
+        status,
+        notes: notes || '',
+      },
+      include: {
+        employee: {
+          include: {
+            user: true,
+          },
+        },
+        project: true,
+      },
+    });
+
+    return NextResponse.json({
+      message: 'Assignment created successfully',
+      data: assignment,
+    }, { status: 201 });
+  } catch (error) {
+    console.error('Error creating assignment:', error);
+    return NextResponse.json(
+      { error: 'Failed to create assignment', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
+  }
+};
 
 // PUT /api/assignments - Update manual assignment with permission check
-export const PUT = withPermission(
+export const PUT = withEmployeeOwnDataAccess(
   async (request: NextRequest) => {
     try {
       const body = await request.json();
@@ -177,11 +192,11 @@ export const PUT = withPermission(
       );
     }
   },
-  PermissionConfigs.assignment.update
+  // No specific permission config for PUT, as it's handled by withEmployeeOwnDataAccess
 );
 
 // DELETE /api/assignments - Delete manual assignment with permission check
-export const DELETE = withPermission(
+export const DELETE = withEmployeeOwnDataAccess(
   async (request: NextRequest) => {
     try {
       const body = await request.json();
@@ -200,5 +215,9 @@ export const DELETE = withPermission(
       );
     }
   },
-  PermissionConfigs.assignment.delete
-); 
+  // No specific permission config for DELETE, as it's handled by withEmployeeOwnDataAccess
+);
+
+// Export the wrapped handlers
+export const GET = withEmployeeOwnDataAccess(getAssignmentsHandler);
+export const POST = withEmployeeOwnDataAccess(createAssignmentHandler); 

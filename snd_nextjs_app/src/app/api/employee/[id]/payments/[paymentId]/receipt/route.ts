@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from '@/lib/db';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string; paymentId: string }> }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+import { withEmployeeOwnDataAccess } from '@/lib/rbac/api-middleware';
 
+const getEmployeePaymentReceiptHandler = async (
+  request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } },
+  { params }: { params: Promise<{ id: string; paymentId: string }> }
+) => {
+  try {
     const resolvedParams = await params;
     const employeeId = parseInt(resolvedParams.id);
     const paymentId = parseInt(resolvedParams.paymentId);
@@ -21,6 +16,16 @@ export async function GET(
         { error: "Employee ID and Payment ID are required" },
         { status: 400 }
       );
+    }
+
+    // For employee users, ensure they can only access their own payment data
+    if (request.employeeAccess?.ownEmployeeId) {
+      if (employeeId !== request.employeeAccess.ownEmployeeId) {
+        return NextResponse.json(
+          { error: "You can only access your own payment data" },
+          { status: 403 }
+        );
+      }
     }
 
     // Get the payment record
@@ -99,10 +104,13 @@ export async function GET(
       receipt: receiptData,
     });
   } catch (error) {
-    console.error("Error generating receipt:", error);
+    console.error("Error fetching payment receipt:", error);
     return NextResponse.json(
-      { error: "Failed to generate receipt" },
+      { error: "Failed to fetch payment receipt" },
       { status: 500 }
     );
   }
-} 
+};
+
+// Export the wrapped handler
+export const GET = withEmployeeOwnDataAccess(getEmployeePaymentReceiptHandler); 
