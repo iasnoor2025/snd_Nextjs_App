@@ -271,11 +271,11 @@ export class EnhancedPermissionService {
       const user = await prisma.user.findUnique({
         where: { id: parseInt(userId) },
         include: {
-          roles: {
+          user_roles: {
             include: {
               role: {
                 include: {
-                  permissions: {
+                  role_permissions: {
                     include: {
                       permission: true,
                     },
@@ -284,7 +284,7 @@ export class EnhancedPermissionService {
               },
             },
           },
-          permissions: {
+          user_permissions: {
             include: {
               permission: true,
             },
@@ -297,7 +297,7 @@ export class EnhancedPermissionService {
       }
 
       // Check direct user permissions first (override role permissions)
-      for (const userPermission of user.permissions) {
+      for (const userPermission of user.user_permissions) {
         const permissionName = userPermission.permission.name;
         if (this.matchesPermission(permissionName, action, resource)) {
           return true;
@@ -305,8 +305,8 @@ export class EnhancedPermissionService {
       }
 
       // Check role permissions
-      for (const userRole of user.roles) {
-        for (const rolePermission of userRole.role.permissions) {
+      for (const userRole of user.user_roles) {
+        for (const rolePermission of userRole.role.role_permissions) {
           const permissionName = rolePermission.permission.name;
           if (this.matchesPermission(permissionName, action, resource)) {
             return true;

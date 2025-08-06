@@ -218,6 +218,62 @@ export const PermissionConfigs = {
     manage: { action: 'manage' as Action, subject: 'Settings' as Subject },
   },
 
+  // Company permissions
+  company: {
+    read: { action: 'read' as Action, subject: 'Company' as Subject },
+    create: { action: 'create' as Action, subject: 'Company' as Subject },
+    update: { action: 'update' as Action, subject: 'Company' as Subject },
+    delete: { action: 'delete' as Action, subject: 'Company' as Subject },
+    manage: { action: 'manage' as Action, subject: 'Company' as Subject },
+  },
+
+  // Department permissions
+  department: {
+    read: { action: 'read' as Action, subject: 'Department' as Subject },
+    create: { action: 'create' as Action, subject: 'Department' as Subject },
+    update: { action: 'update' as Action, subject: 'Department' as Subject },
+    delete: { action: 'delete' as Action, subject: 'Department' as Subject },
+    manage: { action: 'manage' as Action, subject: 'Department' as Subject },
+  },
+
+  // Designation permissions
+  designation: {
+    read: { action: 'read' as Action, subject: 'Designation' as Subject },
+    create: { action: 'create' as Action, subject: 'Designation' as Subject },
+    update: { action: 'update' as Action, subject: 'Designation' as Subject },
+    delete: { action: 'delete' as Action, subject: 'Designation' as Subject },
+    manage: { action: 'manage' as Action, subject: 'Designation' as Subject },
+  },
+
+  // Location permissions
+  location: {
+    read: { action: 'read' as Action, subject: 'Location' as Subject },
+    create: { action: 'create' as Action, subject: 'Location' as Subject },
+    update: { action: 'update' as Action, subject: 'Location' as Subject },
+    delete: { action: 'delete' as Action, subject: 'Location' as Subject },
+    manage: { action: 'manage' as Action, subject: 'Location' as Subject },
+  },
+
+  // Report permissions
+  report: {
+    read: { action: 'read' as Action, subject: 'Report' as Subject },
+    create: { action: 'create' as Action, subject: 'Report' as Subject },
+    update: { action: 'update' as Action, subject: 'Report' as Subject },
+    delete: { action: 'delete' as Action, subject: 'Report' as Subject },
+    manage: { action: 'manage' as Action, subject: 'Report' as Subject },
+  },
+
+  // Leave permissions
+  leave: {
+    read: { action: 'read' as Action, subject: 'Leave' as Subject },
+    create: { action: 'create' as Action, subject: 'Leave' as Subject },
+    update: { action: 'update' as Action, subject: 'Leave' as Subject },
+    delete: { action: 'delete' as Action, subject: 'Leave' as Subject },
+    manage: { action: 'manage' as Action, subject: 'Leave' as Subject },
+    approve: { action: 'approve' as Action, subject: 'Leave' as Subject },
+    reject: { action: 'reject' as Action, subject: 'Leave' as Subject },
+  },
+
   // User permissions
   user: {
     read: { action: 'read' as Action, subject: 'User' as Subject },
