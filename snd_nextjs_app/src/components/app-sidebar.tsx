@@ -92,6 +92,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: IconChartBar,
     },
     {
+      title: t('salaryIncrements'),
+      url: "/modules/salary-increments",
+      icon: IconChartBar,
+    },
+    {
       title: t('leaveManagement'),
       url: "/modules/leave-management",
       icon: IconCalendar,

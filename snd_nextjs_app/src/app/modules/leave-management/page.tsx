@@ -47,95 +47,6 @@ interface LeaveRequestResponse {
   prev_page_url: string | null;
 }
 
-// Mock data
-const mockLeaveRequests: LeaveRequest[] = [
-  {
-    id: "1",
-    employee_name: "John Smith",
-    employee_id: "EMP001",
-    leave_type: "Annual Leave",
-    start_date: "2024-02-15",
-    end_date: "2024-02-20",
-    days_requested: 5,
-    reason: "Family vacation",
-    status: "Pending",
-    submitted_date: "2024-01-15T10:00:00Z",
-    approved_by: null,
-    approved_date: null,
-    comments: null,
-    created_at: "2024-01-15T10:00:00Z",
-    updated_at: "2024-01-15T10:00:00Z"
-  },
-  {
-    id: "2",
-    employee_name: "Sarah Wilson",
-    employee_id: "EMP002",
-    leave_type: "Sick Leave",
-    start_date: "2024-01-20",
-    end_date: "2024-01-22",
-    days_requested: 3,
-    reason: "Medical appointment",
-    status: "Approved",
-    submitted_date: "2024-01-14T14:30:00Z",
-    approved_by: "Mike Johnson",
-    approved_date: "2024-01-14T16:45:00Z",
-    comments: "Approved with medical certificate",
-    created_at: "2024-01-14T14:30:00Z",
-    updated_at: "2024-01-14T16:45:00Z"
-  },
-  {
-    id: "3",
-    employee_name: "David Lee",
-    employee_id: "EMP003",
-    leave_type: "Personal Leave",
-    start_date: "2024-01-25",
-    end_date: "2024-01-25",
-    days_requested: 1,
-    reason: "Personal emergency",
-    status: "Rejected",
-    submitted_date: "2024-01-13T09:15:00Z",
-    approved_by: "Lisa Brown",
-    approved_date: "2024-01-13T11:20:00Z",
-    comments: "Rejected due to insufficient notice",
-    created_at: "2024-01-13T09:15:00Z",
-    updated_at: "2024-01-13T11:20:00Z"
-  },
-  {
-    id: "4",
-    employee_name: "Emily Chen",
-    employee_id: "EMP004",
-    leave_type: "Maternity Leave",
-    start_date: "2024-03-01",
-    end_date: "2024-08-31",
-    days_requested: 120,
-    reason: "Maternity leave",
-    status: "Approved",
-    submitted_date: "2024-01-12T11:20:00Z",
-    approved_by: "Tom Davis",
-    approved_date: "2024-01-12T15:30:00Z",
-    comments: "Approved with all required documentation",
-    created_at: "2024-01-12T11:20:00Z",
-    updated_at: "2024-01-12T15:30:00Z"
-  },
-  {
-    id: "5",
-    employee_name: "Alex Rodriguez",
-    employee_id: "EMP005",
-    leave_type: "Study Leave",
-    start_date: "2024-02-10",
-    end_date: "2024-02-12",
-    days_requested: 3,
-    reason: "Professional development course",
-    status: "Pending",
-    submitted_date: "2024-01-11T15:45:00Z",
-    approved_by: null,
-    approved_date: null,
-    comments: null,
-    created_at: "2024-01-11T15:45:00Z",
-    updated_at: "2024-01-11T15:45:00Z"
-  }
-];
-
 export default function LeaveManagementPage() {
   const { t } = useTranslation('leave');
   const { isRTL } = useI18n();
@@ -152,160 +63,151 @@ export default function LeaveManagementPage() {
   // Get allowed actions for leave management
   const allowedActions = getAllowedActions('Leave');
 
-  useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const filteredData = mockLeaveRequests.filter(request => {
-        const matchesSearch = request.employee_name.toLowerCase().includes(search.toLowerCase()) ||
-                             request.employee_id.toLowerCase().includes(search.toLowerCase()) ||
-                             request.reason.toLowerCase().includes(search.toLowerCase());
-        const matchesStatus = status === "all" || request.status === status;
-        const matchesType = leaveType === "all" || request.leave_type === leaveType;
-        return matchesSearch && matchesStatus && matchesType;
+  const fetchLeaveRequests = async () => {
+    try {
+      setLoading(true);
+      
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: perPage.toString(),
       });
 
-      const total = filteredData.length;
-      const lastPage = Math.ceil(total / perPage);
-      const startIndex = (currentPage - 1) * perPage;
-      const endIndex = startIndex + perPage;
-      const paginatedData = filteredData.slice(startIndex, endIndex);
+      if (status !== "all") {
+        params.append('status', status);
+      }
 
-      setLeaveRequests({
-        data: paginatedData,
-        current_page: currentPage,
-        last_page: lastPage,
-        per_page: perPage,
-        total,
-        next_page_url: currentPage < lastPage ? `/leave-requests?page=${currentPage + 1}` : null,
-        prev_page_url: currentPage > 1 ? `/leave-requests?page=${currentPage - 1}` : null
+      if (leaveType !== "all") {
+        params.append('leaveType', leaveType);
+      }
+
+      if (search) {
+        params.append('search', search);
+      }
+
+      const response = await fetch(`/api/leave-requests/public?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch leave requests');
+      }
+
+      const data = await response.json();
+      
+      if (data.success) {
+        // Transform the API response to match our expected format
+        const transformedData: LeaveRequestResponse = {
+          data: data.leaves.map((leave: any) => ({
+            id: leave.id.toString(),
+            employee_name: leave.employee.name,
+            employee_id: leave.employee.employee_id,
+            leave_type: leave.leave_type,
+            start_date: leave.start_date,
+            end_date: leave.end_date,
+            days_requested: leave.days,
+            reason: leave.reason || '',
+            status: leave.status,
+            submitted_date: leave.created_at,
+            approved_by: null, // Not available in current API
+            approved_date: null, // Not available in current API
+            comments: null, // Not available in current API
+            created_at: leave.created_at,
+            updated_at: leave.updated_at,
+          })),
+          current_page: data.page,
+          last_page: Math.ceil(data.total / data.limit),
+          per_page: data.limit,
+          total: data.total,
+          next_page_url: data.page < Math.ceil(data.total / data.limit) ? `/api/employees/leaves?page=${data.page + 1}` : null,
+          prev_page_url: data.page > 1 ? `/api/employees/leaves?page=${data.page - 1}` : null,
+        };
+
+        setLeaveRequests(transformedData);
+      } else {
+        throw new Error(data.message || 'Failed to fetch leave requests');
+      }
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
+      toast.error(t('error_fetching_leave_requests'));
+    } finally {
       setLoading(false);
-    }, 500);
-  }, [search, status, leaveType, perPage, currentPage]);
-
-  const handleDelete = (id: string) => {
-    if (confirm(t('confirm_delete_leave_request'))) {
-      // Simulate API call
-      setTimeout(() => {
-        toast.success(t('leave_request_deleted_successfully'));
-        // Refresh data
-        setLoading(true);
-        setTimeout(() => {
-          const updatedData = mockLeaveRequests.filter(request => request.id !== id);
-          const filteredData = updatedData.filter(request => {
-            const matchesSearch = request.employee_name.toLowerCase().includes(search.toLowerCase()) ||
-                                 request.employee_id.toLowerCase().includes(search.toLowerCase()) ||
-                                 request.reason.toLowerCase().includes(search.toLowerCase());
-            const matchesStatus = status === "all" || request.status === status;
-            const matchesType = leaveType === "all" || request.leave_type === leaveType;
-            return matchesSearch && matchesStatus && matchesType;
-          });
-
-          const total = filteredData.length;
-          const lastPage = Math.ceil(total / perPage);
-          const startIndex = (currentPage - 1) * perPage;
-          const endIndex = startIndex + perPage;
-          const paginatedData = filteredData.slice(startIndex, endIndex);
-
-          setLeaveRequests({
-            data: paginatedData,
-            current_page: currentPage,
-            last_page: lastPage,
-            per_page: perPage,
-            total,
-            next_page_url: currentPage < lastPage ? `/leave-requests?page=${currentPage + 1}` : null,
-            prev_page_url: currentPage > 1 ? `/leave-requests?page=${currentPage - 1}` : null
-          });
-          setLoading(false);
-        }, 300);
-      }, 500);
     }
   };
 
-  const handleApprove = (id: string) => {
-    // Simulate API call
-    setTimeout(() => {
-      toast.success(t('leave_request_approved_successfully'));
-      // Update the status in mock data
-      const updatedData = mockLeaveRequests.map(request =>
-        request.id === id
-          ? { ...request, status: "Approved", approved_by: "Current User", approved_date: new Date().toISOString() }
-          : request
-      );
+  useEffect(() => {
+    fetchLeaveRequests();
+  }, [search, status, leaveType, perPage, currentPage]);
 
-      // Refresh data
-      setLoading(true);
-      setTimeout(() => {
-        const filteredData = updatedData.filter(request => {
-          const matchesSearch = request.employee_name.toLowerCase().includes(search.toLowerCase()) ||
-                               request.employee_id.toLowerCase().includes(search.toLowerCase()) ||
-                               request.reason.toLowerCase().includes(search.toLowerCase());
-          const matchesStatus = status === "all" || request.status === status;
-          const matchesType = leaveType === "all" || request.leave_type === leaveType;
-          return matchesSearch && matchesStatus && matchesType;
+  const handleDelete = async (id: string) => {
+    if (confirm(t('confirm_delete_leave_request'))) {
+      try {
+        const response = await fetch(`/api/leave-requests/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
         });
 
-        const total = filteredData.length;
-        const lastPage = Math.ceil(total / perPage);
-        const startIndex = (currentPage - 1) * perPage;
-        const endIndex = startIndex + perPage;
-        const paginatedData = filteredData.slice(startIndex, endIndex);
-
-        setLeaveRequests({
-          data: paginatedData,
-          current_page: currentPage,
-          last_page: lastPage,
-          per_page: perPage,
-          total,
-          next_page_url: currentPage < lastPage ? `/leave-requests?page=${currentPage + 1}` : null,
-          prev_page_url: currentPage > 1 ? `/leave-requests?page=${currentPage - 1}` : null
-        });
-        setLoading(false);
-      }, 300);
-    }, 500);
+        if (response.ok) {
+          toast.success(t('leave_request_deleted_successfully'));
+          fetchLeaveRequests(); // Refresh the data
+        } else {
+          throw new Error('Failed to delete leave request');
+        }
+      } catch (error) {
+        console.error('Error deleting leave request:', error);
+        toast.error(t('error_deleting_leave_request'));
+      }
+    }
   };
 
-  const handleReject = (id: string) => {
-    // Simulate API call
-    setTimeout(() => {
-      toast.success(t('leave_request_rejected'));
-      // Update the status in mock data
-      const updatedData = mockLeaveRequests.map(request =>
-        request.id === id
-          ? { ...request, status: "Rejected", approved_by: "Current User", approved_date: new Date().toISOString() }
-          : request
-      );
+  const handleApprove = async (id: string) => {
+    try {
+      const response = await fetch(`/api/leave-requests/${id}/approve`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-      // Refresh data
-      setLoading(true);
-      setTimeout(() => {
-        const filteredData = updatedData.filter(request => {
-          const matchesSearch = request.employee_name.toLowerCase().includes(search.toLowerCase()) ||
-                               request.employee_id.toLowerCase().includes(search.toLowerCase()) ||
-                               request.reason.toLowerCase().includes(search.toLowerCase());
-          const matchesStatus = status === "all" || request.status === status;
-          const matchesType = leaveType === "all" || request.leave_type === leaveType;
-          return matchesSearch && matchesStatus && matchesType;
-        });
+      if (response.ok) {
+        toast.success(t('leave_request_approved_successfully'));
+        fetchLeaveRequests(); // Refresh the data
+      } else {
+        throw new Error('Failed to approve leave request');
+      }
+    } catch (error) {
+      console.error('Error approving leave request:', error);
+      toast.error(t('error_approving_leave_request'));
+    }
+  };
 
-        const total = filteredData.length;
-        const lastPage = Math.ceil(total / perPage);
-        const startIndex = (currentPage - 1) * perPage;
-        const endIndex = startIndex + perPage;
-        const paginatedData = filteredData.slice(startIndex, endIndex);
+  const handleReject = async (id: string) => {
+    try {
+      const response = await fetch(`/api/leave-requests/${id}/reject`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rejection_reason: 'Rejected by manager'
+        }),
+      });
 
-        setLeaveRequests({
-          data: paginatedData,
-          current_page: currentPage,
-          last_page: lastPage,
-          per_page: perPage,
-          total,
-          next_page_url: currentPage < lastPage ? `/leave-requests?page=${currentPage + 1}` : null,
-          prev_page_url: currentPage > 1 ? `/leave-requests?page=${currentPage - 1}` : null
-        });
-        setLoading(false);
-      }, 300);
-    }, 500);
+      if (response.ok) {
+        toast.success(t('leave_request_rejected'));
+        fetchLeaveRequests(); // Refresh the data
+      } else {
+        throw new Error('Failed to reject leave request');
+      }
+    } catch (error) {
+      console.error('Error rejecting leave request:', error);
+      toast.error(t('error_rejecting_leave_request'));
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -416,169 +318,196 @@ export default function LeaveManagementPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {leaveRequests?.data.map((request) => (
-                  <TableRow key={request.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{getTranslatedName(request.employee_name, isRTL, translatedNames, setTranslatedNames) || request.employee_name}</div>
-                        <div className="text-sm text-gray-500">{request.employee_id}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getLeaveTypeBadge(request.leave_type)}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{formatDate(request.start_date)} - {formatDate(request.end_date)}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{request.days_requested} {t('days')}</TableCell>
-                    <TableCell>{getStatusBadge(request.status)}</TableCell>
-                    <TableCell>{formatDate(request.submitted_date)}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        <PermissionContent action="read" subject="Leave">
-                          <Link href={`/modules/leave-management/${request.id}`}>
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                        </PermissionContent>
-                        {request.status === "Pending" && (
-                          <>
-                            <PermissionContent action="approve" subject="Leave">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleApprove(request.id)}
-                                className="text-green-600 hover:text-green-700"
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </Button>
-                            </PermissionContent>
-                            <PermissionContent action="reject" subject="Leave">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleReject(request.id)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </Button>
-                            </PermissionContent>
-                          </>
-                        )}
-                        <PermissionContent action="update" subject="Leave">
-                          <Link href={`/modules/leave-management/${request.id}/edit`}>
-                            <Button variant="ghost" size="sm">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </Link>
-                        </PermissionContent>
-                        <PermissionContent action="delete" subject="Leave">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(request.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </PermissionContent>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                        <span className="ml-2">{t('loading')}</span>
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : leaveRequests?.data && leaveRequests.data.length > 0 ? (
+                  leaveRequests.data.map((request) => (
+                    <TableRow key={request.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{getTranslatedName(request.employee_name, isRTL, translatedNames, setTranslatedNames) || request.employee_name}</div>
+                          <div className="text-sm text-gray-500">{request.employee_id}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getLeaveTypeBadge(request.leave_type)}</TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          <div>{formatDate(request.start_date)} - {formatDate(request.end_date)}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{request.days_requested} {t('days')}</TableCell>
+                      <TableCell>{getStatusBadge(request.status)}</TableCell>
+                      <TableCell>{formatDate(request.submitted_date)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end space-x-2">
+                          <PermissionContent action="read" subject="Leave">
+                            <Link href={`/modules/leave-management/${request.id}`}>
+                              <Button variant="ghost" size="sm">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                          </PermissionContent>
+                          {request.status === "Pending" && (
+                            <>
+                              <PermissionContent action="approve" subject="Leave">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleApprove(request.id)}
+                                  className="text-green-600 hover:text-green-700"
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
+                              </PermissionContent>
+                              <PermissionContent action="reject" subject="Leave">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleReject(request.id)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </Button>
+                              </PermissionContent>
+                            </>
+                          )}
+                          <PermissionContent action="update" subject="Leave">
+                            <Link href={`/modules/leave-management/${request.id}/edit`}>
+                              <Button variant="ghost" size="sm">
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </Link>
+                          </PermissionContent>
+                          <PermissionContent action="delete" subject="Leave">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(request.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </PermissionContent>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <div className="flex flex-col items-center">
+                        <Calendar className="h-12 w-12 text-gray-400 mb-2" />
+                        <p className="text-gray-500">{t('no_leave_requests_found')}</p>
+                        <p className="text-sm text-gray-400 mt-1">{t('no_leave_requests_description')}</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
 
-          {leaveRequests && leaveRequests.last_page > 1 && (
+          {leaveRequests && (
             <div className="flex items-center justify-between mt-4">
               <div className="text-sm text-gray-500">
-                {t('showing_results', {
-                  start: ((leaveRequests.current_page - 1) * leaveRequests.per_page) + 1,
-                  end: Math.min(leaveRequests.current_page * leaveRequests.per_page, leaveRequests.total),
-                  total: leaveRequests.total
-                })}
+                {leaveRequests.total > 0 ? (
+                  t('showing_results', {
+                    start: ((leaveRequests.current_page - 1) * leaveRequests.per_page) + 1,
+                    end: Math.min(leaveRequests.current_page * leaveRequests.per_page, leaveRequests.total),
+                    total: leaveRequests.total
+                  })
+                ) : (
+                  t('no_results_found')
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(Math.max(1, leaveRequests.current_page - 1))}
-                  disabled={leaveRequests.current_page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  {t('previous')}
-                </Button>
+              {leaveRequests.last_page > 1 && (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(1, leaveRequests.current_page - 1))}
+                    disabled={leaveRequests.current_page === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    {t('previous')}
+                  </Button>
 
-                <div className="flex items-center gap-1">
-                  {/* First page */}
-                  {leaveRequests.current_page > 2 && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(1)}
-                        className="w-8 h-8 p-0"
-                      >
-                        1
-                      </Button>
-                      {leaveRequests.current_page > 3 && (
-                        <span className="px-2 text-muted-foreground">...</span>
-                      )}
-                    </>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {/* First page */}
+                    {leaveRequests.current_page > 2 && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(1)}
+                          className="w-8 h-8 p-0"
+                        >
+                          1
+                        </Button>
+                        {leaveRequests.current_page > 3 && (
+                          <span className="px-2 text-muted-foreground">...</span>
+                        )}
+                      </>
+                    )}
 
-                  {/* Current page and surrounding pages */}
-                  {(() => {
-                    const pages = [];
-                    const startPage = Math.max(1, leaveRequests.current_page - 1);
-                    const endPage = Math.min(leaveRequests.last_page, leaveRequests.current_page + 1);
+                    {/* Current page and surrounding pages */}
+                    {(() => {
+                      const pages = [];
+                      const startPage = Math.max(1, leaveRequests.current_page - 1);
+                      const endPage = Math.min(leaveRequests.last_page, leaveRequests.current_page + 1);
 
-                    for (let page = startPage; page <= endPage; page++) {
-                      pages.push(page);
-                    }
+                      for (let page = startPage; page <= endPage; page++) {
+                        pages.push(page);
+                      }
 
-                    return pages.map((page) => (
-                      <Button
-                        key={page}
-                        variant={leaveRequests.current_page === page ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCurrentPage(page)}
-                        className="w-8 h-8 p-0"
-                      >
-                        {page}
-                      </Button>
-                    ));
-                  })()}
+                      return pages.map((page) => (
+                        <Button
+                          key={page}
+                          variant={leaveRequests.current_page === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {page}
+                        </Button>
+                      ));
+                    })()}
 
-                  {/* Last page */}
-                  {leaveRequests.current_page < leaveRequests.last_page - 1 && (
-                    <>
-                      {leaveRequests.current_page < leaveRequests.last_page - 2 && (
-                        <span className="px-2 text-muted-foreground">...</span>
-                      )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(leaveRequests.last_page)}
-                        className="w-8 h-8 p-0"
-                      >
-                        {leaveRequests.last_page}
-                      </Button>
-                    </>
-                  )}
+                    {/* Last page */}
+                    {leaveRequests.current_page < leaveRequests.last_page - 1 && (
+                      <>
+                        {leaveRequests.current_page < leaveRequests.last_page - 2 && (
+                          <span className="px-2 text-muted-foreground">...</span>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(leaveRequests.last_page)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {leaveRequests.last_page}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.min(leaveRequests.last_page, leaveRequests.current_page + 1))}
+                    disabled={leaveRequests.current_page === leaveRequests.last_page}
+                  >
+                    {t('next')}
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
                 </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(Math.min(leaveRequests.last_page, leaveRequests.current_page + 1))}
-                  disabled={leaveRequests.current_page === leaveRequests.last_page}
-                >
-                  {t('next')}
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-              </div>
+              )}
             </div>
           )}
         </CardContent>

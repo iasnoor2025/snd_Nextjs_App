@@ -52,6 +52,9 @@ model User {
   rentals_completed   Rental[]         @relation("RentalCompletedBy")
   rentals_created     Rental[]         @relation("RentalCreatedBy")
   timesheets_approved Timesheet[]      @relation("TimesheetApprovedBy")
+  salary_increments_requested SalaryIncrement[] @relation("SalaryIncrementRequestedBy")
+  salary_increments_approved SalaryIncrement[] @relation("SalaryIncrementApprovedBy")
+  salary_increments_rejected SalaryIncrement[] @relation("SalaryIncrementRejectedBy")
 
   @@map("users")
 }
@@ -303,19 +306,22 @@ model EmployeeSalary {
 }
 
 model EmployeeLeave {
-  id          Int       @id @default(autoincrement())
-  employee_id Int
-  leave_type  String
-  start_date  DateTime
-  end_date    DateTime
-  days        Int
-  reason      String?
-  status      String    @default("pending")
-  approved_by Int?
-  approved_at DateTime?
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @updatedAt
-  employee    Employee  @relation(fields: [employee_id], references: [id])
+  id               Int       @id @default(autoincrement())
+  employee_id      Int
+  leave_type       String
+  start_date       DateTime
+  end_date         DateTime
+  days             Int
+  reason           String?
+  status           String    @default("pending")
+  approved_by      Int?
+  approved_at      DateTime?
+  rejected_by      Int?
+  rejected_at      DateTime?
+  rejection_reason String?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+  employee         Employee  @relation(fields: [employee_id], references: [id])
 
   @@map("employee_leaves")
 }
@@ -414,17 +420,52 @@ model EmployeeTraining {
 model SalaryIncrement {
   id             Int       @id @default(autoincrement())
   employee_id    Int
-  increment_type String
-  amount         Decimal   @db.Decimal(10, 2)
-  percentage     Decimal?  @db.Decimal(5, 2)
-  effective_date DateTime
-  reason         String?
-  approved_by    Int?
-  approved_at    DateTime?
-  status         String    @default("pending")
-  created_at     DateTime  @default(now())
-  updated_at     DateTime  @updatedAt
-  employee       Employee  @relation(fields: [employee_id], references: [id])
+  
+  // Current salary details
+  current_base_salary        Decimal   @db.Decimal(10, 2)
+  current_food_allowance     Decimal   @default(0) @db.Decimal(10, 2)
+  current_housing_allowance  Decimal   @default(0) @db.Decimal(10, 2)
+  current_transport_allowance Decimal  @default(0) @db.Decimal(10, 2)
+  
+  // New salary details
+  new_base_salary           Decimal   @db.Decimal(10, 2)
+  new_food_allowance        Decimal   @default(0) @db.Decimal(10, 2)
+  new_housing_allowance     Decimal   @default(0) @db.Decimal(10, 2)
+  new_transport_allowance   Decimal   @default(0) @db.Decimal(10, 2)
+  
+  // Increment details
+  increment_type            String
+  increment_percentage      Decimal?  @db.Decimal(5, 2)
+  increment_amount          Decimal?  @db.Decimal(10, 2)
+  reason                    String
+  effective_date            DateTime
+  
+  // Request tracking
+  requested_by              Int
+  requested_at              DateTime   @default(now())
+  
+  // Approval tracking
+  approved_by               Int?
+  approved_at               DateTime?
+  
+  // Rejection tracking
+  rejected_by               Int?
+  rejected_at               DateTime?
+  rejection_reason          String?
+  
+  // Status and notes
+  status                    String    @default("pending")
+  notes                     String?
+  
+  created_at                DateTime  @default(now())
+  updated_at                DateTime  @updatedAt
+  deleted_at                DateTime?
+  
+  // Relations
+  employee                  Employee   @relation(fields: [employee_id], references: [id])
+  requested_by_user         User       @relation("SalaryIncrementRequestedBy", fields: [requested_by], references: [id])
+  approved_by_user          User?      @relation("SalaryIncrementApprovedBy", fields: [approved_by], references: [id])
+  rejected_by_user          User?      @relation("SalaryIncrementRejectedBy", fields: [rejected_by], references: [id])
 
   @@map("salary_increments")
 }

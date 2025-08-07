@@ -94,8 +94,7 @@ function CreateLeaveRequestContent() {
         },
         body: JSON.stringify({
           ...formData,
-          days_requested: daysRequested,
-          status: 'Pending'
+          days: daysRequested,
         }),
       });
 
@@ -103,8 +102,13 @@ function CreateLeaveRequestContent() {
         toast.success('Leave request submitted successfully');
         router.push('/modules/leave-management');
       } else {
-        const error = await response.json();
-        toast.error(error.message || 'Failed to submit leave request');
+        try {
+          const error = await response.json();
+          toast.error(error.error || error.message || 'Failed to submit leave request');
+        } catch (parseError) {
+          console.error('Error parsing response:', parseError);
+          toast.error('Failed to submit leave request');
+        }
       }
     } catch (error) {
       console.error('Error submitting leave request:', error);

@@ -12,12 +12,11 @@ const getLeavesHandler = async (request: NextRequest) => {
     const page = parseInt(searchParams.get('page') || '1');
     const status = searchParams.get('status') || '';
     const leaveType = searchParams.get('leaveType') || '';
+    const search = searchParams.get('search') || '';
 
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      deleted_at: null,
-    };
+    const where: any = {};
 
     // Get session to check user role
     const session = await getServerSession(authConfig);
@@ -35,12 +34,29 @@ const getLeavesHandler = async (request: NextRequest) => {
       }
     }
 
-    if (status) {
+    if (status && status !== 'all') {
       where.status = status;
     }
 
-    if (leaveType) {
+    if (leaveType && leaveType !== 'all') {
       where.leave_type = leaveType;
+    }
+
+    // Add search functionality
+    if (search) {
+      where.OR = [
+        {
+          employee: {
+            OR: [
+              { first_name: { contains: search, mode: 'insensitive' } },
+              { last_name: { contains: search, mode: 'insensitive' } },
+              { employee_id: { contains: search, mode: 'insensitive' } },
+            ],
+          },
+        },
+        { reason: { contains: search, mode: 'insensitive' } },
+        { leave_type: { contains: search, mode: 'insensitive' } },
+      ];
     }
 
     const [leaves, total] = await Promise.all([

@@ -213,51 +213,67 @@ function EditLeaveRequestPage() {
     setError(null);
     
     try {
-      // Simulate API call with better error handling
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch(`/api/leave-requests/${leaveId}/public`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Leave request not found');
+        } else if (response.status === 401) {
+          throw new Error('Not authenticated');
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+      }
+
+      const data = await response.json();
       
-      const mockLeaveRequest: LeaveRequest = {
-        id: leaveId,
-        employee_name: "John Smith",
-        employee_id: "EMP001",
-        employee_avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-        leave_type: "Annual Leave",
-        start_date: "2024-02-15",
-        end_date: "2024-02-20",
-        days_requested: 5,
-        reason: "Family vacation to Europe. Planning to visit multiple countries including France, Italy, and Spain. This is a long-planned trip that has been postponed twice due to work commitments.",
-        status: "Pending",
-        submitted_date: "2024-01-15T10:00:00Z",
-        approved_by: null,
-        approved_date: null,
-        comments: null,
-        created_at: "2024-01-15T10:00:00Z",
-        updated_at: "2024-01-15T10:00:00Z",
-        department: "Engineering",
-        position: "Senior Software Engineer",
-        total_leave_balance: 25,
-        leave_taken_this_year: 8,
-        attachments: [
-          {
-            id: "1",
-            name: "Travel_Itinerary.pdf",
-            url: "#",
-            type: "application/pdf"
-          }
-        ]
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to load leave request');
+      }
+
+      const leaveRequestData = data.data;
+      
+      // Transform the API response to match our interface
+      const transformedLeaveRequest: LeaveRequest = {
+        id: leaveRequestData.id,
+        employee_name: leaveRequestData.employee_name,
+        employee_id: leaveRequestData.employee_id,
+        employee_avatar: leaveRequestData.employee_avatar,
+        leave_type: leaveRequestData.leave_type,
+        start_date: leaveRequestData.start_date,
+        end_date: leaveRequestData.end_date,
+        days_requested: leaveRequestData.days_requested,
+        reason: leaveRequestData.reason,
+        status: leaveRequestData.status,
+        submitted_date: leaveRequestData.submitted_date,
+        approved_by: leaveRequestData.approved_by,
+        approved_date: leaveRequestData.approved_date,
+        comments: leaveRequestData.comments,
+        created_at: leaveRequestData.created_at,
+        updated_at: leaveRequestData.updated_at,
+        department: leaveRequestData.department,
+        position: leaveRequestData.position,
+        total_leave_balance: leaveRequestData.total_leave_balance,
+        leave_taken_this_year: leaveRequestData.leave_taken_this_year,
+        attachments: leaveRequestData.attachments || [],
       };
       
-      setLeaveRequest(mockLeaveRequest);
+      setLeaveRequest(transformedLeaveRequest);
       
       // Set form values
       form.reset({
-        leave_type: mockLeaveRequest.leave_type,
-        start_date: mockLeaveRequest.start_date,
-        end_date: mockLeaveRequest.end_date,
-        days_requested: mockLeaveRequest.days_requested,
-        reason: mockLeaveRequest.reason,
-        status: mockLeaveRequest.status,
-        comments: mockLeaveRequest.comments || '',
+        leave_type: transformedLeaveRequest.leave_type,
+        start_date: transformedLeaveRequest.start_date,
+        end_date: transformedLeaveRequest.end_date,
+        days_requested: transformedLeaveRequest.days_requested,
+        reason: transformedLeaveRequest.reason,
+        status: transformedLeaveRequest.status,
+        comments: transformedLeaveRequest.comments || '',
         notify_employee: false,
         send_approval_notification: false
       });
@@ -322,9 +338,6 @@ function EditLeaveRequestPage() {
 
     setSaving(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       // Validate business rules
       if (data.start_date > data.end_date) {
         toast.error('Start date cannot be after end date');
@@ -341,6 +354,34 @@ function EditLeaveRequestPage() {
       if (data.days_requested > remainingBalance) {
         toast.error(`Insufficient leave balance. Available: ${remainingBalance} days`);
         return;
+      }
+
+      // Send update request to API
+      const response = await fetch(`/api/leave-requests/${leaveId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          leave_type: data.leave_type,
+          start_date: data.start_date,
+          end_date: data.end_date,
+          days: data.days_requested,
+          reason: data.reason,
+          status: data.status,
+          comments: data.comments,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update leave request');
+      }
+
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update leave request');
       }
 
       toast.success('Leave request updated successfully');

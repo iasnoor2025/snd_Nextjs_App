@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import apiService from '@/lib/api-service';
 
 export interface Employee {
   id: string;
@@ -62,51 +61,23 @@ export function EmployeeDropdown({
     try {
       console.log('Loading employees...');
       
-             // Try API service first
-       try {
-         console.log('Calling apiService.getEmployees with params:', { limit: 1000, page: 1, all: true });
-         const response = await apiService.getEmployees({ 
-           limit: 1000, 
-           page: 1,
-           all: true
-         });
-         
-         console.log('API Service Response:', response);
-         console.log('Response type:', typeof response);
-         console.log('Response keys:', Object.keys(response || {}));
-         
-         // Handle different response formats
-         const employeeData = (response as any)?.data || response || [];
-         
-         console.log(`Loaded ${employeeData.length} employees from database`);
-         console.log('Employee data sample:', employeeData.slice(0, 2));
-         
-         if (employeeData.length === 0) {
-           setErrorMessage('No employees found in the database.');
-         }
-         
-         setEmployees(employeeData);
-         return;
-       } catch (apiError) {
-         console.error('API Service failed, trying direct fetch:', apiError);
-         console.error('Error details:', apiError);
-       }
-       
-       // Fallback to direct fetch
-       console.log('Trying direct fetch...');
-       const response = await fetch('/api/employees?limit=1000&page=1&all=true', {
-         credentials: 'include',
-       });
+      // Use the public API endpoint that doesn't require authentication
+      const response = await fetch('/api/employees/public?all=true&limit=1000', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
       const data = await response.json();
-      console.log('Direct fetch response:', data);
+      console.log('Employees API response:', data);
       
       const employeeData = data.data || data || [];
-      console.log(`Loaded ${employeeData.length} employees via direct fetch`);
+      console.log(`Loaded ${employeeData.length} employees`);
       
       if (employeeData.length === 0) {
         setErrorMessage('No employees found in the database.');
@@ -116,7 +87,6 @@ export function EmployeeDropdown({
     } catch (error) {
       console.error('Error loading employees:', error);
       
-      // Provide more specific error messages
       let errorMsg = 'Failed to load employees. Please try again.';
       if (error instanceof Error) {
         if (error.message.includes('Network error')) {
@@ -255,11 +225,19 @@ export function useEmployees() {
     setError(null);
 
     try {
-      const response = await apiService.getEmployees({ 
-        per_page: 1000, 
-        page: 1 
+      const response = await fetch('/api/employees/public?all=true&limit=1000', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
-      const employeeData = (response as any)?.data || response || [];
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      const employeeData = data.data || data || [];
       setEmployees(employeeData);
     } catch (err) {
       console.error('Error loading employees:', err);

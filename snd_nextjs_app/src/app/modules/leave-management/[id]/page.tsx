@@ -179,57 +179,30 @@ function LeaveRequestDetailPage() {
     setError(null);
     
     try {
-      // Simulate API call with better error handling
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+      const response = await fetch(`/api/leave-requests/${leaveId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Leave request not found');
+        } else if (response.status === 401) {
+          throw new Error('Not authenticated');
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+      }
+
+      const data = await response.json();
       
-      // Mock data with more realistic structure
-      const mockLeaveRequest: LeaveRequest = {
-        id: leaveId,
-        employee_name: "John Smith",
-        employee_id: "EMP001",
-        employee_avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-        leave_type: "Annual Leave",
-        start_date: "2024-02-15",
-        end_date: "2024-02-20",
-        days_requested: 5,
-        reason: "Family vacation to Europe. Planning to visit multiple countries including France, Italy, and Spain. This is a long-planned trip that has been postponed twice due to work commitments.",
-        status: "Pending",
-        submitted_date: "2024-01-15T10:00:00Z",
-        approved_by: null,
-        approved_date: null,
-        comments: null,
-        created_at: "2024-01-15T10:00:00Z",
-        updated_at: "2024-01-15T10:00:00Z",
-        department: "Engineering",
-        position: "Senior Software Engineer",
-        total_leave_balance: 25,
-        leave_taken_this_year: 8,
-        attachments: [
-          {
-            id: "1",
-            name: "Travel_Itinerary.pdf",
-            url: "#",
-            type: "application/pdf"
-          },
-          {
-            id: "2", 
-            name: "Flight_Bookings.pdf",
-            url: "#",
-            type: "application/pdf"
-          }
-        ],
-        approval_history: [
-          {
-            id: "1",
-            action: "Submitted",
-            approver: "John Smith",
-            date: "2024-01-15T10:00:00Z",
-            comments: "Leave request submitted for approval"
-          }
-        ]
-      };
-      
-      setLeaveRequest(mockLeaveRequest);
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to load leave request');
+      }
+
+      setLeaveRequest(data.data);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load leave request';
       setError(errorMessage);
@@ -258,8 +231,18 @@ function LeaveRequestDetailPage() {
 
     setDeleting(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch(`/api/leave-requests/${leaveId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete leave request');
+      }
+
       toast.success('Leave request deleted successfully');
       router.push('/modules/leave-management');
     } catch (err) {
@@ -274,15 +257,26 @@ function LeaveRequestDetailPage() {
     if (!leaveRequest) return;
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setLeaveRequest(prev => prev ? { ...prev, status: 'Approved', approved_by: user?.name || 'Current User', approved_date: new Date().toISOString() } : null);
+      const response = await fetch(`/api/leave-requests/${leaveId}/approve`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to approve leave request');
+      }
+
       toast.success('Leave request approved successfully');
+      // Refresh the leave request data
+      await fetchLeaveRequest();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to approve leave request';
       toast.error(errorMessage);
     }
-  }, [leaveRequest, user]);
+  }, [leaveRequest, leaveId, fetchLeaveRequest]);
 
   const handleReject = useCallback(async () => {
     if (!leaveRequest) return;
@@ -291,15 +285,29 @@ function LeaveRequestDetailPage() {
     if (!reason) return;
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setLeaveRequest(prev => prev ? { ...prev, status: 'Rejected', comments: reason } : null);
+      const response = await fetch(`/api/leave-requests/${leaveId}/reject`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          rejection_reason: reason,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to reject leave request');
+      }
+
       toast.success('Leave request rejected');
+      // Refresh the leave request data
+      await fetchLeaveRequest();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to reject leave request';
       toast.error(errorMessage);
     }
-  }, [leaveRequest]);
+  }, [leaveRequest, leaveId, fetchLeaveRequest]);
 
   const getStatusBadge = useCallback((status: string) => {
     const statusConfig = {
