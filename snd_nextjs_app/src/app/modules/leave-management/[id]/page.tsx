@@ -42,6 +42,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
 
 interface LeaveRequest {
   id: string;
@@ -173,6 +174,7 @@ function LeaveRequestDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const fetchLeaveRequest = useCallback(async () => {
     setLoading(true);
@@ -225,10 +227,6 @@ function LeaveRequestDetailPage() {
   const handleDelete = useCallback(async () => {
     if (!leaveRequest) return;
     
-    if (!confirm(`Are you sure you want to delete this leave request? This action cannot be undone.`)) {
-      return;
-    }
-
     setDeleting(true);
     try {
       const response = await fetch(`/api/leave-requests/${leaveId}`, {
@@ -250,8 +248,9 @@ function LeaveRequestDetailPage() {
       toast.error(errorMessage);
     } finally {
       setDeleting(false);
+      setShowDeleteDialog(false);
     }
-  }, [leaveRequest, router]);
+  }, [leaveRequest, leaveId, router]);
 
   const handleApprove = useCallback(async () => {
     if (!leaveRequest) return;
@@ -310,19 +309,22 @@ function LeaveRequestDetailPage() {
   }, [leaveRequest, leaveId, fetchLeaveRequest]);
 
   const getStatusBadge = useCallback((status: string) => {
+    // Normalize status to handle both uppercase and lowercase
+    const normalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    
     const statusConfig = {
       'Pending': { variant: 'secondary' as const, icon: Clock, color: 'bg-yellow-100 text-yellow-800' },
       'Approved': { variant: 'default' as const, icon: CheckCircle, color: 'bg-green-100 text-green-800' },
       'Rejected': { variant: 'destructive' as const, icon: XCircle, color: 'bg-red-100 text-red-800' }
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.Pending;
+    const config = statusConfig[normalizedStatus as keyof typeof statusConfig] || statusConfig.Pending;
     const Icon = config.icon;
 
     return (
       <Badge variant={config.variant} className={`flex items-center gap-1 ${config.color}`}>
         <Icon className="h-3 w-3" />
-        {status}
+        {normalizedStatus}
       </Badge>
     );
   }, []);
@@ -412,16 +414,16 @@ function LeaveRequestDetailPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            {hasPermission('leave-requests.edit', 'leave-request') && (
+            {hasPermission('update', 'Leave') && (
               <Button onClick={handleEdit} variant="outline">
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </Button>
             )}
-            {hasPermission('leave-requests.delete', 'leave-request') && (
+            {hasPermission('delete', 'Leave') && (
               <Button
                 variant="destructive"
-                onClick={handleDelete}
+                onClick={() => setShowDeleteDialog(true)}
                 disabled={deleting}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
@@ -454,36 +456,42 @@ function LeaveRequestDetailPage() {
         </div>
 
         {/* Status Banner */}
-        <Alert className={`border-l-4 ${
-          leaveRequest.status === 'Approved' ? 'border-green-500 bg-green-50' :
-          leaveRequest.status === 'Rejected' ? 'border-red-500 bg-red-50' :
-          'border-yellow-500 bg-yellow-50'
-        }`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {leaveRequest.status === 'Approved' ? <CheckCircle className="h-4 w-4 text-green-600" /> :
-               leaveRequest.status === 'Rejected' ? <XCircle className="h-4 w-4 text-red-600" /> :
-               <Clock className="h-4 w-4 text-yellow-600" />}
-              <span className="font-medium">
-                {leaveRequest.status === 'Approved' ? 'Leave Request Approved' :
-                 leaveRequest.status === 'Rejected' ? 'Leave Request Rejected' :
-                 'Leave Request Pending Approval'}
-              </span>
-            </div>
-            {leaveRequest.status === 'Pending' && hasPermission('leave-requests.approve', 'leave-request') && (
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleApprove}>
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  Approve
-                </Button>
-                <Button size="sm" variant="destructive" onClick={handleReject}>
-                  <XCircle className="h-4 w-4 mr-2" />
-                  Reject
-                </Button>
+        {(() => {
+          const normalizedStatus = leaveRequest.status.charAt(0).toUpperCase() + leaveRequest.status.slice(1).toLowerCase();
+          return (
+            <Alert className={`border-l-4 ${
+              normalizedStatus === 'Approved' ? 'border-green-500 bg-green-50' :
+              normalizedStatus === 'Rejected' ? 'border-red-500 bg-red-50' :
+              'border-yellow-500 bg-yellow-50'
+            }`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {normalizedStatus === 'Approved' ? <CheckCircle className="h-4 w-4 text-green-600" /> :
+                   normalizedStatus === 'Rejected' ? <XCircle className="h-4 w-4 text-red-600" /> :
+                   <Clock className="h-4 w-4 text-yellow-600" />}
+                  <span className="font-medium">
+                    {normalizedStatus === 'Approved' ? 'Leave Request Approved' :
+                     normalizedStatus === 'Rejected' ? 'Leave Request Rejected' :
+                     normalizedStatus === 'Pending' ? 'Leave Request Pending Approval' :
+                     `Leave Request ${normalizedStatus}`}
+                  </span>
+                </div>
+                {(normalizedStatus === 'Pending') && hasPermission('approve', 'Leave') && (
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={handleApprove}>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Approve
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={handleReject}>
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Reject
+                    </Button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </Alert>
+            </Alert>
+          );
+        })()}
 
         {/* Tabbed Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
@@ -575,16 +583,16 @@ function LeaveRequestDetailPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Total Balance</span>
-                      <span className="text-sm font-medium">{leaveRequest.total_leave_balance} days</span>
+                      <span className="text-sm font-medium">{leaveRequest.total_leave_balance || 0} days</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Used This Year</span>
-                      <span className="text-sm font-medium">{leaveRequest.leave_taken_this_year} days</span>
+                      <span className="text-sm font-medium">{leaveRequest.leave_taken_this_year || 0} days</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Remaining</span>
                       <span className="text-sm font-medium">
-                        {(leaveRequest.total_leave_balance || 0) - (leaveRequest.leave_taken_this_year || 0)} days
+                        {Math.max(0, (leaveRequest.total_leave_balance || 0) - (leaveRequest.leave_taken_this_year || 0))} days
                       </span>
                     </div>
                     <div className="space-y-2">
@@ -750,12 +758,25 @@ function LeaveRequestDetailPage() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </ErrorBoundary>
-  );
-}
+                     </TabsContent>
+         </Tabs>
+       </div>
+
+       {/* Confirmation Dialog */}
+       <ConfirmationDialog
+         open={showDeleteDialog}
+         onOpenChange={setShowDeleteDialog}
+         title="Delete Leave Request"
+         description="Are you sure you want to delete this leave request? This action cannot be undone."
+         confirmText="Delete"
+         cancelText="Cancel"
+         variant="destructive"
+         onConfirm={handleDelete}
+         loading={deleting}
+       />
+     </ErrorBoundary>
+   );
+ }
 
 export default function LeaveRequestDetailPageWrapper() {
   return (

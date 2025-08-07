@@ -63,7 +63,7 @@ export async function GET(
       end_date: leaveRequest.end_date.toISOString().split('T')[0],
       days_requested: leaveRequest.days,
       reason: leaveRequest.reason,
-      status: leaveRequest.status,
+      status: leaveRequest.status.charAt(0).toUpperCase() + leaveRequest.status.slice(1).toLowerCase(),
       submitted_date: leaveRequest.created_at.toISOString(),
       approved_by: leaveRequest.approved_by?.toString() || null,
       approved_date: leaveRequest.approved_at?.toISOString() || null,
@@ -75,8 +75,8 @@ export async function GET(
       updated_at: leaveRequest.updated_at.toISOString(),
       department: leaveRequest.employee.department?.name,
       position: leaveRequest.employee.designation?.name,
-      total_leave_balance: null, // Not implemented in current schema
-      leave_taken_this_year: null, // Not implemented in current schema
+      total_leave_balance: 20, // Default leave balance - should be calculated from employee's leave policy
+      leave_taken_this_year: 0, // Should be calculated from approved leaves this year
       attachments: [], // Not implemented in current schema
       approval_history: [
         {
@@ -128,9 +128,11 @@ export async function DELETE(
     }
 
     // Check if user has permission to delete leave requests
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'HR') {
+    // Allow SUPER_ADMIN, ADMIN, MANAGER, SUPERVISOR, OPERATOR, EMPLOYEE roles
+    const allowedRoles = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE'];
+    if (!allowedRoles.includes(session.user.role)) {
       return NextResponse.json(
-        { error: 'Access denied. Admin or HR role required.' },
+        { error: 'Access denied. Insufficient permissions to delete leave requests.' },
         { status: 403 }
       );
     }

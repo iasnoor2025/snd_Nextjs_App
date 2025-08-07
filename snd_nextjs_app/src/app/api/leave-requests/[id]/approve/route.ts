@@ -19,9 +19,11 @@ export async function PUT(
     }
 
     // Check if user has permission to approve leave requests
-    if (session.user.role !== 'ADMIN' && session.user.role !== 'HR') {
+    // Allow SUPER_ADMIN, ADMIN, MANAGER, SUPERVISOR, OPERATOR, EMPLOYEE roles
+    const allowedRoles = ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE'];
+    if (!allowedRoles.includes(session.user.role)) {
       return NextResponse.json(
-        { error: 'Access denied. Admin or HR role required.' },
+        { error: 'Access denied. Insufficient permissions to approve leave requests.' },
         { status: 403 }
       );
     }

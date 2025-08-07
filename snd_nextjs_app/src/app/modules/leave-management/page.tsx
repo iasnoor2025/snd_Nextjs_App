@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useTranslation } from 'react-i18next';
 import { useI18n } from '@/hooks/use-i18n';
 import { getTranslatedName } from '@/lib/translation-utils';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 
 interface LeaveRequest {
   id: string;
@@ -59,6 +60,8 @@ export default function LeaveManagementPage() {
   const [perPage, setPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({});
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Get allowed actions for leave management
   const allowedActions = getAllowedActions('Leave');
@@ -143,25 +146,33 @@ export default function LeaveManagementPage() {
   }, [search, status, leaveType, perPage, currentPage]);
 
   const handleDelete = async (id: string) => {
-    if (confirm(t('confirm_delete_leave_request'))) {
-      try {
-        const response = await fetch(`/api/leave-requests/${id}`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+    setDeleteId(id);
+    setShowDeleteDialog(true);
+  };
 
-        if (response.ok) {
-          toast.success(t('leave_request_deleted_successfully'));
-          fetchLeaveRequests(); // Refresh the data
-        } else {
-          throw new Error('Failed to delete leave request');
-        }
-      } catch (error) {
-        console.error('Error deleting leave request:', error);
-        toast.error(t('error_deleting_leave_request'));
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    
+    try {
+      const response = await fetch(`/api/leave-requests/${deleteId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        toast.success(t('leave_request_deleted_successfully'));
+        fetchLeaveRequests(); // Refresh the data
+      } else {
+        throw new Error('Failed to delete leave request');
       }
+    } catch (error) {
+      console.error('Error deleting leave request:', error);
+      toast.error(t('error_deleting_leave_request'));
+    } finally {
+      setShowDeleteDialog(false);
+      setDeleteId(null);
     }
   };
 
@@ -354,7 +365,7 @@ export default function LeaveManagementPage() {
                               </Button>
                             </Link>
                           </PermissionContent>
-                          {request.status === "Pending" && (
+                          {(request.status === "Pending" || request.status === "pending") && (
                             <>
                               <PermissionContent action="approve" subject="Leave">
                                 <Button
@@ -541,9 +552,21 @@ export default function LeaveManagementPage() {
               </PermissionContent>
             </div>
           </CardContent>
-        </Card>
-      </RoleContent>
-    </div>
-    </ProtectedRoute>
-  );
-}
+                 </Card>
+       </RoleContent>
+     </div>
+
+     {/* Confirmation Dialog */}
+     <ConfirmationDialog
+       open={showDeleteDialog}
+       onOpenChange={setShowDeleteDialog}
+       title={t('delete_leave_request')}
+       description={t('confirm_delete_leave_request')}
+       confirmText={t('delete')}
+       cancelText={t('cancel')}
+       variant="destructive"
+       onConfirm={confirmDelete}
+     />
+     </ProtectedRoute>
+   );
+ }
