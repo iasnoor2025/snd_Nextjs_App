@@ -250,6 +250,9 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                     <SelectItem value="iqama">Iqama</SelectItem>
                     <SelectItem value="passport">Passport</SelectItem>
                     <SelectItem value="driving_license">Driving License</SelectItem>
+                    <SelectItem value="operator_license">Operator License</SelectItem>
+                    <SelectItem value="spsp_license">SPSP License</SelectItem>
+                    <SelectItem value="tuv_certification">TUV Certification</SelectItem>                  
                     <SelectItem value="contract">Employment Contract</SelectItem>
                     <SelectItem value="medical">Medical Certificate</SelectItem>
                     <SelectItem value="general">General Document</SelectItem>
