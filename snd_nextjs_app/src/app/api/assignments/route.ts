@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+import { prisma, safePrismaOperation } from '@/lib/db';
 import { withEmployeeListPermission } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
 
@@ -28,10 +28,12 @@ const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: {
     // For employee users, only show their own assignments
     if (user?.role === 'EMPLOYEE') {
       // Find employee record that matches user's national_id
-      const ownEmployee = await prisma.employee.findFirst({
-        where: { iqama_number: user.national_id },
-        select: { id: true },
-      });
+      const ownEmployee = await safePrismaOperation(() => 
+        prisma.employee.findFirst({
+          where: { iqama_number: user.national_id },
+          select: { id: true },
+        })
+      );
       if (ownEmployee) {
         where.employee_id = ownEmployee.id;
       }
@@ -60,21 +62,25 @@ const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: {
     }
 
     const [assignments, total] = await Promise.all([
-      prisma.employeeAssignment.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
-        include: {
-          employee: {
-            include: {
-              user: true,
+      safePrismaOperation(() => 
+        prisma.employeeAssignment.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { created_at: 'desc' },
+          include: {
+            employee: {
+              include: {
+                user: true,
+              },
             },
+            project: true,
           },
-          project: true,
-        },
-      }),
-      prisma.employeeAssignment.count({ where }),
+        })
+      ),
+      safePrismaOperation(() => 
+        prisma.employeeAssignment.count({ where })
+      ),
     ]);
 
     const totalPages = Math.ceil(total / limit);

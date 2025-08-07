@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
 import { checkUserPermission } from './permission-service';
 import { Action, Subject } from './custom-rbac';
-import { prisma } from '@/lib/db';
+import { prisma, initializePrisma } from '@/lib/db';
 
 export interface PermissionConfig {
   action: Action;
@@ -620,6 +620,9 @@ export function withAuth(
 ) {
   return async (request: NextRequest, params?: any): Promise<NextResponse> => {
     try {
+      // Ensure Prisma is initialized before any operations
+      await initializePrisma();
+      
       const session = await getServerSession(authConfig);
       if (!session?.user) {
         return NextResponse.json(

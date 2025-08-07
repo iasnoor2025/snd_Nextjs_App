@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+import { prisma, safePrismaOperation } from '@/lib/db';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
 
@@ -19,20 +19,22 @@ const getTimesheetsHandler = async (request: NextRequest) => {
 
     // Allow test access without authentication
     if (test === 'true') {
-      const timesheets = await prisma.timesheet.findMany({
-        take: 5,
-        include: {
-          employee: {
-            include: {
-              user: true,
+      const timesheets = await safePrismaOperation(() => 
+        prisma.timesheet.findMany({
+          take: 5,
+          include: {
+            employee: {
+              include: {
+                user: true,
+              },
             },
+            project_rel: true,
+            rental: true,
+            assignment: true,
+            approved_by_user: true,
           },
-          project_rel: true,
-          rental: true,
-          assignment: true,
-          approved_by_user: true,
-        },
-      });
+        })
+      );
 
       // Transform the response to match frontend interface
       const transformedTimesheets = timesheets.map(timesheet => ({
@@ -99,10 +101,12 @@ const getTimesheetsHandler = async (request: NextRequest) => {
     // For employee users, only show their own timesheets
     if (user?.role === 'EMPLOYEE') {
       // Find employee record that matches user's national_id
-      const ownEmployee = await prisma.employee.findFirst({
-        where: { iqama_number: user.national_id },
-        select: { id: true },
-      });
+      const ownEmployee = await safePrismaOperation(() => 
+        prisma.employee.findFirst({
+          where: { iqama_number: user.national_id },
+          select: { id: true },
+        })
+      );
       if (ownEmployee) {
         where.employee_id = ownEmployee.id;
       }

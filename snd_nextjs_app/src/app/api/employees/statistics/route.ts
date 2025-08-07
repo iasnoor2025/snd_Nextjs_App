@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+import { prisma, initializePrisma } from '@/lib/db';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
 
@@ -8,20 +8,8 @@ const getEmployeeStatisticsHandler = async (request: NextRequest) => {
   try {
     console.log('Employee Statistics API called');
 
-    // Test database connection first
-    try {
-      await prisma.$connect();
-      console.log('Database connection successful');
-    } catch (dbError) {
-      console.error('Database connection failed:', dbError);
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Database connection failed: ' + (dbError instanceof Error ? dbError.message : 'Unknown error'),
-        },
-        { status: 500 }
-      );
-    }
+    // Ensure Prisma is initialized before any operations
+    await initializePrisma();
 
     // Get session to check user role
     const session = await getServerSession(authConfig);
@@ -104,15 +92,14 @@ const getEmployeeStatisticsHandler = async (request: NextRequest) => {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : 'No stack trace'
     });
+    
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to fetch employee statistics: ' + (error as Error).message
+        message: 'Failed to fetch employee statistics. Please try refreshing the page.'
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 };
 
