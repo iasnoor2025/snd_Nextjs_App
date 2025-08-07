@@ -922,9 +922,20 @@ export default function EmployeeManagementPage() {
                           )}
                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
-                          <Badge variant={employee.status === 'active' ? 'default' : 'secondary'}>
+                          <Badge 
+                            variant={
+                              employee.status === 'active' ? 'default' : 
+                              employee.status === 'on_leave' ? 'secondary' :
+                              employee.status === 'inactive' ? 'destructive' :
+                              'secondary'
+                            }
+                            className={
+                              employee.status === 'on_leave' ? 'bg-yellow-100 text-yellow-800' : ''
+                            }
+                          >
                             {employee.status === 'active' ? t('employee:status.active') :
                              employee.status === 'inactive' ? t('employee:status.inactive') :
+                             employee.status === 'on_leave' ? 'On Leave' :
                              employee.status || t('common.na')}
                           </Badge>
                         </TableCell>

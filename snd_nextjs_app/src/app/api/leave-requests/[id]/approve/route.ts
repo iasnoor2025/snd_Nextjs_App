@@ -59,6 +59,17 @@ export async function PUT(
       }
     });
 
+    // Update employee status to 'on_leave' if the leave is currently active
+    const today = new Date();
+    const isLeaveCurrentlyActive = leaveRequest.start_date <= today && leaveRequest.end_date >= today;
+    
+    if (isLeaveCurrentlyActive) {
+      await prisma.employee.update({
+        where: { id: leaveRequest.employee_id },
+        data: { status: 'on_leave' }
+      });
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Leave request approved successfully'

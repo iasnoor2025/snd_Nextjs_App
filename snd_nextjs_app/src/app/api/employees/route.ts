@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { withAuth } from '@/lib/rbac/api-middleware';
+import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
 
 // GET /api/employees - List employees
 const getEmployeesHandler = async (request: NextRequest) => {
@@ -89,6 +90,14 @@ const getEmployeesHandler = async (request: NextRequest) => {
 
     console.log(`✅ Found ${employees.length} employees out of ${total} total`);
     console.log(`📊 Total assignments found: ${employees.reduce((sum, emp) => sum + emp.employee_assignments.length, 0)}`);
+
+    // Update employee statuses based on current leave status
+    console.log('🔄 Updating employee statuses based on leave...');
+    const statusUpdatePromises = employees.map(employee => 
+      updateEmployeeStatusBasedOnLeave(employee.id)
+    );
+    await Promise.all(statusUpdatePromises);
+    console.log('✅ Employee statuses updated');
 
     // Transform the data to include full_name, proper department/designation names, and current assignment
     const transformedEmployees = employees.map(employee => {

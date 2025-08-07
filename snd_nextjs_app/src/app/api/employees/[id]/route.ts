@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
+import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
 
 // GET handler with employee data filtering
 const getEmployeeHandler = async (
@@ -56,61 +57,90 @@ const getEmployeeHandler = async (
       );
     }
 
+    // Update employee status based on current leave status
+    await updateEmployeeStatusBasedOnLeave(employeeId);
+    
+    // Fetch updated employee data after status update
+    const updatedEmployee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      include: {
+        department: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        designation: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!updatedEmployee) {
+      return NextResponse.json(
+        { error: "Employee not found after status update" },
+        { status: 404 }
+      );
+    }
+
     // Format the response
     const formattedEmployee = {
-      id: employee.id,
-      file_number: employee.file_number,
-      first_name: employee.first_name,
-      middle_name: employee.middle_name,
-      last_name: employee.last_name,
-      full_name: `${employee.first_name} ${employee.middle_name ? employee.middle_name + ' ' : ''}${employee.last_name}`,
-      email: employee.email,
-      phone: employee.phone,
-      employee_id: employee.employee_id,
-      department: employee.department,
-      designation: employee.designation,
-      status: employee.status,
-      hire_date: employee.hire_date?.toISOString().slice(0, 10),
-      basic_salary: employee.basic_salary,
-      nationality: employee.nationality,
-      hourly_rate: employee.hourly_rate,
-      overtime_rate_multiplier: employee.overtime_rate_multiplier,
-      overtime_fixed_rate: employee.overtime_fixed_rate,
-      contract_days_per_month: employee.contract_days_per_month,
-      contract_hours_per_day: employee.contract_hours_per_day,
-      date_of_birth: employee.date_of_birth?.toISOString().slice(0, 10),
-      address: employee.address,
-      city: employee.city,
-      state: employee.state,
-      postal_code: employee.postal_code,
-      country: employee.country,
-      emergency_contact_name: employee.emergency_contact_name,
-      emergency_contact_phone: employee.emergency_contact_phone,
-      emergency_contact_relationship: employee.emergency_contact_relationship,
-      iqama_number: employee.iqama_number,
-      iqama_expiry: employee.iqama_expiry?.toISOString().slice(0, 10),
-      passport_number: employee.passport_number,
-      passport_expiry: employee.passport_expiry?.toISOString().slice(0, 10),
-      driving_license_number: employee.driving_license_number,
-      driving_license_expiry: employee.driving_license_expiry?.toISOString().slice(0, 10),
-      operator_license_number: employee.operator_license_number,
-      operator_license_expiry: employee.operator_license_expiry?.toISOString().slice(0, 10),
-      tuv_certification_number: employee.tuv_certification_number,
-      tuv_certification_expiry: employee.tuv_certification_expiry?.toISOString().slice(0, 10),
-      spsp_license_number: employee.spsp_license_number,
-      spsp_license_expiry: employee.spsp_license_expiry?.toISOString().slice(0, 10),
-      notes: employee.notes,
-      current_location: employee.current_location,
-      food_allowance: employee.food_allowance,
-      housing_allowance: employee.housing_allowance,
-      transport_allowance: employee.transport_allowance,
-      supervisor: employee.supervisor,
-      iqama_file: employee.iqama_file,
-      passport_file: employee.passport_file,
-      driving_license_file: employee.driving_license_file,
-      operator_license_file: employee.operator_license_file,
-      tuv_certification_file: employee.tuv_certification_file,
-      spsp_license_file: employee.spsp_license_file,
+      id: updatedEmployee.id,
+      file_number: updatedEmployee.file_number,
+      first_name: updatedEmployee.first_name,
+      middle_name: updatedEmployee.middle_name,
+      last_name: updatedEmployee.last_name,
+      full_name: `${updatedEmployee.first_name} ${updatedEmployee.middle_name ? updatedEmployee.middle_name + ' ' : ''}${updatedEmployee.last_name}`,
+      email: updatedEmployee.email,
+      phone: updatedEmployee.phone,
+      employee_id: updatedEmployee.employee_id,
+      department: updatedEmployee.department,
+      designation: updatedEmployee.designation,
+      status: updatedEmployee.status,
+      hire_date: updatedEmployee.hire_date?.toISOString().slice(0, 10),
+      basic_salary: updatedEmployee.basic_salary,
+      nationality: updatedEmployee.nationality,
+      hourly_rate: updatedEmployee.hourly_rate,
+      overtime_rate_multiplier: updatedEmployee.overtime_rate_multiplier,
+      overtime_fixed_rate: updatedEmployee.overtime_fixed_rate,
+      contract_days_per_month: updatedEmployee.contract_days_per_month,
+      contract_hours_per_day: updatedEmployee.contract_hours_per_day,
+      date_of_birth: updatedEmployee.date_of_birth?.toISOString().slice(0, 10),
+      address: updatedEmployee.address,
+      city: updatedEmployee.city,
+      state: updatedEmployee.state,
+      postal_code: updatedEmployee.postal_code,
+      country: updatedEmployee.country,
+      emergency_contact_name: updatedEmployee.emergency_contact_name,
+      emergency_contact_phone: updatedEmployee.emergency_contact_phone,
+      emergency_contact_relationship: updatedEmployee.emergency_contact_relationship,
+      iqama_number: updatedEmployee.iqama_number,
+      iqama_expiry: updatedEmployee.iqama_expiry?.toISOString().slice(0, 10),
+      passport_number: updatedEmployee.passport_number,
+      passport_expiry: updatedEmployee.passport_expiry?.toISOString().slice(0, 10),
+      driving_license_number: updatedEmployee.driving_license_number,
+      driving_license_expiry: updatedEmployee.driving_license_expiry?.toISOString().slice(0, 10),
+      operator_license_number: updatedEmployee.operator_license_number,
+      operator_license_expiry: updatedEmployee.operator_license_expiry?.toISOString().slice(0, 10),
+      tuv_certification_number: updatedEmployee.tuv_certification_number,
+      tuv_certification_expiry: updatedEmployee.tuv_certification_expiry?.toISOString().slice(0, 10),
+      spsp_license_number: updatedEmployee.spsp_license_number,
+              spsp_license_expiry: updatedEmployee.spsp_license_expiry?.toISOString().slice(0, 10),
+        notes: updatedEmployee.notes,
+      current_location: updatedEmployee.current_location,
+      food_allowance: updatedEmployee.food_allowance,
+      housing_allowance: updatedEmployee.housing_allowance,
+      transport_allowance: updatedEmployee.transport_allowance,
+      supervisor: updatedEmployee.supervisor,
+      iqama_file: updatedEmployee.iqama_file,
+      passport_file: updatedEmployee.passport_file,
+      driving_license_file: updatedEmployee.driving_license_file,
+      operator_license_file: updatedEmployee.operator_license_file,
+      tuv_certification_file: updatedEmployee.tuv_certification_file,
+      spsp_license_file: updatedEmployee.spsp_license_file,
     };
 
     return NextResponse.json({
