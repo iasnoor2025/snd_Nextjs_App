@@ -106,19 +106,15 @@ export async function PUT(
       where: { id },
       include: {
         employee: {
-          include: {
-            salaries: {
-              where: {
-                status: 'approved',
-                effective_from: { lte: new Date() },
-                OR: [
-                  { effective_to: null },
-                  { effective_to: { gte: new Date() } }
-                ]
-              },
-              orderBy: { effective_from: 'desc' },
-              take: 1,
-            }
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            employee_id: true,
+            basic_salary: true,
+            food_allowance: true,
+            housing_allowance: true,
+            transport_allowance: true,
           }
         }
       }
@@ -143,11 +139,11 @@ export async function PUT(
 
     // If increment type or values changed, recalculate new salary
     if (validatedData.increment_type || validatedData.increment_percentage || validatedData.increment_amount) {
-      const currentSalary = existingIncrement.employee.salaries[0] || {
-        base_salary: existingIncrement.employee.basic_salary,
-        food_allowance: existingIncrement.employee.food_allowance,
-        housing_allowance: existingIncrement.employee.housing_allowance,
-        transport_allowance: existingIncrement.employee.transport_allowance,
+      const currentSalary = {
+        base_salary: parseFloat(String(existingIncrement.employee.basic_salary || 0)),
+        food_allowance: parseFloat(String(existingIncrement.employee.food_allowance || 0)),
+        housing_allowance: parseFloat(String(existingIncrement.employee.housing_allowance || 0)),
+        transport_allowance: parseFloat(String(existingIncrement.employee.transport_allowance || 0)),
       };
 
       let newSalary = {
@@ -161,7 +157,7 @@ export async function PUT(
 
       switch (incrementType) {
         case 'percentage':
-          const percentage = (validatedData.increment_percentage || existingIncrement.increment_percentage || 0) / 100;
+          const percentage = (validatedData.increment_percentage || parseFloat(String(existingIncrement.increment_percentage || 0))) / 100;
           newSalary.base_salary = currentSalary.base_salary * (1 + percentage);
           
           if (validatedData.apply_to_allowances) {
@@ -172,7 +168,7 @@ export async function PUT(
           break;
 
         case 'amount':
-          const amount = validatedData.increment_amount || existingIncrement.increment_amount || 0;
+          const amount = validatedData.increment_amount || parseFloat(String(existingIncrement.increment_amount || 0));
           newSalary.base_salary = currentSalary.base_salary + amount;
           break;
 
@@ -181,10 +177,10 @@ export async function PUT(
         case 'performance':
         case 'market_adjustment':
           newSalary = {
-            base_salary: validatedData.new_base_salary || existingIncrement.new_base_salary,
-            food_allowance: validatedData.new_food_allowance || existingIncrement.new_food_allowance,
-            housing_allowance: validatedData.new_housing_allowance || existingIncrement.new_housing_allowance,
-            transport_allowance: validatedData.new_transport_allowance || existingIncrement.new_transport_allowance,
+            base_salary: validatedData.new_base_salary || parseFloat(String(existingIncrement.new_base_salary || 0)),
+            food_allowance: validatedData.new_food_allowance || parseFloat(String(existingIncrement.new_food_allowance || 0)),
+            housing_allowance: validatedData.new_housing_allowance || parseFloat(String(existingIncrement.new_housing_allowance || 0)),
+            transport_allowance: validatedData.new_transport_allowance || parseFloat(String(existingIncrement.new_transport_allowance || 0)),
           };
           break;
       }
@@ -245,28 +241,65 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    const incrementId = parseInt(params.id);
+    if (isNaN(incrementId)) {
+      return NextResponse.json({ error: 'Invalid increment ID' }, { status: 400 });
     }
 
-    const salaryIncrement = await prisma.salaryIncrement.findUnique({
-      where: { id },
+    // Check if increment exists
+    const increment = await prisma.salaryIncrement.findUnique({
+      where: { id: incrementId },
     });
 
-    if (!salaryIncrement) {
+    if (!increment) {
       return NextResponse.json({ error: 'Salary increment not found' }, { status: 404 });
     }
 
-    if (salaryIncrement.status === 'applied') {
-      return NextResponse.json({ error: 'Cannot delete applied salary increment' }, { status: 400 });
+    // Check permissions
+    const userRole = session.user.role;
+    const isAdmin = userRole === 'super_admin' || userRole === 'admin';
+    
+    // Super admin and admin can delete any increment
+    // Other users can only delete if not applied
+    if (!isAdmin && increment.status === 'applied') {
+      return NextResponse.json({ 
+        error: 'Only administrators can delete applied salary increments' 
+      }, { status: 403 });
     }
 
+    // If it's an applied increment, we need to revert the employee's salary
+    if (increment.status === 'applied') {
+      await prisma.$transaction(async (tx) => {
+        // Revert employee's salary to the original values
+        await tx.employee.update({
+          where: { id: increment.employee_id },
+          data: {
+            basic_salary: increment.current_base_salary,
+            food_allowance: increment.current_food_allowance,
+            housing_allowance: increment.current_housing_allowance,
+            transport_allowance: increment.current_transport_allowance,
+          },
+        });
+
+        // Delete the increment record
+        await tx.salaryIncrement.delete({
+          where: { id: incrementId },
+        });
+      });
+
+      return NextResponse.json({ 
+        message: 'Applied salary increment deleted and employee salary reverted successfully' 
+      }, { status: 200 });
+    }
+
+    // For non-applied increments, just delete the record
     await prisma.salaryIncrement.delete({
-      where: { id },
+      where: { id: incrementId },
     });
 
-    return NextResponse.json({ message: 'Salary increment deleted successfully' });
+    return NextResponse.json({ 
+      message: 'Salary increment deleted successfully' 
+    }, { status: 200 });
   } catch (error) {
     console.error('Error deleting salary increment:', error);
     return NextResponse.json(

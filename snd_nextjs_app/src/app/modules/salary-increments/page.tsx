@@ -136,13 +136,21 @@ export default function SalaryIncrementsPage() {
   };
 
   const handleDelete = async (increment: SalaryIncrement) => {
-    if (!confirm('Are you sure you want to delete this salary increment?')) {
+    const isApplied = increment.status === 'applied';
+    const confirmMessage = isApplied 
+      ? 'Are you sure you want to delete this applied salary increment? This will also revert the employee\'s salary to the original amount.'
+      : 'Are you sure you want to delete this salary increment?';
+    
+    if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
       await salaryIncrementService.deleteSalaryIncrement(increment.id);
-      toast.success('Salary increment deleted successfully');
+      const successMessage = isApplied 
+        ? 'Applied salary increment deleted and employee salary reverted successfully'
+        : 'Salary increment deleted successfully';
+      toast.success(successMessage);
       loadData();
     } catch (error) {
       console.error('Error deleting salary increment:', error);
@@ -151,18 +159,38 @@ export default function SalaryIncrementsPage() {
   };
 
   const canApprove = (increment: SalaryIncrement) => {
+    // Super admin and admin can approve any increment
+    if (session?.user?.role === 'super_admin' || session?.user?.role === 'admin') {
+      return true;
+    }
+    // Other users can only approve pending increments
     return increment.status === 'pending';
   };
 
   const canReject = (increment: SalaryIncrement) => {
+    // Super admin and admin can reject any increment
+    if (session?.user?.role === 'super_admin' || session?.user?.role === 'admin') {
+      return true;
+    }
+    // Other users can only reject pending increments
     return increment.status === 'pending';
   };
 
   const canApply = (increment: SalaryIncrement) => {
+    // Super admin and admin can apply any approved increment
+    if (session?.user?.role === 'super_admin' || session?.user?.role === 'admin') {
+      return increment.status === 'approved';
+    }
+    // Other users can only apply if approved and effective date has passed
     return increment.status === 'approved' && new Date(increment.effective_date) <= new Date();
   };
 
   const canDelete = (increment: SalaryIncrement) => {
+    // Super admin and admin can delete any increment
+    if (session?.user?.role === 'super_admin' || session?.user?.role === 'admin') {
+      return true;
+    }
+    // Other users can only delete if not applied
     return increment.status !== 'applied';
   };
 

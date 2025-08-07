@@ -36,8 +36,14 @@ export async function POST(
       return NextResponse.json({ error: 'Salary increment not found' }, { status: 404 });
     }
 
-    if (increment.status !== 'pending') {
-      return NextResponse.json({ error: 'Only pending increments can be rejected' }, { status: 400 });
+    // Check permissions
+    const userRole = session.user.role;
+    const isAdmin = userRole === 'super_admin' || userRole === 'admin';
+    
+    // Super admin and admin can reject any increment
+    // Other users can only reject pending increments
+    if (!isAdmin && increment.status !== 'pending') {
+      return NextResponse.json({ error: 'Only administrators can reject non-pending increments' }, { status: 403 });
     }
 
     // Update the increment status to rejected

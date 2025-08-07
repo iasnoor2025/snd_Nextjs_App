@@ -34,6 +34,16 @@ export async function POST(
       return NextResponse.json({ error: 'Only approved increments can be applied' }, { status: 400 });
     }
 
+    // Check permissions
+    const userRole = session.user.role;
+    const isAdmin = userRole === 'super_admin' || userRole === 'admin';
+    
+    // Super admin and admin can apply any approved increment
+    // Other users can only apply if effective date has passed
+    if (!isAdmin && new Date(increment.effective_date) > new Date()) {
+      return NextResponse.json({ error: 'Cannot apply salary increment before effective date' }, { status: 400 });
+    }
+
     // Start a transaction to update both the increment and employee salary
     const result = await prisma.$transaction(async (tx) => {
       // Update the increment status to applied
