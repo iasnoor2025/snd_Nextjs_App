@@ -8,16 +8,16 @@ import { z } from 'zod';
 const createSalaryIncrementSchema = z.object({
   employee_id: z.number(),
   increment_type: z.enum(['percentage', 'amount', 'promotion', 'annual_review', 'performance', 'market_adjustment']),
-  increment_percentage: z.number().optional(),
-  increment_amount: z.number().optional(),
+  increment_percentage: z.number().optional().nullable().or(z.undefined()),
+  increment_amount: z.number().optional().nullable().or(z.undefined()),
   reason: z.string(),
   effective_date: z.string(),
-  notes: z.string().optional(),
-  new_base_salary: z.number().optional(),
-  new_food_allowance: z.number().optional(),
-  new_housing_allowance: z.number().optional(),
-  new_transport_allowance: z.number().optional(),
-  apply_to_allowances: z.boolean().optional(),
+  notes: z.string().optional().nullable().or(z.undefined()),
+  new_base_salary: z.number().optional().nullable().or(z.undefined()),
+  new_food_allowance: z.number().optional().nullable().or(z.undefined()),
+  new_housing_allowance: z.number().optional().nullable().or(z.undefined()),
+  new_transport_allowance: z.number().optional().nullable().or(z.undefined()),
+  apply_to_allowances: z.boolean().optional().or(z.undefined()),
 });
 
 const updateSalaryIncrementSchema = createSalaryIncrementSchema.partial();
@@ -117,22 +117,21 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    console.log('Received salary increment data:', body);
+    console.log('Session user ID:', session.user.id, 'Type:', typeof session.user.id);
+    
     const validatedData = createSalaryIncrementSchema.parse(body);
+    console.log('Validated data:', validatedData);
 
     // Get current salary details for the employee
     const employee = await prisma.employee.findUnique({
       where: { id: validatedData.employee_id },
       include: {
-        salaries: {
+        employee_salaries: {
           where: {
-            status: 'approved',
-            effective_from: { lte: new Date() },
-            OR: [
-              { effective_to: null },
-              { effective_to: { gte: new Date() } }
-            ]
+            effective_date: { lte: new Date() }
           },
-          orderBy: { effective_from: 'desc' },
+          orderBy: { effective_date: 'desc' },
           take: 1,
         }
       }
@@ -142,13 +141,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
-    // Get current salary details
-    const currentSalary = employee.salaries[0] || {
-      base_salary: employee.basic_salary,
-      food_allowance: employee.food_allowance,
-      housing_allowance: employee.housing_allowance,
-      transport_allowance: employee.transport_allowance,
+    console.log('Employee found:', employee);
+
+    // Get current salary details - use employee's direct salary fields since EmployeeSalary model is different
+    const currentSalary = {
+      base_salary: parseFloat(String(employee.basic_salary || 0)),
+      food_allowance: parseFloat(String(employee.food_allowance || 0)),
+      housing_allowance: parseFloat(String(employee.housing_allowance || 0)),
+      transport_allowance: parseFloat(String(employee.transport_allowance || 0)),
     };
+
+    console.log('Current salary:', currentSalary);
 
     // Calculate new salary based on increment type
     let newSalary = {
@@ -193,6 +196,8 @@ export async function POST(request: NextRequest) {
         break;
     }
 
+    console.log('New salary calculated:', newSalary);
+
     const salaryIncrement = await prisma.salaryIncrement.create({
       data: {
         employee_id: validatedData.employee_id,
@@ -205,11 +210,11 @@ export async function POST(request: NextRequest) {
         new_housing_allowance: newSalary.housing_allowance,
         new_transport_allowance: newSalary.transport_allowance,
         increment_type: validatedData.increment_type,
-        increment_percentage: validatedData.increment_percentage,
-        increment_amount: validatedData.increment_amount,
+        increment_percentage: validatedData.increment_percentage ? parseFloat(String(validatedData.increment_percentage)) : null,
+        increment_amount: validatedData.increment_amount ? parseFloat(String(validatedData.increment_amount)) : null,
         reason: validatedData.reason,
         effective_date: new Date(validatedData.effective_date),
-        requested_by: session.user.id,
+        requested_by: parseInt(String(session.user.id)),
         notes: validatedData.notes,
       },
       include: {
@@ -230,9 +235,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log('Salary increment created successfully:', salaryIncrement);
+
     return NextResponse.json({ data: salaryIncrement }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error('Validation error details:', {
+        errors: error.errors,
+        receivedData: body
+      });
       return NextResponse.json(
         { error: 'Validation error', details: error.errors },
         { status: 400 }

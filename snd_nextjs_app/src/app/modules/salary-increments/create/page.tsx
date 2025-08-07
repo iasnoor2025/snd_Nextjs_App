@@ -1,18 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { salaryIncrementService, type CreateSalaryIncrementData } from '@/lib/services/salary-increment-service';
 import ApiService from '@/lib/api-service';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Calculator, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
@@ -26,23 +24,54 @@ interface Employee {
   food_allowance: number;
   housing_allowance: number;
   transport_allowance: number;
+  department?: {
+    name: string;
+  };
+  position?: {
+    title: string;
+  };
 }
+
+const incrementTypes = {
+  percentage: 'Percentage Increase',
+  amount: 'Fixed Amount Increase',
+  promotion: 'Promotion',
+  annual_review: 'Annual Review',
+  performance: 'Performance Based',
+  market_adjustment: 'Market Adjustment',
+};
 
 export default function CreateSalaryIncrementPage() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(false);
+  const [calculationMethod, setCalculationMethod] = useState<'percentage' | 'fixed'>('percentage');
   const [formData, setFormData] = useState<CreateSalaryIncrementData>({
     employee_id: 0,
     increment_type: 'percentage',
+    increment_percentage: undefined,
+    increment_amount: undefined,
     reason: '',
     effective_date: '',
     notes: '',
+    new_base_salary: undefined,
+    new_food_allowance: undefined,
+    new_housing_allowance: undefined,
+    new_transport_allowance: undefined,
+    apply_to_allowances: false,
   });
   const [calculatedSalary, setCalculatedSalary] = useState({
-    new_base_salary: 0,
-    new_food_allowance: 0,
-    new_housing_allowance: 0,
-    new_transport_allowance: 0,
+    current_base: 0,
+    current_food: 0,
+    current_housing: 0,
+    current_transport: 0,
+    current_total: 0,
+    new_base: 0,
+    new_food: 0,
+    new_housing: 0,
+    new_transport: 0,
+    new_total: 0,
+    increase_amount: 0,
+    increase_percentage: 0,
   });
 
   const router = useRouter();
@@ -61,75 +90,135 @@ export default function CreateSalaryIncrementPage() {
     if (selectedEmployee) {
       calculateNewSalary();
     }
-  }, [selectedEmployee, formData.increment_type, formData.increment_percentage, formData.increment_amount, formData.apply_to_allowances]);
-
-
+  }, [selectedEmployee, formData.increment_percentage, formData.increment_amount, formData.increment_type, calculationMethod]);
 
   const calculateNewSalary = () => {
     if (!selectedEmployee) return;
 
-    const currentSalary = {
-      base_salary: selectedEmployee.basic_salary,
-      food_allowance: selectedEmployee.food_allowance,
-      housing_allowance: selectedEmployee.housing_allowance,
-      transport_allowance: selectedEmployee.transport_allowance,
-    };
+    // Convert to numbers and ensure they are valid - handle Decimal types properly
+    const baseSalary = parseFloat(String(selectedEmployee.basic_salary || 0));
+    const foodAllowance = parseFloat(String(selectedEmployee.food_allowance || 0));
+    const housingAllowance = parseFloat(String(selectedEmployee.housing_allowance || 0));
+    const transportAllowance = parseFloat(String(selectedEmployee.transport_allowance || 0));
 
-    let newSalary = { ...currentSalary };
+    // Debug logging
+    console.log('Salary calculation debug:', {
+      employee: selectedEmployee,
+      baseSalary,
+      foodAllowance,
+      housingAllowance,
+      transportAllowance,
+      calculationMethod,
+      incrementPercentage: formData.increment_percentage,
+      incrementAmount: formData.increment_amount
+    });
 
-    switch (formData.increment_type) {
-      case 'percentage':
-        if (formData.increment_percentage) {
-          const percentage = formData.increment_percentage / 100;
-          newSalary.base_salary = currentSalary.base_salary * (1 + percentage);
-          
-          if (formData.apply_to_allowances) {
-            newSalary.food_allowance = currentSalary.food_allowance * (1 + percentage);
-            newSalary.housing_allowance = currentSalary.housing_allowance * (1 + percentage);
-            newSalary.transport_allowance = currentSalary.transport_allowance * (1 + percentage);
-          }
-        }
-        break;
+    const currentTotal = baseSalary + foodAllowance + housingAllowance + transportAllowance;
 
-      case 'amount':
-        if (formData.increment_amount) {
-          newSalary.base_salary = currentSalary.base_salary + formData.increment_amount;
-        }
-        break;
+    let newBase = baseSalary;
+    let newFood = foodAllowance;
+    let newHousing = housingAllowance;
+    let newTransport = transportAllowance;
+    let increaseAmount = 0;
+    let increasePercentage = 0;
 
-      case 'promotion':
-      case 'annual_review':
-      case 'performance':
-      case 'market_adjustment':
-        newSalary = {
-          base_salary: formData.new_base_salary || currentSalary.base_salary,
-          food_allowance: formData.new_food_allowance || currentSalary.food_allowance,
-          housing_allowance: formData.new_housing_allowance || currentSalary.housing_allowance,
-          transport_allowance: formData.new_transport_allowance || currentSalary.transport_allowance,
-        };
-        break;
+    if (calculationMethod === 'percentage' && formData.increment_percentage) {
+      const percentageIncrease = parseFloat(String(formData.increment_percentage)) / 100;
+      newBase = baseSalary * (1 + percentageIncrease);
+      newFood = foodAllowance * (1 + percentageIncrease);
+      newHousing = housingAllowance * (1 + percentageIncrease);
+      newTransport = transportAllowance * (1 + percentageIncrease);
+      increasePercentage = parseFloat(String(formData.increment_percentage));
+    } else if (calculationMethod === 'fixed' && formData.increment_amount) {
+      const incrementAmount = parseFloat(String(formData.increment_amount));
+      
+      // Distribute fixed amount proportionally across all components
+      if (currentTotal > 0) {
+        const baseRatio = baseSalary / currentTotal;
+        const foodRatio = foodAllowance / currentTotal;
+        const housingRatio = housingAllowance / currentTotal;
+        const transportRatio = transportAllowance / currentTotal;
+
+        newBase = baseSalary + (incrementAmount * baseRatio);
+        newFood = foodAllowance + (incrementAmount * foodRatio);
+        newHousing = housingAllowance + (incrementAmount * housingRatio);
+        newTransport = transportAllowance + (incrementAmount * transportRatio);
+        increasePercentage = (incrementAmount / currentTotal) * 100;
+      } else {
+        // If current total is 0, add the full amount to base salary
+        newBase = baseSalary + incrementAmount;
+        increasePercentage = 0;
+      }
     }
 
-    setCalculatedSalary(newSalary);
+    const newTotal = newBase + newFood + newHousing + newTransport;
+    increaseAmount = newTotal - currentTotal;
+
+    // Debug logging for results
+    console.log('Calculation results:', {
+      currentTotal,
+      newTotal,
+      increaseAmount,
+      increasePercentage,
+      newBase,
+      newFood,
+      newHousing,
+      newTransport
+    });
+
+    setCalculatedSalary({
+      current_base: baseSalary,
+      current_food: foodAllowance,
+      current_housing: housingAllowance,
+      current_transport: transportAllowance,
+      current_total: currentTotal,
+      new_base: newBase,
+      new_food: newFood,
+      new_housing: newHousing,
+      new_transport: newTransport,
+      new_total: newTotal,
+      increase_amount: increaseAmount,
+      increase_percentage: increasePercentage,
+    });
+
+    // Update form data with calculated values
+    setFormData(prev => ({
+      ...prev,
+      new_base_salary: newBase,
+      new_food_allowance: newFood,
+      new_housing_allowance: newHousing,
+      new_transport_allowance: newTransport,
+    }));
   };
 
-  const handleEmployeeChange = (employeeId: string) => {
-    setFormData(prev => ({ ...prev, employee_id: parseInt(employeeId) }));
-    // Fetch employee details for salary calculations
-    if (employeeId) {
-      fetchEmployeeDetails(parseInt(employeeId));
-    } else {
+  const handleEmployeeChange = async (employeeId: string) => {
+    console.log('Employee selected:', employeeId);
+    
+    if (!employeeId) {
       setSelectedEmployee(null);
+      setFormData(prev => ({ ...prev, employee_id: 0 }));
+      return;
     }
-  };
 
-  const fetchEmployeeDetails = async (employeeId: number) => {
+    setFormData(prev => ({ ...prev, employee_id: parseInt(employeeId) }));
+    
     try {
+      // Fetch full employee details including salary information
       const response = await ApiService.get(`/employees/${employeeId}`);
-      setSelectedEmployee(response.data);
+      console.log('Employee details response:', response);
+      
+      if (response.employee) {
+        setSelectedEmployee(response.employee);
+        console.log('Employee set:', response.employee);
+      } else {
+        console.error('No employee data in response');
+        toast.error('Failed to load employee details');
+        setSelectedEmployee(null);
+      }
     } catch (error) {
       console.error('Error fetching employee details:', error);
       toast.error('Failed to load employee details');
+      setSelectedEmployee(null);
     }
   };
 
@@ -151,9 +240,34 @@ export default function CreateSalaryIncrementPage() {
       return;
     }
 
+    if (calculationMethod === 'percentage' && !formData.increment_percentage) {
+      toast.error('Please enter increment percentage');
+      return;
+    }
+
+    if (calculationMethod === 'fixed' && !formData.increment_amount) {
+      toast.error('Please enter increment amount');
+      return;
+    }
+
+    // Prepare the data to send
+    const dataToSend = {
+      ...formData,
+      // Map calculation method to correct increment type
+      increment_type: calculationMethod === 'percentage' ? 'percentage' : 'amount',
+      // Ensure numeric fields are properly set
+      increment_percentage: calculationMethod === 'percentage' ? formData.increment_percentage : undefined,
+      increment_amount: calculationMethod === 'fixed' ? formData.increment_amount : undefined,
+      // Set apply_to_allowances based on calculation method
+      apply_to_allowances: calculationMethod === 'percentage',
+    };
+
+    console.log('Sending data to API:', dataToSend);
+    console.log('Effective date:', formData.effective_date, 'Type:', typeof formData.effective_date);
+
     try {
       setLoading(true);
-      await salaryIncrementService.createSalaryIncrement(formData);
+      await salaryIncrementService.createSalaryIncrement(dataToSend);
       toast.success('Salary increment created successfully');
       router.push('/modules/salary-increments');
     } catch (error) {
@@ -164,23 +278,20 @@ export default function CreateSalaryIncrementPage() {
     }
   };
 
-  const getCurrentTotalSalary = () => {
-    if (!selectedEmployee) return 0;
-    return selectedEmployee.basic_salary + 
-           selectedEmployee.food_allowance + 
-           selectedEmployee.housing_allowance + 
-           selectedEmployee.transport_allowance;
+  const formatCurrency = (amount: number | null | undefined) => {
+    const validAmount = amount == null || isNaN(Number(amount)) ? 0 : Number(amount);
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'SAR',
+    }).format(validAmount);
   };
 
-  const getNewTotalSalary = () => {
-    return calculatedSalary.new_base_salary + 
-           calculatedSalary.new_food_allowance + 
-           calculatedSalary.new_housing_allowance + 
-           calculatedSalary.new_transport_allowance;
-  };
-
-  const getIncrementAmount = () => {
-    return getNewTotalSalary() - getCurrentTotalSalary();
+  const hasSalaryData = (employee: Employee) => {
+    const baseSalary = parseFloat(String(employee.basic_salary || 0));
+    const foodAllowance = parseFloat(String(employee.food_allowance || 0));
+    const housingAllowance = parseFloat(String(employee.housing_allowance || 0));
+    const transportAllowance = parseFloat(String(employee.transport_allowance || 0));
+    return (baseSalary + foodAllowance + housingAllowance + transportAllowance) > 0;
   };
 
   // Show loading while checking authentication
@@ -202,18 +313,21 @@ export default function CreateSalaryIncrementPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center space-x-4">
-        <Button variant="outline" onClick={() => router.back()}>
-          <ArrowLeft className="w-4 h-4 mr-2" />
+      {/* Header */}
+      <div className="mb-6 flex items-center gap-4">
+        <Button variant="outline" size="sm" onClick={() => router.back()}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
-        <h1 className="text-3xl font-bold">Create Salary Increment</h1>
+        <h2 className="text-xl leading-tight font-semibold text-gray-800">Create Salary Increment</h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Employee Selection */}
         <Card>
           <CardHeader>
-            <CardTitle>Basic Information</CardTitle>
+            <CardTitle>Employee Information</CardTitle>
+            <CardDescription>Select the employee for salary increment</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -227,55 +341,43 @@ export default function CreateSalaryIncrementPage() {
               />
             </div>
 
-            <div>
-              <Label htmlFor="increment_type">Increment Type *</Label>
-              <Select
-                value={formData.increment_type}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, increment_type: value as any }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="percentage">Percentage Increase</SelectItem>
-                  <SelectItem value="amount">Fixed Amount Increase</SelectItem>
-                  <SelectItem value="promotion">Promotion</SelectItem>
-                  <SelectItem value="annual_review">Annual Review</SelectItem>
-                  <SelectItem value="performance">Performance</SelectItem>
-                  <SelectItem value="market_adjustment">Market Adjustment</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            {!selectedEmployee && formData.employee_id && (
+              <div className="text-sm text-yellow-600 font-medium mt-2">
+                Loading employee details...
+              </div>
+            )}
 
-            <div>
-              <Label htmlFor="reason">Reason *</Label>
-              <Textarea
-                id="reason"
-                value={formData.reason}
-                onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
-                placeholder="Enter the reason for this salary increment"
-              />
-            </div>
+            {!formData.employee_id && (
+              <div className="text-sm text-red-600 font-medium mt-2">
+                Please select an employee to continue.
+              </div>
+            )}
 
-            <div>
-              <Label htmlFor="effective_date">Effective Date *</Label>
-              <Input
-                id="effective_date"
-                type="date"
-                value={formData.effective_date}
-                onChange={(e) => setFormData(prev => ({ ...prev, effective_date: e.target.value }))}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="notes">Notes</Label>
-              <Textarea
-                id="notes"
-                value={formData.notes || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Additional notes (optional)"
-              />
-            </div>
+            {selectedEmployee && (
+              <div className="rounded-lg bg-gray-50 p-4">
+                <h4 className="mb-2 font-medium">Current Employee Details</h4>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-600">Name:</span>
+                    <span className="ml-2 font-medium">
+                      {selectedEmployee.first_name} {selectedEmployee.last_name}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Employee ID:</span>
+                    <span className="ml-2 font-medium">{selectedEmployee.employee_id}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Department:</span>
+                    <span className="ml-2 font-medium">{selectedEmployee.department?.name || 'No Department'}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Position:</span>
+                    <span className="ml-2 font-medium">{selectedEmployee.position?.title || 'No Position'}</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -283,162 +385,261 @@ export default function CreateSalaryIncrementPage() {
         <Card>
           <CardHeader>
             <CardTitle>Increment Details</CardTitle>
+            <CardDescription>Specify the increment type and amount</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {formData.increment_type === 'percentage' && (
+            <fieldset disabled={!selectedEmployee} className={!selectedEmployee ? 'opacity-50 pointer-events-none' : ''}>
               <div>
-                <Label htmlFor="increment_percentage">Percentage Increase *</Label>
-                <Input
-                  id="increment_percentage"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.increment_percentage || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, increment_percentage: parseFloat(e.target.value) || 0 }))}
-                  placeholder="Enter percentage (e.g., 5.5 for 5.5%)"
-                />
-                <div className="flex items-center space-x-2 mt-2">
-                  <Checkbox
-                    id="apply_to_allowances"
-                    checked={formData.apply_to_allowances || false}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, apply_to_allowances: checked as boolean }))}
-                  />
-                  <Label htmlFor="apply_to_allowances">Apply percentage to allowances</Label>
-                </div>
+                <Label htmlFor="increment_type">Increment Type</Label>
+                <Select
+                  value={formData.increment_type}
+                  onValueChange={(value) => {
+                    setFormData(prev => ({ ...prev, increment_type: value as any }));
+                    if (value === 'amount') {
+                      setCalculationMethod('fixed');
+                      setFormData(prev => ({ ...prev, increment_percentage: undefined }));
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select increment type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(incrementTypes).map(([key, value]) => (
+                      <SelectItem key={key} value={key}>
+                        {value}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-            )}
 
-            {formData.increment_type === 'amount' && (
               <div>
-                <Label htmlFor="increment_amount">Amount Increase *</Label>
+                <Label>Calculation Method</Label>
+                <div className="mt-2 flex gap-6">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="percentage"
+                      name="calculationMethod"
+                      value="percentage"
+                      checked={calculationMethod === 'percentage'}
+                      onChange={() => {
+                        setCalculationMethod('percentage');
+                        setFormData(prev => ({ ...prev, increment_amount: undefined }));
+                      }}
+                    />
+                    <Label htmlFor="percentage">Percentage</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id="fixed"
+                      name="calculationMethod"
+                      value="fixed"
+                      checked={calculationMethod === 'fixed'}
+                      onChange={() => {
+                        setCalculationMethod('fixed');
+                        setFormData(prev => ({ ...prev, increment_percentage: undefined }));
+                      }}
+                    />
+                    <Label htmlFor="fixed">Fixed Amount</Label>
+                  </div>
+                </div>
+              </div>
+
+              {calculationMethod === 'percentage' ? (
+                <div>
+                  <Label htmlFor="increment_percentage">Increment Percentage (%)</Label>
+                  <Input
+                    id="increment_percentage"
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="100"
+                    value={formData.increment_percentage || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, increment_percentage: parseFloat(e.target.value) || 0 }))}
+                    placeholder="Enter percentage (e.g., 10.5 for 10.5%)"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <Label htmlFor="increment_amount">Increment Amount (SAR)</Label>
+                  <Input
+                    id="increment_amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.increment_amount || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, increment_amount: parseFloat(e.target.value) || 0 }))}
+                    placeholder="Enter fixed amount (e.g., 5000)"
+                  />
+                </div>
+              )}
+
+              <div>
+                <Label htmlFor="effective_date">Effective Date</Label>
                 <Input
-                  id="increment_amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.increment_amount || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, increment_amount: parseFloat(e.target.value) || 0 }))}
-                  placeholder="Enter amount in SAR"
+                  id="effective_date"
+                  type="date"
+                  value={formData.effective_date}
+                  onChange={(e) => setFormData(prev => ({ ...prev, effective_date: e.target.value }))}
+                  min={new Date().toISOString().split('T')[0]}
                 />
               </div>
-            )}
-
-            {(formData.increment_type === 'promotion' || formData.increment_type === 'annual_review' || 
-              formData.increment_type === 'performance' || formData.increment_type === 'market_adjustment') && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="new_base_salary">New Base Salary</Label>
-                  <Input
-                    id="new_base_salary"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.new_base_salary || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, new_base_salary: parseFloat(e.target.value) || 0 }))}
-                    placeholder="Enter new base salary"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="new_food_allowance">New Food Allowance</Label>
-                  <Input
-                    id="new_food_allowance"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.new_food_allowance || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, new_food_allowance: parseFloat(e.target.value) || 0 }))}
-                    placeholder="Enter new food allowance"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="new_housing_allowance">New Housing Allowance</Label>
-                  <Input
-                    id="new_housing_allowance"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.new_housing_allowance || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, new_housing_allowance: parseFloat(e.target.value) || 0 }))}
-                    placeholder="Enter new housing allowance"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="new_transport_allowance">New Transport Allowance</Label>
-                  <Input
-                    id="new_transport_allowance"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.new_transport_allowance || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, new_transport_allowance: parseFloat(e.target.value) || 0 }))}
-                    placeholder="Enter new transport allowance"
-                  />
-                </div>
-              </div>
-            )}
+            </fieldset>
           </CardContent>
         </Card>
 
-        {/* Salary Summary */}
+        {/* Salary Calculation Preview */}
         {selectedEmployee && (
           <Card>
             <CardHeader>
-              <CardTitle>Salary Summary</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Calculator className="h-5 w-5" />
+                Salary Calculation Preview
+              </CardTitle>
+              <CardDescription>Preview of the new salary breakdown</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-4">
+              {!hasSalaryData(selectedEmployee) && (
+                <div className="mb-4 text-sm text-red-600 font-medium">
+                  Warning: This employee has no salary or allowance data set. Calculation will always be zero.
+                </div>
+              )}
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                {/* Current Salary */}
                 <div>
-                  <Label className="font-semibold">Current Salary</Label>
-                  <div className="text-lg">
-                    SAR {getCurrentTotalSalary().toLocaleString()}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Base: SAR {selectedEmployee.basic_salary.toLocaleString()}<br />
-                    Food: SAR {selectedEmployee.food_allowance.toLocaleString()}<br />
-                    Housing: SAR {selectedEmployee.housing_allowance.toLocaleString()}<br />
-                    Transport: SAR {selectedEmployee.transport_allowance.toLocaleString()}
+                  <h4 className="mb-3 font-medium text-gray-900">Current Salary</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Base Salary:</span>
+                      <span>{formatCurrency(calculatedSalary.current_base)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Food Allowance:</span>
+                      <span>{formatCurrency(calculatedSalary.current_food)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Housing Allowance:</span>
+                      <span>{formatCurrency(calculatedSalary.current_housing)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Transport Allowance:</span>
+                      <span>{formatCurrency(calculatedSalary.current_transport)}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2 font-medium">
+                      <span>Total:</span>
+                      <span>{formatCurrency(calculatedSalary.current_total)}</span>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <Label className="font-semibold">New Salary</Label>
-                  <div className="text-lg">
-                    SAR {getNewTotalSalary().toLocaleString()}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Base: SAR {calculatedSalary.new_base_salary.toLocaleString()}<br />
-                    Food: SAR {calculatedSalary.new_food_allowance.toLocaleString()}<br />
-                    Housing: SAR {calculatedSalary.new_housing_allowance.toLocaleString()}<br />
-                    Transport: SAR {calculatedSalary.new_transport_allowance.toLocaleString()}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 pt-4 border-t">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold">Increment Amount:</span>
-                  <span className="text-lg font-bold text-green-600">
-                    +SAR {getIncrementAmount().toLocaleString()}
-                  </span>
-                </div>
-                {formData.increment_type === 'percentage' && formData.increment_percentage && (
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="font-semibold">Percentage Increase:</span>
-                    <span className="text-lg font-bold text-blue-600">
-                      {formData.increment_percentage}%
-                    </span>
-                  </div>
+
+                {/* New Salary - Only show when increment values are provided */}
+                {(formData.increment_percentage || formData.increment_amount) && (
+                  <>
+                    <div>
+                      <h4 className="mb-3 font-medium text-green-900">New Salary</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span>Base Salary:</span>
+                          <span>{formatCurrency(calculatedSalary.new_base)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Food Allowance:</span>
+                          <span>{formatCurrency(calculatedSalary.new_food)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Housing Allowance:</span>
+                          <span>{formatCurrency(calculatedSalary.new_housing)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Transport Allowance:</span>
+                          <span>{formatCurrency(calculatedSalary.new_transport)}</span>
+                        </div>
+                        <div className="flex justify-between border-t pt-2 font-medium">
+                          <span>Total:</span>
+                          <span>{formatCurrency(calculatedSalary.new_total)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Increase Summary */}
+                    <div>
+                      <h4 className="mb-3 font-medium text-blue-900">Increase Summary</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span>Increase Amount:</span>
+                          <span className="font-medium text-green-600">
+                            +{formatCurrency(calculatedSalary.increase_amount)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Increase Percentage:</span>
+                          <span className="font-medium text-green-600">
+                            +{calculatedSalary.increase_percentage.toFixed(2)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Monthly Impact:</span>
+                          <span className="font-medium text-blue-600">
+                            +{formatCurrency(calculatedSalary.increase_amount)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Annual Impact:</span>
+                          <span className="font-medium text-blue-600">
+                            +{formatCurrency(calculatedSalary.increase_amount * 12)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             </CardContent>
           </Card>
         )}
 
-        <div className="flex justify-end space-x-4">
-          <Button variant="outline" onClick={() => router.back()}>
+        {/* Reason and Notes */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Justification</CardTitle>
+            <CardDescription>Provide reason and additional notes for this increment</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="reason">Reason for Increment</Label>
+              <Textarea
+                id="reason"
+                value={formData.reason}
+                onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
+                placeholder="Explain the reason for this salary increment"
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="notes">Additional Notes (Optional)</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Any additional notes or comments"
+                rows={2}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Submit Button */}
+        <div className="flex justify-end gap-4">
+          <Button variant="outline" type="button" onClick={() => router.back()}>
             Cancel
           </Button>
           <Button type="submit" disabled={loading}>
             <Save className="w-4 h-4 mr-2" />
-            {loading ? 'Creating...' : 'Create Increment'}
+            {loading ? 'Creating...' : 'Create Salary Increment'}
           </Button>
         </div>
       </form>

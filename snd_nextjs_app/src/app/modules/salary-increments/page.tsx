@@ -151,7 +151,7 @@ export default function SalaryIncrementsPage() {
   };
 
   const canApprove = (increment: SalaryIncrement) => {
-    return increment.status === 'pending' && new Date(increment.effective_date) >= new Date();
+    return increment.status === 'pending';
   };
 
   const canReject = (increment: SalaryIncrement) => {
@@ -314,7 +314,7 @@ export default function SalaryIncrementsPage() {
         <CardContent>
           {loading ? (
             <div className="text-center py-8">Loading...</div>
-          ) : increments?.length === 0 ? (
+          ) : !increments || increments.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               No salary increments found. Create your first increment to get started.
             </div>
@@ -354,10 +354,10 @@ export default function SalaryIncrementsPage() {
                       <TableCell>
                         <div className="text-sm">
                           {increment.increment_type === 'percentage' && increment.increment_percentage && (
-                            <div>{increment.increment_percentage}%</div>
+                            <div>{parseFloat(String(increment.increment_percentage))}%</div>
                           )}
                           {increment.increment_type === 'amount' && increment.increment_amount && (
-                            <div>SAR {increment.increment_amount.toLocaleString()}</div>
+                            <div>SAR {parseFloat(String(increment.increment_amount)).toLocaleString()}</div>
                           )}
                           <div className="text-xs text-muted-foreground">
                             +SAR {salaryIncrementService.getTotalIncrementAmount(increment).toLocaleString()}

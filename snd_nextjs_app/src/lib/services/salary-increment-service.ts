@@ -62,7 +62,7 @@ export interface CreateSalaryIncrementData {
   apply_to_allowances?: boolean;
 }
 
-export interface UpdateSalaryIncrementData extends Partial<CreateSalaryIncrementData> {}
+export type UpdateSalaryIncrementData = Partial<CreateSalaryIncrementData>;
 
 export interface SalaryIncrementFilters {
   employee_id?: number;
@@ -106,12 +106,26 @@ class SalaryIncrementService {
     });
 
     const response = await ApiService.get(`/salary-increments?${params.toString()}`);
-    return response.data;
+    
+    // The API returns { data: [...], pagination: {...} } directly
+    // but ApiService.get returns ApiResponse<T> which expects { success: boolean, data: T }
+    // So we need to handle the actual response structure
+    const apiResponse = response as any; // Cast to any to handle the actual response structure
+    
+    return {
+      data: apiResponse.data || [],
+      pagination: apiResponse.pagination ? {
+        page: apiResponse.pagination.page || 1,
+        limit: apiResponse.pagination.limit || 15,
+        total: apiResponse.pagination.total || 0,
+        pages: apiResponse.pagination.pages || 0
+      } : { page: 1, limit: 15, total: 0, pages: 0 }
+    };
   }
 
   async getSalaryIncrement(id: number): Promise<SalaryIncrement> {
     const response = await ApiService.get(`/salary-increments/${id}`);
-    return response.data.data;
+    return response.data;
   }
 
   async createSalaryIncrement(data: CreateSalaryIncrementData): Promise<SalaryIncrement> {
@@ -163,17 +177,17 @@ class SalaryIncrementService {
 
   // Helper methods for calculated values
   getCurrentTotalSalary(increment: SalaryIncrement): number {
-    return increment.current_base_salary + 
-           increment.current_food_allowance + 
-           increment.current_housing_allowance + 
-           increment.current_transport_allowance;
+    return parseFloat(String(increment.current_base_salary || 0)) + 
+           parseFloat(String(increment.current_food_allowance || 0)) + 
+           parseFloat(String(increment.current_housing_allowance || 0)) + 
+           parseFloat(String(increment.current_transport_allowance || 0));
   }
 
   getNewTotalSalary(increment: SalaryIncrement): number {
-    return increment.new_base_salary + 
-           increment.new_food_allowance + 
-           increment.new_housing_allowance + 
-           increment.new_transport_allowance;
+    return parseFloat(String(increment.new_base_salary || 0)) + 
+           parseFloat(String(increment.new_food_allowance || 0)) + 
+           parseFloat(String(increment.new_housing_allowance || 0)) + 
+           parseFloat(String(increment.new_transport_allowance || 0));
   }
 
   getTotalIncrementAmount(increment: SalaryIncrement): number {

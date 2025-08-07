@@ -18,40 +18,35 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
-    }
-
     const body = await request.json();
     const validatedData = approveSchema.parse(body);
 
-    const salaryIncrement = await prisma.salaryIncrement.findUnique({
-      where: { id },
-      include: {
-        employee: true,
-      },
+    const incrementId = parseInt(params.id);
+    if (isNaN(incrementId)) {
+      return NextResponse.json({ error: 'Invalid increment ID' }, { status: 400 });
+    }
+
+    // Check if increment exists and is pending
+    const increment = await prisma.salaryIncrement.findUnique({
+      where: { id: incrementId },
     });
 
-    if (!salaryIncrement) {
+    if (!increment) {
       return NextResponse.json({ error: 'Salary increment not found' }, { status: 404 });
     }
 
-    if (salaryIncrement.status !== 'pending') {
-      return NextResponse.json({ error: 'Salary increment cannot be approved' }, { status: 400 });
+    if (increment.status !== 'pending') {
+      return NextResponse.json({ error: 'Only pending increments can be approved' }, { status: 400 });
     }
 
-    if (salaryIncrement.effective_date < new Date()) {
-      return NextResponse.json({ error: 'Cannot approve salary increment with past effective date' }, { status: 400 });
-    }
-
+    // Update the increment status to approved
     const updatedIncrement = await prisma.salaryIncrement.update({
-      where: { id },
+      where: { id: incrementId },
       data: {
         status: 'approved',
-        approved_by: session.user.id,
+        approved_by: parseInt(String(session.user.id)),
         approved_at: new Date(),
-        notes: validatedData.notes,
+        notes: validatedData.notes || increment.notes,
       },
       include: {
         employee: {
@@ -77,15 +72,15 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({ data: updatedIncrement });
+    return NextResponse.json({ data: updatedIncrement }, { status: 200 });
   } catch (error) {
+    console.error('Error approving salary increment:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validation error', details: error.errors },
         { status: 400 }
       );
     }
-    console.error('Error approving salary increment:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

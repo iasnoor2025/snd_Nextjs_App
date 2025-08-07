@@ -13,95 +13,74 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    const incrementId = parseInt(params.id);
+    if (isNaN(incrementId)) {
+      return NextResponse.json({ error: 'Invalid increment ID' }, { status: 400 });
     }
 
-    const salaryIncrement = await prisma.salaryIncrement.findUnique({
-      where: { id },
+    // Check if increment exists and is approved
+    const increment = await prisma.salaryIncrement.findUnique({
+      where: { id: incrementId },
       include: {
         employee: true,
       },
     });
 
-    if (!salaryIncrement) {
+    if (!increment) {
       return NextResponse.json({ error: 'Salary increment not found' }, { status: 404 });
     }
 
-    if (salaryIncrement.status !== 'approved') {
-      return NextResponse.json({ error: 'Salary increment must be approved before applying' }, { status: 400 });
+    if (increment.status !== 'approved') {
+      return NextResponse.json({ error: 'Only approved increments can be applied' }, { status: 400 });
     }
 
-    if (salaryIncrement.effective_date > new Date()) {
-      return NextResponse.json({ error: 'Cannot apply salary increment before effective date' }, { status: 400 });
-    }
-
-    // Apply the salary increment
-    await prisma.$transaction(async (tx) => {
-      // Create new salary record
-      await tx.employeeSalary.create({
-        data: {
-          employee_id: salaryIncrement.employee_id,
-          base_salary: salaryIncrement.new_base_salary,
-          food_allowance: salaryIncrement.new_food_allowance,
-          housing_allowance: salaryIncrement.new_housing_allowance,
-          transport_allowance: salaryIncrement.new_transport_allowance,
-          effective_from: salaryIncrement.effective_date,
-          reason: `Salary increment: ${salaryIncrement.reason}`,
-          approved_by: salaryIncrement.approved_by,
-          approved_at: new Date(),
-          status: 'approved',
-        },
-      });
-
-      // Update employee's basic salary
-      await tx.employee.update({
-        where: { id: salaryIncrement.employee_id },
-        data: {
-          basic_salary: salaryIncrement.new_base_salary,
-          food_allowance: salaryIncrement.new_food_allowance,
-          housing_allowance: salaryIncrement.new_housing_allowance,
-          transport_allowance: salaryIncrement.new_transport_allowance,
-        },
-      });
-
-      // Mark increment as applied
-      await tx.salaryIncrement.update({
-        where: { id },
+    // Start a transaction to update both the increment and employee salary
+    const result = await prisma.$transaction(async (tx) => {
+      // Update the increment status to applied
+      const updatedIncrement = await tx.salaryIncrement.update({
+        where: { id: incrementId },
         data: {
           status: 'applied',
         },
+        include: {
+          employee: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              employee_id: true,
+            }
+          },
+          requested_by_user: {
+            select: {
+              id: true,
+              name: true,
+            }
+          },
+          approved_by_user: {
+            select: {
+              id: true,
+              name: true,
+            }
+          },
+        },
       });
+
+      // Update the employee's salary with the new values
+      await tx.employee.update({
+        where: { id: increment.employee_id },
+        data: {
+          basic_salary: increment.new_base_salary,
+          food_allowance: increment.new_food_allowance,
+          housing_allowance: increment.new_housing_allowance,
+          transport_allowance: increment.new_transport_allowance,
+        },
+      });
+
+      return updatedIncrement;
     });
 
-    const updatedIncrement = await prisma.salaryIncrement.findUnique({
-      where: { id },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            employee_id: true,
-          }
-        },
-        requested_by_user: {
-          select: {
-            id: true,
-            name: true,
-          }
-        },
-        approved_by_user: {
-          select: {
-            id: true,
-            name: true,
-          }
-        },
-      },
-    });
-
-    return NextResponse.json({ data: updatedIncrement });
+    return NextResponse.json({ data: result }, { status: 200 });
   } catch (error) {
     console.error('Error applying salary increment:', error);
     return NextResponse.json(
