@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { prisma, safePrismaOperation, ensurePrismaConnection } from '@/lib/db';
 
 export interface PermissionGrant {
   resource: string;
@@ -82,40 +82,49 @@ export class EnhancedPermissionService {
    * Similar to AccessControl's grant() method
    */
   async grant(roleName: string, resource: string, action: string, attributes?: string[]): Promise<void> {
+    // Ensure database connection is ready
+    await ensurePrismaConnection();
+    
     const permissionName = `${action}.${resource}`;
     
-    // Create permission if it doesn't exist
-    const permission = await prisma.permission.upsert({
-      where: { name: permissionName },
-      update: {},
-      create: {
-        name: permissionName,
-        guard_name: 'web',
-      },
+    // Create permission if it doesn't exist using safe operation
+    const permission = await safePrismaOperation(async () => {
+      return await prisma.permission.upsert({
+        where: { name: permissionName },
+        update: {},
+        create: {
+          name: permissionName,
+          guard_name: 'web',
+        },
+      });
     });
 
-    // Get role
-    const role = await prisma.role.findUnique({
-      where: { name: roleName },
+    // Get role using safe operation
+    const role = await safePrismaOperation(async () => {
+      return await prisma.role.findUnique({
+        where: { name: roleName },
+      });
     });
 
     if (!role) {
       throw new Error(`Role ${roleName} not found`);
     }
 
-    // Grant permission to role
-    await prisma.rolePermission.upsert({
-      where: {
-        permission_id_role_id: {
+    // Grant permission to role using safe operation
+    await safePrismaOperation(async () => {
+      return await prisma.rolePermission.upsert({
+        where: {
+          permission_id_role_id: {
+            permission_id: permission.id,
+            role_id: role.id,
+          },
+        },
+        update: {},
+        create: {
           permission_id: permission.id,
           role_id: role.id,
         },
-      },
-      update: {},
-      create: {
-        permission_id: permission.id,
-        role_id: role.id,
-      },
+      });
     });
 
     // Clear cache
@@ -127,30 +136,39 @@ export class EnhancedPermissionService {
    * Similar to AccessControl's revoke() method
    */
   async revoke(roleName: string, resource: string, action: string): Promise<void> {
+    // Ensure database connection is ready
+    await ensurePrismaConnection();
+    
     const permissionName = `${action}.${resource}`;
     
-    const permission = await prisma.permission.findUnique({
-      where: { name: permissionName },
+    const permission = await safePrismaOperation(async () => {
+      return await prisma.permission.findUnique({
+        where: { name: permissionName },
+      });
     });
 
     if (!permission) {
       return; // Permission doesn't exist, nothing to revoke
     }
 
-    const role = await prisma.role.findUnique({
-      where: { name: roleName },
+    const role = await safePrismaOperation(async () => {
+      return await prisma.role.findUnique({
+        where: { name: roleName },
+      });
     });
 
     if (!role) {
       return; // Role doesn't exist, nothing to revoke
     }
 
-    // Revoke permission from role
-    await prisma.rolePermission.deleteMany({
-      where: {
-        role_id: role.id,
-        permission_id: permission.id,
-      },
+    // Revoke permission from role using safe operation
+    await safePrismaOperation(async () => {
+      return await prisma.rolePermission.deleteMany({
+        where: {
+          role_id: role.id,
+          permission_id: permission.id,
+        },
+      });
     });
 
     // Clear cache
@@ -162,28 +180,33 @@ export class EnhancedPermissionService {
    * Similar to AccessControl's permissions() method
    */
   async getUserPermissions(userId: string): Promise<string[]> {
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(userId) },
-      include: {
-        user_roles: {
-          include: {
-            role: {
-              include: {
-                role_permissions: {
-                  include: {
-                    permission: true,
+    // Ensure database connection is ready
+    await ensurePrismaConnection();
+    
+    const user = await safePrismaOperation(async () => {
+      return await prisma.user.findUnique({
+        where: { id: parseInt(userId) },
+        include: {
+          user_roles: {
+            include: {
+              role: {
+                include: {
+                  role_permissions: {
+                    include: {
+                      permission: true,
+                    },
                   },
                 },
               },
             },
           },
-        },
-        user_permissions: {
-          include: {
-            permission: true,
+          user_permissions: {
+            include: {
+              permission: true,
+            },
           },
         },
-      },
+      });
     });
 
     if (!user) {
@@ -211,15 +234,20 @@ export class EnhancedPermissionService {
    * Get all roles for a user
    */
   async getUserRoles(userId: string): Promise<string[]> {
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(userId) },
-      include: {
-        user_roles: {
-          include: {
-            role: true,
+    // Ensure database connection is ready
+    await ensurePrismaConnection();
+    
+    const user = await safePrismaOperation(async () => {
+      return await prisma.user.findUnique({
+        where: { id: parseInt(userId) },
+        include: {
+          user_roles: {
+            include: {
+              role: true,
+            },
           },
         },
-      },
+      });
     });
 
     if (!user) {
@@ -268,28 +296,33 @@ export class EnhancedPermissionService {
    */
   private async checkPermission(userId: string, action: string, resource: string, attributes?: string[]): Promise<boolean> {
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: parseInt(userId) },
-        include: {
-          user_roles: {
-            include: {
-              role: {
-                include: {
-                  role_permissions: {
-                    include: {
-                      permission: true,
+      // Ensure database connection is ready
+      await ensurePrismaConnection();
+      
+      const user = await safePrismaOperation(async () => {
+        return await prisma.user.findUnique({
+          where: { id: parseInt(userId) },
+          include: {
+            user_roles: {
+              include: {
+                role: {
+                  include: {
+                    role_permissions: {
+                      include: {
+                        permission: true,
+                      },
                     },
                   },
                 },
               },
             },
-          },
-          user_permissions: {
-            include: {
-              permission: true,
+            user_permissions: {
+              include: {
+                permission: true,
+              },
             },
           },
-        },
+        });
       });
 
       if (!user) {

@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
 import { checkUserPermission } from './permission-service';
 import { Action, Subject } from './custom-rbac';
-import { prisma, initializePrisma } from '@/lib/db';
+import { prisma, initializePrisma, safePrismaOperation, ensurePrismaConnection } from '@/lib/db';
 
 export interface PermissionConfig {
   action: Action;
@@ -85,16 +85,21 @@ export async function checkEmployeeAccess(
       return { authorized: false, error: 'Invalid user session' };
     }
 
-    // Get user with role information
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(userId) },
-      include: {
-        user_roles: {
-          include: {
-            role: true,
+    // Ensure database connection is ready
+    await ensurePrismaConnection();
+    
+    // Get user with role information using safe operation
+    const user = await safePrismaOperation(async () => {
+      return await prisma.user.findUnique({
+        where: { id: parseInt(userId) },
+        include: {
+          user_roles: {
+            include: {
+              role: true,
+            },
           },
         },
-      },
+      });
     });
 
     if (!user) {
@@ -132,10 +137,12 @@ export async function checkEmployeeAccess(
 
     // For employee role users, check if their national_id matches the employee's iqama_number
     if (userRole.name === 'employee') {
-      // Get the employee data being requested
-      const employee = await prisma.employee.findUnique({
-        where: { id: employeeId },
-        select: { iqama_number: true },
+      // Get the employee data being requested using safe operation
+      const employee = await safePrismaOperation(async () => {
+        return await prisma.employee.findUnique({
+          where: { id: employeeId },
+          select: { iqama_number: true },
+        });
       });
 
       if (!employee) {
@@ -195,16 +202,21 @@ export async function checkEmployeeOwnDataAccess(
       return { authorized: false, error: 'Invalid user session' };
     }
 
-    // Get user with role information
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(userId) },
-      include: {
-        user_roles: {
-          include: {
-            role: true,
+    // Ensure database connection is ready
+    await ensurePrismaConnection();
+    
+    // Get user with role information using safe operation
+    const user = await safePrismaOperation(async () => {
+      return await prisma.user.findUnique({
+        where: { id: parseInt(userId) },
+        include: {
+          user_roles: {
+            include: {
+              role: true,
+            },
           },
         },
-      },
+      });
     });
 
     if (!user) {
@@ -235,10 +247,12 @@ export async function checkEmployeeOwnDataAccess(
 
     // For employee role users, they can only access their own data
     if (userRole.name === 'employee') {
-      // Find the employee record that matches this user's national_id
-      const ownEmployee = await prisma.employee.findFirst({
-        where: { iqama_number: user.national_id },
-        select: { id: true, iqama_number: true },
+      // Find the employee record that matches this user's national_id using safe operation
+      const ownEmployee = await safePrismaOperation(async () => {
+        return await prisma.employee.findFirst({
+          where: { iqama_number: user.national_id },
+          select: { id: true, iqama_number: true },
+        });
       });
 
       if (!ownEmployee) {
@@ -281,10 +295,12 @@ export async function checkEmployeeOwnDataAccess(
 
     // For employee role users, allow access to their own data even without explicit read permission
     if (userRole.name === 'employee') {
-      // Find the employee record that matches this user's national_id
-      const ownEmployee = await prisma.employee.findFirst({
-        where: { iqama_number: user.national_id },
-        select: { id: true, iqama_number: true },
+      // Find the employee record that matches this user's national_id using safe operation
+      const ownEmployee = await safePrismaOperation(async () => {
+        return await prisma.employee.findFirst({
+          where: { iqama_number: user.national_id },
+          select: { id: true, iqama_number: true },
+        });
       });
 
       if (!ownEmployee) {

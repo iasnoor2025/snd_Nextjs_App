@@ -1,4 +1,4 @@
-import { prisma } from '@/lib/db';
+import { prisma, safePrismaOperation, ensurePrismaConnection } from '@/lib/db';
 import { User, Action, Subject } from './custom-rbac';
 
 export interface PermissionCheck {
@@ -27,29 +27,34 @@ export async function checkUserPermission(
   subject: Subject
 ): Promise<PermissionCheck> {
   try {
-    // Get user with roles and permissions
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(userId) },
-      include: {
-        user_roles: {
-          include: {
-            role: {
-              include: {
-                role_permissions: {
-                  include: {
-                    permission: true,
+    // Ensure database connection is ready
+    await ensurePrismaConnection();
+    
+    // Get user with roles and permissions using safe operation
+    const user = await safePrismaOperation(async () => {
+      return await prisma.user.findUnique({
+        where: { id: parseInt(userId) },
+        include: {
+          user_roles: {
+            include: {
+              role: {
+                include: {
+                  role_permissions: {
+                    include: {
+                      permission: true,
+                    },
                   },
                 },
               },
             },
           },
-        },
-        user_permissions: {
-          include: {
-            permission: true,
+          user_permissions: {
+            include: {
+              permission: true,
+            },
           },
         },
-      },
+      });
     });
 
     if (!user) {
@@ -150,28 +155,33 @@ export async function checkUserPermission(
  */
 export async function getUserPermissions(userId: string): Promise<UserPermissions | null> {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(userId) },
-      include: {
-        user_roles: {
-          include: {
-            role: {
-              include: {
-                role_permissions: {
-                  include: {
-                    permission: true,
+    // Ensure database connection is ready
+    await ensurePrismaConnection();
+    
+    const user = await safePrismaOperation(async () => {
+      return await prisma.user.findUnique({
+        where: { id: parseInt(userId) },
+        include: {
+          user_roles: {
+            include: {
+              role: {
+                include: {
+                  role_permissions: {
+                    include: {
+                      permission: true,
+                    },
                   },
                 },
               },
             },
           },
-        },
-        user_permissions: {
-          include: {
-            permission: true,
+          user_permissions: {
+            include: {
+              permission: true,
+            },
           },
         },
-      },
+      });
     });
 
     if (!user) return null;
@@ -202,9 +212,14 @@ export async function assignPermissionsToRole(
   permissionIds: number[]
 ): Promise<{ success: boolean; message: string }> {
   try {
+    // Ensure database connection is ready
+    await ensurePrismaConnection();
+    
     // Validate role exists
-    const role = await prisma.role.findUnique({
-      where: { id: roleId },
+    const role = await safePrismaOperation(async () => {
+      return await prisma.role.findUnique({
+        where: { id: roleId },
+      });
     });
 
     if (!role) {
@@ -212,8 +227,10 @@ export async function assignPermissionsToRole(
     }
 
     // Validate permissions exist
-    const permissions = await prisma.permission.findMany({
-      where: { id: { in: permissionIds } },
+    const permissions = await safePrismaOperation(async () => {
+      return await prisma.permission.findMany({
+        where: { id: { in: permissionIds } },
+      });
     });
 
     if (permissions.length !== permissionIds.length) {
@@ -221,21 +238,23 @@ export async function assignPermissionsToRole(
     }
 
     // Use transaction to ensure data consistency
-    await prisma.$transaction(async (tx) => {
-      // Remove existing permissions
-      await tx.rolePermission.deleteMany({
-        where: { role_id: roleId },
-      });
-
-      // Add new permissions
-      if (permissionIds.length > 0) {
-        await tx.rolePermission.createMany({
-          data: permissionIds.map(permissionId => ({
-            role_id: roleId,
-            permission_id: permissionId,
-          })),
+    await safePrismaOperation(async () => {
+      return await prisma.$transaction(async (tx) => {
+        // Remove existing permissions
+        await tx.rolePermission.deleteMany({
+          where: { role_id: roleId },
         });
-      }
+
+        // Add new permissions
+        if (permissionIds.length > 0) {
+          await tx.rolePermission.createMany({
+            data: permissionIds.map(permissionId => ({
+              role_id: roleId,
+              permission_id: permissionId,
+            })),
+          });
+        }
+      });
     });
 
     return { success: true, message: 'Permissions assigned successfully' };
@@ -253,9 +272,14 @@ export async function assignPermissionsToUser(
   permissionIds: number[]
 ): Promise<{ success: boolean; message: string }> {
   try {
+    // Ensure database connection is ready
+    await ensurePrismaConnection();
+    
     // Validate user exists
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(userId) },
+    const user = await safePrismaOperation(async () => {
+      return await prisma.user.findUnique({
+        where: { id: parseInt(userId) },
+      });
     });
 
     if (!user) {
@@ -263,8 +287,10 @@ export async function assignPermissionsToUser(
     }
 
     // Validate permissions exist
-    const permissions = await prisma.permission.findMany({
-      where: { id: { in: permissionIds } },
+    const permissions = await safePrismaOperation(async () => {
+      return await prisma.permission.findMany({
+        where: { id: { in: permissionIds } },
+      });
     });
 
     if (permissions.length !== permissionIds.length) {
@@ -272,21 +298,23 @@ export async function assignPermissionsToUser(
     }
 
     // Use transaction to ensure data consistency
-    await prisma.$transaction(async (tx) => {
-      // Remove existing direct permissions
-      await tx.userPermission.deleteMany({
-        where: { user_id: parseInt(userId) },
-      });
-
-      // Add new direct permissions
-      if (permissionIds.length > 0) {
-        await tx.userPermission.createMany({
-          data: permissionIds.map(permissionId => ({
-            user_id: parseInt(userId),
-            permission_id: permissionId,
-          })),
+    await safePrismaOperation(async () => {
+      return await prisma.$transaction(async (tx) => {
+        // Remove existing direct permissions
+        await tx.userPermission.deleteMany({
+          where: { user_id: parseInt(userId) },
         });
-      }
+
+        // Add new direct permissions
+        if (permissionIds.length > 0) {
+          await tx.userPermission.createMany({
+            data: permissionIds.map(permissionId => ({
+              user_id: parseInt(userId),
+              permission_id: permissionId,
+            })),
+          });
+        }
+      });
     });
 
     return { success: true, message: 'Permissions assigned successfully' };
@@ -304,9 +332,14 @@ export async function createPermission(
   guardName: string = 'web'
 ): Promise<{ success: boolean; message: string; permission?: any }> {
   try {
+    // Ensure database connection is ready
+    await ensurePrismaConnection();
+    
     // Check if permission already exists
-    const existingPermission = await prisma.permission.findUnique({
-      where: { name },
+    const existingPermission = await safePrismaOperation(async () => {
+      return await prisma.permission.findUnique({
+        where: { name },
+      });
     });
 
     if (existingPermission) {
@@ -314,11 +347,13 @@ export async function createPermission(
     }
 
     // Create new permission
-    const permission = await prisma.permission.create({
-      data: {
-        name,
-        guard_name: guardName,
-      },
+    const permission = await safePrismaOperation(async () => {
+      return await prisma.permission.create({
+        data: {
+          name,
+          guard_name: guardName,
+        },
+      });
     });
 
     return { success: true, message: 'Permission created successfully', permission };
@@ -346,6 +381,9 @@ export async function getPermissions(filters?: {
   };
 }> {
   try {
+    // Ensure database connection is ready
+    await ensurePrismaConnection();
+    
     const { search, roleId, page = 1, limit = 50 } = filters || {};
     const skip = (page - 1) * limit;
 
@@ -358,22 +396,26 @@ export async function getPermissions(filters?: {
       ];
     }
 
-    // Get permissions with pagination
+    // Get permissions with pagination using safe operations
     const [permissions, total] = await Promise.all([
-      prisma.permission.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { name: 'asc' },
-        include: {
-          role_permissions: {
-            include: {
-              role: true,
+      safePrismaOperation(async () => {
+        return await prisma.permission.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { name: 'asc' },
+          include: {
+            role_permissions: {
+              include: {
+                role: true,
+              },
             },
           },
-        },
+        });
       }),
-      prisma.permission.count({ where }),
+      safePrismaOperation(async () => {
+        return await prisma.permission.count({ where });
+      }),
     ]);
 
     // Filter by role if specified
