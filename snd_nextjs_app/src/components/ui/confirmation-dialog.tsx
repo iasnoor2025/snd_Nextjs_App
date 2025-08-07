@@ -22,6 +22,7 @@ interface ConfirmationDialogProps {
   cancelText?: string;
   variant?: "default" | "destructive";
   onConfirm: () => void;
+  onCancel?: () => void;
   loading?: boolean;
 }
 
@@ -34,10 +35,16 @@ export function ConfirmationDialog({
   cancelText = "Cancel",
   variant = "default",
   onConfirm,
+  onCancel,
   loading = false,
 }: ConfirmationDialogProps) {
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={open} onOpenChange={(open: boolean) => {
+      if (!open && onCancel) {
+        onCancel();
+      }
+      onOpenChange(open);
+    }}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
