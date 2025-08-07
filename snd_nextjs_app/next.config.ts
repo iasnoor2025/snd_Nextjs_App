@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
+  // Disable static export for API routes and dynamic pages
+  trailingSlash: false,
   webpack: (config, { dev, isServer }) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
@@ -68,8 +70,6 @@ const nextConfig: NextConfig = {
     // Number of pages that should be kept simultaneously without being disposed
     pagesBufferLength: 4, // Increased for better performance
   },
-  // Add performance optimizations
-  swcMinify: true,
   // Optimize images
   images: {
     formats: ['image/webp', 'image/avif'],

@@ -5,6 +5,8 @@ import { authConfig } from '@/lib/auth-config';
 
 // GET /api/user/first-login-check - Check if this is first login and establish employee relationship
 export async function GET(request: NextRequest) {
+  let dbConnected = false;
+  
   try {
     const session = await getServerSession(authConfig);
 
@@ -34,7 +36,6 @@ export async function GET(request: NextRequest) {
     const userId = parseInt(session.user.id);
 
     // Test database connection with timeout
-    let dbConnected = false;
     try {
       await Promise.race([
         prisma.$connect(),

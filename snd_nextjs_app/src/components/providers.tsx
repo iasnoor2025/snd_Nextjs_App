@@ -18,7 +18,7 @@ interface ProvidersProps {
 }
 
 export function Providers({ children }: ProvidersProps) {
-  const [queryClient] = useState(
+  const [queryClient] = useState<QueryClient>(
     () =>
       new QueryClient({
         defaultOptions: {
@@ -29,16 +29,10 @@ export function Providers({ children }: ProvidersProps) {
             refetchOnWindowFocus: false,
             refetchOnReconnect: false,
             // Add optimistic updates for faster perceived performance
-            placeholderData: (previousData) => previousData,
+            placeholderData: (previousData: any) => previousData,
           },
           mutations: {
             retry: 1,
-            // Add optimistic updates for mutations
-            onMutate: async (variables) => {
-              // Cancel any outgoing refetches
-              await queryClient.cancelQueries();
-              return { previousData: queryClient.getQueryData() };
-            },
           },
         },
       })
@@ -68,7 +62,7 @@ export function Providers({ children }: ProvidersProps) {
     // Add cleanup callback to memory manager with reduced frequency
     const cleanupCallback = () => {
       // Only clear if memory usage is actually high
-      if (performance.memory && performance.memory.usedJSHeapSize > performance.memory.jsHeapSizeLimit * 0.8) {
+      if ((performance as any).memory && (performance as any).memory.usedJSHeapSize > (performance as any).memory.jsHeapSizeLimit * 0.8) {
         queryClient.clear();
       }
     };

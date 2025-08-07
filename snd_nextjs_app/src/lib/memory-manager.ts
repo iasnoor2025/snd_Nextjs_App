@@ -25,11 +25,16 @@ class MemoryManager {
     if (this.isInitialized) return;
     this.isInitialized = true;
 
-    // Set up global cleanup handlers with reduced frequency
-    this.setupGlobalCleanup();
+    // Only set up global cleanup handlers on the client side
+    if (typeof window !== 'undefined') {
+      this.setupGlobalCleanup();
+    }
   }
 
   private setupGlobalCleanup() {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
     // Handle page unload - only on actual unload, not refresh
     const handleBeforeUnload = () => {
       // Only perform cleanup if it's been a while since last cleanup
@@ -96,6 +101,9 @@ class MemoryManager {
    * Perform full cleanup with cooldown
    */
   performCleanup() {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
     const now = Date.now();
     if (now - this.lastCleanupTime < this.cleanupCooldown) {
       return; // Skip if too soon since last cleanup
@@ -144,6 +152,9 @@ class MemoryManager {
    * Perform partial cleanup (for when page is hidden) - less aggressive
    */
   performPartialCleanup() {
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
     const now = Date.now();
     if (now - this.lastCleanupTime < this.cleanupCooldown) {
       return; // Skip if too soon since last cleanup
@@ -166,6 +177,8 @@ class MemoryManager {
    * Get memory usage information
    */
   getMemoryInfo() {
+    if (typeof window === 'undefined') return null;
+    
     if ('memory' in performance) {
       const memory = (performance as any).memory;
       return {
@@ -193,6 +206,9 @@ class MemoryManager {
    * Monitor memory usage and perform cleanup if needed - less frequent
    */
   startMemoryMonitoring(threshold = 85, interval = 120000) { // 2 minutes interval
+    // Only run on client side
+    if (typeof window === 'undefined') return;
+
     const monitor = setInterval(() => {
       if (this.isMemoryUsageHigh(threshold)) {
         console.warn('High memory usage detected, performing cleanup...');
@@ -210,6 +226,8 @@ class MemoryManager {
    * Get performance metrics for debugging
    */
   getPerformanceMetrics() {
+    if (typeof window === 'undefined') return null;
+
     return {
       memory: this.getMemoryInfo(),
       navigation: performance.navigation ? {
