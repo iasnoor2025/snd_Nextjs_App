@@ -35,8 +35,8 @@ export async function POST(
     }
 
     // Check permissions
-    const userRole = session.user.role;
-    const isAdmin = userRole === 'super_admin' || userRole === 'admin';
+    const userRole = session.user.role?.toLowerCase();
+    const isAdmin = userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin';
     
     // Super admin and admin can apply any approved increment
     // Other users can only apply if effective date has passed

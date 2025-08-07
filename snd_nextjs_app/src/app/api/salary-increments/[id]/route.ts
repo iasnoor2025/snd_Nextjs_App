@@ -256,8 +256,8 @@ export async function DELETE(
     }
 
     // Check permissions
-    const userRole = session.user.role;
-    const isAdmin = userRole === 'super_admin' || userRole === 'admin';
+    const userRole = session.user.role?.toLowerCase();
+    const isAdmin = userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin';
     
     // Super admin and admin can delete any increment
     // Other users can only delete if not applied

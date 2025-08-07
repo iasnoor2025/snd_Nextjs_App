@@ -37,8 +37,8 @@ export async function POST(
     }
 
     // Check permissions
-    const userRole = session.user.role;
-    const isAdmin = userRole === 'super_admin' || userRole === 'admin';
+    const userRole = session.user.role?.toLowerCase();
+    const isAdmin = userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin';
     
     // Super admin and admin can reject any increment
     // Other users can only reject pending increments

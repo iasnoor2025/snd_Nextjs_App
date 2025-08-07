@@ -160,7 +160,8 @@ export default function SalaryIncrementsPage() {
 
   const canApprove = (increment: SalaryIncrement) => {
     // Super admin and admin can approve any increment
-    if (session?.user?.role === 'super_admin' || session?.user?.role === 'admin') {
+    const userRole = session?.user?.role?.toLowerCase();
+    if (userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin') {
       return true;
     }
     // Other users can only approve pending increments
@@ -169,7 +170,8 @@ export default function SalaryIncrementsPage() {
 
   const canReject = (increment: SalaryIncrement) => {
     // Super admin and admin can reject any increment
-    if (session?.user?.role === 'super_admin' || session?.user?.role === 'admin') {
+    const userRole = session?.user?.role?.toLowerCase();
+    if (userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin') {
       return true;
     }
     // Other users can only reject pending increments
@@ -178,7 +180,8 @@ export default function SalaryIncrementsPage() {
 
   const canApply = (increment: SalaryIncrement) => {
     // Super admin and admin can apply any approved increment
-    if (session?.user?.role === 'super_admin' || session?.user?.role === 'admin') {
+    const userRole = session?.user?.role?.toLowerCase();
+    if (userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin') {
       return increment.status === 'approved';
     }
     // Other users can only apply if approved and effective date has passed
@@ -187,10 +190,21 @@ export default function SalaryIncrementsPage() {
 
   const canDelete = (increment: SalaryIncrement) => {
     // Super admin and admin can delete any increment
-    if (session?.user?.role === 'super_admin' || session?.user?.role === 'admin') {
+    const userRole = session?.user?.role?.toLowerCase();
+    if (userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin') {
       return true;
     }
     // Other users can only delete if not applied
+    return increment.status !== 'applied';
+  };
+
+  const canEdit = (increment: SalaryIncrement) => {
+    // Super admin and admin can edit any increment
+    const userRole = session?.user?.role?.toLowerCase();
+    if (userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin') {
+      return true;
+    }
+    // Other users can only edit if not applied
     return increment.status !== 'applied';
   };
 
@@ -412,6 +426,15 @@ export default function SalaryIncrementsPage() {
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
+                          {canEdit(increment) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => router.push(`/modules/salary-increments/edit/${increment.id}`)}
+                            >
+                              <Edit className="w-4 h-4 text-blue-600" />
+                            </Button>
+                          )}
                           {canApprove(increment) && (
                             <Button
                               variant="ghost"
