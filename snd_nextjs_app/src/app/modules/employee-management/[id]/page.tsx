@@ -349,7 +349,7 @@ export default function EmployeeShowPage() {
       const response = await fetch(`/api/employee/${employeeId}/payments`);
       const data = await response.json();
       if (data.success) {
-        setPayments(data.payments || []);
+        setPayments(data.data?.payments || data.payments || []);
       }
     } catch (error) {
       console.error('Error fetching payment history:', error);

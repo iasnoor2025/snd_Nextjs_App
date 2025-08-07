@@ -66,6 +66,8 @@ const getEmployeePaymentsHandler = async (
       },
     });
 
+
+
     // Group payments by month
     const monthlyHistory = paymentHistory.reduce((acc: Record<string, {
       month: string;
@@ -126,7 +128,7 @@ const getEmployeePaymentsHandler = async (
     const totalPaidAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
     const remainingBalance = totalAdvanceAmount - totalPaidAmount;
 
-    return NextResponse.json({
+    const response = {
       success: true,
       data: {
         employee: {
@@ -144,7 +146,9 @@ const getEmployeePaymentsHandler = async (
         payments: payments,
         active_advances: activeAdvances,
       },
-    });
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error('Error fetching employee payments:', error);
     return NextResponse.json(

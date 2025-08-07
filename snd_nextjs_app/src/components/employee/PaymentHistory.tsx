@@ -57,10 +57,10 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
     fetch(`/api/employee/${employeeId}/payments`)
       .then((res) => res.json())
       .then((data) => {
-        setPayments(data?.payments || []);
-        setActiveAdvances(data?.active_advances || []);
-        setEmployeeInfo(data?.employee || null);
-        setTotals(data?.totals || null);
+        setPayments(data?.data?.payments || data?.payments || []);
+        setActiveAdvances(data?.data?.active_advances || data?.active_advances || []);
+        setEmployeeInfo(data?.data?.employee || data?.employee || null);
+        setTotals(data?.data?.totals || data?.totals || null);
         setLoading(false);
       })
       .catch((error) => {
