@@ -66,25 +66,45 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const isMountedRef = useRef(true);
+  const eventListenersRef = useRef<Map<string, (event: any) => void>>(new Map());
 
-  // Cleanup function
+  // Enhanced cleanup function
   const cleanup = useCallback(() => {
-    if (eventSourceRef.current) {
-      eventSourceRef.current.close();
-      eventSourceRef.current = null;
-    }
+    // Clear reconnect timeout
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
+
+    // Abort controller
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
+
+    // Close EventSource and remove all listeners
+    if (eventSourceRef.current) {
+      const eventSource = eventSourceRef.current;
+      
+      // Remove all stored event listeners
+      eventListenersRef.current.forEach((listener, eventType) => {
+        eventSource.removeEventListener(eventType, listener);
+      });
+      eventListenersRef.current.clear();
+      
+      eventSource.close();
+      eventSourceRef.current = null;
+    }
+
+    setIsConnected(false);
+    setIsConnecting(false);
   }, []);
 
-  // Handle event
+  // Handle event with mount check
   const handleEvent = useCallback((event: MessageEvent) => {
+    if (!isMountedRef.current) return;
+
     try {
       const sseEvent: SSEEvent = JSON.parse(event.data);
       
@@ -134,8 +154,10 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
     }
   }, [onEvent, eventTypes, showToasts]);
 
-  // Handle connection open
+  // Handle connection open with mount check
   const handleOpen = useCallback(() => {
+    if (!isMountedRef.current) return;
+    
     setIsConnected(true);
     setIsConnecting(false);
     setError(null);
@@ -147,8 +169,10 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
     }
   }, [onConnect, showToasts]);
 
-  // Handle connection error
+  // Handle connection error with mount check
   const handleError = useCallback((event: Event) => {
+    if (!isMountedRef.current) return;
+    
     setIsConnected(false);
     setIsConnecting(false);
     setError('Connection error occurred');
@@ -162,14 +186,16 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
     if (enabled && reconnectAttempts < maxReconnectAttempts) {
       setReconnectAttempts(prev => prev + 1);
       reconnectTimeoutRef.current = setTimeout(() => {
-        connect();
+        if (isMountedRef.current) {
+          connect();
+        }
       }, reconnectInterval);
     }
   }, [enabled, reconnectAttempts, maxReconnectAttempts, reconnectInterval, onError, showToasts]);
 
-  // Connect function
+  // Connect function with improved error handling
   const connect = useCallback(() => {
-    if (isConnected || isConnecting) return;
+    if (isConnected || isConnecting || !isMountedRef.current) return;
 
     cleanup();
     setIsConnecting(true);
@@ -186,10 +212,19 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
 
       eventSourceRef.current = eventSource;
 
+      // Store event listeners for proper cleanup
+      const openListener = (event: Event) => handleOpen();
+      const errorListener = (event: Event) => handleError(event);
+      const messageListener = (event: MessageEvent) => handleEvent(event);
+
+      eventListenersRef.current.set('open', openListener);
+      eventListenersRef.current.set('error', errorListener);
+      eventListenersRef.current.set('message', messageListener);
+
       // Set up event listeners
-      eventSource.addEventListener('open', handleOpen);
-      eventSource.addEventListener('error', handleError);
-      eventSource.addEventListener('message', handleEvent);
+      eventSource.addEventListener('open', openListener);
+      eventSource.addEventListener('error', errorListener);
+      eventSource.addEventListener('message', messageListener);
 
       // Set up specific event listeners for each event type
       const allEventTypes: SSEEventType[] = [
@@ -206,7 +241,9 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
       ];
 
       allEventTypes.forEach(eventType => {
-        eventSource.addEventListener(eventType, handleEvent);
+        const listener = (event: MessageEvent) => handleEvent(event);
+        eventListenersRef.current.set(eventType, listener);
+        eventSource.addEventListener(eventType, listener);
       });
 
       // Handle abort
@@ -219,7 +256,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
       setError('Failed to establish connection');
       console.error('SSE connection error:', error);
     }
-  }, [url, isConnected, isConnecting, handleOpen, handleError, handleEvent, cleanup]);
+  }, [url, isConnected, isConnecting, handleOpen, handleError, handleEvent, cleanup, enabled, reconnectAttempts, maxReconnectAttempts, reconnectInterval]);
 
   // Disconnect function
   const disconnect = useCallback(() => {
@@ -237,24 +274,33 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
 
   // Reconnect function
   const reconnect = useCallback(() => {
+    if (!isMountedRef.current) return;
     disconnect();
     setTimeout(() => {
-      connect();
+      if (isMountedRef.current) {
+        connect();
+      }
     }, 1000);
   }, [disconnect, connect]);
 
+  // Component mount/unmount tracking
+  useEffect(() => {
+    isMountedRef.current = true;
+    
+    return () => {
+      isMountedRef.current = false;
+      cleanup();
+    };
+  }, [cleanup]);
+
   // Auto-connect when enabled
   useEffect(() => {
-    if (enabled) {
+    if (enabled && isMountedRef.current) {
       connect();
     } else {
       disconnect();
     }
-
-    return () => {
-      cleanup();
-    };
-  }, [enabled, connect, disconnect, cleanup]);
+  }, [enabled, connect, disconnect]);
 
   // Handle page visibility changes
   useEffect(() => {
@@ -266,7 +312,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
         }
       } else {
         // Page is visible again, reconnect if needed
-        if (enabled && !isConnected && !isConnecting) {
+        if (enabled && !isConnected && !isConnecting && isMountedRef.current) {
           connect();
         }
       }

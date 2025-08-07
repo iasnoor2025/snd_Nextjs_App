@@ -15,7 +15,9 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "node scripts/reset-db.js",
     "dev:clean": "rm -rf .next && rm -rf node_modules/.cache && npm run db:generate && npm run dev",
-    "dev:reset": "rm -rf .next && rm -rf node_modules/.cache && npx prisma generate && npm run dev"
+    "dev:reset": "rm -rf .next && rm -rf node_modules/.cache && npx prisma generate && npm run dev",
+    "cleanup": "node scripts/cleanup-dev.js",
+    "dev:fresh": "npm run cleanup && npm run dev"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",

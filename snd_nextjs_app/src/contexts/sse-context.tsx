@@ -55,11 +55,29 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
   const reconnectAttemptsRef = useRef(0);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const [maxReconnectAttempts] = useState(5);
+  const isMountedRef = useRef(true);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  // Enhanced cleanup function
+  const cleanup = useCallback(() => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    if (eventSource) {
+      eventSource.close();
+      setEventSource(null);
+    }
+    setIsConnected(false);
+    setConnectionStatus('disconnected');
+  }, [eventSource]);
+
   // Handle SSE messages
   const handleSSEMessage = useCallback((data: any) => {
+    if (!isMountedRef.current) return;
+    
     switch (data.type) {
       case 'notification':
         handleNotification(data.payload);
@@ -71,12 +89,15 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         handleUpdate(data.payload);
         break;
       default:
-
+        // Handle unknown message types
+        break;
     }
   }, []);
 
   // Handle notification messages
   const handleNotification = useCallback((payload: any) => {
+    if (!isMountedRef.current) return;
+
     const notification: Notification = {
       id: payload.id || Date.now().toString(),
       type: payload.type || 'info',
@@ -110,7 +131,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
 
   // Handle system messages
   const handleSystemMessage = useCallback((payload: any) => {
-    
+    if (!isMountedRef.current) return;
     
     switch (payload.action) {
       case 'reload':
@@ -123,13 +144,14 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         ToastService.info('System update available');
         break;
       default:
-
+        // Handle unknown system actions
+        break;
     }
   }, []);
 
   // Handle update messages
   const handleUpdate = useCallback((payload: any) => {
-    
+    if (!isMountedRef.current) return;
     
     // Handle different types of updates
     switch (payload.entity) {
@@ -143,13 +165,14 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         // Trigger equipment data refresh
         break;
       default:
-
+        // Handle unknown entity types
+        break;
     }
   }, []);
 
-  // Initialize SSE connection
+  // Initialize SSE connection with improved error handling
   const connectSSE = useCallback(() => {
-    if (!session?.user?.email) {
+    if (!session?.user?.email || !isMountedRef.current) {
       setConnectionStatus('disconnected');
       return;
     }
@@ -158,24 +181,26 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
       setConnectionStatus('connecting');
       
       // Close existing connection
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
+      cleanup();
 
       // Create new EventSource connection
       const sse = new EventSource('/api/sse', {
         withCredentials: true,
       });
 
-      sse.onopen = () => {
+      const handleOpen = () => {
+        if (!isMountedRef.current) {
+          sse.close();
+          return;
+        }
         setIsConnected(true);
         setConnectionStatus('connected');
         setReconnectAttempts(0);
         reconnectAttemptsRef.current = 0;
-
       };
 
-      sse.onmessage = (event) => {
+      const handleMessage = (event: MessageEvent) => {
+        if (!isMountedRef.current) return;
         try {
           const data = JSON.parse(event.data);
           handleSSEMessage(data);
@@ -184,7 +209,8 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         }
       };
 
-      sse.onerror = (error) => {
+      const handleError = (error: Event) => {
+        if (!isMountedRef.current) return;
         console.error('SSE connection error:', error);
         setIsConnected(false);
         setConnectionStatus('error');
@@ -192,23 +218,40 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         // Attempt to reconnect using a ref to avoid dependency issues
         if (reconnectAttemptsRef.current < maxReconnectAttempts) {
           setTimeout(() => {
-            connectSSE();
+            if (isMountedRef.current) {
+              connectSSE();
+            }
           }, Math.pow(2, reconnectAttemptsRef.current) * 1000); // Exponential backoff
           reconnectAttemptsRef.current += 1;
           setReconnectAttempts(reconnectAttemptsRef.current);
         }
       };
 
+      sse.addEventListener('open', handleOpen);
+      sse.addEventListener('message', handleMessage);
+      sse.addEventListener('error', handleError);
+
       setEventSource(sse);
       eventSourceRef.current = sse;
+
+      // Store cleanup function
+      cleanupRef.current = () => {
+        sse.removeEventListener('open', handleOpen);
+        sse.removeEventListener('message', handleMessage);
+        sse.removeEventListener('error', handleError);
+        sse.close();
+      };
+
     } catch (error) {
       console.error('Failed to create SSE connection:', error);
       setConnectionStatus('error');
     }
-  }, [session?.user?.email, handleSSEMessage, maxReconnectAttempts]);
+  }, [session?.user?.email, handleSSEMessage, maxReconnectAttempts, cleanup]);
 
   // Mark notification as read
   const markAsRead = useCallback(async (notificationId: string) => {
+    if (!isMountedRef.current) return;
+
     setNotifications(prev => 
       prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
     );
@@ -227,6 +270,8 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
 
   // Mark all notifications as read
   const markAllAsRead = useCallback(async () => {
+    if (!isMountedRef.current) return;
+
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
 
     try {
@@ -243,6 +288,8 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
 
   // Delete notification
   const deleteNotification = useCallback(async (notificationId: string) => {
+    if (!isMountedRef.current) return;
+
     setNotifications(prev => prev.filter(n => n.id !== notificationId));
 
     try {
@@ -256,6 +303,8 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
 
   // Clear all notifications
   const clearAllNotifications = useCallback(async () => {
+    if (!isMountedRef.current) return;
+
     setNotifications([]);
 
     try {
@@ -269,6 +318,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
 
   // Reconnect manually
   const reconnect = useCallback(() => {
+    if (!isMountedRef.current) return;
     setReconnectAttempts(0);
     reconnectAttemptsRef.current = 0;
     connectSSE();
@@ -277,6 +327,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
   // Load existing notifications on mount
   useEffect(() => {
     const loadNotifications = async () => {
+      if (!isMountedRef.current) return;
       try {
         const response = await fetch('/api/notifications');
         if (response.ok) {
@@ -301,27 +352,21 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
       setIsConnected(false);
       setConnectionStatus('disconnected');
     }
-
-    // Cleanup on unmount
-    return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-    };
   }, [session?.user?.email, connectSSE]);
 
-  // Auto-reconnect on network recovery
+  // Auto-reconnect on network recovery with improved cleanup
   useEffect(() => {
     const handleOnline = () => {
-      if (session?.user?.email && !isConnected) {
-
+      if (session?.user?.email && !isConnected && isMountedRef.current) {
         reconnect();
       }
     };
 
     const handleOffline = () => {
-      setIsConnected(false);
-      setConnectionStatus('disconnected');
+      if (isMountedRef.current) {
+        setIsConnected(false);
+        setConnectionStatus('disconnected');
+      }
     };
 
     window.addEventListener('online', handleOnline);
@@ -332,6 +377,42 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
       window.removeEventListener('offline', handleOffline);
     };
   }, [session?.user?.email, isConnected, reconnect]);
+
+  // Component mount/unmount tracking
+  useEffect(() => {
+    isMountedRef.current = true;
+    
+    return () => {
+      isMountedRef.current = false;
+      if (cleanupRef.current) {
+        cleanupRef.current();
+      }
+      cleanup();
+    };
+  }, [cleanup]);
+
+  // Page visibility and unload handling
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && isConnected) {
+        // Optionally disconnect when page is hidden to save resources
+        // cleanup();
+      }
+    };
+
+    const handleBeforeUnload = () => {
+      cleanup();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      cleanup();
+    };
+  }, [isConnected, cleanup]);
 
   const value: SSEContextType = {
     notifications,
