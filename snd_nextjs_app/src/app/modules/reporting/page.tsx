@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { ProtectedRoute } from '@/components/protected-route';
 import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
@@ -21,7 +21,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-// i18n refactor: All user-facing strings now use useTranslation('reporting')
 import { useTranslation } from 'react-i18next';
 
 interface Report {
@@ -33,6 +32,7 @@ interface Report {
   created_at: string;
   last_generated: string;
   schedule: string;
+  description?: string;
 }
 
 interface PaginatedResponse {
@@ -58,39 +58,6 @@ export default function ReportingPage() {
   // Get allowed actions for reporting
   const allowedActions = getAllowedActions('Report');
 
-  const mockReports = useMemo(() => [
-    {
-      id: "1",
-      name: t('monthly_revenue_report'),
-      type: "financial",
-      status: "active",
-      created_by: t('john_doe'),
-      created_at: "2024-01-01",
-      last_generated: "2024-01-31",
-      schedule: "monthly"
-    },
-    {
-      id: "2",
-      name: t('equipment_utilization_report'),
-      type: "operational",
-      status: "active",
-      created_by: t('jane_smith'),
-      created_at: "2024-01-15",
-      last_generated: "2024-01-30",
-      schedule: "weekly"
-    },
-    {
-      id: "3",
-      name: t('project_progress_report'),
-      type: "project",
-      status: "draft",
-      created_by: t('bob_johnson'),
-      created_at: "2024-01-20",
-      last_generated: "2024-01-29",
-      schedule: "daily"
-    }
-  ], [t]);
-
   useEffect(() => {
     const fetchReports = async () => {
       try {
@@ -103,7 +70,7 @@ export default function ReportingPage() {
           ...(type && type !== 'all' && { type }),
         });
 
-        const response = await fetch(`/api/reports?${params}`);
+        const response = await fetch(`/modules/reporting/api/reports?${params}`);
         if (!response.ok) {
           throw new Error('Failed to fetch reports');
         }
@@ -119,26 +86,84 @@ export default function ReportingPage() {
     };
 
     fetchReports();
-  }, [search, status, type, currentPage]);
+  }, [search, status, type, currentPage, t]);
 
-  const handleDelete = async () => {
+  const handleDelete = async (reportId: string) => {
     try {
       toast.loading(t('deleting_report'));
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const response = await fetch(`/modules/reporting/api/reports/${reportId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete report');
+      }
+
       toast.success(t('report_deleted_successfully'));
-    } catch {
+      
+      // Refresh the reports list
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: '10',
+        ...(search && { search }),
+        ...(status && status !== 'all' && { status }),
+        ...(type && type !== 'all' && { type }),
+      });
+
+      const refreshResponse = await fetch(`/modules/reporting/api/reports?${params}`);
+      if (refreshResponse.ok) {
+        const data = await refreshResponse.json();
+        setReports(data);
+      }
+    } catch (error) {
+      console.error('Error deleting report:', error);
       toast.error(t('failed_to_delete_report'));
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (reportId: string, reportType: string) => {
     try {
       toast.loading(t('generating_report'));
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const response = await fetch('/modules/reporting/api/reports/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          reportId,
+          reportType,
+          parameters: {
+            startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // Last 30 days
+            endDate: new Date().toISOString(),
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate report');
+      }
+
+      const result = await response.json();
       toast.success(t('report_generated_successfully'));
-    } catch {
+      
+      // Refresh the reports list to update last_generated
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: '10',
+        ...(search && { search }),
+        ...(status && status !== 'all' && { status }),
+        ...(type && type !== 'all' && { type }),
+      });
+
+      const refreshResponse = await fetch(`/modules/reporting/api/reports?${params}`);
+      if (refreshResponse.ok) {
+        const data = await refreshResponse.json();
+        setReports(data);
+      }
+    } catch (error) {
+      console.error('Error generating report:', error);
       toast.error(t('failed_to_generate_report'));
     }
   };
@@ -164,12 +189,41 @@ export default function ReportingPage() {
         return <Badge className="bg-green-100 text-green-800">{t('operational')}</Badge>;
       case "project":
         return <Badge className="bg-purple-100 text-purple-800">{t('project')}</Badge>;
+      case "employee_summary":
+        return <Badge className="bg-orange-100 text-orange-800">{t('employee_summary')}</Badge>;
+      case "payroll_summary":
+        return <Badge className="bg-indigo-100 text-indigo-800">{t('payroll_summary')}</Badge>;
+      case "equipment_utilization":
+        return <Badge className="bg-teal-100 text-teal-800">{t('equipment_utilization')}</Badge>;
+      case "project_progress":
+        return <Badge className="bg-cyan-100 text-cyan-800">{t('project_progress')}</Badge>;
+      case "rental_summary":
+        return <Badge className="bg-pink-100 text-pink-800">{t('rental_summary')}</Badge>;
+      case "timesheet_summary":
+        return <Badge className="bg-yellow-100 text-yellow-800">{t('timesheet_summary')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{type}</Badge>;
     }
   };
 
-  const types = Array.from(new Set(mockReports.map(r => r.type).filter(Boolean)));
+  const getReportType = (type: string) => {
+    switch (type) {
+      case "employee_summary":
+        return "employee_summary";
+      case "payroll_summary":
+        return "payroll_summary";
+      case "equipment_utilization":
+        return "equipment_utilization";
+      case "project_progress":
+        return "project_progress";
+      case "rental_summary":
+        return "rental_summary";
+      case "timesheet_summary":
+        return "timesheet_summary";
+      default:
+        return "employee_summary"; // Default fallback
+    }
+  };
 
   if (loading) {
     return (
@@ -194,7 +248,7 @@ export default function ReportingPage() {
         <h1 className="text-2xl font-bold">{t('page_title')}</h1>
         <div className="flex space-x-2">
           <PermissionContent action="export" subject="Report">
-            <Button onClick={handleGenerate} variant="outline" size="sm">
+            <Button onClick={() => handleGenerate('', 'employee_summary')} variant="outline" size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
               {t('generate_reports_button')}
             </Button>
@@ -240,9 +294,12 @@ export default function ReportingPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('all_types')}</SelectItem>
-              {types.map(type => (
-                <SelectItem key={type} value={type}>{type}</SelectItem>
-              ))}
+              <SelectItem value="employee_summary">{t('employee_summary')}</SelectItem>
+              <SelectItem value="payroll_summary">{t('payroll_summary')}</SelectItem>
+              <SelectItem value="equipment_utilization">{t('equipment_utilization')}</SelectItem>
+              <SelectItem value="project_progress">{t('project_progress')}</SelectItem>
+              <SelectItem value="rental_summary">{t('rental_summary')}</SelectItem>
+              <SelectItem value="timesheet_summary">{t('timesheet_summary')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -284,17 +341,25 @@ export default function ReportingPage() {
                     <TableCell>
                       <div>
                         <div className="font-medium">{report.name}</div>
+                        {report.description && (
+                          <div className="text-sm text-gray-500">{report.description}</div>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>{getTypeBadge(report.type)}</TableCell>
                     <TableCell>{getStatusBadge(report.status)}</TableCell>
                     <TableCell>{report.created_by}</TableCell>
-                    <TableCell>{t(`schedule_${report.schedule}`)}</TableCell>
-                    <TableCell>{new Date(report.last_generated).toLocaleDateString(undefined, {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  })}</TableCell>
+                    <TableCell>{report.schedule ? t(`schedule_${report.schedule}`) : '-'}</TableCell>
+                    <TableCell>
+                      {report.last_generated 
+                        ? new Date(report.last_generated).toLocaleDateString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })
+                        : '-'
+                      }
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end space-x-2">
                         <PermissionContent action="read" subject="Report">
@@ -312,12 +377,20 @@ export default function ReportingPage() {
                           </Link>
                         </PermissionContent>
                         <PermissionContent action="export" subject="Report">
-                          <Button variant="ghost" size="sm">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleGenerate(report.id, getReportType(report.type))}
+                          >
                             <Download className="h-4 w-4" />
                           </Button>
                         </PermissionContent>
                         <PermissionContent action="delete" subject="Report">
-                          <Button variant="ghost" size="sm" onClick={handleDelete}>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleDelete(report.id)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </PermissionContent>

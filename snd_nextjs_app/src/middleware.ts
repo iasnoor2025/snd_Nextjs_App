@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip middleware for public routes and static assets
-  const publicRoutes = ['/login', '/auth', '/api/auth', '/_next', '/favicon.ico', '/access-denied'];
+  const publicRoutes = ['/login', '/auth', '/api/auth', '/_next', '/favicon.ico', '/access-denied', '/uploads'];
   const staticAssets = ['/api/auth/refresh-session', '/api/auth/session'];
   
   if (publicRoutes.some(route => pathname.startsWith(route)) || 
@@ -82,7 +82,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - uploads (uploaded files)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|uploads).*)',
   ],
 };

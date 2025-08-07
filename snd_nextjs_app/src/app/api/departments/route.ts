@@ -78,29 +78,31 @@ export const POST = withPermission(
       );
     }
 
-    // Check if department with same name already exists
+    // Check if department with same name already exists (case insensitive)
     const existingDepartment = await prisma.department.findFirst({
       where: {
-        name: name,
+        name: {
+          equals: name.trim(),
+          mode: 'insensitive',
+        },
         deleted_at: null,
       },
     });
 
     if (existingDepartment) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Department with this name already exists',
-        },
-        { status: 400 }
-      );
+      return NextResponse.json({
+        success: true,
+        data: existingDepartment,
+        message: 'Department already exists',
+      });
     }
 
+    // Create department without specifying ID to let database auto-generate
     const department = await prisma.department.create({
       data: {
-        name,
-        code,
-        description,
+        name: name.trim(),
+        code: code?.trim() || null,
+        description: description?.trim() || null,
         active: true,
       },
       select: {

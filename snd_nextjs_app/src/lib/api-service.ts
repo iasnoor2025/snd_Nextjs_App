@@ -681,6 +681,24 @@ export class ApiService {
     });
   }
 
+  static async uploadEquipmentDocument(equipmentId: number, file: File, documentName?: string) {
+    return this.uploadFile(file, `/equipment/${equipmentId}/documents`, {
+      document_name: documentName || file.name,
+    });
+  }
+
+  static async getEquipmentDocuments(equipmentId: number) {
+    return this.get(`/equipment/${equipmentId}/documents`, undefined, {
+      errorMessage: 'Failed to load equipment documents',
+    });
+  }
+
+  static async deleteEquipmentDocument(equipmentId: number, documentId: number) {
+    return this.delete(`/equipment/${equipmentId}/documents/${documentId}`, {
+      errorMessage: 'Failed to delete document',
+    });
+  }
+
   // ========================================
   // EXPORT OPERATIONS
   // ========================================

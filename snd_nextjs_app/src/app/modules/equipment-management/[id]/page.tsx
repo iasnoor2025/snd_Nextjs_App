@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { ApiService } from "@/lib/api-service";
 import { Label } from "@/components/ui/label";
 import EquipmentAssignmentHistory from "@/components/equipment/EquipmentRentalHistory";
+import EquipmentDocumentUpload from "@/components/equipment/EquipmentDocumentUpload";
 import { useDeleteConfirmations } from "@/lib/utils/confirmation-utils";
 
 interface Equipment {
@@ -309,6 +310,9 @@ export default function EquipmentShowPage() {
 
                {/* Assignment History */}
         <EquipmentAssignmentHistory equipmentId={equipment.id} />
+
+        {/* Documents */}
+        <EquipmentDocumentUpload equipmentId={equipment.id} />
      </div>
    );
  } 

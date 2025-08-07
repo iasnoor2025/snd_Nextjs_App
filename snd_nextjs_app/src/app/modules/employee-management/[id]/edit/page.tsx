@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Save, User, Phone, Mail, MapPin, Calendar, DollarSign, IdCard } from "lucide-react";
+import { ArrowLeft, Save, User, Phone, Mail, MapPin, Calendar, DollarSign, IdCard, Plus, Edit } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -62,12 +62,43 @@ interface Employee {
   };
 }
 
+interface Department {
+  id: number;
+  name: string;
+  code?: string;
+}
+
+interface Designation {
+  id: number;
+  name: string;
+  description?: string;
+}
+
 export default function EditEmployeePage() {
   const params = useParams();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [employee, setEmployee] = useState<Employee | null>(null);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [designations, setDesignations] = useState<Designation[]>([]);
+  
+  // Add modal states
+  const [showAddDepartment, setShowAddDepartment] = useState(false);
+  const [showAddDesignation, setShowAddDesignation] = useState(false);
+  const [newDepartment, setNewDepartment] = useState({ name: "", code: "" });
+  const [newDesignation, setNewDesignation] = useState({ name: "", description: "" });
+  const [addingDepartment, setAddingDepartment] = useState(false);
+  const [addingDesignation, setAddingDesignation] = useState(false);
+
+  // Edit modal states
+  const [showEditDepartment, setShowEditDepartment] = useState(false);
+  const [showEditDesignation, setShowEditDesignation] = useState(false);
+  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
+  const [editingDesignation, setEditingDesignation] = useState<Designation | null>(null);
+  const [updatingDepartment, setUpdatingDepartment] = useState(false);
+  const [updatingDesignation, setUpdatingDesignation] = useState(false);
+
   const [formData, setFormData] = useState({
     first_name: "",
     middle_name: "",
@@ -107,7 +138,35 @@ export default function EditEmployeePage() {
     tuv_certification_expiry: "",
     spsp_license_number: "",
     spsp_license_expiry: "",
+    department_id: "",
+    designation_id: "",
   });
+
+  // Fetch departments and designations
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [departmentsResponse, designationsResponse] = await Promise.all([
+          fetch('/api/departments'),
+          fetch('/api/designations')
+        ]);
+
+        if (departmentsResponse.ok) {
+          const deptData = await departmentsResponse.json();
+          setDepartments(deptData.data || []);
+        }
+
+        if (designationsResponse.ok) {
+          const desigData = await designationsResponse.json();
+          setDesignations(desigData.data || []);
+        }
+      } catch (error) {
+        console.error('Error fetching departments/designations:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   useEffect(() => {
     const fetchEmployee = async () => {
@@ -158,6 +217,8 @@ export default function EditEmployeePage() {
             tuv_certification_expiry: emp.tuv_certification_expiry ? emp.tuv_certification_expiry.split('T')[0] : "",
             spsp_license_number: emp.spsp_license_number || "",
             spsp_license_expiry: emp.spsp_license_expiry ? emp.spsp_license_expiry.split('T')[0] : "",
+            department_id: emp.department?.id ? emp.department.id.toString() : "",
+            designation_id: emp.designation?.id ? emp.designation.id.toString() : "",
           });
         } else {
           toast.error(result.message || 'Failed to fetch employee');
@@ -200,6 +261,8 @@ export default function EditEmployeePage() {
           overtime_fixed_rate: formData.overtime_fixed_rate && formData.overtime_fixed_rate.trim() !== '' ? parseFloat(formData.overtime_fixed_rate) : null,
           contract_days_per_month: formData.contract_days_per_month ? parseInt(formData.contract_days_per_month) : 26,
           contract_hours_per_day: formData.contract_hours_per_day ? parseInt(formData.contract_hours_per_day) : 8,
+          department_id: formData.department_id ? parseInt(formData.department_id) : null,
+          designation_id: formData.designation_id ? parseInt(formData.designation_id) : null,
         }),
       });
 
@@ -245,6 +308,195 @@ export default function EditEmployeePage() {
 
       return newData;
     });
+  };
+
+  // Add new department
+  const handleAddDepartment = async () => {
+    if (!newDepartment.name.trim()) {
+      toast.error('Department name is required');
+      return;
+    }
+
+    try {
+      setAddingDepartment(true);
+      const response = await fetch('/api/departments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newDepartment.name.trim(),
+          code: newDepartment.code?.trim() || null,
+          description: null,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Department added successfully');
+        setDepartments(prev => [...prev, result.data]);
+        setFormData(prev => ({ ...prev, department_id: result.data.id.toString() }));
+        setNewDepartment({ name: "", code: "" });
+        setShowAddDepartment(false);
+      } else {
+        // If creation fails, try to refresh the departments list
+        toast.error(result.message || 'Failed to add department');
+        
+        // Refresh departments list in case there was a sync issue
+        try {
+          const refreshResponse = await fetch('/api/departments');
+          if (refreshResponse.ok) {
+            const refreshData = await refreshResponse.json();
+            setDepartments(refreshData.data || []);
+          }
+        } catch (refreshError) {
+          console.error('Error refreshing departments:', refreshError);
+        }
+      }
+    } catch (error) {
+      console.error('Error adding department:', error);
+      toast.error('Failed to add department. Please try again.');
+      
+      // Refresh departments list in case there was a sync issue
+      try {
+        const refreshResponse = await fetch('/api/departments');
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json();
+          setDepartments(refreshData.data || []);
+        }
+      } catch (refreshError) {
+        console.error('Error refreshing departments:', refreshError);
+      }
+    } finally {
+      setAddingDepartment(false);
+    }
+  };
+
+  // Add new designation
+  const handleAddDesignation = async () => {
+    if (!newDesignation.name.trim()) {
+      toast.error('Designation name is required');
+      return;
+    }
+
+    try {
+      setAddingDesignation(true);
+      const response = await fetch('/api/designations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newDesignation.name.trim(),
+          description: newDesignation.description?.trim() || null,
+          department_id: formData.department_id || null,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Designation added successfully');
+        setDesignations(prev => [...prev, result.data]);
+        setFormData(prev => ({ ...prev, designation_id: result.data.id }));
+        setNewDesignation({ name: "", description: "" });
+        setShowAddDesignation(false);
+      } else {
+        toast.error(result.message || 'Failed to add designation');
+      }
+    } catch (error) {
+      console.error('Error adding designation:', error);
+      toast.error('Failed to add designation');
+    } finally {
+      setAddingDesignation(false);
+    }
+  };
+
+  // Edit department
+  const handleEditDepartment = async () => {
+    if (!editingDepartment || !editingDepartment.name.trim()) {
+      toast.error('Department name is required');
+      return;
+    }
+
+    try {
+      setUpdatingDepartment(true);
+      const response = await fetch(`/api/departments/${editingDepartment.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editingDepartment.name.trim(),
+          code: editingDepartment.code?.trim() || null,
+          description: null,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Department updated successfully');
+        setDepartments(prev => 
+          prev.map(dept => 
+            dept.id === editingDepartment.id ? result.data : dept
+          )
+        );
+        setEditingDepartment(null);
+        setShowEditDepartment(false);
+      } else {
+        toast.error(result.message || 'Failed to update department');
+      }
+    } catch (error) {
+      console.error('Error updating department:', error);
+      toast.error('Failed to update department');
+    } finally {
+      setUpdatingDepartment(false);
+    }
+  };
+
+  // Edit designation
+  const handleEditDesignation = async () => {
+    if (!editingDesignation || !editingDesignation.name.trim()) {
+      toast.error('Designation name is required');
+      return;
+    }
+
+    try {
+      setUpdatingDesignation(true);
+      const response = await fetch(`/api/designations/${editingDesignation.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editingDesignation.name.trim(),
+          description: editingDesignation.description?.trim() || null,
+          department_id: editingDesignation.department_id || null,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Designation updated successfully');
+        setDesignations(prev => 
+          prev.map(desig => 
+            desig.id === editingDesignation.id ? result.data : desig
+          )
+        );
+        setEditingDesignation(null);
+        setShowEditDesignation(false);
+      } else {
+        toast.error(result.message || 'Failed to update designation');
+      }
+    } catch (error) {
+      console.error('Error updating designation:', error);
+      toast.error('Failed to update designation');
+    } finally {
+      setUpdatingDesignation(false);
+    }
   };
 
   if (loading) {
@@ -412,6 +664,99 @@ export default function EditEmployeePage() {
                     <SelectItem value="terminated">Terminated</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="department_id">Department</Label>
+                <div className="flex gap-2">
+                  <Select value={formData.department_id || "none"} onValueChange={(value) => handleInputChange('department_id', value === "none" ? "" : value)}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Department</SelectItem>
+                      {departments.map((department) => (
+                        <SelectItem key={department.id} value={department.id.toString()}>
+                          {department.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAddDepartment(true)}
+                    className="px-3"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const selectedDept = departments.find(d => d.id.toString() === formData.department_id);
+                      if (selectedDept) {
+                        setEditingDepartment(selectedDept);
+                        setShowEditDepartment(true);
+                      } else {
+                        toast.error('Please select a department to edit');
+                      }
+                    }}
+                    className="px-3"
+                    disabled={!formData.department_id || formData.department_id === ""}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="designation_id">Designation</Label>
+                <div className="flex gap-2">
+                  <Select value={formData.designation_id || "none"} onValueChange={(value) => handleInputChange('designation_id', value === "none" ? "" : value)}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="Select designation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Designation</SelectItem>
+                      {designations.map((designation) => (
+                        <SelectItem key={designation.id} value={designation.id.toString()}>
+                          {designation.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAddDesignation(true)}
+                    className="px-3"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const selectedDesig = designations.find(d => d.id.toString() === formData.designation_id);
+                      if (selectedDesig) {
+                        setEditingDesignation(selectedDesig);
+                        setShowEditDesignation(true);
+                      } else {
+                        toast.error('Please select a designation to edit');
+                      }
+                    }}
+                    className="px-3"
+                    disabled={!formData.designation_id || formData.designation_id === ""}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
 
@@ -807,6 +1152,200 @@ export default function EditEmployeePage() {
           </Link>
         </div>
       </form>
+
+      {/* Add Department Modal */}
+      {showAddDepartment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Add New Department</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="dept_name">Department Name *</Label>
+                <Input
+                  id="dept_name"
+                  value={newDepartment.name}
+                  onChange={(e) => setNewDepartment(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Enter department name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="dept_code">Department Code</Label>
+                <Input
+                  id="dept_code"
+                  value={newDepartment.code}
+                  onChange={(e) => setNewDepartment(prev => ({ ...prev, code: e.target.value }))}
+                  placeholder="Enter department code"
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddDepartment(false);
+                    setNewDepartment({ name: "", code: "" });
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleAddDepartment}
+                  disabled={addingDepartment}
+                >
+                  {addingDepartment ? 'Adding...' : 'Add Department'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Designation Modal */}
+      {showAddDesignation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Add New Designation</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="desig_name">Designation Name *</Label>
+                <Input
+                  id="desig_name"
+                  value={newDesignation.name}
+                  onChange={(e) => setNewDesignation(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Enter designation name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="desig_description">Description</Label>
+                <Textarea
+                  id="desig_description"
+                  value={newDesignation.description}
+                  onChange={(e) => setNewDesignation(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="Enter description"
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddDesignation(false);
+                    setNewDesignation({ name: "", description: "" });
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleAddDesignation}
+                  disabled={addingDesignation}
+                >
+                  {addingDesignation ? 'Adding...' : 'Add Designation'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Department Modal */}
+      {showEditDepartment && editingDepartment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Edit Department</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit_dept_name">Department Name *</Label>
+                <Input
+                  id="edit_dept_name"
+                  value={editingDepartment.name}
+                  onChange={(e) => setEditingDepartment(prev => prev ? { ...prev, name: e.target.value } : null)}
+                  placeholder="Enter department name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_dept_code">Department Code</Label>
+                <Input
+                  id="edit_dept_code"
+                  value={editingDepartment.code || ''}
+                  onChange={(e) => setEditingDepartment(prev => prev ? { ...prev, code: e.target.value } : null)}
+                  placeholder="Enter department code"
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditDepartment(false);
+                    setEditingDepartment(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleEditDepartment}
+                  disabled={updatingDepartment}
+                >
+                  {updatingDepartment ? 'Updating...' : 'Update Department'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Designation Modal */}
+      {showEditDesignation && editingDesignation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Edit Designation</h3>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit_desig_name">Designation Name *</Label>
+                <Input
+                  id="edit_desig_name"
+                  value={editingDesignation.name}
+                  onChange={(e) => setEditingDesignation(prev => prev ? { ...prev, name: e.target.value } : null)}
+                  placeholder="Enter designation name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit_desig_description">Description</Label>
+                <Textarea
+                  id="edit_desig_description"
+                  value={editingDesignation.description || ''}
+                  onChange={(e) => setEditingDesignation(prev => prev ? { ...prev, description: e.target.value } : null)}
+                  placeholder="Enter description"
+                  rows={3}
+                />
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditDesignation(false);
+                    setEditingDesignation(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleEditDesignation}
+                  disabled={updatingDesignation}
+                >
+                  {updatingDesignation ? 'Updating...' : 'Update Designation'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
