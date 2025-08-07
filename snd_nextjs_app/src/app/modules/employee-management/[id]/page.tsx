@@ -159,6 +159,10 @@ export default function EmployeeShowPage() {
   const [showDeletePaymentDialog, setShowDeletePaymentDialog] = useState(false);
   const [selectedPaymentId, setSelectedPaymentId] = useState<number | null>(null);
 
+  // Leave data state
+  const [leaves, setLeaves] = useState<any[]>([]);
+  const [loadingLeaves, setLoadingLeaves] = useState(false);
+
   // Filter advances for repayment (approved and partially repaid, but not fully repaid)
   const approvedAdvances = advances.filter((advance: any) => 
     advance.status === 'approved' || advance.status === 'partially_repaid'
@@ -169,6 +173,7 @@ export default function EmployeeShowPage() {
       fetchEmployeeData();
       fetchAdvances();
       fetchPaymentHistory();
+      fetchLeaves();
     }
   }, [employeeId]);
 
@@ -351,6 +356,22 @@ export default function EmployeeShowPage() {
       toast.error('Failed to load payment history');
     } finally {
       setLoadingPayments(false);
+    }
+  };
+
+  const fetchLeaves = async () => {
+    setLoadingLeaves(true);
+    try {
+      const response = await fetch(`/api/employees/${employeeId}/leaves`);
+      const data = await response.json();
+      if (data.success) {
+        setLeaves(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching leaves:', error);
+      toast.error('Failed to load leave data');
+    } finally {
+      setLoadingLeaves(false);
     }
   };
 
@@ -890,7 +911,7 @@ export default function EmployeeShowPage() {
                       <CardTitle className="text-sm font-medium">Total Leaves</CardTitle>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                      <div className="text-2xl font-bold">0</div>
+                      <div className="text-2xl font-bold">{leaves.length}</div>
                   </CardContent>
                   </Card>
                 <Card>
@@ -898,7 +919,7 @@ export default function EmployeeShowPage() {
                       <CardTitle className="text-sm font-medium">Approved Leaves</CardTitle>
                   </CardHeader>
                     <CardContent className="p-4 pt-0">
-                      <div className="text-2xl font-bold">0</div>
+                      <div className="text-2xl font-bold">{leaves.filter(leave => leave.status === 'approved').length}</div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -906,7 +927,7 @@ export default function EmployeeShowPage() {
                       <CardTitle className="text-sm font-medium">Pending Leaves</CardTitle>
                   </CardHeader>
                     <CardContent className="p-4 pt-0">
-                      <div className="text-2xl font-bold">0</div>
+                      <div className="text-2xl font-bold">{leaves.filter(leave => leave.status === 'pending').length}</div>
                   </CardContent>
                 </Card>
                 <Card>
@@ -914,7 +935,7 @@ export default function EmployeeShowPage() {
                       <CardTitle className="text-sm font-medium">Rejected Leaves</CardTitle>
                   </CardHeader>
                     <CardContent className="p-4 pt-0">
-                      <div className="text-2xl font-bold">0</div>
+                      <div className="text-2xl font-bold">{leaves.filter(leave => leave.status === 'rejected').length}</div>
                   </CardContent>
                 </Card>
               </div>
@@ -952,11 +973,57 @@ export default function EmployeeShowPage() {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          <tr>
-                            <td colSpan={6} className="px-6 py-8 text-center text-sm text-muted-foreground">
-                              No leave requests found
-                            </td>
-                          </tr>
+                          {loadingLeaves ? (
+                            <tr>
+                              <td colSpan={6} className="px-6 py-8 text-center text-sm text-muted-foreground">
+                                <div className="flex items-center justify-center gap-2">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  Loading leave data...
+                                </div>
+                              </td>
+                            </tr>
+                          ) : leaves.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="px-6 py-8 text-center text-sm text-muted-foreground">
+                                No leave requests found
+                              </td>
+                            </tr>
+                          ) : (
+                            leaves.map((leave) => (
+                              <tr key={leave.id}>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                  {leave.leave_type}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {format(new Date(leave.start_date), 'MMM dd, yyyy')}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {format(new Date(leave.end_date), 'MMM dd, yyyy')}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {leave.days} day{leave.days !== 1 ? 's' : ''}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <Badge 
+                                    variant={
+                                      leave.status === 'approved' ? 'default' : 
+                                      leave.status === 'pending' ? 'secondary' : 
+                                      'destructive'
+                                    }
+                                  >
+                                    {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
+                                  </Badge>
+                                </td>
+                                {hasPermission('read', 'resignation') && (
+                                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <Button variant="outline" size="sm">
+                                      View Details
+                                    </Button>
+                                  </td>
+                                )}
+                              </tr>
+                            ))
+                          )}
                         </tbody>
                       </table>
                     </div>
