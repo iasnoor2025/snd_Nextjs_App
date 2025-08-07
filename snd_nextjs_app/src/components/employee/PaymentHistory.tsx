@@ -77,10 +77,28 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
       });
 
       if (response.ok) {
+        const data = await response.json();
         toast.success('Repayment deleted successfully');
-        // Refresh the payments list
+        
+        // Remove the deleted payment from local state
         const updatedPayments = payments.filter(p => p.id !== paymentId);
         setPayments(updatedPayments);
+        
+        // Refresh all data to get updated advance payment information
+        setLoading(true);
+        fetch(`/api/employee/${employeeId}/payments`)
+          .then((res) => res.json())
+          .then((data) => {
+            setPayments(data?.data?.payments || data?.payments || []);
+            setActiveAdvances(data?.data?.active_advances || data?.active_advances || []);
+            setEmployeeInfo(data?.data?.employee || data?.employee || null);
+            setTotals(data?.data?.totals || data?.totals || null);
+            setLoading(false);
+          })
+          .catch((error) => {
+            console.error('PaymentHistory refresh error:', error);
+            setLoading(false);
+          });
       } else {
         const data = await response.json();
         toast.error(data?.message || 'Failed to delete repayment');

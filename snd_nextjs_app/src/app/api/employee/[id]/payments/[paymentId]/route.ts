@@ -44,7 +44,6 @@ const deleteEmployeePaymentHandler = async (
       where: {
         id: paymentId,
         employee_id: employeeId,
-        deleted_at: null,
       },
     });
 
@@ -52,17 +51,50 @@ const deleteEmployeePaymentHandler = async (
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
 
-    // Soft delete the payment
-    await prisma.advancePaymentHistory.update({
-      where: { id: paymentId },
+    // Get the associated advance payment for recalculation
+    const advancePayment = await prisma.advancePayment.findFirst({
+      where: { id: payment.advance_payment_id },
+    });
+
+    if (!advancePayment) {
+      return NextResponse.json({ error: "Associated advance payment not found" }, { status: 404 });
+    }
+
+    // Calculate the new repaid amount after deleting this payment
+    const newRepaidAmount = Math.max(0, Number(advancePayment.repaid_amount || 0) - Number(payment.amount));
+    
+    // Determine the new status based on the new repaid amount
+    let newStatus = advancePayment.status;
+    if (newRepaidAmount <= 0) {
+      newStatus = 'approved';
+    } else if (newRepaidAmount < Number(advancePayment.amount)) {
+      newStatus = 'partially_repaid';
+    } else {
+      newStatus = 'fully_repaid';
+    }
+
+    // Update the advance payment with recalculated values
+    await prisma.advancePayment.update({
+      where: { id: advancePayment.id },
       data: {
-        deleted_at: new Date(),
+        repaid_amount: newRepaidAmount,
+        status: newStatus,
       },
+    });
+
+    // Permanently delete the payment
+    await prisma.advancePaymentHistory.delete({
+      where: { id: paymentId },
     });
 
     return NextResponse.json({
       success: true,
       message: "Payment deleted successfully",
+      recalculated: {
+        advance_id: advancePayment.id,
+        new_repaid_amount: newRepaidAmount,
+        new_status: newStatus,
+      },
     });
   } catch (error) {
     console.error("Error deleting payment:", error);

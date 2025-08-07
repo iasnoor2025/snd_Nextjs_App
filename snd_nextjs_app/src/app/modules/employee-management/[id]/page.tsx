@@ -383,10 +383,16 @@ export default function EmployeeShowPage() {
       });
 
       if (response.ok) {
+        const data = await response.json();
         toast.success('Repayment deleted successfully');
-        // Refresh the payments list
+        
+        // Remove the deleted payment from local state
         const updatedPayments = payments.filter(p => p.id !== paymentId);
         setPayments(updatedPayments);
+        
+        // Refresh all data to get updated advance payment information
+        await fetchPaymentHistory();
+        await fetchAdvances();
       } else {
         const data = await response.json();
         toast.error(data?.message || 'Failed to delete repayment');

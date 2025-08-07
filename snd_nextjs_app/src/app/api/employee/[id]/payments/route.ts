@@ -56,7 +56,6 @@ const getEmployeePaymentsHandler = async (
     const paymentHistory = await prisma.advancePaymentHistory.findMany({
       where: {
         employee_id: employeeId,
-        deleted_at: null,
       },
       orderBy: {
         payment_date: "desc",
