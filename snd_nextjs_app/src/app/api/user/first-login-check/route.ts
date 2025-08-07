@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
 
-// GET /api/user/nation-id - Check if user has nation ID
+// GET /api/user/first-login-check - Check if this is first login and establish employee relationship
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authConfig);
@@ -17,7 +17,8 @@ export async function GET(request: NextRequest) {
           userId: null,
           userName: null,
           userEmail: null,
-          matchedEmployee: null
+          matchedEmployee: null,
+          isFirstLogin: false
         },
         { 
           status: 401,
@@ -52,7 +53,8 @@ export async function GET(request: NextRequest) {
           userId: null,
           userName: null,
           userEmail: null,
-          matchedEmployee: null
+          matchedEmployee: null,
+          isFirstLogin: false
         },
         { 
           status: 503,
@@ -65,7 +67,7 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    // Optimized query to get user and employee data in one go
+    // Get user data
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -73,6 +75,8 @@ export async function GET(request: NextRequest) {
         national_id: true,
         name: true,
         email: true,
+        created_at: true,
+        updated_at: true,
       },
     });
 
@@ -85,7 +89,8 @@ export async function GET(request: NextRequest) {
           userId: null,
           userName: null,
           userEmail: null,
-          matchedEmployee: null
+          matchedEmployee: null,
+          isFirstLogin: false
         },
         { 
           status: 404,
@@ -98,9 +103,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Only check for matched employee if user has a national ID
-    let matchedEmployee = null;
+    // Check if user already has a national_id - if yes, not first login
     if (user.national_id) {
+      // User already has Nation ID, just return the data
+      let matchedEmployee = null;
       try {
         matchedEmployee = await prisma.employee.findFirst({
           where: { iqama_number: user.national_id },
@@ -137,7 +143,87 @@ export async function GET(request: NextRequest) {
         });
       } catch (employeeError) {
         console.error('Error fetching matched employee:', employeeError);
-        // Continue without matched employee data
+      }
+
+      return NextResponse.json({
+        hasNationId: true,
+        nationId: user.national_id,
+        userId: user.id,
+        userName: user.name,
+        userEmail: user.email,
+        matchedEmployee: matchedEmployee,
+        isFirstLogin: false
+      });
+    }
+
+    // This is first login - check if user email matches any employee
+    let matchedEmployee = null;
+    let isFirstLogin = true;
+
+    if (user.email) {
+      try {
+        // First try to find employee by email match
+        matchedEmployee = await prisma.employee.findFirst({
+          where: { email: user.email },
+          select: {
+            id: true,
+            first_name: true,
+            middle_name: true,
+            last_name: true,
+            employee_id: true,
+            phone: true,
+            email: true,
+            address: true,
+            city: true,
+            state: true,
+            country: true,
+            nationality: true,
+            date_of_birth: true,
+            hire_date: true,
+            iqama_number: true,
+            iqama_expiry: true,
+            passport_number: true,
+            passport_expiry: true,
+            driving_license_number: true,
+            driving_license_expiry: true,
+            operator_license_number: true,
+            operator_license_expiry: true,
+            designation: {
+              select: { name: true }
+            },
+            department: {
+              select: { name: true }
+            }
+          }
+        });
+
+        // If found by email, update employee email to match user email and set national_id
+        if (matchedEmployee) {
+          try {
+            // Update employee email if different
+            if (matchedEmployee.email !== user.email) {
+              await prisma.employee.update({
+                where: { id: matchedEmployee.id },
+                data: { email: user.email }
+              });
+              console.log('✅ Updated employee email to match user email');
+            }
+
+            // Update user's national_id to match employee's iqama_number
+            await prisma.user.update({
+              where: { id: userId },
+              data: { national_id: matchedEmployee.iqama_number }
+            });
+            console.log('✅ Updated user national_id to match employee iqama');
+
+            // Update the matchedEmployee object with new email
+            matchedEmployee.email = user.email;
+          } catch (updateError) {
+            console.error('❌ Error updating employee/user relationship:', updateError);
+          }
+        }
+      } catch (employeeError) {
+        console.error('Error fetching matched employee:', employeeError);
       }
     }
 
@@ -148,21 +234,16 @@ export async function GET(request: NextRequest) {
       userName: user.name,
       userEmail: user.email,
       matchedEmployee: matchedEmployee,
+      isFirstLogin: isFirstLogin,
     };
 
-    // Add cache headers for successful responses
-    const cacheHeaders = {
-      'Cache-Control': 'public, max-age=300, s-maxage=300', // 5 minutes cache
-      'ETag': `"nation-id-${userId}-${user.national_id || 'none'}"`,
-    };
-
-    return NextResponse.json(result, { headers: cacheHeaders });
+    return NextResponse.json(result);
     
   } catch (error) {
-    console.error('❌ Error checking nation ID:', error);
+    console.error('❌ Error checking first login:', error);
     return NextResponse.json(
       { 
-        error: 'Failed to check nation ID',
+        error: 'Failed to check first login',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
       { 
@@ -184,71 +265,3 @@ export async function GET(request: NextRequest) {
     }
   }
 }
-
-// PUT /api/user/nation-id - Update user's nation ID
-export async function PUT(request: NextRequest) {
-  const session = await getServerSession(authConfig);
-
-  if (!session?.user?.id) {
-    return NextResponse.json(
-      { error: 'Not authenticated' },
-      { status: 401 }
-    );
-  }
-
-  try {
-    const body = await request.json();
-    const { nationId } = body;
-
-    if (!nationId || typeof nationId !== 'string' || nationId.trim() === '') {
-      return NextResponse.json(
-        { error: 'Nation ID is required' },
-        { status: 400 }
-      );
-    }
-
-    const userId = parseInt(session.user.id);
-    
-    // Check if nation ID is already taken by another user
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        national_id: nationId.trim(),
-        id: { not: userId },
-      },
-    });
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'Nation ID is already registered by another user' },
-        { status: 400 }
-      );
-    }
-
-    // Update user's nation ID
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        national_id: nationId.trim(),
-      },
-      select: {
-        id: true,
-        national_id: true,
-        name: true,
-        email: true,
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: 'Nation ID updated successfully',
-      nationId: updatedUser.national_id,
-      userId: updatedUser.id,
-    });
-  } catch (error) {
-    console.error('Error updating nation ID:', error);
-    return NextResponse.json(
-      { error: 'Failed to update nation ID' },
-      { status: 500 }
-    );
-  }
-} 

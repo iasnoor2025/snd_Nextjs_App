@@ -21,7 +21,7 @@ interface ConditionalLayoutProps {
 export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const pathname = usePathname();
   const { isRTL } = useI18n();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const isLoginPage = pathname === "/login";
   const { isModalOpen, closeModal, nationIdData, isChecking, refreshCheck } = useNationIdCheck();
   
@@ -36,20 +36,20 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
     );
   }
 
-  // Show loading state while checking Nation ID
-  if (isChecking) {
+  // Show loading state only on first login verification
+  if (isChecking && nationIdData?.isFirstLogin) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Verifying your profile...</p>
+          <p className="text-muted-foreground">Setting up your profile...</p>
         </div>
       </div>
     );
   }
 
-  // Show Nation ID required page if user doesn't have Nation ID
-  if (nationIdData && !nationIdData.hasNationId) {
+  // Show Nation ID required page if user doesn't have Nation ID on first login
+  if (nationIdData?.isFirstLogin && nationIdData && !nationIdData.hasNationId) {
     return (
       <NationIdRequired
         userName={nationIdData.userName || ""}
@@ -72,8 +72,8 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
           </main>
         </div>
         
-        {/* Nation ID Modal - Only show if user doesn't have Nation ID */}
-        {nationIdData && !nationIdData.hasNationId && (
+        {/* Nation ID Modal - Only show if user doesn't have Nation ID on first login */}
+        {nationIdData?.isFirstLogin && nationIdData && !nationIdData.hasNationId && (
           <NationIdModal
             isOpen={isModalOpen}
             onClose={closeModal}
@@ -111,8 +111,8 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
         </div>
       </SidebarProvider>
       
-      {/* Nation ID Modal - Only show if user doesn't have Nation ID */}
-      {nationIdData && !nationIdData.hasNationId && (
+      {/* Nation ID Modal - Only show if user doesn't have Nation ID on first login */}
+      {nationIdData?.isFirstLogin && nationIdData && !nationIdData.hasNationId && (
         <NationIdModal
           isOpen={isModalOpen}
           onClose={closeModal}

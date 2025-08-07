@@ -23,50 +23,66 @@ export function Providers({ children }: ProvidersProps) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000,
+            staleTime: 5 * 60 * 1000, // 5 minutes - increased for better performance
+            gcTime: 10 * 60 * 1000, // 10 minutes - increased for better performance
             retry: 1,
-            gcTime: 5 * 60 * 1000, // 5 minutes garbage collection time
-            refetchOnWindowFocus: false, // Prevent refetch on focus to reduce memory usage
-            refetchOnReconnect: false, // Prevent refetch on reconnect to reduce memory usage
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
+            // Add optimistic updates for faster perceived performance
+            placeholderData: (previousData) => previousData,
           },
           mutations: {
             retry: 1,
+            // Add optimistic updates for mutations
+            onMutate: async (variables) => {
+              // Cancel any outgoing refetches
+              await queryClient.cancelQueries();
+              return { previousData: queryClient.getQueryData() };
+            },
           },
         },
       })
   );
 
-  // Cleanup function to prevent memory leaks
+  // Optimized cleanup function to prevent memory leaks without affecting performance
   useEffect(() => {
     const handleBeforeUnload = () => {
-      // Clear all queries on page unload
-      queryClient.clear();
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Clear stale queries when page is hidden
+      // Only clear queries on actual page unload, not on refresh
+      if (performance.navigation.type === 1) { // NavigationType.RELOAD
         queryClient.clear();
       }
     };
 
-    // Add cleanup callback to memory manager
+    const handleVisibilityChange = () => {
+      // Only clear stale queries when page is hidden for a long time
+      if (document.hidden) {
+        // Don't clear immediately, wait a bit
+        setTimeout(() => {
+          if (document.hidden) {
+            queryClient.clear();
+          }
+        }, 30000); // 30 seconds delay
+      }
+    };
+
+    // Add cleanup callback to memory manager with reduced frequency
     const cleanupCallback = () => {
-      queryClient.clear();
+      // Only clear if memory usage is actually high
+      if (performance.memory && performance.memory.usedJSHeapSize > performance.memory.jsHeapSizeLimit * 0.8) {
+        queryClient.clear();
+      }
     };
     addCleanupCallback(cleanupCallback);
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Start memory monitoring
-    startMemoryMonitoring(80, 30000); // Monitor every 30 seconds, cleanup if >80% usage
+    // Start memory monitoring with higher threshold and longer interval
+    startMemoryMonitoring(90, 60000); // Monitor every 60 seconds, cleanup if >90% usage
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      // Clear queries on cleanup
-      queryClient.clear();
     };
   }, [queryClient]);
 

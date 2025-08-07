@@ -4,27 +4,45 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
-  webpack: (config) => {
+  webpack: (config, { dev, isServer }) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
     };
     
-    // Simplified webpack optimization to avoid SSR issues
+    // Optimized webpack configuration for better performance
     config.optimization = {
       ...config.optimization,
-      // Remove problematic vendor chunk splitting for SSR
+      // Better chunk splitting for faster loading
       splitChunks: {
-        chunks: 'async', // Only split async chunks to avoid SSR issues
+        chunks: 'async',
         cacheGroups: {
           default: {
             minChunks: 2,
             priority: -20,
             reuseExistingChunk: true,
           },
+          // Vendor chunks for better caching
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'async',
+            priority: -10,
+          },
         },
       },
+      // Enable module concatenation for better performance
+      concatenateModules: !dev,
     };
+
+    // Add performance hints for development
+    if (dev) {
+      config.performance = {
+        hints: 'warning',
+        maxEntrypointSize: 512000,
+        maxAssetSize: 512000,
+      };
+    }
     
     return config;
   },
@@ -43,12 +61,19 @@ const nextConfig: NextConfig = {
   // Add performance optimizations
   compress: true,
   poweredByHeader: false,
-  // Add memory management settings
+  // Optimized memory management settings
   onDemandEntries: {
     // Period (in ms) where the server will keep pages in the buffer
-    maxInactiveAge: 25 * 1000,
+    maxInactiveAge: 60 * 1000, // Increased to 1 minute
     // Number of pages that should be kept simultaneously without being disposed
-    pagesBufferLength: 2,
+    pagesBufferLength: 4, // Increased for better performance
+  },
+  // Add performance optimizations
+  swcMinify: true,
+  // Optimize images
+  images: {
+    formats: ['image/webp', 'image/avif'],
+    minimumCacheTTL: 60,
   },
 };
 

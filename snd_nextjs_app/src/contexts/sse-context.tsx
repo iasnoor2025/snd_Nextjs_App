@@ -54,14 +54,20 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectAttemptsRef = useRef(0);
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
-  const [maxReconnectAttempts] = useState(5);
+  const [maxReconnectAttempts] = useState(3); // Reduced from 5 to 3
   const isMountedRef = useRef(true);
   const cleanupRef = useRef<(() => void) | null>(null);
+  const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  // Enhanced cleanup function
+  // Optimized cleanup function - less aggressive
   const cleanup = useCallback(() => {
+    if (connectionTimeoutRef.current) {
+      clearTimeout(connectionTimeoutRef.current);
+      connectionTimeoutRef.current = null;
+    }
+
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
@@ -74,7 +80,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     setConnectionStatus('disconnected');
   }, [eventSource]);
 
-  // Handle SSE messages
+  // Handle SSE messages with performance optimization
   const handleSSEMessage = useCallback((data: any) => {
     if (!isMountedRef.current) return;
     
@@ -112,20 +118,22 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
 
     setNotifications(prev => [notification, ...prev]);
 
-    // Show toast notification
-    switch (notification.type) {
-      case 'success':
-        ToastService.success(notification.message);
-        break;
-      case 'error':
-        ToastService.error(notification.message);
-        break;
-      case 'warning':
-        ToastService.warning(notification.message);
-        break;
-      case 'info':
-        ToastService.info(notification.message);
-        break;
+    // Show toast notification only if page is visible
+    if (!document.hidden) {
+      switch (notification.type) {
+        case 'success':
+          ToastService.success(notification.message);
+          break;
+        case 'error':
+          ToastService.error(notification.message);
+          break;
+        case 'warning':
+          ToastService.warning(notification.message);
+          break;
+        case 'info':
+          ToastService.info(notification.message);
+          break;
+      }
     }
   }, []);
 
@@ -170,7 +178,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Initialize SSE connection with improved error handling
+  // Initialize SSE connection with performance optimization
   const connectSSE = useCallback(() => {
     if (!session?.user?.email || !isMountedRef.current) {
       setConnectionStatus('disconnected');
@@ -183,6 +191,14 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
       // Close existing connection
       cleanup();
 
+      // Add connection timeout for faster failure detection
+      connectionTimeoutRef.current = setTimeout(() => {
+        if (connectionStatus === 'connecting') {
+          setConnectionStatus('error');
+          setIsConnected(false);
+        }
+      }, 5000); // 5 second timeout
+
       // Create new EventSource connection
       const sse = new EventSource('/api/sse', {
         withCredentials: true,
@@ -192,6 +208,10 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         if (!isMountedRef.current) {
           sse.close();
           return;
+        }
+        if (connectionTimeoutRef.current) {
+          clearTimeout(connectionTimeoutRef.current);
+          connectionTimeoutRef.current = null;
         }
         setIsConnected(true);
         setConnectionStatus('connected');
@@ -215,13 +235,13 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         setIsConnected(false);
         setConnectionStatus('error');
         
-        // Attempt to reconnect using a ref to avoid dependency issues
+        // Reduced reconnection attempts for faster recovery
         if (reconnectAttemptsRef.current < maxReconnectAttempts) {
           setTimeout(() => {
             if (isMountedRef.current) {
               connectSSE();
             }
-          }, Math.pow(2, reconnectAttemptsRef.current) * 1000); // Exponential backoff
+          }, Math.pow(1.5, reconnectAttemptsRef.current) * 1000); // Reduced exponential backoff
           reconnectAttemptsRef.current += 1;
           setReconnectAttempts(reconnectAttemptsRef.current);
         }
@@ -246,7 +266,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
       console.error('Failed to create SSE connection:', error);
       setConnectionStatus('error');
     }
-  }, [session?.user?.email, handleSSEMessage, maxReconnectAttempts, cleanup]);
+  }, [session?.user?.email, handleSSEMessage, maxReconnectAttempts, cleanup, connectionStatus]);
 
   // Mark notification as read
   const markAsRead = useCallback(async (notificationId: string) => {
@@ -324,7 +344,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     connectSSE();
   }, [connectSSE]);
 
-  // Load existing notifications on mount
+  // Load existing notifications on mount with performance optimization
   useEffect(() => {
     const loadNotifications = async () => {
       if (!isMountedRef.current) return;
@@ -340,25 +360,36 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     };
 
     if (session?.user?.email) {
-      loadNotifications();
+      // Delay loading notifications slightly to prioritize page load
+      setTimeout(loadNotifications, 100);
     }
   }, [session?.user?.email]);
 
-  // Connect to SSE when session is available
+  // Connect to SSE when session is available with delay for better performance
   useEffect(() => {
     if (session?.user?.email) {
-      connectSSE();
+      // Delay connection slightly to prioritize page load
+      setTimeout(() => {
+        if (isMountedRef.current) {
+          connectSSE();
+        }
+      }, 200);
     } else {
       setIsConnected(false);
       setConnectionStatus('disconnected');
     }
   }, [session?.user?.email, connectSSE]);
 
-  // Auto-reconnect on network recovery with improved cleanup
+  // Auto-reconnect on network recovery with reduced frequency
   useEffect(() => {
     const handleOnline = () => {
       if (session?.user?.email && !isConnected && isMountedRef.current) {
-        reconnect();
+        // Delay reconnection to avoid rapid reconnections
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            reconnect();
+          }
+        }, 1000);
       }
     };
 
@@ -391,12 +422,17 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     };
   }, [cleanup]);
 
-  // Page visibility and unload handling
+  // Page visibility and unload handling with reduced frequency
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && isConnected) {
-        // Optionally disconnect when page is hidden to save resources
-        // cleanup();
+        // Don't disconnect immediately, wait longer
+        setTimeout(() => {
+          if (document.hidden && isMountedRef.current) {
+            // Only disconnect if still hidden after 2 minutes
+            cleanup();
+          }
+        }, 120000); // 2 minutes
       }
     };
 
