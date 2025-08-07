@@ -53,7 +53,7 @@ export async function PUT(
       data: {
         status: 'approved',
         approved_at: new Date(),
-        approved_by: session.user.id
+        approved_by: parseInt(session.user.id)
       }
     });
 

@@ -207,9 +207,9 @@ export default function CreateSalaryIncrementPage() {
       const response = await ApiService.get(`/employees/${employeeId}`);
       console.log('Employee details response:', response);
       
-      if (response.employee) {
-        setSelectedEmployee(response.employee);
-        console.log('Employee set:', response.employee);
+      if (response.data) {
+        setSelectedEmployee(response.data);
+        console.log('Employee set:', response.data);
       } else {
         console.error('No employee data in response');
         toast.error('Failed to load employee details');
@@ -254,7 +254,7 @@ export default function CreateSalaryIncrementPage() {
     const dataToSend = {
       ...formData,
       // Map calculation method to correct increment type
-      increment_type: calculationMethod === 'percentage' ? 'percentage' : 'amount',
+      increment_type: (calculationMethod === 'percentage' ? 'percentage' : 'amount') as 'percentage' | 'amount' | 'promotion' | 'annual_review' | 'performance' | 'market_adjustment',
       // Ensure numeric fields are properly set
       increment_percentage: calculationMethod === 'percentage' ? formData.increment_percentage : undefined,
       increment_amount: calculationMethod === 'fixed' ? formData.increment_amount : undefined,

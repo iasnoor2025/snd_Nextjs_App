@@ -242,7 +242,6 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       console.error('Validation error details:', {
         errors: error.errors,
-        receivedData: body
       });
       return NextResponse.json(
         { error: 'Validation error', details: error.errors },

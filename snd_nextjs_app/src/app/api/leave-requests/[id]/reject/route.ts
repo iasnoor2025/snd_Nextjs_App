@@ -54,7 +54,7 @@ export async function PUT(
       data: {
         status: 'rejected',
         rejected_at: new Date(),
-        rejected_by: session.user.id,
+        rejected_by: parseInt(session.user.id),
         rejection_reason: body.rejection_reason || 'Rejected by manager'
       }
     });

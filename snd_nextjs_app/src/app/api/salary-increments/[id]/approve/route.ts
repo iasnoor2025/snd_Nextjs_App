@@ -10,7 +10,7 @@ const approveSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -21,7 +21,8 @@ export async function POST(
     const body = await request.json();
     const validatedData = approveSchema.parse(body);
 
-    const incrementId = parseInt(params.id);
+    const { id } = await params;
+    const incrementId = parseInt(id);
     if (isNaN(incrementId)) {
       return NextResponse.json({ error: 'Invalid increment ID' }, { status: 400 });
     }

@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,7 +13,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const employeeId = parseInt(params.id);
+    const { id } = await params;
+    const employeeId = parseInt(id);
     if (isNaN(employeeId)) {
       return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }

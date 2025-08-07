@@ -20,7 +20,7 @@ const updateSalaryIncrementSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -28,13 +28,14 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
+    const { id } = await params;
+    const incrementId = parseInt(id);
+    if (isNaN(incrementId)) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
     const salaryIncrement = await prisma.salaryIncrement.findUnique({
-      where: { id },
+      where: { id: incrementId },
       include: {
         employee: {
           select: {
@@ -85,7 +86,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -93,8 +94,9 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const id = parseInt(params.id);
-    if (isNaN(id)) {
+    const { id } = await params;
+    const incrementId = parseInt(id);
+    if (isNaN(incrementId)) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
@@ -103,7 +105,7 @@ export async function PUT(
 
     // Check if salary increment exists and is not applied
     const existingIncrement = await prisma.salaryIncrement.findUnique({
-      where: { id },
+      where: { id: incrementId },
       include: {
         employee: {
           select: {
@@ -195,7 +197,7 @@ export async function PUT(
     }
 
     const updatedIncrement = await prisma.salaryIncrement.update({
-      where: { id },
+      where: { id: incrementId },
       data: updateData,
       include: {
         employee: {
@@ -233,7 +235,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -241,7 +243,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const incrementId = parseInt(params.id);
+    const { id } = await params;
+    const incrementId = parseInt(id);
     if (isNaN(incrementId)) {
       return NextResponse.json({ error: 'Invalid increment ID' }, { status: 400 });
     }
