@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 
 import { prisma } from '@/lib/db';
+import { saudiCities } from './saudi-cities';
 async function main() {
   console.log('🌱 Seeding database...')
 
@@ -119,6 +120,52 @@ async function main() {
     })
     console.log('✅ User role relationship created');
 
+    // Seed Saudi Arabian cities
+    console.log('🌍 Seeding Saudi Arabian cities...');
+    let citiesCreated = 0;
+    let citiesSkipped = 0;
+
+    for (const cityData of saudiCities) {
+      try {
+        const existingLocation = await prisma.location.findFirst({
+          where: {
+            name: cityData.name,
+            city: cityData.city,
+            state: cityData.state
+          }
+        });
+
+        if (existingLocation) {
+          console.log(`⏭️  Skipping existing city: ${cityData.name}`);
+          citiesSkipped++;
+          continue;
+        }
+
+        await prisma.location.create({
+          data: {
+            name: cityData.name,
+            description: cityData.description,
+            city: cityData.city,
+            state: cityData.state,
+            country: cityData.country,
+            latitude: cityData.latitude,
+            longitude: cityData.longitude,
+            is_active: true,
+          }
+        });
+
+        console.log(`✅ Created location: ${cityData.name}`);
+        citiesCreated++;
+      } catch (error) {
+        console.error(`❌ Error creating location ${cityData.name}:`, error);
+      }
+    }
+
+    console.log(`📊 Cities seeding summary:`);
+    console.log(`- Created: ${citiesCreated} cities`);
+    console.log(`- Skipped: ${citiesSkipped} existing cities`);
+    console.log(`- Total processed: ${citiesCreated + citiesSkipped} cities`);
+
     console.log('✅ Database seeded successfully!')
     console.log('🔑 Admin user created:')
     console.log('- Admin: admin@ias.com / password')
@@ -130,6 +177,7 @@ async function main() {
     console.log('- OPERATOR (Basic operations)')
     console.log('- EMPLOYEE (Employee access)')
     console.log('- USER (Read-only access)')
+    console.log('🌍 Saudi Arabian cities seeded successfully!')
   } catch (error) {
     console.error('❌ Error during seeding:', error);
     throw error;

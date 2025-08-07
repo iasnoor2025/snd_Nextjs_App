@@ -13,6 +13,7 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed-saudi-cities": "tsx prisma/seed-saudi-cities.ts",
     "db:reset": "node scripts/reset-db.js",
     "dev:clean": "rm -rf .next && rm -rf node_modules/.cache && npm run db:generate && npm run dev",
     "dev:reset": "rm -rf .next && rm -rf node_modules/.cache && npx prisma generate && npm run dev",

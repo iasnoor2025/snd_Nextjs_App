@@ -11,6 +11,7 @@ export const GET = withPermission(
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || undefined;
     const status = searchParams.get('status') || undefined;
+    const city = searchParams.get('city') || undefined;
 
     // Build where clause
     const where: any = {};
@@ -26,6 +27,10 @@ export const GET = withPermission(
 
     if (status) {
       where.is_active = status === 'active';
+    }
+
+    if (city) {
+      where.city = { equals: city, mode: 'insensitive' };
     }
 
     // Get total count for pagination

@@ -13,15 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Search, Plus, Download, Upload, Eye, Edit, Trash2, MapPin } from 'lucide-react';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/custom-pagination";
+
 import Link from 'next/link';
 import { toast } from 'sonner';
 import {
@@ -66,7 +58,8 @@ export default function LocationManagementPage() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(5); // Reduced for testing pagination
+  const [totalPages, setTotalPages] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -92,16 +85,40 @@ export default function LocationManagementPage() {
 
   useEffect(() => {
     fetchLocations();
-  }, []);
+  }, [currentPage, itemsPerPage, searchTerm, statusFilter, cityFilter]);
 
   const fetchLocations = async () => {
     try {
-      const response = await fetch('/api/locations');
+      const params = new URLSearchParams();
+      if (searchTerm) params.append('search', searchTerm);
+      if (statusFilter !== 'all') params.append('status', statusFilter);
+      if (cityFilter !== 'all') params.append('city', cityFilter);
+      params.append('page', currentPage.toString());
+      params.append('limit', itemsPerPage.toString());
+
+      const response = await fetch(`/api/locations?${params.toString()}`);
       if (response.ok) {
-        const result = await response.json() as { success: boolean; data?: Location[] };
+        const result = await response.json() as { 
+          success: boolean; 
+          data?: Location[];
+          pagination?: {
+            page: number;
+            limit: number;
+            total: number;
+            totalPages: number;
+            hasNext: boolean;
+            hasPrev: boolean;
+          };
+        };
         if (result.success && Array.isArray(result.data)) {
           setLocations(result.data);
           setFilteredLocations(result.data);
+                      // Update pagination info if available
+            if (result.pagination) {
+              setCurrentPage(result.pagination.page);
+              setItemsPerPage(result.pagination.limit);
+              setTotalPages(result.pagination.totalPages);
+            }
         } else {
           setLocations([]);
           setFilteredLocations([]);
@@ -123,43 +140,20 @@ export default function LocationManagementPage() {
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    filterLocations(value, statusFilter, cityFilter);
+    setCurrentPage(1); // Reset to first page when searching
   };
 
   const handleStatusFilter = (value: string) => {
     setStatusFilter(value);
-    filterLocations(searchTerm, value, cityFilter);
+    setCurrentPage(1); // Reset to first page when filtering
   };
 
   const handleCityFilter = (value: string) => {
     setCityFilter(value);
-    filterLocations(searchTerm, statusFilter, value);
+    setCurrentPage(1); // Reset to first page when filtering
   };
 
-  const filterLocations = (search: string, status: string, city: string) => {
-    let filtered = locations;
 
-    if (search) {
-      filtered = filtered.filter(location =>
-        location.name.toLowerCase().includes(search.toLowerCase()) ||
-        location.address?.toLowerCase().includes(search.toLowerCase()) ||
-        location.city?.toLowerCase().includes(search.toLowerCase()) ||
-        location.state?.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-
-    if (status !== 'all') {
-      filtered = filtered.filter(location => 
-        status === 'active' ? location.is_active : !location.is_active
-      );
-    }
-
-    if (city !== 'all') {
-      filtered = filtered.filter(location => location.city === city);
-    }
-
-    setFilteredLocations(filtered);
-  };
 
   const handleSort = (field: string) => {
     if (sortField === field) {
@@ -175,26 +169,8 @@ export default function LocationManagementPage() {
     return sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
   };
 
-  const sortedLocations = useMemo(() => {
-    return [...filteredLocations].sort((a, b) => {
-      const aValue = a[sortField as keyof Location];
-      const bValue = b[sortField as keyof Location];
-      
-      if (aValue === null && bValue === null) return 0;
-      if (aValue === null) return 1;
-      if (bValue === null) return -1;
-      
-      const comparison = String(aValue).localeCompare(String(bValue));
-      return sortDirection === 'asc' ? comparison : -comparison;
-    });
-  }, [filteredLocations, sortField, sortDirection]);
-
-  const paginatedLocations = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return sortedLocations.slice(startIndex, startIndex + itemsPerPage);
-  }, [sortedLocations, currentPage, itemsPerPage]);
-
-  const totalPages = Math.ceil(sortedLocations.length / itemsPerPage);
+  // For now, we'll use the locations directly since server-side sorting is not implemented
+  const displayLocations = locations;
 
   const handleAddLocation = async () => {
     try {
@@ -398,6 +374,7 @@ export default function LocationManagementPage() {
                   <SelectValue />
                 </SelectTrigger>
                                  <SelectContent>
+                   <SelectItem value="5">5 {t('perPage')}</SelectItem>
                    <SelectItem value="10">10 {t('perPage')}</SelectItem>
                    <SelectItem value="25">25 {t('perPage')}</SelectItem>
                    <SelectItem value="50">50 {t('perPage')}</SelectItem>
@@ -411,7 +388,7 @@ export default function LocationManagementPage() {
         {/* Locations Table */}
         <Card>
           <CardHeader>
-            <CardTitle>{t('locations')} ({filteredLocations.length})</CardTitle>
+            <CardTitle>{t('locations')} ({locations.length})</CardTitle>
             <CardDescription>
               {t('manageAllLocations')}
             </CardDescription>
@@ -452,7 +429,7 @@ export default function LocationManagementPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedLocations.map((location) => (
+                  {displayLocations.map((location) => (
                                          <TableRow key={location.id}>
                        <TableCell className="font-medium">
                          <Link 
@@ -531,99 +508,89 @@ export default function LocationManagementPage() {
               <div className="flex items-center justify-between mt-4">
                 <div className="text-sm text-gray-700">
                   {t('pagination.showing')} {((currentPage - 1) * itemsPerPage) + 1} {t('pagination.to')}{' '}
-                  {Math.min(currentPage * itemsPerPage, sortedLocations.length)} {t('pagination.of')}{' '}
-                  {sortedLocations.length} {t('pagination.results')}
+                  {Math.min(currentPage * itemsPerPage, locations.length)} {t('pagination.of')}{' '}
+                  {locations.length} {t('pagination.results')}
                 </div>
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious 
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (currentPage > 1) setCurrentPage(currentPage - 1);
-                        }}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
-                      />
-                    </PaginationItem>
-                    
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    {t('previous')}
+                  </Button>
+
+                  <div className="flex items-center gap-1">
                     {/* First page */}
                     {currentPage > 3 && (
-                      <PaginationItem>
-                        <PaginationLink
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setCurrentPage(1);
-                          }}
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(1)}
+                          className="w-8 h-8 p-0"
                         >
                           1
-                        </PaginationLink>
-                      </PaginationItem>
+                        </Button>
+                        {currentPage > 4 && (
+                          <span className="px-2 text-muted-foreground">...</span>
+                        )}
+                      </>
                     )}
-                    
-                    {/* Ellipsis */}
-                    {currentPage > 4 && (
-                      <PaginationItem>
-                        <PaginationEllipsis />
-                      </PaginationItem>
-                    )}
-                    
-                    {/* Page numbers */}
-                    {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
-                      const pageNum = Math.max(1, currentPage - 1 + i);
-                      if (pageNum > totalPages) return null;
-                      
-                      return (
-                        <PaginationItem key={pageNum}>
-                          <PaginationLink
-                            href="#"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setCurrentPage(pageNum);
-                            }}
-                            isActive={pageNum === currentPage}
-                          >
-                            {pageNum}
-                          </PaginationLink>
-                        </PaginationItem>
-                      );
-                    })}
-                    
-                    {/* Ellipsis */}
-                    {currentPage < totalPages - 2 && (
-                      <PaginationItem>
-                        <PaginationEllipsis />
-                      </PaginationItem>
-                    )}
-                    
+
+                    {/* Current page and surrounding pages */}
+                    {(() => {
+                      const pages = [];
+                      const startPage = Math.max(1, currentPage - 1);
+                      const endPage = Math.min(totalPages, currentPage + 1);
+
+                      for (let page = startPage; page <= endPage; page++) {
+                        pages.push(page);
+                      }
+
+                      return pages.map((page) => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {page}
+                        </Button>
+                      ));
+                    })()}
+
                     {/* Last page */}
-                    {currentPage < totalPages - 2 && (
-                      <PaginationItem>
-                        <PaginationLink
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setCurrentPage(totalPages);
-                          }}
+                    {currentPage < totalPages - 1 && (
+                      <>
+                        {currentPage < totalPages - 2 && (
+                          <span className="px-2 text-muted-foreground">...</span>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(totalPages)}
+                          className="w-8 h-8 p-0"
                         >
                           {totalPages}
-                        </PaginationLink>
-                      </PaginationItem>
+                        </Button>
+                      </>
                     )}
-                    
-                    <PaginationItem>
-                      <PaginationNext 
-                        href="#"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-                        }}
-                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                  >
+                    {t('next')}
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
