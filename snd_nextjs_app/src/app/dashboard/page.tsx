@@ -40,13 +40,13 @@ export default function Page() {
     }
   }, [session, status, router]);
 
-  // Fetch iqama expiring within next 30 days
+  // Fetch iqama expiring within next 30 days; also include expired and missing dates
   useEffect(() => {
     if (!session) return;
     const fetchData = async () => {
       setLoadingIqama(true);
       try {
-        const res = await fetch('/api/employees/iqama-expiring?days=30');
+        const res = await fetch('/api/employees/iqama-expiring?days=30&range=next&includeExpired=1&expiredDays=30&includeMissing=1');
         if (!res.ok) throw new Error('Failed');
         const json = await res.json();
         setIqamaData(json.data || []);
@@ -124,7 +124,7 @@ export default function Page() {
           </div>
 
           <div className="bg-card border rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Iqama Expiring (Next 30 Days)</h2>
+            <h2 className="text-xl font-semibold mb-4">Iqama Expiring / Expired / Missing (30 Days Window)</h2>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
