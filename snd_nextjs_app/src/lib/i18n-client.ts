@@ -28,6 +28,7 @@ import enSettings from '@/locales/en/settings.json';
 import enReporting from '@/locales/en/reporting.json';
 import enAnalytics from '@/locales/en/analytics.json';
 import enSidebar from '@/locales/en/sidebar.json';
+import enMaintenance from '@/locales/en/maintenance.json';
 
 import arCommon from '@/locales/ar/common.json';
 import arAuth from '@/locales/ar/auth.json';
@@ -52,6 +53,7 @@ import arSettings from '@/locales/ar/settings.json';
 import arReporting from '@/locales/ar/reporting.json';
 import arAnalytics from '@/locales/ar/analytics.json';
 import arSidebar from '@/locales/ar/sidebar.json';
+import arMaintenance from '@/locales/ar/maintenance.json';
 
 const resources = {
   en: {
@@ -78,6 +80,7 @@ const resources = {
     reporting: enReporting,
     analytics: enAnalytics,
     sidebar: enSidebar,
+      maintenance: enMaintenance,
   },
   ar: {
     common: arCommon,
@@ -103,6 +106,7 @@ const resources = {
     reporting: arReporting,
     analytics: arAnalytics,
     sidebar: arSidebar,
+      maintenance: arMaintenance,
   },
 };
 
@@ -126,7 +130,7 @@ if (!i18n.isInitialized) {
       },
 
       defaultNS: 'common',
-      ns: ['common', 'auth', 'dashboard', 'equipment', 'employee', 'customer', 'profile', 'leave', 'payroll', 'quotation', 'timesheet', 'admin', 'company', 'notifications', 'project', 'safety', 'user', 'location', 'rental', 'settings', 'reporting', 'analytics', 'sidebar'],
+      ns: ['common', 'auth', 'dashboard', 'equipment', 'employee', 'customer', 'profile', 'leave', 'payroll', 'quotation', 'timesheet', 'admin', 'company', 'notifications', 'project', 'safety', 'user', 'location', 'rental', 'settings', 'reporting', 'analytics', 'sidebar', 'maintenance'],
 
       react: {
         useSuspense: false,

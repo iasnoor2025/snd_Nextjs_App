@@ -1,0 +1,89 @@
+{
+  "page": {
+    "title": "الصيانة والإصلاحات",
+    "subtitle": "تتبع وإدارة أنشطة صيانة وإصلاح المعدات.",
+    "createTitle": "إنشاء صيانة",
+    "editTitle": "تعديل الصيانة",
+    "detailsTitle": "تفاصيل الصيانة"
+  },
+  "filters": {
+    "equipment": "المعدة",
+    "mechanic": "الفني",
+    "start": "البداية",
+    "end": "النهاية",
+    "status": "الحالة",
+    "all": "الكل",
+    "reset": "إعادة تعيين",
+    "create": "إنشاء صيانة"
+  },
+  "table": {
+    "equipment": "المعدة",
+    "mechanic": "الفني",
+    "date": "التاريخ",
+    "items": "العناصر",
+    "totalCost": "إجمالي التكلفة",
+    "status": "الحالة",
+    "actions": "الإجراءات"
+  },
+  "form": {
+    "equipment": "المعدة",
+    "mechanic": "الفني",
+    "type": "النوع",
+    "status": "الحالة",
+    "title": "العنوان",
+    "description": "الوصف",
+    "date": "التاريخ",
+    "dueDate": "تاريخ الاستحقاق",
+    "itemsUsed": "العناصر المستخدمة",
+    "item": "عنصر",
+    "qty": "الكمية",
+    "unitCost": "تكلفة الوحدة",
+    "total": "الإجمالي",
+    "addItem": "إضافة عنصر",
+    "maintenanceTitlePlaceholder": "عنوان الصيانة",
+    "selectEquipment": "اختر المعدة",
+    "selectMechanic": "اختر الفني",
+    "selectType": "اختر النوع",
+    "selectStatus": "اختر الحالة"
+  },
+  "type": {
+    "repair": "إصلاح",
+    "scheduled": "مجدولة"
+  },
+  "status": {
+    "open": "مفتوحة",
+    "in_progress": "قيد التنفيذ",
+    "completed": "منتهية"
+  },
+  "actions": {
+    "markCompleted": "تعيين كمنتهية",
+    "completed": "منتهية",
+    "edit": "تعديل",
+    "view": "عرض",
+    "delete": "حذف",
+    "cancel": "إلغاء",
+    "create": "إنشاء",
+    "save": "حفظ",
+    "saving": "جارٍ الحفظ...",
+    "addItem": "إضافة عنصر"
+  },
+  "view": {
+    "detailsTitle": "تفاصيل الصيانة",
+    "equipment": "المعدة",
+    "mechanic": "الفني",
+    "type": "النوع",
+    "status": "الحالة",
+    "date": "التاريخ",
+    "due": "تاريخ الاستحقاق",
+    "title": "العنوان",
+    "description": "الوصف",
+    "itemsUsed": "العناصر المستخدمة",
+    "totalCost": "إجمالي التكلفة"
+  },
+  "confirm": {
+    "deleteTitle": "حذف سجل الصيانة؟",
+    "deleteDescription": "لا يمكن التراجع عن هذا الإجراء. سيتم حذف سجل الصيانة وعناصره نهائيًا."
+  }
+}
+
+

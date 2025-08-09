@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { ApiService } from '@/lib/api-service';
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 
 const itemSchema = z.object({
@@ -59,6 +60,7 @@ export function MaintenanceForm({
   });
 
   const { fields, append, remove, update } = useFieldArray({ name: 'items', control: form.control });
+  const { t } = useTranslation('maintenance');
 
   const totalCost = useMemo(() => {
     const items = form.getValues('items') || [];
@@ -92,7 +94,7 @@ export function MaintenanceForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Create Maintenance</DialogTitle>
+          <DialogTitle>{t('page.createTitle')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -101,10 +103,10 @@ export function MaintenanceForm({
                 name="equipment_id"
                 render={({ field }: any) => (
                   <FormItem>
-                    <FormLabel>Equipment</FormLabel>
+                    <FormLabel>{t('form.equipment')}</FormLabel>
                     <Select onValueChange={(v) => field.onChange(Number(v))}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select equipment" />
+                        <SelectValue placeholder={t('form.selectEquipment')} />
                       </SelectTrigger>
                       <SelectContent>
                         {equipmentOptions.map((opt) => (
@@ -122,10 +124,10 @@ export function MaintenanceForm({
                 name="assigned_to_employee_id"
                 render={({ field }: any) => (
                   <FormItem>
-                    <FormLabel>Mechanic</FormLabel>
+                    <FormLabel>{t('form.mechanic')}</FormLabel>
                     <Select onValueChange={(v) => field.onChange(Number(v))}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select mechanic" />
+                        <SelectValue placeholder={t('form.selectMechanic')} />
                       </SelectTrigger>
                       <SelectContent>
                         {employeeOptions.map((opt) => (
@@ -143,14 +145,14 @@ export function MaintenanceForm({
                 name="type"
                 render={({ field }: any) => (
                   <FormItem>
-                    <FormLabel>Type</FormLabel>
+                    <FormLabel>{t('form.type')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
+                        <SelectValue placeholder={t('form.selectType')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="corrective">Repair</SelectItem>
-                        <SelectItem value="scheduled">Scheduled</SelectItem>
+                        <SelectItem value="corrective">{t('type.repair')}</SelectItem>
+                        <SelectItem value="scheduled">{t('type.scheduled')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -163,15 +165,15 @@ export function MaintenanceForm({
                 name="status"
                 render={({ field }: any) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel>{t('form.status')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
+                        <SelectValue placeholder={t('form.selectStatus')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="open">Open</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="open">{t('status.open')}</SelectItem>
+                        <SelectItem value="in_progress">{t('status.in_progress')}</SelectItem>
+                        <SelectItem value="completed">{t('status.completed')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -185,9 +187,9 @@ export function MaintenanceForm({
               name="title"
               render={({ field }: any) => (
                 <FormItem>
-                  <FormLabel>Title</FormLabel>
+                  <FormLabel>{t('form.title')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Maintenance title" {...field} />
+                    <Input placeholder={t('form.maintenanceTitlePlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -199,9 +201,9 @@ export function MaintenanceForm({
               name="description"
               render={({ field }: any) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>{t('form.description')}</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Describe the work" {...field} />
+                    <Textarea placeholder={t('form.description')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -214,7 +216,7 @@ export function MaintenanceForm({
                 name="scheduled_date"
                 render={({ field }: any) => (
                   <FormItem>
-                    <FormLabel>Date</FormLabel>
+                    <FormLabel>{t('form.date')}</FormLabel>
                     <DatePicker date={field.value} setDate={field.onChange} />
                     <FormMessage />
                   </FormItem>
@@ -225,7 +227,7 @@ export function MaintenanceForm({
                 name="due_date"
                 render={({ field }: any) => (
                   <FormItem>
-                    <FormLabel>Due Date</FormLabel>
+                    <FormLabel>{t('form.dueDate')}</FormLabel>
                     <DatePicker date={field.value} setDate={field.onChange} />
                     <FormMessage />
                   </FormItem>
@@ -235,9 +237,9 @@ export function MaintenanceForm({
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium">Items Used</h4>
+                <h4 className="text-sm font-medium">{t('form.itemsUsed')}</h4>
                 <Button type="button" variant="secondary" onClick={() => append({ name: '', quantity: 1 as number, unit_cost: 0 as number })}>
-                  Add Item
+                  {t('form.addItem')}
                 </Button>
               </div>
               <div className="space-y-3">
@@ -252,7 +254,7 @@ export function MaintenanceForm({
                         name={`items.${idx}.name` as const}
                         render={({ field }: any) => (
                           <FormItem className="md:col-span-3">
-                            <FormLabel>Item</FormLabel>
+                            <FormLabel>{t('form.item')}</FormLabel>
                             <FormControl>
                               <Input placeholder="Item name" {...field} />
                             </FormControl>
@@ -265,7 +267,7 @@ export function MaintenanceForm({
                         name={`items.${idx}.quantity` as const}
                         render={({ field }: any) => (
                           <FormItem className="md:col-span-2">
-                            <FormLabel>Qty</FormLabel>
+                            <FormLabel>{t('form.qty')}</FormLabel>
                             <FormControl>
                               <Input type="number" step="0.01" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
                             </FormControl>
@@ -278,7 +280,7 @@ export function MaintenanceForm({
                         name={`items.${idx}.unit_cost` as const}
                         render={({ field }: any) => (
                           <FormItem className="md:col-span-2">
-                            <FormLabel>Unit Cost</FormLabel>
+                            <FormLabel>{t('form.unitCost')}</FormLabel>
                             <FormControl>
                               <Input type="number" step="0.01" {...field} onChange={(e) => field.onChange(Number(e.target.value))} />
                             </FormControl>
@@ -287,12 +289,12 @@ export function MaintenanceForm({
                         )}
                       />
                       <div className="md:col-span-2">
-                        <FormLabel>Total</FormLabel>
+                        <FormLabel>{t('form.total')}</FormLabel>
                         <div className="h-10 flex items-center rounded-md border px-3 text-sm">{itemTotal.toFixed(2)}</div>
                       </div>
                       <div className="md:col-span-3 flex items-end gap-2">
                         <Button type="button" variant="outline" onClick={() => remove(idx)}>
-                          Remove
+                          {t('actions.delete')}
                         </Button>
                       </div>
                     </div>
@@ -304,9 +306,9 @@ export function MaintenanceForm({
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
+                {t('actions.cancel')}
               </Button>
-              <Button type="submit">Create</Button>
+              <Button type="submit">{t('actions.create')}</Button>
             </div>
         </form>
       </DialogContent>

@@ -1,0 +1,89 @@
+{
+  "page": {
+    "title": "Maintenance & Repairs",
+    "subtitle": "Track and manage equipment maintenance and repair activities.",
+    "createTitle": "Create Maintenance",
+    "editTitle": "Edit Maintenance",
+    "detailsTitle": "Maintenance Details"
+  },
+  "filters": {
+    "equipment": "Equipment",
+    "mechanic": "Mechanic",
+    "start": "Start",
+    "end": "End",
+    "status": "Status",
+    "all": "All",
+    "reset": "Reset",
+    "create": "Create Maintenance"
+  },
+  "table": {
+    "equipment": "Equipment",
+    "mechanic": "Mechanic",
+    "date": "Date",
+    "items": "Items",
+    "totalCost": "Total Cost",
+    "status": "Status",
+    "actions": "Actions"
+  },
+  "form": {
+    "equipment": "Equipment",
+    "mechanic": "Mechanic",
+    "type": "Type",
+    "status": "Status",
+    "title": "Title",
+    "description": "Description",
+    "date": "Date",
+    "dueDate": "Due Date",
+    "itemsUsed": "Items Used",
+    "item": "Item",
+    "qty": "Qty",
+    "unitCost": "Unit Cost",
+    "total": "Total",
+    "addItem": "Add Item",
+    "maintenanceTitlePlaceholder": "Maintenance title",
+    "selectEquipment": "Select equipment",
+    "selectMechanic": "Select mechanic",
+    "selectType": "Select type",
+    "selectStatus": "Select status"
+  },
+  "type": {
+    "repair": "Repair",
+    "scheduled": "Scheduled"
+  },
+  "status": {
+    "open": "Open",
+    "in_progress": "In Progress",
+    "completed": "Completed"
+  },
+  "actions": {
+    "markCompleted": "Mark Completed",
+    "completed": "Completed",
+    "edit": "Edit",
+    "view": "View",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "create": "Create",
+    "save": "Save",
+    "saving": "Saving...",
+    "addItem": "Add Item"
+  },
+  "view": {
+    "detailsTitle": "Maintenance Details",
+    "equipment": "Equipment",
+    "mechanic": "Mechanic",
+    "type": "Type",
+    "status": "Status",
+    "date": "Date",
+    "due": "Due",
+    "title": "Title",
+    "description": "Description",
+    "itemsUsed": "Items Used",
+    "totalCost": "Total Cost"
+  },
+  "confirm": {
+    "deleteTitle": "Delete maintenance record?",
+    "deleteDescription": "This action cannot be undone. The maintenance record and its items will be permanently deleted."
+  }
+}
+
+

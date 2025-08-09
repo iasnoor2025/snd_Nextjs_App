@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
 import { ApiService } from '@/lib/api-service';
+import { useTranslation } from 'react-i18next';
 
 export default function MaintenanceEditModal({
   open,
@@ -21,6 +22,7 @@ export default function MaintenanceEditModal({
 }) {
   const [record, setRecord] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation('maintenance');
 
   useEffect(() => {
     if (!open || !id) return;
@@ -51,56 +53,56 @@ export default function MaintenanceEditModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Edit Maintenance</DialogTitle>
+          <DialogTitle>{t('page.editTitle')}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm">Status</label>
+              <label className="text-sm">{t('form.status')}</label>
               <Select value={record.status} onValueChange={(v) => setRecord({ ...record, status: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="open">Open</SelectItem>
-                  <SelectItem value="in_progress">In Progress</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="open">{t('status.open')}</SelectItem>
+                  <SelectItem value="in_progress">{t('status.in_progress')}</SelectItem>
+                  <SelectItem value="completed">{t('status.completed')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="text-sm">Type</label>
+              <label className="text-sm">{t('form.type')}</label>
               <Select value={record.type} onValueChange={(v) => setRecord({ ...record, type: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="corrective">Repair</SelectItem>
-                  <SelectItem value="scheduled">Scheduled</SelectItem>
+                  <SelectItem value="corrective">{t('type.repair')}</SelectItem>
+                  <SelectItem value="scheduled">{t('type.scheduled')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div>
-            <label className="text-sm">Title</label>
+            <label className="text-sm">{t('form.title')}</label>
             <Input value={record.title || ''} onChange={(e) => setRecord({ ...record, title: e.target.value })} />
           </div>
           <div>
-            <label className="text-sm">Description</label>
+            <label className="text-sm">{t('form.description')}</label>
             <Textarea value={record.description || ''} onChange={(e) => setRecord({ ...record, description: e.target.value })} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="text-sm">Date</label>
+              <label className="text-sm">{t('form.date')}</label>
               <DatePicker
                 date={record.scheduled_date ? new Date(record.scheduled_date) : undefined}
                 setDate={(d) => setRecord({ ...record, scheduled_date: d ? d.toISOString() : null })}
               />
             </div>
             <div>
-              <label className="text-sm">Due</label>
+              <label className="text-sm">{t('form.dueDate')}</label>
               <DatePicker
                 date={record.due_date ? new Date(record.due_date) : undefined}
                 setDate={(d) => setRecord({ ...record, due_date: d ? d.toISOString() : null })}
@@ -109,8 +111,8 @@ export default function MaintenanceEditModal({
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Cancel</Button>
-            <Button onClick={save} disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>{t('actions.cancel')}</Button>
+            <Button onClick={save} disabled={loading}>{loading ? t('actions.saving') : t('actions.save')}</Button>
           </div>
         </div>
       </DialogContent>
