@@ -1,4 +1,4 @@
-import { prisma } from './db';
+import { db, prisma } from './db';
 
 export interface AutoGenerateResult {
   success: boolean;

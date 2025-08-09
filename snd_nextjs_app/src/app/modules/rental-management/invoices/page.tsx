@@ -138,7 +138,7 @@ export default function InvoicesPage() {
     fetchInvoices();
   }, [search, status, startDate, endDate, currentPage]);
 
-  const getMockInvoicesData = (search: string = '', status: string = 'all', startDate: string = '', endDate: string = '', page: number = 1): PaginatedResponse => {
+    const getMockInvoicesData = (search: string = '', status: string = 'all', startDate: string = '', endDate: string = '', page: number = 1): PaginatedResponse => {
     const mockInvoices = [
       {
         id: 1,
@@ -627,7 +627,7 @@ export default function InvoicesPage() {
 
                     {/* Current page and surrounding pages */}
                     {(() => {
-                      const pages = [];
+                  const pages: number[] = [];
                       const startPage = Math.max(1, currentPage - 1);
                       const endPage = Math.min(invoices.last_page, currentPage + 1);
 

@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       
       // Check if there are any other keys that might contain employee data
       const possibleDataKeys = ['results', 'employees', 'data', 'items'];
-      let alternativeData = null;
+      let alternativeData: any[] | null = null;
       
       for (const key of possibleDataKeys) {
         if (erpnextData[key] && Array.isArray(erpnextData[key]) && erpnextData[key].length > 0) {

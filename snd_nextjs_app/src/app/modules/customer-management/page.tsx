@@ -847,7 +847,7 @@ export default function CustomerManagementPage() {
 
                       {/* Current page and surrounding pages */}
                       {(() => {
-                        const pages = [];
+                    const pages: number[] = [];
                         const startPage = Math.max(1, pagination.page - 1);
                         const endPage = Math.min(pagination.totalPages, pagination.page + 1);
 

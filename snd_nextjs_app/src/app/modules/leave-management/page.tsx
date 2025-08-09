@@ -469,7 +469,7 @@ export default function LeaveManagementPage() {
 
                     {/* Current page and surrounding pages */}
                     {(() => {
-                      const pages = [];
+                    const pages: number[] = [];
                       const startPage = Math.max(1, leaveRequests.current_page - 1);
                       const endPage = Math.min(leaveRequests.last_page, leaveRequests.current_page + 1);
 

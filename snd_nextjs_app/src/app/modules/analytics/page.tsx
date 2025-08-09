@@ -535,7 +535,7 @@ export default function AnalyticsPage() {
 
                   {/* Current page and surrounding pages */}
                   {(() => {
-                    const pages = [];
+                    const pages: number[] = [];
                     const startPage = Math.max(1, reports.current_page - 1);
                     const endPage = Math.min(reports.last_page, reports.current_page + 1);
 

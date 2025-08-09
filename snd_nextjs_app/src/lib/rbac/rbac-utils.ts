@@ -1,32 +1,35 @@
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { users, modelHasRoles, roles } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 import { hasPermission, User, Action, Subject } from './custom-rbac';
 
 export async function getRBACPermissions(userId: string) {
   try {
     // Get user with roles and permissions
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(userId) },
-      include: {
-        user_roles: {
-          include: {
-            role: {
-              include: {
-                role_permissions: {
-                  include: {
-                    permission: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        user_permissions: {
-          include: {
-            permission: true,
-          },
-        },
-      },
-    });
+    const rows = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        name: users.name,
+        isActive: users.isActive,
+        roleName: roles.name,
+        roleId: roles.id,
+      })
+      .from(users)
+      .leftJoin(modelHasRoles, eq(modelHasRoles.userId, users.id))
+      .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
+      .where(eq(users.id, parseInt(userId)));
+    const user = rows.length
+      ? {
+          id: rows[0].id,
+          email: rows[0].email,
+          name: rows[0].name,
+          isActive: rows[0].isActive,
+          role_id: rows[0].roleId,
+          user_roles: rows.filter(r => r.roleName).map(r => ({ role: { name: r.roleName! } })),
+          user_permissions: [],
+        }
+      : null;
 
     if (!user) {
       throw new Error('User not found');

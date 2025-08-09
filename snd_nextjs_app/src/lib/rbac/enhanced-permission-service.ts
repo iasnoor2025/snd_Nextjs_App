@@ -1,4 +1,4 @@
-import { prisma, safePrismaOperation, ensurePrismaConnection } from '@/lib/db';
+import { db, ensurePrismaConnection, safePrismaOperation, prisma } from '@/lib/db';
 
 export interface PermissionGrant {
   resource: string;

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { projects as projectsTable } from '@/lib/drizzle/schema';
+import { and, eq, ilike, desc, sql } from 'drizzle-orm';
 import { withReadPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 export const GET = withReadPermission(
@@ -10,41 +12,32 @@ export const GET = withReadPermission(
       const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit') || '10', 10)));
       const search = (searchParams.get('search') || '').trim();
 
-      const where: any = {
-        status: 'active',
-        deleted_at: null,
-      };
-
+      const filters = [eq(projectsTable.status, 'active' as any)];
       if (search) {
-        where.AND = where.AND || [];
-        where.AND.push({
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { customer: { is: { name: { contains: search, mode: 'insensitive' } } } },
-          ],
-        });
+        filters.push(ilike(projectsTable.name, `%${search}%`));
       }
+      const whereExpr = and(...filters);
 
-      const total = await prisma.project.count({ where });
-      const items = await prisma.project.findMany({
-        where,
-        orderBy: [{ created_at: 'desc' }, { id: 'desc' }],
-        skip: (page - 1) * limit,
-        take: limit,
-        select: {
-          id: true,
-          name: true,
-          start_date: true,
-          end_date: true,
-          status: true,
-          customer: { select: { name: true } },
-        },
-      });
+      const totalRows = await db.select({ id: projectsTable.id }).from(projectsTable).where(whereExpr);
+      const total = totalRows.length;
+      const items = await db
+        .select({
+          id: projectsTable.id,
+          name: projectsTable.name,
+          start_date: projectsTable.startDate,
+          end_date: projectsTable.endDate,
+          status: projectsTable.status,
+        })
+        .from(projectsTable)
+        .where(whereExpr)
+        .orderBy(desc(projectsTable.createdAt), desc(projectsTable.id))
+        .offset((page - 1) * limit)
+        .limit(limit);
 
       const data = items.map((p) => ({
         id: p.id,
         name: p.name,
-        customer: p.customer?.name || null,
+        customer: null,
         start_date: p.start_date,
         end_date: p.end_date,
         status: p.status,

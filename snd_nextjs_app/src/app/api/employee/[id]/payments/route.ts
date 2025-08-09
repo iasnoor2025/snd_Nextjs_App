@@ -108,7 +108,7 @@ const getEmployeePaymentsHandler = async (
     }, {});
 
     // Flatten all payments from all months
-    const payments = Object.values(monthlyHistory).flatMap(month => month.payments);
+    const payments = (Object.values(monthlyHistory) as Array<{ payments: { amount: number }[] }>).flatMap(month => month.payments);
 
     // Get active advances
     const activeAdvances = await prisma.advancePayment.findMany({

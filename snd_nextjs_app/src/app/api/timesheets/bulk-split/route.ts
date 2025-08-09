@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { timesheets } from '@/lib/drizzle/schema';
+import { and, eq } from 'drizzle-orm';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -12,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const created = [];
+    const created: any[] = [];
 
     for (const assignment of assignments) {
       const {
@@ -55,38 +57,39 @@ export async function POST(request: NextRequest) {
         }
 
         // Check for existing timesheet
-        const existingTimesheet = await prisma.timesheet.findFirst({
-          where: {
-            employee_id: employee_id,
-            date: new Date(date),
-            ...(project_id && { project_id: project_id }),
-            ...(rental_id && { rental_id: rental_id }),
-          },
-        });
+        const existingTimesheet = await db
+          .select({ id: timesheets.id })
+          .from(timesheets)
+          .where(
+            and(
+              eq(timesheets.employeeId, employee_id),
+              eq(timesheets.date, new Date(date).toISOString())
+            )
+          )
+          .limit(1);
 
         if (existingTimesheet) {
           continue; // Skip if timesheet already exists
         }
 
         // Create timesheet
-        const timesheet = await prisma.timesheet.create({
-          data: {
-            employee_id: employee_id,
-            assignment_id: assignment_id || null,
-            project_id: project_id || null,
-            rental_id: rental_id || null,
-            date: new Date(date),
-            hours_worked: normalHours,
-            overtime_hours: overtimeHours,
-            description: description || null,
-            tasks: tasks || null,
-            status: 'draft',
-            start_time: start_time ? new Date(start_time) : new Date(),
-            end_time: end_time ? new Date(end_time) : null,
-          },
+        await db.insert(timesheets).values({
+          employeeId: employee_id,
+          assignmentId: assignment_id || null,
+          projectId: project_id || null,
+          rentalId: rental_id || null,
+          date: new Date(date).toISOString(),
+          hoursWorked: String(normalHours),
+          overtimeHours: String(overtimeHours),
+          description: description || null,
+          tasks: tasks || null,
+          status: 'draft',
+          startTime: start_time ? new Date(start_time).toISOString() : new Date().toISOString(),
+          endTime: end_time ? new Date(end_time).toISOString() : null,
+          updatedAt: new Date().toISOString(),
         });
 
-        created.push(timesheet);
+        created.push({ employee_id, date });
       }
     }
 
@@ -106,7 +109,7 @@ export async function POST(request: NextRequest) {
 
 // Helper function to get date range
 function getDateRange(from: string, to: string): string[] {
-  const dates = [];
+  const dates: string[] = [];
   const current = new Date(from);
   const end = new Date(to);
 

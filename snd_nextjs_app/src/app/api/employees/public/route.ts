@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { employees as employeesTable, departments, designations } from '@/lib/drizzle/schema';
+import { and, asc, eq, ilike, or } from 'drizzle-orm';
 
 // GET /api/employees/public - Get employees for dropdown (no auth required)
 export async function GET(request: NextRequest) {
   try {
     console.log('🔍 Starting public employee fetch...');
-    
+
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '1000');
     const search = searchParams.get('search') || '';
@@ -13,63 +15,54 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Public search params:', { limit, search, all });
 
-    // Build where clause
-    const where: any = {
-      status: 'active', // Only show active employees
-    };
-    
+    // Build filters
+    const filters: any[] = [eq(employeesTable.status, 'active')];
     if (search) {
-      where.OR = [
-        { first_name: { contains: search, mode: 'insensitive' } },
-        { last_name: { contains: search, mode: 'insensitive' } },
-        { employee_id: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-      ];
+      const s = `%${search}%`;
+      filters.push(
+        or(
+          ilike(employeesTable.firstName, s),
+          ilike(employeesTable.lastName, s),
+          ilike(employeesTable.employeeId, s),
+          ilike(employeesTable.email as any, s),
+        )
+      );
     }
 
-    console.log('🔍 Where clause:', JSON.stringify(where, null, 2));
-
-    // Get employees
     console.log('🔍 Executing employee query...');
-    const employees = await prisma.employee.findMany({
-      where,
-      take: all ? undefined : limit,
-      orderBy: { first_name: 'asc' },
-      select: {
-        id: true,
-        first_name: true,
-        last_name: true,
-        employee_id: true,
-        file_number: true,
-        email: true,
-        phone: true,
-        department: {
-          select: {
-            name: true,
-          },
-        },
-        designation: {
-          select: {
-            name: true,
-          },
-        },
-        status: true,
-      },
-    });
+    const baseQuery = db
+      .select({
+        id: employeesTable.id,
+        first_name: employeesTable.firstName,
+        last_name: employeesTable.lastName,
+        employee_id: employeesTable.employeeId,
+        file_number: employeesTable.fileNumber,
+        email: employeesTable.email,
+        phone: employeesTable.phone,
+        dept_name: departments.name,
+        desig_name: designations.name,
+        status: employeesTable.status,
+      })
+      .from(employeesTable)
+      .leftJoin(departments, eq(departments.id, employeesTable.departmentId))
+      .leftJoin(designations, eq(designations.id, employeesTable.designationId))
+      .where(and(...filters))
+      .orderBy(asc(employeesTable.firstName));
 
-    console.log(`✅ Found ${employees.length} employees`);
+    const rows = await (all ? baseQuery : baseQuery.limit(limit));
 
-    // Transform the data for the dropdown
-    const transformedEmployees = employees.map(employee => ({
-      id: employee.id.toString(),
+    console.log(`✅ Found ${rows.length} employees`);
+
+    const transformedEmployees = rows.map((employee) => ({
+      id: String(employee.id),
       first_name: employee.first_name,
       last_name: employee.last_name,
       employee_id: employee.employee_id,
       file_number: employee.file_number,
       email: employee.email,
       phone: employee.phone,
-      department: employee.department?.name,
-      designation: employee.designation?.name,
+      department: employee.dept_name || null,
+      designation: employee.desig_name || null,
       status: employee.status,
     }));
 
@@ -81,17 +74,16 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ Returning response with', transformedEmployees.length, 'employees');
     return NextResponse.json(response);
-    
   } catch (error) {
     console.error('❌ Error fetching employees:', error);
     console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { 
-        error: 'Internal server error', 
+      {
+        error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

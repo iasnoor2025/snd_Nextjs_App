@@ -169,16 +169,16 @@ export async function GET(request: NextRequest) {
       console.log('Matched employee found:', matchedEmployee);
 
       // Auto-update employee email if it doesn't match user's email
-      if (matchedEmployee && matchedEmployee.email !== user.email) {
-        console.log('Auto-updating employee email from', matchedEmployee.email, 'to', user.email);
+      if (matchedEmployee && (matchedEmployee as any).email !== (user as any).email) {
+        console.log('Auto-updating employee email from', (matchedEmployee as any).email, 'to', (user as any).email);
         try {
           await prisma.employee.update({
-            where: { id: matchedEmployee.id },
+            where: { id: (matchedEmployee as any).id },
             data: { email: user.email }
           });
           console.log('✅ Successfully updated employee email');
           // Update the matchedEmployee object with new email
-          matchedEmployee.email = user.email;
+          (matchedEmployee as any).email = (user as any).email;
         } catch (updateError) {
           console.error('❌ Error updating employee email:', updateError);
         }

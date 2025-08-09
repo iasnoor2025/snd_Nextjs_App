@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { rentals as rentalsTable, customers, projects as projectsTable } from '@/lib/drizzle/schema';
+import { and, desc, eq, ilike, sql } from 'drizzle-orm';
 import { withReadPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 export const GET = withReadPermission(
@@ -10,46 +12,37 @@ export const GET = withReadPermission(
       const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit') || '10', 10)));
       const search = (searchParams.get('search') || '').trim();
 
-      const where: any = {
-        status: 'active',
-        deleted_at: null,
-      };
-
+      const filters: any[] = [eq(rentalsTable.status, 'active' as any)];
       if (search) {
-        where.AND = where.AND || [];
-        where.AND.push({
-          OR: [
-            { rental_number: { contains: search, mode: 'insensitive' } },
-            { equipment_name: { contains: search, mode: 'insensitive' } },
-            { customer: { is: { name: { contains: search, mode: 'insensitive' } } } },
-            { project: { is: { name: { contains: search, mode: 'insensitive' } } } },
-          ],
-        });
+        const s = `%${search}%`;
+        filters.push(
+          ilike(rentalsTable.rentalNumber, s),
+        );
       }
+      const whereExpr = and(...filters);
 
-      const total = await prisma.rental.count({ where });
-      const items = await prisma.rental.findMany({
-        where,
-        orderBy: [{ start_date: 'desc' }, { id: 'desc' }],
-        skip: (page - 1) * limit,
-        take: limit,
-        select: {
-          id: true,
-          rental_number: true,
-          equipment_name: true,
-          start_date: true,
-          expected_end_date: true,
-          status: true,
-          customer: { select: { name: true } },
-          project: { select: { name: true } },
-        },
-      });
+      const totalRows = await db.select({ id: rentalsTable.id }).from(rentalsTable).where(whereExpr);
+      const total = totalRows.length;
+      const items = await db
+        .select({
+          id: rentalsTable.id,
+          rental_number: rentalsTable.rentalNumber,
+          equipment_name: rentalsTable.equipmentName,
+          start_date: rentalsTable.startDate,
+          expected_end_date: rentalsTable.expectedEndDate,
+          status: rentalsTable.status,
+        })
+        .from(rentalsTable)
+        .where(whereExpr)
+        .orderBy(desc(rentalsTable.startDate), desc(rentalsTable.id))
+        .offset((page - 1) * limit)
+        .limit(limit);
 
       const data = items.map((r) => ({
         id: r.id,
         rental_number: r.rental_number,
-        customer: r.customer?.name || null,
-        project: r.project?.name || null,
+        customer: null,
+        project: null,
         equipment_name: r.equipment_name || null,
         start_date: r.start_date,
         expected_end_date: r.expected_end_date,

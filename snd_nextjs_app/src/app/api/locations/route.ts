@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { locations as locationsTable } from '@/lib/drizzle/schema';
+import { and, or, ilike, eq, asc } from 'drizzle-orm';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 export const GET = withPermission(
@@ -13,36 +15,41 @@ export const GET = withPermission(
     const status = searchParams.get('status') || undefined;
     const city = searchParams.get('city') || undefined;
 
-    // Build where clause
-    const where: any = {};
-    
+    // Build where clause (Drizzle)
+    const filters: any[] = [];
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { address: { contains: search, mode: 'insensitive' } },
-        { city: { contains: search, mode: 'insensitive' } },
-        { state: { contains: search, mode: 'insensitive' } },
-      ];
+      filters.push(
+        or(
+          ilike(locationsTable.name, `%${search}%`),
+          ilike(locationsTable.address, `%${search}%`),
+          ilike(locationsTable.city, `%${search}%`),
+          ilike(locationsTable.state, `%${search}%`)
+        )
+      );
     }
-
     if (status) {
-      where.is_active = status === 'active';
+      filters.push(eq(locationsTable.isActive, status === 'active'));
     }
-
     if (city) {
-      where.city = { equals: city, mode: 'insensitive' };
+      filters.push(ilike(locationsTable.city, city));
     }
+    const whereExpr = filters.length ? and(...filters) : undefined;
 
     // Get total count for pagination
-    const totalCount = await prisma.location.count({ where });
+    const totalRows = await db
+      .select({ id: locationsTable.id })
+      .from(locationsTable)
+      .where(whereExpr as any);
+    const totalCount = totalRows.length;
 
     // Get paginated results
-    const locations = await prisma.location.findMany({
-      where,
-      orderBy: { name: 'asc' },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+    const locations = await db
+      .select()
+      .from(locationsTable)
+      .where(whereExpr as any)
+      .orderBy(asc(locationsTable.name))
+      .offset((page - 1) * limit)
+      .limit(limit);
 
     return NextResponse.json({
       success: true,
@@ -72,20 +79,23 @@ export const POST = withPermission(
   try {
     const body = await request.json();
     
-    const location = await prisma.location.create({
-      data: {
+    const inserted = await db
+      .insert(locationsTable)
+      .values({
         name: body.name,
-        description: body.description,
-        address: body.address,
-        city: body.city,
-        state: body.state,
-        zip_code: body.zip_code,
-        country: body.country,
-        latitude: body.latitude,
-        longitude: body.longitude,
-        is_active: body.is_active !== undefined ? body.is_active : true,
-      }
-    });
+        description: body.description ?? null,
+        address: body.address ?? null,
+        city: body.city ?? null,
+        state: body.state ?? null,
+        zipCode: body.zip_code ?? null,
+        country: body.country ?? null,
+        latitude: body.latitude ?? null,
+        longitude: body.longitude ?? null,
+        isActive: body.is_active !== undefined ? body.is_active : true,
+          updatedAt: new Date().toISOString(),
+      })
+      .returning();
+    const location = inserted[0];
 
     return NextResponse.json({
       success: true,

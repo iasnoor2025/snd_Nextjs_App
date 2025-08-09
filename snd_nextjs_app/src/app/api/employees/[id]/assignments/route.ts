@@ -54,7 +54,7 @@ async function manageAssignmentStatuses(employeeId: number) {
         // Previous assignments should be completed and have an end date
         // Always update previous assignments to ensure end dates are correct
         // Find the next assignment after this one to set the correct end date
-        let nextAssignment = null;
+        let nextAssignment: any = null;
         for (let j = i + 1; j < allAssignments.length; j++) {
           if (allAssignments[j].start_date > assignment.start_date) {
             nextAssignment = allAssignments[j];
@@ -65,9 +65,9 @@ async function manageAssignmentStatuses(employeeId: number) {
         let endDate;
         if (nextAssignment) {
           // Set end date to the day before the next assignment starts
-          endDate = new Date(nextAssignment.start_date);
+          endDate = new Date((nextAssignment as any).start_date);
           endDate.setDate(endDate.getDate() - 1);
-          console.log(`  🔄 Updating previous assignment to completed with end date: ${endDate.toISOString().slice(0, 10)} (day before ${nextAssignment.name})`);
+          console.log(`  🔄 Updating previous assignment to completed with end date: ${endDate.toISOString().slice(0, 10)} (day before ${(nextAssignment as any).name})`);
         } else {
           // If no next assignment, set to the day before current assignment starts
           endDate = new Date(currentAssignment.start_date);

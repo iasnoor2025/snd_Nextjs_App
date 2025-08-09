@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma, initializePrisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { employees, employeeAssignments } from '@/lib/drizzle/schema';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
 
@@ -8,71 +10,84 @@ const getEmployeeStatisticsHandler = async (request: NextRequest) => {
   try {
     console.log('Employee Statistics API called');
 
-    // Ensure Prisma is initialized before any operations
-    await initializePrisma();
+    // Drizzle pool is initialized on import
 
     // Get session to check user role
     const session = await getServerSession(authConfig);
     const user = session?.user;
     
     // For employee users, only show statistics for their own record
-    let whereClause: any = {};
-    if (user?.role === 'EMPLOYEE') {
-      // Find employee record that matches user's national_id
-      const ownEmployee = await prisma.employee.findFirst({
-        where: { iqama_number: user.national_id },
-        select: { id: true },
-      });
-      if (ownEmployee) {
-        whereClause.id = ownEmployee.id;
+    let ownEmployeeId: number | null = null;
+    if (user?.role === 'EMPLOYEE' && user.national_id) {
+      try {
+        const ownRows = await db
+          .select({ id: employees.id })
+          .from(employees)
+          .where(eq(employees.iqamaNumber, String(user.national_id)))
+          .limit(1);
+        ownEmployeeId = ownRows[0]?.id ?? null;
+      } catch (e) {
+        ownEmployeeId = null;
       }
     }
 
     // Get total employee count (filtered for employee users)
-    const totalEmployees = await prisma.employee.count({ where: whereClause });
+    const totalEmployeesRows = ownEmployeeId
+      ? await db.select({ count: sql<number>`count(*)` }).from(employees).where(eq(employees.id, ownEmployeeId))
+      : await db.select({ count: sql<number>`count(*)` }).from(employees);
+    const totalEmployees = Number((totalEmployeesRows as any)[0]?.count ?? 0);
     console.log('Total employees:', totalEmployees);
 
     // Get employees with current assignments (filtered for employee users)
-    const currentlyAssigned = await prisma.employee.count({
-      where: {
-        ...whereClause,
-        employee_assignments: {
-          some: {
-            status: 'active'
-          }
-        }
-      }
-    });
+    let currentlyAssigned = 0;
+    if (ownEmployeeId) {
+      const rows = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(employeeAssignments)
+        .where(and(eq(employeeAssignments.employeeId, ownEmployeeId), eq(employeeAssignments.status, 'active')));
+      currentlyAssigned = Number((rows as any)[0]?.count ?? 0) > 0 ? 1 : 0;
+    } else {
+      const rows = await db
+        .select({ count: sql<number>`count(distinct ${employeeAssignments.employeeId})` })
+        .from(employeeAssignments)
+        .where(eq(employeeAssignments.status, 'active'));
+      currentlyAssigned = Number((rows as any)[0]?.count ?? 0);
+    }
     console.log('Currently assigned:', currentlyAssigned);
 
     // Count project assignments (filtered for employee users)
-    const projectAssignments = await prisma.employee.count({
-      where: {
-        ...whereClause,
-        employee_assignments: {
-          some: {
-            status: 'active',
-            type: 'project'
-          }
-        }
-      }
-    });
+    let projectAssignments = 0;
+    if (ownEmployeeId) {
+      const rows = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(employeeAssignments)
+        .where(and(eq(employeeAssignments.employeeId, ownEmployeeId), eq(employeeAssignments.status, 'active'), eq(employeeAssignments.type, 'project')));
+      projectAssignments = Number((rows as any)[0]?.count ?? 0) > 0 ? 1 : 0;
+    } else {
+      const rows = await db
+        .select({ count: sql<number>`count(distinct ${employeeAssignments.employeeId})` })
+        .from(employeeAssignments)
+        .where(and(eq(employeeAssignments.status, 'active'), eq(employeeAssignments.type, 'project')));
+      projectAssignments = Number((rows as any)[0]?.count ?? 0);
+    }
     console.log('Project assignments:', projectAssignments);
 
     // Count rental assignments (filtered for employee users)
-    const rentalAssignments = await prisma.employee.count({
-      where: {
-        ...whereClause,
-        employee_assignments: {
-          some: {
-            status: 'active',
-            type: {
-              in: ['rental', 'rental_item']
-            }
-          }
-        }
-      }
-    });
+    let rentalAssignments = 0;
+    const rentalTypes = ['rental', 'rental_item'] as const;
+    if (ownEmployeeId) {
+      const rows = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(employeeAssignments)
+        .where(and(eq(employeeAssignments.employeeId, ownEmployeeId), eq(employeeAssignments.status, 'active'), inArray(employeeAssignments.type, rentalTypes as unknown as string[])));
+      rentalAssignments = Number((rows as any)[0]?.count ?? 0) > 0 ? 1 : 0;
+    } else {
+      const rows = await db
+        .select({ count: sql<number>`count(distinct ${employeeAssignments.employeeId})` })
+        .from(employeeAssignments)
+        .where(and(eq(employeeAssignments.status, 'active'), inArray(employeeAssignments.type, rentalTypes as unknown as string[])));
+      rentalAssignments = Number((rows as any)[0]?.count ?? 0);
+    }
     console.log('Rental assignments:', rentalAssignments);
 
     return NextResponse.json({

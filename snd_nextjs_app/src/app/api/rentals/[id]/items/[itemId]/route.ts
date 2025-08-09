@@ -19,7 +19,7 @@ export async function PUT(
     const newOperatorId = body.operatorId ? parseInt(body.operatorId) : null;
 
     // Validate required fields
-    const missingFields = [];
+    const missingFields: string[] = [];
     if (!body.equipmentName) missingFields.push('equipmentName');
     if (!body.quantity) missingFields.push('quantity');
     if (!body.unitPrice) missingFields.push('unitPrice');

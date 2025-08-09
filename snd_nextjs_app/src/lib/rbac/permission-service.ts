@@ -1,4 +1,6 @@
-import { prisma, safePrismaOperation, ensurePrismaConnection } from '@/lib/db';
+import { db } from '@/lib/db';
+import { users, modelHasRoles, roles, roleHasPermissions, permissions as permissionsTable, modelHasPermissions } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 import { User, Action, Subject } from './custom-rbac';
 
 export interface PermissionCheck {
@@ -27,67 +29,51 @@ export async function checkUserPermission(
   subject: Subject
 ): Promise<PermissionCheck> {
   try {
-    // Ensure database connection is ready
-    await ensurePrismaConnection();
-    
-    // Get user with roles and permissions using safe operation
-    const user = await safePrismaOperation(async () => {
-      return await prisma.user.findUnique({
-        where: { id: parseInt(userId) },
-        include: {
-          user_roles: {
-            include: {
-              role: {
-                include: {
-                  role_permissions: {
-                    include: {
-                      permission: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-          user_permissions: {
-            include: {
-              permission: true,
-            },
-          },
-        },
-      });
-    });
+    // Fetch user role and permissions via Drizzle
+    const userRows = await db
+      .select({
+        id: users.id,
+        isActive: users.isActive,
+        roleId: roles.id,
+        roleName: roles.name,
+      })
+      .from(users)
+      .leftJoin(modelHasRoles, eq(modelHasRoles.userId, users.id))
+      .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
+      .where(eq(users.id, parseInt(userId)));
 
-    if (!user) {
-      return {
-        hasPermission: false,
-        reason: 'User not found',
-      };
+    if (userRows.length === 0) {
+      return { hasPermission: false, reason: 'User not found' };
     }
 
-    if (!user.isActive) {
-      return {
-        hasPermission: false,
-        reason: 'User account is inactive',
-      };
+    const isActive = userRows[0].isActive;
+    if (!isActive) {
+      return { hasPermission: false, reason: 'User account is inactive' };
     }
+
+    const roleName = userRows[0].roleName || 'USER';
+
+    // Direct user permissions
+    const directPermRows = await db
+      .select({ name: permissionsTable.name })
+      .from(modelHasPermissions)
+      .leftJoin(permissionsTable, eq(permissionsTable.id, modelHasPermissions.permissionId))
+      .where(eq(modelHasPermissions.userId, parseInt(userId)));
+    const directPermissions = directPermRows.map(r => r.name!).filter(Boolean);
 
     // Get user's role
-    const userRole = user.user_roles[0]?.role;
-    if (!userRole) {
-      return {
-        hasPermission: false,
-        reason: 'User has no assigned role',
-      };
+    if (!roleName) {
+      return { hasPermission: false, reason: 'User has no assigned role' };
     }
 
     // Check direct user permissions first (these override role permissions)
-    const directPermissions = user.user_permissions.map(up => up.permission.name);
+    // directPermissions already computed
     
     // Check for wildcard permissions
     if (directPermissions.includes('*') || directPermissions.includes('manage.all')) {
       return {
         hasPermission: true,
-        userRole: userRole.name,
+        userRole: roleName, 
       };
     }
 
@@ -96,18 +82,23 @@ export async function checkUserPermission(
     if (directPermissions.includes(specificDirectPermission)) {
       return {
         hasPermission: true,
-        userRole: userRole.name,
+        userRole: roleName,
       };
     }
 
     // Check role permissions
-    const rolePermissions = userRole.role_permissions.map(rp => rp.permission.name);
+    const rolePermRows = await db
+      .select({ name: permissionsTable.name })
+      .from(roleHasPermissions)
+      .leftJoin(permissionsTable, eq(permissionsTable.id, roleHasPermissions.permissionId))
+      .where(eq(roleHasPermissions.roleId, userRows[0].roleId!));
+    const rolePermissions = rolePermRows.map(r => r.name!).filter(Boolean);
     
     // Check for wildcard permissions in role
     if (rolePermissions.includes('*') || rolePermissions.includes('manage.all')) {
       return {
         hasPermission: true,
-        userRole: userRole.name,
+        userRole: roleName,
       };
     }
 
@@ -116,7 +107,7 @@ export async function checkUserPermission(
     if (rolePermissions.includes(specificRolePermission)) {
       return {
         hasPermission: true,
-        userRole: userRole.name,
+        userRole: roleName,
       };
     }
 
@@ -131,14 +122,14 @@ export async function checkUserPermission(
     if (broaderPermissions.length > 0) {
       return {
         hasPermission: true,
-        userRole: userRole.name,
+        userRole: roleName,
       };
     }
 
     return {
       hasPermission: false,
       reason: `User does not have permission: ${action}.${subject}`,
-      userRole: userRole.name,
+      userRole: roleName,
       requiredPermissions: [specificRolePermission],
     };
   } catch (error) {
@@ -155,45 +146,39 @@ export async function checkUserPermission(
  */
 export async function getUserPermissions(userId: string): Promise<UserPermissions | null> {
   try {
-    // Ensure database connection is ready
-    await ensurePrismaConnection();
-    
-    const user = await safePrismaOperation(async () => {
-      return await prisma.user.findUnique({
-        where: { id: parseInt(userId) },
-        include: {
-          user_roles: {
-            include: {
-              role: {
-                include: {
-                  role_permissions: {
-                    include: {
-                      permission: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-          user_permissions: {
-            include: {
-              permission: true,
-            },
-          },
-        },
-      });
-    });
+    const userRows = await db
+      .select({
+        id: users.id,
+        roleId: roles.id,
+        roleName: roles.name,
+      })
+      .from(users)
+      .leftJoin(modelHasRoles, eq(modelHasRoles.userId, users.id))
+      .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
+      .where(eq(users.id, parseInt(userId)));
+    if (userRows.length === 0) return null;
 
-    if (!user) return null;
+    // User rows already validated above
 
-    const userRole = user.user_roles[0]?.role;
-    const directPermissions = user.user_permissions.map(up => up.permission.name);
-    const inheritedPermissions = userRole?.role_permissions.map(rp => rp.permission.name) || [];
+    const roleId = userRows[0].roleId || 0;
+    const roleName = userRows[0].roleName || 'No Role';
+    const directPermRows2 = await db
+      .select({ name: permissionsTable.name })
+      .from(modelHasPermissions)
+      .leftJoin(permissionsTable, eq(permissionsTable.id, modelHasPermissions.permissionId))
+      .where(eq(modelHasPermissions.userId, parseInt(userId)));
+    const directPermissions = directPermRows2.map(r => r.name!).filter(Boolean);
+    const rolePermRows2 = await db
+      .select({ name: permissionsTable.name })
+      .from(roleHasPermissions)
+      .leftJoin(permissionsTable, eq(permissionsTable.id, roleHasPermissions.permissionId))
+      .where(eq(roleHasPermissions.roleId, roleId));
+    const inheritedPermissions = rolePermRows2.map(r => r.name!).filter(Boolean);
 
     return {
       userId,
-      roleId: userRole?.id || 0,
-      roleName: userRole?.name || 'No Role',
+      roleId,
+      roleName,
       permissions: [...new Set([...directPermissions, ...inheritedPermissions])],
       directPermissions,
       inheritedPermissions,
@@ -212,50 +197,13 @@ export async function assignPermissionsToRole(
   permissionIds: number[]
 ): Promise<{ success: boolean; message: string }> {
   try {
-    // Ensure database connection is ready
-    await ensurePrismaConnection();
-    
-    // Validate role exists
-    const role = await safePrismaOperation(async () => {
-      return await prisma.role.findUnique({
-        where: { id: roleId },
-      });
-    });
-
-    if (!role) {
-      return { success: false, message: 'Role not found' };
+    // Remove existing and assign permissions via Drizzle
+    await db.delete(roleHasPermissions).where(eq(roleHasPermissions.roleId, roleId));
+    if (permissionIds.length > 0) {
+      await db.insert(roleHasPermissions).values(
+        permissionIds.map(pid => ({ roleId, permissionId: pid }))
+      );
     }
-
-    // Validate permissions exist
-    const permissions = await safePrismaOperation(async () => {
-      return await prisma.permission.findMany({
-        where: { id: { in: permissionIds } },
-      });
-    });
-
-    if (permissions.length !== permissionIds.length) {
-      return { success: false, message: 'One or more permissions not found' };
-    }
-
-    // Use transaction to ensure data consistency
-    await safePrismaOperation(async () => {
-      return await prisma.$transaction(async (tx) => {
-        // Remove existing permissions
-        await tx.rolePermission.deleteMany({
-          where: { role_id: roleId },
-        });
-
-        // Add new permissions
-        if (permissionIds.length > 0) {
-          await tx.rolePermission.createMany({
-            data: permissionIds.map(permissionId => ({
-              role_id: roleId,
-              permission_id: permissionId,
-            })),
-          });
-        }
-      });
-    });
 
     return { success: true, message: 'Permissions assigned successfully' };
   } catch (error) {
@@ -272,50 +220,13 @@ export async function assignPermissionsToUser(
   permissionIds: number[]
 ): Promise<{ success: boolean; message: string }> {
   try {
-    // Ensure database connection is ready
-    await ensurePrismaConnection();
-    
-    // Validate user exists
-    const user = await safePrismaOperation(async () => {
-      return await prisma.user.findUnique({
-        where: { id: parseInt(userId) },
-      });
-    });
-
-    if (!user) {
-      return { success: false, message: 'User not found' };
+    // Assign direct permissions via Drizzle
+    await db.delete(modelHasPermissions).where(eq(modelHasPermissions.userId, parseInt(userId)));
+    if (permissionIds.length > 0) {
+      await db.insert(modelHasPermissions).values(
+        permissionIds.map(pid => ({ userId: parseInt(userId), permissionId: pid }))
+      );
     }
-
-    // Validate permissions exist
-    const permissions = await safePrismaOperation(async () => {
-      return await prisma.permission.findMany({
-        where: { id: { in: permissionIds } },
-      });
-    });
-
-    if (permissions.length !== permissionIds.length) {
-      return { success: false, message: 'One or more permissions not found' };
-    }
-
-    // Use transaction to ensure data consistency
-    await safePrismaOperation(async () => {
-      return await prisma.$transaction(async (tx) => {
-        // Remove existing direct permissions
-        await tx.userPermission.deleteMany({
-          where: { user_id: parseInt(userId) },
-        });
-
-        // Add new direct permissions
-        if (permissionIds.length > 0) {
-          await tx.userPermission.createMany({
-            data: permissionIds.map(permissionId => ({
-              user_id: parseInt(userId),
-              permission_id: permissionId,
-            })),
-          });
-        }
-      });
-    });
 
     return { success: true, message: 'Permissions assigned successfully' };
   } catch (error) {
@@ -332,29 +243,22 @@ export async function createPermission(
   guardName: string = 'web'
 ): Promise<{ success: boolean; message: string; permission?: any }> {
   try {
-    // Ensure database connection is ready
-    await ensurePrismaConnection();
-    
     // Check if permission already exists
-    const existingPermission = await safePrismaOperation(async () => {
-      return await prisma.permission.findUnique({
-        where: { name },
-      });
-    });
+    const existing = await db
+      .select({ id: permissionsTable.id })
+      .from(permissionsTable)
+      .where(eq(permissionsTable.name, name));
 
-    if (existingPermission) {
+    if (existing.length > 0) {
       return { success: false, message: 'Permission already exists' };
     }
 
     // Create new permission
-    const permission = await safePrismaOperation(async () => {
-      return await prisma.permission.create({
-        data: {
-          name,
-          guard_name: guardName,
-        },
-      });
-    });
+    const inserted = await db
+      .insert(permissionsTable)
+      .values({ name, guardName, updatedAt: new Date().toISOString() })
+      .returning();
+    const permission = inserted[0];
 
     return { success: true, message: 'Permission created successfully', permission };
   } catch (error) {
@@ -381,49 +285,25 @@ export async function getPermissions(filters?: {
   };
 }> {
   try {
-    // Ensure database connection is ready
-    await ensurePrismaConnection();
-    
     const { search, roleId, page = 1, limit = 50 } = filters || {};
     const skip = (page - 1) * limit;
 
     // Build where clause
-    const where: any = {};
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { guard_name: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    // Get permissions with pagination using safe operations
-    const [permissions, total] = await Promise.all([
-      safePrismaOperation(async () => {
-        return await prisma.permission.findMany({
-          where,
-          skip,
-          take: limit,
-          orderBy: { name: 'asc' },
-          include: {
-            role_permissions: {
-              include: {
-                role: true,
-              },
-            },
-          },
-        });
-      }),
-      safePrismaOperation(async () => {
-        return await prisma.permission.count({ where });
-      }),
-    ]);
+    // Fetch permissions via Drizzle and filter in-memory for search
+    const permRows = await db.select().from(permissionsTable);
+    const permissions = permRows.filter(p => {
+      if (!search) return true;
+      const s = search.toLowerCase();
+      return (p.name?.toLowerCase().includes(s) || p.guardName?.toLowerCase().includes(s));
+    });
+    const total = permissions.length;
 
     // Filter by role if specified
     let filteredPermissions = permissions;
     if (roleId) {
-      filteredPermissions = permissions.filter(permission =>
-        permission.role_permissions.some(rp => rp.role_id === roleId)
-      );
+      const rolePerms = await db.select().from(roleHasPermissions).where(eq(roleHasPermissions.roleId, roleId));
+      const allowedIds = new Set(rolePerms.map(rp => rp.permissionId));
+      filteredPermissions = permissions.filter(p => allowedIds.has(p.id));
     }
 
     return {

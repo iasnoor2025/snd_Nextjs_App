@@ -108,7 +108,7 @@ export default function SalaryAdvancesPage() {
       });
 
       const total = filteredData.length;
-      const lastPage = Math.ceil(total / 10);
+          const lastPage: number = Math.ceil(total / 10);
       const startIndex = (currentPage - 1) * 10;
       const endIndex = startIndex + 10;
       const paginatedData = filteredData.slice(startIndex, endIndex);
@@ -180,7 +180,7 @@ export default function SalaryAdvancesPage() {
           <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
         </div>
         <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
+      {[...Array(5)].map((_, i: number) => (
             <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
           ))}
         </div>
@@ -362,7 +362,7 @@ export default function SalaryAdvancesPage() {
 
                 {/* Current page and surrounding pages */}
                 {(() => {
-                  const pages = [];
+            const pages: number[] = [];
                   const startPage = Math.max(1, advances.current_page - 1);
                   const endPage = Math.min(advances.last_page, advances.current_page + 1);
 

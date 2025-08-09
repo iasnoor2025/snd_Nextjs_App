@@ -1068,7 +1068,7 @@ export default function EmployeeManagementPage() {
 
                     {/* Current page and surrounding pages */}
                     {(() => {
-                      const pages = [];
+                    const pages: number[] = [];
                       const startPage = Math.max(1, currentPage - 1);
                       const endPage = Math.min(totalPages, currentPage + 1);
 

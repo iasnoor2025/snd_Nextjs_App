@@ -146,7 +146,7 @@ export default function QuotationsPage() {
     fetchQuotations();
   }, [search, status, startDate, endDate, currentPage]);
 
-  const getMockQuotationsData = (search: string = '', status: string = 'all', startDate: string = '', endDate: string = '', page: number = 1): PaginatedResponse => {
+    const getMockQuotationsData = (search: string = '', status: string = 'all', startDate: string = '', endDate: string = '', page: number = 1): PaginatedResponse => {
     const mockQuotations = [
       {
         id: 1,
@@ -646,7 +646,7 @@ export default function QuotationsPage() {
 
                     {/* Current page and surrounding pages */}
                     {(() => {
-                      const pages = [];
+                  const pages: number[] = [];
                       const startPage = Math.max(1, currentPage - 1);
                       const endPage = Math.min(quotations.last_page, currentPage + 1);
 

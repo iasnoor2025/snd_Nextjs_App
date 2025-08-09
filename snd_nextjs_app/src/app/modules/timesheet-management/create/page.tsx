@@ -320,7 +320,21 @@ function CreateTimesheetContent() {
 
     setProcessing(true);
     try {
-      const assignments = [];
+      const assignments: Array<{
+        employee_id: string;
+        assignment_id: string | null;
+        date_from: string;
+        date_to: string;
+        project_id: string | null;
+        rental_id: string | null;
+        hours_worked: string;
+        overtime_hours: string;
+        description: string;
+        tasks: string;
+        start_time: string;
+        end_time: string;
+        daily_hours: Record<string, { normal: string; overtime: string }>;
+      }> = [];
 
       // If assignment blocks are empty or invalid, create a default block using bulk date range
       let blocksToProcess = assignmentBlocks;

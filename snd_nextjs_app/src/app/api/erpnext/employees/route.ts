@@ -36,7 +36,7 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
 export async function GET(request: NextRequest) {
   try {
     const data = await makeERPNextRequest('/api/resource/Employee?limit_page_length=1000');
-    const employees = [];
+    const employees: any[] = [];
 
     if (data.data) {
       for (const item of data.data) {

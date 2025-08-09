@@ -1449,7 +1449,7 @@ export default function PayrollManagementPage() {
 
                         {/* Current page and surrounding pages */}
                         {(() => {
-                          const pages = [];
+                          const pages: number[] = [];
                           const startPage = Math.max(1, currentPage - 1);
                           const endPage = Math.min(payrolls.last_page, currentPage + 1);
 

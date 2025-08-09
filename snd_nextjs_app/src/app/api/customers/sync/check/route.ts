@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { customers } from '@/lib/drizzle/schema';
+import { sql } from 'drizzle-orm';
 // ERPNext configuration
 const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
 const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY;
@@ -44,7 +46,7 @@ async function fetchAllCustomersFromERPNext(): Promise<any[]> {
     console.log('ERPNext raw customer response:', response);
     
     // Handle different response structures
-    let customerList = [];
+    let customerList: any[] = [];
     if (response.data && Array.isArray(response.data)) {
       customerList = response.data;
     } else if (response.results && Array.isArray(response.results)) {
@@ -95,7 +97,8 @@ export async function POST(_request: NextRequest) {
 
     // Test database connection
     try {
-      await prisma.$connect();
+      // Drizzle pool is initialized at import; try a trivial query
+      await db.execute(sql`select 1`);
       console.log('Database connection successful');
     } catch (dbError) {
       console.error('Database connection failed:', dbError);
@@ -114,7 +117,8 @@ export async function POST(_request: NextRequest) {
     console.log(`Fetched ${erpnextCustomers.length} customers from ERPNext`);
     
     // Get existing customers count for comparison
-    const existingCustomerCount = await prisma.customer.count();
+    const countRows = await db.execute(sql`select count(*)::int as count from customers`);
+    const existingCustomerCount = Number((countRows as any)?.rows?.[0]?.count ?? 0);
     console.log(`Database has ${existingCustomerCount} existing customers`);
 
     // Prepare check result
@@ -149,6 +153,6 @@ export async function POST(_request: NextRequest) {
       { status: 500 }
     );
   } finally {
-    await prisma.$disconnect();
+    // nothing to disconnect with Drizzle
   }
 } 

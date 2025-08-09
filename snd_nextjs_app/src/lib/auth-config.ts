@@ -1,7 +1,8 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { NextAuthOptions } from "next-auth";
-import { prisma } from "./db";
+// Switched from Prisma to Drizzle repository
+import { findUserByEmailWithRoles, upsertGoogleUser } from './repositories/user-repo';
 import bcrypt from "bcryptjs";
 
 export const authConfig: NextAuthOptions = {
@@ -22,16 +23,7 @@ export const authConfig: NextAuthOptions = {
         }
 
         try {
-          const user = await prisma.user.findUnique({
-            where: { email: credentials.email },
-            include: {
-              user_roles: {
-                include: {
-                  role: true
-                }
-              }
-            }
-          });
+          const user = await findUserByEmailWithRoles(credentials.email);
 
           if (!user) {
             console.log('🔍 AUTH - User not found:', credentials.email);
@@ -59,7 +51,7 @@ export const authConfig: NextAuthOptions = {
             console.log('🔍 AUTH - admin@ias.com detected, setting role to SUPER_ADMIN');
           } else {
             // For other users, check user_roles or fallback to role_id
-            if (user.user_roles && user.user_roles.length > 0) {
+             if (user.user_roles && user.user_roles.length > 0) {
               const roleHierarchy = {
                 'SUPER_ADMIN': 1,
                 'ADMIN': 2,
@@ -85,13 +77,13 @@ export const authConfig: NextAuthOptions = {
               role = highestRole;
             } else {
               // Fallback to role_id mapping
-              if (user.role_id === 1) role = "SUPER_ADMIN";
-              else if (user.role_id === 2) role = "ADMIN";
-              else if (user.role_id === 3) role = "MANAGER";
-              else if (user.role_id === 4) role = "SUPERVISOR";
-              else if (user.role_id === 5) role = "OPERATOR";
-              else if (user.role_id === 6) role = "EMPLOYEE";
-              else if (user.role_id === 7) role = "USER";
+               if (user.role_id === 1) role = "SUPER_ADMIN";
+               else if (user.role_id === 2) role = "ADMIN";
+               else if (user.role_id === 3) role = "MANAGER";
+               else if (user.role_id === 4) role = "SUPERVISOR";
+               else if (user.role_id === 5) role = "OPERATOR";
+               else if (user.role_id === 6) role = "EMPLOYEE";
+               else if (user.role_id === 7) role = "USER";
             }
           }
           
@@ -152,16 +144,7 @@ export const authConfig: NextAuthOptions = {
       if (account?.provider === 'google') {
         try {
           // Check if user exists in database
-          const existingUser = await prisma.user.findUnique({
-            where: { email: user.email! },
-            include: {
-              user_roles: {
-                include: {
-                  role: true
-                }
-              }
-            }
-          });
+          const existingUser = await findUserByEmailWithRoles(user.email!);
 
           if (existingUser) {
             // User exists, check if active
@@ -173,16 +156,7 @@ export const authConfig: NextAuthOptions = {
             return true;
           } else {
             // Create new user for Google OAuth
-            const newUser = await prisma.user.create({
-              data: {
-                email: user.email!,
-                name: user.name || user.email!.split('@')[0],
-                password: '', // No password for OAuth users
-                isActive: true,
-                email_verified_at: new Date(), // Google accounts are verified
-                role_id: 7, // Default to USER role
-              },
-            });
+            await upsertGoogleUser(user.email!, user.name || null);
             console.log('🔍 GOOGLE AUTH - New user created:', user.email);
             return true;
           }
@@ -206,16 +180,7 @@ export const authConfig: NextAuthOptions = {
       // For Google OAuth users, determine role
       if (account?.provider === 'google' && token.email) {
         try {
-          const dbUser = await prisma.user.findUnique({
-            where: { email: token.email },
-            include: {
-              user_roles: {
-                include: {
-                  role: true
-                }
-              }
-            }
-          });
+          const dbUser = await findUserByEmailWithRoles(token.email);
 
           if (dbUser) {
             // Determine role for Google user

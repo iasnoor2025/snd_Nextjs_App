@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { db } from '@/lib/db';
+import { employeeLeaves, employees } from '@/lib/drizzle/schema';
+import { and, eq, gte, lte } from 'drizzle-orm';
 
 /**
  * Check if an employee is currently on leave and update their status accordingly
@@ -13,24 +13,26 @@ export async function updateEmployeeStatusBasedOnLeave(employeeId: number): Prom
     const today = new Date();
     
     // Find any approved leave that is currently active (start_date <= today <= end_date)
-    const activeLeave = await prisma.employeeLeave.findFirst({
-      where: {
-        employee_id: employeeId,
-        status: 'approved',
-        start_date: {
-          lte: today
-        },
-        end_date: {
-          gte: today
-        }
-      }
-    });
+    const activeLeave = await db
+      .select()
+      .from(employeeLeaves)
+      .where(
+        and(
+          eq(employeeLeaves.employeeId, employeeId),
+          eq(employeeLeaves.status, 'approved'),
+          lte(employeeLeaves.startDate, today.toISOString()),
+          gte(employeeLeaves.endDate, today.toISOString())
+        )
+      )
+      .limit(1);
 
     // Get current employee status
-    const employee = await prisma.employee.findUnique({
-      where: { id: employeeId },
-      select: { status: true }
-    });
+    const emp = await db
+      .select({ status: employees.status })
+      .from(employees)
+      .where(eq(employees.id, employeeId))
+      .limit(1);
+    const employee = emp[0];
 
     if (!employee) {
       return false;
@@ -38,22 +40,16 @@ export async function updateEmployeeStatusBasedOnLeave(employeeId: number): Prom
 
     let statusUpdated = false;
 
-    if (activeLeave) {
+    if (activeLeave.length > 0) {
       // Employee is currently on leave
       if (employee.status !== 'on_leave') {
-        await prisma.employee.update({
-          where: { id: employeeId },
-          data: { status: 'on_leave' }
-        });
+        await db.update(employees).set({ status: 'on_leave' }).where(eq(employees.id, employeeId));
         statusUpdated = true;
       }
     } else {
       // Employee is not currently on leave
       if (employee.status === 'on_leave') {
-        await prisma.employee.update({
-          where: { id: employeeId },
-          data: { status: 'active' }
-        });
+        await db.update(employees).set({ status: 'active' }).where(eq(employees.id, employeeId));
         statusUpdated = true;
       }
     }
@@ -74,20 +70,20 @@ export async function isEmployeeCurrentlyOnLeave(employeeId: number): Promise<bo
   try {
     const today = new Date();
     
-    const activeLeave = await prisma.employeeLeave.findFirst({
-      where: {
-        employee_id: employeeId,
-        status: 'approved',
-        start_date: {
-          lte: today
-        },
-        end_date: {
-          gte: today
-        }
-      }
-    });
+    const activeLeave = await db
+      .select()
+      .from(employeeLeaves)
+      .where(
+        and(
+          eq(employeeLeaves.employeeId, employeeId),
+          eq(employeeLeaves.status, 'approved'),
+          lte(employeeLeaves.startDate, today.toISOString()),
+          gte(employeeLeaves.endDate, today.toISOString())
+        )
+      )
+      .limit(1);
 
-    return !!activeLeave;
+    return activeLeave.length > 0;
   } catch (error) {
     console.error('Error checking if employee is on leave:', error);
     return false;
@@ -104,26 +100,21 @@ export async function getEmployeeLeaveStatus(employeeId: number) {
     const today = new Date();
     
     // Get all approved leaves for the employee
-    const approvedLeaves = await prisma.employeeLeave.findMany({
-      where: {
-        employee_id: employeeId,
-        status: 'approved'
-      },
-      orderBy: {
-        start_date: 'desc'
-      }
-    });
+    const approvedLeaves = await db
+      .select()
+      .from(employeeLeaves)
+      .where(and(eq(employeeLeaves.employeeId, employeeId), eq(employeeLeaves.status, 'approved')));
 
     const currentLeave = approvedLeaves.find(leave => 
-      leave.start_date <= today && leave.end_date >= today
+      (leave as any).startDate <= today.toISOString() && (leave as any).endDate >= today.toISOString()
     );
 
     const upcomingLeave = approvedLeaves.find(leave => 
-      leave.start_date > today
+      (leave as any).startDate > today.toISOString()
     );
 
     const pastLeave = approvedLeaves.find(leave => 
-      leave.end_date < today
+      (leave as any).endDate < today.toISOString()
     );
 
     return {

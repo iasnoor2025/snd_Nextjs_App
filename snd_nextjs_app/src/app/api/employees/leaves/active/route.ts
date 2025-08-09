@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { employeeLeaves, employees as employeesTable, departments, designations } from '@/lib/drizzle/schema';
+import { and, asc, eq, gte, ilike, isNull, lte, or, sql } from 'drizzle-orm';
 import { withReadPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 export const GET = withReadPermission(
@@ -12,78 +14,82 @@ export const GET = withReadPermission(
 
       const now = new Date();
 
-      const where: any = {
-        status: 'approved',
-        start_date: { lte: now },
-        OR: [
-          { end_date: { gte: now } },
-          { end_date: null },
-        ],
-        employee: {
-          is: { deleted_at: null },
-        },
-      };
+      const baseFilters: any[] = [
+        eq(employeeLeaves.status, 'approved' as any),
+        lte(employeeLeaves.startDate, now.toISOString()),
+        or(gte(employeeLeaves.endDate, now.toISOString()), isNull(employeeLeaves.endDate)),
+      ];
 
       if (search) {
-        where.AND = where.AND || [];
-        where.AND.push({
-          OR: [
-            { employee: { is: { first_name: { contains: search, mode: 'insensitive' } } } },
-            { employee: { is: { middle_name: { contains: search, mode: 'insensitive' } } } },
-            { employee: { is: { last_name: { contains: search, mode: 'insensitive' } } } },
-            { employee: { is: { file_number: { contains: search, mode: 'insensitive' } } } },
-            { employee: { is: { employee_id: { contains: search, mode: 'insensitive' } } } },
-            { employee: { is: { iqama_number: { contains: search, mode: 'insensitive' } } } },
-            { employee: { is: { department: { is: { name: { contains: search, mode: 'insensitive' } } } } } },
-            { employee: { is: { designation: { is: { name: { contains: search, mode: 'insensitive' } } } } } },
-            { leave_type: { contains: search, mode: 'insensitive' } },
-          ],
-        });
+        const s = `%${search}%`;
+        baseFilters.push(
+          or(
+            ilike(employeesTable.firstName, s),
+            ilike(employeesTable.middleName, s),
+            ilike(employeesTable.lastName, s),
+            ilike(employeesTable.fileNumber, s),
+            ilike(employeesTable.employeeId, s),
+            ilike(employeesTable.iqamaNumber, s),
+            ilike(departments.name, s),
+            ilike(designations.name, s),
+            ilike(employeeLeaves.leaveType, s),
+          )
+        );
       }
 
-      const total = await prisma.employeeLeave.count({ where });
-      const items = await prisma.employeeLeave.findMany({
-        where,
-        orderBy: [{ end_date: 'asc' }, { id: 'asc' }],
-        skip: (page - 1) * limit,
-        take: limit,
-        select: {
-          id: true,
-          employee_id: true,
-          leave_type: true,
-          start_date: true,
-          end_date: true,
-          days: true,
-          status: true,
-          employee: {
-            select: {
-              id: true,
-              first_name: true,
-              middle_name: true,
-              last_name: true,
-              file_number: true,
-              department: { select: { name: true } },
-              designation: { select: { name: true } },
-            },
-          },
-        },
-      });
+      const whereExpr = and(...baseFilters);
+
+      const totalRow = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(employeeLeaves)
+        .leftJoin(employeesTable, eq(employeesTable.id, employeeLeaves.employeeId))
+        .leftJoin(departments, eq(departments.id, employeesTable.departmentId))
+        .leftJoin(designations, eq(designations.id, employeesTable.designationId))
+        .where(whereExpr);
+      const total = Number((totalRow as any)[0]?.count ?? 0);
+
+      const items = await db
+        .select({
+          id: employeeLeaves.id,
+          employee_id: employeeLeaves.employeeId,
+          leave_type: employeeLeaves.leaveType,
+          start_date: employeeLeaves.startDate,
+          end_date: employeeLeaves.endDate,
+          days: employeeLeaves.days,
+          status: employeeLeaves.status,
+          emp_id: employeesTable.id,
+          first_name: employeesTable.firstName,
+          middle_name: employeesTable.middleName,
+          last_name: employeesTable.lastName,
+          file_number: employeesTable.fileNumber,
+          department_name: departments.name,
+          designation_name: designations.name,
+        })
+        .from(employeeLeaves)
+        .leftJoin(employeesTable, eq(employeesTable.id, employeeLeaves.employeeId))
+        .leftJoin(departments, eq(departments.id, employeesTable.departmentId))
+        .leftJoin(designations, eq(designations.id, employeesTable.designationId))
+        .where(whereExpr)
+        .orderBy(asc(employeeLeaves.endDate), asc(employeeLeaves.id))
+        .offset((page - 1) * limit)
+        .limit(limit);
 
       const data = items.map((it) => {
-        const fullName = [it.employee?.first_name, it.employee?.middle_name, it.employee?.last_name]
+        const fullName = [it.first_name, it.middle_name, it.last_name]
           .filter(Boolean)
           .join(' ');
-        const daysLeft = it.end_date ? Math.max(0, Math.ceil((it.end_date.getTime() - now.getTime()) / (1000*60*60*24))) : null;
+        const endDate = it.end_date ? new Date(it.end_date as unknown as string) : null;
+        const daysLeft = endDate ? Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000*60*60*24))) : null;
         return {
           id: it.id,
-          employee_id: it.employee?.id,
+          employee_id: it.employee_id,
           name: fullName,
-          file_number: it.employee?.file_number || null,
-          department: it.employee?.department?.name || null,
-          designation: it.employee?.designation?.name || null,
+          file_number: it.file_number || null,
+          department: it.department_name || null,
+          designation: it.designation_name || null,
           leave_type: it.leave_type,
           start_date: it.start_date,
-          end_date: it.end_date,
+          end_date: endDate,
           days_left: daysLeft,
           status: it.status,
         };

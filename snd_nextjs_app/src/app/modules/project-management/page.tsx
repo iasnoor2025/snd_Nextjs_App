@@ -670,7 +670,7 @@ export default function ProjectManagementPage() {
 
               {/* Current page and surrounding pages */}
               {(() => {
-                const pages = [];
+                const pages: number[] = [];
                 const startPage = Math.max(1, projects.current_page - 1);
                 const endPage = Math.min(projects.last_page, projects.current_page + 1);
 

@@ -1,4 +1,4 @@
-import { prisma } from './db';
+import { db } from './db';
 
 export class ERPNextClient {
   private baseUrl: string;
@@ -34,7 +34,7 @@ export class ERPNextClient {
 
   async fetchAllEmployees(): Promise<any[]> {
     const data = await this.makeRequest('/api/resource/Employee?limit_page_length=1000');
-    const employees = [];
+    const employees: any[] = [];
 
     if (data.data) {
       for (const item of data.data) {

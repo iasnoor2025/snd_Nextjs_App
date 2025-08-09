@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma, safePrismaOperation } from '@/lib/db';
+import { db, prisma, safePrismaOperation } from '@/lib/db';
 import { withAuth, PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
+import {
+  equipmentMaintenance as equipmentMaintenanceTable,
+  equipment as equipmentTable,
+  employees as employeesTable,
+  equipmentMaintenanceItems as maintenanceItemsTable,
+} from '@/lib/drizzle/schema';
+import { and, desc, eq, gte, inArray, lte } from 'drizzle-orm';
 
 function parseNumber(value: any): number | undefined {
   if (value === undefined || value === null || value === '') return undefined;
@@ -18,28 +25,76 @@ export const GET = withAuth(async (request: NextRequest) => {
     const start = searchParams.get('startDate');
     const end = searchParams.get('endDate');
 
-    const where: any = {};
-    if (equipmentId) where.equipment_id = equipmentId;
-    if (mechanicId) where.assigned_to_employee_id = mechanicId;
-    if (status) where.status = status;
-    if (type) where.type = type;
-    if (start || end) {
-      where.scheduled_date = {};
-      if (start) where.scheduled_date.gte = new Date(start);
-      if (end) where.scheduled_date.lte = new Date(end);
-    }
+    const filters: any[] = [];
+    if (equipmentId) filters.push(eq(equipmentMaintenanceTable.equipmentId, equipmentId));
+    if (mechanicId) filters.push(eq(equipmentMaintenanceTable.assignedToEmployeeId, mechanicId));
+    if (status) filters.push(eq(equipmentMaintenanceTable.status, status));
+    if (type) filters.push(eq(equipmentMaintenanceTable.type, type));
+    if (start) filters.push(gte(equipmentMaintenanceTable.scheduledDate, new Date(start).toISOString()));
+    if (end) filters.push(lte(equipmentMaintenanceTable.scheduledDate, new Date(end).toISOString()));
 
-    const records = await safePrismaOperation(() =>
-      prisma.equipmentMaintenance.findMany({
-        where,
-        orderBy: { created_at: 'desc' },
-        include: {
-          equipment: { select: { id: true, name: true } },
-          mechanic: { select: { id: true, first_name: true, last_name: true } },
-          items: true,
+    const maintenanceRows = await db
+      .select({
+        id: equipmentMaintenanceTable.id,
+        equipment_id: equipmentMaintenanceTable.equipmentId,
+        title: equipmentMaintenanceTable.title,
+        description: equipmentMaintenanceTable.description,
+        status: equipmentMaintenanceTable.status,
+        type: equipmentMaintenanceTable.type,
+        priority: equipmentMaintenanceTable.priority,
+        assigned_to_employee_id: equipmentMaintenanceTable.assignedToEmployeeId,
+        scheduled_date: equipmentMaintenanceTable.scheduledDate,
+        due_date: equipmentMaintenanceTable.dueDate,
+        cost: equipmentMaintenanceTable.cost,
+        created_at: equipmentMaintenanceTable.createdAt,
+        updated_at: equipmentMaintenanceTable.updatedAt,
+        equipment: {
+          id: equipmentTable.id,
+          name: equipmentTable.name,
+        },
+        mechanic: {
+          id: employeesTable.id,
+          first_name: employeesTable.firstName,
+          last_name: employeesTable.lastName,
         },
       })
-    );
+      .from(equipmentMaintenanceTable)
+      .leftJoin(equipmentTable, eq(equipmentTable.id, equipmentMaintenanceTable.equipmentId))
+      .leftJoin(employeesTable, eq(employeesTable.id, equipmentMaintenanceTable.assignedToEmployeeId))
+      .where(filters.length ? and(...filters) : undefined)
+      .orderBy(desc(equipmentMaintenanceTable.createdAt));
+
+    const maintenanceIds = maintenanceRows.map((r) => r.id);
+    let itemsByMaintenanceId: Record<number, any[]> = {};
+    if (maintenanceIds.length > 0) {
+      const itemRows = await db
+        .select({
+          id: maintenanceItemsTable.id,
+          maintenance_id: maintenanceItemsTable.maintenanceId,
+          name: maintenanceItemsTable.name,
+          description: maintenanceItemsTable.description,
+          quantity: maintenanceItemsTable.quantity,
+          unit: maintenanceItemsTable.unit,
+          unit_cost: maintenanceItemsTable.unitCost,
+          total_cost: maintenanceItemsTable.totalCost,
+          created_at: maintenanceItemsTable.createdAt,
+          updated_at: maintenanceItemsTable.updatedAt,
+        })
+        .from(maintenanceItemsTable)
+        .where(inArray(maintenanceItemsTable.maintenanceId, maintenanceIds as any));
+
+      itemsByMaintenanceId = itemRows.reduce((acc: Record<number, any[]>, item) => {
+        const key = item.maintenance_id as unknown as number;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(item);
+        return acc;
+      }, {});
+    }
+
+    const records = maintenanceRows.map((r) => ({
+      ...r,
+      items: itemsByMaintenanceId[r.id] || [],
+    }));
 
     return NextResponse.json({ success: true, data: records });
   } catch (error) {
@@ -67,62 +122,57 @@ export const POST = withPermission(async (request: NextRequest) => {
       return NextResponse.json({ success: false, message: 'equipment_id is required' }, { status: 400 });
     }
 
-    const created = await safePrismaOperation(async () => {
-      const result = await prisma.$transaction(async (tx) => {
-        const maintenance = await tx.equipmentMaintenance.create({
-          data: {
-            equipment_id,
-            assigned_to_employee_id: assigned_to_employee_id || null,
-            type: type || 'corrective',
-            title: title || 'Maintenance',
-            description: description || null,
-            scheduled_date: scheduled_date ? new Date(scheduled_date) : null,
-            due_date: due_date ? new Date(due_date) : null,
-            status: status || 'open',
-          },
-        });
+    const nowIso = new Date().toISOString();
+    const created = await db.transaction(async (tx) => {
+      const inserted = await tx
+        .insert(equipmentMaintenanceTable)
+        .values({
+          equipmentId: equipment_id,
+          assignedToEmployeeId: assigned_to_employee_id || null,
+          type: type || 'corrective',
+          title: title || 'Maintenance',
+          description: description || null,
+          scheduledDate: scheduled_date ? new Date(scheduled_date).toISOString() : null,
+          dueDate: due_date ? new Date(due_date).toISOString() : null,
+          status: status || 'open',
+          updatedAt: nowIso,
+        })
+        .returning({ id: equipmentMaintenanceTable.id, status: equipmentMaintenanceTable.status });
+      const maintenanceId = inserted[0].id;
 
-        // Create items and sum cost
-        let totalCost = 0;
-        if (Array.isArray(items) && items.length) {
-          for (const item of items) {
-            const quantity = Number(item.quantity || 1);
-            const unit_cost = Number(item.unit_cost || 0);
-            const total_cost = Number(item.total_cost ?? quantity * unit_cost);
-            totalCost += total_cost;
-            await tx.equipmentMaintenanceItem.create({
-              data: {
-                maintenance_id: maintenance.id,
-                name: String(item.name || 'Item'),
-                description: item.description || null,
-                quantity,
-                unit: item.unit || null,
-                unit_cost,
-                total_cost,
-              },
-            });
-          }
+      let totalCostNum = 0;
+      if (Array.isArray(items) && items.length) {
+        for (const item of items) {
+          const quantity = Number(item.quantity || 1);
+          const unitCost = Number(item.unit_cost || 0);
+          const totalCost = Number(item.total_cost ?? quantity * unitCost);
+          totalCostNum += totalCost;
+          await tx.insert(maintenanceItemsTable).values({
+            maintenanceId,
+            name: String(item.name || 'Item'),
+            description: item.description ? String(item.description) : null,
+            quantity: String(quantity) as any,
+            unit: item.unit ? String(item.unit) : null,
+            unitCost: String(unitCost) as any,
+            totalCost: String(totalCost) as any,
+            updatedAt: nowIso,
+          });
         }
+      }
 
-        // Update maintenance total cost
-        const updatedMaintenance = await tx.equipmentMaintenance.update({
-          where: { id: maintenance.id },
-          data: { cost: totalCost },
-        });
+      const updatedMaintenance = await tx
+        .update(equipmentMaintenanceTable)
+        .set({ cost: String(totalCostNum) as any, updatedAt: nowIso })
+        .where(eq(equipmentMaintenanceTable.id, maintenanceId))
+        .returning({ id: equipmentMaintenanceTable.id, status: equipmentMaintenanceTable.status, equipmentId: equipmentMaintenanceTable.equipmentId });
 
-        // Update equipment status depending on maintenance status/type
-        let equipmentStatus = 'under_maintenance';
-        if (updatedMaintenance.status === 'completed') {
-          equipmentStatus = 'available';
-        }
-        await tx.equipment.update({
-          where: { id: equipment_id },
-          data: { status: equipmentStatus, last_maintenance_date: new Date() },
-        });
+      const newStatus = updatedMaintenance[0].status === 'completed' ? 'available' : 'under_maintenance';
+      await tx
+        .update(equipmentTable)
+        .set({ status: newStatus, lastMaintenanceDate: nowIso })
+        .where(eq(equipmentTable.id, updatedMaintenance[0].equipmentId));
 
-        return updatedMaintenance;
-      });
-      return result;
+      return updatedMaintenance[0];
     });
 
     return NextResponse.json({ success: true, data: created });

@@ -264,7 +264,7 @@ export default function CompanyManagementPage() {
 
                   {/* Current page and surrounding pages */}
                   {(() => {
-                    const pages = [];
+                    const pages: number[] = [];
                     const startPage = Math.max(1, companies.pagination.page - 1);
                     const endPage = Math.min(companies.pagination.totalPages, companies.pagination.page + 1);
 

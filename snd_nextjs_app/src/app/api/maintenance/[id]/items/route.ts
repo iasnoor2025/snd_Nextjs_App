@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma, safePrismaOperation } from '@/lib/db';
+import { db } from '@/lib/db';
 import { withPermission } from '@/lib/rbac/api-middleware';
+import { equipmentMaintenance as equipmentMaintenanceTable, equipmentMaintenanceItems as maintenanceItemsTable } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export const POST = withPermission(async (request: NextRequest, { params }: { params: { id: string } }) => {
   try {
@@ -19,26 +21,37 @@ export const POST = withPermission(async (request: NextRequest, { params }: { pa
       return NextResponse.json({ success: false, message: 'Item name is required' }, { status: 400 });
     }
 
-    const result = await safePrismaOperation(async () => {
-      return prisma.$transaction(async (tx) => {
-        await tx.equipmentMaintenanceItem.create({
-          data: { maintenance_id: id, name, quantity, unit_cost, unit, description, total_cost },
-        });
-
-        const sum = await tx.equipmentMaintenanceItem.aggregate({
-          where: { maintenance_id: id },
-          _sum: { total_cost: true },
-        });
-        const newCost = Number(sum._sum.total_cost || 0);
-
-        const updated = await tx.equipmentMaintenance.update({
-          where: { id },
-          data: { cost: newCost },
-          include: { items: true },
-        });
-
-        return updated;
+    const nowIso = new Date().toISOString();
+    const result = await db.transaction(async (tx) => {
+      await tx.insert(maintenanceItemsTable).values({
+        maintenanceId: id,
+        name,
+        description,
+        quantity: String(quantity) as any,
+        unit,
+        unitCost: String(unit_cost) as any,
+        totalCost: String(total_cost) as any,
+        updatedAt: nowIso,
       });
+
+      // Recompute cost by summing items
+      const items = await tx
+        .select({ total_cost: maintenanceItemsTable.totalCost })
+        .from(maintenanceItemsTable)
+        .where(eq(maintenanceItemsTable.maintenanceId, id));
+      const newCost = items.reduce((sum, row) => sum + Number(row.total_cost || 0), 0);
+
+      await tx
+        .update(equipmentMaintenanceTable)
+        .set({ cost: String(newCost) as any, updatedAt: nowIso })
+        .where(eq(equipmentMaintenanceTable.id, id));
+
+      const updated = await tx
+        .select()
+        .from(maintenanceItemsTable)
+        .where(eq(maintenanceItemsTable.maintenanceId, id));
+
+      return { items: updated, cost: newCost };
     });
 
     return NextResponse.json({ success: true, data: result });

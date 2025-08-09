@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { customers } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 // ERPNext configuration
 const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
 const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY;
@@ -91,7 +93,7 @@ async function fetchAllCustomersFromERPNext(): Promise<any[]> {
     });
     
     // Handle different response structures
-    let customerList = [];
+    let customerList: any[] = [];
     if (response.data && Array.isArray(response.data)) {
       customerList = response.data;
     } else if (response.results && Array.isArray(response.results)) {
@@ -156,7 +158,7 @@ export async function POST(request: NextRequest) {
 
     // Test database connection
     try {
-      await prisma.$connect();
+      await db.execute('select 1');
       console.log('Database connection successful');
     } catch (dbError) {
       console.error('Database connection failed:', dbError);
@@ -188,25 +190,25 @@ export async function POST(request: NextRequest) {
           const customerData = createItem.data;
           console.log('Creating customer:', customerData.name);
           
-          await prisma.customer.create({
-            data: {
-              name: customerData.name,
-              company_name: customerData.company_name,
-              contact_person: customerData.contact_person,
-              email: customerData.email,
-              phone: customerData.phone,
-              address: customerData.address,
-              city: customerData.city,
-              state: customerData.state,
-              postal_code: customerData.postal_code,
-              country: customerData.country,
-              tax_number: customerData.tax_number,
-              credit_limit: customerData.credit_limit,
-              payment_terms: customerData.payment_terms,
-              notes: customerData.notes,
-              is_active: customerData.is_active,
-              erpnext_id: customerData.erpnext_id,
-            }
+          await db.insert(customers).values({
+            name: customerData.name,
+            companyName: customerData.company_name,
+            contactPerson: customerData.contact_person,
+            email: customerData.email,
+            phone: customerData.phone,
+            address: customerData.address,
+            city: customerData.city,
+            state: customerData.state,
+            postalCode: customerData.postal_code,
+            country: customerData.country,
+            taxNumber: customerData.tax_number,
+            creditLimit: customerData.credit_limit as any,
+            paymentTerms: customerData.payment_terms,
+            notes: customerData.notes,
+            isActive: customerData.is_active,
+            erpnextId: customerData.erpnext_id,
+            status: 'active',
+            updatedAt: new Date().toISOString(),
           });
           
           createdCount++;
@@ -228,26 +230,27 @@ export async function POST(request: NextRequest) {
           const { existingId, newData } = updateItem;
           console.log('Updating customer:', newData.name);
           
-          await prisma.customer.update({
-            where: { id: existingId },
-            data: {
+          await db
+            .update(customers)
+            .set({
               name: newData.name,
-              company_name: newData.company_name,
-              contact_person: newData.contact_person,
+              companyName: newData.company_name,
+              contactPerson: newData.contact_person,
               email: newData.email,
               phone: newData.phone,
               address: newData.address,
               city: newData.city,
               state: newData.state,
-              postal_code: newData.postal_code,
+              postalCode: newData.postal_code,
               country: newData.country,
-              tax_number: newData.tax_number,
-              credit_limit: newData.credit_limit,
-              payment_terms: newData.payment_terms,
+              taxNumber: newData.tax_number,
+              creditLimit: newData.credit_limit as any,
+              paymentTerms: newData.payment_terms,
               notes: newData.notes,
-              is_active: newData.is_active,
-            }
-          });
+              isActive: newData.is_active,
+              updatedAt: new Date().toISOString(),
+            })
+            .where(eq(customers.id, existingId));
           
           updatedCount++;
           processedCount++;
@@ -283,7 +286,7 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   } finally {
-    await prisma.$disconnect();
+    // Drizzle pool stays connected
   }
 }
 

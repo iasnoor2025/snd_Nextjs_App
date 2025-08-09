@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { payrolls, payrollItems, employees, timesheets } from '@/lib/drizzle/schema';
+import { and, asc, desc, eq, gte, lte } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
@@ -15,20 +17,24 @@ export async function GET(
 
     // Connect to database
     console.log('🔍 PAYSLIP API - Connecting to database...');
-    await prisma.$connect();
+    // Drizzle uses pooled connections automatically
     console.log('🔍 PAYSLIP API - Database connected');
 
     // Get payroll with employee and items
     console.log('🔍 PAYSLIP API - Fetching payroll data...');
-    const payroll = await prisma.payroll.findUnique({
-      where: { id: id },
-      include: {
-        employee: true,
-        items: {
-          orderBy: { order: 'asc' }
-        }
-      }
-    });
+    const payrollRow = await db
+      .select()
+      .from(payrolls)
+      .where(eq(payrolls.id, id))
+      .limit(1);
+    const payroll = payrollRow[0] as any;
+
+    const employeeRow = payroll
+      ? await db.select().from(employees).where(eq(employees.id, payroll.employeeId)).limit(1)
+      : [];
+    const payrollItemsRows = payroll
+      ? await db.select().from(payrollItems).where(eq(payrollItems.payrollId, payroll.id)).orderBy(asc(payrollItems.order))
+      : [];
 
     console.log('🔍 PAYSLIP API - Payroll found:', !!payroll);
 
@@ -84,7 +90,7 @@ export async function GET(
       };
       
       // Generate sample attendance data
-      const sampleAttendanceData = [];
+      const sampleAttendanceData: Array<{ date: string; day: number; status: string; hours: number; overtime: number }> = [];
       const daysInMonth = new Date(2025, 7, 0).getDate();
       
       for (let day = 1; day <= daysInMonth; day++) {
@@ -138,23 +144,27 @@ export async function GET(
       payrollYear: payroll.year
     });
 
-    const attendanceData = await prisma.timesheet.findMany({
-      where: {
-        employee_id: payroll.employee_id,
-        date: {
-          gte: startDate,
-          lte: endDate
-        }
-      },
-      orderBy: {
-        date: 'asc'
-      }
-    });
+    const attendanceData = await db
+      .select({
+        date: timesheets.date,
+        hours_worked: timesheets.hoursWorked,
+        overtime_hours: timesheets.overtimeHours,
+        status: timesheets.status,
+      })
+      .from(timesheets)
+      .where(
+        and(
+          eq(timesheets.employeeId, payroll.employeeId),
+          gte(timesheets.date, startDate.toISOString()),
+          lte(timesheets.date, endDate.toISOString())
+        )
+      )
+      .orderBy(asc(timesheets.date));
     
     console.log('🔍 PAYSLIP API - Attendance records found:', attendanceData.length);
     console.log('🔍 PAYSLIP API - All attendance data:', attendanceData.map(a => ({
-      date: a.date.toISOString().split('T')[0],
-      day: a.date.getDate(),
+      date: new Date(a.date as unknown as string).toISOString().split('T')[0],
+      day: new Date(a.date as unknown as string).getDate(),
       hours: a.hours_worked,
       overtime: a.overtime_hours,
       status: a.status
@@ -162,9 +172,9 @@ export async function GET(
 
     // Transform attendance data - Convert Decimal to numbers
     const transformedAttendanceData = attendanceData.map(attendance => ({
-      date: attendance.date.toISOString().split('T')[0],
-      day: attendance.date.getDate(),
-      status: attendance.status,
+      date: new Date(attendance.date as unknown as string).toISOString().split('T')[0],
+      day: new Date(attendance.date as unknown as string).getDate(),
+      status: attendance.status as string,
       hours: Number(attendance.hours_worked) || 0,
       overtime: Number(attendance.overtime_hours) || 0
     }));
@@ -183,27 +193,38 @@ export async function GET(
     // Transform payroll data to convert Decimal to numbers
     const transformedPayroll = {
       ...payroll,
-      base_salary: Number(payroll.base_salary),
-      overtime_amount: Number(payroll.overtime_amount),
-      bonus_amount: Number(payroll.bonus_amount),
-      advance_deduction: Number(payroll.advance_deduction),
-      final_amount: Number(payroll.final_amount),
-      total_worked_hours: Number(payroll.total_worked_hours),
-      overtime_hours: Number(payroll.overtime_hours)
-    };
+      base_salary: Number(payroll.baseSalary),
+      overtime_amount: Number(payroll.overtimeAmount),
+      bonus_amount: Number(payroll.bonusAmount),
+      advance_deduction: Number(payroll.advanceDeduction),
+      final_amount: Number(payroll.finalAmount),
+      total_worked_hours: Number(payroll.totalWorkedHours),
+      overtime_hours: Number(payroll.overtimeHours),
+      employee_id: payroll.employeeId,
+      items: payrollItemsRows,
+    } as any;
 
     // Transform employee data to convert Decimal to numbers
-    const transformedEmployee = {
-      ...payroll.employee,
-      basic_salary: Number(payroll.employee.basic_salary || 0),
-      food_allowance: Number(payroll.employee.food_allowance || 0),
-      housing_allowance: Number(payroll.employee.housing_allowance || 0),
-      transport_allowance: Number(payroll.employee.transport_allowance || 0),
-      overtime_rate_multiplier: Number(payroll.employee.overtime_rate_multiplier || 1.5),
-      overtime_fixed_rate: Number(payroll.employee.overtime_fixed_rate || 0),
-      contract_days_per_month: Number(payroll.employee.contract_days_per_month || 26),
-      contract_hours_per_day: Number(payroll.employee.contract_hours_per_day || 8)
-    };
+    const emp = employeeRow[0] as any;
+    const transformedEmployee = emp
+      ? {
+          ...emp,
+          basic_salary: Number(emp.basicSalary || 0),
+          food_allowance: Number(emp.foodAllowance || 0),
+          housing_allowance: Number(emp.housingAllowance || 0),
+          transport_allowance: Number(emp.transportAllowance || 0),
+          overtime_rate_multiplier: Number(emp.overtimeRateMultiplier || 1.5),
+          overtime_fixed_rate: Number(emp.overtimeFixedRate || 0),
+          contract_days_per_month: Number(emp.contractDaysPerMonth || 26),
+          contract_hours_per_day: Number(emp.contractHoursPerDay || 8),
+          first_name: emp.firstName,
+          last_name: emp.lastName,
+          full_name: `${emp.firstName ?? ''} ${emp.lastName ?? ''}`.trim(),
+          file_number: emp.fileNumber,
+          department: '',
+          designation: '',
+        }
+      : null;
 
     // Return JSON data for the frontend
     console.log('🔍 PAYSLIP API - Returning response');
@@ -230,8 +251,7 @@ export async function GET(
       { status: 500 }
     );
   } finally {
-    console.log('🔍 PAYSLIP API - Disconnecting from database');
-    await prisma.$disconnect();
+    // Pooled with Drizzle; nothing to disconnect
   }
 }
 

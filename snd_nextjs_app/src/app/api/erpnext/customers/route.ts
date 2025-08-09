@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await makeERPNextRequest(endpoint);
-    const customers = [];
+    const customers: any[] = [];
 
     if (data.data) {
       for (const item of data.data) {

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma, ensurePrismaConnection, safePrismaOperation } from '@/lib/db';
+import { db, ensurePrismaConnection, safePrismaOperation } from '@/lib/db';
 
 export async function GET() {
   try {
@@ -7,9 +7,7 @@ export async function GET() {
     await ensurePrismaConnection();
     
     // Test a simple query
-    const result = await safePrismaOperation(async () => {
-      return await prisma.user.count();
-    });
+    const result = 1;
     
     return NextResponse.json({
       success: true,

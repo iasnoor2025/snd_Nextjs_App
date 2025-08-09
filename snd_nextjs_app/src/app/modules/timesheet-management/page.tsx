@@ -282,7 +282,7 @@ export default function TimesheetManagementPage() {
       setTimeout(() => {
         // Try multiple selectors to find the current month element
         const selectContent = document.querySelector('[data-radix-select-content]');
-        let currentMonthElement = null;
+        let currentMonthElement: Element | null = null;
 
         if (selectContent) {
           // Try different attribute selectors
@@ -637,8 +637,9 @@ export default function TimesheetManagementPage() {
   }, [currentTimesheets]);
 
   // Generate month options for the last 2 years and next 2 years
-  const monthOptions = useMemo(() => {
-    const options = [];
+  type MonthOption = { value: string; label: string };
+  const monthOptions = useMemo<MonthOption[]>(() => {
+    const options: MonthOption[] = [];
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
 
@@ -650,7 +651,7 @@ export default function TimesheetManagementPage() {
           month: 'long',
           year: 'numeric'
         });
-        options.push({ value: yearMonth, label: monthName });
+        options.push({ value: yearMonth, label: monthName }); 
       }
     }
 
@@ -1289,7 +1290,7 @@ export default function TimesheetManagementPage() {
 
           {/* Page numbers */}
           {(() => {
-            const pages = [];
+            const pages: JSX.Element[] = [];
             const maxVisiblePages = 5;
             let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
             let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);

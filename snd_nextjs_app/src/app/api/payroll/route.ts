@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
+import { payrolls as payrollsTable, payrollItems as payrollItemsTable, employees as employeesTable } from '@/lib/drizzle/schema';
+import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 const getPayrollHandler = async (request: NextRequest) => {
   try {
@@ -21,33 +24,41 @@ const getPayrollHandler = async (request: NextRequest) => {
     const user = session?.user;
     
     // For employee users, only show their own payroll records
-    if (user?.role === 'EMPLOYEE') {
-      // Find employee record that matches user's national_id
-      const ownEmployee = await prisma.employee.findFirst({
-        where: { iqama_number: user.national_id },
-        select: { id: true },
-      });
+    const filters: any[] = [];
+    if (user?.role === 'EMPLOYEE' && user.national_id) {
+      const ownEmp = await db
+        .select({ id: employeesTable.id })
+        .from(employeesTable)
+        .where(eq(employeesTable.iqamaNumber as any, user.national_id))
+        .limit(1);
+      const ownEmployee = ownEmp[0];
       if (ownEmployee) {
-        where.employee_id = ownEmployee.id;
+        filters.push(eq(payrollsTable.employeeId, ownEmployee.id as number));
       }
     }
 
     if (status && status !== 'all') {
-      where.status = status;
+      filters.push(eq(payrollsTable.status, status));
     }
 
     if (month) {
       const [year, monthNum] = month.split('-');
-      where.year = parseInt(year);
-      where.month = parseInt(monthNum);
+      filters.push(eq(payrollsTable.year, parseInt(year)));
+      filters.push(eq(payrollsTable.month, parseInt(monthNum)));
     }
 
     if (employee_id && employee_id !== 'all') {
-      where.employee_id = parseInt(employee_id);
+      filters.push(eq(payrollsTable.employeeId, parseInt(employee_id)));
     }
 
+    const whereExpr = filters.length ? and(...filters) : undefined;
+
     // Get total count
-    const total = await prisma.payroll.count({ where });
+    const totalRow = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(payrollsTable)
+      .where(whereExpr as any);
+    const total = Number((totalRow as any)[0]?.count ?? 0);
 
     // Calculate pagination
     const skip = (page - 1) * per_page;
@@ -55,19 +66,81 @@ const getPayrollHandler = async (request: NextRequest) => {
     const from = skip + 1;
     const to = Math.min(skip + per_page, total);
 
-    // Get payrolls with employee data
-    const payrolls = await prisma.payroll.findMany({
-      where,
-      include: {
-        employee: true,
-        items: {
-          orderBy: { order: 'asc' }
-        }
-      },
-      skip,
-      take: per_page,
-      orderBy: { created_at: 'desc' }
-    });
+    // Get payrolls with employee data (Drizzle)
+    const payrollRows = await db
+      .select({
+        id: payrollsTable.id,
+        employee_id: payrollsTable.employeeId,
+        month: payrollsTable.month,
+        year: payrollsTable.year,
+        base_salary: payrollsTable.baseSalary,
+        overtime_amount: payrollsTable.overtimeAmount,
+        bonus_amount: payrollsTable.bonusAmount,
+        deduction_amount: payrollsTable.deductionAmount,
+        advance_deduction: payrollsTable.advanceDeduction,
+        final_amount: payrollsTable.finalAmount,
+        total_worked_hours: payrollsTable.totalWorkedHours,
+        overtime_hours: payrollsTable.overtimeHours,
+        status: payrollsTable.status,
+        notes: payrollsTable.notes,
+        approved_by: payrollsTable.approvedBy,
+        approved_at: payrollsTable.approvedAt,
+        paid_by: payrollsTable.paidBy,
+        paid_at: payrollsTable.paidAt,
+        payment_method: payrollsTable.paymentMethod,
+        payment_reference: payrollsTable.paymentReference,
+        payment_status: payrollsTable.paymentStatus,
+        payment_processed_at: payrollsTable.paymentProcessedAt,
+        currency: payrollsTable.currency,
+        payroll_run_id: payrollsTable.payrollRunId,
+        created_at: payrollsTable.createdAt,
+        updated_at: payrollsTable.updatedAt,
+        employee: {
+          id: employeesTable.id,
+          first_name: employeesTable.firstName,
+          last_name: employeesTable.lastName,
+          email: employeesTable.email,
+        },
+      })
+      .from(payrollsTable)
+      .leftJoin(employeesTable, eq(employeesTable.id, payrollsTable.employeeId))
+      .where(whereExpr as any)
+      .orderBy(desc(payrollsTable.createdAt))
+      .offset(skip)
+      .limit(per_page);
+
+    const payrollIds = payrollRows.map((p) => p.id);
+    let itemsByPayrollId: Record<number, any[]> = {};
+    if (payrollIds.length > 0) {
+      const itemRows = await db
+        .select({
+          id: payrollItemsTable.id,
+          payroll_id: payrollItemsTable.payrollId,
+          type: payrollItemsTable.type,
+          description: payrollItemsTable.description,
+          amount: payrollItemsTable.amount,
+          is_taxable: payrollItemsTable.isTaxable,
+          tax_rate: payrollItemsTable.taxRate,
+          order: payrollItemsTable.order,
+          created_at: payrollItemsTable.createdAt,
+          updated_at: payrollItemsTable.updatedAt,
+        })
+        .from(payrollItemsTable)
+        .where(inArray(payrollItemsTable.payrollId, payrollIds as any))
+        .orderBy(asc(payrollItemsTable.order));
+
+      itemsByPayrollId = itemRows.reduce((acc: Record<number, any[]>, item) => {
+        const key = item.payroll_id as unknown as number;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(item);
+        return acc;
+      }, {});
+    }
+
+    const payrolls = payrollRows.map((p) => ({
+      ...p,
+      items: itemsByPayrollId[p.id] || [],
+    }));
 
     return NextResponse.json({
       success: true,
@@ -118,32 +191,35 @@ const createPayrollHandler = async (request: NextRequest) => {
     const user = session?.user;
     
     // For employee users, ensure they can only create payroll records for themselves
-    if (user?.role === 'EMPLOYEE') {
-      // Find employee record that matches user's national_id
-      const ownEmployee = await prisma.employee.findFirst({
-        where: { iqama_number: user.national_id },
-        select: { id: true },
-      });
+    if (user?.role === 'EMPLOYEE' && user.national_id) {
+      const ownEmp = await db
+        .select({ id: employeesTable.id })
+        .from(employeesTable)
+        .where(eq(employeesTable.iqamaNumber as any, user.national_id))
+        .limit(1);
+      const ownEmployee = ownEmp[0];
       if (ownEmployee) {
-        if (body.employee_id && parseInt(body.employee_id) !== ownEmployee.id) {
+        if (body.employee_id && parseInt(body.employee_id) !== (ownEmployee.id as number)) {
           return NextResponse.json(
             { error: 'You can only create payroll records for yourself' },
             { status: 403 }
           );
         }
-        // Override employee_id to ensure it's the user's own employee ID
         body.employee_id = ownEmployee.id;
       }
     }
 
     // Check if payroll already exists for this employee, month, and year
-    const existingPayroll = await prisma.payroll.findFirst({
-      where: {
-        employee_id: body.employee_id,
-        month: body.month,
-        year: body.year,
-      }
-    });
+    const existingRows = await db
+      .select({ id: payrollsTable.id })
+      .from(payrollsTable)
+      .where(and(
+        eq(payrollsTable.employeeId, Number(body.employee_id)),
+        eq(payrollsTable.month, Number(body.month)),
+        eq(payrollsTable.year, Number(body.year)),
+      ))
+      .limit(1);
+    const existingPayroll = existingRows[0];
 
     if (existingPayroll) {
       return NextResponse.json(
@@ -155,22 +231,33 @@ const createPayrollHandler = async (request: NextRequest) => {
       );
     }
 
-    // Create payroll record
-    const payroll = await prisma.payroll.create({
-      data: {
-        employee_id: body.employee_id,
-        month: body.month,
-        year: body.year,
-        base_salary: body.base_salary || 0,
-        final_amount: body.final_amount || 0,
+    // Create payroll record (Drizzle)
+    const nowIso = new Date().toISOString();
+    const inserted = await db
+      .insert(payrollsTable)
+      .values({
+        employeeId: Number(body.employee_id),
+        month: Number(body.month),
+        year: Number(body.year),
+        baseSalary: (body.base_salary != null ? String(Number(body.base_salary)) : undefined) as any,
+        finalAmount: (body.final_amount != null ? String(Number(body.final_amount)) : undefined) as any,
         status: body.status || 'pending',
         notes: body.notes || '',
-      },
-      include: {
-        employee: true,
-        items: true
-      }
-    });
+        updatedAt: nowIso,
+      })
+      .returning({
+        id: payrollsTable.id,
+        employee_id: payrollsTable.employeeId,
+        month: payrollsTable.month,
+        year: payrollsTable.year,
+        base_salary: payrollsTable.baseSalary,
+        final_amount: payrollsTable.finalAmount,
+        status: payrollsTable.status,
+        notes: payrollsTable.notes,
+        created_at: payrollsTable.createdAt,
+        updated_at: payrollsTable.updatedAt,
+      });
+    const payroll = inserted[0];
 
     return NextResponse.json({
       success: true,

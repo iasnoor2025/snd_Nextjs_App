@@ -28,7 +28,7 @@ const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: {
     // For employee users, only show their own assignments
     if (user?.role === 'EMPLOYEE') {
       // Find employee record that matches user's national_id
-      const ownEmployee = await safePrismaOperation(() => 
+      const ownEmployee = await safePrismaOperation<{ id: number } | null>(() => 
         prisma.employee.findFirst({
           where: { iqama_number: user.national_id },
           select: { id: true },
@@ -62,7 +62,7 @@ const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: {
     }
 
     const [assignments, total] = await Promise.all([
-      safePrismaOperation(() => 
+      safePrismaOperation<any[]>(() => 
         prisma.employeeAssignment.findMany({
           where,
           skip,
@@ -78,7 +78,7 @@ const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: {
           },
         })
       ),
-      safePrismaOperation(() => 
+      safePrismaOperation<number>(() => 
         prisma.employeeAssignment.count({ where })
       ),
     ]);

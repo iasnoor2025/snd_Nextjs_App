@@ -829,7 +829,7 @@ export default function EmployeeShowPage() {
                               months += 12;
                             }
 
-                            const parts = [];
+                            const parts: string[] = [];
                             if (years > 0) parts.push(`${years} year${years !== 1 ? 's' : ''}`);
                             if (months > 0) parts.push(`${months} month${months !== 1 ? 's' : ''}`);
                             if (days > 0) parts.push(`${days} day${days !== 1 ? 's' : ''}`);

@@ -3,7 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
 import { checkUserPermission } from './permission-service';
 import { Action, Subject } from './custom-rbac';
-import { prisma, initializePrisma, safePrismaOperation, ensurePrismaConnection } from '@/lib/db';
+import { db, initializePrisma } from '@/lib/db';
+import { users, modelHasRoles, roles, employees } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export interface PermissionConfig {
   action: Action;
@@ -85,22 +87,24 @@ export async function checkEmployeeAccess(
       return { authorized: false, error: 'Invalid user session' };
     }
 
-    // Ensure database connection is ready
-    await ensurePrismaConnection();
-    
-    // Get user with role information using safe operation
-    const user = await safePrismaOperation(async () => {
-      return await prisma.user.findUnique({
-        where: { id: parseInt(userId) },
-        include: {
-          user_roles: {
-            include: {
-              role: true,
-            },
-          },
-        },
-      });
-    });
+    // Get user with role information via Drizzle
+    const userRows = await db
+      .select({
+        id: users.id,
+        national_id: users.nationalId,
+        roleName: roles.name,
+      })
+      .from(users)
+      .leftJoin(modelHasRoles, eq(modelHasRoles.userId, users.id))
+      .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
+      .where(eq(users.id, parseInt(userId)));
+    const user = userRows.length
+      ? {
+          id: userRows[0].id,
+          national_id: userRows[0].national_id,
+          user_roles: userRows.filter(r => r.roleName).map(r => ({ role: { name: r.roleName! } })),
+        }
+      : null;
 
     if (!user) {
       return { authorized: false, error: 'User not found' };
@@ -138,12 +142,11 @@ export async function checkEmployeeAccess(
     // For employee role users, check if their national_id matches the employee's iqama_number
     if (userRole.name === 'employee') {
       // Get the employee data being requested using safe operation
-      const employee = await safePrismaOperation(async () => {
-        return await prisma.employee.findUnique({
-          where: { id: employeeId },
-          select: { iqama_number: true },
-        });
-      });
+      const employeeRows = await db
+        .select({ iqama_number: employees.iqamaNumber })
+        .from(employees)
+        .where(eq(employees.id, employeeId));
+      const employee = employeeRows[0];
 
       if (!employee) {
         return { authorized: false, error: 'Employee not found' };
@@ -202,22 +205,24 @@ export async function checkEmployeeOwnDataAccess(
       return { authorized: false, error: 'Invalid user session' };
     }
 
-    // Ensure database connection is ready
-    await ensurePrismaConnection();
-    
-    // Get user with role information using safe operation
-    const user = await safePrismaOperation(async () => {
-      return await prisma.user.findUnique({
-        where: { id: parseInt(userId) },
-        include: {
-          user_roles: {
-            include: {
-              role: true,
-            },
-          },
-        },
-      });
-    });
+    // Get user with role information via Drizzle
+    const userRows = await db
+      .select({
+        id: users.id,
+        national_id: users.nationalId,
+        roleName: roles.name,
+      })
+      .from(users)
+      .leftJoin(modelHasRoles, eq(modelHasRoles.userId, users.id))
+      .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
+      .where(eq(users.id, parseInt(userId)));
+    const user = userRows.length
+      ? {
+          id: userRows[0].id,
+          national_id: userRows[0].national_id,
+          user_roles: userRows.filter(r => r.roleName).map(r => ({ role: { name: r.roleName! } })),
+        }
+      : null;
 
     if (!user) {
       return { authorized: false, error: 'User not found' };
@@ -248,12 +253,11 @@ export async function checkEmployeeOwnDataAccess(
     // For employee role users, they can only access their own data
     if (userRole.name === 'employee') {
       // Find the employee record that matches this user's national_id using safe operation
-      const ownEmployee = await safePrismaOperation(async () => {
-        return await prisma.employee.findFirst({
-          where: { iqama_number: user.national_id },
-          select: { id: true, iqama_number: true },
-        });
-      });
+      const ownRows = await db
+        .select({ id: employees.id, iqama_number: employees.iqamaNumber })
+        .from(employees)
+        .where(eq(employees.iqamaNumber, user.national_id ?? ''));
+      const ownEmployee = ownRows[0];
 
       if (!ownEmployee) {
         return { 
@@ -296,12 +300,11 @@ export async function checkEmployeeOwnDataAccess(
     // For employee role users, allow access to their own data even without explicit read permission
     if (userRole.name === 'employee') {
       // Find the employee record that matches this user's national_id using safe operation
-      const ownEmployee = await safePrismaOperation(async () => {
-        return await prisma.employee.findFirst({
-          where: { iqama_number: user.national_id },
-          select: { id: true, iqama_number: true },
-        });
-      });
+      const ownRows2 = await db
+        .select({ id: employees.id, iqama_number: employees.iqamaNumber })
+        .from(employees)
+        .where(eq(employees.iqamaNumber, user.national_id ?? ''));
+      const ownEmployee = ownRows2[0];
 
       if (!ownEmployee) {
         return { 

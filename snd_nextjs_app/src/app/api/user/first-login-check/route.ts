@@ -202,9 +202,9 @@ export async function GET(request: NextRequest) {
         if (matchedEmployee) {
           try {
             // Update employee email if different
-            if (matchedEmployee.email !== user.email) {
+            if ((matchedEmployee as any).email !== (user as any).email) {
               await prisma.employee.update({
-                where: { id: matchedEmployee.id },
+                where: { id: (matchedEmployee as any).id },
                 data: { email: user.email }
               });
               console.log('✅ Updated employee email to match user email');
@@ -213,12 +213,12 @@ export async function GET(request: NextRequest) {
             // Update user's national_id to match employee's iqama_number
             await prisma.user.update({
               where: { id: userId },
-              data: { national_id: matchedEmployee.iqama_number }
+              data: { national_id: (matchedEmployee as any).iqama_number }
             });
             console.log('✅ Updated user national_id to match employee iqama');
 
             // Update the matchedEmployee object with new email
-            matchedEmployee.email = user.email;
+            (matchedEmployee as any).email = (user as any).email;
           } catch (updateError) {
             console.error('❌ Error updating employee/user relationship:', updateError);
           }

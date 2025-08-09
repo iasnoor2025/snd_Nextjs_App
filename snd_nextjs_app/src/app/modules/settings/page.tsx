@@ -456,7 +456,7 @@ export default function SettingsPage() {
 
                   {/* Current page and surrounding pages */}
                   {(() => {
-                    const pages = [];
+                    const pages: number[] = [];
                     const startPage = Math.max(1, settings.current_page - 1);
                     const endPage = Math.min(settings.last_page, settings.current_page + 1);
 

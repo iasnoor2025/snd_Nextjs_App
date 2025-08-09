@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
+import { employeeLeaves, employees as employeesTable } from '@/lib/drizzle/schema';
+import { and, desc, eq, ilike, sql } from 'drizzle-orm';
 
 // GET /api/employees/leaves - Get leave requests for the current employee
 const getLeavesHandler = async (request: NextRequest) => {
@@ -16,86 +18,86 @@ const getLeavesHandler = async (request: NextRequest) => {
 
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const filters: any[] = [];
 
     // Get session to check user role
     const session = await getServerSession(authConfig);
     const user = session?.user;
     
     // For employee users, only show their own leave requests
-    if (user?.role === 'EMPLOYEE') {
-      // Find employee record that matches user's national_id
-      const ownEmployee = await prisma.employee.findFirst({
-        where: { iqama_number: user.national_id },
-        select: { id: true },
-      });
-      if (ownEmployee) {
-        where.employee_id = ownEmployee.id;
-      }
+    if (user?.role === 'EMPLOYEE' && user.national_id) {
+      const ownRows = await db
+        .select({ id: employeesTable.id })
+        .from(employeesTable)
+        .where(eq(employeesTable.iqamaNumber, String(user.national_id)))
+        .limit(1);
+      const ownId = ownRows[0]?.id;
+      if (ownId) filters.push(eq(employeeLeaves.employeeId, ownId));
     }
 
     if (status && status !== 'all') {
-      where.status = status;
+      filters.push(eq(employeeLeaves.status, status));
     }
 
     if (leaveType && leaveType !== 'all') {
-      where.leave_type = leaveType;
+      filters.push(eq(employeeLeaves.leaveType, leaveType));
     }
 
     // Add search functionality
     if (search) {
-      where.OR = [
-        {
-          employee: {
-            OR: [
-              { first_name: { contains: search, mode: 'insensitive' } },
-              { last_name: { contains: search, mode: 'insensitive' } },
-              { employee_id: { contains: search, mode: 'insensitive' } },
-            ],
-          },
-        },
-        { reason: { contains: search, mode: 'insensitive' } },
-        { leave_type: { contains: search, mode: 'insensitive' } },
-      ];
+      const s = `%${search}%`;
+      filters.push(
+        ilike(employeesTable.firstName, s) as any,
+      );
     }
 
-    const [leaves, total] = await Promise.all([
-      prisma.employeeLeave.findMany({
-        where,
-        take: limit,
-        skip,
-        orderBy: {
-          created_at: 'desc',
-        },
-        include: {
-          employee: {
-            select: {
-              id: true,
-              first_name: true,
-              last_name: true,
-              employee_id: true,
-            },
-          },
-        },
-      }),
-      prisma.employeeLeave.count({ where }),
-    ]);
+    const whereExpr = filters.length ? and(...filters) : undefined;
+
+    const totalRow = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(employeeLeaves)
+      .leftJoin(employeesTable, eq(employeesTable.id, employeeLeaves.employeeId))
+      .where(whereExpr as any);
+    const total = Number((totalRow as any)[0]?.count ?? 0);
+
+    const leaves = await db
+      .select({
+        id: employeeLeaves.id,
+        leave_type: employeeLeaves.leaveType,
+        start_date: employeeLeaves.startDate,
+        end_date: employeeLeaves.endDate,
+        days: employeeLeaves.days,
+        status: employeeLeaves.status,
+        reason: employeeLeaves.reason,
+        created_at: employeeLeaves.createdAt,
+        updated_at: employeeLeaves.updatedAt,
+        emp_id: employeesTable.id,
+        emp_first: employeesTable.firstName,
+        emp_last: employeesTable.lastName,
+        emp_employee_id: employeesTable.employeeId,
+      })
+      .from(employeeLeaves)
+      .leftJoin(employeesTable, eq(employeesTable.id, employeeLeaves.employeeId))
+      .where(whereExpr as any)
+      .orderBy(desc(employeeLeaves.createdAt))
+      .offset(skip)
+      .limit(limit);
 
     const formattedLeaves = leaves.map(leave => ({
       id: leave.id,
       leave_type: leave.leave_type,
-      start_date: leave.start_date.toISOString().split('T')[0],
-      end_date: leave.end_date.toISOString().split('T')[0],
+      start_date: leave.start_date ? new Date(leave.start_date as unknown as string).toISOString().split('T')[0] : '',
+      end_date: leave.end_date ? new Date(leave.end_date as unknown as string).toISOString().split('T')[0] : '',
       days: leave.days,
       status: leave.status,
       reason: leave.reason,
       employee: {
-        id: leave.employee.id,
-        name: `${leave.employee.first_name} ${leave.employee.last_name}`,
-        employee_id: leave.employee.employee_id,
+        id: leave.emp_id,
+        name: `${leave.emp_first ?? ''} ${leave.emp_last ?? ''}`.trim(),
+        employee_id: leave.emp_employee_id,
       },
-      created_at: leave.created_at.toISOString(),
-      updated_at: leave.updated_at.toISOString(),
+      created_at: leave.created_at ? new Date(leave.created_at as unknown as string).toISOString() : '',
+      updated_at: leave.updated_at ? new Date(leave.updated_at as unknown as string).toISOString() : '',
     }));
 
     return NextResponse.json({
@@ -128,38 +130,31 @@ const createLeaveHandler = async (request: NextRequest) => {
     const user = session?.user;
     
     // For employee users, ensure they can only create leave requests for themselves
-    if (user?.role === 'EMPLOYEE') {
-      // Find employee record that matches user's national_id
-      const ownEmployee = await prisma.employee.findFirst({
-        where: { iqama_number: user.national_id },
-        select: { id: true },
-      });
-      if (ownEmployee) {
-        body.employee_id = ownEmployee.id;
+    if (user?.role === 'EMPLOYEE' && user.national_id) {
+      const ownRows = await db
+        .select({ id: employeesTable.id })
+        .from(employeesTable)
+        .where(eq(employeesTable.iqamaNumber, String(user.national_id)))
+        .limit(1);
+      if (ownRows[0]?.id) {
+        body.employee_id = ownRows[0].id;
       }
     }
 
-    const leaveRequest = await prisma.employeeLeave.create({
-      data: {
-        employee_id: body.employee_id,
-        leave_type: body.leave_type,
-        start_date: new Date(body.start_date),
-        end_date: new Date(body.end_date),
+    const inserted = await db
+      .insert(employeeLeaves)
+      .values({
+        employeeId: body.employee_id,
+        leaveType: body.leave_type,
+        startDate: new Date(body.start_date).toISOString(),
+        endDate: new Date(body.end_date).toISOString(),
         days: body.days_requested,
         reason: body.reason,
         status: 'pending',
-      },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            employee_id: true,
-          },
-        },
-      },
-    });
+        updatedAt: new Date().toISOString(),
+      })
+      .returning();
+    const leaveRequest = inserted[0];
 
     return NextResponse.json({
       success: true,

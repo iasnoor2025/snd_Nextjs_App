@@ -261,7 +261,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
   };
 
   const getAssignmentDetails = (assignment: Assignment) => {
-    const details = [];
+    const details: string[] = [];
     
     if (assignment.project) {
       details.push(`Project: ${assignment.project.name}`);
