@@ -43,6 +43,7 @@ import TimesheetSummary from "@/components/employee/timesheets/TimesheetSummary"
 
 import DocumentsTab from "@/components/employee/DocumentsTab";
 import AssignmentsTab from "@/components/employee/AssignmentsTab";
+import { salaryIncrementService, type SalaryIncrement } from "@/lib/services/salary-increment-service";
 
 interface Employee {
   id: number;
@@ -114,6 +115,8 @@ export default function EmployeeShowPage() {
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("personal-info");
+  const [salaryHistory, setSalaryHistory] = useState<SalaryIncrement[]>([]);
+  const [loadingSalaryHistory, setLoadingSalaryHistory] = useState(false);
   
   // Assignment related state
   const [currentAssignment, setCurrentAssignment] = useState<any>(null);
@@ -174,6 +177,7 @@ export default function EmployeeShowPage() {
       fetchAdvances();
       fetchPaymentHistory();
       fetchLeaves();
+      fetchSalaryHistory();
     }
   }, [employeeId]);
 
@@ -372,6 +376,20 @@ export default function EmployeeShowPage() {
       toast.error('Failed to load leave data');
     } finally {
       setLoadingLeaves(false);
+    }
+  };
+
+  const fetchSalaryHistory = async () => {
+    setLoadingSalaryHistory(true);
+    try {
+      const data = await salaryIncrementService.getEmployeeSalaryHistory(parseInt(employeeId));
+      setSalaryHistory(data || []);
+    } catch (error) {
+      console.error("Error fetching salary history:", error);
+      toast.error("Failed to load salary history");
+      setSalaryHistory([]);
+    } finally {
+      setLoadingSalaryHistory(false);
     }
   };
 
@@ -861,6 +879,85 @@ export default function EmployeeShowPage() {
                       )}
                     </dl>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Salary History */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Salary History</CardTitle>
+                    <CardDescription>Approved and applied salary changes</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto rounded-md border">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Effective Date</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Salary</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">New Salary</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Increment</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Requested By</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Approved By</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {loadingSalaryHistory ? (
+                        <tr>
+                          <td colSpan={8} className="px-6 py-8 text-center text-sm text-muted-foreground">
+                            <div className="flex items-center justify-center gap-2">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Loading salary history...
+                            </div>
+                          </td>
+                        </tr>
+                      ) : salaryHistory.length === 0 ? (
+                        <tr>
+                          <td colSpan={8} className="px-6 py-8 text-center text-sm text-muted-foreground italic">
+                            No salary history found
+                          </td>
+                        </tr>
+                      ) : (
+                        salaryHistory.map((inc) => (
+                          <tr key={inc.id} className="hover:bg-muted/50">
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                              {format(new Date(inc.effective_date), 'MMM dd, yyyy')}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              SAR {salaryIncrementService.getCurrentTotalSalary(inc).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              SAR {salaryIncrementService.getNewTotalSalary(inc).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              +SAR {salaryIncrementService.getTotalIncrementAmount(inc).toLocaleString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {salaryIncrementService.getIncrementTypeLabel(inc.increment_type)}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <Badge variant={salaryIncrementService.getStatusColor(inc.status) as any}>
+                                {salaryIncrementService.getStatusLabel(inc.status)}
+                              </Badge>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {inc.requested_by_user?.name || '-'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                              {inc.approved_by_user?.name || '-'}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </CardContent>
             </Card>
