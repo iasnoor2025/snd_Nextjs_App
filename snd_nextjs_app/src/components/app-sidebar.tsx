@@ -72,6 +72,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: IconTools,
     },
     {
+      title: t('maintenanceManagement'),
+      url: "/modules/maintenance-management",
+      icon: IconTools,
+    },
+    {
       title: t('rentalManagement'),
       url: "/modules/rental-management",
       icon: IconCalendar,

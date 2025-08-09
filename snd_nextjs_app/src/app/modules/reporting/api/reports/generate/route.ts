@@ -147,21 +147,21 @@ async function generatePayrollSummaryReport(parameters: any) {
     prisma.payroll.aggregate({
       where: whereClause,
       _sum: {
-        total_amount: true,
+        final_amount: true,
       },
     }),
     prisma.payroll.aggregate({
       where: whereClause,
       _avg: {
-        total_amount: true,
+        final_amount: true,
       },
     }),
   ]);
 
   return {
     total_payrolls: payrolls.length,
-    total_amount: totalAmount._sum.total_amount || 0,
-    average_amount: averageAmount._avg.total_amount || 0,
+    total_amount: totalAmount._sum.final_amount || 0,
+    average_amount: averageAmount._avg.final_amount || 0,
     payrolls: payrolls.slice(0, 50), // Limit to first 50 for preview
     generated_at: new Date().toISOString(),
   };
@@ -181,7 +181,7 @@ async function generateEquipmentUtilizationReport(parameters: any) {
   const equipment = await prisma.equipment.findMany({
     where: whereClause,
     include: {
-      equipmentRentalHistory: {
+      equipment_rental_history: {
         where: startDate && endDate ? {
           start_date: {
             gte: new Date(startDate),
@@ -195,9 +195,9 @@ async function generateEquipmentUtilizationReport(parameters: any) {
   const utilizationStats = equipment.map(eq => ({
     id: eq.id,
     name: eq.name,
-    type: eq.type,
-    total_rentals: eq.equipmentRentalHistory.length,
-    total_hours: eq.equipmentRentalHistory.reduce((sum, rental) => {
+    category_id: eq.category_id ?? null,
+    total_rentals: eq.equipment_rental_history.length,
+    total_hours: eq.equipment_rental_history.reduce((sum, rental) => {
       if (rental.end_date && rental.start_date) {
         const hours = (rental.end_date.getTime() - rental.start_date.getTime()) / (1000 * 60 * 60);
         return sum + hours;
@@ -232,7 +232,7 @@ async function generateProjectProgressReport(parameters: any) {
   const projects = await prisma.project.findMany({
     where: whereClause,
     include: {
-      projectResources: true,
+      project_resources: true,
     },
     orderBy: { created_at: 'desc' },
   });
@@ -241,9 +241,9 @@ async function generateProjectProgressReport(parameters: any) {
     id: project.id,
     name: project.name,
     status: project.status,
-    total_resources: project.projectResources.length,
-    total_cost: project.projectResources.reduce((sum, resource) => {
-      return sum + (resource.total_cost || 0);
+    total_resources: project.project_resources.length,
+    total_cost: project.project_resources.reduce((sum, resource) => {
+      return sum + Number(resource.total_cost || 0);
     }, 0),
   }));
 
@@ -275,7 +275,7 @@ async function generateRentalSummaryReport(parameters: any) {
       where: whereClause,
       include: {
         customer: true,
-        rentalItems: {
+        rental_items: {
           include: {
             equipment: true,
           },
@@ -299,8 +299,8 @@ async function generateRentalSummaryReport(parameters: any) {
 
   return {
     total_rentals: rentals.length,
-    total_revenue: totalRevenue._sum.total_amount || 0,
-    average_revenue: averageRevenue._avg.total_amount || 0,
+    total_revenue: Number(totalRevenue._sum.total_amount || 0),
+    average_revenue: Number(averageRevenue._avg.total_amount || 0),
     rentals: rentals.slice(0, 50), // Limit to first 50 for preview
     generated_at: new Date().toISOString(),
   };
@@ -327,22 +327,18 @@ async function generateTimesheetSummaryReport(parameters: any) {
       where: whereClause,
       include: {
         employee: true,
-        timeEntries: true,
+        time_entries: true,
       },
       orderBy: { created_at: 'desc' },
     }),
-    prisma.timeEntry.aggregate({
-      where: {
-        timesheet: whereClause,
-      },
+    prisma.timesheet.aggregate({
+      where: whereClause,
       _sum: {
         hours_worked: true,
       },
     }),
-    prisma.timeEntry.aggregate({
-      where: {
-        timesheet: whereClause,
-      },
+    prisma.timesheet.aggregate({
+      where: whereClause,
       _avg: {
         hours_worked: true,
       },
@@ -351,8 +347,8 @@ async function generateTimesheetSummaryReport(parameters: any) {
 
   return {
     total_timesheets: timesheets.length,
-    total_hours: totalHours._sum.hours_worked || 0,
-    average_hours: averageHours._avg.hours_worked || 0,
+    total_hours: Number(totalHours._sum.hours_worked || 0),
+    average_hours: Number(averageHours._avg.hours_worked || 0),
     timesheets: timesheets.slice(0, 50), // Limit to first 50 for preview
     generated_at: new Date().toISOString(),
   };

@@ -120,6 +120,40 @@ async function main() {
     })
     console.log('✅ User role relationship created');
 
+    // Seed minimal maintenance demo if equipment and employees exist
+    try {
+      const equipment = await prisma.equipment.findFirst();
+      const mechanic = await prisma.employee.findFirst();
+      if (equipment) {
+        const m = await prisma.equipmentMaintenance.create({
+          data: {
+            equipment_id: equipment.id,
+            assigned_to_employee_id: mechanic?.id || null,
+            type: 'scheduled',
+            title: 'Initial Service',
+            description: 'Oil change and inspection',
+            status: 'completed',
+            scheduled_date: new Date(),
+          },
+        });
+        await prisma.equipmentMaintenanceItem.create({
+          data: {
+            maintenance_id: m.id,
+            name: 'Engine Oil',
+            quantity: 5,
+            unit: 'L',
+            unit_cost: 25,
+            total_cost: 125,
+          },
+        });
+        await prisma.equipmentMaintenance.update({ where: { id: m.id }, data: { cost: 125 } });
+        await prisma.equipment.update({ where: { id: equipment.id }, data: { status: 'available', last_maintenance_date: new Date() } });
+        console.log('🛠️  Seeded sample maintenance record');
+      }
+    } catch (e) {
+      console.warn('Skipping maintenance seed:', e);
+    }
+
     // Seed Saudi Arabian cities
     console.log('🌍 Seeding Saudi Arabian cities...');
     let citiesCreated = 0;

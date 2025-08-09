@@ -468,6 +468,15 @@ export const PermissionConfigs = {
     manage: { action: 'manage' as Action, subject: 'Equipment' as Subject },
   },
 
+  // Maintenance permissions
+  maintenance: {
+    read: { action: 'read' as Action, subject: 'Maintenance' as Subject },
+    create: { action: 'create' as Action, subject: 'Maintenance' as Subject },
+    update: { action: 'update' as Action, subject: 'Maintenance' as Subject },
+    delete: { action: 'delete' as Action, subject: 'Maintenance' as Subject },
+    manage: { action: 'manage' as Action, subject: 'Maintenance' as Subject },
+  },
+
   // Rental permissions
   rental: {
     read: { action: 'read' as Action, subject: 'Rental' as Subject },

@@ -71,6 +71,7 @@ interface Department {
 interface Designation {
   id: number;
   name: string;
+  department_id?: number;
   description?: string;
 }
 

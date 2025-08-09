@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { withPermission, PermissionConfigs, withReadPermission } from '@/lib/rbac/api-middleware';
 
-export const GET = withPermission(
+export const GET = withReadPermission(
   async (request: NextRequest) => {
   try {
     console.log('Fetching equipment from database...');

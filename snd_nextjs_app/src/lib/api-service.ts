@@ -281,6 +281,51 @@ export class ApiService {
     });
   }
 
+  // ========================================
+  // MAINTENANCE MANAGEMENT
+  // ========================================
+
+  static async getMaintenance(params?: {
+    equipmentId?: number;
+    mechanicId?: number;
+    status?: string;
+    type?: string;
+    startDate?: string;
+    endDate?: string;
+  }) {
+    return this.get('/maintenance', params, {
+      toastMessage: 'Maintenance records loaded',
+      errorMessage: 'Failed to load maintenance records',
+    });
+  }
+
+  static async getMaintenanceItem(id: number) {
+    return this.get(`/maintenance/${id}`, undefined, {
+      errorMessage: 'Failed to load maintenance record',
+    });
+  }
+
+  static async createMaintenance(data: any) {
+    return this.post('/maintenance', data, {
+      toastMessage: 'Maintenance created',
+      errorMessage: 'Failed to create maintenance',
+    });
+  }
+
+  static async updateMaintenance(id: number, data: any) {
+    return this.put(`/maintenance/${id}`, data, {
+      toastMessage: 'Maintenance updated',
+      errorMessage: 'Failed to update maintenance',
+    });
+  }
+
+  static async deleteMaintenance(id: number) {
+    return this.delete(`/maintenance/${id}`, {
+      toastMessage: 'Maintenance deleted',
+      errorMessage: 'Failed to delete maintenance',
+    });
+  }
+
   static async getEquipmentItem(id: number) {
     return this.get(`/equipment/${id}`, undefined, {
       errorMessage: 'Failed to load equipment',

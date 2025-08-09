@@ -194,6 +194,8 @@ model Employee {
   equipment_rental_history           EquipmentRentalHistory[]
   project_resources                  ProjectResource[]
   assigned_tasks                     ProjectResource[]          @relation("TaskAssignedTo")
+  // Back relation: maintenance tasks assigned as mechanic
+  equipment_maintenances             EquipmentMaintenance[]
 
   @@map("employees")
 }
@@ -825,8 +827,58 @@ model Equipment {
   rental_items                RentalItem[]
   equipment_rental_history    EquipmentRentalHistory[]
   project_resources           ProjectResource[]
+  // Back relation: maintenance records
+  equipment_maintenance       EquipmentMaintenance[]
 
   @@map("equipment")
+}
+
+/// Heavy Equipment Maintenance main record
+model EquipmentMaintenance {
+  id                       Int       @id @default(autoincrement())
+  equipment_id             Int
+  title                    String    @default("Maintenance")
+  description              String?
+  status                   String    @default("open")
+  type                     String    @default("corrective") // "corrective" | "scheduled"
+  priority                 String    @default("medium")
+  requested_by             Int?
+  assigned_to_employee_id  Int?
+  scheduled_date           DateTime?
+  due_date                 DateTime?
+  started_at               DateTime?
+  completed_at             DateTime?
+  cost                     Decimal?  @db.Decimal(12, 2)
+  meter_reading            Decimal?  @db.Decimal(12, 2)
+  notes                    String?
+  created_at               DateTime  @default(now())
+  updated_at               DateTime  @updatedAt
+
+  // Relations
+  equipment                Equipment @relation(fields: [equipment_id], references: [id])
+  mechanic                 Employee? @relation(fields: [assigned_to_employee_id], references: [id])
+  items                    EquipmentMaintenanceItem[]
+
+  @@map("equipment_maintenance")
+}
+
+/// Items/parts used in a maintenance record
+model EquipmentMaintenanceItem {
+  id             Int       @id @default(autoincrement())
+  maintenance_id Int
+  name           String
+  description    String?
+  quantity       Decimal   @default(1) @db.Decimal(10, 2)
+  unit           String?
+  unit_cost      Decimal   @default(0) @db.Decimal(12, 2)
+  total_cost     Decimal   @default(0) @db.Decimal(12, 2)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+
+  // Relations
+  maintenance    EquipmentMaintenance @relation(fields: [maintenance_id], references: [id])
+
+  @@map("equipment_maintenance_items")
 }
 
 model Rental {
