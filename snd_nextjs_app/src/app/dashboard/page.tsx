@@ -46,6 +46,23 @@ export default function Page() {
   const [leaveSearch, setLeaveSearch] = useState<string>("")
   const [leaveSearchInput, setLeaveSearchInput] = useState<string>("")
 
+  // Rentals and Projects state
+  const [rentalData, setRentalData] = useState<any[]>([])
+  const [rentalLoading, setRentalLoading] = useState<boolean>(false)
+  const [rentalPage, setRentalPage] = useState<number>(1)
+  const [rentalTotalPages, setRentalTotalPages] = useState<number>(1)
+  const [rentalLimit] = useState<number>(10)
+  const [rentalSearch, setRentalSearch] = useState<string>("")
+  const [rentalSearchInput, setRentalSearchInput] = useState<string>("")
+
+  const [projectData, setProjectData] = useState<any[]>([])
+  const [projectLoading, setProjectLoading] = useState<boolean>(false)
+  const [projectPage, setProjectPage] = useState<number>(1)
+  const [projectTotalPages, setProjectTotalPages] = useState<number>(1)
+  const [projectLimit] = useState<number>(10)
+  const [projectSearch, setProjectSearch] = useState<string>("")
+  const [projectSearchInput, setProjectSearchInput] = useState<string>("")
+
   // Ensure user is authenticated
   const { data: session, status } = useSession()
 
@@ -142,6 +159,72 @@ export default function Page() {
     }, 400);
     return () => clearTimeout(h);
   }, [leaveSearchInput]);
+
+  // Fetch active rentals
+  useEffect(() => {
+    if (!session) return;
+    const run = async () => {
+      setRentalLoading(true);
+      try {
+        const params = new URLSearchParams({
+          page: String(rentalPage),
+          limit: String(rentalLimit),
+          search: rentalSearch,
+        });
+        const res = await fetch(`/api/rentals/active?${params.toString()}`);
+        if (!res.ok) throw new Error('Failed rentals fetch');
+        const json = await res.json();
+        setRentalData(json.data || []);
+        setRentalTotalPages(json.pagination?.totalPages || 1);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setRentalLoading(false);
+      }
+    };
+    run();
+  }, [session, rentalPage, rentalLimit, rentalSearch]);
+
+  useEffect(() => {
+    const h = setTimeout(() => {
+      setRentalPage(1);
+      setRentalSearch(rentalSearchInput.trim());
+    }, 400);
+    return () => clearTimeout(h);
+  }, [rentalSearchInput]);
+
+  // Fetch active projects
+  useEffect(() => {
+    if (!session) return;
+    const run = async () => {
+      setProjectLoading(true);
+      try {
+        const params = new URLSearchParams({
+          page: String(projectPage),
+          limit: String(projectLimit),
+          search: projectSearch,
+        });
+        const res = await fetch(`/api/projects/active?${params.toString()}`);
+        if (!res.ok) throw new Error('Failed projects fetch');
+        const json = await res.json();
+        setProjectData(json.data || []);
+        setProjectTotalPages(json.pagination?.totalPages || 1);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setProjectLoading(false);
+      }
+    };
+    run();
+  }, [session, projectPage, projectLimit, projectSearch]);
+
+  useEffect(() => {
+    const h = setTimeout(() => {
+      setProjectPage(1);
+      setProjectSearch(projectSearchInput.trim());
+    }, 400);
+    return () => clearTimeout(h);
+  }, [projectSearchInput]);
 
   const iqamaExpiringColumns = useMemo(() => [
     { key: 'name', label: 'Name' },
@@ -401,6 +484,158 @@ export default function Page() {
                       onClick={(e) => { e.preventDefault(); if (leavePage < leaveTotalPages && !leaveLoading) setLeavePage(leavePage + 1) }}
                       className={leavePage >= leaveTotalPages || leaveLoading ? 'pointer-events-none opacity-50' : ''}
                     />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </div>
+
+          <div className="bg-card border rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Active Rentals</h2>
+            <div className="mb-4 flex items-center gap-2">
+              <Input placeholder="Search by rental, customer, project, equipment" value={rentalSearchInput} onChange={(e) => setRentalSearchInput(e.target.value)} className="max-w-md" />
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="py-2 pr-4">Rental #</TableHead>
+                    <TableHead className="py-2 pr-4">Customer</TableHead>
+                    <TableHead className="py-2 pr-4">Project</TableHead>
+                    <TableHead className="py-2 pr-4">Equipment</TableHead>
+                    <TableHead className="py-2 pr-4">Start</TableHead>
+                    <TableHead className="py-2 pr-4">Expected End</TableHead>
+                    <TableHead className="py-2 pr-4">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(rentalLoading && rentalData.length === 0) ? (
+                    <TableRow><TableCell className="py-4" colSpan={7}>Loading...</TableCell></TableRow>
+                  ) : rentalData.length === 0 ? (
+                    <TableRow><TableCell className="py-4" colSpan={7}>No records</TableCell></TableRow>
+                  ) : (
+                    rentalData.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="py-2 pr-4">{r.rental_number}</TableCell>
+                        <TableCell className="py-2 pr-4">{r.customer || '-'}</TableCell>
+                        <TableCell className="py-2 pr-4">{r.project || '-'}</TableCell>
+                        <TableCell className="py-2 pr-4">{r.equipment_name || '-'}</TableCell>
+                        <TableCell className="py-2 pr-4">{r.start_date ? new Date(r.start_date).toLocaleDateString() : '-'}</TableCell>
+                        <TableCell className="py-2 pr-4">{r.expected_end_date ? new Date(r.expected_end_date).toLocaleDateString() : '-'}</TableCell>
+                        <TableCell className="py-2 pr-4">{r.status}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="mt-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); if (rentalPage > 1 && !rentalLoading) setRentalPage(rentalPage - 1) }} className={rentalPage <= 1 || rentalLoading ? 'pointer-events-none opacity-50' : ''} />
+                  </PaginationItem>
+                  {(() => {
+                    const items: JSX.Element[] = []
+                    const maxToShow = 5
+                    const addLink = (p: number, active = false) => {
+                      items.push(
+                        <PaginationItem key={p}>
+                          <PaginationLink href="#" isActive={active} onClick={(e) => { e.preventDefault(); setRentalPage(p) }}>{p}</PaginationLink>
+                        </PaginationItem>
+                      )
+                    }
+                    if (rentalTotalPages <= maxToShow) {
+                      for (let p = 1; p <= rentalTotalPages; p++) addLink(p, p === rentalPage)
+                    } else {
+                      addLink(1, rentalPage === 1)
+                      const showLeftEllipsis = rentalPage > 3
+                      const showRightEllipsis = rentalPage < rentalTotalPages - 2
+                      const start = Math.max(2, rentalPage - 1)
+                      const end = Math.min(rentalTotalPages - 1, rentalPage + 1)
+                      if (showLeftEllipsis) items.push(<PaginationItem key="ellipsisl"><PaginationEllipsis /></PaginationItem>)
+                      for (let p = start; p <= end; p++) addLink(p, p === rentalPage)
+                      if (showRightEllipsis) items.push(<PaginationItem key="ellipsisr"><PaginationEllipsis /></PaginationItem>)
+                      addLink(rentalTotalPages, rentalPage === rentalTotalPages)
+                    }
+                    return items
+                  })()}
+                  <PaginationItem>
+                    <PaginationNext href="#" onClick={(e) => { e.preventDefault(); if (rentalPage < rentalTotalPages && !rentalLoading) setRentalPage(rentalPage + 1) }} className={rentalPage >= rentalTotalPages || rentalLoading ? 'pointer-events-none opacity-50' : ''} />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          </div>
+
+          <div className="bg-card border rounded-lg p-6">
+            <h2 className="text-xl font-semibold mb-4">Active Projects</h2>
+            <div className="mb-4 flex items-center gap-2">
+              <Input placeholder="Search by project or customer" value={projectSearchInput} onChange={(e) => setProjectSearchInput(e.target.value)} className="max-w-md" />
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="py-2 pr-4">Name</TableHead>
+                    <TableHead className="py-2 pr-4">Customer</TableHead>
+                    <TableHead className="py-2 pr-4">Start</TableHead>
+                    <TableHead className="py-2 pr-4">End</TableHead>
+                    <TableHead className="py-2 pr-4">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(projectLoading && projectData.length === 0) ? (
+                    <TableRow><TableCell className="py-4" colSpan={5}>Loading...</TableCell></TableRow>
+                  ) : projectData.length === 0 ? (
+                    <TableRow><TableCell className="py-4" colSpan={5}>No records</TableCell></TableRow>
+                  ) : (
+                    projectData.map((p) => (
+                      <TableRow key={p.id}>
+                        <TableCell className="py-2 pr-4">{p.name}</TableCell>
+                        <TableCell className="py-2 pr-4">{p.customer || '-'}</TableCell>
+                        <TableCell className="py-2 pr-4">{p.start_date ? new Date(p.start_date).toLocaleDateString() : '-'}</TableCell>
+                        <TableCell className="py-2 pr-4">{p.end_date ? new Date(p.end_date).toLocaleDateString() : '-'}</TableCell>
+                        <TableCell className="py-2 pr-4">{p.status}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="mt-4">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); if (projectPage > 1 && !projectLoading) setProjectPage(projectPage - 1) }} className={projectPage <= 1 || projectLoading ? 'pointer-events-none opacity-50' : ''} />
+                  </PaginationItem>
+                  {(() => {
+                    const items: JSX.Element[] = []
+                    const maxToShow = 5
+                    const addLink = (p: number, active = false) => {
+                      items.push(
+                        <PaginationItem key={p}>
+                          <PaginationLink href="#" isActive={active} onClick={(e) => { e.preventDefault(); setProjectPage(p) }}>{p}</PaginationLink>
+                        </PaginationItem>
+                      )
+                    }
+                    if (projectTotalPages <= maxToShow) {
+                      for (let p = 1; p <= projectTotalPages; p++) addLink(p, p === projectPage)
+                    } else {
+                      addLink(1, projectPage === 1)
+                      const showLeftEllipsis = projectPage > 3
+                      const showRightEllipsis = projectPage < projectTotalPages - 2
+                      const start = Math.max(2, projectPage - 1)
+                      const end = Math.min(projectTotalPages - 1, projectPage + 1)
+                      if (showLeftEllipsis) items.push(<PaginationItem key="ellipsisl"><PaginationEllipsis /></PaginationItem>)
+                      for (let p = start; p <= end; p++) addLink(p, p === projectPage)
+                      if (showRightEllipsis) items.push(<PaginationItem key="ellipsisr"><PaginationEllipsis /></PaginationItem>)
+                      addLink(projectTotalPages, projectPage === projectTotalPages)
+                    }
+                    return items
+                  })()}
+                  <PaginationItem>
+                    <PaginationNext href="#" onClick={(e) => { e.preventDefault(); if (projectPage < projectTotalPages && !projectLoading) setProjectPage(projectPage + 1) }} className={projectPage >= projectTotalPages || projectLoading ? 'pointer-events-none opacity-50' : ''} />
                   </PaginationItem>
                 </PaginationContent>
               </Pagination>
