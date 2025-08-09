@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { hasPermission, createUserFromSession } from '@/lib/rbac/custom-rbac';
+import { permissions as permissionsTable, roles as rolesTable, roleHasPermissions as roleHasPermissionsTable } from '@/lib/drizzle/schema';
+import { and, asc, eq, ilike, or, sql } from 'drizzle-orm';
 
 // GET /api/permissions - List all permissions
 export async function GET(request: NextRequest) {
@@ -31,42 +33,75 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build where clause
-    const where: any = {};
+    const filters: any[] = [];
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { guard_name: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    // Get permissions with pagination
-    const [permissions, total] = await Promise.all([
-      prisma.permission.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { name: 'asc' },
-        include: {
-          role_permissions: {
-            include: {
-              role: true,
-            },
-          },
-        },
-      }),
-      prisma.permission.count({ where }),
-    ]);
-
-    // If role filter is specified, filter permissions by role
-    let filteredPermissions = permissions;
-    if (role) {
-      filteredPermissions = permissions.filter(permission =>
-        permission.role_permissions.some(rp => rp.role.name === role)
+      const s = `%${search}%`;
+      filters.push(
+        or(
+          ilike(permissionsTable.name, s),
+          ilike(permissionsTable.guardName, s as any),
+        )
       );
     }
 
+    const whereExpr = filters.length ? and(...filters) : undefined;
+
+    // total count
+    const totalRow = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(permissionsTable)
+      .where(whereExpr as any);
+    const total = Number((totalRow as any)[0]?.count ?? 0);
+
+    // page rows
+    const perms = await db
+      .select({
+        id: permissionsTable.id,
+        name: permissionsTable.name,
+        guard_name: permissionsTable.guardName,
+        created_at: permissionsTable.createdAt,
+        updated_at: permissionsTable.updatedAt,
+      })
+      .from(permissionsTable)
+      .where(whereExpr as any)
+      .orderBy(asc(permissionsTable.name))
+      .offset(skip)
+      .limit(limit);
+
+    // join roles per permission
+    const permIds = perms.map((p) => p.id as number);
+    let roleMap: Record<number, { role: { id: number; name: string } }[]> = {};
+    if (permIds.length > 0) {
+      const roleRows = await db
+        .select({
+          permission_id: roleHasPermissionsTable.permissionId,
+          role_id: rolesTable.id,
+          role_name: rolesTable.name,
+        })
+        .from(roleHasPermissionsTable)
+        .leftJoin(rolesTable, eq(rolesTable.id, roleHasPermissionsTable.roleId))
+        .where(or(...permIds.map((id) => eq(roleHasPermissionsTable.permissionId, id))));
+
+      roleMap = roleRows.reduce((acc, r) => {
+        const pid = r.permission_id as unknown as number;
+        if (!acc[pid]) acc[pid] = [];
+        if (r.role_id != null)
+          acc[pid].push({ role: { id: r.role_id as number, name: r.role_name as string } });
+        return acc;
+      }, {} as Record<number, { role: { id: number; name: string } }[]>);
+    }
+
+    let results = perms.map((p) => ({
+      ...p,
+      role_permissions: roleMap[p.id as number] || [],
+    }));
+
+    if (role) {
+      results = results.filter((p) => p.role_permissions.some((rp) => rp.role.name === role));
+    }
+
     return NextResponse.json({
-      permissions: filteredPermissions,
+      permissions: results,
       pagination: {
         page,
         limit,
@@ -112,11 +147,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if permission already exists
-    const existingPermission = await prisma.permission.findUnique({
-      where: { name },
-    });
+    const existing = await db
+      .select({ id: permissionsTable.id })
+      .from(permissionsTable)
+      .where(eq(permissionsTable.name, name))
+      .limit(1);
 
-    if (existingPermission) {
+    if (existing[0]) {
       return NextResponse.json(
         { error: 'Permission already exists' },
         { status: 409 }
@@ -124,12 +161,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Create new permission
-    const permission = await prisma.permission.create({
-      data: {
-        name,
-        guard_name,
-      },
-    });
+    const nowIso = new Date().toISOString();
+    const inserted = await db
+      .insert(permissionsTable)
+      .values({ name, guardName: guard_name, updatedAt: nowIso })
+      .returning({
+        id: permissionsTable.id,
+        name: permissionsTable.name,
+        guard_name: permissionsTable.guardName,
+        created_at: permissionsTable.createdAt,
+      });
+    const permission = inserted[0];
 
     return NextResponse.json({
       message: 'Permission created successfully',

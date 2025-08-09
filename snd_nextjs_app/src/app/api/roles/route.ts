@@ -1,29 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { roles as rolesTable, modelHasRoles as modelHasRolesTable } from '@/lib/drizzle/schema';
+import { asc, desc, eq, sql } from 'drizzle-orm';
 // GET /api/roles - Get all roles with user count
 export async function GET() {
   try {
-    const roles = await prisma.role.findMany({
-      include: {
-        _count: {
-          select: {
-            user_roles: true,
-          },
-        },
-      },
-      orderBy: {
-        created_at: 'desc',
-      },
-    });
+    // Fetch roles
+    const roles = await db
+      .select({
+        id: rolesTable.id,
+        name: rolesTable.name,
+        guard_name: rolesTable.guardName,
+        created_at: rolesTable.createdAt,
+        updated_at: rolesTable.updatedAt,
+      })
+      .from(rolesTable)
+      .orderBy(desc(rolesTable.createdAt));
 
-    // Transform the data to include userCount
-    const rolesWithUserCount = roles.map(role => ({
+    // Count users per role
+    const counts = await db
+      .select({ role_id: modelHasRolesTable.roleId, count: sql<number>`count(*)` })
+      .from(modelHasRolesTable)
+      .groupBy(modelHasRolesTable.roleId);
+
+    const roleIdToCount = new Map<number, number>();
+    for (const c of counts as any[]) roleIdToCount.set(c.role_id, Number(c.count || 0));
+
+    const rolesWithUserCount = roles.map((role) => ({
       id: role.id,
       name: role.name,
       guard_name: role.guard_name,
       createdAt: role.created_at,
       updatedAt: role.updated_at,
-      userCount: role._count.user_roles,
+      userCount: roleIdToCount.get(role.id as number) || 0,
     }));
 
     return NextResponse.json(rolesWithUserCount);
@@ -51,11 +60,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if role already exists
-    const existingRole = await prisma.role.findUnique({
-      where: { name },
-    });
-
-    if (existingRole) {
+    const existing = await db
+      .select({ id: rolesTable.id })
+      .from(rolesTable)
+      .where(eq(rolesTable.name, name))
+      .limit(1);
+    if (existing[0]) {
       return NextResponse.json(
         { error: 'Role with this name already exists' },
         { status: 400 }
@@ -63,19 +73,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Create role
-    const role = await prisma.role.create({
-      data: {
-        name,
-        guard_name: guard_name || 'web',
-      },
-      include: {
-        _count: {
-          select: {
-            user_roles: true,
-          },
-        },
-      },
-    });
+    const inserted = await db
+      .insert(rolesTable)
+      .values({ name, guardName: guard_name || 'web', updatedAt: new Date().toISOString() })
+      .returning({
+        id: rolesTable.id,
+        name: rolesTable.name,
+        guard_name: rolesTable.guardName,
+        created_at: rolesTable.createdAt,
+        updated_at: rolesTable.updatedAt,
+      });
+    const role = inserted[0];
 
     const roleWithUserCount = {
       id: role.id,
@@ -83,7 +91,7 @@ export async function POST(request: NextRequest) {
       guard_name: role.guard_name,
       createdAt: role.created_at,
       updatedAt: role.updated_at,
-      userCount: role._count.user_roles,
+      userCount: 0,
     };
 
     return NextResponse.json(roleWithUserCount, { status: 201 });
@@ -110,10 +118,12 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if role exists
-    const existingRole = await prisma.role.findUnique({
-      where: { id },
-    });
-
+    const existing = await db
+      .select({ id: rolesTable.id, name: rolesTable.name })
+      .from(rolesTable)
+      .where(eq(rolesTable.id, id))
+      .limit(1);
+    const existingRole = existing[0];
     if (!existingRole) {
       return NextResponse.json(
         { error: 'Role not found' },
@@ -123,11 +133,12 @@ export async function PUT(request: NextRequest) {
 
     // Check if name is being changed and if it's already taken
     if (name && name !== existingRole.name) {
-      const nameExists = await prisma.role.findUnique({
-        where: { name },
-      });
-
-      if (nameExists) {
+      const nameExists = await db
+        .select({ id: rolesTable.id })
+        .from(rolesTable)
+        .where(eq(rolesTable.name, name))
+        .limit(1);
+      if (nameExists[0]) {
         return NextResponse.json(
           { error: 'Role name already exists' },
           { status: 400 }
@@ -136,20 +147,29 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update role
-    const role = await prisma.role.update({
-      where: { id },
-      data: {
-        name,
-        guard_name,
-      },
-      include: {
-        _count: {
-          select: {
-            user_roles: true,
-          },
-        },
-      },
-    });
+    const updated = await db
+      .update(rolesTable)
+      .set({
+        name: name ?? undefined,
+        guardName: guard_name ?? undefined,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(rolesTable.id, id))
+      .returning({
+        id: rolesTable.id,
+        name: rolesTable.name,
+        guard_name: rolesTable.guardName,
+        created_at: rolesTable.createdAt,
+        updated_at: rolesTable.updatedAt,
+      });
+    const role = updated[0];
+
+    // Count user roles
+    const countRows = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(modelHasRolesTable)
+      .where(eq(modelHasRolesTable.roleId, id));
+    const userCount = Number((countRows as any)[0]?.count ?? 0);
 
     const roleWithUserCount = {
       id: role.id,
@@ -157,7 +177,7 @@ export async function PUT(request: NextRequest) {
       guard_name: role.guard_name,
       createdAt: role.created_at,
       updatedAt: role.updated_at,
-      userCount: role._count.user_roles,
+      userCount,
     };
 
     return NextResponse.json(roleWithUserCount);
@@ -183,37 +203,21 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Check if role exists
-    const existingRole = await prisma.role.findUnique({
-      where: { id },
-      include: {
-        _count: {
-          select: {
-            user_roles: true,
-          },
-        },
-      },
-    });
+    // Check existing and user count
+    const countRows = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(modelHasRolesTable)
+      .where(eq(modelHasRolesTable.roleId, id));
+    const userCount = Number((countRows as any)[0]?.count ?? 0);
 
-    if (!existingRole) {
-      return NextResponse.json(
-        { error: 'Role not found' },
-        { status: 404 }
-      );
-    }
-
-    // Check if role has users assigned
-    if (existingRole._count.user_roles > 0) {
+    if (userCount > 0) {
       return NextResponse.json(
         { error: 'Cannot delete role with assigned users' },
         { status: 400 }
       );
     }
 
-    // Delete role
-    await prisma.role.delete({
-      where: { id },
-    });
+    await db.delete(rolesTable).where(eq(rolesTable.id, id));
 
     return NextResponse.json({ message: 'Role deleted successfully' });
   } catch (error) {

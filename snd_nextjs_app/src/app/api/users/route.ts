@@ -1,43 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { users as usersTable, roles as rolesTable, modelHasRoles as modelHasRolesTable } from '@/lib/drizzle/schema';
+import { desc, eq, sql } from 'drizzle-orm';
 
 // GET /api/users - Get all users
 export const GET = withPermission(
   async () => {
     try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role_id: true,
-        isActive: true,
-        created_at: true,
-        last_login_at: true,
-        user_roles: {
-          include: {
-            role: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: {
-        created_at: 'desc',
-      },
-    });
+    const users = await db
+      .select({
+        id: usersTable.id,
+        name: usersTable.name,
+        email: usersTable.email,
+        role_id: usersTable.roleId,
+        isActive: usersTable.isActive,
+        created_at: usersTable.createdAt,
+        last_login_at: usersTable.lastLoginAt,
+      })
+      .from(usersTable)
+      .orderBy(desc(usersTable.createdAt));
+
+    // Fetch roles per user
+    const userIds = users.map((u) => u.id as number);
+    let rolesByUserId: Record<number, { role: { id: number; name: string } }[]> = {};
+    if (userIds.length > 0) {
+      const rows = await db
+        .select({ user_id: modelHasRolesTable.userId, role_id: rolesTable.id, role_name: rolesTable.name })
+        .from(modelHasRolesTable)
+        .leftJoin(rolesTable, eq(rolesTable.id, modelHasRolesTable.roleId))
+        .where(sql`1=1`);
+      rolesByUserId = rows.reduce((acc, r) => {
+        const uid = r.user_id as unknown as number;
+        if (!acc[uid]) acc[uid] = [];
+        if (r.role_id != null) acc[uid].push({ role: { id: r.role_id as number, name: r.role_name as string } });
+        return acc;
+      }, {} as Record<number, { role: { id: number; name: string } }[]>);
+    }
 
     // Transform the data to include role information
     const usersWithRoles = users.map(user => {
       // Determine role based on user_roles or fallback to role_id
       let role = "USER";
       
-      if (user.user_roles && user.user_roles.length > 0) {
+      const user_roles = rolesByUserId[user.id as number] || [];
+      if (user_roles.length > 0) {
         // Get the highest priority role (SUPER_ADMIN > ADMIN > MANAGER > SUPERVISOR > OPERATOR > EMPLOYEE > USER)
         const roleHierarchy = {
           'SUPER_ADMIN': 1,  // Highest priority
@@ -52,7 +60,7 @@ export const GET = withPermission(
         let highestRole = 'USER';
         let highestPriority = 7; // Start with lowest priority
         
-        user.user_roles.forEach(userRole => {
+        user_roles.forEach(userRole => {
           const roleName = userRole.role.name.toUpperCase();
           const priority = roleHierarchy[roleName as keyof typeof roleHierarchy] || 7;
           if (priority < highestPriority) { // Lower number = higher priority
@@ -121,11 +129,13 @@ export const POST = withPermission(
     }
 
     // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const existingUser = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.email, email))
+      .limit(1);
 
-    if (existingUser) {
+    if (existingUser[0]) {
       return NextResponse.json(
         { error: 'User with this email already exists' },
         { status: 400 }
@@ -136,42 +146,39 @@ export const POST = withPermission(
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Find the role by name
-    let roleId = 1; // Default to role ID 1
+    let roleId = 1; // Default
     if (role) {
-      const foundRole = await prisma.role.findFirst({
-        where: { name: role },
-      });
-      if (foundRole) {
-        roleId = foundRole.id;
-      }
+      const found = await db
+        .select({ id: rolesTable.id })
+        .from(rolesTable)
+        .where(eq(rolesTable.name, role))
+        .limit(1);
+      if (found[0]) roleId = found[0].id as number;
     }
 
     // Create user
-    const user = await prisma.user.create({
-      data: {
+    const inserted = await db
+      .insert(usersTable)
+      .values({
         name,
         email,
         password: hashedPassword,
-        role_id: roleId,
-        isActive: isActive !== undefined ? isActive : true,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role_id: true,
-        isActive: true,
-        created_at: true,
-      },
-    });
+        roleId: roleId,
+        isActive: isActive !== undefined ? !!isActive : (true as any),
+        updatedAt: new Date().toISOString(),
+      })
+      .returning({
+        id: usersTable.id,
+        name: usersTable.name,
+        email: usersTable.email,
+        role_id: usersTable.roleId,
+        isActive: usersTable.isActive,
+        created_at: usersTable.createdAt,
+      });
+    const user = inserted[0];
 
     // Create user role relationship
-    await prisma.userRole.create({
-      data: {
-        user_id: user.id,
-        role_id: roleId,
-      },
-    });
+    await db.insert(modelHasRolesTable).values({ userId: user.id as number, roleId });
 
     return NextResponse.json(user, { status: 201 });
   } catch (error) {
@@ -200,9 +207,12 @@ export const PUT = withPermission(
     }
 
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id },
-    });
+    const existingUserRows = await db
+      .select({ id: usersTable.id, email: usersTable.email, role_id: usersTable.roleId })
+      .from(usersTable)
+      .where(eq(usersTable.id, id))
+      .limit(1);
+    const existingUser = existingUserRows[0];
 
     if (!existingUser) {
       return NextResponse.json(
@@ -213,9 +223,11 @@ export const PUT = withPermission(
 
     // Check if email is being changed and if it's already taken
     if (email && email !== existingUser.email) {
-      const emailExists = await prisma.user.findUnique({
-        where: { email },
-      });
+      const emailExists = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.email, email))
+        .limit(1);
 
       if (emailExists) {
         return NextResponse.json(
@@ -228,12 +240,12 @@ export const PUT = withPermission(
     // Find the role by name if role is provided
     let roleId = existingUser.role_id;
     if (role) {
-      const foundRole = await prisma.role.findFirst({
-        where: { name: role },
-      });
-      if (foundRole) {
-        roleId = foundRole.id;
-      }
+      const found = await db
+        .select({ id: rolesTable.id })
+        .from(rolesTable)
+        .where(eq(rolesTable.name, role))
+        .limit(1);
+      if (found[0]) roleId = found[0].id as number;
     }
 
     // Prepare update data
@@ -250,33 +262,32 @@ export const PUT = withPermission(
     }
 
     // Update user
-    const user = await prisma.user.update({
-      where: { id },
-      data: updateData,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role_id: true,
-        isActive: true,
-        created_at: true,
-      },
-    });
+    const updated = await db
+      .update(usersTable)
+      .set({
+        name: updateData.name ?? undefined,
+        email: updateData.email ?? undefined,
+        isActive: updateData.isActive ?? undefined,
+        roleId: updateData.role_id ?? undefined,
+        password: updateData.password ?? undefined,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(usersTable.id, id))
+      .returning({
+        id: usersTable.id,
+        name: usersTable.name,
+        email: usersTable.email,
+        role_id: usersTable.roleId,
+        isActive: usersTable.isActive,
+        created_at: usersTable.createdAt,
+      });
+    const user = updated[0];
 
     // Update user role relationship if role changed
     if (role && roleId !== existingUser.role_id) {
       // Delete existing user role
-      await prisma.userRole.deleteMany({
-        where: { user_id: parseInt(id) },
-      });
-
-      // Create new user role
-      await prisma.userRole.create({
-        data: {
-          user_id: parseInt(id),
-          role_id: roleId,
-        },
-      });
+      await db.delete(modelHasRolesTable).where(eq(modelHasRolesTable.userId, id));
+      await db.insert(modelHasRolesTable).values({ userId: id, roleId });
     }
 
     return NextResponse.json(user);
@@ -306,9 +317,12 @@ export const DELETE = withPermission(
     }
 
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id },
-    });
+    const existingUserRows2 = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(eq(usersTable.id, id))
+      .limit(1);
+    const existingUser = existingUserRows2[0];
 
     if (!existingUser) {
       return NextResponse.json(
@@ -318,9 +332,7 @@ export const DELETE = withPermission(
     }
 
     // Delete user
-    await prisma.user.delete({
-      where: { id },
-    });
+    await db.delete(usersTable).where(eq(usersTable.id, id));
 
     return NextResponse.json({ message: 'User deleted successfully' });
   } catch (error) {
