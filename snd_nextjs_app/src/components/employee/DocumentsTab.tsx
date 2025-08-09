@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import { FileText, Download, Upload, Trash2, RefreshCw, Plus, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useRBAC } from "@/lib/rbac/rbac-context";
+import { useDropzone } from "react-dropzone";
+import DocumentManager, { type DocumentItem } from "@/components/shared/DocumentManager";
 
 interface Document {
   id: number;
@@ -39,13 +41,28 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
   const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[] | null>(null);
 
   // Upload form state
   const [uploadForm, setUploadForm] = useState({
+    document_name: '',
     document_type: '',
     file: null as File | null,
     description: '',
   });
+
+  const documentNameOptions = [
+    { label: 'Iqama', value: 'iqama' },
+    { label: 'Passport', value: 'passport' },
+    { label: 'Driving License', value: 'driving_license' },
+    { label: 'Operator License', value: 'operator_license' },
+    { label: 'SPSP License', value: 'spsp_license' },
+    { label: 'TUV Certification', value: 'tuv_certification' },
+    { label: 'Employment Contract', value: 'contract' },
+    { label: 'Medical Certificate', value: 'medical' },
+    { label: 'General Document', value: 'general' },
+  ];
 
   useEffect(() => {
     fetchDocuments();
@@ -79,8 +96,8 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
   };
 
   const handleUpload = async () => {
-    if (!uploadForm.file || !uploadForm.document_type) {
-      toast.error('Please select a file and document type');
+    if (!uploadForm.file || !uploadForm.document_name.trim()) {
+      toast.error('Please select a file and enter a document name');
       return;
     }
 
@@ -88,7 +105,8 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     try {
       const formData = new FormData();
       formData.append('file', uploadForm.file);
-      formData.append('document_type', uploadForm.document_type);
+      formData.append('document_name', uploadForm.document_name.trim());
+      if (uploadForm.document_type) formData.append('document_type', uploadForm.document_type);
       formData.append('description', uploadForm.description);
 
       const response = await fetch(`/api/employees/${employeeId}/documents/upload`, {
@@ -99,7 +117,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
       if (response.ok) {
         toast.success('Document uploaded successfully');
         setShowUploadDialog(false);
-        setUploadForm({ document_type: '', file: null, description: '' });
+        setUploadForm({ document_name: '', document_type: '', file: null, description: '' });
         fetchDocuments(); // Refresh the list
       } else {
         const errorData = await response.json();
@@ -112,6 +130,58 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
       setUploading(false);
     }
   };
+
+  // Drag & drop handler (multiple files)
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (!acceptedFiles.length) return;
+    if (!uploadForm.document_name.trim() || !uploadForm.document_type.trim()) {
+      setPendingFiles(acceptedFiles);
+      setShowDetailsDialog(true);
+      return;
+    }
+
+    setUploading(true);
+    try {
+      for (const file of acceptedFiles) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('document_name', uploadForm.document_name.trim());
+        if (uploadForm.document_type) formData.append('document_type', uploadForm.document_type);
+        formData.append('description', uploadForm.description);
+
+        const response = await fetch(`/api/employees/${employeeId}/documents/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) throw new Error('Upload failed');
+      }
+
+      toast.success('Document(s) uploaded successfully');
+      setUploadForm({ document_name: '', document_type: '', file: null, description: '' });
+      fetchDocuments();
+    } catch (error) {
+      console.error('Error uploading documents:', error);
+      toast.error('Failed to upload documents');
+    } finally {
+      setUploading(false);
+    }
+  }, [employeeId, uploadForm]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    multiple: true,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'application/vnd.ms-excel': ['.xls'],
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'image/*': ['.jpg', '.jpeg', '.png', '.gif'],
+      'text/plain': ['.txt'],
+    },
+    maxSize: 10 * 1024 * 1024,
+  });
 
   const handleDelete = async (documentId: number) => {
     if (!confirm('Are you sure you want to delete this document?')) {
@@ -169,6 +239,20 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const isImageFile = (type: string | undefined): boolean => {
+    if (!type) return false;
+    return type.startsWith('image/') || type.toLowerCase().includes('image');
+  };
+
+  const getFileIcon = (type: string | undefined): string => {
+    const t = (type || '').toLowerCase();
+    if (t.includes('pdf')) return '📄';
+    if (t.includes('word') || t.includes('doc')) return '📝';
+    if (t.includes('excel') || t.includes('sheet') || t.includes('xls')) return '📊';
+    if (t.includes('image')) return '🖼️';
+    return '📄';
+  };
+
   const getDocumentTypeBadge = (type: string) => {
     const typeColors: { [key: string]: string } = {
       'iqama': 'bg-blue-100 text-blue-800',
@@ -184,6 +268,21 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
         {type.replace('_', ' ').toUpperCase()}
       </Badge>
     );
+  };
+
+  const toTitleCase = (s: string) => s.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+
+  const getDocumentTypeLabel = (type?: string) => {
+    if (!type) return 'Document';
+    return toTitleCase(type.replace(/_/g, ' '));
+  };
+
+  const getDownloadFileName = (doc: any) => {
+    const typeLabel = getDocumentTypeLabel(doc.document_type);
+    const safeType = typeLabel.replace(/\s+/g, '_');
+    const safeFile = (doc.file_number || doc.employee_file_number || employeeId).toString();
+    const ext = (doc.file_name || '').split('.').pop() || 'file';
+    return `${safeFile}_${safeType}.${ext}`;
   };
 
   if (loading) {
@@ -212,178 +311,142 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Employee Documents</h3>
-          <p className="text-sm text-muted-foreground">
-            Manage and view employee documents
-          </p>
-        </div>
-        {hasPermission('create', 'employee-document') && (
-          <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Upload Document
-              </Button>
-            </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Upload Document</DialogTitle>
-              <DialogDescription>
-                Upload a new document for this employee
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="document_type">Document Type</Label>
-                <Select
-                  value={uploadForm.document_type}
-                  onValueChange={(value) => setUploadForm(prev => ({ ...prev, document_type: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select document type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="iqama">Iqama</SelectItem>
-                    <SelectItem value="passport">Passport</SelectItem>
-                    <SelectItem value="driving_license">Driving License</SelectItem>
-                    <SelectItem value="operator_license">Operator License</SelectItem>
-                    <SelectItem value="spsp_license">SPSP License</SelectItem>
-                    <SelectItem value="tuv_certification">TUV Certification</SelectItem>                  
-                    <SelectItem value="contract">Employment Contract</SelectItem>
-                    <SelectItem value="medical">Medical Certificate</SelectItem>
-                    <SelectItem value="general">General Document</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="file">File</Label>
-                <Input
-                  id="file"
-                  type="file"
-                  onChange={handleFileChange}
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description (Optional)</Label>
-                <Textarea
-                  id="description"
-                  value={uploadForm.description}
-                  onChange={(e) => setUploadForm(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Enter document description..."
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowUploadDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleUpload} disabled={uploading || !uploadForm.file || !uploadForm.document_type}>
-                {uploading ? (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Uploading...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload
-                  </>
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-        )}
-      </div>
+    <>
+    <DocumentManager
+      title="Employee Documents"
+      description="Upload and manage employee documents"
+      beforeUpload={(files) => {
+        if (!uploadForm.document_name.trim() || !uploadForm.document_type.trim()) {
+          setPendingFiles(files);
+          setShowDetailsDialog(true);
+          return false;
+        }
+        return true;
+      }}
+      loadDocuments={async () => {
+        const response = await fetch(`/api/employees/${employeeId}/documents`);
+        if (response.ok) {
+          const data = await response.json();
+          const list = Array.isArray(data) ? data : [];
+          return list.map((d: any) => {
+            const fileNum = d.employee?.file_number || d.file_number;
+            const base = (d.name || getDocumentTypeLabel(d.document_type) || 'Document').toString();
+            const displayName = fileNum ? `${base} (File ${fileNum})` : base;
+            return {
+              id: d.id,
+              name: displayName,
+              file_name: d.file_name,
+              file_type: d.mime_type || d.file_type || '',
+              size: d.size ?? 0,
+              url: d.url,
+              created_at: d.created_at,
+              typeLabel: getDocumentTypeLabel(d.document_type),
+              employee_file_number: fileNum,
+              document_type: d.document_type,
+            } as DocumentItem;
+          }) as DocumentItem[];
+        }
+        return [] as DocumentItem[];
+      }}
+      uploadDocument={async (file, extra) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('document_name', uploadForm.document_name.trim());
+        if (uploadForm.document_type) formData.append('document_type', uploadForm.document_type);
+        formData.append('description', uploadForm.description);
 
-      {/* Documents Grid */}
-      {documents.length === 0 ? (
-        <div className="rounded-lg bg-muted/30 p-8 text-center">
-          <FileText className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
-          <h3 className="mb-2 text-lg font-medium">No Documents</h3>
-          <p className="mb-6 text-sm text-muted-foreground">
-            This employee doesn't have any documents uploaded yet.
-          </p>
-          {hasPermission('create', 'employee-document') && (
-            <Button onClick={() => setShowUploadDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Upload First Document
-            </Button>
-          )}
-        </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {documents.map((doc) => (
-            <Card key={doc.id} className="overflow-hidden">
-              <CardHeader className="p-4 pb-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="truncate text-base" title={doc.name}>
-                      {doc.name}
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      {doc.file_type} • {formatFileSize(doc.size)}
-                    </CardDescription>
-                  </div>
-                  {getDocumentTypeBadge(doc.document_type)}
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 pt-2">
-                {doc.description && (
-                  <p className="mb-3 text-sm text-muted-foreground">
-                    {doc.description}
-                  </p>
-                )}
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-2">
-                    {hasPermission('read', 'employee-document') && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDownload(doc)}
-                      >
-                        <Download className="mr-1 h-3.5 w-3.5" />
-                        Download
-                      </Button>
-                    )}
-                    {hasPermission('read', 'employee-document') && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(doc.url, '_blank')}
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                  {hasPermission('delete', 'employee-document') && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(doc.id)}
-                      disabled={deletingId === doc.id}
-                    >
-                      {deletingId === doc.id ? (
-                        <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
-                  )}
-                </div>
-                <div className="mt-2 text-xs text-muted-foreground">
-                  Uploaded: {new Date(doc.created_at).toLocaleDateString()}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        await fetch(`/api/employees/${employeeId}/documents/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+      }}
+      deleteDocument={async (id) => {
+        await fetch(`/api/employees/${employeeId}/documents/${id}`, { method: 'DELETE' });
+      }}
+      // RBAC-controlled actions
+      canUpload={hasPermission('create', 'employee-document')}
+      canDownload={hasPermission('read', 'employee-document')}
+      canPreview={hasPermission('read', 'employee-document')}
+      canDelete={hasPermission('delete', 'employee-document')}
+      downloadPrefix={(doc) => (doc.employee_file_number ? String(doc.employee_file_number) : String(employeeId))}
+      singleLine={false}
+      wrapItems
+      showSize={false}
+      showDate={false}
+      // Extra controls for employee: description only (name/type asked in popup)
+      renderExtraControls={(
+        <div className="grid gap-3">
+          <div>
+            <Label htmlFor="description">Description (Optional)</Label>
+            <Input
+              id="description"
+              value={uploadForm.description}
+              onChange={(e) => setUploadForm(prev => ({ ...prev, description: e.target.value }))}
+              placeholder="Enter document description..."
+            />
+          </div>
         </div>
       )}
-    </div>
+    />
+
+    <Dialog open={showDetailsDialog} onOpenChange={(open) => { if(!open) setPendingFiles(null); setShowDetailsDialog(open); }}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Document Details</DialogTitle>
+          <DialogDescription>Provide a name and select document type before uploading.</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-3">
+          <div>
+            <Label htmlFor="doc_name_popup">Document Name</Label>
+            <Select
+              value={uploadForm.document_type}
+              onValueChange={(v) => {
+                const opt = documentNameOptions.find(o => o.value === v);
+                setUploadForm(prev => ({...prev, document_type: v, document_name: opt ? opt.label : v }));
+              }}
+            >
+              <SelectTrigger id="doc_name_popup">
+                <SelectValue placeholder="Select document name" />
+              </SelectTrigger>
+              <SelectContent>
+                {documentNameOptions.map(o => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { setShowDetailsDialog(false); setPendingFiles(null); }}>Cancel</Button>
+          <Button onClick={async () => {
+            if (!uploadForm.document_name.trim() || !uploadForm.document_type.trim() || !pendingFiles) { return; }
+            setUploading(true);
+            try {
+              for (const file of pendingFiles) {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('document_name', uploadForm.document_name.trim());
+                formData.append('document_type', uploadForm.document_type.trim());
+                formData.append('description', uploadForm.description);
+                const resp = await fetch(`/api/employees/${employeeId}/documents/upload`, { method: 'POST', body: formData });
+                if (!resp.ok) throw new Error('Upload failed');
+              }
+              toast.success('Document(s) uploaded successfully');
+              setPendingFiles(null);
+              setShowDetailsDialog(false);
+              setUploadForm({ document_name: '', document_type: '', file: null, description: '' });
+              fetchDocuments();
+            } catch (e) {
+              toast.error('Failed to upload documents');
+            } finally {
+              setUploading(false);
+            }
+          }}>
+            {uploading ? 'Uploading...' : 'Upload'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 } 

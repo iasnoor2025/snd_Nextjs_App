@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 
@@ -40,7 +40,8 @@ export async function POST(
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const documentType = formData.get('document_type') as string;
+    const rawDocumentType = (formData.get('document_type') as string) || 'general';
+    const documentName = (formData.get('document_name') as string) || '';
     const description = formData.get('description') as string;
 
     if (!file) {
@@ -50,12 +51,7 @@ export async function POST(
       );
     }
 
-    if (!documentType) {
-      return NextResponse.json(
-        { error: "Document type is required" },
-        { status: 400 }
-      );
-    }
+    // document type is optional now; default handled above
 
     // Validate file type
     const allowedTypes = [
@@ -89,25 +85,56 @@ export async function POST(
       await mkdir(uploadDir, { recursive: true });
     }
 
-    // Generate unique filename
+    // If the document type is specific (not general), remove any existing document(s) of the same type
+    if (rawDocumentType && rawDocumentType !== 'general') {
+      const existingDocs = await prisma.employeeDocument.findMany({
+        where: { employee_id: employeeId, document_type: rawDocumentType },
+      });
+      for (const doc of existingDocs) {
+        try {
+          const absPath = join(process.cwd(), 'public', doc.file_path.replace(/^\//, ''));
+          if (existsSync(absPath)) {
+            await unlink(absPath);
+          }
+        } catch (e) {
+          // ignore file deletion errors and proceed
+        }
+      }
+      if (existingDocs.length > 0) {
+        await prisma.employeeDocument.deleteMany({
+          where: { employee_id: employeeId, document_type: rawDocumentType },
+        });
+      }
+    }
+
+    // Generate consistent filename: {fileNumber}_{DocumentType}_{timestamp}.{ext}
     const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${documentType}_${timestamp}.${fileExtension}`;
-    const filePath = join(uploadDir, fileName);
-    const relativePath = `/uploads/documents/${employeeId}/${fileName}`;
+    const originalExt = file.name.split('.').pop() || 'bin';
+    const ext = originalExt.toLowerCase();
+
+    const toTitleCase = (s: string) => s.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+    const baseLabel = documentName.trim() || toTitleCase((rawDocumentType || 'Document').replace(/_/g, ' '));
+    const fileNumber = employee.file_number || String(employeeId);
+    const baseName = `${fileNumber}_${baseLabel}`
+      .replace(/\s+/g, '_')
+      .replace(/[^A-Za-z0-9_\-]/g, '');
+
+    const storedFileName = `${baseName}_${timestamp}.${ext}`;
+    const filePath = join(uploadDir, storedFileName);
+    const relativePath = `/uploads/documents/${employeeId}/${storedFileName}`;
 
     // Convert file to buffer and save
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     await writeFile(filePath, buffer);
 
-    // Save document record to database
+    // Save document record to database (use the new file name)
     const document = await prisma.employeeDocument.create({
       data: {
         employee_id: employeeId,
-        document_type: documentType,
+        document_type: rawDocumentType,
         file_path: relativePath,
-        file_name: file.name,
+        file_name: storedFileName,
         file_size: file.size,
         mime_type: file.type,
         description: description || null,
@@ -119,7 +146,7 @@ export async function POST(
       message: 'Document uploaded successfully',
       data: {
         id: document.id,
-        name: document.file_name,
+        name: baseLabel,
         file_name: document.file_name,
         file_type: document.mime_type?.split('/')[1]?.toUpperCase() || 'UNKNOWN',
         size: document.file_size,

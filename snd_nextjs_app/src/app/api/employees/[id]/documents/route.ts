@@ -30,22 +30,34 @@ export async function GET(
       orderBy: {
         created_at: 'desc',
       },
+      include: {
+        employee: {
+          select: { file_number: true },
+        },
+      },
     });
 
     // Format documents to match Laravel response
-    const formattedDocuments = documents.map(doc => ({
-      id: doc.id,
-      name: doc.file_name,
-      file_name: doc.file_name,
-      file_type: doc.mime_type?.split('/')[1]?.toUpperCase() || 'UNKNOWN',
-      size: doc.file_size || 0,
-      url: doc.file_path,
-      mime_type: doc.mime_type,
-      document_type: doc.document_type,
-      description: doc.description,
-      created_at: doc.created_at.toISOString(),
-      updated_at: doc.updated_at.toISOString(),
-    }));
+    const toTitleCase = (s: string) => s.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+    const formattedDocuments = documents.map(doc => {
+      const typeLabel = doc.document_type && doc.document_type !== 'general'
+        ? toTitleCase(doc.document_type.replace(/_/g, ' '))
+        : undefined;
+      return {
+        id: doc.id,
+        name: typeLabel || doc.file_name,
+        file_name: doc.file_name,
+        file_type: doc.mime_type?.split('/')[1]?.toUpperCase() || 'UNKNOWN',
+        size: doc.file_size || 0,
+        url: doc.file_path,
+        mime_type: doc.mime_type,
+        document_type: doc.document_type,
+        description: doc.description,
+        file_number: doc.employee?.file_number || null,
+        created_at: doc.created_at.toISOString(),
+        updated_at: doc.updated_at.toISOString(),
+      };
+    });
 
     return NextResponse.json(formattedDocuments);
   } catch (error) {
