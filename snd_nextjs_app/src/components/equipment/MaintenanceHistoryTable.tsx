@@ -123,7 +123,7 @@ export default function MaintenanceHistoryTable() {
                 <TableCell>{r.scheduled_date ? new Date(r.scheduled_date).toLocaleDateString() : '-'}</TableCell>
                 <TableCell>{r.items?.length || 0}</TableCell>
                 <TableCell>{Number(r.cost || 0).toFixed(2)}</TableCell>
-                <TableCell>{t(`status.${r.status}`, r.status)}</TableCell>
+                <TableCell>{t(`status.${r.status}`, { defaultValue: r.status })}</TableCell>
                 <TableCell>
                   <div className="flex gap-2">
                     <Button
