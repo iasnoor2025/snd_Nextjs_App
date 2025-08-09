@@ -11,6 +11,9 @@ export const GET = withReadPermission(
       const includeExpired = searchParams.get('includeExpired') === '1';
       const includeMissing = searchParams.get('includeMissing') === '1';
       const expiredDaysParam = parseInt(searchParams.get('expiredDays') || '30', 10);
+      const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+      const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit') || '10', 10)));
+      const search = (searchParams.get('search') || '').trim();
 
       const now = new Date();
       const end = new Date();
@@ -29,11 +32,9 @@ export const GET = withReadPermission(
         orConditions.push({ iqama_expiry: { gte: now, lte: end } });
       }
 
-      // Optionally include expired window (last expiredDays)
+      // Optionally include ALL expired (any date before now)
       if (includeExpired) {
-        const expiredStart = new Date();
-        expiredStart.setDate(expiredStart.getDate() - (isNaN(expiredDaysParam) ? 30 : expiredDaysParam));
-        orConditions.push({ iqama_expiry: { gte: expiredStart, lt: now } });
+        orConditions.push({ iqama_expiry: { lt: now } });
       }
 
       // Optionally include missing dates
@@ -43,25 +44,138 @@ export const GET = withReadPermission(
 
       const where: any = {
         status: { in: ['active', 'on_leave'] },
-        OR: orConditions,
       };
 
-      const employees = await prisma.employee.findMany({
-        where,
-        select: {
-          id: true,
-          first_name: true,
-          middle_name: true,
-          last_name: true,
-          file_number: true,
-          employee_id: true,
-          iqama_number: true,
-          iqama_expiry: true,
-          department: { select: { name: true } },
-          designation: { select: { name: true } },
-        },
-        orderBy: { iqama_expiry: 'asc' },
-      });
+      const andConditions: any[] = [];
+      andConditions.push({ OR: orConditions });
+
+      if (search) {
+        const s = search;
+        const searchOr: any[] = [
+          { first_name: { contains: s, mode: 'insensitive' } },
+          { middle_name: { contains: s, mode: 'insensitive' } },
+          { last_name: { contains: s, mode: 'insensitive' } },
+          { file_number: { contains: s, mode: 'insensitive' } },
+          { employee_id: { contains: s, mode: 'insensitive' } },
+          { iqama_number: { contains: s, mode: 'insensitive' } },
+          { department: { name: { contains: s, mode: 'insensitive' } } },
+          { designation: { name: { contains: s, mode: 'insensitive' } } },
+        ];
+        andConditions.push({ OR: searchOr });
+      }
+
+      if (andConditions.length) {
+        where.AND = andConditions;
+      }
+
+      // Prioritize iqama_number matches when searching
+      let totalCount = 0;
+      let employees: Array<any> = [];
+
+      if (search) {
+        const s = search;
+        const whereIqama = {
+          AND: [
+            where,
+            { iqama_number: { contains: s, mode: 'insensitive' } },
+          ],
+        } as any;
+
+        const whereOthers = {
+          AND: [
+            where,
+            { NOT: { iqama_number: { contains: s, mode: 'insensitive' } } },
+            {
+              OR: [
+                { first_name: { contains: s, mode: 'insensitive' } },
+                { middle_name: { contains: s, mode: 'insensitive' } },
+                { last_name: { contains: s, mode: 'insensitive' } },
+                { file_number: { contains: s, mode: 'insensitive' } },
+                { employee_id: { contains: s, mode: 'insensitive' } },
+                { department: { name: { contains: s, mode: 'insensitive' } } },
+                { designation: { name: { contains: s, mode: 'insensitive' } } },
+              ],
+            },
+          ],
+        } as any;
+
+        const [countIqama, countOthers] = await Promise.all([
+          prisma.employee.count({ where: whereIqama }),
+          prisma.employee.count({ where: whereOthers }),
+        ]);
+        totalCount = countIqama + countOthers;
+
+        const offset = (page - 1) * limit;
+        const takeFromIqama = Math.max(0, Math.min(limit, countIqama - Math.min(offset, countIqama)));
+        const skipIqama = Math.min(offset, countIqama);
+        const remaining = Math.max(0, limit - takeFromIqama);
+        const skipOthers = Math.max(0, offset - countIqama);
+
+        const [iqamaRows, otherRows] = await Promise.all([
+          takeFromIqama > 0
+            ? prisma.employee.findMany({
+                where: whereIqama,
+                select: {
+                  id: true,
+                  first_name: true,
+                  middle_name: true,
+                  last_name: true,
+                  file_number: true,
+                  employee_id: true,
+                  iqama_number: true,
+                  iqama_expiry: true,
+                  department: { select: { name: true } },
+                  designation: { select: { name: true } },
+                },
+                orderBy: [{ iqama_expiry: 'asc' }, { id: 'asc' }],
+                skip: skipIqama,
+                take: takeFromIqama,
+              })
+            : Promise.resolve([]),
+          remaining > 0
+            ? prisma.employee.findMany({
+                where: whereOthers,
+                select: {
+                  id: true,
+                  first_name: true,
+                  middle_name: true,
+                  last_name: true,
+                  file_number: true,
+                  employee_id: true,
+                  iqama_number: true,
+                  iqama_expiry: true,
+                  department: { select: { name: true } },
+                  designation: { select: { name: true } },
+                },
+                orderBy: [{ iqama_expiry: 'asc' }, { id: 'asc' }],
+                skip: skipOthers,
+                take: remaining,
+              })
+            : Promise.resolve([]),
+        ]);
+
+        employees = [...iqamaRows, ...otherRows];
+      } else {
+        totalCount = await prisma.employee.count({ where });
+        employees = await prisma.employee.findMany({
+          where,
+          select: {
+            id: true,
+            first_name: true,
+            middle_name: true,
+            last_name: true,
+            file_number: true,
+            employee_id: true,
+            iqama_number: true,
+            iqama_expiry: true,
+            department: { select: { name: true } },
+            designation: { select: { name: true } },
+          },
+          orderBy: [{ iqama_expiry: 'asc' }, { id: 'asc' }],
+          skip: (page - 1) * limit,
+          take: limit,
+        });
+      }
 
       // Post-sort: expired first, then expiring, then missing; within each by date asc
       const nowMs = now.getTime();
@@ -88,18 +202,21 @@ export const GET = withReadPermission(
             days_remaining: daysRemaining,
             status,
           };
-        })
-        .sort((a, b) => {
-          const orderRank = (s: string) => (s === 'expired' ? 0 : s === 'expiring' ? 1 : 2);
-          const rA = orderRank(a.status);
-          const rB = orderRank(b.status);
-          if (rA !== rB) return rA - rB;
-          const aTime = a.iqama_expiry ? new Date(a.iqama_expiry).getTime() : Infinity;
-          const bTime = b.iqama_expiry ? new Date(b.iqama_expiry).getTime() : Infinity;
-          return aTime - bTime;
         });
 
-      return NextResponse.json({ success: true, data });
+      const totalPages = Math.ceil(totalCount / limit) || 1;
+      return NextResponse.json({ 
+        success: true, 
+        data, 
+        pagination: {
+          page,
+          limit,
+          total: totalCount,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1,
+        }
+      });
     } catch (error) {
       console.error('Error fetching iqama expiring employees:', error);
       return NextResponse.json(

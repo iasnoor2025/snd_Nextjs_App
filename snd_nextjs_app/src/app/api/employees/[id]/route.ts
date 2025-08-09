@@ -187,102 +187,78 @@ const updateEmployeeHandler = async (
       }
     }
 
-    // Convert date strings to Date objects for Prisma
-    const updateData = { ...body };
-    
-    // Convert date fields to proper Date objects
-    if (updateData.hire_date && updateData.hire_date.trim() !== '') {
-      updateData.hire_date = new Date(updateData.hire_date);
-    } else {
-      updateData.hire_date = null;
-    }
-    if (updateData.date_of_birth && updateData.date_of_birth.trim() !== '') {
-      updateData.date_of_birth = new Date(updateData.date_of_birth);
-    } else {
-      updateData.date_of_birth = null;
-    }
-    if (updateData.iqama_expiry && updateData.iqama_expiry.trim() !== '') {
-      updateData.iqama_expiry = new Date(updateData.iqama_expiry);
-    } else {
-      updateData.iqama_expiry = null;
-    }
-    if (updateData.passport_expiry && updateData.passport_expiry.trim() !== '') {
-      updateData.passport_expiry = new Date(updateData.passport_expiry);
-    } else {
-      updateData.passport_expiry = null;
-    }
-    if (updateData.driving_license_expiry && updateData.driving_license_expiry.trim() !== '') {
-      updateData.driving_license_expiry = new Date(updateData.driving_license_expiry);
-    } else {
-      updateData.driving_license_expiry = null;
-    }
-    if (updateData.operator_license_expiry && updateData.operator_license_expiry.trim() !== '') {
-      updateData.operator_license_expiry = new Date(updateData.operator_license_expiry);
-    } else {
-      updateData.operator_license_expiry = null;
-    }
-    if (updateData.tuv_certification_expiry && updateData.tuv_certification_expiry.trim() !== '') {
-      updateData.tuv_certification_expiry = new Date(updateData.tuv_certification_expiry);
-    } else {
-      updateData.tuv_certification_expiry = null;
-    }
-    if (updateData.spsp_license_expiry && updateData.spsp_license_expiry.trim() !== '') {
-      updateData.spsp_license_expiry = new Date(updateData.spsp_license_expiry);
-    } else {
-      updateData.spsp_license_expiry = null;
+    // Build partial update payload: only mutate fields present in body
+    const updateDataRaw: Record<string, any> = body || {};
+    const prismaData: Record<string, any> = {};
+
+    const dateFields = [
+      'hire_date',
+      'date_of_birth',
+      'iqama_expiry',
+      'passport_expiry',
+      'driving_license_expiry',
+      'operator_license_expiry',
+      'tuv_certification_expiry',
+      'spsp_license_expiry',
+    ];
+    for (const key of dateFields) {
+      if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
+        const v = updateDataRaw[key];
+        prismaData[key] = v && typeof v === 'string' && v.trim() !== '' ? new Date(v) : null;
+      }
     }
 
-    // Convert numeric fields to proper numbers
-    if (updateData.hourly_rate !== undefined && updateData.hourly_rate !== null) {
-      updateData.hourly_rate = parseFloat(updateData.hourly_rate);
-    } else {
-      updateData.hourly_rate = null;
-    }
-    
-    if (updateData.basic_salary !== undefined && updateData.basic_salary !== null) {
-      updateData.basic_salary = parseFloat(updateData.basic_salary);
-    } else {
-      updateData.basic_salary = null;
-    }
-
-    if (updateData.overtime_rate_multiplier !== undefined && updateData.overtime_rate_multiplier !== null) {
-      updateData.overtime_rate_multiplier = parseFloat(updateData.overtime_rate_multiplier);
-    } else {
-      updateData.overtime_rate_multiplier = 1.5; // Default value
+    const numberFieldsFloat = [
+      'hourly_rate',
+      'basic_salary',
+      'overtime_rate_multiplier',
+      'overtime_fixed_rate',
+    ];
+    for (const key of numberFieldsFloat) {
+      if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
+        const v = updateDataRaw[key];
+        prismaData[key] = v === '' || v === null || v === undefined ? null : parseFloat(v);
+      }
     }
 
-    if (updateData.overtime_fixed_rate !== undefined && updateData.overtime_fixed_rate !== null) {
-      updateData.overtime_fixed_rate = parseFloat(updateData.overtime_fixed_rate);
-    } else {
-      updateData.overtime_fixed_rate = null;
+    const numberFieldsInt = [
+      'contract_days_per_month',
+      'contract_hours_per_day',
+    ];
+    for (const key of numberFieldsInt) {
+      if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
+        const v = updateDataRaw[key];
+        prismaData[key] = v === '' || v === null || v === undefined ? null : parseInt(v);
+      }
     }
 
-    // Handle contract fields
-    if (updateData.contract_days_per_month !== undefined && updateData.contract_days_per_month !== null) {
-      updateData.contract_days_per_month = parseInt(updateData.contract_days_per_month);
-    } else {
-      updateData.contract_days_per_month = 26; // Default value
+    // Pass-through other primitive fields if present
+    const passthroughFields = [
+      'first_name','middle_name','last_name','email','phone','address','city','state','postal_code','country','nationality','department_id','designation_id','supervisor','status','notes','iqama_number','passport_number','driving_license_number','operator_license_number','tuv_certification_number','spsp_license_number','advance_salary_eligible','advance_salary_approved_this_month'
+    ];
+    for (const key of passthroughFields) {
+      if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
+        prismaData[key] = updateDataRaw[key];
+      }
     }
 
-    if (updateData.contract_hours_per_day !== undefined && updateData.contract_hours_per_day !== null) {
-      updateData.contract_hours_per_day = parseInt(updateData.contract_hours_per_day);
-    } else {
-      updateData.contract_hours_per_day = 8; // Default value
-    }
-
-    // Auto-calculate hourly rate if basic salary is provided (same as Laravel logic)
-    if (updateData.basic_salary && updateData.basic_salary > 0) {
-      const days = updateData.contract_days_per_month || 26;
-      const hours = updateData.contract_hours_per_day || 8;
+    // Auto-calc hourly_rate only if basic_salary and contract fields are part of this update
+    if (
+      Object.prototype.hasOwnProperty.call(prismaData, 'basic_salary') &&
+      prismaData.basic_salary &&
+      (Object.prototype.hasOwnProperty.call(prismaData, 'contract_days_per_month') || Object.prototype.hasOwnProperty.call(prismaData, 'contract_hours_per_day'))
+    ) {
+      const days = prismaData.contract_days_per_month ?? 26;
+      const hours = prismaData.contract_hours_per_day ?? 8;
       if (days > 0 && hours > 0) {
-        updateData.hourly_rate = Math.round((updateData.basic_salary / (days * hours)) * 100) / 100;
+        prismaData.hourly_rate = Math.round((Number(prismaData.basic_salary) / (days * hours)) * 100) / 100;
       }
     }
 
     // Update employee in database
     const updatedEmployee = await prisma.employee.update({
       where: { id: employeeId },
-      data: updateData,
+      data: prismaData,
       include: {
         department: {
           select: {
