@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { employeeLeaves, employees, departments, designations } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 import { authConfig } from '@/lib/auth-config';
 
 // GET /api/leave-requests/[id] - Get a specific leave request
@@ -19,32 +21,48 @@ export async function GET(
       );
     }
 
-    // Get the leave request with employee details
-    const leaveRequest = await prisma.employeeLeave.findUnique({
-      where: { id: parseInt(id) },
-      include: {
+    // Get the leave request with employee details using Drizzle
+    const [leaveRequest] = await db
+      .select({
+        id: employeeLeaves.id,
+        leaveType: employeeLeaves.leaveType,
+        startDate: employeeLeaves.startDate,
+        endDate: employeeLeaves.endDate,
+        days: employeeLeaves.days,
+        reason: employeeLeaves.reason,
+        status: employeeLeaves.status,
+        approvedBy: employeeLeaves.approvedBy,
+        approvedAt: employeeLeaves.approvedAt,
+        rejectedBy: employeeLeaves.rejectedBy,
+        rejectedAt: employeeLeaves.rejectedAt,
+        rejectionReason: employeeLeaves.rejectionReason,
+        createdAt: employeeLeaves.createdAt,
+        updatedAt: employeeLeaves.updatedAt,
         employee: {
-          select: {
-            first_name: true,
-            last_name: true,
-            employee_id: true,
-            file_number: true,
-            email: true,
-            phone: true,
-            department: {
-              select: {
-                name: true,
-              },
-            },
-            designation: {
-              select: {
-                name: true,
-              },
-            },
-          },
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          email: employees.email,
+          phone: employees.phone,
+          departmentId: employees.departmentId,
+          designationId: employees.designationId,
         },
-      },
-    });
+        department: {
+          id: departments.id,
+          name: departments.name,
+        },
+        designation: {
+          id: designations.id,
+          name: designations.name,
+        },
+      })
+      .from(employeeLeaves)
+      .leftJoin(employees, eq(employeeLeaves.employeeId, employees.id))
+      .leftJoin(departments, eq(employees.departmentId, departments.id))
+      .leftJoin(designations, eq(employees.designationId, designations.id))
+      .where(eq(employeeLeaves.id, parseInt(id)))
+      .limit(1);
 
     if (!leaveRequest) {
       return NextResponse.json(
@@ -56,25 +74,25 @@ export async function GET(
     // Transform the data for the frontend
     const transformedLeaveRequest = {
       id: leaveRequest.id.toString(),
-      employee_name: `${leaveRequest.employee.first_name} ${leaveRequest.employee.last_name}`,
-      employee_id: leaveRequest.employee.employee_id,
-      leave_type: leaveRequest.leave_type,
-      start_date: leaveRequest.start_date.toISOString().split('T')[0],
-      end_date: leaveRequest.end_date.toISOString().split('T')[0],
+      employee_name: `${leaveRequest.employee.firstName} ${leaveRequest.employee.lastName}`,
+      employee_id: leaveRequest.employee.id,
+      leave_type: leaveRequest.leaveType,
+      start_date: leaveRequest.startDate.toISOString().split('T')[0],
+      end_date: leaveRequest.endDate.toISOString().split('T')[0],
       days_requested: leaveRequest.days,
       reason: leaveRequest.reason,
       status: leaveRequest.status.charAt(0).toUpperCase() + leaveRequest.status.slice(1).toLowerCase(),
-      submitted_date: leaveRequest.created_at.toISOString(),
-      approved_by: leaveRequest.approved_by?.toString() || null,
-      approved_date: leaveRequest.approved_at?.toISOString() || null,
-      rejected_by: leaveRequest.rejected_by?.toString() || null,
-      rejected_at: leaveRequest.rejected_at?.toISOString() || null,
-      rejection_reason: leaveRequest.rejection_reason || null,
+      submitted_date: leaveRequest.createdAt.toISOString(),
+      approved_by: leaveRequest.approvedBy?.toString() || null,
+      approved_date: leaveRequest.approvedAt?.toISOString() || null,
+      rejected_by: leaveRequest.rejectedBy?.toString() || null,
+      rejected_at: leaveRequest.rejectedAt?.toISOString() || null,
+      rejection_reason: leaveRequest.rejectionReason || null,
       comments: null, // Not implemented in current schema
-      created_at: leaveRequest.created_at.toISOString(),
-      updated_at: leaveRequest.updated_at.toISOString(),
-      department: leaveRequest.employee.department?.name,
-      position: leaveRequest.employee.designation?.name,
+      created_at: leaveRequest.createdAt.toISOString(),
+      updated_at: leaveRequest.updatedAt.toISOString(),
+      department: leaveRequest.department?.name,
+      position: leaveRequest.designation?.name,
       total_leave_balance: 20, // Default leave balance - should be calculated from employee's leave policy
       leave_taken_this_year: 0, // Should be calculated from approved leaves this year
       attachments: [], // Not implemented in current schema
@@ -84,11 +102,10 @@ export async function GET(
           action: leaveRequest.status === 'pending' ? 'Submitted' : 
                   leaveRequest.status === 'approved' ? 'Approved' : 
                   leaveRequest.status === 'rejected' ? 'Rejected' : 'Submitted',
-          approver: leaveRequest.employee.first_name + ' ' + leaveRequest.employee.last_name,
-          date: leaveRequest.created_at.toISOString(),
+          approver: leaveRequest.employee.firstName + ' ' + leaveRequest.employee.lastName,
+          date: leaveRequest.createdAt.toISOString(),
           comments: leaveRequest.status === 'pending' ? 'Leave request submitted for approval' :
-                   leaveRequest.status === 'approved' ? 'Leave request approved' :
-                   leaveRequest.status === 'rejected' ? `Leave request rejected: ${leaveRequest.rejection_reason || 'No reason provided'}` :
+                   leaveRequest.status === 'rejected' ? `Leave request rejected: ${leaveRequest.rejectionReason || 'No reason provided'}` :
                    'Leave request submitted for approval'
         }
       ]

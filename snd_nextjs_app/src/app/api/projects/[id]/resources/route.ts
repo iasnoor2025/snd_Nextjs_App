@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { projectResources, employees, equipment, employeeAssignments, equipmentRentalHistory } from '@/lib/drizzle/schema';
+import { eq, desc } from 'drizzle-orm';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -7,38 +10,74 @@ export async function GET(
   try {
     const { id: projectId } = await params;
 
-    const resources = await prisma.projectResource.findMany({
-      where: {
-        project_id: parseInt(projectId)
-      },
-      include: {
+    const resources = await db
+      .select({
+        id: projectResources.id,
+        projectId: projectResources.projectId,
+        type: projectResources.type,
+        name: projectResources.name,
+        description: projectResources.description,
+        quantity: projectResources.quantity,
+        unitCost: projectResources.unitCost,
+        totalCost: projectResources.totalCost,
+        date: projectResources.date,
+        status: projectResources.status,
+        notes: projectResources.notes,
+        employeeId: projectResources.employeeId,
+        workerName: projectResources.workerName,
+        jobTitle: projectResources.jobTitle,
+        dailyRate: projectResources.dailyRate,
+        daysWorked: projectResources.daysWorked,
+        startDate: projectResources.startDate,
+        endDate: projectResources.endDate,
+        totalDays: projectResources.totalDays,
+        equipmentId: projectResources.equipmentId,
+        equipmentName: projectResources.equipmentName,
+        operatorName: projectResources.operatorName,
+        hourlyRate: projectResources.hourlyRate,
+        hoursWorked: projectResources.hoursWorked,
+        usageHours: projectResources.usageHours,
+        maintenanceCost: projectResources.maintenanceCost,
+        materialName: projectResources.materialName,
+        unit: projectResources.unit,
+        unitPrice: projectResources.unitPrice,
+        materialId: projectResources.materialId,
+        fuelType: projectResources.fuelType,
+        liters: projectResources.liters,
+        pricePerLiter: projectResources.pricePerLiter,
+        category: projectResources.category,
+        expenseDescription: projectResources.expenseDescription,
+        amount: projectResources.amount,
+        title: projectResources.title,
+        priority: projectResources.priority,
+        dueDate: projectResources.dueDate,
+        completionPercentage: projectResources.completionPercentage,
+        assignedToId: projectResources.assignedToId,
+        createdAt: projectResources.createdAt,
+        updatedAt: projectResources.updatedAt,
         employee: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            designation: true
-          }
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          designation: employees.designation
         },
         equipment: {
-          select: {
-            id: true,
-            name: true,
-            description: true
-          }
+          id: equipment.id,
+          name: equipment.name,
+          description: equipment.description
         },
-        assigned_to: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true
-          }
+        assignedTo: {
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName
         }
-      },
-      orderBy: {
-        created_at: 'desc'
-      }
-    });
+      })
+      .from(projectResources)
+      .leftJoin(employees, eq(projectResources.employeeId, employees.id))
+      .leftJoin(equipment, eq(projectResources.equipmentId, equipment.id))
+      .leftJoin(employees, eq(projectResources.assignedToId, employees.id))
+      .where(eq(projectResources.projectId, parseInt(projectId)))
+      .orderBy(desc(projectResources.createdAt));
 
     return NextResponse.json({ 
       success: true,
@@ -71,104 +110,83 @@ export async function POST(
 
     // Prepare the data for insertion
     const resourceData = {
-      project_id: parseInt(projectId),
+      projectId: parseInt(projectId),
       type: body.type,
       name: body.name,
       description: body.description,
       quantity: body.quantity ? parseInt(body.quantity) : null,
-      unit_cost: body.unit_cost ? parseFloat(body.unit_cost) : null,
-      total_cost: body.total_cost ? parseFloat(body.total_cost) : null,
+      unitCost: body.unit_cost ? parseFloat(body.unit_cost) : null,
+      totalCost: body.total_cost ? parseFloat(body.total_cost) : null,
       date: body.date ? new Date(body.date) : null,
       status: body.status || 'pending',
       notes: body.notes,
 
       // Manpower specific fields
-      employee_id: body.employee_id ? parseInt(body.employee_id) : null,
-      worker_name: body.worker_name,
-      job_title: body.job_title,
-      daily_rate: body.daily_rate ? parseFloat(body.daily_rate) : null,
-      days_worked: body.days_worked ? parseInt(body.days_worked) : null,
-      start_date: body.start_date ? new Date(body.start_date) : null,
-      end_date: body.end_date ? new Date(body.end_date) : null,
-      total_days: body.total_days ? parseInt(body.total_days) : null,
+      employeeId: body.employee_id ? parseInt(body.employee_id) : null,
+      workerName: body.worker_name,
+      jobTitle: body.job_title,
+      dailyRate: body.daily_rate ? parseFloat(body.daily_rate) : null,
+      daysWorked: body.days_worked ? parseInt(body.days_worked) : null,
+      startDate: body.start_date ? new Date(body.start_date) : null,
+      endDate: body.end_date ? new Date(body.end_date) : null,
+      totalDays: body.total_days ? parseInt(body.total_days) : null,
 
       // Equipment specific fields
-      equipment_id: body.equipment_id ? parseInt(body.equipment_id) : null,
-      equipment_name: body.equipment_name,
-      operator_name: body.operator_name,
-      hourly_rate: body.hourly_rate ? parseFloat(body.hourly_rate) : null,
-      hours_worked: body.hours_worked ? parseFloat(body.hours_worked) : null,
-      usage_hours: body.usage_hours ? parseFloat(body.usage_hours) : null,
-      maintenance_cost: body.maintenance_cost ? parseFloat(body.maintenance_cost) : null,
+      equipmentId: body.equipment_id ? parseInt(body.equipment_id) : null,
+      equipmentName: body.equipment_name,
+      operatorName: body.operator_name,
+      hourlyRate: body.hourly_rate ? parseFloat(body.hourly_rate) : null,
+      hoursWorked: body.hours_worked ? parseFloat(body.hours_worked) : null,
+      usageHours: body.usage_hours ? parseFloat(body.usage_hours) : null,
+      maintenanceCost: body.maintenance_cost ? parseFloat(body.maintenance_cost) : null,
 
       // Material specific fields
-      material_name: body.material_name,
+      materialName: body.material_name,
       unit: body.unit,
-      unit_price: body.unit_price ? parseFloat(body.unit_price) : null,
-      material_id: body.material_id ? parseInt(body.material_id) : null,
+      unitPrice: body.unit_price ? parseFloat(body.unit_price) : null,
+      materialId: body.material_id ? parseInt(body.material_id) : null,
 
       // Fuel specific fields
-      fuel_type: body.fuel_type,
+      fuelType: body.fuel_type,
       liters: body.liters ? parseFloat(body.liters) : null,
-      price_per_liter: body.price_per_liter ? parseFloat(body.price_per_liter) : null,
+      pricePerLiter: body.price_per_liter ? parseFloat(body.price_per_liter) : null,
 
       // Expense specific fields
       category: body.category,
-      expense_description: body.expense_description,
+      expenseDescription: body.expense_description,
       amount: body.amount ? parseFloat(body.amount) : null,
 
       // Task specific fields
       title: body.title,
       priority: body.priority,
-      due_date: body.due_date ? new Date(body.due_date) : null,
-      completion_percentage: body.completion_percentage ? parseInt(body.completion_percentage) : null,
-      assigned_to_id: body.assigned_to_id ? parseInt(body.assigned_to_id) : null,
+      dueDate: body.due_date ? new Date(body.due_date) : null,
+      completionPercentage: body.completion_percentage ? parseInt(body.completion_percentage) : null,
+      assignedToId: body.assigned_to_id ? parseInt(body.assigned_to_id) : null,
     };
 
-    const resource = await prisma.projectResource.create({
-      data: resourceData,
-      include: {
-        employee: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            designation: true
-          }
-        },
-        equipment: {
-          select: {
-            id: true,
-            name: true,
-            description: true
-          }
-        },
-        assigned_to: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true
-          }
-        }
-      }
-    });
+    const insertedResource = await db
+      .insert(projectResources)
+      .values(resourceData)
+      .returning();
+
+    const resource = insertedResource[0];
 
     // If this is a manpower resource with an employee, create an employee assignment
     if (body.type === 'manpower' && body.employee_id) {
       try {
         console.log('Creating employee assignment for employee:', body.employee_id);
-        await prisma.employeeAssignment.create({
-          data: {
-            employee_id: parseInt(body.employee_id),
-            project_id: parseInt(projectId),
+        await db
+          .insert(employeeAssignments)
+          .values({
+            employeeId: parseInt(body.employee_id),
+            projectId: parseInt(projectId),
             name: `${body.name} Assignment`,
-            start_date: body.start_date ? new Date(body.start_date) : new Date(),
-            end_date: body.end_date ? new Date(body.end_date) : null,
+            startDate: body.start_date ? new Date(body.start_date) : new Date(),
+            endDate: body.end_date ? new Date(body.end_date) : null,
             notes: body.notes,
             status: 'active',
             type: 'project'
-          }
-        });
+          });
         console.log('Employee assignment created successfully');
       } catch (assignmentError) {
         console.error('Error creating employee assignment:', assignmentError);
@@ -180,19 +198,19 @@ export async function POST(
     if (body.type === 'equipment' && body.equipment_id) {
       try {
         console.log('Creating equipment assignment for equipment:', body.equipment_id);
-        await prisma.equipmentRentalHistory.create({
-          data: {
-            equipment_id: parseInt(body.equipment_id),
-            assignment_type: 'project',
-            project_id: parseInt(projectId),
-            start_date: body.start_date ? new Date(body.start_date) : new Date(),
-            end_date: body.end_date ? new Date(body.end_date) : null,
-            daily_rate: body.hourly_rate ? parseFloat(body.hourly_rate) * 8 : null, // Convert hourly to daily
-            total_amount: body.total_cost ? parseFloat(body.total_cost) : null,
+        await db
+          .insert(equipmentRentalHistory)
+          .values({
+            equipmentId: parseInt(body.equipment_id),
+            assignmentType: 'project',
+            projectId: parseInt(projectId),
+            startDate: body.start_date ? new Date(body.start_date) : new Date(),
+            endDate: body.end_date ? new Date(body.end_date) : null,
+            dailyRate: body.hourly_rate ? parseFloat(body.hourly_rate) * 8 : null, // Convert hourly to daily
+            totalAmount: body.total_cost ? parseFloat(body.total_cost) : null,
             notes: body.notes,
             status: 'active'
-          }
-        });
+          });
         console.log('Equipment assignment created successfully');
       } catch (assignmentError) {
         console.error('Error creating equipment assignment:', assignmentError);

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { employees, employeeDocuments } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
 import { writeFile, mkdir, unlink } from 'fs/promises';
@@ -27,16 +29,19 @@ export async function POST(
     }
 
     // Check if employee exists
-    const employee = await prisma.employee.findUnique({
-      where: { id: employeeId },
-    });
+    const employeeResult = await db.select()
+      .from(employees)
+      .where(eq(employees.id, employeeId))
+      .limit(1);
 
-    if (!employee) {
+    if (!employeeResult[0]) {
       return NextResponse.json(
         { error: "Employee not found" },
         { status: 404 }
       );
     }
+
+    const employee = employeeResult[0];
 
     const formData = await request.formData();
     const file = formData.get('file') as File;
@@ -87,12 +92,15 @@ export async function POST(
 
     // If the document type is specific (not general), remove any existing document(s) of the same type
     if (rawDocumentType && rawDocumentType !== 'general') {
-      const existingDocs = await prisma.employeeDocument.findMany({
-        where: { employee_id: employeeId, document_type: rawDocumentType },
-      });
+      const existingDocsResult = await db.select()
+        .from(employeeDocuments)
+        .where(eq(employeeDocuments.employeeId, employeeId));
+      
+      const existingDocs = existingDocsResult.filter(doc => doc.documentType === rawDocumentType);
+      
       for (const doc of existingDocs) {
         try {
-          const absPath = join(process.cwd(), 'public', doc.file_path.replace(/^\//, ''));
+          const absPath = join(process.cwd(), 'public', doc.filePath.replace(/^\//, ''));
           if (existsSync(absPath)) {
             await unlink(absPath);
           }
@@ -101,9 +109,8 @@ export async function POST(
         }
       }
       if (existingDocs.length > 0) {
-        await prisma.employeeDocument.deleteMany({
-          where: { employee_id: employeeId, document_type: rawDocumentType },
-        });
+        await db.delete(employeeDocuments)
+          .where(eq(employeeDocuments.employeeId, employeeId));
       }
     }
 
@@ -114,7 +121,7 @@ export async function POST(
 
     const toTitleCase = (s: string) => s.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
     const baseLabel = documentName.trim() || toTitleCase((rawDocumentType || 'Document').replace(/_/g, ' '));
-    const fileNumber = employee.file_number || String(employeeId);
+    const fileNumber = employee.fileNumber || String(employeeId);
     const baseName = `${fileNumber}_${baseLabel}`
       .replace(/\s+/g, '_')
       .replace(/[^A-Za-z0-9_\-]/g, '');
@@ -129,17 +136,21 @@ export async function POST(
     await writeFile(filePath, buffer);
 
     // Save document record to database (use the new file name)
-    const document = await prisma.employeeDocument.create({
-      data: {
-        employee_id: employeeId,
-        document_type: rawDocumentType,
-        file_path: relativePath,
-        file_name: storedFileName,
-        file_size: file.size,
-        mime_type: file.type,
+    const documentResult = await db.insert(employeeDocuments)
+      .values({
+        employeeId: employeeId,
+        documentType: rawDocumentType,
+        filePath: relativePath,
+        fileName: storedFileName,
+        fileSize: file.size,
+        mimeType: file.type,
         description: description || null,
-      },
-    });
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }) 
+      .returning();
+
+    const document = documentResult[0];
 
     return NextResponse.json({
       success: true,
@@ -147,15 +158,15 @@ export async function POST(
       data: {
         id: document.id,
         name: baseLabel,
-        file_name: document.file_name,
-        file_type: document.mime_type?.split('/')[1]?.toUpperCase() || 'UNKNOWN',
-        size: document.file_size,
-        url: document.file_path,
-        mime_type: document.mime_type,
-        document_type: document.document_type,
+        fileName: document.fileName,
+        fileType: document.mimeType?.split('/')[1]?.toUpperCase() || 'UNKNOWN',
+        size: document.fileSize,
+        url: document.filePath,
+        mimeType: document.mimeType,
+        documentType: document.documentType,
         description: document.description,
-        created_at: document.created_at.toISOString(),
-        updated_at: document.updated_at.toISOString(),
+        createdAt: document.createdAt.toISOString(),
+        updatedAt: document.updatedAt.toISOString(),
       }
     });
   } catch (error) {

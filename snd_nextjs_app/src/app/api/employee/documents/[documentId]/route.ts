@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { db } from '@/lib/drizzle'
+import { employeeDocuments, employees } from '@/lib/drizzle/schema'
+import { eq, and } from 'drizzle-orm'
 import { getServerSession } from 'next-auth'
 import { authConfig } from '@/lib/auth-config'
 import fs from 'fs'
@@ -31,16 +33,19 @@ export async function DELETE(
     const { documentId } = await params
 
     // Get the document to check ownership and file path
-    const document = await prisma.employeeDocument.findFirst({
-      where: {
-        id: parseInt(documentId),
-        employee: {
-          user_id: parseInt(session.user.id)
-        }
-      }
-    })
+    const document = await db
+      .select()
+      .from(employeeDocuments)
+      .leftJoin(employees, eq(employeeDocuments.employeeId, employees.id))
+      .where(
+        and(
+          eq(employeeDocuments.id, parseInt(documentId)),
+          eq(employees.userId, parseInt(session.user.id))
+        )
+      )
+      .limit(1);
 
-    if (!document) {
+    if (!document.length) {
       return NextResponse.json(
         { error: 'Document not found or access denied' },
         { status: 404 }
@@ -48,8 +53,8 @@ export async function DELETE(
     }
 
     // Delete the physical file if it exists
-    if (document.file_path) {
-      const filePath = path.join(process.cwd(), 'public', document.file_path)
+    if (document[0].employeeDocument.filePath) {
+      const filePath = path.join(process.cwd(), 'public', document[0].employeeDocument.filePath)
       try {
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath)
@@ -61,11 +66,9 @@ export async function DELETE(
     }
 
     // Delete the document record from database
-    await prisma.employeeDocument.delete({
-      where: {
-        id: parseInt(documentId)
-      }
-    })
+    await db
+      .delete(employeeDocuments)
+      .where(eq(employeeDocuments.id, parseInt(documentId)));
 
     return NextResponse.json(
       { message: 'Document deleted successfully' },

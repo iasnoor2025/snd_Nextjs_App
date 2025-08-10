@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { timesheets, employees, users } from '@/lib/drizzle/schema';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
+import { eq, and } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,34 +14,58 @@ export async function POST(request: NextRequest) {
 
     const { timesheetId, notes } = await request.json();
 
-    // Get the timesheet using any type to bypass TypeScript issues
-    const timesheet = await (prisma.timesheet as any).findUnique({
-      where: { id: timesheetId },
-      include: {
+    // Get the timesheet with employee and user details
+    const timesheetData = await db
+      .select({
+        id: timesheets.id,
+        employeeId: timesheets.employeeId,
+        status: timesheets.status,
+        hoursWorked: timesheets.hoursWorked,
+        overtimeHours: timesheets.overtimeHours,
+        date: timesheets.date,
+        notes: timesheets.notes,
+        submittedAt: timesheets.submittedAt,
         employee: {
-          include: {
-            user: true
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          user: {
+            id: users.id,
+            name: users.name,
+            email: users.email
           }
         }
-      }
-    });
+      })
+      .from(timesheets)
+      .leftJoin(employees, eq(timesheets.employeeId, employees.id))
+      .leftJoin(users, eq(employees.userId, users.id))
+      .where(eq(timesheets.id, parseInt(timesheetId)))
+      .limit(1);
 
+    const timesheet = timesheetData[0];
     if (!timesheet) {
       return NextResponse.json({ error: 'Timesheet not found' }, { status: 404 });
     }
 
     // Check if timesheet belongs to the current user's employee record
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(session.user.id) },
-      include: { employees: true }
-    });
+    const userData = await db
+      .select({
+        id: users.id,
+        employees: {
+          id: employees.id
+        }
+      })
+      .from(users)
+      .leftJoin(employees, eq(users.id, employees.userId))
+      .where(eq(users.id, parseInt(session.user.id)));
 
-    if (!user) {
+    if (!userData.length) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // Check if user is the employee or has permission to submit for others
-    const userEmployeeIds = user.employees.map(emp => emp.id);
+    const userEmployeeIds = userData.map(emp => emp.employees?.id).filter(Boolean);
     const canSubmit = userEmployeeIds.includes(timesheet.employeeId) ||
                      session.user.role === 'ADMIN' ||
                      session.user.role === 'MANAGER' ||
@@ -86,21 +112,45 @@ export async function POST(request: NextRequest) {
     }
 
     // Update timesheet status and submission details
-    const updatedTimesheet = await (prisma.timesheet as any).update({
-      where: { id: timesheetId },
-      data: {
+    await db
+      .update(timesheets)
+      .set({
         status: 'submitted',
         submittedAt: new Date(),
         notes: notes || timesheet.notes
-      },
-      include: {
+      })
+      .where(eq(timesheets.id, parseInt(timesheetId)));
+
+    // Fetch the updated timesheet with details
+    const updatedTimesheetData = await db
+      .select({
+        id: timesheets.id,
+        employeeId: timesheets.employeeId,
+        status: timesheets.status,
+        hoursWorked: timesheets.hoursWorked,
+        overtimeHours: timesheets.overtimeHours,
+        date: timesheets.date,
+        notes: timesheets.notes,
+        submittedAt: timesheets.submittedAt,
         employee: {
-          include: {
-            user: true
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          user: {
+            id: users.id,
+            name: users.name,
+            email: users.email
           }
         }
-      }
-    });
+      })
+      .from(timesheets)
+      .leftJoin(employees, eq(timesheets.employeeId, employees.id))
+      .leftJoin(users, eq(employees.userId, users.id))
+      .where(eq(timesheets.id, parseInt(timesheetId)))
+      .limit(1);
+
+    const updatedTimesheet = updatedTimesheetData[0];
 
     return NextResponse.json({
       message: 'Timesheet submitted successfully',

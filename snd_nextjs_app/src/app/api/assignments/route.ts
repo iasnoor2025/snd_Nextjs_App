@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma, safePrismaOperation } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { employeeAssignments, employees, users, projects } from '@/lib/drizzle/schema';
+import { and, desc, eq, ilike, or, isNull, asc, sql } from 'drizzle-orm';
 import { withEmployeeListPermission } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
 
@@ -28,26 +30,24 @@ const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: {
     // For employee users, only show their own assignments
     if (user?.role === 'EMPLOYEE') {
       // Find employee record that matches user's national_id
-      const ownEmployee = await safePrismaOperation<{ id: number } | null>(() => 
-        prisma.employee.findFirst({
-          where: { iqama_number: user.national_id },
-          select: { id: true },
-        })
-      );
+      const [ownEmployee] = await db
+        .select({ id: employees.id })
+        .from(employees)
+        .where(eq(employees.iqamaNumber, user.national_id))
+        .limit(1);
       if (ownEmployee) {
         where.employee_id = ownEmployee.id;
       }
     }
 
-    if (search) {
-      where.OR = [
-        { employee: { first_name: { contains: search, mode: 'insensitive' } } },
-        { employee: { last_name: { contains: search, mode: 'insensitive' } } },
-        { employee: { employee_id: { contains: search, mode: 'insensitive' } } },
-        { project: { name: { contains: search, mode: 'insensitive' } } },
-        { assignment_type: { contains: search, mode: 'insensitive' } },
-      ];
-    }
+    // Search filters will be applied in the Drizzle query
+    const searchFilters = search ? [
+      ilike(employees.firstName, `%${search}%`),
+      ilike(employees.lastName, `%${search}%`),
+      ilike(employees.fileNumber, `%${search}%`),
+      ilike(projects.name, `%${search}%`),
+      ilike(employeeAssignments.assignmentType, `%${search}%`),
+    ] : [];
 
     if (status && status !== 'all') {
       where.status = status;
@@ -61,36 +61,70 @@ const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: {
       where.project_id = projectId;
     }
 
+    // Build Drizzle query with filters
+    const baseQuery = db
+      .select({
+        id: employeeAssignments.id,
+        employeeId: employeeAssignments.employeeId,
+        projectId: employeeAssignments.projectId,
+        assignmentType: employeeAssignments.assignmentType,
+        status: employeeAssignments.status,
+        startDate: employeeAssignments.startDate,
+        endDate: employeeAssignments.endDate,
+        description: employeeAssignments.description,
+        createdAt: employeeAssignments.createdAt,
+        updatedAt: employeeAssignments.updatedAt,
+        employee: {
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          userId: employees.userId,
+        },
+        project: {
+          id: projects.id,
+          name: projects.name,
+        },
+        user: {
+          id: users.id,
+          name: users.name,
+          email: users.email,
+        },
+      })
+      .from(employeeAssignments)
+      .leftJoin(employees, eq(employeeAssignments.employeeId, employees.id))
+      .leftJoin(projects, eq(employeeAssignments.projectId, projects.id))
+      .leftJoin(users, eq(employees.userId, users.id))
+      .where(and(
+        isNull(employeeAssignments.deletedAt),
+        ...(user?.role === 'EMPLOYEE' && where.employee_id ? [eq(employeeAssignments.employeeId, where.employee_id)] : []),
+        ...(status && status !== 'all' ? [eq(employeeAssignments.status, status)] : []),
+        ...(employeeId ? [eq(employeeAssignments.employeeId, parseInt(employeeId))] : []),
+        ...(projectId ? [eq(employeeAssignments.projectId, parseInt(projectId))] : []),
+        ...(searchFilters.length > 0 ? [or(...searchFilters)] : [])
+      ));
+
     const [assignments, total] = await Promise.all([
-      safePrismaOperation<any[]>(() => 
-        prisma.employeeAssignment.findMany({
-          where,
-          skip,
-          take: limit,
-          orderBy: { created_at: 'desc' },
-          include: {
-            employee: {
-              include: {
-                user: true,
-              },
-            },
-            project: true,
-          },
-        })
-      ),
-      safePrismaOperation<number>(() => 
-        prisma.employeeAssignment.count({ where })
-      ),
+      baseQuery.orderBy(desc(employeeAssignments.createdAt)).offset(skip).limit(limit),
+      db.select({ count: sql<number>`count(*)` }).from(employeeAssignments).where(and(
+        isNull(employeeAssignments.deletedAt),
+        ...(user?.role === 'EMPLOYEE' && where.employee_id ? [eq(employeeAssignments.employeeId, where.employee_id)] : []),
+        ...(status && status !== 'all' ? [eq(employeeAssignments.status, status)] : []),
+        ...(employeeId ? [eq(employeeAssignments.employeeId, parseInt(employeeId))] : []),
+        ...(projectId ? [eq(employeeAssignments.projectId, parseInt(projectId))] : []),
+        ...(searchFilters.length > 0 ? [or(...searchFilters)] : [])
+      )),
     ]);
 
-    const totalPages = Math.ceil(total / limit);
+    const totalCount = Number(total[0]?.count ?? 0);
+    const totalPages = Math.ceil(totalCount / limit);
 
     return NextResponse.json({
       data: assignments,
       current_page: page,
       last_page: totalPages,
       per_page: limit,
-      total,
+      total: totalCount,
       next_page_url: page < totalPages ? `/api/assignments?page=${page + 1}` : null,
       prev_page_url: page > 1 ? `/api/assignments?page=${page - 1}` : null,
     });
@@ -130,29 +164,61 @@ const createAssignmentHandler = async (request: NextRequest & { employeeAccess?:
       body.employeeId = request.employeeAccess.ownEmployeeId.toString();
     }
 
-    const assignment = await prisma.employeeAssignment.create({
-      data: {
-        employee_id: parseInt(body.employeeId),
-        project_id: projectId ? parseInt(projectId) : null,
-        type: assignmentType,
-        start_date: new Date(startDate),
-        end_date: endDate ? new Date(endDate) : null,
+    const [assignment] = await db
+      .insert(employeeAssignments)
+      .values({
+        employeeId: parseInt(body.employeeId),
+        projectId: projectId ? parseInt(projectId) : null,
+        assignmentType: assignmentType,
+        startDate: new Date(startDate),
+        endDate: endDate ? new Date(endDate) : null,
         status,
-        notes: notes || '',
-      },
-      include: {
+        description: notes || '',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    // Fetch the created assignment with related data
+    const [assignmentWithDetails] = await db
+      .select({
+        id: employeeAssignments.id,
+        employeeId: employeeAssignments.employeeId,
+        projectId: employeeAssignments.projectId,
+        assignmentType: employeeAssignments.assignmentType,
+        startDate: employeeAssignments.startDate,
+        endDate: employeeAssignments.endDate,
+        status: employeeAssignments.status,
+        description: employeeAssignments.description,
+        createdAt: employeeAssignments.createdAt,
+        updatedAt: employeeAssignments.updatedAt,
         employee: {
-          include: {
-            user: true,
-          },
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          userId: employees.userId,
         },
-        project: true,
-      },
-    });
+        project: {
+          id: projects.id,
+          name: projects.name,
+        },
+        user: {
+          id: users.id,
+          name: users.name,
+          email: users.email,
+        },
+      })
+      .from(employeeAssignments)
+      .leftJoin(employees, eq(employeeAssignments.employeeId, employees.id))
+      .leftJoin(projects, eq(employeeAssignments.projectId, projects.id))
+      .leftJoin(users, eq(employees.userId, users.id))
+      .where(eq(employeeAssignments.id, assignment.id))
+      .limit(1);
 
     return NextResponse.json({
       message: 'Assignment created successfully',
-      data: assignment,
+      data: assignmentWithDetails,
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating assignment:', error);
@@ -180,28 +246,59 @@ export const PUT = withEmployeeListPermission(
         notes,
       } = body;
 
-      const assignment = await prisma.employeeAssignment.update({
-        where: { id },
-        data: {
-          employee_id: employeeId,
-          project_id: projectId,
-          type: assignmentType || 'manual',
-          start_date: new Date(startDate),
-          end_date: endDate ? new Date(endDate) : null,
+      const [assignment] = await db
+        .update(employeeAssignments)
+        .set({
+          employeeId: employeeId,
+          projectId: projectId,
+          assignmentType: assignmentType || 'manual',
+          startDate: new Date(startDate),
+          endDate: endDate ? new Date(endDate) : null,
           status,
-          notes,
-        },
-        include: {
-          employee: {
-            include: {
-              user: true,
-            },
-          },
-          project: true,
-        },
-      });
+          description: notes,
+          updatedAt: new Date(),
+        })
+        .where(eq(employeeAssignments.id, id))
+        .returning();
 
-      return NextResponse.json(assignment);
+      // Fetch the updated assignment with related data
+      const [assignmentWithDetails] = await db
+        .select({
+          id: employeeAssignments.id,
+          employeeId: employeeAssignments.employeeId,
+          projectId: employeeAssignments.projectId,
+          assignmentType: employeeAssignments.assignmentType,
+          startDate: employeeAssignments.startDate,
+          endDate: employeeAssignments.endDate,
+          status: employeeAssignments.status,
+          description: employeeAssignments.description,
+          createdAt: employeeAssignments.createdAt,
+          updatedAt: employeeAssignments.updatedAt,
+          employee: {
+            id: employees.id,
+            firstName: employees.firstName,
+            lastName: employees.lastName,
+            fileNumber: employees.fileNumber,
+            userId: employees.userId,
+          },
+          project: {
+            id: projects.id,
+            name: projects.name,
+          },
+          user: {
+            id: users.id,
+            name: users.name,
+            email: users.email,
+          },
+        })
+        .from(employeeAssignments)
+        .leftJoin(employees, eq(employeeAssignments.employeeId, employees.id))
+        .leftJoin(projects, eq(employeeAssignments.projectId, projects.id))
+        .leftJoin(users, eq(employees.userId, users.id))
+        .where(eq(employeeAssignments.id, id))
+        .limit(1);
+
+      return NextResponse.json(assignmentWithDetails);
     } catch (error) {
       console.error('Error updating assignment:', error);
       return NextResponse.json(
@@ -220,9 +317,9 @@ export const DELETE = withEmployeeListPermission(
       const body = await request.json();
       const { id } = body;
 
-      await prisma.employeeAssignment.delete({
-        where: { id },
-      });
+      await db
+        .delete(employeeAssignments)
+        .where(eq(employeeAssignments.id, id));
 
       return NextResponse.json({ message: 'Assignment deleted successfully' });
     } catch (error) {

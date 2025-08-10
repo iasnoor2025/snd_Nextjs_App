@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
+import { db } from '@/lib/drizzle';
+import { eq, desc, and, sql } from 'drizzle-orm';
+import { notifications } from '@/lib/drizzle/schema';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,89 +21,80 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const perPage = parseInt(searchParams.get('per_page') || '50');
     const unreadOnly = searchParams.get('unread_only') === 'true';
+    const userEmail = session.user.email;
 
-    // Mock notifications data - in a real app, this would come from a database
-    const mockNotifications = [
-      {
-        id: '1',
-        type: 'info' as const,
-        title: 'System Update',
-        message: 'Your timesheet has been approved for this week.',
-        data: { timesheet_id: 123 },
-        timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-        read: false,
-        action_url: '/timesheets',
-        priority: 'medium' as const,
-      },
-      {
-        id: '2',
-        type: 'success' as const,
-        title: 'Payment Processed',
-        message: 'Your advance payment has been processed successfully.',
-        data: { payment_id: 456 },
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-        read: true,
-        action_url: '/payroll',
-        priority: 'high' as const,
-      },
-      {
-        id: '3',
-        type: 'warning' as const,
-        title: 'Equipment Due',
-        message: 'Equipment rental is due for return tomorrow.',
-        data: { rental_id: 789 },
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-        read: false,
-        action_url: '/rentals',
-        priority: 'high' as const,
-      },
-      {
-        id: '4',
-        type: 'error' as const,
-        title: 'Login Alert',
-        message: 'New login detected from an unrecognized device.',
-        data: { device_info: 'Unknown Device' },
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-        read: true,
-        action_url: '/profile',
-        priority: 'high' as const,
-      },
-    ];
+    try {
+      // Build where conditions
+      const whereConditions = unreadOnly 
+        ? and(eq(notifications.userEmail, userEmail), eq(notifications.read, false))
+        : eq(notifications.userEmail, userEmail);
 
-    // Filter notifications based on query parameters
-    let filteredNotifications = mockNotifications;
-    
-    if (unreadOnly) {
-      filteredNotifications = mockNotifications.filter(n => !n.read);
+      // Get notifications with pagination
+      const notificationsResult = await db
+        .select()
+        .from(notifications)
+        .where(whereConditions)
+        .orderBy(desc(notifications.createdAt))
+        .limit(perPage)
+        .offset((page - 1) * perPage);
+
+      // Get total count
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(notifications)
+        .where(whereConditions);
+
+      const total = countResult[0]?.count || 0;
+      const totalPages = Math.ceil(total / perPage);
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          notifications: notificationsResult.map(notification => ({
+            id: notification.id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            data: notification.data,
+            timestamp: notification.timestamp,
+            read: notification.read,
+            action_url: notification.actionUrl,
+            priority: notification.priority,
+          })),
+          pagination: {
+            current_page: page,
+            last_page: totalPages,
+            per_page: perPage,
+            total: total,
+            from: total > 0 ? (page - 1) * perPage + 1 : 0,
+            to: Math.min(page * perPage, total),
+          },
+        },
+      });
+    } catch (dbError) {
+      console.error('Database error:', dbError);
+      
+      // If table doesn't exist yet, return empty result
+      return NextResponse.json({
+        success: true,
+        data: {
+          notifications: [],
+          pagination: {
+            current_page: page,
+            last_page: 1,
+            per_page: perPage,
+            total: 0,
+            from: 0,
+            to: 0,
+          },
+        },
+      });
     }
 
-    // Apply pagination
-    const startIndex = (page - 1) * perPage;
-    const endIndex = startIndex + perPage;
-    const paginatedNotifications = filteredNotifications.slice(startIndex, endIndex);
-
-    // Calculate pagination info
-    const total = filteredNotifications.length;
-    const totalPages = Math.ceil(total / perPage);
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        notifications: paginatedNotifications,
-        pagination: {
-          current_page: page,
-          last_page: totalPages,
-          per_page: perPage,
-          total: total,
-          from: startIndex + 1,
-          to: Math.min(endIndex, total),
-        },
-      },
-    });
   } catch (error) {
-    console.error('Error fetching notifications:', error);
+    console.error('Notification API error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch notifications' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

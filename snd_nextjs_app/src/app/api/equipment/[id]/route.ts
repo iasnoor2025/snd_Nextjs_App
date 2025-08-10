@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { equipment, equipmentRentalHistory, projects, rentals, employees } from '@/lib/drizzle/schema';
+import { eq, and } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
@@ -16,77 +18,79 @@ export async function GET(
       );
     }
 
-    const equipment = await prisma.equipment.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        name: true,
-        model_number: true,
-        status: true,
-        category_id: true,
-        manufacturer: true,
-        daily_rate: true,
-        weekly_rate: true,
-        monthly_rate: true,
-        erpnext_id: true,
-        serial_number: true,
-        description: true,
-        created_at: true,
-        updated_at: true
-      }
-    });
+    const [equipmentData] = await db
+      .select({
+        id: equipment.id,
+        name: equipment.name,
+        modelNumber: equipment.modelNumber,
+        status: equipment.status,
+        categoryId: equipment.categoryId,
+        manufacturer: equipment.manufacturer,
+        dailyRate: equipment.dailyRate,
+        weeklyRate: equipment.weeklyRate,
+        monthlyRate: equipment.monthlyRate,
+        erpnextId: equipment.erpnextId,
+        serialNumber: equipment.serialNumber,
+        description: equipment.description,
+        createdAt: equipment.createdAt,
+        updatedAt: equipment.updatedAt
+      })
+      .from(equipment)
+      .where(eq(equipment.id, id))
+      .limit(1);
 
-    if (!equipment) {
+    if (!equipmentData) {
       return NextResponse.json(
         { success: false, error: 'Equipment not found' },
         { status: 404 }
       );
     }
 
-    // Get current assignment for this equipment
-    const currentAssignment = await prisma.equipmentRentalHistory.findFirst({
-      where: {
-        equipment_id: id,
-        status: 'active'
-      },
-      include: {
+    // Get current assignment for this equipment using Drizzle
+    const [currentAssignment] = await db
+      .select({
+        id: equipmentRentalHistory.id,
+        assignmentType: equipmentRentalHistory.assignmentType,
+        status: equipmentRentalHistory.status,
         project: {
-          select: {
-            name: true
-          }
+          name: projects.name
         },
         rental: {
-          select: {
-            rental_number: true
-          }
+          rentalNumber: rentals.rentalNumber
         },
         employee: {
-          select: {
-            first_name: true,
-            last_name: true
-          }
+          firstName: employees.firstName,
+          lastName: employees.lastName
         }
-      }
-    });
+      })
+      .from(equipmentRentalHistory)
+      .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
+      .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
+      .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
+      .where(and(
+        eq(equipmentRentalHistory.equipmentId, id),
+        eq(equipmentRentalHistory.status, 'active')
+      ))
+      .limit(1);
     
     let assignmentName = '';
     if (currentAssignment) {
-      if (currentAssignment.assignment_type === 'project' && currentAssignment.project) {
+      if (currentAssignment.assignmentType === 'project' && currentAssignment.project) {
         assignmentName = currentAssignment.project.name;
-      } else if (currentAssignment.assignment_type === 'rental' && currentAssignment.rental) {
-        assignmentName = `Rental: ${currentAssignment.rental.rental_number}`;
-      } else if (currentAssignment.assignment_type === 'manual' && currentAssignment.employee) {
-        assignmentName = `${currentAssignment.employee.first_name} ${currentAssignment.employee.last_name}`.trim();
+      } else if (currentAssignment.assignmentType === 'rental' && currentAssignment.rental) {
+        assignmentName = `Rental: ${currentAssignment.rental.rentalNumber}`;
+      } else if (currentAssignment.assignmentType === 'manual' && currentAssignment.employee) {
+        assignmentName = `${currentAssignment.employee.firstName} ${currentAssignment.employee.lastName}`.trim();
       } else {
-        assignmentName = currentAssignment.assignment_type;
+        assignmentName = currentAssignment.assignmentType;
       }
     }
     
     const equipmentWithAssignment = {
-      ...equipment,
+      ...equipmentData,
       current_assignment: currentAssignment ? {
         id: currentAssignment.id,
-        type: currentAssignment.assignment_type,
+        type: currentAssignment.assignmentType,
         name: assignmentName,
         status: 'active'
       } : null

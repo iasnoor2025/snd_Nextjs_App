@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/database';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { rentals } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export async function POST(
   request: NextRequest,
@@ -19,22 +21,16 @@ export async function POST(
     }
 
     // Update rental with completion information
-    const updatedRental = await prisma.rental.update({
-      where: { id: parseInt(id) },
-      data: {
-        actual_end_date: new Date(),
+    const updatedRentalResult = await db.update(rentals)
+      .set({
+        actualEndDate: new Date(),
         status: 'completed',
-        completed_at: new Date(),
-      },
-      include: {
-        customer: true,
-        rental_items: {
-          include: {
-            equipment: true
-          }
-        }
-      }
-    });
+        completedAt: new Date(),
+      })
+      .where(eq(rentals.id, parseInt(id)))
+      .returning();
+    
+    const updatedRental = updatedRentalResult[0];
 
     return NextResponse.json({
       message: 'Rental completed successfully',

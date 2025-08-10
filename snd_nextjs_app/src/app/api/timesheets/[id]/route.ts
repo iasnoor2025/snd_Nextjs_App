@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { timesheets, employees, users, projects, rentals, employeeAssignments } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 
@@ -31,71 +33,117 @@ export async function PUT(
       );
     }
 
-    // Update the timesheet
-    const updatedTimesheet = await prisma.timesheet.update({
-      where: { id: parseInt(id) },
-      data: {
-        hours_worked: parseFloat(hoursWorked),
-        overtime_hours: parseFloat(overtimeHours),
+    // Update the timesheet using Drizzle
+    const [updatedTimesheet] = await db
+      .update(timesheets)
+      .set({
+        hoursWorked: parseFloat(hoursWorked),
+        overtimeHours: parseFloat(overtimeHours),
         ...(status && { status }),
         ...(description && { description }),
         ...(tasksCompleted && { tasks: tasksCompleted }),
-      },
-      include: {
+        updatedAt: new Date(),
+      })
+      .where(eq(timesheets.id, parseInt(id)))
+      .returning();
+
+    // Fetch the updated timesheet with related data
+    const [timesheetWithDetails] = await db
+      .select({
+        id: timesheets.id,
+        employeeId: timesheets.employeeId,
+        date: timesheets.date,
+        hoursWorked: timesheets.hoursWorked,
+        overtimeHours: timesheets.overtimeHours,
+        startTime: timesheets.startTime,
+        endTime: timesheets.endTime,
+        status: timesheets.status,
+        projectId: timesheets.projectId,
+        rentalId: timesheets.rentalId,
+        assignmentId: timesheets.assignmentId,
+        description: timesheets.description,
+        tasks: timesheets.tasks,
+        submittedAt: timesheets.submittedAt,
+        approvedBy: timesheets.approvedBy,
+        approvedAt: timesheets.approvedAt,
+        createdAt: timesheets.createdAt,
+        updatedAt: timesheets.updatedAt,
         employee: {
-          include: {
-            user: true,
-          },
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          userId: employees.userId,
         },
-        project_rel: true,
-        rental: true,
-        assignment: true,
-        approved_by_user: true,
-      },
-    });
+        user: {
+          id: users.id,
+          name: users.name,
+          email: users.email,
+        },
+        project: {
+          id: projects.id,
+          name: projects.name,
+        },
+        rental: {
+          id: rentals.id,
+          rentalNumber: rentals.rentalNumber,
+        },
+        assignment: {
+          id: employeeAssignments.id,
+          assignmentType: employeeAssignments.assignmentType,
+        },
+      })
+      .from(timesheets)
+      .leftJoin(employees, eq(timesheets.employeeId, employees.id))
+      .leftJoin(users, eq(employees.userId, users.id))
+      .leftJoin(projects, eq(timesheets.projectId, projects.id))
+      .leftJoin(rentals, eq(timesheets.rentalId, rentals.id))
+      .leftJoin(employeeAssignments, eq(timesheets.assignmentId, employeeAssignments.id))
+      .where(eq(timesheets.id, parseInt(id)))
+      .limit(1);
 
     // Transform the response to match frontend interface
     const transformedTimesheet = {
-      id: updatedTimesheet.id.toString(),
-      employeeId: updatedTimesheet.employee_id.toString(),
-      date: updatedTimesheet.date.toISOString().split('T')[0],
-      hoursWorked: updatedTimesheet.hours_worked,
-      overtimeHours: updatedTimesheet.overtime_hours,
-      startTime: updatedTimesheet.start_time?.toISOString() || '',
-      endTime: updatedTimesheet.end_time?.toISOString() || '',
-      status: updatedTimesheet.status,
-      projectId: updatedTimesheet.project_id?.toString(),
-      rentalId: updatedTimesheet.rental_id?.toString(),
-      assignmentId: updatedTimesheet.assignment_id?.toString(),
-      description: updatedTimesheet.description || '',
-      tasksCompleted: updatedTimesheet.tasks || '',
-      submittedAt: updatedTimesheet.submitted_at?.toISOString() || '',
-      approvedBy: updatedTimesheet.approved_by_user?.name || '',
-      approvedAt: updatedTimesheet.approved_at?.toISOString() || '',
-      createdAt: updatedTimesheet.created_at.toISOString(),
-      updatedAt: updatedTimesheet.updated_at.toISOString(),
+      id: timesheetWithDetails.id.toString(),
+      employeeId: timesheetWithDetails.employeeId.toString(),
+      date: timesheetWithDetails.date.toISOString().split('T')[0],
+      hoursWorked: timesheetWithDetails.hoursWorked,
+      overtimeHours: timesheetWithDetails.overtimeHours,
+      startTime: timesheetWithDetails.startTime?.toISOString() || '',
+      endTime: timesheetWithDetails.endTime?.toISOString() || '',
+      status: timesheetWithDetails.status,
+      projectId: timesheetWithDetails.projectId?.toString(),
+      rentalId: timesheetWithDetails.rentalId?.toString(),
+      assignmentId: timesheetWithDetails.assignmentId?.toString(),
+      description: timesheetWithDetails.description || '',
+      tasksCompleted: timesheetWithDetails.tasks || '',
+      submittedAt: timesheetWithDetails.submittedAt?.toISOString() || '',
+      approvedBy: timesheetWithDetails.user?.name || '',
+      approvedAt: timesheetWithDetails.approvedAt?.toISOString() || '',
+      createdAt: timesheetWithDetails.createdAt.toISOString(),
+      updatedAt: timesheetWithDetails.updatedAt.toISOString(),
       employee: {
-        id: updatedTimesheet.employee.id.toString(),
-        firstName: updatedTimesheet.employee.first_name,
-        lastName: updatedTimesheet.employee.last_name,
-        employeeId: updatedTimesheet.employee.employee_id,
-        user: updatedTimesheet.employee.user ? {
-          name: updatedTimesheet.employee.user.name,
-          email: updatedTimesheet.employee.user.email,
+        id: timesheetWithDetails.employee.id.toString(),
+        firstName: timesheetWithDetails.employee.firstName,
+        lastName: timesheetWithDetails.employee.lastName,
+        employeeId: timesheetWithDetails.employee.fileNumber,
+        user: timesheetWithDetails.user ? {
+          name: timesheetWithDetails.user.name,
+          email: timesheetWithDetails.user.email,
         } : undefined,
       },
-      project: updatedTimesheet.project_rel ? {
-        id: updatedTimesheet.project_rel.id.toString(),
-        name: updatedTimesheet.project_rel.name,
+      project: timesheetWithDetails.project ? {
+        id: timesheetWithDetails.project.id.toString(),
+        name: timesheetWithDetails.project.name,
       } : undefined,
-      rental: updatedTimesheet.rental ? {
-        id: updatedTimesheet.rental.id.toString(),
-        rentalNumber: updatedTimesheet.rental.rental_number,
+      rental: timesheetWithDetails.rental ? {
+        id: timesheetWithDetails.rental.id.toString(),
+        rentalNumber: timesheetWithDetails.rental.rentalNumber,
       } : undefined,
-      assignment: updatedTimesheet.assignment ? {
-        id: updatedTimesheet.assignment.id.toString(),
-        name: updatedTimesheet.assignment.name || '',
-        type: updatedTimesheet.assignment.type,
+      assignment: timesheetWithDetails.assignment ? {
+        id: timesheetWithDetails.assignment.id.toString(),
+        name: timesheetWithDetails.assignment.assignmentType || '',
+        type: timesheetWithDetails.assignment.assignmentType,
       } : undefined,
     };
 

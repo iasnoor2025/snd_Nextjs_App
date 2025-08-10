@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/database';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { rentals } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export async function POST(
   request: NextRequest,
@@ -19,29 +21,29 @@ export async function POST(
     const quotationNumber = `QT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Update rental with quotation information
-    const updatedRental = await prisma.rental.update({
-      where: { id: parseInt(id) },
-      data: {
-        quotation_id: parseInt(quotationNumber.replace(/\D/g, '')), // Extract numeric part
+    const updatedRentalResult = await db.update(rentals)
+      .set({
+        quotationId: parseInt(quotationNumber.replace(/\D/g, '')), // Extract numeric part
         status: 'quotation_generated',
-      },
-      include: {
-        customer: true,
-        rental_items: {
-          include: {
-            equipment: true
-          }
-        }
-      }
-    });
+      })
+      .where(eq(rentals.id, parseInt(id)))
+      .returning();
+    
+    const updatedRental = updatedRentalResult[0];
+
+    // Fetch rental with related data
+    const rentalWithDetails = await db.select()
+      .from(rentals)
+      .where(eq(rentals.id, parseInt(id)))
+      .limit(1);
 
     return NextResponse.json({
       message: 'Quotation generated successfully',
       quotation: {
         id: quotationNumber,
-        rental_id: parseInt(id),
-        quotation_number: quotationNumber,
-        created_at: new Date().toISOString(),
+        rentalId: parseInt(id),
+        quotationNumber: quotationNumber,
+        createdAt: new Date().toISOString(),
         rental: updatedRental
       }
     });

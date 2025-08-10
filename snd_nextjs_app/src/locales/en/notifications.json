@@ -37,11 +37,16 @@
   "delete": "Delete",
   "clearAll": "Clear All",
   "noNotifications": "No notifications",
+  "noNotificationsDescription": "You don't have any notifications at the moment.",
   "noNotificationsFound": "No notifications found",
   "notificationSent": "Notification sent successfully",
   "notificationFailed": "Failed to send notification",
   "preferencesUpdated": "Notification preferences updated",
   "templateCreated": "Notification template created",
   "templateUpdated": "Notification template updated",
-  "templateDeleted": "Notification template deleted"
+  "templateDeleted": "Notification template deleted",
+  "loading": "Loading",
+  "viewAllNotifications": "View All Notifications",
+  "notificationsTitle": "System Notifications",
+  "notificationsDescription": "View and manage your system notifications"
 } 

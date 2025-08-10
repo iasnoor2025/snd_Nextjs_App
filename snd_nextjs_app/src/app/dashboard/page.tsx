@@ -23,19 +23,13 @@ import {
   TableRow 
 } from "@/components/ui/table"
 import { 
-  Pagination, 
-  PaginationContent, 
-  PaginationItem, 
-  PaginationLink, 
-  PaginationNext, 
-  PaginationPrevious 
-} from "@/components/ui/pagination"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { 
@@ -70,92 +64,108 @@ import {
   Home,
   Car,
   Plane,
-  Ship
+  Ship,
+  Timer,
+  AlertCircle,
+  FileWarning,
+  UserCheck,
+  CalendarDays,
+  Clock3,
+  TrendingDown,
+  Award,
+  Star,
+  Zap as Lightning
 } from "lucide-react"
 import { RoleBased } from "@/lib/rbac/rbac-components"
 
-// Types for real data
-interface DashboardStats {
-  totalEmployees: number
-  activeProjects: number
-  availableEquipment: number
-  monthlyRevenue: number
-  pendingApprovals: number
-  activeRentals: number
-  totalCustomers: number
-  equipmentUtilization: number
-}
-
-interface IqamaExpiring {
-  id: string
-  employeeName: string
-  fileNumber: string
-  iqamaNumber: string
-  expiryDate: string
-  daysRemaining: number
-  department: string
-  status: string
-}
-
-interface LeaveRequest {
-  id: string
-  employeeName: string
-  fileNumber: string
-  leaveType: string
-  startDate: string
-  endDate: string
-  days: number
-  status: string
-  reason: string
-}
-
-interface ActiveRental {
-  id: string
-  customerName: string
-  equipmentName: string
-  startDate: string
-  endDate: string
-  duration: number
-  dailyRate: number
-  totalAmount: number
-  status: string
-}
-
-interface ActiveProject {
-  id: string
-  name: string
-  customer: string
-  startDate: string
-  endDate: string
-  progress: number
-  budget: number
-  spent: number
-  status: string
-}
-
-interface RecentActivity {
-  id: string
-  type: string
-  description: string
-  user: string
-  timestamp: string
-  severity: 'low' | 'medium' | 'high'
-}
+// Import types from the dashboard service
+import type {
+  DashboardStats,
+  IqamaData,
+  TimesheetData,
+  DocumentData,
+  LeaveRequest,
+  ActiveRental,
+  ActiveProject,
+  RecentActivity
+} from '@/lib/services/dashboard-service';
 
 export default function DashboardPage() {
   const { t } = useTranslation('dashboard');
   const router = useRouter()
   const { data: session, status } = useSession()
-  
-  // State for dashboard data
+
+  // Enhanced state for comprehensive dashboard data
   const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [iqamaData, setIqamaData] = useState<IqamaExpiring[]>([])
+  const [iqamaData, setIqamaData] = useState<IqamaData[]>([])
+  const [timesheetData, setTimesheetData] = useState<TimesheetData[]>([])
+  const [documentData, setDocumentData] = useState<DocumentData[]>([])
   const [leaveData, setLeaveData] = useState<LeaveRequest[]>([])
   const [rentalData, setRentalData] = useState<ActiveRental[]>([])
   const [projectData, setProjectData] = useState<ActiveProject[]>([])
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [activeTab, setActiveTab] = useState('overview')
+  
+  // State for update modal
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+  const [selectedIqama, setSelectedIqama] = useState<IqamaData | null>(null);
+  const [newExpiryDate, setNewExpiryDate] = useState('');
+  const [updating, setUpdating] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  
+  // Pagination logic
+  const filteredIqamaData = iqamaData.filter(item => item.status !== 'active');
+  const totalPages = Math.ceil(filteredIqamaData.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedIqamaData = filteredIqamaData.slice(startIndex, endIndex);
+  
+  // Generate page numbers to display (max 5 pages)
+  const getPageNumbers = (): number[] => {
+    const pages: number[] = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      // Show all pages if total is 5 or less
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show 5 pages with smart positioning
+      if (currentPage <= 3) {
+        // Near the beginning: show pages 1-5
+        for (let i = 1; i <= 5; i++) {
+          pages.push(i);
+        }
+      } else if (currentPage >= totalPages - 2) {
+        // Near the end: show last 5 pages
+        for (let i = totalPages - 4; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        // Middle: show current page ± 2
+        for (let i = currentPage - 2; i <= currentPage + 2; i++) {
+          pages.push(i);
+        }
+      }
+    }
+    
+    return pages;
+  };
+  
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+  
+  const handlePageSizeChange = (newPageSize: string) => {
+    setPageSize(Number(newPageSize));
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
   
   // Ensure user is authenticated and not an employee
   useEffect(() => {
@@ -181,83 +191,95 @@ export default function DashboardPage() {
     try {
       setLoading(true);
       
-      // Determine data limits based on user role
-      const isSeniorRole = session?.user?.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role);
-      const dataLimit = isSeniorRole ? 100 : 10; // Super admin/manager gets 100 records, others get 10
+      // Fetch all data from the API route
+      const response = await fetch('/api/dashboard');
       
-      const [
-        statsRes,
-        iqamaRes,
-        leaveRes,
-        rentalRes,
-        projectRes,
-        activityRes
-      ] = await Promise.all([
-        fetch('/api/employees/statistics'),
-        fetch(`/api/employees/iqama-expiring?days=30&limit=${dataLimit}`),
-        fetch(`/api/employees/leaves/active?limit=${dataLimit}`),
-        fetch(`/api/rentals/active?limit=${dataLimit}`),
-        fetch(`/api/projects/active?limit=${dataLimit}`),
-        fetch(`/api/notifications/recent?limit=${dataLimit}`)
-      ]);
-
-      // Process statistics
-      if (statsRes.ok) {
-        const statsData = await statsRes.json();
-        setStats({
-          totalEmployees: statsData.data?.totalEmployees || 0,
-          activeProjects: statsData.data?.projectAssignments || 0,
-          availableEquipment: 0, // Will be fetched separately
-          monthlyRevenue: 0, // Will be calculated from rentals
-          pendingApprovals: 0, // Will be calculated
-          activeRentals: statsData.data?.rentalAssignments || 0,
-          totalCustomers: 0, // Will be fetched separately
-          equipmentUtilization: 0 // Will be calculated
-        });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch dashboard data: ${response.statusText}`);
       }
+      
+      const data = await response.json();
+      
+      const {
+        stats,
+        iqamaData,
+        timesheetData,
+        documentData,
+        leaveData,
+        rentalData,
+        projectData,
+        recentActivity: activityData
+      } = data;
 
-      // Process Iqama data
-      if (iqamaRes.ok) {
-        const iqamaJson = await iqamaRes.json();
-        setIqamaData(iqamaJson.data || []);
-      }
-
-      // Process Leave data
-      if (leaveRes.ok) {
-        const leaveJson = await leaveRes.json();
-        setLeaveData(leaveJson.data || []);
-      }
-
-      // Process Rental data
-      if (rentalRes.ok) {
-        const rentalJson = await rentalRes.json();
-        setRentalData(rentalJson.data || []);
-      }
-
-      // Process Project data
-      if (projectRes.ok) {
-        const projectJson = await projectRes.json();
-        setProjectData(projectJson.data || []);
-      }
-
-      // Process Activity data
-      if (activityRes.ok) {
-        const activityJson = await activityRes.json();
-        setRecentActivity(activityJson.data || []);
-      }
+      // Set all the data
+      setStats(stats);
+      setIqamaData(iqamaData);
+      setTimesheetData(timesheetData);
+      setDocumentData(documentData);
+      setLeaveData(leaveData);
+      setRentalData(rentalData);
+      setProjectData(projectData);
+      setRecentActivity(activityData);
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-    } finally {
+      } finally {
       setLoading(false);
     }
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchDashboardData();
-    setRefreshing(false);
-  };
+    try {
+      await fetchDashboardData();
+    } catch (error) {
+      console.error('Error refreshing dashboard data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  // Handle opening update modal
+  const handleOpenUpdateModal = (iqama: IqamaData) => {
+    setSelectedIqama(iqama);
+    setNewExpiryDate(iqama.expiryDate ? new Date(iqama.expiryDate).toISOString().split('T')[0] : '');
+    setIsUpdateModalOpen(true);
+  }
+
+  // Handle updating Iqama expiry date
+  const handleUpdateIqama = async () => {
+    if (!selectedIqama || !newExpiryDate) return;
+    
+    setUpdating(true);
+    try {
+      const response = await fetch(`/api/employees/${selectedIqama.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          iqama_expiry: newExpiryDate
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update Iqama expiry date');
+      }
+
+      // Refresh dashboard data to show updated information
+      await fetchDashboardData();
+      
+      // Close modal and reset state
+      setIsUpdateModalOpen(false);
+      setSelectedIqama(null);
+      setNewExpiryDate('');
+    } catch (error) {
+      console.error('Error updating Iqama expiry date:', error);
+      alert('Failed to update Iqama expiry date. Please try again.');
+      } finally {
+      setUpdating(false);
+    }
+  }
 
   // Show loading while checking authentication
   if (status === "loading") {
@@ -301,10 +323,10 @@ export default function DashboardPage() {
                 <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
                 {refreshing ? 'Refreshing...' : 'Refresh'}
               </Button>
-            </div>
+          </div>
           </div>
         </div>
-      </div>
+          </div>
 
       {/* Main Content */}
       <div className="container mx-auto px-6 py-8">
@@ -313,104 +335,13 @@ export default function DashboardPage() {
             <div className="text-center">
               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
               <p className="text-slate-600 dark:text-slate-400">Loading dashboard data...</p>
-              {session?.user?.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role) && (
-                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Fetching comprehensive data for {session.user.role.replace('_', ' ')} role</p>
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">Loading up to 100 records per category for complete overview</p>
-                </div>
-              )}
             </div>
           </div>
         ) : (
           <div className="space-y-8">
-            {/* Data Summary and Search for Senior Roles */}
-            {session?.user?.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role) && (
-              <div className="col-span-full">
-                <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
-                      <Database className="h-5 w-5" />
-                      Data Overview - {session.user.role.replace('_', ' ')}
-                    </CardTitle>
-                    <CardDescription className="text-blue-700 dark:text-blue-300">
-                      Comprehensive view of all company data and operations
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {/* Search Bar */}
-                      <div className="flex gap-3">
-                        <div className="flex-1">
-                          <Input
-                            placeholder="Search employees, projects, or equipment..."
-                            className="border-blue-200 focus:border-blue-400"
-                          />
-                        </div>
-                        <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
-                          <Search className="h-4 w-4 mr-2" />
-                          Search
-                        </Button>
-                        <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
-                          <Filter className="h-4 w-4 mr-2" />
-                          Filters
-                        </Button>
-                        <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
-                          <FileText className="h-4 w-4 mr-2" />
-                          Export
-                        </Button>
-                      </div>
-                      
-                      {/* Data Summary Grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-800 dark:text-blue-200">{iqamaData.length}</div>
-                          <div className="text-blue-600 dark:text-blue-400">Iqama Records</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-800 dark:text-blue-200">{leaveData.length}</div>
-                          <div className="text-blue-600 dark:text-blue-400">Leave Requests</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-800 dark:text-blue-200">{projectData.length}</div>
-                          <div className="text-blue-600 dark:text-blue-400">Active Projects</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-2xl font-bold text-blue-800 dark:text-blue-200">{rentalData.length}</div>
-                          <div className="text-blue-600 dark:text-blue-400">Active Rentals</div>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* Data Status Indicator for Senior Roles */}
-            {session?.user?.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role) && (
-              <div className="col-span-full mb-4">
-                <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-                      <span className="text-sm font-medium text-green-800 dark:text-green-200">
-                        Data Loaded Successfully
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-green-700 dark:text-green-300">
-                      <span>Iqama: {iqamaData.length} records</span>
-                      <span>Leave: {leaveData.length} records</span>
-                      <span>Projects: {projectData.length} records</span>
-                      <span>Rentals: {rentalData.length} records</span>
-                      <span>Activity: {recentActivity.length} records</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Key Performance Indicators */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-lg">
+              <Card className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
@@ -418,380 +349,385 @@ export default function DashboardPage() {
                       <p className="text-3xl font-bold">{stats?.totalEmployees?.toLocaleString() || '0'}</p>
                       <p className="text-blue-100 text-sm mt-1">Active workforce</p>
                     </div>
-                    <div className="bg-blue-400/20 p-3 rounded-full">
+                    <div className="bg-blue-500/30 p-3 rounded-full backdrop-blur-sm">
                       <Users className="h-8 w-8" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-lg">
+              <Card className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-green-100 text-sm font-medium">Active Projects</p>
-                      <p className="text-3xl font-bold">{stats?.activeProjects || '0'}</p>
-                      <p className="text-green-100 text-sm mt-1">Ongoing work</p>
+                      <p className="text-emerald-100 text-sm font-medium">Today's Attendance</p>
+                      <p className="text-3xl font-bold">{stats?.todayTimesheets || '0'}</p>
+                      <p className="text-emerald-100 text-sm mt-1">Present today</p>
                     </div>
-                    <div className="bg-green-400/20 p-3 rounded-full">
+                    <div className="bg-emerald-500/30 p-3 rounded-full backdrop-blur-sm">
+                      <UserCheck className="h-8 w-8" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-orange-600 via-orange-700 to-orange-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-orange-100 text-sm font-medium">Active Projects</p>
+                      <p className="text-3xl font-bold">{stats?.activeProjects || '0'}</p>
+                      <p className="text-orange-100 text-sm mt-1">Ongoing work</p>
+                    </div>
+                    <div className="bg-orange-500/30 p-3 rounded-full backdrop-blur-sm">
                       <Building2 className="h-8 w-8" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0 shadow-lg">
+              <Card className="bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-orange-100 text-sm font-medium">Active Rentals</p>
-                      <p className="text-3xl font-bold">{stats?.activeRentals || '0'}</p>
-                      <p className="text-orange-100 text-sm mt-1">Equipment in use</p>
+                      <p className="text-purple-100 text-sm font-medium">Critical Alerts</p>
+                      <p className="text-3xl font-bold">
+                        {(stats?.expiredDocuments || 0) + (stats?.expiringDocuments || 0)}
+                      </p>
+                      <p className="text-purple-100 text-sm mt-1">Documents & Iqama</p>
                     </div>
-                    <div className="bg-orange-400/20 p-3 rounded-full">
-                      <Truck className="h-8 w-8" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-lg">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-purple-100 text-sm font-medium">Pending Approvals</p>
-                      <p className="text-3xl font-bold">{stats?.pendingApprovals || '0'}</p>
-                      <p className="text-purple-100 text-sm mt-1">Awaiting action</p>
-                    </div>
-                    <div className="bg-purple-400/20 p-3 rounded-full">
-                      <Clock className="h-8 w-8" />
+                    <div className="bg-purple-500/30 p-3 rounded-full backdrop-blur-sm">
+                      <AlertCircle className="h-8 w-8" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Comprehensive Data Insights for Senior Roles */}
-            {session?.user?.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-emerald-200 dark:border-emerald-800">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-emerald-800 dark:text-emerald-200">
-                      <BarChart3 className="h-5 w-5" />
-                      Data Coverage
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-emerald-700 dark:text-emerald-300">Iqama Records</span>
-                        <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">{iqamaData.length} records</span>
+            {/* Critical Alerts Section */}
+            <div className="space-y-6">
+              {/* Iqama Status */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    Iqama Status Overview
+                  </CardTitle>
+                  <CardDescription>
+                    Complete Iqama status including expired, expiring, and missing
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {/* Status Summary */}
+                    <div className="grid grid-cols-4 gap-2 mb-4">
+                      <div className="text-center p-2 bg-muted rounded-lg">
+                        <div className="text-lg font-bold">
+                          {filteredIqamaData.filter(item => item.status === 'expired').length}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Expired</div>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-emerald-700 dark:text-emerald-300">Leave Requests</span>
-                        <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">{leaveData.length} records</span>
+                      <div className="text-center p-2 bg-muted rounded-lg">
+                        <div className="text-lg font-bold">
+                          {filteredIqamaData.filter(item => item.status === 'expiring').length}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Expiring</div>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-emerald-700 dark:text-emerald-300">Active Projects</span>
-                        <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">{projectData.length} records</span>
+                      <div className="text-center p-2 bg-muted rounded-lg">
+                        <div className="text-lg font-bold">
+                          {filteredIqamaData.filter(item => item.status === 'missing').length}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Missing</div>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-emerald-700 dark:text-emerald-300">Active Rentals</span>
-                        <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">{rentalData.length} records</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-amber-200 dark:border-amber-800">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
-                      <TrendingUp className="h-5 w-5" />
-                      Performance Metrics
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-amber-700 dark:text-amber-300">Total Employees</span>
-                        <span className="text-sm font-medium text-amber-800 dark:text-amber-200">{stats?.totalEmployees || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-amber-700 dark:text-amber-300">Project Coverage</span>
-                        <span className="text-sm font-medium text-amber-800 dark:text-amber-200">{stats?.activeProjects || 0} active</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-amber-700 dark:text-amber-300">Equipment Utilization</span>
-                        <span className="text-sm font-medium text-amber-800 dark:text-amber-200">{stats?.activeRentals || 0} in use</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm text-amber-700 dark:text-amber-300">Pending Actions</span>
-                        <span className="text-sm font-medium text-amber-800 dark:text-amber-200">{stats?.pendingApprovals || 0} items</span>
+                      <div className="text-center p-2 bg-muted rounded-lg">
+                        <div className="text-lg font-bold">
+                          {filteredIqamaData.length}
+                        </div>
+                        <div className="text-xs text-muted-foreground">Total</div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-purple-200 dark:border-purple-800">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-purple-800 dark:text-purple-200">
-                      <Zap className="h-5 w-5" />
-                      Quick Actions
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <Button variant="outline" size="sm" className="w-full justify-start text-purple-700 border-purple-200 hover:bg-purple-50">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Employee
-                      </Button>
-                      <Button variant="outline" size="sm" className="w-full justify-start text-purple-700 border-purple-200 hover:bg-purple-50">
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Project
-                      </Button>
-                      <Button variant="outline" size="sm" className="w-full justify-start text-purple-700 border-purple-200 hover:bg-purple-50">
-                        <Plus className="h-4 w-4 mr-2" />
-                        New Rental
-                      </Button>
-                      <Button variant="outline" size="sm" className="w-full justify-start text-purple-700 border-purple-200 hover:bg-purple-50">
-                        <Settings className="h-4 w-4 mr-2" />
-                        System Settings
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* Main Dashboard Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Left Column - Critical Alerts */}
-              <div className="lg:col-span-1 space-y-6">
-                {/* Iqama Expiring Soon */}
-                <Card className="border-l-4 border-l-red-500 bg-red-50 dark:bg-red-900/10">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 text-red-700 dark:text-red-300">
-                      <AlertTriangle className="h-5 w-5" />
-                      Iqama Expiring Soon
-                    </CardTitle>
-                    <CardDescription className="text-red-600 dark:text-red-400">
-                      Employees with expiring Iqama in the next 30 days
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {iqamaData.length === 0 ? (
-                      <p className="text-green-600 dark:text-green-400 text-sm py-4 text-center">
-                        ✅ No Iqama expiring soon
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        {iqamaData.map((item) => (
-                          <div key={item.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-red-200 dark:border-red-800">
-                            <div>
-                              <p className="font-medium text-slate-900 dark:text-slate-100">{item.employeeName}</p>
-                              <p className="text-sm text-slate-600 dark:text-slate-400">{item.fileNumber}</p>
-                            </div>
-                            <div className="text-right">
-                              <Badge variant={item.daysRemaining <= 7 ? 'destructive' : 'secondary'}>
-                                {item.daysRemaining} days
-                              </Badge>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                {new Date(item.expiryDate).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                        {iqamaData.length > 0 && (
-                          <Button variant="outline" size="sm" className="w-full" onClick={() => router.push('/modules/employee-management')}>
-                            View All ({iqamaData.length} Iqama Records)
-                          </Button>
-                        )}
+                    
+                    {/* All Iqama Records Table */}
+                    <div className="w-full overflow-x-auto">
+              <Table>
+                <TableHeader>
+                          <TableRow>
+                            <TableHead>Employee</TableHead>
+                            <TableHead>File #</TableHead>
+                            <TableHead>Iqama #</TableHead>
+                            <TableHead>Department</TableHead>
+                            <TableHead>Nationality</TableHead>
+                            <TableHead>Expiry Date</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Days</TableHead>
+                            <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                          {paginatedIqamaData
+                            .map((item) => (
+                              <TableRow key={item.id}>
+                                <TableCell className="font-medium">
+                                  <div>
+                                    <div className="font-semibold">{item.employeeName}</div>
+                                    {item.position && (
+                                      <div className="text-sm text-muted-foreground">{item.position}</div>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>{item.fileNumber || 'N/A'}</TableCell>
+                                <TableCell>{item.iqamaNumber || 'N/A'}</TableCell>
+                                <TableCell>{item.department || 'N/A'}</TableCell>
+                                <TableCell>{item.nationality || 'N/A'}</TableCell>
+                                <TableCell>
+                                  {item.expiryDate ? (
+                                    <span className="font-medium">
+                                      {new Date(item.expiryDate).toLocaleDateString()}
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground">N/A</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge 
+                                    variant={item.status === 'expired' ? 'destructive' : 
+                                           item.status === 'expiring' ? 'secondary' : 
+                                           item.status === 'missing' ? 'outline' : 'default'}
+                                  >
+                                    {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {item.daysRemaining !== null ? (
+                                    <span className="font-medium">
+                                      {item.daysRemaining} days
+                                    </span>
+                                  ) : (
+                                    <span className="text-muted-foreground">N/A</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleOpenUpdateModal(item)}
+                                  >
+                                    <Edit className="h-3 w-3 mr-1" />
+                                    Update
+                                  </Button>
+                        </TableCell>
+                      </TableRow>
+                            ))}
+                </TableBody>
+              </Table>
+            </div>
+                    
+                    {filteredIqamaData.length === 0 && (
+                      <div className="text-center py-6 text-muted-foreground">
+                        <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-60" />
+                        <p className="font-medium">No critical Iqama issues found</p>
+                        <p className="text-sm opacity-80">All Iqama documents are up to date</p>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-
-                {/* Leave Requests */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Calendar className="h-5 w-5" />
-                      Leave Requests
-                    </CardTitle>
-                    <CardDescription>
-                      Active leave requests and approvals
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {leaveData.length === 0 ? (
-                      <p className="text-slate-500 dark:text-slate-400 text-center py-4">No active leave requests</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {leaveData.map((leave) => (
-                          <div key={leave.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
-                            <div>
-                              <p className="font-medium text-slate-900 dark:text-slate-100">{leave.employeeName}</p>
-                              <p className="text-sm text-slate-600 dark:text-slate-400">{leave.leaveType} • {leave.fileNumber}</p>
-                            </div>
-                            <div className="text-right">
-                              <Badge variant={leave.status === 'approved' ? 'default' : leave.status === 'pending' ? 'secondary' : 'destructive'}>
-                                {leave.status}
-                              </Badge>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                {leave.days} days • {new Date(leave.startDate).toLocaleDateString()}
-                              </p>
-                            </div>
+                    
+                    {filteredIqamaData.length > 0 && (
+                      <div className="pt-4 border-t">
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-2">
+                          <div className="text-sm text-muted-foreground">
+                            <span className="font-medium">Total Critical Records:</span> {filteredIqamaData.length}
                           </div>
-                        ))}
-                        {leaveData.length > 0 && (
-                          <Button variant="outline" size="sm" className="w-full" onClick={() => router.push('/modules/employee-management')}>
-                            View All ({leaveData.length} Leave Requests)
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Recent Activity */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Activity className="h-5 w-5" />
-                      Recent Activity
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                                              {recentActivity.map((activity) => (
-                        <div key={activity.id} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                          <div className={`w-2 h-2 rounded-full mt-2 ${
-                            activity.severity === 'high' ? 'bg-red-500' : 
-                            activity.severity === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                          }`} />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{activity.description}</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                              {activity.user} • {new Date(activity.timestamp).toLocaleString()}
-                            </p>
+                          <div className="flex gap-2 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-destructive rounded-full"></div>
+                              Expired: {filteredIqamaData.filter(item => item.status === 'expired').length}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-secondary rounded-full"></div>
+                              Expiring: {filteredIqamaData.filter(item => item.status === 'expiring').length}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-muted rounded-full"></div>
+                              Missing: {filteredIqamaData.filter(item => item.status === 'missing').length}
+                            </span>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Center Column - Active Projects & Equipment */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Active Projects */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Building2 className="h-5 w-5" />
-                      Active Projects
-                    </CardTitle>
-                    <CardDescription>
-                      Ongoing construction and development projects
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {projectData.map((project) => (
-                        <div key={project.id} className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border">
-                          <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-semibold text-slate-900 dark:text-slate-100">{project.name}</h4>
-                            <Badge variant={project.status === 'active' ? 'default' : 'secondary'}>
-                              {project.status}
-                            </Badge>
+                        
+                        {/* Pagination Controls */}
+                        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4 pt-4 border-t">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Show</span>
+                            <select
+                              value={pageSize}
+                              onChange={(e) => handlePageSizeChange(e.target.value)}
+                              className="h-8 w-16 rounded-md border border-input bg-background px-2 py-1 text-sm"
+                            >
+                              <option value={5}>5</option>
+                              <option value={10}>10</option>
+                              <option value={20}>20</option>
+                              <option value={50}>50</option>
+                            </select>
+                            <span className="text-sm text-muted-foreground">per page</span>
                           </div>
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Customer</p>
-                              <p className="font-medium">{project.customer}</p>
-                            </div>
-                            <div>
-                              <p className="text-slate-600 dark:text-slate-400">Progress</p>
-                              <div className="flex items-center gap-2">
-                                <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                                  <div 
-                                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                                    style={{ width: `${project.progress}%` }}
-                                  />
+                          
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePageChange(currentPage - 1)}
+                              disabled={currentPage === 1}
+                            >
+                              Previous
+                      </Button>
+                            
+                            <div className="flex items-center gap-1">
+                              {getPageNumbers().map((page, index) => (
+                                <div key={page} className="flex items-center gap-1">
+                                  {/* Show ellipsis before first page if needed */}
+                                  {index === 0 && page > 1 && (
+                                    <>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handlePageChange(1)}
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        1
+                                      </Button>
+                                      {page > 2 && (
+                                        <span className="px-2 text-muted-foreground">...</span>
+                                      )}
+                                    </>
+                                  )}
+                                  
+                                  <Button
+                                    variant={currentPage === page ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => handlePageChange(page)}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    {page}
+                                  </Button>
+                                  
+                                  {/* Show ellipsis after last page if needed */}
+                                  {index === getPageNumbers().length - 1 && page < totalPages && (
+                                    <>
+                                      {page < totalPages - 1 && (
+                                        <span className="px-2 text-muted-foreground">...</span>
+                                      )}
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handlePageChange(totalPages)}
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        {totalPages}
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
-                                <span className="text-sm font-medium">{project.progress}%</span>
-                              </div>
+                              ))}
                             </div>
-                          </div>
-                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                            <span className="text-sm text-slate-600 dark:text-slate-400">
-                              Budget: ${project.budget?.toLocaleString() || '0'}
-                            </span>
-                            <Button variant="outline" size="sm" onClick={() => router.push(`/modules/project-management/${project.id}`)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              View
+                            
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handlePageChange(currentPage + 1)}
+                              disabled={currentPage === totalPages}
+                            >
+                              Next
                             </Button>
                           </div>
-                        </div>
-                      ))}
-                      {projectData.length > 0 && (
-                        <Button variant="outline" className="w-full" onClick={() => router.push('/modules/project-management')}>
-                          View All Projects ({projectData.length} Active)
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Active Rentals */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Truck className="h-5 w-5" />
-                      Active Equipment Rentals
-                    </CardTitle>
-                    <CardDescription>
-                      Currently active equipment rental contracts
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {rentalData.map((rental) => (
-                        <div key={rental.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border">
-                          <div className="flex items-center gap-3">
-                            <div className="bg-blue-100 dark:bg-blue-900/20 p-2 rounded-lg">
-                              <Wrench className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-slate-900 dark:text-slate-100">{rental.equipmentName}</p>
-                              <p className="text-sm text-slate-600 dark:text-slate-400">{rental.customerName}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-medium text-slate-900 dark:text-slate-100">
-                              ${rental.totalAmount?.toLocaleString() || '0'}
-                            </p>
-                            <p className="text-sm text-slate-600 dark:text-slate-400">
-                              {rental.duration} days
-                            </p>
+                          
+                          <div className="text-sm text-muted-foreground">
+                            Page {currentPage} of {totalPages}
                           </div>
                         </div>
-                      ))}
-                      {rentalData.length > 0 && (
-                        <Button variant="outline" className="w-full" onClick={() => router.push('/modules/rental-management')}>
-                          View All Rentals ({rentalData.length} Active)
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                      </div>
+                    )}
             </div>
+                </CardContent>
+              </Card>
 
-            {/* Bottom Row - Quick Actions & Statistics */}
+              {/* Today's Timesheets */}
+              <Card className="border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 shadow-lg">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+                    <Timer className="h-5 w-5" />
+                    Today's Attendance
+                  </CardTitle>
+                  <CardDescription className="text-blue-700 dark:text-blue-300">
+                    Employee attendance and timesheet status for today
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {/* Attendance Summary */}
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      <div className="text-center p-2 bg-green-200 dark:bg-green-800/30 rounded-lg">
+                        <div className="text-lg font-bold text-green-800 dark:text-green-200">
+                          {timesheetData.filter(item => item.status === 'present').length}
+            </div>
+                        <div className="text-xs text-green-600 dark:text-green-400">Present</div>
+                      </div>
+                      <div className="text-center p-2 bg-yellow-200 dark:bg-yellow-800/30 rounded-lg">
+                        <div className="text-lg font-bold text-yellow-800 dark:text-yellow-200">
+                          {timesheetData.filter(item => item.status === 'late').length}
+                        </div>
+                        <div className="text-xs text-yellow-600 dark:text-yellow-400">Late</div>
+                      </div>
+                      <div className="text-center p-2 bg-red-200 dark:bg-red-800/30 rounded-lg">
+                        <div className="text-lg font-bold text-red-800 dark:text-red-200">
+                          {timesheetData.filter(item => item.status === 'absent').length}
+                        </div>
+                        <div className="text-xs text-red-600 dark:text-red-400">Absent</div>
+                      </div>
+                    </div>
+                    
+                    {/* Timesheet Table */}
+                    <div className="max-h-64 overflow-y-auto">
+              <Table>
+                <TableHeader>
+                          <TableRow className="bg-blue-100 dark:bg-blue-900/20">
+                            <TableHead className="text-blue-800 dark:text-blue-200">Employee</TableHead>
+                            <TableHead className="text-blue-800 dark:text-blue-200">Status</TableHead>
+                            <TableHead className="text-blue-800 dark:text-blue-200">Hours</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                          {timesheetData.slice(0, 10).map((item) => (
+                            <TableRow key={item.id} className="hover:bg-blue-50 dark:hover:bg-blue-900/10">
+                              <TableCell className="font-medium">{item.employeeName}</TableCell>
+                              <TableCell>
+                                <Badge 
+                                  variant={item.status === 'present' ? 'default' : 
+                                         item.status === 'late' ? 'secondary' : 
+                                         item.status === 'half-day' ? 'outline' : 'destructive'}
+                                >
+                                  {item.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm">{item.totalHours}h</TableCell>
+                      </TableRow>
+                          ))}
+                </TableBody>
+              </Table>
+            </div>
+                    
+                    {timesheetData.length > 0 && (
+                      <Button variant="outline" size="sm" className="w-full border-blue-300 text-blue-700 hover:bg-blue-50" 
+                              onClick={() => router.push('/modules/timesheet-management')}>
+                        View All Timesheets ({timesheetData.length} records)
+                      </Button>
+                    )}
+            </div>
+                </CardContent>
+              </Card>
+          </div>
+
+            {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <RoleBased roles={['SUPER_ADMIN', 'ADMIN']}>
-                <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white border-0 shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300" onClick={() => router.push('/modules/user-management')}>
+                <Card className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer" onClick={() => router.push('/modules/user-management')}>
                   <CardContent className="p-6 text-center">
                     <Users className="h-12 w-12 mx-auto mb-3 opacity-80" />
                     <h3 className="text-lg font-semibold mb-2">User Management</h3>
@@ -801,7 +737,7 @@ export default function DashboardPage() {
               </RoleBased>
 
               <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
-                <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300" onClick={() => router.push('/modules/analytics')}>
+                <Card className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer" onClick={() => router.push('/modules/analytics')}>
                   <CardContent className="p-6 text-center">
                     <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-80" />
                     <h3 className="text-lg font-semibold mb-2">Analytics</h3>
@@ -811,7 +747,7 @@ export default function DashboardPage() {
               </RoleBased>
 
               <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
-                <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white border-0 shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300" onClick={() => router.push('/modules/payroll-management')}>
+                <Card className="bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer" onClick={() => router.push('/modules/payroll-management')}>
                   <CardContent className="p-6 text-center">
                     <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-80" />
                     <h3 className="text-lg font-semibold mb-2">Payroll</h3>
@@ -821,7 +757,7 @@ export default function DashboardPage() {
               </RoleBased>
 
               <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
-                <Card className="bg-gradient-to-br from-rose-500 to-rose-600 text-white border-0 shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300" onClick={() => router.push('/modules/settings')}>
+                <Card className="bg-gradient-to-br from-rose-600 via-rose-700 to-rose-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer" onClick={() => router.push('/modules/settings')}>
                   <CardContent className="p-6 text-center">
                     <Settings className="h-12 w-12 mx-auto mb-3 opacity-80" />
                     <h3 className="text-lg font-semibold mb-2">Settings</h3>
@@ -831,52 +767,99 @@ export default function DashboardPage() {
               </RoleBased>
             </div>
 
-            {/* Comprehensive Reporting Section for Senior Roles */}
-            {session?.user?.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role) && (
-              <div className="mt-8">
-                <Card className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
-                      <FileText className="h-5 w-5" />
-                      Data Export & Reporting
-                    </CardTitle>
-                    <CardDescription className="text-slate-600 dark:text-slate-400">
-                      Generate comprehensive reports and export data for analysis
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <Button variant="outline" className="justify-start text-slate-700 border-slate-300 hover:bg-slate-50">
-                        <FileText className="h-4 w-4 mr-2" />
-                        Export Employee Data ({iqamaData.length} records)
+            {/* Recent Activity */}
+            <Card className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/20 dark:to-slate-800/20 shadow-lg border-slate-200 dark:border-slate-700">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
+                  <Activity className="h-5 w-5" />
+                  Recent System Activity
+                </CardTitle>
+                <CardDescription className="text-slate-600 dark:text-slate-400">
+                  Latest system events, user actions, and important notifications
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {recentActivity.length === 0 ? (
+                    <p className="text-slate-500 dark:text-slate-400 text-center py-8">No recent activity</p>
+                  ) : (
+                    <>
+                      {recentActivity.slice(0, 15).map((activity) => (
+                        <div key={activity.id} className="flex items-start gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
+                          <div className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${
+                            activity.severity === 'high' ? 'bg-red-500' : 
+                            activity.severity === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                          }`} />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{activity.description}</p>
+                            <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
+                              <span>{activity.user}</span>
+                              <span>•</span>
+                              <span>{activity.timestamp ? new Date(activity.timestamp).toLocaleString() : 'N/A'}</span>
+                              <span>•</span>
+                              <Badge variant="outline" className="text-xs">
+                                {activity.type}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {recentActivity.length > 15 && (
+                        <Button variant="outline" className="w-full border-slate-300 text-slate-700 hover:bg-slate-50" 
+                                onClick={() => router.push('/modules/activity-log')}>
+                          View All Activity ({recentActivity.length} records)
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Update Iqama Modal */}
+            <Dialog open={isUpdateModalOpen} onOpenChange={setIsUpdateModalOpen}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Update Iqama Expiry Date</DialogTitle>
+                  <DialogDescription>
+                    Update the expiry date for {selectedIqama?.employeeName}'s Iqama.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="expiryDate" className="text-right">
+                      Expiry Date
+                    </Label>
+                    <Input
+                      id="expiryDate"
+                      type="date"
+                      value={newExpiryDate}
+                      onChange={(e) => setNewExpiryDate(e.target.value)}
+                      className="col-span-3"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsUpdateModalOpen(false)}
+                    disabled={updating}
+                  >
+                    Cancel
                       </Button>
-                      <Button variant="outline" className="justify-start text-slate-700 border-slate-300 hover:bg-slate-50">
-                        <FileText className="h-4 w-4 mr-2" />
-                        Export Leave Reports ({leaveData.length} records)
+                  <Button
+                    type="button"
+                    onClick={handleUpdateIqama}
+                    disabled={!newExpiryDate || updating}
+                  >
+                    {updating ? 'Updating...' : 'Update'}
                       </Button>
-                      <Button variant="outline" className="justify-start text-slate-700 border-slate-300 hover:bg-slate-50">
-                        <FileText className="h-4 w-4 mr-2" />
-                        Export Project Status ({projectData.length} records)
-                      </Button>
-                      <Button variant="outline" className="justify-start text-slate-700 border-slate-300 hover:bg-slate-50">
-                        <FileText className="h-4 w-4 mr-2" />
-                        Export Rental Data ({rentalData.length} records)
-                      </Button>
-                      <Button variant="outline" className="justify-start text-slate-700 border-slate-300 hover:bg-slate-50">
-                        <BarChart3 className="h-4 w-4 mr-2" />
-                        Generate Analytics Report
-                      </Button>
-                      <Button variant="outline" className="justify-start text-slate-700 border-slate-300 hover:bg-slate-50">
-                        <Database className="h-4 w-4 mr-2" />
-                        Full Data Backup
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
               </div>
             )}
-          </div>
-        )}
       </div>
     </div>
   )

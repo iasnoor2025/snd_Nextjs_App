@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { equipment } from '@/lib/drizzle/schema';
+import { eq, or, count } from 'drizzle-orm';
+
 export async function POST(request: NextRequest) {
   try {
     // Validate environment variables
@@ -19,7 +22,8 @@ export async function POST(request: NextRequest) {
 
     // Test database connection
     try {
-      await prisma.$connect();
+      // Test with a simple query
+      await db.select({ count: count() }).from(equipment).limit(1);
       console.log('Database connection successful');
     } catch (dbError) {
       console.error('Database connection failed:', dbError);
@@ -33,7 +37,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if database has existing equipment
-    const existingEquipmentCount = await prisma.equipment.count();
+    const existingEquipmentResult = await db.select({ count: count() }).from(equipment);
+    const existingEquipmentCount = existingEquipmentResult[0]?.count || 0;
     console.log(`Database has ${existingEquipmentCount} existing equipment`);
 
     // Fetch all items from ERPNext (using only working fields)
@@ -113,25 +118,24 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if equipment already exists
-        const existingEquipment = await prisma.equipment.findFirst({
-          where: {
-            OR: [
-              { erpnext_id: erpEquipmentItem.item_code },
-              { serial_number: erpEquipmentItem.serial_no }
-            ]
-          }
-        });
+        const existingEquipmentResult = await db.select().from(equipment).where(
+          or(
+            eq(equipment.erpnextId, erpEquipmentItem.item_code),
+            eq(equipment.serialNumber, erpEquipmentItem.serial_no)
+          )
+        ).limit(1);
+        const existingEquipment = existingEquipmentResult[0];
 
         const equipmentData = {
           name: erpEquipmentItem.item_name || erpEquipmentItem.item_code,
           description: erpEquipmentItem.description || '',
           manufacturer: '', // Not available in API response
-          model_number: '', // Not available in API response
-          serial_number: '', // Not available in API response
-          erpnext_id: erpEquipmentItem.item_code,
-          daily_rate: erpEquipmentItem.standard_rate ? parseFloat(erpEquipmentItem.standard_rate) : null,
+          modelNumber: '', // Not available in API response
+          serialNumber: '', // Not available in API response
+          erpnextId: erpEquipmentItem.item_code,
+          dailyRate: erpEquipmentItem.standard_rate ? parseFloat(erpEquipmentItem.standard_rate) : null,
           status: 'available',
-          is_active: true,
+          isActive: true,
         };
 
         if (existingEquipment) {
@@ -140,32 +144,34 @@ export async function POST(request: NextRequest) {
             existingEquipment.name !== equipmentData.name ||
             existingEquipment.description !== equipmentData.description ||
             existingEquipment.manufacturer !== equipmentData.manufacturer ||
-            existingEquipment.model_number !== equipmentData.model_number ||
-            existingEquipment.serial_number !== equipmentData.serial_number ||
-            existingEquipment.erpnext_id !== equipmentData.erpnext_id ||
-            existingEquipment.daily_rate?.toString() !== (equipmentData.daily_rate?.toString() || 'null') ||
+            existingEquipment.modelNumber !== equipmentData.modelNumber ||
+            existingEquipment.serialNumber !== equipmentData.serialNumber ||
+            existingEquipment.erpnextId !== equipmentData.erpnextId ||
+            existingEquipment.dailyRate?.toString() !== (equipmentData.dailyRate?.toString() || 'null') ||
             existingEquipment.status !== equipmentData.status ||
-            existingEquipment.is_active !== equipmentData.is_active;
+            existingEquipment.isActive !== equipmentData.isActive;
 
           if (hasChanges) {
             console.log('Updating existing equipment:', existingEquipment.id);
-            const updatedEquipmentItem = await prisma.equipment.update({
-              where: { id: existingEquipment.id },
-              data: equipmentData,
-            });
-            syncedEquipment.push(updatedEquipmentItem);
-            updatedEquipment.push(updatedEquipmentItem);
+            const updatedEquipmentItem = await db.update(equipment)
+              .set(equipmentData)
+              .where(eq(equipment.id, existingEquipment.id))
+              .returning();
+            const updatedItem = updatedEquipmentItem[0];
+            syncedEquipment.push(updatedItem);
+            updatedEquipment.push(updatedItem);
           } else {
             console.log('Equipment unchanged, skipping:', existingEquipment.id);
             syncedEquipment.push(existingEquipment);
           }
         } else {
           console.log('Creating new equipment:', equipmentData.name);
-          const newEquipmentItem = await prisma.equipment.create({
-            data: equipmentData,
-          });
-          syncedEquipment.push(newEquipmentItem);
-          newEquipment.push(newEquipmentItem);
+          const newEquipmentItem = await db.insert(equipment)
+            .values(equipmentData)
+            .returning();
+          const newItem = newEquipmentItem[0];
+          syncedEquipment.push(newItem);
+          newEquipment.push(newItem);
         }
       } catch (error) {
         console.error(`Error processing equipment ${erpEquipmentItem.item_code}:`, error);
@@ -220,7 +226,5 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 } 

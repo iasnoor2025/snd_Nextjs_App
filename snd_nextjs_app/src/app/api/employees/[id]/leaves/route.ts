@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { db } from '@/lib/drizzle';
+import { employeeLeaves, employees } from '@/lib/drizzle/schema';
+import { eq, desc } from 'drizzle-orm';
 
 export const GET = withPermission(
   async (
@@ -12,24 +12,33 @@ export const GET = withPermission(
   try {
     const { id } = await params;
 
-    // Fetch real leave data from the database
-    const leaves = await prisma.employeeLeave.findMany({
-      where: {
-        employee_id: parseInt(id)
-      },
-      orderBy: {
-        created_at: 'desc'
-      },
-      include: {
+    // Fetch real leave data from the database using Drizzle
+    const leaves = await db
+      .select({
+        id: employeeLeaves.id,
+        leave_type: employeeLeaves.leaveType,
+        start_date: employeeLeaves.startDate,
+        end_date: employeeLeaves.endDate,
+        days: employeeLeaves.days,
+        reason: employeeLeaves.reason,
+        status: employeeLeaves.status,
+        approved_by: employeeLeaves.approvedBy,
+        approved_at: employeeLeaves.approvedAt,
+        rejected_by: employeeLeaves.rejectedBy,
+        rejected_at: employeeLeaves.rejectedAt,
+        rejection_reason: employeeLeaves.rejectionReason,
+        created_at: employeeLeaves.createdAt,
+        updated_at: employeeLeaves.updatedAt,
         employee: {
-          select: {
-            first_name: true,
-            last_name: true,
-            employee_id: true
-          }
+          first_name: employees.firstName,
+          last_name: employees.lastName,
+          employee_id: employees.employeeId
         }
-      }
-    });
+      })
+      .from(employeeLeaves)
+      .leftJoin(employees, eq(employees.id, employeeLeaves.employeeId))
+      .where(eq(employeeLeaves.employeeId, parseInt(id)))
+      .orderBy(desc(employeeLeaves.createdAt));
 
     // Transform the data to match the expected format
     const transformedLeaves = leaves.map(leave => ({
@@ -78,18 +87,19 @@ export const POST = withPermission(
     const { id } = await params;
     const body = await request.json();
 
-    // Create new leave request in the database
-    const newLeave = await prisma.employeeLeave.create({
-      data: {
-        employee_id: parseInt(id),
-        leave_type: body.leave_type,
-        start_date: new Date(body.start_date),
-        end_date: new Date(body.end_date),
+    // Create new leave request in the database using Drizzle
+    const [newLeave] = await db
+      .insert(employeeLeaves)
+      .values({
+        employeeId: parseInt(id),
+        leaveType: body.leave_type,
+        startDate: new Date(body.start_date),
+        endDate: new Date(body.end_date),
         days: body.days || 0,
         reason: body.reason || '',
         status: body.status || 'pending'
-      }
-    });
+      })
+      .returning();
 
     return NextResponse.json({
       success: true,

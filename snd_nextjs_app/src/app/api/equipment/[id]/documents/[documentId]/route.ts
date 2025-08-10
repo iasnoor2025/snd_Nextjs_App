@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { media } from '@/lib/drizzle/schema';
+import { eq, and } from 'drizzle-orm';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -22,16 +24,20 @@ export async function DELETE(
     }
 
     // Find the document
-    const document = await prisma.media.findFirst({
-      where: {
-        id: docId,
-        model_type: 'Equipment',
-        model_id: equipmentId,
-        collection: 'documents'
-      }
-    });
+    const document = await db
+      .select()
+      .from(media)
+      .where(
+        and(
+          eq(media.id, docId),
+          eq(media.modelType, 'Equipment'),
+          eq(media.modelId, equipmentId),
+          eq(media.collection, 'documents')
+        )
+      )
+      .limit(1);
 
-    if (!document) {
+    if (!document.length) {
       return NextResponse.json(
         { success: false, error: 'Document not found' },
         { status: 404 }
@@ -39,17 +45,15 @@ export async function DELETE(
     }
 
     // Delete file from disk
-    const filePath = join(process.cwd(), 'public', 'uploads', 'documents', document.file_path);
+    const filePath = join(process.cwd(), 'public', 'uploads', 'documents', document[0].filePath);
     if (existsSync(filePath)) {
       await unlink(filePath);
     }
 
     // Delete from database
-    await prisma.media.delete({
-      where: {
-        id: docId
-      }
-    });
+    await db
+      .delete(media)
+      .where(eq(media.id, docId));
 
     return NextResponse.json({
       success: true,

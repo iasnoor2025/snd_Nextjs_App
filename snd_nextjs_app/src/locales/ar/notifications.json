@@ -37,11 +37,16 @@
   "delete": "حذف",
   "clearAll": "مسح الكل",
   "noNotifications": "لا توجد إشعارات",
+  "noNotificationsDescription": "لا توجد لديك إشعارات في الوقت الحالي.",
   "noNotificationsFound": "لم يتم العثور على إشعارات",
   "notificationSent": "تم إرسال الإشعار بنجاح",
   "notificationFailed": "فشل في إرسال الإشعار",
   "preferencesUpdated": "تم تحديث تفضيلات الإشعارات",
   "templateCreated": "تم إنشاء قالب الإشعار",
   "templateUpdated": "تم تحديث قالب الإشعار",
-  "templateDeleted": "تم حذف قالب الإشعار"
+  "templateDeleted": "تم حذف قالب الإشعار",
+  "loading": "جاري التحميل",
+  "viewAllNotifications": "عرض جميع الإشعارات",
+  "notificationsTitle": "إشعارات النظام",
+  "notificationsDescription": "عرض وإدارة إشعارات النظام الخاصة بك"
 } 

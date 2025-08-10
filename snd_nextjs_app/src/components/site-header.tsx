@@ -18,7 +18,9 @@ import { User, LogOut, Settings } from "lucide-react"
 import { LanguageSwitcher } from "./language-switcher"
 import { ThemeToggle } from "./theme-toggle"
 import { I18nErrorBoundary } from "./i18n-error-boundary"
+import { I18nWrapper } from "./i18n-wrapper"
 import { useI18n } from "@/hooks/use-i18n"
+import { NotificationBell } from "./notification-bell"
 
 export function SiteHeader() {
   const { data: session, status } = useSession();
@@ -50,6 +52,7 @@ export function SiteHeader() {
             <div className="text-sm text-muted-foreground">Loading...</div>
           ) : session ? (
             <div className="flex items-center gap-2">
+              <NotificationBell />
               <Badge variant={
                 session?.user?.role === "SUPER_ADMIN" ? "destructive" :
                 session?.user?.role === "ADMIN" ? "default" :

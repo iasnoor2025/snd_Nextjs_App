@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { media, equipment } from '@/lib/drizzle/schema';
+import { eq, desc } from 'drizzle-orm';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
@@ -21,29 +23,22 @@ export async function GET(
     }
 
     // Get documents for this equipment
-    const documents = await prisma.media.findMany({
-      where: {
-        model_type: 'Equipment',
-        model_id: equipmentId,
-        collection: 'documents'
-      },
-      orderBy: {
-        created_at: 'desc'
-      }
-    });
+    const documents = await db
+      .select()
+      .from(media)
+      .where(eq(media.modelId, equipmentId))
+      .orderBy(desc(media.createdAt));
 
     // Transform documents to match expected format
     const formattedDocuments = documents.map(doc => ({
       id: doc.id,
-      name: doc.file_name,
-      file_name: doc.file_name,
-      file_type: doc.mime_type,
-      size: doc.file_size,
-      url: `/uploads/documents/${doc.file_path}`,
-      created_at: doc.created_at.toISOString()
+      name: doc.fileName,
+      file_name: doc.fileName,
+      file_type: doc.mimeType,
+      size: doc.fileSize,
+      url: `/uploads/documents/${doc.filePath}`,
+      created_at: doc.createdAt.toISOString()
     }));
-
-
 
     return NextResponse.json({
       success: true,
@@ -81,11 +76,13 @@ export async function POST(
     }
 
     // Verify equipment exists
-    const equipment = await prisma.equipment.findUnique({
-      where: { id: equipmentId }
-    });
+    const equipmentData = await db
+      .select()
+      .from(equipment)
+      .where(eq(equipment.id, equipmentId))
+      .limit(1);
 
-    if (!equipment) {
+    if (!equipmentData.length) {
       return NextResponse.json(
         { success: false, error: 'Equipment not found' },
         { status: 404 }
@@ -150,17 +147,15 @@ export async function POST(
     await writeFile(filePath, buffer);
 
     // Save document info to database
-    const document = await prisma.media.create({
-      data: {
-        file_name: documentName || originalName,
-        file_path: fileName,
-        file_size: file.size,
-        mime_type: file.type,
-        collection: 'documents',
-        model_type: 'Equipment',
-        model_id: equipmentId
-      }
-    });
+    const [document] = await db.insert(media).values({
+      fileName: documentName || originalName,
+      filePath: fileName,
+      fileSize: file.size,
+      mimeType: file.type,
+      collection: 'documents',
+      modelType: 'Equipment',
+      modelId: equipmentId
+    }).returning();
 
     return NextResponse.json({
       success: true,
@@ -168,12 +163,12 @@ export async function POST(
         message: 'Document uploaded successfully',
         document: {
           id: document.id,
-          name: document.file_name,
-          file_name: document.file_name,
-          file_type: document.mime_type,
-          size: document.file_size,
-          url: `/uploads/documents/${document.file_path}`,
-          created_at: document.created_at.toISOString()
+          name: document.fileName,
+          file_name: document.fileName,
+          file_type: document.mimeType,
+          size: document.fileSize,
+          url: `/uploads/documents/${document.filePath}`,
+          created_at: document.createdAt.toISOString()
         }
       }
     });

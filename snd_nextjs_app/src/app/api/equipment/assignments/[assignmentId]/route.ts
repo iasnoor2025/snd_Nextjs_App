@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { equipmentRentalHistory, rentals, customers, projects, employees, employeeAssignments } from '@/lib/drizzle/schema';
+import { eq, and, like, contains } from 'drizzle-orm';
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ assignmentId: string }> }
@@ -30,11 +33,13 @@ export async function PUT(
     } = body;
 
     // Check if assignment exists
-    const existingAssignment = await prisma.equipmentRentalHistory.findUnique({
-      where: { id: assignmentId }
-    });
+    const existingAssignment = await db
+      .select()
+      .from(equipmentRentalHistory)
+      .where(eq(equipmentRentalHistory.id, assignmentId))
+      .limit(1);
 
-    if (!existingAssignment) {
+    if (!existingAssignment.length) {
       return NextResponse.json(
         { success: false, error: 'Assignment not found' },
         { status: 404 }
@@ -44,58 +49,76 @@ export async function PUT(
     // Prepare update data
     const updateData: any = {};
     
-    if (assignment_type !== undefined) updateData.assignment_type = assignment_type;
-    if (project_id !== undefined) updateData.project_id = project_id;
-    if (employee_id !== undefined) updateData.employee_id = employee_id;
-    if (rental_id !== undefined) updateData.rental_id = rental_id;
-    if (start_date !== undefined) updateData.start_date = new Date(start_date);
-    if (end_date !== undefined) updateData.end_date = end_date ? new Date(end_date) : null;
-    if (daily_rate !== undefined) updateData.daily_rate = daily_rate ? parseFloat(daily_rate) : null;
-    if (total_amount !== undefined) updateData.total_amount = total_amount ? parseFloat(total_amount) : null;
+    if (assignment_type !== undefined) updateData.assignmentType = assignment_type;
+    if (project_id !== undefined) updateData.projectId = project_id;
+    if (employee_id !== undefined) updateData.employeeId = employee_id;
+    if (rental_id !== undefined) updateData.rentalId = rental_id;
+    if (start_date !== undefined) updateData.startDate = new Date(start_date);
+    if (end_date !== undefined) updateData.endDate = end_date ? new Date(end_date) : null;
+    if (daily_rate !== undefined) updateData.dailyRate = daily_rate ? parseFloat(daily_rate) : null;
+    if (total_amount !== undefined) updateData.totalAmount = total_amount ? parseFloat(total_amount) : null;
     if (notes !== undefined) updateData.notes = notes;
     if (status !== undefined) updateData.status = status;
 
     // Update the assignment
-    const updatedAssignment = await prisma.equipmentRentalHistory.update({
-      where: { id: assignmentId },
-      data: updateData,
-      include: {
+    await db
+      .update(equipmentRentalHistory)
+      .set(updateData)
+      .where(eq(equipmentRentalHistory.id, assignmentId));
+
+    // Fetch the updated assignment with related data
+    const updatedAssignment = await db
+      .select({
+        id: equipmentRentalHistory.id,
+        equipmentId: equipmentRentalHistory.equipmentId,
+        rentalId: equipmentRentalHistory.rentalId,
+        projectId: equipmentRentalHistory.projectId,
+        employeeId: equipmentRentalHistory.employeeId,
+        assignmentType: equipmentRentalHistory.assignmentType,
+        startDate: equipmentRentalHistory.startDate,
+        endDate: equipmentRentalHistory.endDate,
+        status: equipmentRentalHistory.status,
+        notes: equipmentRentalHistory.notes,
+        dailyRate: equipmentRentalHistory.dailyRate,
+        totalAmount: equipmentRentalHistory.totalAmount,
+        createdAt: equipmentRentalHistory.createdAt,
+        updatedAt: equipmentRentalHistory.updatedAt,
         rental: {
-          include: {
-            customer: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true
-              }
-            }
+          id: rentals.id,
+          rentalNumber: rentals.rentalNumber,
+          customer: {
+            id: customers.id,
+            name: customers.name,
+            email: customers.email,
+            phone: customers.phone
           }
         },
         project: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            status: true
-          }
+          id: projects.id,
+          name: projects.name,
+          description: projects.description,
+          status: projects.status
         },
         employee: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            employee_id: true,
-            email: true,
-            phone: true
-          }
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          email: employees.email,
+          phone: employees.phone
         }
-      }
-    });
+      })
+      .from(equipmentRentalHistory)
+      .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
+      .leftJoin(customers, eq(rentals.customerId, customers.id))
+      .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
+      .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
+      .where(eq(equipmentRentalHistory.id, assignmentId))
+      .limit(1);
 
     return NextResponse.json({
       success: true,
-      data: updatedAssignment,
+      data: updatedAssignment[0],
       message: 'Equipment assignment updated successfully'
     });
   } catch (error) {
@@ -123,11 +146,13 @@ export async function DELETE(
     }
 
     // Check if assignment exists
-    const existingAssignment = await prisma.equipmentRentalHistory.findUnique({
-      where: { id: assignmentId }
-    });
+    const existingAssignment = await db
+      .select()
+      .from(equipmentRentalHistory)
+      .where(eq(equipmentRentalHistory.id, assignmentId))
+      .limit(1);
 
-    if (!existingAssignment) {
+    if (!existingAssignment.length) {
       return NextResponse.json(
         { success: false, error: 'Assignment not found' },
         { status: 404 }
@@ -136,25 +161,27 @@ export async function DELETE(
 
     // If this is a manual assignment with an employee, also delete the corresponding employee assignment
     let deletedEmployeeAssignment = null;
-    if (existingAssignment.assignment_type === 'manual' && existingAssignment.employee_id) {
+    if (existingAssignment[0].assignmentType === 'manual' && existingAssignment[0].employeeId) {
       try {
         // Find and delete the corresponding employee assignment
-        const employeeAssignment = await prisma.employeeAssignment.findFirst({
-          where: {
-            employee_id: existingAssignment.employee_id,
-            type: 'manual',
-            name: {
-              contains: `Equipment Assignment -`
-            }
-          }
-        });
+        const employeeAssignment = await db
+          .select()
+          .from(employeeAssignments)
+          .where(
+            and(
+              eq(employeeAssignments.employeeId, existingAssignment[0].employeeId),
+              eq(employeeAssignments.type, 'manual'),
+              like(employeeAssignments.name, '%Equipment Assignment -%')
+            )
+          )
+          .limit(1);
 
-        if (employeeAssignment) {
-          await prisma.employeeAssignment.delete({
-            where: { id: employeeAssignment.id }
-          });
-          deletedEmployeeAssignment = employeeAssignment;
-          console.log('Employee assignment deleted automatically:', employeeAssignment);
+        if (employeeAssignment.length) {
+          await db
+            .delete(employeeAssignments)
+            .where(eq(employeeAssignments.id, employeeAssignment[0].id));
+          deletedEmployeeAssignment = employeeAssignment[0];
+          console.log('Employee assignment deleted automatically:', employeeAssignment[0]);
         }
       } catch (assignmentError) {
         console.error('Error deleting employee assignment:', assignmentError);
@@ -163,15 +190,15 @@ export async function DELETE(
     }
 
     // Delete the equipment assignment
-    await prisma.equipmentRentalHistory.delete({
-      where: { id: assignmentId }
-    });
+    await db
+      .delete(equipmentRentalHistory)
+      .where(eq(equipmentRentalHistory.id, assignmentId));
 
     return NextResponse.json({
       success: true,
       message: 'Equipment assignment deleted successfully' + (deletedEmployeeAssignment ? ' and employee assignment deleted automatically' : ''),
       data: {
-        deletedEquipmentAssignment: existingAssignment,
+        deletedEquipmentAssignment: existingAssignment[0],
         deletedEmployeeAssignment
       }
     });

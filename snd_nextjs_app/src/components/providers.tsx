@@ -10,6 +10,7 @@ import SSEProvider from "@/contexts/sse-context";
 import { I18nProvider } from "@/components/i18n-provider";
 import { I18nWrapper } from "@/components/i18n-wrapper";
 import { ConfirmationProvider } from "@/components/providers/confirmation-provider";
+import { NotificationProvider } from "@/contexts/notification-context";
 import { addCleanupCallback, startMemoryMonitoring } from "@/lib/memory-manager";
 import '@/lib/i18n-client'; // Initialize i18n on client side
 
@@ -94,7 +95,9 @@ export function Providers({ children }: ProvidersProps) {
               <I18nWrapper>
                 <I18nProvider>
                   <ConfirmationProvider>
-                    {children}
+                    <NotificationProvider>
+                      {children}
+                    </NotificationProvider>
                   </ConfirmationProvider>
                 </I18nProvider>
               </I18nWrapper>

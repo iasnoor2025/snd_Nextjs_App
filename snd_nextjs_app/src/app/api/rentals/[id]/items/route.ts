@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/database';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { employeeAssignments } from '@/lib/drizzle/schema';
 
 export async function POST(
   request: NextRequest,
@@ -61,19 +62,17 @@ export async function POST(
         const customerName = rental?.customer?.name || 'Unknown Customer';
         
         // Create employee assignment
-        await prisma.employeeAssignment.create({
-          data: {
-            employee_id: parseInt(body.operatorId),
-            name: `${customerName} - ${body.equipmentName} Rental`,
-            type: 'rental_item',
-            location: 'Rental Site',
-            start_date: new Date(),
-            end_date: null,
-            status: 'active',
-            notes: `Assigned to rental item: ${body.equipmentName}`,
-            rental_id: parseInt(rentalId),
-            project_id: null,
-          },
+        await db.insert(employeeAssignments).values({
+          employeeId: parseInt(body.operatorId),
+          name: `${customerName} - ${body.equipmentName} Rental`,
+          type: 'rental_item',
+          location: 'Rental Site',
+          startDate: new Date(),
+          endDate: null,
+          status: 'active',
+          notes: `Assigned to rental item: ${body.equipmentName}`,
+          rentalId: parseInt(rentalId),
+          projectId: null,
         });
 
         console.log(`Employee assignment created for operator ${body.operatorId} on rental ${rentalId}`);

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { employees, advancePaymentHistory, advancePayments, designations } from '@/lib/drizzle/schema';
+import { eq, and, isNull } from 'drizzle-orm';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
 
@@ -27,11 +29,12 @@ const getEmployeePaymentReceiptHandler = async (
     // For employee users, ensure they can only access their own payment data
     if (user?.role === 'EMPLOYEE') {
       // Find employee record that matches user's national_id
-      const ownEmployee = await prisma.employee.findFirst({
-        where: { iqama_number: user.national_id },
-        select: { id: true },
-      });
-      if (ownEmployee && employeeId !== ownEmployee.id) {
+      const ownEmployee = await db
+        .select({ id: employees.id })
+        .from(employees)
+        .where(eq(employees.iqamaNumber, user.national_id))
+        .limit(1);
+      if (ownEmployee.length && employeeId !== ownEmployee[0].id) {
         return NextResponse.json(
           { error: "You can only access your own payment data" },
           { status: 403 }
@@ -40,38 +43,54 @@ const getEmployeePaymentReceiptHandler = async (
     }
 
     // Get the payment record
-    const paymentRecord = await prisma.advancePaymentHistory.findFirst({
-      where: {
-        id: paymentId,
-        employee_id: employeeId,
-        deleted_at: null,
-      },
-      include: {
-        advance_payment: true,
-      },
-    });
+    const paymentRecord = await db
+      .select({
+        id: advancePaymentHistory.id,
+        amount: advancePaymentHistory.amount,
+        paymentDate: advancePaymentHistory.paymentDate,
+        notes: advancePaymentHistory.notes,
+        createdAt: advancePaymentHistory.createdAt,
+        advancePaymentId: advancePaymentHistory.advancePaymentId,
+        advancePayment: {
+          id: advancePayments.id,
+          amount: advancePayments.amount,
+          reason: advancePayments.reason,
+          paymentDate: advancePayments.paymentDate,
+          repaidAmount: advancePayments.repaidAmount
+        }
+      })
+      .from(advancePaymentHistory)
+      .leftJoin(advancePayments, eq(advancePaymentHistory.advancePaymentId, advancePayments.id))
+      .where(
+        and(
+          eq(advancePaymentHistory.id, paymentId),
+          eq(advancePaymentHistory.employeeId, employeeId),
+          isNull(advancePaymentHistory.deletedAt)
+        )
+      )
+      .limit(1);
 
-    if (!paymentRecord) {
+    if (!paymentRecord.length) {
       return NextResponse.json({ error: "Payment record not found" }, { status: 404 });
     }
 
     // Get employee information
-    const employee = await prisma.employee.findUnique({
-      where: { id: employeeId },
-      select: {
-        id: true,
-        first_name: true,
-        last_name: true,
-        employee_id: true,
+    const employee = await db
+      .select({
+        id: employees.id,
+        firstName: employees.firstName,
+        lastName: employees.lastName,
+        fileNumber: employees.fileNumber,
         designation: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    });
+          name: designations.name
+        }
+      })
+      .from(employees)
+      .leftJoin(designations, eq(employees.designationId, designations.id))
+      .where(eq(employees.id, employeeId))
+      .limit(1);
 
-    if (!employee) {
+    if (!employee.length) {
       return NextResponse.json({ error: "Employee not found" }, { status: 404 });
     }
 
@@ -86,26 +105,26 @@ const getEmployeePaymentReceiptHandler = async (
     // Format the receipt data
     const receiptData = {
       payment: {
-        id: paymentRecord.id,
-        amount: paymentRecord.amount,
-        payment_date: paymentRecord.payment_date.toISOString().slice(0, 10), // YYYY-MM-DD
-        notes: paymentRecord.notes,
+        id: paymentRecord[0].id,
+        amount: paymentRecord[0].amount,
+        payment_date: paymentRecord[0].paymentDate.toISOString().slice(0, 10), // YYYY-MM-DD
+        notes: paymentRecord[0].notes,
         recorded_by: "System", // TODO: Add user lookup
-        created_at: paymentRecord.created_at.toISOString().slice(0, 19).replace('T', ' '), // YYYY-MM-DD HH:MM:SS
+        created_at: paymentRecord[0].createdAt.toISOString().slice(0, 19).replace('T', ' '), // YYYY-MM-DD HH:MM:SS
       },
-      advance: paymentRecord.advance_payment ? {
-        id: paymentRecord.advance_payment.id,
-        amount: paymentRecord.advance_payment.amount,
-        reason: paymentRecord.advance_payment.reason,
-        payment_date: paymentRecord.advance_payment.payment_date?.toISOString().slice(0, 10) || null,
-        repaid_amount: paymentRecord.advance_payment.repaid_amount,
-        balance: Number(paymentRecord.advance_payment.amount) - Number(paymentRecord.advance_payment.repaid_amount || 0),
+      advance: paymentRecord[0].advancePayment ? {
+        id: paymentRecord[0].advancePayment.id,
+        amount: paymentRecord[0].advancePayment.amount,
+        reason: paymentRecord[0].advancePayment.reason,
+        payment_date: paymentRecord[0].advancePayment.paymentDate?.toISOString().slice(0, 10) || null,
+        repaid_amount: paymentRecord[0].advancePayment.repaidAmount,
+        balance: Number(paymentRecord[0].advancePayment.amount) - Number(paymentRecord[0].advancePayment.repaidAmount || 0),
       } : null,
       employee: {
-        id: employee.id,
-        name: `${employee.first_name} ${employee.last_name}`,
-        position: employee.designation?.name || "Employee",
-        employee_id: employee.employee_id,
+        id: employee[0].id,
+        name: `${employee[0].firstName} ${employee[0].lastName}`,
+        position: employee[0].designation?.name || "Employee",
+        employee_id: employee[0].fileNumber,
       },
       company: company,
     };

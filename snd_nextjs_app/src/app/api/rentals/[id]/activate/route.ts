@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/database';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { rentals } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export async function POST(
   request: NextRequest,
@@ -19,20 +21,14 @@ export async function POST(
     }
 
     // Update rental with activation information
-    const updatedRental = await prisma.rental.update({
-      where: { id: parseInt(id) },
-      data: {
+    const updatedRentalResult = await db.update(rentals)
+      .set({
         status: 'active',
-      },
-      include: {
-        customer: true,
-        rental_items: {
-          include: {
-            equipment: true
-          }
-        }
-      }
-    });
+      })
+      .where(eq(rentals.id, parseInt(id)))
+      .returning();
+    
+    const updatedRental = updatedRentalResult[0];
 
     return NextResponse.json({
       message: 'Rental activated successfully',

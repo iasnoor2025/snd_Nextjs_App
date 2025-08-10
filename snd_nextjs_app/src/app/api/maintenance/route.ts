@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, prisma, safePrismaOperation } from '@/lib/db';
+import { db } from '@/lib/db';
 import { withAuth, PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 import {
   equipmentMaintenance as equipmentMaintenanceTable,

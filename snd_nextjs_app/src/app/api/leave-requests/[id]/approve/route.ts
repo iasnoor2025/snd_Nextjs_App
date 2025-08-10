@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { employeeLeaves, employees } from '@/lib/drizzle/schema';
 import { authConfig } from '@/lib/auth-config';
+import { eq } from 'drizzle-orm';
 
 export async function PUT(
   request: NextRequest,
@@ -28,12 +30,25 @@ export async function PUT(
       );
     }
 
-    // Find the leave request
-    const leaveRequest = await prisma.employeeLeave.findUnique({
-      where: { id: parseInt(id) },
-      include: { employee: true }
-    });
+    // Find the leave request with employee details
+    const leaveRequestData = await db
+      .select({
+        id: employeeLeaves.id,
+        status: employeeLeaves.status,
+        startDate: employeeLeaves.startDate,
+        endDate: employeeLeaves.endDate,
+        employeeId: employeeLeaves.employeeId,
+        employee: {
+          id: employees.id,
+          status: employees.status
+        }
+      })
+      .from(employeeLeaves)
+      .leftJoin(employees, eq(employeeLeaves.employeeId, employees.id))
+      .where(eq(employeeLeaves.id, parseInt(id)))
+      .limit(1);
 
+    const leaveRequest = leaveRequestData[0];
     if (!leaveRequest) {
       return NextResponse.json(
         { error: 'Leave request not found' },
@@ -50,24 +65,24 @@ export async function PUT(
     }
 
     // Update the leave request status to approved
-    await prisma.employeeLeave.update({
-      where: { id: parseInt(id) },
-      data: {
+    await db
+      .update(employeeLeaves)
+      .set({
         status: 'approved',
-        approved_at: new Date(),
-        approved_by: parseInt(session.user.id)
-      }
-    });
+        approvedAt: new Date(),
+        approvedBy: parseInt(session.user.id)
+      })
+      .where(eq(employeeLeaves.id, parseInt(id)));
 
     // Update employee status to 'on_leave' if the leave is currently active
     const today = new Date();
-    const isLeaveCurrentlyActive = leaveRequest.start_date <= today && leaveRequest.end_date >= today;
+    const isLeaveCurrentlyActive = leaveRequest.startDate <= today && leaveRequest.endDate >= today;
     
     if (isLeaveCurrentlyActive) {
-      await prisma.employee.update({
-        where: { id: leaveRequest.employee_id },
-        data: { status: 'on_leave' }
-      });
+      await db
+        .update(employees)
+        .set({ status: 'on_leave' })
+        .where(eq(employees.id, leaveRequest.employeeId));
     }
 
     return NextResponse.json({

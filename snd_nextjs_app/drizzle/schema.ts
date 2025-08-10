@@ -69,6 +69,7 @@ export const employeeAssignments = pgTable("employee_assignments", {
 	location: text(),
 	name: text(),
 	type: text().default('manual').notNull(),
+	assignmentType: text("assignment_type").default('project').notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.employeeId],
@@ -184,7 +185,7 @@ export const projectResources = pgTable("project_resources", {
 	completionPercentage: integer("completion_percentage"),
 	assignedToId: integer("assigned_to_id"),
 	createdAt: timestamp("created_at", { precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	updatedAt: timestamp("updated_at", { precision: 3, mode: 'string' }).notNull(),
+	updatedAt: timestamp("updated_at", { precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 }, (table) => [
 	foreignKey({
 			columns: [table.projectId],
@@ -499,11 +500,12 @@ export const departments = pgTable("departments", {
 export const designations = pgTable("designations", {
 	id: serial().primaryKey().notNull(),
 	name: text().notNull(),
+	title: text(),
 	description: text(),
 	departmentId: integer("department_id"),
 	isActive: boolean("is_active").default(true).notNull(),
 	createdAt: timestamp("created_at", { precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	updatedAt: timestamp("updated_at", { precision: 3, mode: 'string' }).notNull(),
+	updatedAt: timestamp("updated_at", { precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	deletedAt: timestamp("deleted_at", { precision: 3, mode: 'string' }),
 }, (table) => [
 	foreignKey({
@@ -1060,6 +1062,8 @@ export const timesheets = pgTable("timesheets", {
 	project: text(),
 	tasks: text(),
 	submittedAt: timestamp("submitted_at", { precision: 3, mode: 'string' }),
+	month: integer(),
+	year: integer(),
 	createdAt: timestamp("created_at", { precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	updatedAt: timestamp("updated_at", { precision: 3, mode: 'string' }).notNull(),
 	deletedAt: timestamp("deleted_at", { precision: 3, mode: 'string' }),
@@ -1346,6 +1350,8 @@ export const permissions = pgTable("permissions", {
 	id: serial().primaryKey().notNull(),
 	name: text().notNull(),
 	guardName: text("guard_name").default('web').notNull(),
+	description: text(),
+	module: text(),
 	createdAt: timestamp("created_at", { precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	updatedAt: timestamp("updated_at", { precision: 3, mode: 'string' }).notNull(),
 }, (table) => [
@@ -1409,3 +1415,18 @@ export const modelHasPermissions = pgTable("model_has_permissions", {
 		}).onUpdate("cascade").onDelete("cascade"),
 	primaryKey({ columns: [table.permissionId, table.userId], name: "model_has_permissions_pkey"}),
 ]);
+
+export const notifications = pgTable("notifications", {
+	id: serial("id").primaryKey().notNull(),
+	type: text("type").notNull(), // 'info', 'success', 'warning', 'error'
+	title: text("title").notNull(),
+	message: text("message").notNull(),
+	data: jsonb("data"), // Additional data for the notification
+	timestamp: timestamp("timestamp", { precision: 3, mode: 'string' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+	read: boolean("read").notNull().default(false),
+	actionUrl: text("action_url"), // URL to navigate to when clicked
+	priority: text("priority").notNull().default('medium'), // 'low', 'medium', 'high'
+	userEmail: text("user_email").notNull(), // User who should receive this notification
+	createdAt: timestamp("created_at", { precision: 3, mode: 'string' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+	updatedAt: timestamp("updated_at", { precision: 3, mode: 'string' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+});

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { employeeLeaves, employees } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 import { authConfig } from '@/lib/auth-config';
 
 // POST /api/leave-requests - Create a new leave request
@@ -52,9 +54,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if employee exists
-    const employee = await prisma.employee.findUnique({
-      where: { id: parseInt(employee_id) },
-    });
+    const [employee] = await db
+      .select({
+        id: employees.id,
+        firstName: employees.firstName,
+        lastName: employees.lastName,
+        fileNumber: employees.fileNumber
+      })
+      .from(employees)
+      .where(eq(employees.id, parseInt(employee_id)))
+      .limit(1);
 
     if (!employee) {
       return NextResponse.json(
@@ -64,28 +73,20 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the leave request
-    const leaveRequest = await prisma.employeeLeave.create({
-      data: {
-        employee_id: parseInt(employee_id),
-        leave_type,
-        start_date: startDate,
-        end_date: endDate,
+    const [leaveRequest] = await db
+      .insert(employeeLeaves)
+      .values({
+        employeeId: parseInt(employee_id),
+        leaveType: leave_type,
+        startDate: startDate,
+        endDate: endDate,
         days: parseInt(days),
         reason: reason || null,
         status: 'pending',
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-      include: {
-        employee: {
-          select: {
-            first_name: true,
-            last_name: true,
-            employee_id: true,
-          },
-        },
-      },
-    });
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
 
     console.log('✅ Leave request created:', leaveRequest.id);
 
@@ -94,11 +95,11 @@ export async function POST(request: NextRequest) {
       message: 'Leave request created successfully',
       data: {
         id: leaveRequest.id,
-        employee_name: `${leaveRequest.employee.first_name} ${leaveRequest.employee.last_name}`,
-        employee_id: leaveRequest.employee.employee_id,
-        leave_type: leaveRequest.leave_type,
-        start_date: leaveRequest.start_date,
-        end_date: leaveRequest.end_date,
+        employee_name: `${employee.firstName} ${employee.lastName}`,
+        employee_id: employee.id,
+        leave_type: leaveRequest.leaveType,
+        start_date: leaveRequest.startDate,
+        end_date: leaveRequest.endDate,
         days: leaveRequest.days,
         reason: leaveRequest.reason,
         status: leaveRequest.status,

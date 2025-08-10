@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { DatabaseService } from '@/lib/database';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { employeeAssignments } from '@/lib/drizzle/schema';
+import { eq, and } from 'drizzle-orm';
 
 export async function PUT(
   request: NextRequest,
@@ -15,7 +17,7 @@ export async function PUT(
 
     // Get current rental item to check if operator changed
     const currentItem = await DatabaseService.getRentalItem(parseInt(itemId));
-    const previousOperatorId = currentItem?.operator_id;
+    const previousOperatorId = currentItem?.operatorId;
     const newOperatorId = body.operatorId ? parseInt(body.operatorId) : null;
 
     // Validate required fields
@@ -53,18 +55,17 @@ export async function PUT(
       try {
         // If there was a previous operator, end their assignment
         if (previousOperatorId) {
-          await prisma.employeeAssignment.updateMany({
-            where: {
-              employee_id: previousOperatorId,
-              rental_id: parseInt(rentalId),
-              type: 'rental_item',
-              status: 'active',
-            },
-            data: {
+          await db.update(employeeAssignments)
+            .set({
               status: 'inactive',
-              end_date: new Date(),
-            },
-          });
+              endDate: new Date(),
+            })
+            .where(and(
+              eq(employeeAssignments.employeeId, previousOperatorId),
+              eq(employeeAssignments.rentalId, parseInt(rentalId)),
+              eq(employeeAssignments.type, 'rental_item'),
+              eq(employeeAssignments.status, 'active')
+            ));
         }
 
         // If there's a new operator, create a new assignment
@@ -74,19 +75,17 @@ export async function PUT(
           const customerName = rental?.customer?.name || 'Unknown Customer';
           
           // Create employee assignment
-          await prisma.employeeAssignment.create({
-            data: {
-              employee_id: newOperatorId,
-              name: `${customerName} - ${body.equipmentName} Rental`,
-              type: 'rental_item',
-              location: 'Rental Site',
-              start_date: new Date(),
-              end_date: null,
-              status: 'active',
-              notes: `Assigned to rental item: ${body.equipmentName}`,
-              rental_id: parseInt(rentalId),
-              project_id: null,
-            },
+          await db.insert(employeeAssignments).values({
+            employeeId: newOperatorId,
+            name: `${customerName} - ${body.equipmentName} Rental`,
+            type: 'rental_item',
+            location: 'Rental Site',
+            startDate: new Date(),
+            endDate: null,
+            status: 'active',
+            notes: `Assigned to rental item: ${body.equipmentName}`,
+            rentalId: parseInt(rentalId),
+            projectId: null,
           });
 
           console.log(`Employee assignment updated for operator ${newOperatorId} on rental ${rentalId}`);
@@ -123,7 +122,7 @@ export async function DELETE(
 
     // Get current rental item to check if it has an operator
     const currentItem = await DatabaseService.getRentalItem(parseInt(itemId));
-    const operatorId = currentItem?.operator_id;
+    const operatorId = currentItem?.operatorId;
 
     // Delete rental item
     await DatabaseService.deleteRentalItem(parseInt(itemId));
@@ -131,18 +130,17 @@ export async function DELETE(
     // If the item had an operator, end their assignment
     if (operatorId) {
       try {
-        await prisma.employeeAssignment.updateMany({
-          where: {
-            employee_id: operatorId,
-            rental_id: parseInt(rentalId),
-            type: 'rental_item',
-            status: 'active',
-          },
-          data: {
+        await db.update(employeeAssignments)
+          .set({
             status: 'inactive',
-            end_date: new Date(),
-          },
-        });
+            endDate: new Date(),
+          })
+          .where(and(
+            eq(employeeAssignments.employeeId, operatorId),
+            eq(employeeAssignments.rentalId, parseInt(rentalId)),
+            eq(employeeAssignments.type, 'rental_item'),
+            eq(employeeAssignments.status, 'active')
+          ));
 
         console.log(`Employee assignment ended for operator ${operatorId} on rental ${rentalId}`);
       } catch (assignmentError) {

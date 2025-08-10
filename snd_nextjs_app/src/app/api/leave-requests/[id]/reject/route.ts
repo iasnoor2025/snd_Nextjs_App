@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { employeeLeaves, employees } from '@/lib/drizzle/schema';
 import { authConfig } from '@/lib/auth-config';
+import { eq } from 'drizzle-orm';
 
 export async function PUT(
   request: NextRequest,
@@ -29,12 +31,21 @@ export async function PUT(
       );
     }
 
-    // Find the leave request
-    const leaveRequest = await prisma.employeeLeave.findUnique({
-      where: { id: parseInt(id) },
-      include: { employee: true }
-    });
+    // Find the leave request with employee details
+    const leaveRequestData = await db
+      .select({
+        id: employeeLeaves.id,
+        status: employeeLeaves.status,
+        employee: {
+          id: employees.id
+        }
+      })
+      .from(employeeLeaves)
+      .leftJoin(employees, eq(employeeLeaves.employeeId, employees.id))
+      .where(eq(employeeLeaves.id, parseInt(id)))
+      .limit(1);
 
+    const leaveRequest = leaveRequestData[0];
     if (!leaveRequest) {
       return NextResponse.json(
         { error: 'Leave request not found' },
@@ -51,15 +62,15 @@ export async function PUT(
     }
 
     // Update the leave request status to rejected
-    await prisma.employeeLeave.update({
-      where: { id: parseInt(id) },
-      data: {
+    await db
+      .update(employeeLeaves)
+      .set({
         status: 'rejected',
-        rejected_at: new Date(),
-        rejected_by: parseInt(session.user.id),
-        rejection_reason: body.rejection_reason || 'Rejected by manager'
-      }
-    });
+        rejectedAt: new Date(),
+        rejectedBy: parseInt(session.user.id),
+        rejectionReason: body.rejection_reason || 'Rejected by manager'
+      })
+      .where(eq(employeeLeaves.id, parseInt(id)));
 
     return NextResponse.json({
       success: true,

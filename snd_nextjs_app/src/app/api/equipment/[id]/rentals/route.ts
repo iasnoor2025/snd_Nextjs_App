@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { equipment, equipmentRentalHistory, rentals, customers, projects, employees, users, employeeAssignments } from '@/lib/drizzle/schema';
+import { eq, desc, and, isNull } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
@@ -17,11 +19,9 @@ export async function GET(
     }
 
     // Check if equipment exists
-    const equipment = await prisma.equipment.findUnique({
-      where: { id }
-    });
+    const equipmentData = await db.select().from(equipment).where(eq(equipment.id, id)).limit(1);
 
-    if (!equipment) {
+    if (!equipmentData.length) {
       return NextResponse.json(
         { success: false, error: 'Equipment not found' },
         { status: 404 }
@@ -29,145 +29,152 @@ export async function GET(
     }
 
     // Fetch rental history for this equipment from the new EquipmentRentalHistory table
-    const rentalHistory = await prisma.equipmentRentalHistory.findMany({
-      where: {
-        equipment_id: id
-      },
-      include: {
+    const rentalHistory = await db
+      .select({
+        id: equipmentRentalHistory.id,
+        equipmentId: equipmentRentalHistory.equipmentId,
+        rentalId: equipmentRentalHistory.rentalId,
+        projectId: equipmentRentalHistory.projectId,
+        employeeId: equipmentRentalHistory.employeeId,
+        assignmentType: equipmentRentalHistory.assignmentType,
+        startDate: equipmentRentalHistory.startDate,
+        endDate: equipmentRentalHistory.endDate,
+        status: equipmentRentalHistory.status,
+        notes: equipmentRentalHistory.notes,
+        dailyRate: equipmentRentalHistory.dailyRate,
+        totalAmount: equipmentRentalHistory.totalAmount,
+        createdAt: equipmentRentalHistory.createdAt,
+        updatedAt: equipmentRentalHistory.updatedAt,
         rental: {
-          include: {
-            customer: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true
-              }
-            }
+          id: rentals.id,
+          rentalNumber: rentals.rentalNumber,
+          customer: {
+            id: customers.id,
+            name: customers.name,
+            email: customers.email,
+            phone: customers.phone
           }
         },
         project: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            status: true
-          }
+          id: projects.id,
+          name: projects.name,
+          description: projects.description,
+          status: projects.status
         },
         employee: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            employee_id: true,
-            email: true,
-            phone: true
-          }
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          email: employees.email,
+          phone: employees.phone
         }
-      },
-      orderBy: {
-        created_at: 'desc'
-      }
-    });
+      })
+      .from(equipmentRentalHistory)
+      .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
+      .leftJoin(customers, eq(rentals.customerId, customers.id))
+      .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
+      .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
+      .where(eq(equipmentRentalHistory.equipmentId, id))
+      .orderBy(desc(equipmentRentalHistory.createdAt));
 
     // Transform the data to include more useful information
     const history = rentalHistory.map(item => ({
       id: item.id,
-      rental_id: item.rental_id,
-      rental_number: item.rental?.rental_number || null,
+      rental_id: item.rentalId,
+      rental_number: item.rental?.rentalNumber || null,
       customer_name: item.rental?.customer?.name || null,
       customer_email: item.rental?.customer?.email || null,
       customer_phone: item.rental?.customer?.phone || null,
-      project_id: item.project_id,
+      project_id: item.projectId,
       project_name: item.project?.name || null,
       project_description: item.project?.description || null,
       project_status: item.project?.status || null,
-      employee_id: item.employee_id,
-      employee_name: item.employee ? `${item.employee.first_name} ${item.employee.last_name}` : null,
-      employee_id_number: item.employee?.employee_id || null,
+      employee_id: item.employeeId,
+      employee_name: item.employee ? `${item.employee.firstName} ${item.employee.lastName}` : null,
+      employee_id_number: item.employee?.fileNumber || null,
       employee_email: item.employee?.email || null,
       employee_phone: item.employee?.phone || null,
-      assignment_type: item.assignment_type,
-      equipment_name: equipment.name,
+      assignment_type: item.assignmentType,
+      equipment_name: equipmentData[0].name,
       quantity: 1, // Default to 1 for manual/project assignments
-      unit_price: item.daily_rate || 0,
-      total_price: item.total_amount || 0,
+      unit_price: item.dailyRate || 0,
+      total_price: item.totalAmount || 0,
       rate_type: 'daily', // Default for manual/project assignments
       status: item.status,
       notes: item.notes,
-      rental_start_date: item.start_date,
-      rental_expected_end_date: item.end_date,
-      rental_actual_end_date: item.end_date,
+      rental_start_date: item.startDate,
+      rental_expected_end_date: item.endDate,
+      rental_actual_end_date: item.endDate,
       rental_status: item.status,
-      created_at: item.created_at,
-      updated_at: item.updated_at
+      created_at: item.createdAt,
+      updated_at: item.updatedAt
     }));
 
     // Also fetch traditional rental items for backward compatibility
-    const rentalItems = await prisma.rentalItem.findMany({
-      where: {
-        equipment_id: id
-      },
-      include: {
-        rental: {
-          include: {
-            customer: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true
-              }
-            },
-            project: {
-              select: {
-                id: true,
-                name: true,
-                description: true,
-                status: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: {
-        created_at: 'desc'
-      }
-    });
+    const rentalItems = await db
+      .select({
+        id: rentals.id,
+        rentalNumber: rentals.rentalNumber,
+        customer: {
+          id: customers.id,
+          name: customers.name,
+          email: customers.email,
+          phone: customers.phone
+        },
+        project: {
+          id: projects.id,
+          name: projects.name,
+          description: projects.description,
+          status: projects.status
+        },
+        startDate: rentals.startDate,
+        expectedEndDate: rentals.expectedEndDate,
+        actualEndDate: rentals.actualEndDate,
+        status: rentals.status,
+        notes: rentals.notes,
+        createdAt: rentals.createdAt,
+        updatedAt: rentals.updatedAt
+      })
+      .from(rentals)
+      .leftJoin(customers, eq(rentals.customerId, customers.id))
+      .leftJoin(projects, eq(rentals.projectId, projects.id))
+      .where(eq(rentals.equipmentId, id))
+      .orderBy(desc(rentals.createdAt));
 
-    // Transform rental items data
-    const rentalItemsHistory = rentalItems.map(item => ({
-      id: `rental_item_${item.id}`,
-      rental_id: item.rental_id,
-      rental_number: item.rental.rental_number,
-      customer_name: item.rental.customer?.name || 'Unknown',
-      customer_email: item.rental.customer?.email,
-      customer_phone: item.rental.customer?.phone,
-      project_id: item.rental.project_id,
-      project_name: item.rental.project?.name || null,
-      project_description: item.rental.project?.description || null,
-      project_status: item.rental.project?.status || null,
-      employee_id: null,
-      employee_name: null,
-      employee_id_number: null,
-      employee_email: null,
-      employee_phone: null,
-      assignment_type: 'rental',
-      equipment_name: item.equipment_name,
-      quantity: item.quantity,
-      unit_price: item.unit_price,
-      total_price: item.total_price,
-      rate_type: item.rate_type,
-      days: item.days,
-      status: item.status,
-      notes: item.notes,
-      rental_start_date: item.rental.start_date,
-      rental_expected_end_date: item.rental.expected_end_date,
-      rental_actual_end_date: item.rental.actual_end_date,
-      rental_status: item.rental.status,
-      created_at: item.created_at,
-      updated_at: item.updated_at
-    }));
+         // Transform rental items data
+     const rentalItemsHistory = rentalItems.map(item => ({
+       id: `rental_item_${item.id}`,
+       rental_id: item.id,
+       rental_number: item.rentalNumber,
+       customer_name: item.customer?.name || 'Unknown',
+       customer_email: item.customer?.email,
+       customer_phone: item.customer?.phone,
+       project_id: item.projectId,
+       project_name: item.project?.name || null,
+       project_description: item.project?.description || null,
+       project_status: item.project?.status || null,
+       employee_id: null,
+       employee_name: null,
+       employee_id_number: null,
+       employee_email: null,
+       employee_phone: null,
+       assignment_type: 'rental',
+       equipment_name: equipmentData[0].name,
+       quantity: 1, // Default to 1 for rental items
+       unit_price: 0, // No direct unit price in this query
+       total_price: 0, // No direct total price in this query
+       rate_type: 'daily', // Default for rental items
+       days: null, // No direct days in this query
+       status: item.status,
+       notes: item.notes,
+       rental_start_date: item.startDate,
+       rental_expected_end_date: item.expectedEndDate,
+       rental_actual_end_date: item.actualEndDate,
+       rental_status: item.status,
+       created_at: item.createdAt,
+       updated_at: item.updatedAt
+     }));
 
     // Combine both histories and sort by creation date
     const combinedHistory = [...history, ...rentalItemsHistory].sort((a, b) => 
@@ -249,98 +256,96 @@ export async function POST(
     }
 
     // Check if equipment exists
-    const equipment = await prisma.equipment.findUnique({
-      where: { id }
-    });
+    const equipmentData = await db.select().from(equipment).where(eq(equipment.id, id)).limit(1);
 
-    if (!equipment) {
+    if (!equipmentData.length) {
       return NextResponse.json(
         { success: false, error: 'Equipment not found' },
         { status: 404 }
       );
     }
 
-    // Create the rental history entry
-    const rentalHistory = await prisma.equipmentRentalHistory.create({
-      data: {
-        equipment_id: id,
-        rental_id: assignment_type === 'rental' ? body.rental_id : null,
-        project_id: assignment_type === 'project' ? project_id : null,
-        employee_id: assignment_type === 'manual' ? employee_id : null,
-        assignment_type,
-        start_date: new Date(start_date),
-        end_date: end_date ? new Date(end_date) : null,
-        status,
-        notes,
-        daily_rate: daily_rate ? parseFloat(daily_rate) : null,
-        total_amount: total_amount ? parseFloat(total_amount) : null
-      },
-      include: {
-        rental: {
-          include: {
-            customer: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true
-              }
-            }
-          }
-        },
-        project: {
-          select: {
-            id: true,
-            name: true,
-            description: true,
-            status: true
-          }
-        },
-        employee: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            employee_id: true,
-            email: true,
-            phone: true
-          }
-        }
-      }
-    });
+         // Create the rental history entry
+     const [createdRentalHistory] = await db.insert(equipmentRentalHistory).values({
+       equipmentId: id,
+       rentalId: assignment_type === 'rental' ? body.rental_id : null,
+       projectId: assignment_type === 'project' ? project_id : null,
+       employeeId: assignment_type === 'manual' ? employee_id : null,
+       assignmentType: assignment_type,
+       startDate: new Date(start_date),
+       endDate: end_date ? new Date(end_date) : null,
+       status,
+       notes,
+       dailyRate: daily_rate ? parseFloat(daily_rate) : null,
+       totalAmount: total_amount ? parseFloat(total_amount) : null
+     }).returning();
+
+     // Fetch the created rental history with related data
+     const rentalHistory = await db
+       .select({
+         id: equipmentRentalHistory.id,
+         equipmentId: equipmentRentalHistory.equipmentId,
+         rentalId: equipmentRentalHistory.rentalId,
+         projectId: equipmentRentalHistory.projectId,
+         employeeId: equipmentRentalHistory.employeeId,
+         assignmentType: equipmentRentalHistory.assignmentType,
+         startDate: equipmentRentalHistory.startDate,
+         endDate: equipmentRentalHistory.endDate,
+         status: equipmentRentalHistory.status,
+         notes: equipmentRentalHistory.notes,
+         dailyRate: equipmentRentalHistory.dailyRate,
+         totalAmount: equipmentRentalHistory.totalAmount,
+         createdAt: equipmentRentalHistory.createdAt,
+         updatedAt: equipmentRentalHistory.updatedAt,
+         rental: {
+           id: rentals.id,
+           rentalNumber: rentals.rentalNumber,
+           customer: {
+             id: customers.id,
+             name: customers.name,
+             email: customers.email,
+             phone: customers.phone
+           }
+         },
+         project: {
+           id: projects.id,
+           name: projects.name,
+           description: projects.description,
+           status: projects.status
+         },
+         employee: {
+           id: employees.id,
+           firstName: employees.firstName,
+           lastName: employees.lastName,
+           fileNumber: employees.fileNumber,
+           email: employees.email,
+           phone: employees.phone
+         }
+       })
+       .from(equipmentRentalHistory)
+       .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
+       .leftJoin(customers, eq(rentals.customerId, customers.id))
+       .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
+       .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
+       .where(eq(equipmentRentalHistory.id, createdRentalHistory.id))
+       .limit(1);
 
     // If this is a manual assignment with an employee, also create an employee assignment
     let employeeAssignment = null;
     if (assignment_type === 'manual' && employee_id) {
       try {
-        employeeAssignment = await prisma.employeeAssignment.create({
-          data: {
-            employee_id: parseInt(employee_id),
-            name: `Equipment Assignment - ${equipment.name}`,
-            type: 'manual',
-            location: body.location || null,
-            start_date: new Date(start_date),
-            end_date: end_date ? new Date(end_date) : null,
-            status: 'active',
-            notes: `Manual equipment assignment: ${notes || 'No additional notes'}`,
-            project_id: null,
-            rental_id: null
-          },
-          include: {
-            project: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-            rental: {
-              select: {
-                id: true,
-                rental_number: true,
-              },
-            },
-          },
-        });
+        employeeAssignment = await db.insert(employeeAssignments).values({
+          employeeId: parseInt(employee_id),
+          name: `Equipment Assignment - ${equipmentData[0].name}`,
+          type: 'manual',
+          location: body.location || null,
+          startDate: new Date(start_date),
+          endDate: end_date ? new Date(end_date) : null,
+          status: 'active',
+          notes: `Manual equipment assignment: ${notes || 'No additional notes'}`,
+          projectId: null,
+          rentalId: null
+        }).returning();
 
         console.log('Employee assignment created automatically:', employeeAssignment);
       } catch (assignmentError) {
@@ -349,14 +354,14 @@ export async function POST(
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        rentalHistory,
-        employeeAssignment
-      },
-      message: 'Equipment assignment created successfully' + (employeeAssignment ? ' and employee assignment created automatically' : '')
-    }, { status: 201 });
+         return NextResponse.json({
+       success: true,
+       data: {
+         rentalHistory: rentalHistory[0],
+         employeeAssignment: employeeAssignment?.[0] || null
+       },
+       message: 'Equipment assignment created successfully' + (employeeAssignment ? ' and employee assignment created automatically' : '')
+     }, { status: 201 });
   } catch (error) {
     console.error('Error creating equipment assignment:', error);
     return NextResponse.json(

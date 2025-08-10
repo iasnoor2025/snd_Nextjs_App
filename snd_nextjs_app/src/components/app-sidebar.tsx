@@ -21,6 +21,7 @@ import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
+import { NotificationBell } from "@/components/notification-bell"
 import {
   Sidebar,
   SidebarContent,
@@ -224,6 +225,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <span className="text-base font-semibold">{t('appTitle')}</span>
               </a>
             </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <div className="flex items-center justify-end px-2">
+              <NotificationBell />
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>

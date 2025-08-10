@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { employeeLeaves, employees } from '@/lib/drizzle/schema';
+import { eq, ilike, or, desc, asc, sql, and } from 'drizzle-orm';
 
 // GET /api/leave-requests/public - Get leave requests for management (no auth required)
 export async function GET(request: NextRequest) {
@@ -17,77 +19,85 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Public search params:', { limit, page, status, leaveType, search });
 
-    // Build where clause
-    const where: any = {};
+    // Build where conditions
+    let whereConditions = [];
     
     if (status && status !== 'all') {
-      where.status = status;
+      whereConditions.push(eq(employeeLeaves.status, status));
     }
 
     if (leaveType && leaveType !== 'all') {
-      where.leave_type = leaveType;
+      whereConditions.push(eq(employeeLeaves.leaveType, leaveType));
     }
 
     // Add search functionality
     if (search) {
-      where.OR = [
-        {
-          employee: {
-            OR: [
-              { first_name: { contains: search, mode: 'insensitive' } },
-              { last_name: { contains: search, mode: 'insensitive' } },
-              { employee_id: { contains: search, mode: 'insensitive' } },
-            ],
-          },
-        },
-        { reason: { contains: search, mode: 'insensitive' } },
-        { leave_type: { contains: search, mode: 'insensitive' } },
-      ];
+      whereConditions.push(
+        or(
+          ilike(employees.firstName, `%${search}%`),
+          ilike(employees.lastName, `%${search}%`),
+          ilike(employees.fileNumber, `%${search}%`),
+          ilike(employeeLeaves.reason, `%${search}%`),
+          ilike(employeeLeaves.leaveType, `%${search}%`)
+        )
+      );
     }
 
-    console.log('🔍 Where clause:', JSON.stringify(where, null, 2));
+    console.log('🔍 Where conditions:', whereConditions);
 
     // Get leave requests with employee details
-    const [leaves, total] = await Promise.all([
-      prisma.employeeLeave.findMany({
-        where,
-        take: limit,
-        skip,
-        orderBy: {
-          created_at: 'desc',
+    const leaves = await db
+      .select({
+        id: employeeLeaves.id,
+        leaveType: employeeLeaves.leaveType,
+        startDate: employeeLeaves.startDate,
+        endDate: employeeLeaves.endDate,
+        days: employeeLeaves.days,
+        status: employeeLeaves.status,
+        reason: employeeLeaves.reason,
+        createdAt: employeeLeaves.createdAt,
+        updatedAt: employeeLeaves.updatedAt,
+        employee: {
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
         },
-        include: {
-          employee: {
-            select: {
-              id: true,
-              first_name: true,
-              last_name: true,
-              employee_id: true,
-            },
-          },
-        },
-      }),
-      prisma.employeeLeave.count({ where }),
-    ]);
+      })
+      .from(employeeLeaves)
+      .leftJoin(employees, eq(employeeLeaves.employeeId, employees.id))
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .orderBy(desc(employeeLeaves.createdAt))
+      .limit(limit)
+      .offset(skip);
+
+    // Get total count
+    const totalResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(employeeLeaves)
+      .leftJoin(employees, eq(employeeLeaves.employeeId, employees.id))
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
+
+    const total = totalResult[0]?.count || 0;
 
     console.log(`✅ Found ${leaves.length} leave requests out of ${total} total`);
 
     // Transform the data for the frontend
     const formattedLeaves = leaves.map(leave => ({
       id: leave.id,
-      leave_type: leave.leave_type,
-      start_date: leave.start_date.toISOString().split('T')[0],
-      end_date: leave.end_date.toISOString().split('T')[0],
+      leave_type: leave.leaveType,
+      start_date: leave.startDate.toISOString().split('T')[0],
+      end_date: leave.endDate.toISOString().split('T')[0],
       days: leave.days,
       status: leave.status,
       reason: leave.reason,
       employee: {
         id: leave.employee.id,
-        name: `${leave.employee.first_name} ${leave.employee.last_name}`,
-        employee_id: leave.employee.employee_id,
+        name: `${leave.employee.firstName} ${leave.employee.lastName}`,
+        employee_id: leave.employee.fileNumber,
       },
-      created_at: leave.created_at.toISOString(),
-      updated_at: leave.updated_at.toISOString(),
+      created_at: leave.createdAt.toISOString(),
+      updated_at: leave.updatedAt.toISOString(),
     }));
 
     const response = {

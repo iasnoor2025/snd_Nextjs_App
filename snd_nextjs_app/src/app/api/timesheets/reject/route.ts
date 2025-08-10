@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/drizzle';
+import { timesheets, employees, users } from '@/lib/drizzle/schema';
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { checkUserPermission } from '@/lib/rbac/permission-service';
+import { eq } from 'drizzle-orm';
 
 // Helper function to get the appropriate permission for rejection stage
 function getRejectionPermission(rejectionStage: string): string {
@@ -25,18 +27,30 @@ export const POST = withPermission(
     try {
       const { timesheetId, rejectionReason, rejectionStage } = await request.json();
 
-      // Get the timesheet
-      const timesheet = await prisma.timesheet.findUnique({
-        where: { id: timesheetId },
-        include: {
+      // Get the timesheet with employee and user details
+      const timesheetData = await db
+        .select({
+          id: timesheets.id,
+          status: timesheets.status,
           employee: {
-            include: {
-              user: true
+            id: employees.id,
+            firstName: employees.firstName,
+            lastName: employees.lastName,
+            fileNumber: employees.fileNumber,
+            user: {
+              id: users.id,
+              name: users.name,
+              email: users.email
             }
           }
-        }
-      });
+        })
+        .from(timesheets)
+        .leftJoin(employees, eq(timesheets.employeeId, employees.id))
+        .leftJoin(users, eq(employees.userId, users.id))
+        .where(eq(timesheets.id, parseInt(timesheetId)))
+        .limit(1);
 
+      const timesheet = timesheetData[0];
       if (!timesheet) {
         return NextResponse.json({ error: 'Timesheet not found' }, { status: 404 });
       }
@@ -60,20 +74,39 @@ export const POST = withPermission(
       }
 
       // Update timesheet with rejection
-      const updatedTimesheet = await prisma.timesheet.update({
-        where: { id: timesheetId },
-        data: {
+      await db
+        .update(timesheets)
+        .set({
           status: 'rejected',
-          rejection_reason: rejectionReason,
-        },
-        include: {
+          rejectionReason: rejectionReason,
+        })
+        .where(eq(timesheets.id, parseInt(timesheetId)));
+
+      // Fetch the updated timesheet with details
+      const updatedTimesheetData = await db
+        .select({
+          id: timesheets.id,
+          status: timesheets.status,
+          rejectionReason: timesheets.rejectionReason,
           employee: {
-            include: {
-              user: true
+            id: employees.id,
+            firstName: employees.firstName,
+            lastName: employees.lastName,
+            fileNumber: employees.fileNumber,
+            user: {
+              id: users.id,
+              name: users.name,
+              email: users.email
             }
           }
-        }
-      });
+        })
+        .from(timesheets)
+        .leftJoin(employees, eq(timesheets.employeeId, employees.id))
+        .leftJoin(users, eq(employees.userId, users.id))
+        .where(eq(timesheets.id, parseInt(timesheetId)))
+        .limit(1);
+
+      const updatedTimesheet = updatedTimesheetData[0];
 
       return NextResponse.json({
         message: `Timesheet rejected at ${rejectionStage} stage`,
