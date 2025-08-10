@@ -137,6 +137,17 @@
     "fileUploadError": "Failed to upload file"
   },
   
+  "confirmDelete": {
+    "department": {
+      "title": "Delete Department",
+      "description": "Are you sure you want to delete the department '{name}'? This action cannot be undone."
+    },
+    "designation": {
+      "title": "Delete Designation",
+      "description": "Are you sure you want to delete the designation '{name}'? This action cannot be undone."
+    }
+  },
+  
   "pagination": {
     "showing": "Showing {start}-{end} of {total} employees",
     "show": "Show",

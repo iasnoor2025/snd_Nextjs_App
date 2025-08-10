@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { companies as companiesTable } from '@/lib/drizzle/schema';
+import { and, asc, eq, ilike, or, sql } from 'drizzle-orm';
 
 // Helper function to format company data for frontend
 function formatCompanyForFrontend(company: Record<string, any>) {
@@ -22,21 +24,6 @@ export const GET = withPermission(
   try {
     console.log('Companies API called');
 
-    // Test database connection first
-    try {
-      await prisma.$connect();
-      console.log('Database connection successful');
-    } catch (dbError) {
-      console.error('Database connection failed:', dbError);
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Database connection failed: ' + (dbError instanceof Error ? dbError.message : 'Unknown error'),
-        },
-        { status: 500 }
-      );
-    }
-
     // Get query parameters for filtering
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search');
@@ -48,30 +35,48 @@ export const GET = withPermission(
     console.log('Query parameters:', { search, status, page, limit });
 
     // Build where clause for filtering
-    const where: Record<string, any> = {};
+    const filters: any[] = [];
     
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { email: { contains: search, mode: 'insensitive' } },
-        { address: { contains: search, mode: 'insensitive' } },
-      ];
+      const s = `%${search}%`;
+      filters.push(
+        or(
+          ilike(companiesTable.name, s),
+          ilike(companiesTable.email, s),
+          ilike(companiesTable.address, s as any),
+        )
+      );
     }
 
-    // Fetch companies from database
-    const companies = await prisma.company.findMany({
-      where,
-      skip: offset,
-      take: limit,
-      orderBy: [
-        { id: 'asc' }
-      ]
-    });
-
-    console.log(`Found ${companies.length} companies`);
+    const whereExpr = filters.length ? and(...filters) : undefined;
 
     // Get total count for pagination
-    const totalCount = await prisma.company.count({ where });
+    const totalCountRow = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(companiesTable)
+      .where(whereExpr as any);
+    const totalCount = Number(totalCountRow[0]?.count ?? 0);
+
+    // Fetch companies from database
+    const companies = await db
+      .select({
+        id: companiesTable.id,
+        name: companiesTable.name,
+        address: companiesTable.address,
+        email: companiesTable.email,
+        phone: companiesTable.phone,
+        logo: companiesTable.logo,
+        legal_document: companiesTable.legalDocument,
+        created_at: companiesTable.createdAt,
+        updated_at: companiesTable.updatedAt,
+      })
+      .from(companiesTable)
+      .where(whereExpr as any)
+      .orderBy(asc(companiesTable.id))
+      .offset(offset)
+      .limit(limit);
+
+    console.log(`Found ${companies.length} companies`);
 
     return NextResponse.json({
       success: true,
@@ -104,8 +109,6 @@ export const GET = withPermission(
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
   },
   PermissionConfigs.company.read
@@ -128,11 +131,13 @@ export const POST = withPermission(
     }
 
     // Check if company with same name already exists
-    const existingCompany = await prisma.company.findFirst({
-      where: { name: body.name }
-    });
+    const existingCompanyRows = await db
+      .select({ id: companiesTable.id })
+      .from(companiesTable)
+      .where(eq(companiesTable.name, body.name))
+      .limit(1);
 
-    if (existingCompany) {
+    if (existingCompanyRows[0]) {
       return NextResponse.json(
         {
           success: false,
@@ -143,16 +148,31 @@ export const POST = withPermission(
     }
 
     // Create company
-    const newCompany = await prisma.company.create({
-      data: {
+    const nowIso = new Date().toISOString();
+    const newCompanyRows = await db
+      .insert(companiesTable)
+      .values({
         name: body.name,
         address: body.address,
         email: body.email,
         phone: body.phone,
         logo: body.logo,
-        legal_document: body.legal_document
-      }
-    });
+        legal_document: body.legal_document,
+        updatedAt: nowIso,
+      })
+      .returning({
+        id: companiesTable.id,
+        name: companiesTable.name,
+        address: companiesTable.address,
+        email: companiesTable.email,
+        phone: companiesTable.phone,
+        logo: companiesTable.logo,
+        legal_document: companiesTable.legalDocument,
+        created_at: companiesTable.createdAt,
+        updated_at: companiesTable.updatedAt,
+      });
+
+    const newCompany = newCompanyRows[0];
 
     return NextResponse.json({
       success: true,

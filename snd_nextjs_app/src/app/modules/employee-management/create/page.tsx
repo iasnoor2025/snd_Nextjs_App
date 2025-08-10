@@ -14,8 +14,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, Upload, User, FileText, CreditCard, Shield, MapPin, Plus, Edit } from 'lucide-react';
+import { ArrowLeft, Save, Upload, User, FileText, CreditCard, Shield, MapPin, Plus, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { useConfirmationDialog } from '@/components/providers/confirmation-provider';
 
 interface Department {
   id: number;
@@ -116,6 +117,7 @@ export default function CreateEmployeePage() {
   const { t } = useTranslation(['common', 'employee']);
   const router = useRouter();
   const { hasPermission } = useRBAC();
+  const { confirm } = useConfirmationDialog();
   const [isLoading, setIsLoading] = useState(false);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [designations, setDesignations] = useState<Designation[]>([]);
@@ -667,7 +669,7 @@ export default function CreateEmployeePage() {
                       <Label htmlFor="department_id">{t('employee:fields.department')}</Label>
                       <div className="flex gap-2">
                         <Select
-                          value={formData.department_id?.toString()}
+                          value={formData.department_id?.toString() || ""}
                           onValueChange={(value) => handleInputChange('department_id', parseInt(value))}
                         >
                           <SelectTrigger className="flex-1">
@@ -675,7 +677,7 @@ export default function CreateEmployeePage() {
                           </SelectTrigger>
                           <SelectContent>
                             {departments.map((dept) => (
-                              <SelectItem key={dept.id} value={dept.id.toString()}>
+                              <SelectItem key={`dept-${dept.id}`} value={dept.id.toString()}>
                                 {dept.name}
                               </SelectItem>
                             ))}
@@ -708,13 +710,55 @@ export default function CreateEmployeePage() {
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            const selectedDept = departments.find(d => d.id === formData.department_id);
+                            if (selectedDept) {
+                              const confirmed = await confirm({
+                                title: t('employee:confirmDelete.department.title'),
+                                description: t('employee:confirmDelete.department.description', { name: selectedDept.name }),
+                                variant: "destructive",
+                                confirmText: t('common:delete'),
+                                cancelText: t('common:cancel'),
+                              });
+                              
+                              if (confirmed) {
+                                try {
+                                  const response = await fetch(`/api/departments/${selectedDept.id}`, {
+                                    method: 'DELETE',
+                                  });
+                                  const result = await response.json();
+                                  if (result.success) {
+                                    toast.success(t('employee:messages.deleteSuccess'));
+                                    setDepartments(prev => prev.filter(d => d.id !== selectedDept.id));
+                                    setFormData(prev => ({ ...prev, department_id: undefined }));
+                                  } else {
+                                    toast.error(result.message || t('employee:messages.deleteError'));
+                                  }
+                                } catch (error) {
+                                  console.error('Error deleting department:', error);
+                                  toast.error(t('employee:messages.deleteError'));
+                                }
+                              }
+                            } else {
+                              toast.error('Please select a department to delete');
+                            }
+                          }}
+                          className="px-3"
+                          disabled={!formData.department_id}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                     <div>
                       <Label htmlFor="designation_id">{t('employee:fields.designation')}</Label>
                       <div className="flex gap-2">
                         <Select
-                          value={formData.designation_id?.toString()}
+                          value={formData.designation_id?.toString() || ""}
                           onValueChange={(value) => handleInputChange('designation_id', parseInt(value))}
                         >
                           <SelectTrigger className="flex-1">
@@ -722,7 +766,7 @@ export default function CreateEmployeePage() {
                           </SelectTrigger>
                           <SelectContent>
                             {designations.map((desig) => (
-                              <SelectItem key={desig.id} value={desig.id.toString()}>
+                              <SelectItem key={`desig-${desig.id}`} value={desig.id.toString()}>
                                 {desig.name}
                               </SelectItem>
                             ))}
@@ -754,6 +798,48 @@ export default function CreateEmployeePage() {
                           disabled={!formData.designation_id}
                         >
                           <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            const selectedDesig = designations.find(d => d.id === formData.designation_id);
+                            if (selectedDesig) {
+                              const confirmed = await confirm({
+                                title: t('employee:confirmDelete.designation.title'),
+                                description: t('employee:confirmDelete.designation.description', { name: selectedDesig.name }),
+                                variant: "destructive",
+                                confirmText: t('common:delete'),
+                                cancelText: t('common:cancel'),
+                              });
+                              
+                              if (confirmed) {
+                                try {
+                                  const response = await fetch(`/api/designations/${selectedDesig.id}`, {
+                                    method: 'DELETE',
+                                  });
+                                  const result = await response.json();
+                                  if (result.success) {
+                                    toast.success(t('employee:messages.deleteSuccess'));
+                                    setDesignations(prev => prev.filter(d => d.id !== selectedDesig.id));
+                                    setFormData(prev => ({ ...prev, designation_id: undefined }));
+                                  } else {
+                                    toast.error(result.message || t('employee:messages.deleteError'));
+                                  }
+                                } catch (error) {
+                                  console.error('Error deleting designation:', error);
+                                  toast.error(t('employee:messages.deleteError'));
+                                }
+                              }
+                            } else {
+                              toast.error('Please select a designation to delete');
+                            }
+                          }}
+                          className="px-3"
+                          disabled={!formData.designation_id}
+                        >
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>

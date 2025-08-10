@@ -1,148 +1,178 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
-import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { db } from '../../../lib/db';
+import { designations, departments } from '../../../../drizzle/schema';
+import { eq, isNull } from 'drizzle-orm';
+import { withPermission, PermissionConfigs } from '../../../lib/rbac/api-middleware';
 
 export const GET = withPermission(
   async (request: NextRequest) => {
-  try {
-    console.log('Designations API called');
-
-    // Test database connection first
     try {
-      await prisma.$connect();
-      console.log('Database connection successful');
-    } catch (dbError) {
-      console.error('Database connection failed:', dbError);
+      console.log('GET /api/designations - Fetching all designations');
+      
+      const allDesignations = await db
+        .select({
+          id: designations.id,
+          name: designations.name,
+          description: designations.description,
+          is_active: designations.isActive,
+          department_id: designations.departmentId,
+          created_at: designations.createdAt,
+          updated_at: designations.updatedAt,
+        })
+        .from(designations)
+        .where(isNull(designations.deletedAt))
+        .orderBy(designations.name);
+
+      console.log('GET /api/designations - Found designations:', allDesignations);
+
+      // Fetch department details for each designation
+      const designationsWithDepartments = await Promise.all(
+        allDesignations.map(async (designation) => {
+          if (designation.department_id) {
+            const department = await db
+              .select({
+                id: departments.id,
+                name: departments.name,
+                code: departments.code,
+              })
+              .from(departments)
+              .where(eq(departments.id, designation.department_id))
+              .limit(1);
+
+            return {
+              ...designation,
+              department: department[0] || null,
+            };
+          }
+          return {
+            ...designation,
+            department: null,
+          };
+        })
+      );
+
+      return NextResponse.json({
+        success: true,
+        data: designationsWithDepartments,
+        message: 'Designations retrieved successfully',
+      });
+    } catch (error) {
+      console.error('Error fetching designations:', error);
       return NextResponse.json(
         {
           success: false,
-          message: 'Database connection failed: ' + (dbError instanceof Error ? dbError.message : 'Unknown error'),
+          message: 'Failed to fetch designations: ' + (error instanceof Error ? error.message : 'Unknown error'),
         },
         { status: 500 }
       );
     }
-
-    const designations = await prisma.designation.findMany({
-      where: {
-        is_active: true,
-        deleted_at: null,
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        department_id: true,
-        is_active: true,
-        created_at: true,
-        updated_at: true,
-        department: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-      },
-      orderBy: {
-        name: 'asc',
-      },
-    });
-
-    console.log(`Found ${designations.length} designations`);
-
-    return NextResponse.json({
-      success: true,
-      data: designations,
-      message: `Successfully retrieved ${designations.length} designations`,
-    });
-  } catch (error) {
-    console.error('Error fetching designations:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to fetch designations: ' + (error instanceof Error ? error.message : 'Unknown error'),
-      },
-      { status: 500 }
-    );
-  }
   },
   PermissionConfigs.designation.read
 );
 
 export const POST = withPermission(
   async (request: NextRequest) => {
-  try {
-    const body = await request.json();
-    const { name, description, department_id } = body;
+    try {
+      const body = await request.json();
+      const { name, description, department_id } = body;
 
-    if (!name) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Designation name is required',
-        },
-        { status: 400 }
-      );
-    }
+      console.log('POST /api/designations - Request body:', body);
 
-    // Check if designation with same name already exists
-    const existingDesignation = await prisma.designation.findFirst({
-      where: {
-        name: name,
-        deleted_at: null,
-      },
-    });
-
-    if (existingDesignation) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Designation with this name already exists',
-        },
-        { status: 400 }
-      );
-    }
-
-    const designation = await prisma.designation.create({
-      data: {
-        name,
-        description,
-        department_id: department_id ? parseInt(department_id) : null,
-        is_active: true,
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        department_id: true,
-        is_active: true,
-        created_at: true,
-        updated_at: true,
-        department: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
+      if (!name || !name.trim()) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: 'Designation name is required',
           },
-        },
-      },
-    });
+          { status: 400 }
+        );
+      }
 
-    return NextResponse.json({
-      success: true,
-      data: designation,
-      message: 'Designation created successfully',
-    });
-  } catch (error) {
-    console.error('Error creating designation:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to create designation: ' + (error instanceof Error ? error.message : 'Unknown error'),
-      },
-      { status: 500 }
-    );
-  }
+      const trimmedName = name.trim();
+      console.log('POST /api/designations - Name to check:', trimmedName);
+
+      // Check for existing designation with the same name (case insensitive)
+      const allDesignations = await db
+        .select({
+          id: designations.id,
+          name: designations.name,
+        })
+        .from(designations)
+        .where(isNull(designations.deletedAt));
+
+      console.log('POST /api/designations - All designations for comparison:', allDesignations);
+
+      const existingDesignation = allDesignations.find(
+        desig => desig.name.toLowerCase() === trimmedName.toLowerCase()
+      );
+
+      console.log('POST /api/designations - Existing designation found:', existingDesignation);
+
+      if (existingDesignation) {
+        return NextResponse.json({
+          success: false,
+          message: `Designation with name "${trimmedName}" already exists`,
+        }, { status: 400 });
+      }
+
+      // Create new designation
+      const [newDesignation] = await db
+        .insert(designations)
+        .values({
+          name: trimmedName,
+          description: description?.trim() || null,
+          departmentId: department_id || null,
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .returning({
+          id: designations.id,
+          name: designations.name,
+          description: designations.description,
+          is_active: designations.isActive,
+          department_id: designations.departmentId,
+          created_at: designations.createdAt,
+          updated_at: designations.updatedAt,
+        });
+
+      // Fetch department details if department_id was provided
+      let departmentData: { id: number; name: string; code: string | null } | null = null;
+      if (newDesignation.department_id) {
+        const department = await db
+          .select({
+            id: departments.id,
+            name: departments.name,
+            code: departments.code,
+          })
+          .from(departments)
+          .where(eq(departments.id, newDesignation.department_id))
+          .limit(1);
+        departmentData = department[0] || null;
+      }
+
+      const result = {
+        ...newDesignation,
+        department: departmentData,
+      };
+
+      return NextResponse.json({
+        success: true,
+        data: result,
+        message: 'Designation created successfully',
+      });
+    } catch (error) {
+      console.error('Error creating designation:', error);
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Failed to create designation: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        },
+        { status: 500 }
+      );
+    }
   },
   PermissionConfigs.designation.create
-); 
+);
+
+ 

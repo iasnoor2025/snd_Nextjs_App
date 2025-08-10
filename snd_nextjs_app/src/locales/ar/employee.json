@@ -119,8 +119,8 @@
   "messages": {
     "loading": "جاري تحميل الموظفين...",
     "noEmployees": "لم يتم العثور على موظفين.",
-    "noEmployeesFilter": "لا يوجد موظفين يطابقون الفلاتر المحددة.",
-    "syncSuccess": "تمت مزامنة الموظفين بنجاح",
+    "noEmployeesFilter": "لا يوجد موظفين يطابقون المرشحات الخاصة بك.",
+    "syncSuccess": "تم مزامنة الموظفين بنجاح",
     "syncError": "فشل في مزامنة الموظفين",
     "exportSuccess": "تم تصدير الموظفين بنجاح",
     "exportError": "فشل في تصدير الموظفين",
@@ -131,10 +131,21 @@
     "createSuccess": "تم إنشاء الموظف بنجاح",
     "createError": "فشل في إنشاء الموظف",
     "fetchError": "فشل في جلب الموظفين",
-    "confirmDelete": "هل أنت متأكد من حذف هذا الموظف؟",
-    "noCreatePermission": "ليس لديك صلاحية لإنشاء موظفين",
+    "confirmDelete": "هل أنت متأكد من أنك تريد حذف هذا الموظف؟",
+    "noCreatePermission": "ليس لديك إذن لإنشاء موظفين",
     "fileUploadSuccess": "تم رفع الملف بنجاح",
     "fileUploadError": "فشل في رفع الملف"
+  },
+  
+  "confirmDelete": {
+    "department": {
+      "title": "حذف القسم",
+      "description": "هل أنت متأكد من أنك تريد حذف القسم '{name}'؟ لا يمكن التراجع عن هذا الإجراء."
+    },
+    "designation": {
+      "title": "حذف المسمى الوظيفي",
+      "description": "هل أنت متأكد من أنك تريد حذف المسمى الوظيفي '{name}'؟ لا يمكن التراجع عن هذا الإجراء."
+    }
   },
   
   "pagination": {

@@ -679,7 +679,7 @@ export default function EditEmployeePage() {
                     <SelectContent>
                       <SelectItem value="none">No Department</SelectItem>
                       {departments.map((department) => (
-                        <SelectItem key={department.id} value={department.id.toString()}>
+                        <SelectItem key={`dept-${department.id}`} value={department.id.toString()}>
                           {department.name}
                         </SelectItem>
                       ))}
@@ -723,11 +723,11 @@ export default function EditEmployeePage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">No Designation</SelectItem>
-                      {designations.map((designation) => (
-                        <SelectItem key={designation.id} value={designation.id.toString()}>
-                          {designation.name}
-                        </SelectItem>
-                      ))}
+                                              {designations.map((designation) => (
+                          <SelectItem key={`desig-${designation.id}`} value={designation.id.toString()}>
+                            {designation.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   <Button

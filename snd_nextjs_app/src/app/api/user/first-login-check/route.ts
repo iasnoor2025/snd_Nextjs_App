@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
+import { users as usersTable, employees as employeesTable, departments as departmentsTable, designations as designationsTable } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 // GET /api/user/first-login-check - Check if this is first login and establish employee relationship
 export async function GET(request: NextRequest) {
-  let dbConnected = false;
-  
   try {
     const session = await getServerSession(authConfig);
 
@@ -34,52 +34,22 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = parseInt(session.user.id);
-
-    // Test database connection with timeout
-    try {
-      await Promise.race([
-        prisma.$connect(),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Database connection timeout')), 3000)
-        )
-      ]);
-      dbConnected = true;
-    } catch (dbError) {
-      console.error('Database connection failed:', dbError);
-      return NextResponse.json(
-        { 
-          error: 'Database connection failed',
-          hasNationId: false,
-          nationId: null,
-          userId: null,
-          userName: null,
-          userEmail: null,
-          matchedEmployee: null,
-          isFirstLogin: false
-        },
-        { 
-          status: 503,
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
-        }
-      );
-    }
     
     // Get user data
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        national_id: true,
-        name: true,
-        email: true,
-        created_at: true,
-        updated_at: true,
-      },
-    });
+    const userRows = await db
+      .select({
+        id: usersTable.id,
+        national_id: usersTable.nationalId,
+        name: usersTable.name,
+        email: usersTable.email,
+        created_at: usersTable.createdAt,
+        updated_at: usersTable.updatedAt,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, userId))
+      .limit(1);
+
+    const user = userRows[0];
 
     if (!user) {
       return NextResponse.json(
@@ -109,39 +79,64 @@ export async function GET(request: NextRequest) {
       // User already has Nation ID, just return the data
       let matchedEmployee = null;
       try {
-        matchedEmployee = await prisma.employee.findFirst({
-          where: { iqama_number: user.national_id },
-          select: {
-            id: true,
-            first_name: true,
-            middle_name: true,
-            last_name: true,
-            employee_id: true,
-            phone: true,
-            email: true,
-            address: true,
-            city: true,
-            state: true,
-            country: true,
-            nationality: true,
-            date_of_birth: true,
-            hire_date: true,
-            iqama_number: true,
-            iqama_expiry: true,
-            passport_number: true,
-            passport_expiry: true,
-            driving_license_number: true,
-            driving_license_expiry: true,
-            operator_license_number: true,
-            operator_license_expiry: true,
-            designation: {
-              select: { name: true }
-            },
-            department: {
-              select: { name: true }
-            }
+        const employeeRows = await db
+          .select({
+            id: employeesTable.id,
+            first_name: employeesTable.firstName,
+            middle_name: employeesTable.middleName,
+            last_name: employeesTable.lastName,
+            employee_id: employeesTable.employeeId,
+            phone: employeesTable.phone,
+            email: employeesTable.email,
+            address: employeesTable.address,
+            city: employeesTable.city,
+            state: employeesTable.state,
+            country: employeesTable.country,
+            nationality: employeesTable.nationality,
+            date_of_birth: employeesTable.dateOfBirth,
+            hire_date: employeesTable.hireDate,
+            iqama_number: employeesTable.iqamaNumber,
+            iqama_expiry: employeesTable.iqamaExpiry,
+            passport_number: employeesTable.passportNumber,
+            passport_expiry: employeesTable.passportExpiry,
+            driving_license_number: employeesTable.drivingLicenseNumber,
+            driving_license_expiry: employeesTable.drivingLicenseExpiry,
+            operator_license_number: employeesTable.operatorLicenseNumber,
+            operator_license_expiry: employeesTable.operatorLicenseExpiry,
+          })
+          .from(employeesTable)
+          .where(eq(employeesTable.iqamaNumber, user.national_id))
+          .limit(1);
+
+        if (employeeRows[0]) {
+          const employee = employeeRows[0];
+          
+          // Get designation and department names
+          let designationName = null;
+          let departmentName = null;
+          
+          if (employee.id) {
+            const designationRows = await db
+              .select({ name: designationsTable.name })
+              .from(designationsTable)
+              .where(eq(designationsTable.id, employee.id))
+              .limit(1);
+            designationName = designationRows[0]?.name;
+            
+            const departmentRows = await db
+              .select({ name: departmentsTable.name })
+              .from(departmentsTable)
+              .where(eq(departmentsTable.id, employee.id))
+              .limit(1);
+            departmentName = departmentRows[0]?.name;
           }
-        });
+
+          matchedEmployee = {
+            ...employee,
+            designation: { name: designationName },
+            department: { name: departmentName }
+          };
+        }
       } catch (employeeError) {
         console.error('Error fetching matched employee:', employeeError);
       }
@@ -164,61 +159,84 @@ export async function GET(request: NextRequest) {
     if (user.email) {
       try {
         // First try to find employee by email match
-        matchedEmployee = await prisma.employee.findFirst({
-          where: { email: user.email },
-          select: {
-            id: true,
-            first_name: true,
-            middle_name: true,
-            last_name: true,
-            employee_id: true,
-            phone: true,
-            email: true,
-            address: true,
-            city: true,
-            state: true,
-            country: true,
-            nationality: true,
-            date_of_birth: true,
-            hire_date: true,
-            iqama_number: true,
-            iqama_expiry: true,
-            passport_number: true,
-            passport_expiry: true,
-            driving_license_number: true,
-            driving_license_expiry: true,
-            operator_license_number: true,
-            operator_license_expiry: true,
-            designation: {
-              select: { name: true }
-            },
-            department: {
-              select: { name: true }
-            }
-          }
-        });
+        const employeeRows = await db
+          .select({
+            id: employeesTable.id,
+            first_name: employeesTable.firstName,
+            middle_name: employeesTable.middleName,
+            last_name: employeesTable.lastName,
+            employee_id: employeesTable.employeeId,
+            phone: employeesTable.phone,
+            email: employeesTable.email,
+            address: employeesTable.address,
+            city: employeesTable.city,
+            state: employeesTable.state,
+            country: employeesTable.country,
+            nationality: employeesTable.nationality,
+            date_of_birth: employeesTable.dateOfBirth,
+            hire_date: employeesTable.hireDate,
+            iqama_number: employeesTable.iqamaNumber,
+            iqama_expiry: employeesTable.iqamaExpiry,
+            passport_number: employeesTable.passportNumber,
+            passport_expiry: employeesTable.passportExpiry,
+            driving_license_number: employeesTable.drivingLicenseNumber,
+            driving_license_expiry: employeesTable.drivingLicenseExpiry,
+            operator_license_number: employeesTable.operatorLicenseNumber,
+            operator_license_expiry: employeesTable.operatorLicenseExpiry,
+          })
+          .from(employeesTable)
+          .where(eq(employeesTable.email, user.email))
+          .limit(1);
 
-        // If found by email, update employee email to match user email and set national_id
-        if (matchedEmployee) {
+        if (employeeRows[0]) {
+          const employee = employeeRows[0];
+          
+          // Get designation and department names
+          let designationName = null;
+          let departmentName = null;
+          
+          if (employee.id) {
+            const designationRows = await db
+              .select({ name: designationsTable.name })
+              .from(designationsTable)
+              .where(eq(designationsTable.id, employee.id))
+              .limit(1);
+            designationName = designationRows[0]?.name;
+            
+            const departmentRows = await db
+              .select({ name: departmentsTable.name })
+              .from(departmentsTable)
+              .where(eq(departmentsTable.id, employee.id))
+              .limit(1);
+            departmentName = departmentRows[0]?.name;
+          }
+
+          matchedEmployee = {
+            ...employee,
+            designation: { name: designationName },
+            department: { name: departmentName }
+          };
+
+          // If found by email, update employee email to match user email and set national_id
           try {
             // Update employee email if different
-            if ((matchedEmployee as any).email !== (user as any).email) {
-              await prisma.employee.update({
-                where: { id: (matchedEmployee as any).id },
-                data: { email: user.email }
-              });
+            if (employee.email !== user.email) {
+              await db
+                .update(employeesTable)
+                .set({ email: user.email })
+                .where(eq(employeesTable.id, employee.id));
               console.log('✅ Updated employee email to match user email');
             }
 
             // Update user's national_id to match employee's iqama_number
-            await prisma.user.update({
-              where: { id: userId },
-              data: { national_id: (matchedEmployee as any).iqama_number }
-            });
+            await db
+              .update(usersTable)
+              .set({ nationalId: employee.iqama_number })
+              .where(eq(usersTable.id, userId));
             console.log('✅ Updated user national_id to match employee iqama');
 
             // Update the matchedEmployee object with new email
-            (matchedEmployee as any).email = (user as any).email;
+            matchedEmployee.email = user.email;
           } catch (updateError) {
             console.error('❌ Error updating employee/user relationship:', updateError);
           }
@@ -256,13 +274,5 @@ export async function GET(request: NextRequest) {
         }
       }
     );
-  } finally {
-    if (dbConnected) {
-      try {
-        await prisma.$disconnect();
-      } catch (disconnectError) {
-        console.error('Error disconnecting from database:', disconnectError);
-      }
-    }
   }
 }
