@@ -146,7 +146,7 @@ export async function POST(
 
       // Create a payment history record for tracking using Drizzle
       await db
-        .insert(advancePaymentHistory)
+        .insert(advancePaymentHistories)
         .values({
           employeeId: activeAdvance.employeeId,
           advancePaymentId: activeAdvance.id,

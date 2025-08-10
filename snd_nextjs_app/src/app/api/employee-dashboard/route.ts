@@ -29,13 +29,13 @@ export async function GET(request: NextRequest) {
     const employeeRows = await db
       .select({
         id: employees.id,
-        employeeId: employees.employeeId,
+
         firstName: employees.firstName,
         lastName: employees.lastName,
         email: employees.email,
         phone: employees.phone,
         hireDate: employees.hireDate,
-        salary: employees.salary,
+        basicSalary: employees.basicSalary,
         status: employees.status,
         departmentId: employees.departmentId,
         designationId: employees.designationId,
@@ -47,15 +47,15 @@ export async function GET(request: NextRequest) {
         },
         designation: {
           id: designations.id,
-          title: designations.title,
-          code: designations.code
+          name: designations.name,
+          description: designations.description
         },
-        user: {
-          id: users.id,
-          name: users.name,
-          email: users.email,
-          role: users.role
-        }
+                  user: {
+            id: users.id,
+            name: users.name,
+            email: users.email,
+            roleId: users.roleId
+          }
       })
       .from(employees)
       .leftJoin(users, eq(employees.userId, users.id))
@@ -86,8 +86,7 @@ export async function GET(request: NextRequest) {
         projectId: timesheets.projectId,
         project: {
           id: projects.id,
-          name: projects.name,
-          code: projects.code
+          name: projects.name
         }
       })
       .from(timesheets)
@@ -127,15 +126,14 @@ export async function GET(request: NextRequest) {
         status: employeeAssignments.status,
         projectId: employeeAssignments.projectId,
         rentalId: employeeAssignments.rentalId,
+        createdAt: employeeAssignments.createdAt,
         project: {
           id: projects.id,
-          name: projects.name,
-          code: projects.code
+          name: projects.name
         },
         rental: {
           id: rentals.id,
-          name: rentals.name,
-          code: rentals.code
+          name: rentals.equipmentName
         }
       })
       .from(employeeAssignments)
@@ -171,12 +169,12 @@ export async function GET(request: NextRequest) {
         id: employeeDocuments.id,
         documentType: employeeDocuments.documentType,
         fileName: employeeDocuments.fileName,
-        fileUrl: employeeDocuments.fileUrl,
-        uploadedAt: employeeDocuments.uploadedAt
+        filePath: employeeDocuments.filePath,
+        createdAt: employeeDocuments.createdAt
       })
       .from(employeeDocuments)
       .where(eq(employeeDocuments.employeeId, employee.id))
-      .orderBy(desc(employeeDocuments.uploadedAt))
+      .orderBy(desc(employeeDocuments.createdAt))
       .limit(5);
 
     // Transform data to match expected format
@@ -220,24 +218,23 @@ export async function GET(request: NextRequest) {
       created_at: advance.createdAt
     }));
 
-    const employeeDocuments = employeeDocumentsRows.map(doc => ({
+    const employeeDocumentsList = employeeDocumentsRows.map(doc => ({
       id: doc.id,
       document_type: doc.documentType,
       file_name: doc.fileName,
-      file_url: doc.fileUrl,
-      uploaded_at: doc.uploadedAt
+      file_path: doc.filePath,
+      created_at: doc.createdAt
     }));
 
     return NextResponse.json({
       employee: {
         id: employee.id,
-        employee_id: employee.employeeId,
         first_name: employee.firstName,
         last_name: employee.lastName,
         email: employee.email,
         phone: employee.phone,
         hire_date: employee.hireDate,
-        salary: employee.salary,
+        basic_salary: employee.basicSalary,
         status: employee.status,
         department: employee.department,
         designation: employee.designation,
@@ -247,7 +244,7 @@ export async function GET(request: NextRequest) {
       recentLeaves,
       currentAssignments,
       recentAdvances,
-      employeeDocuments
+      employeeDocuments: employeeDocumentsList
     })
 
   } catch (error) {

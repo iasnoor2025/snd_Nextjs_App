@@ -261,6 +261,8 @@ export async function POST(
         notes: body.notes,
         projectId: body.project_id || null,
         rentalId: body.rental_id || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .returning();
 
@@ -341,6 +343,7 @@ export async function PUT(
         notes: body.notes,
         projectId: body.project_id || null,
         rentalId: body.rental_id || null,
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(employeeAssignments.id, body.id))
       .returning();
@@ -451,7 +454,7 @@ export async function DELETE(
     const assignment = assignmentRows[0];
 
     // If this is a manual assignment that was created from an equipment assignment, also delete the corresponding equipment assignment
-    let deletedEquipmentAssignment = null;
+    let deletedEquipmentAssignment: any = null;
     if (assignment.type === 'manual' && assignment.name && assignment.name.includes('Equipment Assignment -')) {
       try {
         // Find and delete the corresponding equipment assignment

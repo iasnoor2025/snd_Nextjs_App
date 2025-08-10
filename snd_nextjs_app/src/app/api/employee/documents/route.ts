@@ -80,11 +80,10 @@ export async function POST(request: NextRequest) {
         employeeId: parseInt(employee_id as string),
         documentType: document_type,
         fileName: file.name,
-        fileUrl: `/uploads/documents/${fileName}`,
+        filePath: `/uploads/documents/${fileName}`,
         description: description || '',
-        fileSize: file.size.toString(),
+        fileSize: file.size,
         mimeType: file.type,
-        uploadedAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })

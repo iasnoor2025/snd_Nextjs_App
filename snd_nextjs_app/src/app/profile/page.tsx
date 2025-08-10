@@ -19,7 +19,10 @@ import {
   IconX,
   IconDatabase,
   IconLink,
-  IconInfoCircle
+  IconInfoCircle,
+  IconPhoto,
+  IconDownload,
+  IconEye
 } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
@@ -36,6 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { IconFileText } from '@tabler/icons-react';
 
 // i18n refactor: All user-facing strings now use useTranslation('profile')
 import { useTranslation } from 'react-i18next';
@@ -791,7 +795,7 @@ export default function ProfilePage() {
                           <div className="flex justify-between">
                             <span className="text-sm text-muted-foreground">{t('licenseNumber')}</span>
                             <span className="text-sm font-medium">{profile.matchedEmployee.driving_license_number}</span>
-                          </div>
+                            </div>
                           <div className="flex justify-between">
                             <span className="text-sm text-muted-foreground">{t('expiryDate')}</span>
                             <span className="text-sm font-medium">
@@ -824,6 +828,26 @@ export default function ProfilePage() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Employee Documents Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <IconUser className="h-5 w-5" />
+                    Employee Documents
+                    <Badge variant="outline" className="ml-2">
+                      <IconDatabase className="h-3 w-3 mr-1" />
+                      Documents
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    View your uploaded employee documents including Iqama
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <EmployeeDocumentsDisplay />
+                </CardContent>
+              </Card>
 
               <Card>
                 <CardHeader>
@@ -1179,4 +1203,240 @@ export default function ProfilePage() {
       </div>
     </div>
   )
+}
+
+// Employee Documents Display Component
+function EmployeeDocumentsDisplay() {
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
+
+  const fetchDocuments = async () => {
+    try {
+      console.log('🔄 EmployeeDocumentsDisplay: Starting to fetch documents...');
+      const response = await fetch('/api/profile/documents');
+      console.log('📊 EmployeeDocumentsDisplay: Response status:', response.status);
+      console.log('📊 EmployeeDocumentsDisplay: Response headers:', response.headers.get('content-type'));
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ EmployeeDocumentsDisplay: Documents data received:', data);
+        console.log('✅ EmployeeDocumentsDisplay: Data type:', typeof data);
+        console.log('✅ EmployeeDocumentsDisplay: Is array?', Array.isArray(data));
+        console.log('✅ EmployeeDocumentsDisplay: Data length:', Array.isArray(data) ? data.length : 'Not an array');
+        
+        if (Array.isArray(data)) {
+          // Check specifically for Iqama documents
+          const iqamaDocs = data.filter(doc => doc.document_type === 'iqama');
+          console.log('🔍 EmployeeDocumentsDisplay: Iqama documents found:', iqamaDocs.length);
+          console.log('🔍 EmployeeDocumentsDisplay: Iqama documents:', iqamaDocs);
+          
+          // Check all document types
+          const docTypes = [...new Set(data.map(doc => doc.document_type))];
+          console.log('🔍 EmployeeDocumentsDisplay: All document types found:', docTypes);
+        }
+        
+        setDocuments(Array.isArray(data) ? data : []);
+      } else {
+        const errorText = await response.text();
+        console.error('❌ EmployeeDocumentsDisplay: Error response:', errorText);
+        setError('Failed to load documents');
+      }
+    } catch (error) {
+      console.error('❌ EmployeeDocumentsDisplay: Network error fetching documents:', error);
+      setError('Failed to load documents');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownload = (document: any) => {
+    if (document.url) {
+      const link = document.createElement('a');
+      link.href = document.url;
+      link.download = document.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
+
+  const handlePreview = (document: any) => {
+    if (document.url) {
+      window.open(document.url, '_blank');
+    }
+  };
+
+  const getDocumentIcon = (mimeType: string) => {
+    if (mimeType?.startsWith('image/')) {
+      return <IconPhoto className="h-4 w-4 text-blue-500" />;
+    }
+    return <IconFileText className="h-4 w-4 text-gray-500" />;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        <span className="ml-2 text-sm text-muted-foreground">Loading documents...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-sm text-muted-foreground">{error}</p>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={fetchDocuments}
+          className="mt-2"
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  if (documents.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <IconFileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+        <p className="text-sm text-muted-foreground">No documents uploaded yet</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Your Iqama and other documents will appear here once uploaded
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Iqama Document - Special Display */}
+      {documents.filter(doc => doc.document_type === 'iqama').map((iqamaDoc) => (
+        <div key={iqamaDoc.id} className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-100 p-2 rounded-lg">
+                <IconFileText className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-blue-900">Iqama Document</h4>
+                <p className="text-sm text-blue-700">ID Card Size</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePreview(iqamaDoc)}
+                className="h-8 px-3"
+              >
+                <IconEye className="h-4 w-4 mr-1" />
+                View
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleDownload(iqamaDoc)}
+                className="h-8 px-3"
+              >
+                <IconDownload className="h-4 w-4 mr-1" />
+                Download
+              </Button>
+            </div>
+          </div>
+          
+          {/* Document Preview - ID Card Size */}
+          <div className="bg-white rounded-lg border-2 border-dashed border-blue-200 p-4">
+            <div className="flex items-center justify-center">
+              {iqamaDoc.mime_type?.startsWith('image/') ? (
+                <div className="relative group">
+                  <img
+                    src={iqamaDoc.url}
+                    alt="Iqama Document"
+                    className="w-32 h-20 object-cover rounded border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                    onClick={() => handlePreview(iqamaDoc)}
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded flex items-center justify-center">
+                    <IconEye className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+                </div>
+              ) : (
+                <div className="w-32 h-20 bg-gray-100 rounded border flex items-center justify-center">
+                  <IconFileText className="h-8 w-8 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <div className="text-center mt-2">
+              <p className="text-xs text-gray-600">Click to view full size</p>
+            </div>
+          </div>
+          
+          <div className="mt-3 text-xs text-blue-600">
+            <span>Uploaded: {new Date(iqamaDoc.created_at).toLocaleDateString()}</span>
+            {iqamaDoc.file_size && (
+              <span className="ml-3">Size: {formatFileSize(iqamaDoc.file_size)}</span>
+            )}
+          </div>
+        </div>
+      ))}
+
+      {/* Other Documents */}
+      {documents.filter(doc => doc.document_type !== 'iqama').length > 0 && (
+        <>
+          <Separator />
+          <h4 className="text-sm font-medium text-muted-foreground">Other Documents</h4>
+          <div className="grid gap-3">
+            {documents
+              .filter(doc => doc.document_type !== 'iqama')
+              .map((document) => (
+                <div key={document.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    {getDocumentIcon(document.mime_type)}
+                    <div>
+                      <p className="text-sm font-medium">{document.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {document.file_name} • {formatFileSize(document.file_size)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handlePreview(document)}
+                      className="h-8 px-2"
+                    >
+                      <IconEye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDownload(document)}
+                      className="h-8 px-2"
+                    >
+                      <IconDownload className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
 }

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db, prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
+import { users, employees, designations, departments } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 // GET /api/profile - Get current user profile
 export async function GET(request: NextRequest) {
@@ -25,58 +27,35 @@ export async function GET(request: NextRequest) {
     const userId = session.user.id;
     console.log('✅ Profile API: Current user ID from session:', userId);
 
-    // Test database connection first
-    try {
-      await prisma.$connect();
-      console.log('✅ Profile API: Database connected successfully');
-    } catch (dbError) {
-      console.error('❌ Profile API: Database connection failed:', dbError);
-      // Return session user data if database is not available
-      const sessionProfile = {
-        id: session.user.id,
-        name: session.user.name || "Authenticated User",
-        email: session.user.email || "",
-        phone: "",
-        avatar: "",
-        role: session.user.role || "USER",
-        department: "General",
-        location: "",
-        bio: "This is your profile from session data. Set up your database to see full profile information.",
-        joinDate: new Date().toISOString(),
-        lastLogin: new Date().toISOString(),
-        status: session.user.isActive ? "active" : "inactive",
-        firstName: "",
-        middleName: "",
-        lastName: "",
-        designation: "",
-        address: "",
-        city: "",
-        state: "",
-        country: "",
-      };
-
-      console.log('✅ Profile API: Returning session profile due to database error');
-      return NextResponse.json(sessionProfile);
-    }
-
     // Get user from database
     console.log('🔍 Profile API: Fetching user from database...');
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(userId) },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role_id: true,
-        avatar: true,
-        locale: true,
-        last_login_at: true,
-        isActive: true,
-        created_at: true,
-        updated_at: true,
-        national_id: true,
-      },
-    });
+    const userRows = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        roleId: users.roleId,
+        avatar: users.avatar,
+        locale: users.locale,
+        lastLoginAt: users.lastLoginAt,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+        nationalId: users.nationalId,
+      })
+      .from(users)
+      .where(eq(users.id, parseInt(userId)))
+      .limit(1);
+
+    if (userRows.length === 0) {
+      console.log('❌ Profile API: User not found in database');
+      return NextResponse.json(
+        { error: 'User not found in database' },
+        { status: 404 }
+      );
+    }
+
+    const user = userRows[0];
 
     if (!user) {
       console.log('❌ Profile API: User not found in database');
@@ -89,140 +68,181 @@ export async function GET(request: NextRequest) {
     console.log('✅ Profile API: Found user:', user);
 
     // Get employee data if exists (direct user_id match)
-    const employee = await prisma.employee.findFirst({
-      where: { user_id: parseInt(user.id.toString()) },  
-      select: {
-        id: true,
-        first_name: true,
-        middle_name: true,
-        last_name: true,
-        employee_id: true,
-        phone: true,
-        email: true,
-        address: true,
-        city: true,
-        state: true,
-        country: true,
-        nationality: true,
-        date_of_birth: true,
-        hire_date: true,
-        iqama_number: true,
-        iqama_expiry: true,
-        passport_number: true,
-        passport_expiry: true,
-        driving_license_number: true,
-        driving_license_expiry: true,
-        operator_license_number: true,
-        operator_license_expiry: true,
-        designation: {
-          select: {
-            name: true,
-          },
-        },
-        department: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    });
+    const employeeRows = await db
+      .select({
+        id: employees.id,
+        firstName: employees.firstName,
+        middleName: employees.middleName,
+        lastName: employees.lastName,
+        fileNumber: employees.fileNumber,
+        phone: employees.phone,
+        email: employees.email,
+        address: employees.address,
+        city: employees.city,
+        state: employees.state,
+        country: employees.country,
+        nationality: employees.nationality,
+        dateOfBirth: employees.dateOfBirth,
+        hireDate: employees.hireDate,
+        iqamaNumber: employees.iqamaNumber,
+        iqamaExpiry: employees.iqamaExpiry,
+        passportNumber: employees.passportNumber,
+        passportExpiry: employees.passportExpiry,
+        drivingLicenseNumber: employees.drivingLicenseNumber,
+        drivingLicenseExpiry: employees.drivingLicenseExpiry,
+        operatorLicenseNumber: employees.operatorLicenseNumber,
+        operatorLicenseExpiry: employees.operatorLicenseExpiry,
+        designationId: employees.designationId,
+        departmentId: employees.departmentId,
+      })
+      .from(employees)
+      .where(eq(employees.userId, parseInt(user.id.toString())))
+      .limit(1);
+
+    const employee = employeeRows.length > 0 ? employeeRows[0] : null;
 
     console.log('Found employee data:', employee);
 
     // Check if user's national ID matches any employee's Iqama number
-    let matchedEmployee = null;
-    if (user.national_id) {
-      console.log('Checking for Nation ID match:', user.national_id);
-      matchedEmployee = await prisma.employee.findFirst({
-        where: { iqama_number: user.national_id },
-        select: {
-          id: true,
-          first_name: true,
-          middle_name: true,
-          last_name: true,
-          employee_id: true,
-          phone: true,
-          email: true,
-          address: true,
-          city: true,
-          state: true,
-          country: true,
-          nationality: true,
-          date_of_birth: true,
-          hire_date: true,
-          iqama_number: true,
-          iqama_expiry: true,
-          passport_number: true,
-          passport_expiry: true,
-          driving_license_number: true,
-          driving_license_expiry: true,
-          operator_license_number: true,
-          operator_license_expiry: true,
-          designation: {
-            select: { name: true }
-          },
-          department: {
-            select: { name: true }
+    let matchedEmployee: any = null;
+    if (user.nationalId) {
+      console.log('🔍 Profile API: Checking for National ID match with employee Iqama number:', user.nationalId);
+      const matchedEmployeeRows = await db
+        .select({
+          id: employees.id,
+          firstName: employees.firstName,
+          middleName: employees.middleName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          phone: employees.phone,
+          email: employees.email,
+          address: employees.address,
+          city: employees.city,
+          state: employees.state,
+          country: employees.country,
+          nationality: employees.nationality,
+          dateOfBirth: employees.dateOfBirth,
+          hireDate: employees.hireDate,
+          iqamaNumber: employees.iqamaNumber,
+          iqamaExpiry: employees.iqamaExpiry,
+          passportNumber: employees.passportNumber,
+          passportExpiry: employees.passportExpiry,
+          drivingLicenseNumber: employees.drivingLicenseNumber,
+          drivingLicenseExpiry: employees.drivingLicenseExpiry,
+          operatorLicenseNumber: employees.operatorLicenseNumber,
+          operatorLicenseExpiry: employees.operatorLicenseExpiry,
+          designationId: employees.designationId,
+          departmentId: employees.departmentId,
+          userId: employees.userId,
+        })
+        .from(employees)
+        .where(eq(employees.iqamaNumber, user.nationalId))
+        .limit(1);
+
+      if (matchedEmployeeRows.length > 0) {
+        matchedEmployee = matchedEmployeeRows[0];
+        console.log('✅ Profile API: Found employee with matching Iqama number:', matchedEmployee);
+        
+        // Step 3: Auto-update employee email if it doesn't match user's email
+        if (matchedEmployee.email !== user.email) {
+          console.log('🔄 Profile API: Auto-updating employee email from', matchedEmployee.email, 'to', user.email);
+          try {
+            await db
+              .update(employees)
+              .set({ email: user.email })
+              .where(eq(employees.id, matchedEmployee.id));
+            console.log('✅ Profile API: Successfully updated employee email');
+            // Update the matchedEmployee object with new email
+            matchedEmployee.email = user.email;
+          } catch (updateError) {
+            console.error('❌ Profile API: Error updating employee email:', updateError);
           }
         }
-      });
-      console.log('Matched employee found:', matchedEmployee);
-
-      // Auto-update employee email if it doesn't match user's email
-      if (matchedEmployee && (matchedEmployee as any).email !== (user as any).email) {
-        console.log('Auto-updating employee email from', (matchedEmployee as any).email, 'to', (user as any).email);
-        try {
-          await prisma.employee.update({
-            where: { id: (matchedEmployee as any).id },
-            data: { email: user.email }
-          });
-          console.log('✅ Successfully updated employee email');
-          // Update the matchedEmployee object with new email
-          (matchedEmployee as any).email = (user as any).email;
-        } catch (updateError) {
-          console.error('❌ Error updating employee email:', updateError);
+        
+        // Step 4: Establish relationship by updating employee's userId field
+        if (!matchedEmployee.userId || matchedEmployee.userId !== parseInt(user.id.toString())) {
+          console.log('🔗 Profile API: Establishing user-employee relationship by updating userId field');
+          try {
+            await db
+              .update(employees)
+              .set({ userId: parseInt(user.id.toString()) })
+              .where(eq(employees.id, matchedEmployee.id));
+            console.log('✅ Profile API: Successfully linked user to employee via userId');
+            // Update the matchedEmployee object with new userId
+            matchedEmployee.userId = parseInt(user.id.toString());
+          } catch (linkError) {
+            console.error('❌ Profile API: Error linking user to employee:', linkError);
+          }
+        } else {
+          console.log('✅ Profile API: User-employee relationship already established');
         }
+      } else {
+        console.log('❌ Profile API: No employee found with matching Iqama number:', user.nationalId);
       }
+    } else {
+      console.log('⚠️ Profile API: User has no national_id, cannot match with employee Iqama number');
     }
 
     // If no direct employee record, try to find by email match
-    let emailMatchedEmployee = null;
+    let emailMatchedEmployee: any = null;
     if (!employee && user.email) {
-      console.log('Checking for email match:', user.email);
-      emailMatchedEmployee = await prisma.employee.findFirst({
-        where: { email: user.email },
-        select: {
-          id: true,
-          first_name: true,
-          middle_name: true,
-          last_name: true,
-          employee_id: true,
-          phone: true,
-          email: true,
-          address: true,
-          city: true,
-          state: true,
-          country: true,
-          nationality: true,
-          date_of_birth: true,
-          hire_date: true,
-          iqama_number: true,
-          iqama_expiry: true,
-          passport_number: true,
-          passport_expiry: true,
-          driving_license_number: true,
-          driving_license_expiry: true,
-          operator_license_number: true,
-          operator_license_expiry: true,
-          designation: {
-            select: { name: true }
-          },
-          department: {
-            select: { name: true }
+      console.log('🔍 Profile API: Checking for email match:', user.email);
+      const emailMatchedEmployeeRows = await db
+        .select({
+          id: employees.id,
+          firstName: employees.firstName,
+          middleName: employees.middleName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          phone: employees.phone,
+          email: employees.email,
+          address: employees.address,
+          city: employees.city,
+          state: employees.state,
+          country: employees.country,
+          nationality: employees.nationality,
+          dateOfBirth: employees.dateOfBirth,
+          hireDate: employees.hireDate,
+          iqamaNumber: employees.iqamaNumber,
+          iqamaExpiry: employees.iqamaExpiry,
+          passportNumber: employees.passportNumber,
+          passportExpiry: employees.passportExpiry,
+          drivingLicenseNumber: employees.drivingLicenseNumber,
+          drivingLicenseExpiry: employees.drivingLicenseExpiry,
+          operatorLicenseNumber: employees.operatorLicenseNumber,
+          operatorLicenseExpiry: employees.operatorLicenseExpiry,
+          designationId: employees.designationId,
+          departmentId: employees.departmentId,
+          userId: employees.userId,
+        })
+        .from(employees)
+        .where(eq(employees.email, user.email))
+        .limit(1);
+
+      if (emailMatchedEmployeeRows.length > 0) {
+        emailMatchedEmployee = emailMatchedEmployeeRows[0];
+        console.log('✅ Profile API: Found employee with matching email:', emailMatchedEmployee);
+        
+        // Establish relationship by updating employee's userId field if not already set
+        if (!emailMatchedEmployee.userId || emailMatchedEmployee.userId !== parseInt(user.id.toString())) {
+          console.log('🔗 Profile API: Establishing user-employee relationship via email match');
+          try {
+            await db
+              .update(employees)
+              .set({ userId: parseInt(user.id.toString()) })
+              .where(eq(employees.id, emailMatchedEmployee.id));
+            console.log('✅ Profile API: Successfully linked user to employee via email match');
+            // Update the emailMatchedEmployee object with new userId
+            emailMatchedEmployee.userId = parseInt(user.id.toString());
+          } catch (linkError) {
+            console.error('❌ Profile API: Error linking user to employee via email:', linkError);
           }
+        } else {
+          console.log('✅ Profile API: User-employee relationship already established via email');
         }
-      });
-      console.log('Email matched employee found:', emailMatchedEmployee);
+      } else {
+        console.log('❌ Profile API: No employee found with matching email:', user.email);
+      }
     }
 
     // Use the best available employee data
@@ -235,20 +255,20 @@ export async function GET(request: NextRequest) {
       email: user.email,
       phone: bestEmployee?.phone || '',
       avatar: user.avatar || '',
-      role: user.role_id,
+      role: user.roleId,
       department: bestEmployee?.department?.name || 'General',
       location: bestEmployee?.city && bestEmployee?.state
         ? `${bestEmployee.city}, ${bestEmployee.state}`
         : bestEmployee?.country || '',
       bio: '', // Could be added to user model later
-      joinDate: user.created_at.toISOString(),
-      lastLogin: user.last_login_at?.toISOString() || user.created_at.toISOString(),
+            joinDate: user.createdAt,
+      lastLogin: user.lastLoginAt || user.createdAt,
       status: user.isActive ? 'active' : 'inactive',
-      nationalId: user.national_id || '',
+      nationalId: user.nationalId || '',
       // Employee specific fields (from best available employee data)
-      firstName: bestEmployee?.first_name || '',
-      middleName: bestEmployee?.middle_name || '',
-      lastName: bestEmployee?.last_name || '',
+      firstName: bestEmployee?.firstName || '',
+      middleName: bestEmployee?.middleName || '',
+      lastName: bestEmployee?.lastName || '',
       designation: bestEmployee?.designation?.name || '',
       address: bestEmployee?.address || '',
       city: bestEmployee?.city || '',
@@ -259,7 +279,7 @@ export async function GET(request: NextRequest) {
     };
 
     console.log('Final profile response:', profile);
-    console.log('User national_id from database:', user.national_id);
+    console.log('User nationalId from database:', user.nationalId);
     console.log('Profile nationalId field:', profile.nationalId);
     return NextResponse.json(profile);
   } catch (error) {
@@ -293,13 +313,6 @@ export async function GET(request: NextRequest) {
 
     console.log('✅ Profile API: Returning session profile due to error');
     return NextResponse.json(sessionProfile);
-  } finally {
-    try {
-      await prisma.$disconnect();
-      console.log('✅ Profile API: Database disconnected');
-    } catch (disconnectError) {
-      console.error('❌ Profile API: Error disconnecting from database:', disconnectError);
-    }
   }
 }
 

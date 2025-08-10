@@ -249,27 +249,29 @@ export async function POST(request: NextRequest) {
           let designationId = null;
 
           if (designationName) {
-            let designation = await db.select().from(employeesTable).where(
+            let designation: any[] = await db.select().from(employeesTable).where(
               sql`designation = ${designationName}`
             );
 
             if (designation.length === 0) {
-              designation = await db.insert(employeesTable).values({
+              const newDesignation = await db.insert(employeesTable).values({
                 designation: designationName,
                 description: designationName,
                 is_active: true
               }).returning();
+              designation = newDesignation;
             } else {
-              designation = await db.update(employeesTable).set({
+              const updatedDesignation = await db.update(employeesTable).set({
                 description: designationName,
                 is_active: true
               }).where(sql`id = ${designation[0].id}`).returning();
+              designation = updatedDesignation;
             }
             designationId = designation[0].id;
           }
 
           if (departmentName) {
-            const department = await db.select().from(employeesTable).where(
+            const department: any[] = await db.select().from(employeesTable).where(
               sql`department = ${departmentName}`
             );
             if (department.length > 0) {

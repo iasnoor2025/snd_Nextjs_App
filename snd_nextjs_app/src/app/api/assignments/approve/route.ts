@@ -45,7 +45,7 @@ export const POST = withPermission(
               id: users.id,
               name: users.name,
               email: users.email,
-            }
+            } as any
           },
           project: {
             id: projects.id,
@@ -132,7 +132,7 @@ export const POST = withPermission(
               id: users.id,
               name: users.name,
               email: users.email,
-            }
+            } as any
           },
           project: {
             id: projects.id,

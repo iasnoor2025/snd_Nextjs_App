@@ -112,6 +112,8 @@ export async function POST(
         fileSize: body.file_size,
         mimeType: body.mime_type,
         description: body.description,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .returning();
 

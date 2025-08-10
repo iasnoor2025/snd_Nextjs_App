@@ -13,9 +13,9 @@ function formatCompanyForFrontend(company: Record<string, any>) {
     email: company.email,
     phone: company.phone,
     logo: company.logo,
-    legal_document: company.legal_document,
-    created_at: company.created_at?.toISOString().split('T')[0] || null,
-    updated_at: company.updated_at?.toISOString().split('T')[0] || null,
+    legal_document: company.legalDocument,
+    created_at: company.createdAt?.toISOString().split('T')[0] || null,
+    updated_at: company.updatedAt?.toISOString().split('T')[0] || null,
   };
 }
 
@@ -66,9 +66,9 @@ export const GET = withPermission(
         email: companiesTable.email,
         phone: companiesTable.phone,
         logo: companiesTable.logo,
-        legal_document: companiesTable.legalDocument,
-        created_at: companiesTable.createdAt,
-        updated_at: companiesTable.updatedAt,
+        legalDocument: companiesTable.legalDocument,
+        createdAt: companiesTable.createdAt,
+        updatedAt: companiesTable.updatedAt,
       })
       .from(companiesTable)
       .where(whereExpr as any)
@@ -157,7 +157,7 @@ export const POST = withPermission(
         email: body.email,
         phone: body.phone,
         logo: body.logo,
-        legal_document: body.legal_document,
+        legalDocument: body.legal_document,
         updatedAt: nowIso,
       })
       .returning({
@@ -167,9 +167,9 @@ export const POST = withPermission(
         email: companiesTable.email,
         phone: companiesTable.phone,
         logo: companiesTable.logo,
-        legal_document: companiesTable.legalDocument,
-        created_at: companiesTable.createdAt,
-        updated_at: companiesTable.updatedAt,
+        legalDocument: companiesTable.legalDocument,
+        createdAt: companiesTable.createdAt,
+        updatedAt: companiesTable.updatedAt,
       });
 
     const newCompany = newCompanyRows[0];
