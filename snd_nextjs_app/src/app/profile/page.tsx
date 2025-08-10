@@ -22,7 +22,36 @@ import {
   IconInfoCircle,
   IconPhoto,
   IconDownload,
-  IconEye
+  IconEye,
+  IconFileText,
+  IconId,
+  IconCalendar,
+  IconFlag,
+  IconBriefcase,
+  IconHome,
+  IconGlobe,
+  IconClock,
+  IconStar,
+  IconSettings,
+  IconLock,
+  IconEyeOff,
+  IconQrcode,
+  IconFingerprint,
+  IconDeviceMobile,
+  IconDeviceLaptop,
+  IconWorld,
+  IconMoon,
+  IconSun,
+  IconDeviceDesktop,
+  IconRotate,
+  IconCar,
+  IconTools,
+  IconAlertTriangle,
+  IconPlane,
+
+  IconMessage,
+  IconLoader,
+  IconDeviceFloppy
 } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
@@ -39,7 +68,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { toast } from "sonner"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { IconFileText } from '@tabler/icons-react';
+import { Progress } from "@/components/ui/progress"
 
 // i18n refactor: All user-facing strings now use useTranslation('profile')
 import { useTranslation } from 'react-i18next';
@@ -96,6 +125,13 @@ interface UserProfile {
   matchedEmployee?: MatchedEmployee
 }
 
+interface ProfileStats {
+  profileCompletion: number
+  documentsCount: number
+  lastActivity: string
+  securityScore: number
+}
+
 interface NotificationSettings {
   emailNotifications: boolean
   pushNotifications: boolean
@@ -127,6 +163,13 @@ export default function ProfilePage() {
     joinDate: "",
     lastLogin: "",
     status: "inactive"
+  })
+
+  const [profileStats, setProfileStats] = useState<ProfileStats>({
+    profileCompletion: 0,
+    documentsCount: 0,
+    lastActivity: "",
+    securityScore: 85
   })
 
   const [isLoading, setIsLoading] = useState(true)
@@ -342,18 +385,25 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="h-full w-full bg-background">
-        <div className="w-full p-4">
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Loading profile...</p>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="container mx-auto p-6">
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="text-center space-y-6">
+              <div className="relative">
+                <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary/20 border-t-primary mx-auto"></div>
+                <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary/40 animate-pulse"></div>
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-xl font-semibold text-foreground">Loading Your Profile</h2>
+                <p className="text-muted-foreground">Preparing your personalized dashboard...</p>
+              </div>
               <Button
                 variant="outline"
-                size="sm"
+                size="lg"
                 onClick={retryFetch}
                 className="mt-4"
               >
+                <IconRotate className="h-4 w-4 mr-2" />
                 Retry
               </Button>
             </div>
@@ -364,23 +414,135 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="h-full w-full bg-background">
-      <div className="w-full p-4">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Profile Settings
-          </h1>
-          <p className="text-muted-foreground">
-            Manage your account settings, preferences, and personal information.
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="container mx-auto p-6 space-y-8">
+        {/* Hero Header */}
+        <div className="relative">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-3xl"></div>
+          <div className="relative p-8 rounded-3xl border bg-card/50 backdrop-blur-sm">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+              <div className="flex items-center gap-6">
+                <div className="relative">
+                  <Avatar className="h-24 w-24 ring-4 ring-background shadow-xl">
+                    <AvatarImage src={profile.avatar} alt={profile.name} />
+                    <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground">
+                      {profile.name.split(' ').map(n => n[0]).join('')}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 ring-2 ring-background">
+                    <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h1 className="text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                    {profile.name || 'Your Profile'}
+                  </h1>
+                  <p className="text-xl text-muted-foreground">
+                    {profile.role && profile.department ? `${profile.role} • ${profile.department}` : 'Employee Profile'}
+                  </p>
+                  <div className="flex items-center gap-4">
+                    <Badge variant="secondary" className="px-3 py-1">
+                      <IconId className="h-3 w-3 mr-1" />
+                      {profile.nationalId || 'No National ID'}
+                    </Badge>
+                    <Badge variant={profile.status === "active" ? "default" : "secondary"}>
+                      <IconCheck className="h-3 w-3 mr-1" />
+                      {profile.status}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant={isEditing ? "outline" : "default"}
+                  size="lg"
+                  onClick={() => setIsEditing(!isEditing)}
+                  disabled={isSaving}
+                  className="shadow-lg"
+                >
+                  {isEditing ? <IconX className="h-4 w-4 mr-2" /> : <IconEdit className="h-4 w-4 mr-2" />}
+                  {isEditing ? "Cancel" : "Edit Profile"}
+                </Button>
+                <Button variant="outline" size="lg" className="shadow-lg">
+                  <IconSettings className="h-4 w-4 mr-2" />
+                  Settings
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Profile Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-blue-600">Profile Completion</p>
+                  <p className="text-2xl font-bold text-blue-900">{profileStats.profileCompletion}%</p>
+                </div>
+                <div className="bg-blue-100 p-3 rounded-full">
+                  <IconUser className="h-6 w-6 text-blue-600" />
+                </div>
+              </div>
+              <Progress value={profileStats.profileCompletion} className="mt-3" />
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-green-50 to-green-100/50 border-green-200/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-green-600">Documents</p>
+                  <p className="text-2xl font-bold text-green-900">{profileStats.documentsCount}</p>
+                </div>
+                <div className="bg-green-100 p-3 rounded-full">
+                  <IconFileText className="h-6 w-6 text-green-600" />
+                </div>
+              </div>
+              <p className="text-xs text-green-600 mt-1">Uploaded files</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50 border-purple-200/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-purple-600">Security Score</p>
+                  <p className="text-2xl font-bold text-purple-900">{profileStats.securityScore}%</p>
+                </div>
+                <div className="bg-purple-100 p-3 rounded-full">
+                  <IconShield className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+              <p className="text-xs text-purple-600 mt-1">Account protection</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50 border-orange-200/50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-orange-600">Last Activity</p>
+                  <p className="text-2xl font-bold text-orange-900">
+                    {profile.lastLogin ? new Date(profile.lastLogin).toLocaleDateString() : 'N/A'}
+                  </p>
+                </div>
+                <div className="bg-orange-100 p-3 rounded-full">
+                  <IconClock className="h-6 w-6 text-orange-600" />
+                </div>
+              </div>
+              <p className="text-xs text-orange-600 mt-1">Recent login</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Data Source Alert */}
         {hasRealEmployeeData() && (
-          <Alert className="mb-6">
-            <IconDatabase className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Real Database Data:</strong> Your profile is now showing actual employee information from the database. 
+          <Alert className="border-primary/20 bg-primary/5">
+            <IconDatabase className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-primary">
+              <strong>Database Connected:</strong> Your profile is displaying real employee information from the database. 
               {profile.matchedEmployee && (
                 <span className="ml-2">
                   <IconLink className="h-4 w-4 inline mr-1" />
@@ -391,40 +553,73 @@ export default function ProfilePage() {
           </Alert>
         )}
 
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
-            <TabsTrigger value="appearance">Appearance</TabsTrigger>
-            <TabsTrigger value="security">Security</TabsTrigger>
+        <Tabs defaultValue="profile" className="space-y-8">
+          <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/50">
+            <TabsTrigger value="profile" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <IconUser className="h-4 w-4 mr-2" />
+              Profile
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <IconBell className="h-4 w-4 mr-2" />
+              Notifications
+            </TabsTrigger>
+            <TabsTrigger value="appearance" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <IconPalette className="h-4 w-4 mr-2" />
+              Appearance
+            </TabsTrigger>
+            <TabsTrigger value="security" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+              <IconShield className="h-4 w-4 mr-2" />
+              Security
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="profile" className="space-y-6">
-            <Card>
-              <CardHeader>
+          <TabsContent value="profile" className="space-y-8">
+            {/* Personal Information Card */}
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-white to-muted/20">
+              <CardHeader className="pb-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>Personal Information</CardTitle>
-                    <CardDescription>
+                  <div className="space-y-1">
+                    <CardTitle className="text-2xl flex items-center gap-2">
+                      <IconUser className="h-6 w-6 text-primary" />
+                      Personal Information
+                    </CardTitle>
+                    <CardDescription className="text-base">
                       Update your personal details and contact information
                     </CardDescription>
                   </div>
-                  <Button
-                    variant={isEditing ? "outline" : "default"}
-                    onClick={() => setIsEditing(!isEditing)}
-                    disabled={isSaving}
-                  >
-                    {isEditing ? <IconX className="h-4 w-4 mr-2" /> : <IconEdit className="h-4 w-4 mr-2" />}
-                    {isEditing ? "Cancel" : "Edit"}
-                  </Button>
+                  <div className="flex gap-3">
+                    {isEditing && (
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={() => setIsEditing(false)}
+                        disabled={isSaving}
+                        className="shadow-md"
+                      >
+                        <IconX className="h-4 w-4 mr-2" />
+                        Cancel
+                      </Button>
+                    )}
+                    <Button
+                      variant={isEditing ? "default" : "outline"}
+                      size="lg"
+                      onClick={() => setIsEditing(!isEditing)}
+                      disabled={isSaving}
+                      className="shadow-md"
+                    >
+                      {isEditing ? <IconCheck className="h-4 w-4 mr-2" /> : <IconEdit className="h-4 w-4 mr-2" />}
+                      {isEditing ? "Save Changes" : "Edit Profile"}
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center space-x-6">
+              <CardContent className="space-y-8">
+                {/* Avatar Section */}
+                <div className="flex items-center gap-8">
                   <div className="relative">
-                    <Avatar className="h-24 w-24">
+                    <Avatar className="h-32 w-32 ring-4 ring-primary/20 shadow-xl">
                       <AvatarImage src={profile.avatar} alt={profile.name} />
-                      <AvatarFallback className="text-2xl">
+                      <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground">
                         {profile.name.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
@@ -432,416 +627,610 @@ export default function ProfilePage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full p-0"
+                        className="absolute -bottom-2 -right-2 h-10 w-10 rounded-full p-0 shadow-lg"
                       >
-                        <IconCamera className="h-4 w-4" />
+                        <IconCamera className="h-5 w-5" />
                       </Button>
                     )}
                   </div>
-                  <div className="flex-1">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">{t('fullName')}</Label>
+                  <div className="flex-1 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <Label htmlFor="name" className="text-sm font-semibold text-muted-foreground">
+                          <IconUser className="h-4 w-4 inline mr-2" />
+                          Full Name
+                        </Label>
                         <Input
                           id="name"
                           value={profile.name}
                           onChange={(e) => setProfile({ ...profile, name: e.target.value })}
                           disabled={!isEditing}
+                          className="h-12 text-base border-2 focus:border-primary/50"
+                          placeholder="Enter your full name"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">{t('email')}</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="email" className="text-sm font-semibold text-muted-foreground">
+                          <IconMail className="h-4 w-4 inline mr-2" />
+                          Email Address
+                        </Label>
                         <Input
                           id="email"
                           type="email"
                           value={profile.email}
                           onChange={(e) => setProfile({ ...profile, email: e.target.value })}
                           disabled={!isEditing}
+                          className="h-12 text-base border-2 focus:border-primary/50"
+                          placeholder="Enter your email"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">{t('phone')}</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="phone" className="text-sm font-semibold text-muted-foreground">
+                          <IconPhone className="h-4 w-4 inline mr-2" />
+                          Phone Number
+                        </Label>
                         <Input
                           id="phone"
                           value={profile.phone}
                           onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                           disabled={!isEditing}
+                          className="h-12 text-base border-2 focus:border-primary/50"
+                          placeholder="Enter your phone number"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="location">{t('location')}</Label>
+                      <div className="space-y-3">
+                        <Label htmlFor="nationalId" className="text-sm font-semibold text-muted-foreground">
+                          <IconId className="h-4 w-4 inline mr-2" />
+                          National ID (Iqama)
+                        </Label>
                         <Input
-                          id="location"
-                          value={profile.location}
-                          onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+                          id="nationalId"
+                          value={profile.nationalId || ''}
+                          onChange={(e) => setProfile({ ...profile, nationalId: e.target.value })}
                           disabled={!isEditing}
+                          className="h-12 text-base border-2 focus:border-primary/50"
+                          placeholder="Enter your National ID"
                         />
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className="my-8" />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">{t('firstName')}</Label>
-                    <Input
-                      id="firstName"
-                      value={profile.firstName || ''}
-                      onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
-                      disabled={!isEditing}
-                    />
+                {/* Additional Information */}
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <IconInfoCircle className="h-5 w-5 text-primary" />
+                    Additional Information
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label htmlFor="firstName" className="text-sm font-semibold text-muted-foreground">First Name</Label>
+                      <Input
+                        id="firstName"
+                        value={profile.firstName || ''}
+                        onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+                        disabled={!isEditing}
+                        className="h-11 border-2 focus:border-primary/50"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="lastName" className="text-sm font-semibold text-muted-foreground">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        value={profile.lastName || ''}
+                        onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                        disabled={!isEditing}
+                        className="h-11 border-2 focus:border-primary/50"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="role" className="text-sm font-semibold text-muted-foreground">Job Role</Label>
+                      <Input
+                        id="role"
+                        value={profile.role}
+                        onChange={(e) => setProfile({ ...profile, role: e.target.value })}
+                        disabled={!isEditing}
+                        className="h-11 border-2 focus:border-primary/50"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="department" className="text-sm font-semibold text-muted-foreground">Department</Label>
+                      <Input
+                        id="department"
+                        value={profile.department}
+                        onChange={(e) => setProfile({ ...profile, department: e.target.value })}
+                        disabled={!isEditing}
+                        className="h-11 border-2 focus:border-primary/50"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">{t('lastName')}</Label>
-                    <Input
-                      id="lastName"
-                      value={profile.lastName || ''}
-                      onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="role">{t('role')}</Label>
-                    <Input
-                      id="role"
-                      value={profile.role}
-                      onChange={(e) => setProfile({ ...profile, role: e.target.value })}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="department">{t('department')}</Label>
-                    <Input
-                      id="department"
-                      value={profile.department}
-                      onChange={(e) => setProfile({ ...profile, department: e.target.value })}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="nationalId">{t('nationalId')}</Label>
-                    <Input
-                      id="nationalId"
-                      value={profile.nationalId || ''}
-                      onChange={(e) => setProfile({ ...profile, nationalId: e.target.value })}
-                      disabled={!isEditing}
-                      placeholder={t('nationalIdPlaceholder')}
-                    />
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="address">{t('address')}</Label>
-                    <Input
-                      id="address"
-                      value={profile.address || ''}
-                      onChange={(e) => setProfile({ ...profile, address: e.target.value })}
-                      disabled={!isEditing}
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label htmlFor="address" className="text-sm font-semibold text-muted-foreground">
+                        <IconHome className="h-4 w-4 inline mr-2" />
+                        Address
+                      </Label>
+                      <Input
+                        id="address"
+                        value={profile.address || ''}
+                        onChange={(e) => setProfile({ ...profile, address: e.target.value })}
+                        disabled={!isEditing}
+                        className="h-11 border-2 focus:border-primary/50"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="city" className="text-sm font-semibold text-muted-foreground">
+                        <IconMapPin className="h-4 w-4 inline mr-2" />
+                        City
+                      </Label>
+                      <Input
+                        id="city"
+                        value={profile.city || ''}
+                        onChange={(e) => setProfile({ ...profile, city: e.target.value })}
+                        disabled={!isEditing}
+                        className="h-11 border-2 focus:border-primary/50"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="state" className="text-sm font-semibold text-muted-foreground">
+                        <IconMapPin className="h-4 w-4 inline mr-2" />
+                        State/Province
+                      </Label>
+                      <Input
+                        id="state"
+                        value={profile.state || ''}
+                        onChange={(e) => setProfile({ ...profile, state: e.target.value })}
+                        disabled={!isEditing}
+                        className="h-11 border-2 focus:border-primary/50"
+                      />
+                    </div>
+                    <div className="space-y-3">
+                      <Label htmlFor="country" className="text-sm font-semibold text-muted-foreground">
+                        <IconGlobe className="h-4 w-4 inline mr-2" />
+                        Country
+                      </Label>
+                      <Input
+                        id="country"
+                        value={profile.country || ''}
+                        onChange={(e) => setProfile({ ...profile, country: e.target.value })}
+                        disabled={!isEditing}
+                        className="h-11 border-2 focus:border-primary/50"
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="city">{t('city')}</Label>
-                    <Input
-                      id="city"
-                      value={profile.city || ''}
-                      onChange={(e) => setProfile({ ...profile, city: e.target.value })}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="state">{t('state')}</Label>
-                    <Input
-                      id="state"
-                      value={profile.state || ''}
-                      onChange={(e) => setProfile({ ...profile, state: e.target.value })}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="country">{t('country')}</Label>
-                    <Input
-                      id="country"
-                      value={profile.country || ''}
-                      onChange={(e) => setProfile({ ...profile, country: e.target.value })}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="bio">{t('bio')}</Label>
-                  <Textarea
-                    id="bio"
-                    value={profile.bio}
-                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                    disabled={!isEditing}
-                    rows={4}
-                  />
+                  <div className="space-y-3">
+                    <Label htmlFor="bio" className="text-sm font-semibold text-muted-foreground">Bio</Label>
+                    <Textarea
+                      id="bio"
+                      value={profile.bio}
+                      onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                      disabled={!isEditing}
+                      rows={4}
+                      className="border-2 focus:border-primary/50 resize-none"
+                      placeholder="Tell us about yourself..."
+                    />
+                  </div>
                 </div>
 
                 {isEditing && (
-                  <div className="flex justify-end space-x-2">
+                  <div className="flex justify-end gap-3 pt-6 border-t">
                     <Button
                       variant="outline"
+                      size="lg"
                       onClick={() => setIsEditing(false)}
                       disabled={isSaving}
+                      className="shadow-md"
                     >
                       Cancel
                     </Button>
                     <Button
                       onClick={handleSaveProfile}
                       disabled={isSaving}
+                      size="lg"
+                      className="shadow-md"
                     >
-                      {isSaving ? "Saving..." : "Save Changes"}
+                      {isSaving ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <IconCheck className="h-4 w-4 mr-2" />
+                          Save Changes
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconUser className="h-5 w-5" />
+            {/* Information Cards Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Account Information Card */}
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50/50 to-blue-100/30">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl flex items-center gap-3 text-blue-900">
+                    <div className="bg-blue-100 p-2 rounded-lg">
+                      <IconUser className="h-6 w-6 text-blue-600" />
+                    </div>
                     Account Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">{t('userId')}</span>
-                    <span className="text-sm font-medium">{profile.id}</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">User ID</span>
+                      <p className="text-sm font-semibold text-blue-900 font-mono">{profile.id}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">Status</span>
+                      <Badge variant={profile.status === "active" ? "default" : "secondary"} className="w-fit">
+                        <IconCheck className="h-3 w-3 mr-1" />
+                        {profile.status}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">{t('joinDate')}</span>
-                    <span className="text-sm font-medium">
-                      {formatDate(profile.joinDate)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">{t('lastLogin')}</span>
-                    <span className="text-sm font-medium">
-                      {formatDate(profile.lastLogin)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">{t('nationalId')}</span>
-                    <span className="text-sm font-medium">
-                      {profile.nationalId || 'Not set'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">{t('status')}</span>
-                    <Badge variant={profile.status === "active" ? "default" : "secondary"}>
-                      {profile.status}
-                    </Badge>
+                  
+                  <Separator className="my-4" />
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <IconCalendar className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm text-blue-700">Join Date</span>
+                      </div>
+                      <span className="text-sm font-medium text-blue-900">
+                        {formatDate(profile.joinDate)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <IconClock className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm text-blue-700">Last Login</span>
+                      </div>
+                      <span className="text-sm font-medium text-blue-900">
+                        {formatDate(profile.lastLogin)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <IconId className="h-4 w-4 text-blue-500" />
+                        <span className="text-sm text-blue-700">National ID</span>
+                      </div>
+                      <span className="text-sm font-medium text-blue-900">
+                        {profile.nationalId || 'Not set'}
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
 
+              {/* Employee Information Card */}
               {hasRealEmployeeData() && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <IconUser className="h-5 w-5" />
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50/50 to-green-100/30">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-xl flex items-center gap-3 text-green-900">
+                      <div className="bg-green-100 p-2 rounded-lg">
+                        <IconBriefcase className="h-6 w-6 text-green-600" />
+                      </div>
                       Employee Information
-                      <Badge variant="outline" className="ml-2">
+                      <Badge variant="outline" className="ml-2 bg-green-100 text-green-700 border-green-300">
                         <IconDatabase className="h-3 w-3 mr-1" />
                         Database
                       </Badge>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">{t('fullName')}</span>
-                      <span className="text-sm font-medium">
-                        {profile.firstName} {profile.middleName} {profile.lastName}
-                      </span>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <span className="text-xs font-medium text-green-600 uppercase tracking-wide">Full Name</span>
+                        <p className="text-sm font-semibold text-green-900">
+                          {profile.firstName} {profile.middleName} {profile.lastName}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <span className="text-xs font-medium text-green-600 uppercase tracking-wide">Phone</span>
+                        <p className="text-sm font-semibold text-green-900">{profile.phone}</p>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">{t('phone')}</span>
-                      <span className="text-sm font-medium">{profile.phone}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">{t('designation')}</span>
-                      <span className="text-sm font-medium">{profile.designation || 'Not assigned'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">{t('location')}</span>
-                      <span className="text-sm font-medium">
-                        {profile.city && profile.state ? `${profile.city}, ${profile.state}` : profile.country || 'Not specified'}
-                      </span>
+                    
+                    <Separator className="my-4" />
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <IconStar className="h-4 w-4 text-green-500" />
+                          <span className="text-sm text-green-700">Designation</span>
+                        </div>
+                        <span className="text-sm font-medium text-green-900">
+                          {profile.designation || 'Not assigned'}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <IconBuilding className="h-4 w-4 text-green-500" />
+                          <span className="text-sm text-green-700">Department</span>
+                        </div>
+                        <span className="text-sm font-medium text-green-900">
+                          {profile.department || 'Not assigned'}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <IconMapPin className="h-4 w-4 text-green-500" />
+                          <span className="text-sm text-green-700">Location</span>
+                        </div>
+                        <span className="text-sm font-medium text-green-900">
+                          {profile.city && profile.state ? `${profile.city}, ${profile.state}` : profile.country || 'Not specified'}
+                        </span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               )}
 
+                            {/* Matched Employee Details Card */}
               {profile.matchedEmployee && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <IconUser className="h-5 w-5" />
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50/50 to-purple-100/30 col-span-1 lg:col-span-2">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-xl flex items-center gap-3 text-purple-900">
+                      <div className="bg-purple-100 p-2 rounded-lg">
+                        <IconLink className="h-6 w-6 text-purple-600" />
+                      </div>
                       Matched Employee Details
-                      <Badge variant="outline" className="ml-2">
-                        <IconLink className="h-3 w-3 mr-1" />
-                        Matched
+                      <Badge variant="outline" className="ml-2 bg-purple-100 text-purple-700 border-purple-300">
+                        <IconCheck className="h-3 w-3 mr-1" />
+                        Auto-Matched
                       </Badge>
                     </CardTitle>
-                    <CardDescription>
-                      Employee information matched with your National ID (Iqama Number)
+                    <CardDescription className="text-purple-700">
+                      Employee information automatically matched with your National ID (Iqama Number)
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">{t('employeeId')}</span>
-                      <span className="text-sm font-medium">{profile.matchedEmployee.employee_id}</span>
+                  <CardContent className="space-y-6">
+                    {/* Basic Information Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <span className="text-xs font-medium text-purple-600 uppercase tracking-wide">Employee ID</span>
+                        <p className="text-sm font-semibold text-purple-900 font-mono">{profile.matchedEmployee.employee_id}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <span className="text-xs font-medium text-purple-600 uppercase tracking-wide">Full Name</span>
+                        <p className="text-sm font-semibold text-purple-900">
+                          {profile.matchedEmployee.first_name} {profile.matchedEmployee.middle_name} {profile.matchedEmployee.last_name}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <span className="text-xs font-medium text-purple-600 uppercase tracking-wide">Nationality</span>
+                        <p className="text-sm font-semibold text-purple-900">{profile.matchedEmployee.nationality || 'Not specified'}</p>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">{t('fullName')}</span>
-                      <span className="text-sm font-medium">
-                        {profile.matchedEmployee.first_name} {profile.matchedEmployee.middle_name} {profile.matchedEmployee.last_name}
-                      </span>
+
+                    <Separator className="my-6" />
+
+                    {/* Detailed Information */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Personal Details */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-semibold text-purple-800 flex items-center gap-2">
+                          <IconUser className="h-4 w-4" />
+                          Personal Details
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                            <span className="text-sm text-purple-700">Date of Birth</span>
+                            <span className="text-sm font-medium text-purple-900">
+                              {formatDate(profile.matchedEmployee.date_of_birth)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                            <span className="text-sm text-purple-700">Hire Date</span>
+                            <span className="text-sm font-medium text-purple-900">
+                              {formatDate(profile.matchedEmployee.hire_date)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                            <span className="text-sm text-purple-700">Phone</span>
+                            <span className="text-sm font-medium text-purple-900">
+                              {profile.matchedEmployee.phone || 'Not specified'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                            <span className="text-sm text-purple-700">Email</span>
+                            <span className="text-sm font-medium text-purple-900">
+                              {profile.matchedEmployee.email || 'Not specified'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Work Details */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-semibold text-purple-800 flex items-center gap-2">
+                          <IconBriefcase className="h-4 w-4" />
+                          Work Details
+                        </h4>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                            <span className="text-sm text-purple-700">Designation</span>
+                            <span className="text-sm font-medium text-purple-900">
+                              {profile.matchedEmployee.designation?.name || 'Not assigned'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                            <span className="text-sm text-purple-700">Department</span>
+                            <span className="text-sm font-medium text-purple-900">
+                              {profile.matchedEmployee.department?.name || 'Not assigned'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                            <span className="text-sm text-purple-700">Address</span>
+                            <span className="text-sm font-medium text-purple-900">
+                              {profile.matchedEmployee.address || 'Not specified'}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
+                            <span className="text-sm text-purple-700">Location</span>
+                            <span className="text-sm font-medium text-purple-900">
+                              {profile.matchedEmployee.city && profile.matchedEmployee.state 
+                                ? `${profile.matchedEmployee.city}, ${profile.matchedEmployee.state}` 
+                                : profile.matchedEmployee.country || 'Not specified'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">{t('nationality')}</span>
-                      <span className="text-sm font-medium">{profile.matchedEmployee.nationality || 'Not specified'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">{t('dateOfBirth')}</span>
-                      <span className="text-sm font-medium">
-                        {formatDate(profile.matchedEmployee.date_of_birth)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">{t('hireDate')}</span>
-                      <span className="text-sm font-medium">
-                        {formatDate(profile.matchedEmployee.hire_date)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">{t('designation')}</span>
-                      <span className="text-sm font-medium">{profile.matchedEmployee.designation?.name || 'Not assigned'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">{t('department')}</span>
-                      <span className="text-sm font-medium">{profile.matchedEmployee.department?.name || 'Not assigned'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">{t('phone')}</span>
-                      <span className="text-sm font-medium">{profile.matchedEmployee.phone || 'Not specified'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">{t('email')}</span>
-                      <span className="text-sm font-medium">{profile.matchedEmployee.email || 'Not specified'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">{t('address')}</span>
-                      <span className="text-sm font-medium">{profile.matchedEmployee.address || 'Not specified'}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">{t('location')}</span>
-                      <span className="text-sm font-medium">
-                        {profile.matchedEmployee.city && profile.matchedEmployee.state 
-                          ? `${profile.matchedEmployee.city}, ${profile.matchedEmployee.state}` 
-                          : profile.matchedEmployee.country || 'Not specified'}
-                      </span>
-                    </div>
+
+                    {/* Documents Section */}
+                    <Separator className="my-6" />
                     
-                    {/* Iqama Information */}
-                    <Separator />
-                    <div className="space-y-2">
-                      <h4 className="text-sm font-medium">{t('iqamaInformation')}</h4>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">{t('iqamaNumber')}</span>
-                        <span className="text-sm font-medium">{profile.matchedEmployee.iqama_number}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-muted-foreground">{t('iqamaExpiry')}</span>
-                        <span className="text-sm font-medium">
-                          {formatDate(profile.matchedEmployee.iqama_expiry)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Passport Information */}
-                    {profile.matchedEmployee.passport_number && (
-                      <>
-                        <Separator />
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium">{t('passportInformation')}</h4>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">{t('passportNumber')}</span>
-                            <span className="text-sm font-medium">{profile.matchedEmployee.passport_number}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">{t('passportExpiry')}</span>
-                            <span className="text-sm font-medium">
-                              {formatDate(profile.matchedEmployee.passport_expiry)}
-                            </span>
-                          </div>
-                        </div>
-                      </>
-                    )}
-
-                    {/* Driving License Information */}
-                    {profile.matchedEmployee.driving_license_number && (
-                      <>
-                        <Separator />
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium">{t('drivingLicense')}</h4>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">{t('licenseNumber')}</span>
-                            <span className="text-sm font-medium">{profile.matchedEmployee.driving_license_number}</span>
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-semibold text-purple-800 flex items-center gap-2">
+                        <IconFileText className="h-4 w-4" />
+                        Documents & Licenses
+                      </h4>
+                      
+                      {/* Iqama Information */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-lg border border-blue-200/50">
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="bg-blue-100 p-2 rounded-lg">
+                              <IconId className="h-5 w-5 text-blue-600" />
                             </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">{t('expiryDate')}</span>
-                            <span className="text-sm font-medium">
-                              {formatDate(profile.matchedEmployee.driving_license_expiry)}
-                            </span>
+                            <div>
+                              <h5 className="font-semibold text-blue-900">Iqama</h5>
+                              <p className="text-xs text-blue-600">Residence Permit</p>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-blue-700">Number:</span>
+                              <span className="font-medium text-blue-900">{profile.matchedEmployee.iqama_number}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-blue-700">Expires:</span>
+                              <span className="font-medium text-blue-900">
+                                {formatDate(profile.matchedEmployee.iqama_expiry)}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </>
-                    )}
 
-                    {/* Operator License Information */}
-                    {profile.matchedEmployee.operator_license_number && (
-                      <>
-                        <Separator />
-                        <div className="space-y-2">
-                          <h4 className="text-sm font-medium">{t('operatorLicense')}</h4>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">{t('licenseNumber')}</span>
-                            <span className="text-sm font-medium">{profile.matchedEmployee.operator_license_number}</span>
+                        {/* Passport Information */}
+                        {profile.matchedEmployee.passport_number && (
+                          <div className="p-4 bg-gradient-to-r from-green-50 to-green-100/50 rounded-lg border border-green-200/50">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="bg-green-100 p-2 rounded-lg">
+                                <IconGlobe className="h-5 w-5 text-green-600" />
+                              </div>
+                              <div>
+                                <h5 className="font-semibold text-green-900">Passport</h5>
+                                <p className="text-xs text-green-600">Travel Document</p>
+                              </div>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-green-700">Number:</span>
+                                <span className="font-medium text-green-900">{profile.matchedEmployee.passport_number}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-green-700">Expires:</span>
+                                <span className="font-medium text-green-900">
+                                  {formatDate(profile.matchedEmployee.passport_expiry)}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">{t('expiryDate')}</span>
-                            <span className="text-sm font-medium">
-                              {formatDate(profile.matchedEmployee.operator_license_expiry)}
-                            </span>
-                          </div>
+                        )}
+                      </div>
+
+                      {/* Additional Licenses */}
+                      {(profile.matchedEmployee.driving_license_number || profile.matchedEmployee.operator_license_number) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {profile.matchedEmployee.driving_license_number && (
+                            <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100/50 rounded-lg border border-orange-200/50">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="bg-orange-100 p-2 rounded-lg">
+                                  <IconCar className="h-5 w-5 text-orange-600" />
+                                </div>
+                                <div>
+                                  <h5 className="font-semibold text-orange-900">Driving License</h5>
+                                  <p className="text-xs text-orange-600">Vehicle Operation</p>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-orange-700">Number:</span>
+                                  <span className="font-medium text-orange-900">{profile.matchedEmployee.driving_license_number}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-orange-700">Expires:</span>
+                                  <span className="font-medium text-orange-900">
+                                    {formatDate(profile.matchedEmployee.driving_license_expiry)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {profile.matchedEmployee.operator_license_number && (
+                            <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100/50 rounded-lg border border-purple-200/50">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="bg-purple-100 p-2 rounded-lg">
+                                  <IconTools className="h-5 w-5 text-purple-600" />
+                                </div>
+                                <div>
+                                  <h5 className="font-semibold text-purple-900">Operator License</h5>
+                                  <p className="text-xs text-purple-600">Equipment Operation</p>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-purple-700">Number:</span>
+                                  <span className="font-medium text-purple-900">{profile.matchedEmployee.operator_license_number}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-purple-700">Expires:</span>
+                                  <span className="font-medium text-purple-900">
+                                    {formatDate(profile.matchedEmployee.operator_license_expiry)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </>
-                    )}
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               )}
 
               {/* Employee Documents Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconUser className="h-5 w-5" />
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-indigo-50/50 to-indigo-100/30">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl flex items-center gap-3 text-indigo-900">
+                    <div className="bg-indigo-100 p-2 rounded-lg">
+                      <IconFileText className="h-6 w-6 text-indigo-600" />
+                    </div>
                     Employee Documents
-                    <Badge variant="outline" className="ml-2">
+                    <Badge variant="outline" className="ml-2 bg-indigo-100 text-indigo-700 border-indigo-300">
                       <IconDatabase className="h-3 w-3 mr-1" />
-                      Documents
+                      {profileStats.documentsCount} Files
                     </Badge>
                   </CardTitle>
-                  <CardDescription>
-                    View your uploaded employee documents including Iqama
+                  <CardDescription className="text-indigo-700">
+                    View and manage your uploaded documents and certificates
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -849,29 +1238,49 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <IconBuilding className="h-5 w-5" />
+              {/* Company Information Card */}
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-amber-50/50 to-amber-100/30">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl flex items-center gap-3 text-amber-900">
+                    <div className="bg-amber-100 p-2 rounded-lg">
+                      <IconBuilding className="h-6 w-6 text-amber-600" />
+                    </div>
                     Company Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">{t('company')}</span>
-                    <span className="text-sm font-medium">SND Rental Management</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">{t('department')}</span>
-                    <span className="text-sm font-medium">{profile.department}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">{t('role')}</span>
-                    <span className="text-sm font-medium">{profile.role}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">{t('location')}</span>
-                    <span className="text-sm font-medium">{profile.location}</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-3 bg-white/50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <IconBuilding className="h-4 w-4 text-amber-600" />
+                        <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">Company</span>
+                      </div>
+                      <p className="text-sm font-semibold text-amber-900">SND Rental Management</p>
+                    </div>
+                    
+                    <div className="p-3 bg-white/50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <IconBriefcase className="h-4 w-4 text-amber-600" />
+                        <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">Department</span>
+                      </div>
+                      <p className="text-sm font-semibold text-amber-900">{profile.department || 'Not assigned'}</p>
+                    </div>
+                    
+                    <div className="p-3 bg-white/50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <IconStar className="h-4 w-4 text-amber-600" />
+                        <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">Role</span>
+                      </div>
+                      <p className="text-sm font-semibold text-amber-900">{profile.role || 'Not assigned'}</p>
+                    </div>
+                    
+                    <div className="p-3 bg-white/50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <IconMapPin className="h-4 w-4 text-amber-600" />
+                        <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">Location</span>
+                      </div>
+                      <p className="text-sm font-semibold text-amber-900">{profile.location || 'Not specified'}</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -879,112 +1288,286 @@ export default function ProfilePage() {
           </TabsContent>
 
           <TabsContent value="notifications" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconBell className="h-5 w-5" />
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50/50 to-blue-100/30">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl flex items-center gap-3 text-blue-900">
+                  <div className="bg-blue-100 p-2 rounded-lg">
+                    <IconBell className="h-6 w-6 text-blue-600" />
+                  </div>
                   Notification Preferences
                 </CardTitle>
-                <CardDescription>
-                  Choose how you want to receive notifications
+                <CardDescription className="text-blue-700">
+                  Manage how you receive notifications and updates across all platforms
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>{t('emailNotifications')}</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {t('emailNotificationsDescription')}
-                      </p>
+              <CardContent className="space-y-8">
+                {/* Email Notifications Section */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-100 p-2 rounded-lg">
+                      <IconMail className="h-5 w-5 text-blue-600" />
                     </div>
-                    <Switch
-                      checked={notifications.emailNotifications}
-                      onCheckedChange={(checked) =>
-                        setNotifications({ ...notifications, emailNotifications: checked })
-                      }
-                    />
+                    <h4 className="text-lg font-semibold text-blue-900">Email Notifications</h4>
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>{t('pushNotifications')}</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {t('pushNotificationsDescription')}
-                      </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="email-news" className="text-sm font-medium text-blue-900">Company News</Label>
+                          <p className="text-xs text-blue-600">Company announcements and updates</p>
+                        </div>
+                        <Switch
+                          id="email-news"
+                          checked={notifications.emailNotifications}
+                          onCheckedChange={(checked) =>
+                            setNotifications({ ...notifications, emailNotifications: checked })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-blue-600">
+                        <IconClock className="h-3 w-3" />
+                        <span>Daily digest</span>
+                      </div>
                     </div>
-                    <Switch
-                      checked={notifications.pushNotifications}
-                      onCheckedChange={(checked) =>
-                        setNotifications({ ...notifications, pushNotifications: checked })
-                      }
-                    />
-                  </div>
 
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>{t('smsNotifications')}</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {t('smsNotificationsDescription')}
-                      </p>
+                    <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="email-updates" className="text-sm font-medium text-blue-900">System Updates</Label>
+                          <p className="text-xs text-blue-600">Maintenance and system changes</p>
+                        </div>
+                        <Switch
+                          id="email-updates"
+                          checked={notifications.securityAlerts}
+                          onCheckedChange={(checked) =>
+                            setNotifications({ ...notifications, securityAlerts: checked })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-blue-600">
+                        <IconAlertTriangle className="h-3 w-3" />
+                        <span>Immediate alerts</span>
+                      </div>
                     </div>
-                    <Switch
-                      checked={notifications.smsNotifications}
-                      onCheckedChange={(checked) =>
-                        setNotifications({ ...notifications, smsNotifications: checked })
-                      }
-                    />
-                  </div>
 
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>{t('marketingEmails')}</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {t('marketingEmailsDescription')}
-                      </p>
+                    <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="email-security" className="text-sm font-medium text-blue-900">Security Alerts</Label>
+                          <p className="text-xs text-blue-600">Critical security notifications</p>
+                        </div>
+                        <Switch
+                          id="email-security"
+                          checked={notifications.securityAlerts}
+                          onCheckedChange={(checked) =>
+                            setNotifications({ ...notifications, securityAlerts: checked })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-blue-600">
+                        <IconShield className="h-3 w-3" />
+                        <span>Priority alerts</span>
+                      </div>
                     </div>
-                    <Switch
-                      checked={notifications.marketingEmails}
-                      onCheckedChange={(checked) =>
-                        setNotifications({ ...notifications, marketingEmails: checked })
-                      }
-                    />
-                  </div>
 
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>{t('securityAlerts')}</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {t('securityAlertsDescription')}
-                      </p>
+                    <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="email-timesheet" className="text-sm font-medium text-blue-900">Weekly Reports</Label>
+                          <p className="text-xs text-blue-600">Weekly submission reminders</p>
+                        </div>
+                        <Switch
+                          id="email-timesheet"
+                          checked={notifications.weeklyReports}
+                          onCheckedChange={(checked) =>
+                            setNotifications({ ...notifications, weeklyReports: checked })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-blue-600">
+                        <IconCalendar className="h-3 w-3" />
+                        <span>Weekly</span>
+                      </div>
                     </div>
-                    <Switch
-                      checked={notifications.securityAlerts}
-                      onCheckedChange={(checked) =>
-                        setNotifications({ ...notifications, securityAlerts: checked })
-                      }
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>{t('weeklyReports')}</Label>
-                      <p className="text-sm text-muted-foreground">
-                        {t('weeklyReportsDescription')}
-                      </p>
-                    </div>
-                    <Switch
-                      checked={notifications.weeklyReports}
-                      onCheckedChange={(checked) =>
-                        setNotifications({ ...notifications, weeklyReports: checked })
-                      }
-                    />
                   </div>
                 </div>
 
-                <div className="flex justify-end">
-                  <Button onClick={handleSaveNotifications} disabled={isSaving}>
-                    {isSaving ? "Saving..." : "Save Preferences"}
+                <Separator className="my-8" />
+
+                {/* Push Notifications Section */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-100 p-2 rounded-lg">
+                      <IconDeviceMobile className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-blue-900">Push Notifications</h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="push-reminders" className="text-sm font-medium text-blue-900">Daily Reminders</Label>
+                          <p className="text-xs text-blue-600">Task and schedule reminders</p>
+                        </div>
+                        <Switch
+                          id="push-reminders"
+                          checked={notifications.pushNotifications}
+                          onCheckedChange={(checked) =>
+                            setNotifications({ ...notifications, pushNotifications: checked })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-blue-600">
+                        <IconBell className="h-3 w-3" />
+                        <span>9:00 AM daily</span>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="push-approvals" className="text-sm font-medium text-blue-900">Approval Requests</Label>
+                          <p className="text-xs text-blue-600">When approval is needed</p>
+                        </div>
+                        <Switch
+                          id="push-approvals"
+                          checked={notifications.pushNotifications}
+                          onCheckedChange={(checked) =>
+                            setNotifications({ ...notifications, pushNotifications: checked })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-blue-600">
+                        <IconCheck className="h-3 w-3" />
+                        <span>Immediate</span>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="push-leave" className="text-sm font-medium text-blue-900">Leave Updates</Label>
+                          <p className="text-xs text-blue-600">Leave request status changes</p>
+                        </div>
+                        <Switch
+                          id="push-leave"
+                          checked={notifications.pushNotifications}
+                          onCheckedChange={(checked) =>
+                            setNotifications({ ...notifications, pushNotifications: checked })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-blue-600">
+                        <IconPlane className="h-3 w-3" />
+                        <span>Status changes</span>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="push-equipment" className="text-sm font-medium text-blue-900">Equipment Alerts</Label>
+                          <p className="text-xs text-blue-600">Maintenance and assignment updates</p>
+                        </div>
+                        <Switch
+                          id="push-equipment"
+                          checked={notifications.pushNotifications}
+                          onCheckedChange={(checked) =>
+                            setNotifications({ ...notifications, pushNotifications: checked })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-blue-600">
+                        <IconSettings className="h-3 w-3" />
+                        <span>Important updates</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Notifications */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-100 p-2 rounded-lg">
+                      <IconMessage className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-blue-900">Additional Notifications</h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="sms-notifications" className="text-sm font-medium text-blue-900">SMS Notifications</Label>
+                          <p className="text-xs text-blue-600">Text message alerts</p>
+                        </div>
+                        <Switch
+                          id="sms-notifications"
+                          checked={notifications.smsNotifications}
+                          onCheckedChange={(checked) =>
+                            setNotifications({ ...notifications, smsNotifications: checked })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-blue-600">
+                        <IconPhone className="h-3 w-3" />
+                        <span>Emergency only</span>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="marketing-emails" className="text-sm font-medium text-blue-900">Marketing Emails</Label>
+                          <p className="text-xs text-blue-600">Promotional content</p>
+                        </div>
+                        <Switch
+                          id="marketing-emails"
+                          checked={notifications.marketingEmails}
+                          onCheckedChange={(checked) =>
+                            setNotifications({ ...notifications, marketingEmails: checked })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-blue-600">
+                        <IconMail className="h-3 w-3" />
+                        <span>Monthly digest</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Notification Summary */}
+                <div className="mt-8 p-4 bg-blue-50/50 rounded-lg border border-blue-200/50">
+                  <div className="flex items-center gap-3">
+                    <IconInfoCircle className="h-5 w-5 text-blue-600" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-900">Notification Summary</p>
+                      <p className="text-xs text-blue-600">
+                        You'll receive notifications through email and push notifications based on your preferences above. 
+                        Critical alerts will always be sent regardless of settings.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end pt-4">
+                  <Button 
+                    onClick={handleSaveNotifications} 
+                    disabled={isSaving}
+                    className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+                  >
+                    {isSaving ? (
+                      <>
+                        <IconLoader className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <IconDeviceFloppy className="h-4 w-4 mr-2" />
+                        Save Preferences
+                      </>
+                    )}
                   </Button>
                 </div>
               </CardContent>
@@ -992,102 +1575,218 @@ export default function ProfilePage() {
           </TabsContent>
 
           <TabsContent value="appearance" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconPalette className="h-5 w-5" />
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50/50 to-purple-100/30">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl flex items-center gap-3 text-purple-900">
+                  <div className="bg-purple-100 p-2 rounded-lg">
+                    <IconPalette className="h-6 w-6 text-purple-600" />
+                  </div>
                   Appearance Settings
                 </CardTitle>
-                <CardDescription>
-                  Customize your interface appearance and preferences
+                <CardDescription className="text-purple-700">
+                  Customize your interface appearance and preferences for the best experience
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="theme">{t('theme')}</Label>
-                    <Select
-                      value={appearance.theme}
-                      onValueChange={(value) =>
-                        setAppearance({ ...appearance, theme: value as "light" | "dark" | "system" })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="light">{t('lightTheme')}</SelectItem>
-                        <SelectItem value="dark">{t('darkTheme')}</SelectItem>
-                        <SelectItem value="system">{t('systemTheme')}</SelectItem>
-                      </SelectContent>
-                    </Select>
+              <CardContent className="space-y-8">
+                {/* Theme Selection */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-purple-100 p-2 rounded-lg">
+                      <IconSun className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-purple-900">Theme & Display</h4>
                   </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="p-4 bg-white/50 rounded-lg border border-purple-200/50">
+                      <div className="space-y-3">
+                        <Label htmlFor="theme" className="text-sm font-medium text-purple-900">Theme Mode</Label>
+                        <Select
+                          value={appearance.theme}
+                          onValueChange={(value) =>
+                            setAppearance({ ...appearance, theme: value as "light" | "dark" | "system" })
+                          }
+                        >
+                          <SelectTrigger className="bg-white/70 border-purple-200">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="light">
+                              <div className="flex items-center gap-2">
+                                <IconSun className="h-4 w-4" />
+                                Light Theme
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="dark">
+                              <div className="flex items-center gap-2">
+                                <IconMoon className="h-4 w-4" />
+                                Dark Theme
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="system">
+                              <div className="flex items-center gap-2">
+                                <IconDeviceDesktop className="h-4 w-4" />
+                                System Default
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-purple-600">Choose your preferred color scheme</p>
+                      </div>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="language">{t('language')}</Label>
-                    <Select
-                      value={appearance.language}
-                      onValueChange={(value) =>
-                        setAppearance({ ...appearance, language: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="en">{t('english')}</SelectItem>
-                        <SelectItem value="es">{t('spanish')}</SelectItem>
-                        <SelectItem value="fr">{t('french')}</SelectItem>
-                        <SelectItem value="de">{t('german')}</SelectItem>
-                        <SelectItem value="ar">{t('arabic')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="timezone">{t('timezone')}</Label>
-                    <Select
-                      value={appearance.timezone}
-                      onValueChange={(value) =>
-                        setAppearance({ ...appearance, timezone: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="America/New_York">{t('easternTime')}</SelectItem>
-                        <SelectItem value="America/Chicago">{t('centralTime')}</SelectItem>
-                        <SelectItem value="America/Denver">{t('mountainTime')}</SelectItem>
-                        <SelectItem value="America/Los_Angeles">{t('pacificTime')}</SelectItem>
-                        <SelectItem value="UTC">{t('utc')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="dateFormat">{t('dateFormat')}</Label>
-                    <Select
-                      value={appearance.dateFormat}
-                      onValueChange={(value) =>
-                        setAppearance({ ...appearance, dateFormat: value })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="MM/DD/YYYY">{t('mmddyyyy')}</SelectItem>
-                        <SelectItem value="DD/MM/YYYY">{t('ddmmyyyy')}</SelectItem>
-                        <SelectItem value="YYYY-MM-DD">{t('yyyyMmdd')}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="p-4 bg-white/50 rounded-lg border border-purple-200/50">
+                      <div className="space-y-3">
+                        <Label htmlFor="language" className="text-sm font-medium text-purple-900">Language</Label>
+                        <Select
+                          value={appearance.language}
+                          onValueChange={(value) =>
+                            setAppearance({ ...appearance, language: value })
+                          }
+                        >
+                          <SelectTrigger className="bg-white/70 border-purple-200">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="en">
+                              <div className="flex items-center gap-2">
+                                <IconFlag className="h-4 w-4" />
+                                English
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="es">
+                              <div className="flex items-center gap-2">
+                                <IconFlag className="h-4 w-4" />
+                                Español
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="fr">
+                              <div className="flex items-center gap-2">
+                                <IconFlag className="h-4 w-4" />
+                                Français
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="de">
+                              <div className="flex items-center gap-2">
+                                <IconFlag className="h-4 w-4" />
+                                Deutsch
+                              </div>
+                            </SelectItem>
+                            <SelectItem value="ar">
+                              <div className="flex items-center gap-2">
+                                <IconFlag className="h-4 w-4" />
+                                العربية
+                              </div>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-purple-600">Select your preferred language</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex justify-end">
-                  <Button onClick={handleSaveAppearance} disabled={isSaving}>
-                    {isSaving ? "Saving..." : "Save Settings"}
+                <Separator className="my-8" />
+
+                {/* Time & Date Settings */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-purple-100 p-2 rounded-lg">
+                      <IconClock className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-purple-900">Time & Date</h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="p-4 bg-white/50 rounded-lg border border-purple-200/50">
+                      <div className="space-y-3">
+                        <Label htmlFor="timezone" className="text-sm font-medium text-purple-900">Timezone</Label>
+                        <Select
+                          value={appearance.timezone}
+                          onValueChange={(value) =>
+                            setAppearance({ ...appearance, timezone: value })
+                          }
+                        >
+                          <SelectTrigger className="bg-white/70 border-purple-200">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
+                            <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
+                            <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
+                            <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
+                            <SelectItem value="UTC">UTC (Coordinated Universal Time)</SelectItem>
+                            <SelectItem value="Europe/London">London (GMT)</SelectItem>
+                            <SelectItem value="Asia/Dubai">Dubai (GST)</SelectItem>
+                            <SelectItem value="Asia/Riyadh">Riyadh (AST)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-purple-600">Set your local timezone</p>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-white/50 rounded-lg border border-purple-200/50">
+                      <div className="space-y-3">
+                        <Label htmlFor="dateFormat" className="text-sm font-medium text-purple-900">Date Format</Label>
+                        <Select
+                          value={appearance.dateFormat}
+                          onValueChange={(value) =>
+                            setAppearance({ ...appearance, dateFormat: value })
+                          }
+                        >
+                          <SelectTrigger className="bg-white/70 border-purple-200">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="MM/DD/YYYY">MM/DD/YYYY (US Format)</SelectItem>
+                            <SelectItem value="DD/MM/YYYY">DD/MM/YYYY (European Format)</SelectItem>
+                            <SelectItem value="YYYY-MM-DD">YYYY-MM-DD (ISO Format)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-purple-600">Choose your preferred date format</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Preview Section */}
+                <div className="p-4 bg-white/50 rounded-lg border border-purple-200/50">
+                  <div className="flex items-center gap-3 mb-4">
+                    <IconEye className="h-5 w-5 text-purple-600" />
+                    <h4 className="text-lg font-semibold text-purple-900">Preview</h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                      <p className="text-sm font-medium text-purple-900">Current Theme</p>
+                      <p className="text-xs text-purple-600 capitalize">{appearance.theme}</p>
+                    </div>
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                      <p className="text-sm font-medium text-purple-900">Language</p>
+                      <p className="text-xs text-purple-600">{appearance.language === 'en' ? 'English' : appearance.language}</p>
+                    </div>
+                    <div className="text-center p-3 bg-purple-50 rounded-lg">
+                      <p className="text-sm font-medium text-purple-900">Date Format</p>
+                      <p className="text-xs text-purple-600">{appearance.dateFormat}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="flex justify-end pt-4">
+                  <Button 
+                    onClick={handleSaveAppearance} 
+                    disabled={isSaving}
+                    className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg"
+                  >
+                    {isSaving ? (
+                      <>
+                        <IconLoader className="h-4 w-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <IconDeviceFloppy className="h-4 w-4 mr-2" />
+                        Save Settings
+                      </>
+                    )}
                   </Button>
                 </div>
               </CardContent>
