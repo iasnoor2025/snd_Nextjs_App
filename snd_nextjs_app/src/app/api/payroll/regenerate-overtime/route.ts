@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { payrolls, employees, payrollItems } from '@/lib/drizzle/schema';
+import { eq, gt, and } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
@@ -7,7 +9,8 @@ export async function POST(request: NextRequest) {
     
     // Test basic connection first
     try {
-      await prisma.$connect();
+      // Test connection with a simple query
+      await db.select({ count: 1 }).from(employees).limit(1);
       console.log('✅ Database connection successful');
     } catch (connectionError) {
       console.error('❌ Database connection failed:', connectionError);
@@ -21,110 +24,126 @@ export async function POST(request: NextRequest) {
     }
     
     // Get all payrolls that have overtime hours but 0 overtime amount
-    const payrollsToUpdate = await prisma.payroll.findMany({
-      where: {
-        overtime_hours: {
-          gt: 0
-        },
-        overtime_amount: 0
-      },
-      include: {
+    const payrollsToUpdateData = await db
+      .select({
+        id: payrolls.id,
+        month: payrolls.month,
+        year: payrolls.year,
+        overtimeHours: payrolls.overtimeHours,
+        overtimeAmount: payrolls.overtimeAmount,
+        baseSalary: payrolls.baseSalary,
+        bonusAmount: payrolls.bonusAmount,
+        deductionAmount: payrolls.deductionAmount,
         employee: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            basic_salary: true,
-            contract_days_per_month: true,
-            contract_hours_per_day: true,
-            overtime_rate_multiplier: true,
-            overtime_fixed_rate: true
-          }
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          basicSalary: employees.basicSalary,
+          contractDaysPerMonth: employees.contractDaysPerMonth,
+          contractHoursPerDay: employees.contractHoursPerDay,
+          overtimeRateMultiplier: employees.overtimeRateMultiplier,
+          overtimeFixedRate: employees.overtimeFixedRate
         }
-      }
-    });
+      })
+      .from(payrolls)
+      .leftJoin(employees, eq(payrolls.employeeId, employees.id))
+      .where(
+        and(
+          gt(payrolls.overtimeHours, 0),
+          eq(payrolls.overtimeAmount, '0')
+        )
+      );
 
-    console.log(`Found ${payrollsToUpdate.length} payrolls to update`);
+    console.log(`Found ${payrollsToUpdateData.length} payrolls to update`);
 
     const updatedPayrolls: string[] = [];
     const errors: string[] = [];
 
-    for (const payroll of payrollsToUpdate) {
+    for (const payroll of payrollsToUpdateData) {
       try {
-        console.log(`Updating payroll for ${payroll.employee.first_name} ${payroll.employee.last_name} - ${payroll.month}/${payroll.year}`);
+        console.log(`Updating payroll for ${payroll.employee.firstName} ${payroll.employee.lastName} - ${payroll.month}/${payroll.year}`);
         
-                 // Calculate overtime amount based on employee's overtime settings
-         let overtimeAmount = 0;
-         if (Number(payroll.overtime_hours) > 0) {
-           // Use the formula: basic/30/8*overtime rate
-           const basicSalary = Number(payroll.employee.basic_salary);
-           const hourlyRate = basicSalary / 30 / 8; // basic/30/8
+        // Calculate overtime amount based on employee's overtime settings
+        let overtimeAmount = 0;
+        if (Number(payroll.overtimeHours) > 0) {
+          // Use the formula: basic/30/8*overtime rate
+          const basicSalary = Number(payroll.employee.basicSalary);
+          const hourlyRate = basicSalary / 30 / 8; // basic/30/8
 
-           console.log(`Overtime calculation for ${payroll.employee.first_name} ${payroll.employee.last_name}:`);
-           console.log(`- Total overtime hours: ${payroll.overtime_hours}`);
-           console.log(`- Basic salary: ${basicSalary}`);
-           console.log(`- Hourly rate (basic/30/8): ${hourlyRate}`);
-           console.log(`- Overtime fixed rate: ${payroll.employee.overtime_fixed_rate}`);
-           console.log(`- Overtime rate multiplier: ${payroll.employee.overtime_rate_multiplier}`);
+          console.log(`Overtime calculation for ${payroll.employee.firstName} ${payroll.employee.lastName}:`);
+          console.log(`- Total overtime hours: ${payroll.overtimeHours}`);
+          console.log(`- Basic salary: ${basicSalary}`);
+          console.log(`- Hourly rate (basic/30/8): ${hourlyRate}`);
+          console.log(`- Overtime fixed rate: ${payroll.employee.overtimeFixedRate}`);
+          console.log(`- Overtime rate multiplier: ${payroll.employee.overtimeRateMultiplier}`);
 
-           // Use employee's overtime settings
-           if (payroll.employee.overtime_fixed_rate && Number(payroll.employee.overtime_fixed_rate) > 0) {
-             // Use fixed overtime rate
-             overtimeAmount = Number(payroll.overtime_hours) * Number(payroll.employee.overtime_fixed_rate);
-             console.log(`- Using fixed rate: ${payroll.employee.overtime_fixed_rate} SAR/hr`);
-           } else {
-             // Use overtime multiplier with basic/30/8 formula
-             const overtimeMultiplier = Number(payroll.employee.overtime_rate_multiplier) || 1.5;
-             overtimeAmount = Number(payroll.overtime_hours) * (hourlyRate * overtimeMultiplier);
-             console.log(`- Using multiplier: ${overtimeMultiplier}x (basic/30/8 formula)`);
-           }
-           
-           console.log(`- Final overtime amount: ${overtimeAmount}`);
-         }
+          // Use employee's overtime settings
+          if (payroll.employee.overtimeFixedRate && Number(payroll.employee.overtimeFixedRate) > 0) {
+            // Use fixed overtime rate
+            overtimeAmount = Number(payroll.overtimeHours) * Number(payroll.employee.overtimeFixedRate);
+            console.log(`- Using fixed rate: ${payroll.employee.overtimeFixedRate} SAR/hr`);
+          } else {
+            // Use overtime multiplier with basic/30/8 formula
+            const overtimeMultiplier = Number(payroll.employee.overtimeRateMultiplier) || 1.5;
+            overtimeAmount = Number(payroll.overtimeHours) * (hourlyRate * overtimeMultiplier);
+            console.log(`- Using multiplier: ${overtimeMultiplier}x (basic/30/8 formula)`);
+          }
+          
+          console.log(`- Final overtime amount: ${overtimeAmount}`);
+        }
 
         // Update the payroll
-        const updatedPayroll = await prisma.payroll.update({
-          where: { id: payroll.id },
-          data: {
-            overtime_amount: overtimeAmount,
-            final_amount: Number(payroll.base_salary) + overtimeAmount + Number(payroll.bonus_amount) - Number(payroll.deduction_amount)
-          }
-        });
+        const updatedPayrollsResult = await db
+          .update(payrolls)
+          .set({
+            overtimeAmount: overtimeAmount.toString(),
+            finalAmount: (Number(payroll.baseSalary) + overtimeAmount + Number(payroll.bonusAmount) - Number(payroll.deductionAmount)).toString(),
+            updatedAt: new Date().toISOString()
+          })
+          .where(eq(payrolls.id, payroll.id))
+          .returning();
 
         // Update or create overtime payroll item
-        const existingOvertimeItem = await prisma.payrollItem.findFirst({
-          where: {
-            payroll_id: payroll.id,
-            type: 'overtime'
-          }
-        });
+        const existingOvertimeItemData = await db
+          .select({ id: payrollItems.id })
+          .from(payrollItems)
+          .where(
+            and(
+              eq(payrollItems.payrollId, payroll.id),
+              eq(payrollItems.type, 'overtime')
+            )
+          )
+          .limit(1);
 
-        if (existingOvertimeItem) {
+        if (existingOvertimeItemData[0]) {
           // Update existing overtime item
-          await prisma.payrollItem.update({
-            where: { id: existingOvertimeItem.id },
-            data: {
-              amount: overtimeAmount,
-              description: payroll.employee.overtime_fixed_rate && Number(payroll.employee.overtime_fixed_rate) > 0 
-                ? `Overtime Pay (Fixed Rate: ${payroll.employee.overtime_fixed_rate} SAR/hr)`
-                : `Overtime Pay (${Number(payroll.employee.overtime_rate_multiplier) || 1.5}x Rate)`
-            }
-          });
+          await db
+            .update(payrollItems)
+            .set({
+              amount: overtimeAmount.toString(),
+              description: payroll.employee.overtimeFixedRate && Number(payroll.employee.overtimeFixedRate) > 0 
+                ? `Overtime Pay (Fixed Rate: ${payroll.employee.overtimeFixedRate} SAR/hr)`
+                : `Overtime Pay (${Number(payroll.employee.overtimeRateMultiplier) || 1.5}x Rate)`,
+              updatedAt: new Date().toISOString()
+            })
+            .where(eq(payrollItems.id, existingOvertimeItemData[0].id));
         } else if (overtimeAmount > 0) {
           // Create new overtime item
-          await prisma.payrollItem.create({
-            data: {
-              payroll_id: payroll.id,
+          await db
+            .insert(payrollItems)
+            .values({
+              payrollId: payroll.id,
               type: 'overtime',
-              description: payroll.employee.overtime_fixed_rate && Number(payroll.employee.overtime_fixed_rate) > 0 
-                ? `Overtime Pay (Fixed Rate: ${payroll.employee.overtime_fixed_rate} SAR/hr)`
-                : `Overtime Pay (${Number(payroll.employee.overtime_rate_multiplier) || 1.5}x Rate)`,
-              amount: overtimeAmount,
-              is_taxable: true,
-              tax_rate: 15,
-              order: 2
-            }
-          });
+              description: payroll.employee.overtimeFixedRate && Number(payroll.employee.overtimeFixedRate) > 0 
+                ? `Overtime Pay (Fixed Rate: ${payroll.employee.overtimeFixedRate} SAR/hr)`
+                : `Overtime Pay (${Number(payroll.employee.overtimeRateMultiplier) || 1.5}x Rate)`,
+              amount: overtimeAmount.toString(),
+              isTaxable: true,
+              taxRate: '15',
+              order: 2,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            });
         }
 
         updatedPayrolls.push(payroll.id.toString());
@@ -169,11 +188,5 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
-  } finally {
-    try {
-      await prisma.$disconnect();
-    } catch (disconnectError) {
-      console.error('Error disconnecting from database:', disconnectError);
-    }
   }
 } 

@@ -1,24 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { payrolls, employees } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: payrollId } = await params;
+    const { id: payrollId } = params;
     const id = parseInt(payrollId);
 
-    // Connect to database
-    await prisma.$connect();
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid payroll ID' },
+        { status: 400 }
+      );
+    }
 
     // Check if payroll exists
-    const payroll = await prisma.payroll.findUnique({
-      where: { id: id },
-      include: { employee: true }
-    });
+    const payrollData = await db
+      .select({
+        id: payrolls.id,
+        status: payrolls.status,
+        employeeId: payrolls.employeeId,
+        employee: {
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+        }
+      })
+      .from(payrolls)
+      .leftJoin(employees, eq(payrolls.employeeId, employees.id))
+      .where(eq(payrolls.id, id))
+      .limit(1);
 
-    if (!payroll) {
+    if (!payrollData[0]) {
       return NextResponse.json(
         {
           success: false,
@@ -27,6 +45,8 @@ export async function POST(
         { status: 404 }
       );
     }
+
+    const payroll = payrollData[0];
 
     // Check if payroll can be approved
     if (payroll.status !== 'pending') {
@@ -40,20 +60,25 @@ export async function POST(
     }
 
     // Approve the payroll
-    const updatedPayroll = await prisma.payroll.update({
-      where: { id: id },
-      data: {
+    const updatedPayrolls = await db
+      .update(payrolls)
+      .set({
         status: 'approved',
-        approved_by: 1, // Mock user ID - in real app, get from session
-        approved_at: new Date(),
-        updated_at: new Date()
-      },
-      include: { employee: true }
-    });
+        approvedBy: 1, // Mock user ID - in real app, get from session
+        approvedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      })
+      .where(eq(payrolls.id, id))
+      .returning();
+
+    const updatedPayroll = updatedPayrolls[0];
 
     return NextResponse.json({
       success: true,
-      data: updatedPayroll,
+      data: {
+        ...updatedPayroll,
+        employee: payroll.employee
+      },
       message: 'Payroll approved successfully'
     });
   } catch (error) {
@@ -65,7 +90,5 @@ export async function POST(
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

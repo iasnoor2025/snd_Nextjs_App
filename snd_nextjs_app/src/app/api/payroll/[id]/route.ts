@@ -1,70 +1,163 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { payrolls, payrollItems, employees } from '@/lib/drizzle/schema';
+import { db } from '@/lib/drizzle';
+import { payrolls, employees, payrollItems, departments, designations } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: idParam } = await params;
+    const { id: idParam } = params;
     const id = parseInt(idParam);
 
-    // Get payroll with employee and items using Drizzle
-    const payrollRows = await db
-      .select()
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid payroll ID' },
+        { status: 400 }
+      );
+    }
+
+    const payrollData = await db
+      .select({
+        id: payrolls.id,
+        employeeId: payrolls.employeeId,
+        month: payrolls.month,
+        year: payrolls.year,
+        baseSalary: payrolls.baseSalary,
+        overtimeAmount: payrolls.overtimeAmount,
+        bonusAmount: payrolls.bonusAmount,
+        deductionAmount: payrolls.deductionAmount,
+        advanceDeduction: payrolls.advanceDeduction,
+        finalAmount: payrolls.finalAmount,
+        totalWorkedHours: payrolls.totalWorkedHours,
+        overtimeHours: payrolls.overtimeHours,
+        status: payrolls.status,
+        notes: payrolls.notes,
+        approvedBy: payrolls.approvedBy,
+        approvedAt: payrolls.approvedAt,
+        paidBy: payrolls.paidBy,
+        paidAt: payrolls.paidAt,
+        paymentMethod: payrolls.paymentMethod,
+        paymentReference: payrolls.paymentReference,
+        paymentStatus: payrolls.paymentStatus,
+        currency: payrolls.currency,
+        createdAt: payrolls.createdAt,
+        updatedAt: payrolls.updatedAt,
+        employee: {
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          email: employees.email,
+          phone: employees.phone,
+          basicSalary: employees.basicSalary,
+          departmentId: employees.departmentId,
+          designationId: employees.designationId,
+        },
+        department: {
+          id: departments.id,
+          name: departments.name,
+        },
+        designation: {
+          id: designations.id,
+          name: designations.name,
+        }
+      })
       .from(payrolls)
+      .leftJoin(employees, eq(payrolls.employeeId, employees.id))
+      .leftJoin(departments, eq(employees.departmentId, departments.id))
+      .leftJoin(designations, eq(employees.designationId, designations.id))
       .where(eq(payrolls.id, id))
       .limit(1);
 
-    if (payrollRows.length === 0) {
+    if (!payrollData || payrollData.length === 0) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Payroll not found'
-        },
+        { success: false, error: 'Payroll not found' },
         { status: 404 }
       );
     }
 
-    const payroll = payrollRows[0];
+    const payroll = payrollData[0];
 
-    // Get payroll items using Drizzle
-    const payrollItemsRows = await db
-      .select()
+    // Get payroll items
+    const payrollItemsData = await db
+      .select({
+        id: payrollItems.id,
+        payrollId: payrollItems.payrollId,
+        type: payrollItems.type,
+        description: payrollItems.description,
+        amount: payrollItems.amount,
+        isTaxable: payrollItems.isTaxable,
+        taxRate: payrollItems.taxRate,
+        order: payrollItems.order,
+        createdAt: payrollItems.createdAt,
+        updatedAt: payrollItems.updatedAt,
+      })
       .from(payrollItems)
       .where(eq(payrollItems.payrollId, id))
       .orderBy(payrollItems.order);
 
-    // Get employee data using Drizzle
-    const employeeRows = await db
-      .select()
-      .from(employees)
-      .where(eq(employees.id, payroll.employeeId))
-      .limit(1);
-
-    const employee = employeeRows[0] || null;
-
-    // Format response to match expected structure
-    const formattedPayroll = {
-      ...payroll,
-      employee,
-      items: payrollItemsRows
+    // Transform data to match frontend expectations (snake_case)
+    const transformedPayroll = {
+      id: payroll.id,
+      employee_id: payroll.employeeId,
+      month: payroll.month,
+      year: payroll.year,
+      base_salary: Number(payroll.baseSalary),
+      overtime_amount: Number(payroll.overtimeAmount),
+      bonus_amount: Number(payroll.bonusAmount),
+      deduction_amount: Number(payroll.deductionAmount),
+      advance_deduction: Number(payroll.advanceDeduction),
+      final_amount: Number(payroll.finalAmount),
+      total_worked_hours: Number(payroll.totalWorkedHours),
+      overtime_hours: Number(payroll.overtimeHours),
+      status: payroll.status,
+      notes: payroll.notes,
+      approved_by: payroll.approvedBy,
+      approved_at: payroll.approvedAt,
+      paid_by: payroll.paidBy,
+      paid_at: payroll.paidAt,
+      payment_method: payroll.paymentMethod,
+      payment_reference: payroll.paymentReference,
+      payment_status: payroll.paymentStatus,
+      currency: payroll.currency,
+      created_at: payroll.createdAt,
+      updated_at: payroll.updatedAt,
+      employee: {
+        id: payroll.employee?.id || 0,
+        first_name: payroll.employee?.firstName || '',
+        last_name: payroll.employee?.lastName || '',
+        full_name: payroll.employee ? `${payroll.employee.firstName} ${payroll.employee.lastName}` : '',
+        file_number: payroll.employee?.fileNumber || '',
+        basic_salary: Number(payroll.employee?.basicSalary || 0),
+        department: payroll.department?.name || '',
+        designation: payroll.designation?.name || '',
+        status: 'active' // Default status
+      },
+      items: payrollItemsData.map(item => ({
+        id: item.id,
+        payroll_id: item.payrollId,
+        type: item.type,
+        description: item.description,
+        amount: Number(item.amount),
+        is_taxable: item.isTaxable,
+        tax_rate: Number(item.taxRate),
+        order: item.order,
+        created_at: item.createdAt,
+        updated_at: item.updatedAt,
+      }))
     };
 
     return NextResponse.json({
       success: true,
-      data: formattedPayroll,
-      message: 'Payroll retrieved successfully'
+      data: transformedPayroll
     });
+
   } catch (error) {
-    console.error('Error retrieving payroll:', error);
+    console.error('Error fetching payroll:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Error retrieving payroll: ' + (error as Error).message
-      },
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -72,99 +165,99 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: idParam } = await params;
-    const id = parseInt(idParam);
-    const body = await request.json();
-    const { base_salary, overtime_amount, bonus_amount, deduction_amount, advance_deduction, notes, status } = body;
+    const id = parseInt(params.id);
+    
+    if (isNaN(id)) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid payroll ID' },
+        { status: 400 }
+      );
+    }
 
-    // Check if payroll exists using Drizzle
-    const existingPayrollRows = await db
-      .select()
+    const body = await request.json();
+
+    // Check if payroll exists
+    const existingPayroll = await db
+      .select({ id: payrolls.id })
       .from(payrolls)
       .where(eq(payrolls.id, id))
       .limit(1);
 
-    if (existingPayrollRows.length === 0) {
+    if (existingPayroll.length === 0) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Payroll not found'
-        },
+        { success: false, message: 'Payroll not found' },
         { status: 404 }
       );
     }
 
-    const existingPayroll = existingPayrollRows[0];
-
-    // Helper function to validate numeric values
-    const isValidNumber = (value: any): boolean => {
-      return value !== undefined && value !== null && !isNaN(Number(value));
-    };
-
     // Calculate final amount
-    const finalAmount = (isValidNumber(base_salary) ? base_salary : existingPayroll.baseSalary) + 
-                       (isValidNumber(overtime_amount) ? overtime_amount : existingPayroll.overtimeAmount) + 
-                       (isValidNumber(bonus_amount) ? bonus_amount : existingPayroll.bonusAmount) - 
-                       (isValidNumber(deduction_amount) ? deduction_amount : existingPayroll.deductionAmount) - 
-                       (isValidNumber(advance_deduction) ? advance_deduction : existingPayroll.advanceDeduction);
+    const baseSalary = Number(body.baseSalary) || 0;
+    const overtimeAmount = Number(body.overtimeAmount) || 0;
+    const bonusAmount = Number(body.bonusAmount) || 0;
+    const deductionAmount = Number(body.deductionAmount) || 0;
+    const advanceDeduction = Number(body.advanceDeduction) || 0;
+    
+    const finalAmount = baseSalary + overtimeAmount + bonusAmount - deductionAmount - advanceDeduction;
 
-    // Update payroll using Drizzle
-    const updatedPayrollRows = await db
+    // Update payroll
+    const updatedPayrolls = await db
       .update(payrolls)
       .set({
-        baseSalary: isValidNumber(base_salary) ? base_salary.toString() : existingPayroll.baseSalary,
-        overtimeAmount: isValidNumber(overtime_amount) ? overtime_amount.toString() : existingPayroll.overtimeAmount,
-        bonusAmount: isValidNumber(bonus_amount) ? bonus_amount.toString() : existingPayroll.bonusAmount,
-        deductionAmount: isValidNumber(deduction_amount) ? deduction_amount.toString() : existingPayroll.deductionAmount,
-        advanceDeduction: isValidNumber(advance_deduction) ? advance_deduction.toString() : existingPayroll.advanceDeduction,
+        baseSalary: baseSalary.toString(),
+        overtimeAmount: overtimeAmount.toString(),
+        bonusAmount: bonusAmount.toString(),
+        deductionAmount: deductionAmount.toString(),
+        advanceDeduction: advanceDeduction.toString(),
         finalAmount: finalAmount.toString(),
-        notes: notes !== undefined ? notes : existingPayroll.notes,
-        status: status !== undefined ? status : existingPayroll.status,
-        updatedAt: new Date().toISOString()
+        totalWorkedHours: (body.totalWorkedHours || 0).toString(),
+        overtimeHours: (body.overtimeHours || 0).toString(),
+        status: body.status || 'pending',
+        notes: body.notes || '',
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(payrolls.id, id))
       .returning();
 
-    const updatedPayroll = updatedPayrollRows[0];
+    const updatedPayroll = updatedPayrolls[0];
 
-    // Get updated payroll items using Drizzle
-    const updatedPayrollItemsRows = await db
-      .select()
-      .from(payrollItems)
-      .where(eq(payrollItems.payrollId, id))
-      .orderBy(payrollItems.order);
+    // Update payroll items if provided
+    if (body.items && Array.isArray(body.items)) {
+      // Delete existing items
+      await db
+        .delete(payrollItems)
+        .where(eq(payrollItems.payrollId, id));
 
-    // Get employee data using Drizzle
-    const employeeRows = await db
-      .select()
-      .from(employees)
-      .where(eq(employees.id, updatedPayroll.employeeId))
-      .limit(1);
+      // Create new items
+      const payrollItemsData = body.items.map((item: any, index: number) => ({
+        payrollId: id,
+        type: item.type || 'earnings',
+        description: item.description || '',
+        amount: (item.amount || 0).toString(),
+        isTaxable: item.isTaxable || false,
+        taxRate: (item.taxRate || 0).toString(),
+        order: index + 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }));
 
-    const employee = employeeRows[0] || null;
-
-    // Format response to match expected structure
-    const formattedUpdatedPayroll = {
-      ...updatedPayroll,
-      employee,
-      items: updatedPayrollItemsRows
-    };
+      await db
+        .insert(payrollItems)
+        .values(payrollItemsData);
+    }
 
     return NextResponse.json({
       success: true,
-      data: formattedUpdatedPayroll,
-      message: 'Payroll updated successfully'
+      message: 'Payroll updated successfully',
+      data: updatedPayroll
     });
+
   } catch (error) {
     console.error('Error updating payroll:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Error updating payroll: ' + (error as Error).message
-      },
+      { success: false, message: 'Failed to update payroll' },
       { status: 500 }
     );
   }
@@ -172,48 +265,38 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id: idParam } = await params;
-    const id = parseInt(idParam);
-
-    // Check if payroll exists using Drizzle
-    const payrollRows = await db
-      .select()
-      .from(payrolls)
-      .where(eq(payrolls.id, id))
-      .limit(1);
-
-    if (payrollRows.length === 0) {
+    const id = parseInt(params.id);
+    
+    if (isNaN(id)) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Payroll not found'
-        },
-        { status: 404 }
-      );
-    }
-
-    const payroll = payrollRows[0];
-
-    // Check if payroll is paid - if so, prevent deletion
-    if (payroll.status === 'paid') {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Cannot delete paid payroll'
-        },
+        { success: false, message: 'Invalid payroll ID' },
         { status: 400 }
       );
     }
 
-    // Delete payroll items first (cascade) using Drizzle
+    // Check if payroll exists
+    const existingPayroll = await db
+      .select({ id: payrolls.id })
+      .from(payrolls)
+      .where(eq(payrolls.id, id))
+      .limit(1);
+
+    if (existingPayroll.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'Payroll not found' },
+        { status: 404 }
+      );
+    }
+
+    // Delete payroll items first
     await db
       .delete(payrollItems)
       .where(eq(payrollItems.payrollId, id));
 
-    // Delete payroll using Drizzle
+    // Delete payroll
     await db
       .delete(payrolls)
       .where(eq(payrolls.id, id));
@@ -222,13 +305,11 @@ export async function DELETE(
       success: true,
       message: 'Payroll deleted successfully'
     });
+
   } catch (error) {
     console.error('Error deleting payroll:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Error deleting payroll: ' + (error as Error).message
-      },
+      { success: false, message: 'Failed to delete payroll' },
       { status: 500 }
     );
   }

@@ -1,699 +1,882 @@
 "use client"
 
-import { ChartAreaSimple } from "@/components/chart-area-simple"
-import { DataTable } from "@/components/data-table-simple"
-import { SectionCards } from "@/components/section-cards"
-import { SSEStatusCompact } from "@/components/sse-status"
-import { useSidebar } from "@/components/ui/sidebar"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
-import { useEffect, useMemo, useState } from "react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-// i18n refactor: All user-facing strings now use useTranslation('dashboard')
+import { useEffect, useState } from "react"
 import { useTranslation } from 'react-i18next'
+import { 
+  Card, 
+  CardContent, 
+  CardDescription, 
+  CardHeader, 
+  CardTitle 
+} from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table"
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from "@/components/ui/pagination"
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { 
+  Users, 
+  Calendar, 
+  TrendingUp, 
+  AlertTriangle, 
+  Building2, 
+  Wrench, 
+  Truck, 
+  FileText,
+  Search,
+  Filter,
+  RefreshCw,
+  Eye,
+  Edit,
+  Plus,
+  DollarSign,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Activity,
+  BarChart3,
+  PieChart,
+  Target,
+  Zap,
+  Shield,
+  Settings,
+  Database,
+  Globe,
+  Briefcase,
+  Home,
+  Car,
+  Plane,
+  Ship
+} from "lucide-react"
+import { RoleBased } from "@/lib/rbac/rbac-components"
 
-import data from "./data.json"
+// Types for real data
+interface DashboardStats {
+  totalEmployees: number
+  activeProjects: number
+  availableEquipment: number
+  monthlyRevenue: number
+  pendingApprovals: number
+  activeRentals: number
+  totalCustomers: number
+  equipmentUtilization: number
+}
 
-export default function Page() {
+interface IqamaExpiring {
+  id: string
+  employeeName: string
+  fileNumber: string
+  iqamaNumber: string
+  expiryDate: string
+  daysRemaining: number
+  department: string
+  status: string
+}
+
+interface LeaveRequest {
+  id: string
+  employeeName: string
+  fileNumber: string
+  leaveType: string
+  startDate: string
+  endDate: string
+  days: number
+  status: string
+  reason: string
+}
+
+interface ActiveRental {
+  id: string
+  customerName: string
+  equipmentName: string
+  startDate: string
+  endDate: string
+  duration: number
+  dailyRate: number
+  totalAmount: number
+  status: string
+}
+
+interface ActiveProject {
+  id: string
+  name: string
+  customer: string
+  startDate: string
+  endDate: string
+  progress: number
+  budget: number
+  spent: number
+  status: string
+}
+
+interface RecentActivity {
+  id: string
+  type: string
+  description: string
+  user: string
+  timestamp: string
+  severity: 'low' | 'medium' | 'high'
+}
+
+export default function DashboardPage() {
   const { t } = useTranslation('dashboard');
-  const { state, open } = useSidebar()
   const router = useRouter()
-  const [iqamaData, setIqamaData] = useState<any[]>([])
-  const [loadingIqama, setLoadingIqama] = useState<boolean>(false)
-  const [pageIqama, setPageIqama] = useState<number>(1)
-  const [totalPagesIqama, setTotalPagesIqama] = useState<number>(1)
-  const [limitIqama] = useState<number>(10)
-  const [searchIqama, setSearchIqama] = useState<string>("")
-  const [searchInput, setSearchInput] = useState<string>("")
-  const [isFirstLoad, setIsFirstLoad] = useState<boolean>(true)
-  const [updateOpen, setUpdateOpen] = useState<boolean>(false)
-  const [updating, setUpdating] = useState<boolean>(false)
-  const [selectedRow, setSelectedRow] = useState<any | null>(null)
-  const [newExpiry, setNewExpiry] = useState<string>("")
-
-  // On Leave table state
-  const [leaveData, setLeaveData] = useState<any[]>([])
-  const [leaveLoading, setLeaveLoading] = useState<boolean>(false)
-  const [leavePage, setLeavePage] = useState<number>(1)
-  const [leaveTotalPages, setLeaveTotalPages] = useState<number>(1)
-  const [leaveLimit] = useState<number>(10)
-  const [leaveSearch, setLeaveSearch] = useState<string>("")
-  const [leaveSearchInput, setLeaveSearchInput] = useState<string>("")
-
-  // Rentals and Projects state
-  const [rentalData, setRentalData] = useState<any[]>([])
-  const [rentalLoading, setRentalLoading] = useState<boolean>(false)
-  const [rentalPage, setRentalPage] = useState<number>(1)
-  const [rentalTotalPages, setRentalTotalPages] = useState<number>(1)
-  const [rentalLimit] = useState<number>(10)
-  const [rentalSearch, setRentalSearch] = useState<string>("")
-  const [rentalSearchInput, setRentalSearchInput] = useState<string>("")
-
-  const [projectData, setProjectData] = useState<any[]>([])
-  const [projectLoading, setProjectLoading] = useState<boolean>(false)
-  const [projectPage, setProjectPage] = useState<number>(1)
-  const [projectTotalPages, setProjectTotalPages] = useState<number>(1)
-  const [projectLimit] = useState<number>(10)
-  const [projectSearch, setProjectSearch] = useState<string>("")
-  const [projectSearchInput, setProjectSearchInput] = useState<string>("")
-
-  // Ensure user is authenticated
   const { data: session, status } = useSession()
-
-  // Redirect to login if not authenticated or redirect employees to their dashboard
+  
+  // State for dashboard data
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [iqamaData, setIqamaData] = useState<IqamaExpiring[]>([])
+  const [leaveData, setLeaveData] = useState<LeaveRequest[]>([])
+  const [rentalData, setRentalData] = useState<ActiveRental[]>([])
+  const [projectData, setProjectData] = useState<ActiveProject[]>([])
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  
+  // Ensure user is authenticated and not an employee
   useEffect(() => {
     if (status === "loading") return;
-
     if (!session) {
       router.push('/login');
       return;
     }
-
-    // Redirect employees to their specific dashboard
     if (session.user?.role === 'EMPLOYEE') {
       router.push('/employee-dashboard');
       return;
     }
   }, [session, status, router]);
 
-  // Fetch iqama expiring within next 30 days; also include expired and missing dates
+  // Fetch dashboard data
   useEffect(() => {
-    if (!session) return;
-    const fetchData = async () => {
-      setLoadingIqama(true);
-      try {
-        const params = new URLSearchParams({
-          days: '30',
-          range: 'next',
-          includeExpired: '1',
-          expiredDays: '30',
-          includeMissing: '1',
-          page: String(pageIqama),
-          limit: String(limitIqama),
-          search: searchIqama,
+    if (session?.user) {
+      fetchDashboardData();
+    }
+  }, [session]);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Determine data limits based on user role
+      const isSeniorRole = session?.user?.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role);
+      const dataLimit = isSeniorRole ? 100 : 10; // Super admin/manager gets 100 records, others get 10
+      
+      const [
+        statsRes,
+        iqamaRes,
+        leaveRes,
+        rentalRes,
+        projectRes,
+        activityRes
+      ] = await Promise.all([
+        fetch('/api/employees/statistics'),
+        fetch(`/api/employees/iqama-expiring?days=30&limit=${dataLimit}`),
+        fetch(`/api/employees/leaves/active?limit=${dataLimit}`),
+        fetch(`/api/rentals/active?limit=${dataLimit}`),
+        fetch(`/api/projects/active?limit=${dataLimit}`),
+        fetch(`/api/notifications/recent?limit=${dataLimit}`)
+      ]);
+
+      // Process statistics
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        setStats({
+          totalEmployees: statsData.data?.totalEmployees || 0,
+          activeProjects: statsData.data?.projectAssignments || 0,
+          availableEquipment: 0, // Will be fetched separately
+          monthlyRevenue: 0, // Will be calculated from rentals
+          pendingApprovals: 0, // Will be calculated
+          activeRentals: statsData.data?.rentalAssignments || 0,
+          totalCustomers: 0, // Will be fetched separately
+          equipmentUtilization: 0 // Will be calculated
         });
-        const res = await fetch(`/api/employees/iqama-expiring?${params.toString()}`);
-        if (!res.ok) throw new Error('Failed');
-        const json = await res.json();
-        setIqamaData(json.data || []);
-        if (json.pagination?.totalPages) {
-          setTotalPagesIqama(json.pagination.totalPages);
-        } else {
-          setTotalPagesIqama(1);
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoadingIqama(false);
-        if (isFirstLoad) setIsFirstLoad(false);
       }
-    };
-    fetchData();
-  }, [session, pageIqama, limitIqama, searchIqama]);
 
-  // Debounce search input to avoid flicker on each keystroke
-  useEffect(() => {
-    const handle = setTimeout(() => {
-      setPageIqama(1);
-      setSearchIqama(searchInput.trim());
-    }, 400);
-    return () => clearTimeout(handle);
-  }, [searchInput]);
-
-  // Fetch employees currently on leave
-  useEffect(() => {
-    if (!session) return;
-    const run = async () => {
-      setLeaveLoading(true);
-      try {
-        const params = new URLSearchParams({
-          page: String(leavePage),
-          limit: String(leaveLimit),
-          search: leaveSearch,
-        });
-        const res = await fetch(`/api/employees/leaves/active?${params.toString()}`);
-        if (!res.ok) throw new Error('Failed leave fetch');
-        const json = await res.json();
-        setLeaveData(json.data || []);
-        setLeaveTotalPages(json.pagination?.totalPages || 1);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLeaveLoading(false);
+      // Process Iqama data
+      if (iqamaRes.ok) {
+        const iqamaJson = await iqamaRes.json();
+        setIqamaData(iqamaJson.data || []);
       }
-    };
-    run();
-  }, [session, leavePage, leaveLimit, leaveSearch]);
 
-  // Debounce leave search
-  useEffect(() => {
-    const h = setTimeout(() => {
-      setLeavePage(1);
-      setLeaveSearch(leaveSearchInput.trim());
-    }, 400);
-    return () => clearTimeout(h);
-  }, [leaveSearchInput]);
-
-  // Fetch active rentals
-  useEffect(() => {
-    if (!session) return;
-    const run = async () => {
-      setRentalLoading(true);
-      try {
-        const params = new URLSearchParams({
-          page: String(rentalPage),
-          limit: String(rentalLimit),
-          search: rentalSearch,
-        });
-        const res = await fetch(`/api/rentals/active?${params.toString()}`);
-        if (!res.ok) throw new Error('Failed rentals fetch');
-        const json = await res.json();
-        setRentalData(json.data || []);
-        setRentalTotalPages(json.pagination?.totalPages || 1);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setRentalLoading(false);
+      // Process Leave data
+      if (leaveRes.ok) {
+        const leaveJson = await leaveRes.json();
+        setLeaveData(leaveJson.data || []);
       }
-    };
-    run();
-  }, [session, rentalPage, rentalLimit, rentalSearch]);
 
-  useEffect(() => {
-    const h = setTimeout(() => {
-      setRentalPage(1);
-      setRentalSearch(rentalSearchInput.trim());
-    }, 400);
-    return () => clearTimeout(h);
-  }, [rentalSearchInput]);
-
-  // Fetch active projects
-  useEffect(() => {
-    if (!session) return;
-    const run = async () => {
-      setProjectLoading(true);
-      try {
-        const params = new URLSearchParams({
-          page: String(projectPage),
-          limit: String(projectLimit),
-          search: projectSearch,
-        });
-        const res = await fetch(`/api/projects/active?${params.toString()}`);
-        if (!res.ok) throw new Error('Failed projects fetch');
-        const json = await res.json();
-        setProjectData(json.data || []);
-        setProjectTotalPages(json.pagination?.totalPages || 1);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setProjectLoading(false);
+      // Process Rental data
+      if (rentalRes.ok) {
+        const rentalJson = await rentalRes.json();
+        setRentalData(rentalJson.data || []);
       }
-    };
-    run();
-  }, [session, projectPage, projectLimit, projectSearch]);
 
-  useEffect(() => {
-    const h = setTimeout(() => {
-      setProjectPage(1);
-      setProjectSearch(projectSearchInput.trim());
-    }, 400);
-    return () => clearTimeout(h);
-  }, [projectSearchInput]);
+      // Process Project data
+      if (projectRes.ok) {
+        const projectJson = await projectRes.json();
+        setProjectData(projectJson.data || []);
+      }
 
-  const iqamaExpiringColumns = useMemo(() => [
-    { key: 'name', label: 'Name' },
-    { key: 'file_number', label: 'File No.' },
-    { key: 'department', label: 'Department' },
-    { key: 'designation', label: 'Designation' },
-    { key: 'iqama_number', label: 'Iqama No.' },
-    { key: 'iqama_expiry', label: 'Expiry Date' },
-    { key: 'days_remaining', label: 'Days Left' },
-    { key: 'status', label: 'Status' },
-    { key: 'actions', label: 'Actions' },
-  ], []);
+      // Process Activity data
+      if (activityRes.ok) {
+        const activityJson = await activityRes.json();
+        setRecentActivity(activityJson.data || []);
+      }
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchDashboardData();
+    setRefreshing(false);
+  };
 
   // Show loading while checking authentication
   if (status === "loading") {
     return (
-      <div className="flex h-full w-full items-center justify-center">
+      <div className="flex h-screen w-full items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">{t('loading')}</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">{t('loading')}</p>
         </div>
       </div>
     )
   }
 
-  // Don't render if not authenticated
-  if (!session) {
-    return null;
-  }
+  if (!session) return null;
 
   return (
-    <div className="h-full w-full bg-background">
-      <div className="w-full p-4">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      {/* Header Section */}
+      <div className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80 sticky top-0 z-50">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">
-                {t('dashboard_overview')}
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Executive Dashboard
               </h1>
-              <p className="text-muted-foreground">
-                {t('welcome_back', { name: session?.user?.name || t('user') })} {t('monitor_business_performance')}
+              <p className="text-slate-600 dark:text-slate-400 mt-1">
+                Welcome back, {session.user?.name || 'Administrator'}
               </p>
             </div>
-            <SSEStatusCompact />
-          </div>
-          <div className="mt-4 p-4 bg-muted rounded-lg">
-            <p className="text-sm font-medium">{t('sidebar_state')}: <span className="text-primary">{state}</span></p>
-            <p className="text-sm text-muted-foreground">{t('open')}: {open ? t('yes') : t('no')}</p>
-            <p className="text-sm text-muted-foreground">{t('content_flush_description')}</p>
+            <div className="flex items-center gap-3">
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">
+                {session.user?.role?.replace('_', ' ')}
+              </Badge>
+              <Button 
+                onClick={handleRefresh} 
+                disabled={refreshing}
+                variant="outline" 
+                size="sm"
+                className="bg-white/50 hover:bg-white/80 dark:bg-slate-800/50 dark:hover:bg-slate-800/80"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Refreshing...' : 'Refresh'}
+              </Button>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="space-y-6">
-          <SectionCards />
-
-          <div className="bg-card border rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">{t('analytics_overview')}</h2>
-            <ChartAreaSimple />
-          </div>
-
-          <div className="bg-card border rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">{t('recent_activities')}</h2>
-            <DataTable data={data} />
-          </div>
-
-          <div className="bg-card border rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Iqama Expiring / Expired / Missing (30 Days Window)</h2>
-            <div className="mb-4 flex items-center gap-2">
-              <Input
-                placeholder="Search by name, file no., department, designation, iqama no."
-                value={searchInput}
-                onChange={(e) => { setSearchInput(e.target.value); }}
-                className="max-w-md"
-              />
-              {loadingIqama && (
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                  Updating...
+      {/* Main Content */}
+      <div className="container mx-auto px-6 py-8">
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-slate-600 dark:text-slate-400">Loading dashboard data...</p>
+              {session?.user?.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role) && (
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">Fetching comprehensive data for {session.user.role.replace('_', ' ')} role</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">Loading up to 100 records per category for complete overview</p>
                 </div>
               )}
             </div>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {iqamaExpiringColumns.map(col => (
-                      <TableHead key={col.key} className="py-2 pr-4">{col.label}</TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(loadingIqama && iqamaData.length === 0) ? (
-                    <TableRow><TableCell className="py-4" colSpan={iqamaExpiringColumns.length}>Loading...</TableCell></TableRow>
-                  ) : iqamaData.length === 0 ? (
-                    <TableRow><TableCell className="py-4" colSpan={iqamaExpiringColumns.length}>No records</TableCell></TableRow>
-                  ) : (
-                    iqamaData.map((row) => (
-                      <TableRow key={row.id}>
-                        <TableCell className="py-2 pr-4">{row.name}</TableCell>
-                        <TableCell className="py-2 pr-4">{row.file_number || '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{row.department || '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{row.designation || '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{row.iqama_number || '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{row.iqama_expiry ? new Date(row.iqama_expiry).toLocaleDateString() : '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{row.days_remaining ?? '-'}</TableCell>
-                        <TableCell className={`py-2 pr-4 ${row.status === 'expired' ? 'text-red-600 font-medium' : row.status === 'expiring' ? 'text-amber-600 font-medium' : 'text-gray-500'}`}>{row.status}</TableCell>
-                        <TableCell className="py-2 pr-4">
-                          <Button size="sm" onClick={() => { setSelectedRow(row); setNewExpiry(row.iqama_expiry ? new Date(row.iqama_expiry).toISOString().slice(0,10) : ""); setUpdateOpen(true); }}>Update</Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="mt-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      href="#"
-                      onClick={(e) => { e.preventDefault(); if (pageIqama > 1 && !loadingIqama) setPageIqama(pageIqama - 1) }}
-                      className={pageIqama <= 1 || loadingIqama ? 'pointer-events-none opacity-50' : ''}
-                    />
-                  </PaginationItem>
-                  {(() => {
-                    const items: JSX.Element[] = []
-                    const maxToShow = 5
-                    const addLink = (p: number, active = false) => {
-                      items.push(
-                        <PaginationItem key={p}>
-                          <PaginationLink href="#" isActive={active} onClick={(e) => { e.preventDefault(); setPageIqama(p) }}>{p}</PaginationLink>
-                        </PaginationItem>
-                      )
-                    }
-                    if (totalPagesIqama <= maxToShow) {
-                      for (let p = 1; p <= totalPagesIqama; p++) addLink(p, p === pageIqama)
-                    } else {
-                      addLink(1, pageIqama === 1)
-                      const showLeftEllipsis = pageIqama > 3
-                      const showRightEllipsis = pageIqama < totalPagesIqama - 2
-                      const start = Math.max(2, pageIqama - 1)
-                      const end = Math.min(totalPagesIqama - 1, pageIqama + 1)
-                      if (showLeftEllipsis) {
-                        items.push(<PaginationItem key="ellipsisl"><PaginationEllipsis /></PaginationItem>)
-                      }
-                      for (let p = start; p <= end; p++) addLink(p, p === pageIqama)
-                      if (showRightEllipsis) {
-                        items.push(<PaginationItem key="ellipsisr"><PaginationEllipsis /></PaginationItem>)
-                      }
-                      addLink(totalPagesIqama, pageIqama === totalPagesIqama)
-                    }
-                    return items
-                  })()}
-                  <PaginationItem>
-                    <PaginationNext
-                      href="#"
-                      onClick={(e) => { e.preventDefault(); if (pageIqama < totalPagesIqama && !loadingIqama) setPageIqama(pageIqama + 1) }}
-                      className={pageIqama >= totalPagesIqama || loadingIqama ? 'pointer-events-none opacity-50' : ''}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
           </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Data Summary and Search for Senior Roles */}
+            {session?.user?.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role) && (
+              <div className="col-span-full">
+                <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+                      <Database className="h-5 w-5" />
+                      Data Overview - {session.user.role.replace('_', ' ')}
+                    </CardTitle>
+                    <CardDescription className="text-blue-700 dark:text-blue-300">
+                      Comprehensive view of all company data and operations
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Search Bar */}
+                      <div className="flex gap-3">
+                        <div className="flex-1">
+                          <Input
+                            placeholder="Search employees, projects, or equipment..."
+                            className="border-blue-200 focus:border-blue-400"
+                          />
+                        </div>
+                        <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
+                          <Search className="h-4 w-4 mr-2" />
+                          Search
+                        </Button>
+                        <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
+                          <Filter className="h-4 w-4 mr-2" />
+                          Filters
+                        </Button>
+                        <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
+                          <FileText className="h-4 w-4 mr-2" />
+                          Export
+                        </Button>
+                      </div>
+                      
+                      {/* Data Summary Grid */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-800 dark:text-blue-200">{iqamaData.length}</div>
+                          <div className="text-blue-600 dark:text-blue-400">Iqama Records</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-800 dark:text-blue-200">{leaveData.length}</div>
+                          <div className="text-blue-600 dark:text-blue-400">Leave Requests</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-800 dark:text-blue-200">{projectData.length}</div>
+                          <div className="text-blue-600 dark:text-blue-400">Active Projects</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-800 dark:text-blue-200">{rentalData.length}</div>
+                          <div className="text-blue-600 dark:text-blue-400">Active Rentals</div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
-          <div className="bg-card border rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Employees Currently on Leave</h2>
-            <div className="mb-4 flex items-center gap-2">
-              <Input
-                placeholder="Search by employee, file no., dept, designation, leave type"
-                value={leaveSearchInput}
-                onChange={(e) => setLeaveSearchInput(e.target.value)}
-                className="max-w-md"
-              />
-            </div>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="py-2 pr-4">Name</TableHead>
-                    <TableHead className="py-2 pr-4">File No.</TableHead>
-                    <TableHead className="py-2 pr-4">Department</TableHead>
-                    <TableHead className="py-2 pr-4">Designation</TableHead>
-                    <TableHead className="py-2 pr-4">Leave Type</TableHead>
-                    <TableHead className="py-2 pr-4">Start</TableHead>
-                    <TableHead className="py-2 pr-4">End</TableHead>
-                    <TableHead className="py-2 pr-4">Days Left</TableHead>
-                    <TableHead className="py-2 pr-4">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(leaveLoading && leaveData.length === 0) ? (
-                    <TableRow><TableCell className="py-4" colSpan={9}>Loading...</TableCell></TableRow>
-                  ) : leaveData.length === 0 ? (
-                    <TableRow><TableCell className="py-4" colSpan={9}>No records</TableCell></TableRow>
-                  ) : (
-                    leaveData.map((row) => (
-                      <TableRow key={row.id}>
-                        <TableCell className="py-2 pr-4">{row.name}</TableCell>
-                        <TableCell className="py-2 pr-4">{row.file_number || '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{row.department || '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{row.designation || '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{row.leave_type}</TableCell>
-                        <TableCell className="py-2 pr-4">{row.start_date ? new Date(row.start_date).toLocaleDateString() : '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{row.end_date ? new Date(row.end_date).toLocaleDateString() : '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{row.days_left ?? '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{row.status}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="mt-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      href="#"
-                      onClick={(e) => { e.preventDefault(); if (leavePage > 1 && !leaveLoading) setLeavePage(leavePage - 1) }}
-                      className={leavePage <= 1 || leaveLoading ? 'pointer-events-none opacity-50' : ''}
-                    />
-                  </PaginationItem>
-                  {(() => {
-                    const items: JSX.Element[] = []
-                    const maxToShow = 5
-                    const addLink = (p: number, active = false) => {
-                      items.push(
-                        <PaginationItem key={p}>
-                          <PaginationLink href="#" isActive={active} onClick={(e) => { e.preventDefault(); setLeavePage(p) }}>{p}</PaginationLink>
-                        </PaginationItem>
-                      )
-                    }
-                    if (leaveTotalPages <= maxToShow) {
-                      for (let p = 1; p <= leaveTotalPages; p++) addLink(p, p === leavePage)
-                    } else {
-                      addLink(1, leavePage === 1)
-                      const showLeftEllipsis = leavePage > 3
-                      const showRightEllipsis = leavePage < leaveTotalPages - 2
-                      const start = Math.max(2, leavePage - 1)
-                      const end = Math.min(leaveTotalPages - 1, leavePage + 1)
-                      if (showLeftEllipsis) {
-                        items.push(<PaginationItem key="ellipsisl"><PaginationEllipsis /></PaginationItem>)
-                      }
-                      for (let p = start; p <= end; p++) addLink(p, p === leavePage)
-                      if (showRightEllipsis) {
-                        items.push(<PaginationItem key="ellipsisr"><PaginationEllipsis /></PaginationItem>)
-                      }
-                      addLink(leaveTotalPages, leavePage === leaveTotalPages)
-                    }
-                    return items
-                  })()}
-                  <PaginationItem>
-                    <PaginationNext
-                      href="#"
-                      onClick={(e) => { e.preventDefault(); if (leavePage < leaveTotalPages && !leaveLoading) setLeavePage(leavePage + 1) }}
-                      className={leavePage >= leaveTotalPages || leaveLoading ? 'pointer-events-none opacity-50' : ''}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          </div>
-
-          <div className="bg-card border rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Active Rentals</h2>
-            <div className="mb-4 flex items-center gap-2">
-              <Input placeholder="Search by rental, customer, project, equipment" value={rentalSearchInput} onChange={(e) => setRentalSearchInput(e.target.value)} className="max-w-md" />
-            </div>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="py-2 pr-4">Rental #</TableHead>
-                    <TableHead className="py-2 pr-4">Customer</TableHead>
-                    <TableHead className="py-2 pr-4">Project</TableHead>
-                    <TableHead className="py-2 pr-4">Equipment</TableHead>
-                    <TableHead className="py-2 pr-4">Start</TableHead>
-                    <TableHead className="py-2 pr-4">Expected End</TableHead>
-                    <TableHead className="py-2 pr-4">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(rentalLoading && rentalData.length === 0) ? (
-                    <TableRow><TableCell className="py-4" colSpan={7}>Loading...</TableCell></TableRow>
-                  ) : rentalData.length === 0 ? (
-                    <TableRow><TableCell className="py-4" colSpan={7}>No records</TableCell></TableRow>
-                  ) : (
-                    rentalData.map((r) => (
-                      <TableRow key={r.id}>
-                        <TableCell className="py-2 pr-4">{r.rental_number}</TableCell>
-                        <TableCell className="py-2 pr-4">{r.customer || '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{r.project || '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{r.equipment_name || '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{r.start_date ? new Date(r.start_date).toLocaleDateString() : '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{r.expected_end_date ? new Date(r.expected_end_date).toLocaleDateString() : '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{r.status}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="mt-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); if (rentalPage > 1 && !rentalLoading) setRentalPage(rentalPage - 1) }} className={rentalPage <= 1 || rentalLoading ? 'pointer-events-none opacity-50' : ''} />
-                  </PaginationItem>
-                  {(() => {
-                    const items: JSX.Element[] = []
-                    const maxToShow = 5
-                    const addLink = (p: number, active = false) => {
-                      items.push(
-                        <PaginationItem key={p}>
-                          <PaginationLink href="#" isActive={active} onClick={(e) => { e.preventDefault(); setRentalPage(p) }}>{p}</PaginationLink>
-                        </PaginationItem>
-                      )
-                    }
-                    if (rentalTotalPages <= maxToShow) {
-                      for (let p = 1; p <= rentalTotalPages; p++) addLink(p, p === rentalPage)
-                    } else {
-                      addLink(1, rentalPage === 1)
-                      const showLeftEllipsis = rentalPage > 3
-                      const showRightEllipsis = rentalPage < rentalTotalPages - 2
-                      const start = Math.max(2, rentalPage - 1)
-                      const end = Math.min(rentalTotalPages - 1, rentalPage + 1)
-                      if (showLeftEllipsis) items.push(<PaginationItem key="ellipsisl"><PaginationEllipsis /></PaginationItem>)
-                      for (let p = start; p <= end; p++) addLink(p, p === rentalPage)
-                      if (showRightEllipsis) items.push(<PaginationItem key="ellipsisr"><PaginationEllipsis /></PaginationItem>)
-                      addLink(rentalTotalPages, rentalPage === rentalTotalPages)
-                    }
-                    return items
-                  })()}
-                  <PaginationItem>
-                    <PaginationNext href="#" onClick={(e) => { e.preventDefault(); if (rentalPage < rentalTotalPages && !rentalLoading) setRentalPage(rentalPage + 1) }} className={rentalPage >= rentalTotalPages || rentalLoading ? 'pointer-events-none opacity-50' : ''} />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          </div>
-
-          <div className="bg-card border rounded-lg p-6">
-            <h2 className="text-xl font-semibold mb-4">Active Projects</h2>
-            <div className="mb-4 flex items-center gap-2">
-              <Input placeholder="Search by project or customer" value={projectSearchInput} onChange={(e) => setProjectSearchInput(e.target.value)} className="max-w-md" />
-            </div>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="py-2 pr-4">Name</TableHead>
-                    <TableHead className="py-2 pr-4">Customer</TableHead>
-                    <TableHead className="py-2 pr-4">Start</TableHead>
-                    <TableHead className="py-2 pr-4">End</TableHead>
-                    <TableHead className="py-2 pr-4">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(projectLoading && projectData.length === 0) ? (
-                    <TableRow><TableCell className="py-4" colSpan={5}>Loading...</TableCell></TableRow>
-                  ) : projectData.length === 0 ? (
-                    <TableRow><TableCell className="py-4" colSpan={5}>No records</TableCell></TableRow>
-                  ) : (
-                    projectData.map((p) => (
-                      <TableRow key={p.id}>
-                        <TableCell className="py-2 pr-4">{p.name}</TableCell>
-                        <TableCell className="py-2 pr-4">{p.customer || '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{p.start_date ? new Date(p.start_date).toLocaleDateString() : '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{p.end_date ? new Date(p.end_date).toLocaleDateString() : '-'}</TableCell>
-                        <TableCell className="py-2 pr-4">{p.status}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="mt-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); if (projectPage > 1 && !projectLoading) setProjectPage(projectPage - 1) }} className={projectPage <= 1 || projectLoading ? 'pointer-events-none opacity-50' : ''} />
-                  </PaginationItem>
-                  {(() => {
-                    const items: JSX.Element[] = []
-                    const maxToShow = 5
-                    const addLink = (p: number, active = false) => {
-                      items.push(
-                        <PaginationItem key={p}>
-                          <PaginationLink href="#" isActive={active} onClick={(e) => { e.preventDefault(); setProjectPage(p) }}>{p}</PaginationLink>
-                        </PaginationItem>
-                      )
-                    }
-                    if (projectTotalPages <= maxToShow) {
-                      for (let p = 1; p <= projectTotalPages; p++) addLink(p, p === projectPage)
-                    } else {
-                      addLink(1, projectPage === 1)
-                      const showLeftEllipsis = projectPage > 3
-                      const showRightEllipsis = projectPage < projectTotalPages - 2
-                      const start = Math.max(2, projectPage - 1)
-                      const end = Math.min(projectTotalPages - 1, projectPage + 1)
-                      if (showLeftEllipsis) items.push(<PaginationItem key="ellipsisl"><PaginationEllipsis /></PaginationItem>)
-                      for (let p = start; p <= end; p++) addLink(p, p === projectPage)
-                      if (showRightEllipsis) items.push(<PaginationItem key="ellipsisr"><PaginationEllipsis /></PaginationItem>)
-                      addLink(projectTotalPages, projectPage === projectTotalPages)
-                    }
-                    return items
-                  })()}
-                  <PaginationItem>
-                    <PaginationNext href="#" onClick={(e) => { e.preventDefault(); if (projectPage < projectTotalPages && !projectLoading) setProjectPage(projectPage + 1) }} className={projectPage >= projectTotalPages || projectLoading ? 'pointer-events-none opacity-50' : ''} />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
-          </div>
-
-          {/* Update Iqama Expiry Dialog */}
-          <Dialog open={updateOpen} onOpenChange={setUpdateOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Update Iqama Expiry</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3">
-                <div>
-                  <div className="text-sm text-muted-foreground">{selectedRow?.name} ({selectedRow?.file_number || '-'})</div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="iqama_expiry_date">Expiry Date</Label>
-                  <Input id="iqama_expiry_date" type="date" value={newExpiry} onChange={(e) => setNewExpiry(e.target.value)} />
-                  <div className="text-xs text-muted-foreground">Leave empty to clear.</div>
+            {/* Data Status Indicator for Senior Roles */}
+            {session?.user?.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role) && (
+              <div className="col-span-full mb-4">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                      <span className="text-sm font-medium text-green-800 dark:text-green-200">
+                        Data Loaded Successfully
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-green-700 dark:text-green-300">
+                      <span>Iqama: {iqamaData.length} records</span>
+                      <span>Leave: {leaveData.length} records</span>
+                      <span>Projects: {projectData.length} records</span>
+                      <span>Rentals: {rentalData.length} records</span>
+                      <span>Activity: {recentActivity.length} records</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setUpdateOpen(false)} disabled={updating}>Cancel</Button>
-                <Button
-                  onClick={async () => {
-                    if (!selectedRow) return;
-                    try {
-                      setUpdating(true);
-                      const res = await fetch(`/api/employees/${selectedRow.id}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ iqama_expiry: newExpiry || null }),
-                      });
-                      if (!res.ok) throw new Error('Failed to update');
-                      // Optionally refetch page to re-apply filters/order
-                      // await fetchData(); // fetchData is inline; keeping optimistic update
-                      const now = new Date();
-                      const updatedDate = newExpiry ? new Date(newExpiry) : null;
-                      setIqamaData((prev) => prev.map((r) => {
-                        if (r.id !== selectedRow.id) return r;
-                        const status = !updatedDate ? 'missing' : (updatedDate < now ? 'expired' : 'expiring');
-                        const days_remaining = updatedDate ? Math.ceil((updatedDate.getTime() - now.getTime()) / (1000*60*60*24)) : null;
-                        return { ...r, iqama_expiry: updatedDate, status, days_remaining };
-                      }));
-                      setUpdateOpen(false);
-                    } catch (e) {
-                      console.error(e);
-                    } finally {
-                      setUpdating(false);
-                    }
-                  }}
-                  disabled={updating}
-                >{updating ? 'Saving...' : 'Save'}</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
+            )}
+
+            {/* Key Performance Indicators */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-100 text-sm font-medium">Total Employees</p>
+                      <p className="text-3xl font-bold">{stats?.totalEmployees?.toLocaleString() || '0'}</p>
+                      <p className="text-blue-100 text-sm mt-1">Active workforce</p>
+                    </div>
+                    <div className="bg-blue-400/20 p-3 rounded-full">
+                      <Users className="h-8 w-8" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-green-100 text-sm font-medium">Active Projects</p>
+                      <p className="text-3xl font-bold">{stats?.activeProjects || '0'}</p>
+                      <p className="text-green-100 text-sm mt-1">Ongoing work</p>
+                    </div>
+                    <div className="bg-green-400/20 p-3 rounded-full">
+                      <Building2 className="h-8 w-8" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-orange-100 text-sm font-medium">Active Rentals</p>
+                      <p className="text-3xl font-bold">{stats?.activeRentals || '0'}</p>
+                      <p className="text-orange-100 text-sm mt-1">Equipment in use</p>
+                    </div>
+                    <div className="bg-orange-400/20 p-3 rounded-full">
+                      <Truck className="h-8 w-8" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-lg">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-purple-100 text-sm font-medium">Pending Approvals</p>
+                      <p className="text-3xl font-bold">{stats?.pendingApprovals || '0'}</p>
+                      <p className="text-purple-100 text-sm mt-1">Awaiting action</p>
+                    </div>
+                    <div className="bg-purple-400/20 p-3 rounded-full">
+                      <Clock className="h-8 w-8" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Comprehensive Data Insights for Senior Roles */}
+            {session?.user?.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border-emerald-200 dark:border-emerald-800">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-emerald-800 dark:text-emerald-200">
+                      <BarChart3 className="h-5 w-5" />
+                      Data Coverage
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-emerald-700 dark:text-emerald-300">Iqama Records</span>
+                        <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">{iqamaData.length} records</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-emerald-700 dark:text-emerald-300">Leave Requests</span>
+                        <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">{leaveData.length} records</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-emerald-700 dark:text-emerald-300">Active Projects</span>
+                        <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">{projectData.length} records</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-emerald-700 dark:text-emerald-300">Active Rentals</span>
+                        <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">{rentalData.length} records</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-amber-200 dark:border-amber-800">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-amber-800 dark:text-amber-200">
+                      <TrendingUp className="h-5 w-5" />
+                      Performance Metrics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-amber-700 dark:text-amber-300">Total Employees</span>
+                        <span className="text-sm font-medium text-amber-800 dark:text-amber-200">{stats?.totalEmployees || 0}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-amber-700 dark:text-amber-300">Project Coverage</span>
+                        <span className="text-sm font-medium text-amber-800 dark:text-amber-200">{stats?.activeProjects || 0} active</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-amber-700 dark:text-amber-300">Equipment Utilization</span>
+                        <span className="text-sm font-medium text-amber-800 dark:text-amber-200">{stats?.activeRentals || 0} in use</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-amber-700 dark:text-amber-300">Pending Actions</span>
+                        <span className="text-sm font-medium text-amber-800 dark:text-amber-200">{stats?.pendingApprovals || 0} items</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-purple-200 dark:border-purple-800">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-purple-800 dark:text-purple-200">
+                      <Zap className="h-5 w-5" />
+                      Quick Actions
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <Button variant="outline" size="sm" className="w-full justify-start text-purple-700 border-purple-200 hover:bg-purple-50">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Employee
+                      </Button>
+                      <Button variant="outline" size="sm" className="w-full justify-start text-purple-700 border-purple-200 hover:bg-purple-50">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Project
+                      </Button>
+                      <Button variant="outline" size="sm" className="w-full justify-start text-purple-700 border-purple-200 hover:bg-purple-50">
+                        <Plus className="h-4 w-4 mr-2" />
+                        New Rental
+                      </Button>
+                      <Button variant="outline" size="sm" className="w-full justify-start text-purple-700 border-purple-200 hover:bg-purple-50">
+                        <Settings className="h-4 w-4 mr-2" />
+                        System Settings
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Main Dashboard Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Left Column - Critical Alerts */}
+              <div className="lg:col-span-1 space-y-6">
+                {/* Iqama Expiring Soon */}
+                <Card className="border-l-4 border-l-red-500 bg-red-50 dark:bg-red-900/10">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-red-700 dark:text-red-300">
+                      <AlertTriangle className="h-5 w-5" />
+                      Iqama Expiring Soon
+                    </CardTitle>
+                    <CardDescription className="text-red-600 dark:text-red-400">
+                      Employees with expiring Iqama in the next 30 days
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {iqamaData.length === 0 ? (
+                      <p className="text-green-600 dark:text-green-400 text-sm py-4 text-center">
+                        ✅ No Iqama expiring soon
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {iqamaData.map((item) => (
+                          <div key={item.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-red-200 dark:border-red-800">
+                            <div>
+                              <p className="font-medium text-slate-900 dark:text-slate-100">{item.employeeName}</p>
+                              <p className="text-sm text-slate-600 dark:text-slate-400">{item.fileNumber}</p>
+                            </div>
+                            <div className="text-right">
+                              <Badge variant={item.daysRemaining <= 7 ? 'destructive' : 'secondary'}>
+                                {item.daysRemaining} days
+                              </Badge>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                {new Date(item.expiryDate).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                        {iqamaData.length > 0 && (
+                          <Button variant="outline" size="sm" className="w-full" onClick={() => router.push('/modules/employee-management')}>
+                            View All ({iqamaData.length} Iqama Records)
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Leave Requests */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5" />
+                      Leave Requests
+                    </CardTitle>
+                    <CardDescription>
+                      Active leave requests and approvals
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {leaveData.length === 0 ? (
+                      <p className="text-slate-500 dark:text-slate-400 text-center py-4">No active leave requests</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {leaveData.map((leave) => (
+                          <div key={leave.id} className="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                            <div>
+                              <p className="font-medium text-slate-900 dark:text-slate-100">{leave.employeeName}</p>
+                              <p className="text-sm text-slate-600 dark:text-slate-400">{leave.leaveType} • {leave.fileNumber}</p>
+                            </div>
+                            <div className="text-right">
+                              <Badge variant={leave.status === 'approved' ? 'default' : leave.status === 'pending' ? 'secondary' : 'destructive'}>
+                                {leave.status}
+                              </Badge>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                {leave.days} days • {new Date(leave.startDate).toLocaleDateString()}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                        {leaveData.length > 0 && (
+                          <Button variant="outline" size="sm" className="w-full" onClick={() => router.push('/modules/employee-management')}>
+                            View All ({leaveData.length} Leave Requests)
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Recent Activity */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Activity className="h-5 w-5" />
+                      Recent Activity
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                                              {recentActivity.map((activity) => (
+                        <div key={activity.id} className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                          <div className={`w-2 h-2 rounded-full mt-2 ${
+                            activity.severity === 'high' ? 'bg-red-500' : 
+                            activity.severity === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                          }`} />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{activity.description}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                              {activity.user} • {new Date(activity.timestamp).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Center Column - Active Projects & Equipment */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Active Projects */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5" />
+                      Active Projects
+                    </CardTitle>
+                    <CardDescription>
+                      Ongoing construction and development projects
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {projectData.map((project) => (
+                        <div key={project.id} className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg border">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="font-semibold text-slate-900 dark:text-slate-100">{project.name}</h4>
+                            <Badge variant={project.status === 'active' ? 'default' : 'secondary'}>
+                              {project.status}
+                            </Badge>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Customer</p>
+                              <p className="font-medium">{project.customer}</p>
+                            </div>
+                            <div>
+                              <p className="text-slate-600 dark:text-slate-400">Progress</p>
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                  <div 
+                                    className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                                    style={{ width: `${project.progress}%` }}
+                                  />
+                                </div>
+                                <span className="text-sm font-medium">{project.progress}%</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                            <span className="text-sm text-slate-600 dark:text-slate-400">
+                              Budget: ${project.budget?.toLocaleString() || '0'}
+                            </span>
+                            <Button variant="outline" size="sm" onClick={() => router.push(`/modules/project-management/${project.id}`)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              View
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                      {projectData.length > 0 && (
+                        <Button variant="outline" className="w-full" onClick={() => router.push('/modules/project-management')}>
+                          View All Projects ({projectData.length} Active)
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Active Rentals */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Truck className="h-5 w-5" />
+                      Active Equipment Rentals
+                    </CardTitle>
+                    <CardDescription>
+                      Currently active equipment rental contracts
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {rentalData.map((rental) => (
+                        <div key={rental.id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-blue-100 dark:bg-blue-900/20 p-2 rounded-lg">
+                              <Wrench className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-slate-900 dark:text-slate-100">{rental.equipmentName}</p>
+                              <p className="text-sm text-slate-600 dark:text-slate-400">{rental.customerName}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium text-slate-900 dark:text-slate-100">
+                              ${rental.totalAmount?.toLocaleString() || '0'}
+                            </p>
+                            <p className="text-sm text-slate-600 dark:text-slate-400">
+                              {rental.duration} days
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                      {rentalData.length > 0 && (
+                        <Button variant="outline" className="w-full" onClick={() => router.push('/modules/rental-management')}>
+                          View All Rentals ({rentalData.length} Active)
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Bottom Row - Quick Actions & Statistics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <RoleBased roles={['SUPER_ADMIN', 'ADMIN']}>
+                <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white border-0 shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300" onClick={() => router.push('/modules/user-management')}>
+                  <CardContent className="p-6 text-center">
+                    <Users className="h-12 w-12 mx-auto mb-3 opacity-80" />
+                    <h3 className="text-lg font-semibold mb-2">User Management</h3>
+                    <p className="text-indigo-100 text-sm">Manage users, roles & permissions</p>
+                  </CardContent>
+                </Card>
+              </RoleBased>
+
+              <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+                <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300" onClick={() => router.push('/modules/analytics')}>
+                  <CardContent className="p-6 text-center">
+                    <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-80" />
+                    <h3 className="text-lg font-semibold mb-2">Analytics</h3>
+                    <p className="text-emerald-100 text-sm">Business intelligence & reports</p>
+                  </CardContent>
+                </Card>
+              </RoleBased>
+
+              <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+                <Card className="bg-gradient-to-br from-amber-500 to-amber-600 text-white border-0 shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300" onClick={() => router.push('/modules/payroll-management')}>
+                  <CardContent className="p-6 text-center">
+                    <DollarSign className="h-12 w-12 mx-auto mb-3 opacity-80" />
+                    <h3 className="text-lg font-semibold mb-2">Payroll</h3>
+                    <p className="text-amber-100 text-sm">Salary & compensation management</p>
+                  </CardContent>
+                </Card>
+              </RoleBased>
+
+              <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+                <Card className="bg-gradient-to-br from-rose-500 to-rose-600 text-white border-0 shadow-lg cursor-pointer hover:shadow-xl transition-all duration-300" onClick={() => router.push('/modules/settings')}>
+                  <CardContent className="p-6 text-center">
+                    <Settings className="h-12 w-12 mx-auto mb-3 opacity-80" />
+                    <h3 className="text-lg font-semibold mb-2">Settings</h3>
+                    <p className="text-rose-100 text-sm">System configuration</p>
+                  </CardContent>
+                </Card>
+              </RoleBased>
+            </div>
+
+            {/* Comprehensive Reporting Section for Senior Roles */}
+            {session?.user?.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role) && (
+              <div className="mt-8">
+                <Card className="bg-gradient-to-r from-slate-50 to-gray-50 dark:from-slate-900/20 dark:to-gray-900/20 border-slate-200 dark:border-slate-800">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
+                      <FileText className="h-5 w-5" />
+                      Data Export & Reporting
+                    </CardTitle>
+                    <CardDescription className="text-slate-600 dark:text-slate-400">
+                      Generate comprehensive reports and export data for analysis
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <Button variant="outline" className="justify-start text-slate-700 border-slate-300 hover:bg-slate-50">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Export Employee Data ({iqamaData.length} records)
+                      </Button>
+                      <Button variant="outline" className="justify-start text-slate-700 border-slate-300 hover:bg-slate-50">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Export Leave Reports ({leaveData.length} records)
+                      </Button>
+                      <Button variant="outline" className="justify-start text-slate-700 border-slate-300 hover:bg-slate-50">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Export Project Status ({projectData.length} records)
+                      </Button>
+                      <Button variant="outline" className="justify-start text-slate-700 border-slate-300 hover:bg-slate-50">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Export Rental Data ({rentalData.length} records)
+                      </Button>
+                      <Button variant="outline" className="justify-start text-slate-700 border-slate-300 hover:bg-slate-50">
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        Generate Analytics Report
+                      </Button>
+                      <Button variant="outline" className="justify-start text-slate-700 border-slate-300 hover:bg-slate-50">
+                        <Database className="h-4 w-4 mr-2" />
+                        Full Data Backup
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

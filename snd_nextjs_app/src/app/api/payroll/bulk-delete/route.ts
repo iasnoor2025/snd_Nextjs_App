@@ -1,79 +1,77 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { payrolls, payrollItems } from '@/lib/drizzle/schema';
+import { eq, inArray } from 'drizzle-orm';
+import { and } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { payroll_ids } = body;
+    const { ids } = body;
 
-    if (!payroll_ids || !Array.isArray(payroll_ids) || payroll_ids.length === 0) {
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Payroll IDs are required'
+        { success: false, message: 'Please provide an array of payroll IDs to delete' },
+        { status: 400 }
+      );
+    }
+
+    // Validate that all IDs are numbers
+    const validIds = ids.filter(id => !isNaN(Number(id)));
+    
+    if (validIds.length !== ids.length) {
+      return NextResponse.json(
+        { success: false, message: 'Some payroll IDs are invalid' },
+        { status: 400 }
+      );
+    }
+
+    // Check if any of the payrolls are already paid
+    const paidPayrolls = await db
+      .select({ id: payrolls.id, status: payrolls.status })
+      .from(payrolls)
+      .where(
+        and(
+          inArray(payrolls.id, validIds),
+          eq(payrolls.status, 'paid')
+        )
+      );
+
+    if (paidPayrolls.length > 0) {
+      const paidIds = paidPayrolls.map(p => p.id);
+      return NextResponse.json(
+        { 
+          success: false, 
+          message: `Cannot delete paid payrolls. Paid payroll IDs: ${paidIds.join(', ')}` 
         },
         { status: 400 }
       );
     }
 
-    let deletedCount = 0;
-    const errors: string[] = [];
+    // Delete payroll items first
+    await db
+      .delete(payrollItems)
+      .where(inArray(payrollItems.payrollId, validIds));
 
-    for (const payrollId of payroll_ids) {
-      try {
-        // Check if payroll exists
-        const payroll = await prisma.payroll.findUnique({
-          where: { id: payrollId },
-          include: { employee: true }
-        });
-
-        if (!payroll) {
-          errors.push(`Payroll with ID ${payrollId} not found`);
-          continue;
-        }
-
-        // Check if payroll can be deleted (not paid or processed)
-        if (payroll.status === 'paid' || payroll.status === 'processed') {
-          errors.push(`Cannot delete payroll ${payrollId} - status is ${payroll.status}`);
-          continue;
-        }
-
-        // Delete payroll items first (cascade)
-        await prisma.payrollItem.deleteMany({
-          where: { payroll_id: payrollId }
-        });
-
-        // Delete payroll
-        await prisma.payroll.delete({
-          where: { id: payrollId }
-        });
-
-        deletedCount++;
-      } catch (error) {
-        errors.push(`Error deleting payroll ${payrollId}: ${error}`);
-      }
-    }
-
-    let message = `Successfully deleted ${deletedCount} payroll(s)`;
-    if (errors.length > 0) {
-      message += `. ${errors.length} error(s) occurred: ${errors.slice(0, 3).join(', ')}`;
-      if (errors.length > 3) {
-        message += ` and ${errors.length - 3} more...`;
-      }
-    }
+    // Delete payrolls
+    const deletedPayrolls = await db
+      .delete(payrolls)
+      .where(inArray(payrolls.id, validIds))
+      .returning();
 
     return NextResponse.json({
       success: true,
-      message: message,
-      deleted_count: deletedCount,
-      errors: errors
+      message: `Successfully deleted ${deletedPayrolls.length} payroll(s)`,
+      data: {
+        deletedCount: deletedPayrolls.length,
+        deletedIds: deletedPayrolls.map(p => p.id)
+      }
     });
+
   } catch (error) {
+    console.error('Error in bulk delete:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to delete payrolls: ' + (error as Error).message
-      },
+      { success: false, message: 'Failed to delete payrolls' },
       { status: 500 }
     );
   }

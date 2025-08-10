@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { employees, timesheets, payrolls, payrollItems, payrollRuns } from '@/lib/drizzle/schema';
+import { eq, and, gte, lt } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,12 +25,16 @@ export async function POST(request: NextRequest) {
     let totalSkipped = 0;
 
     // Get all active employees
-    const employees = await prisma.employee.findMany({
-      where: { status: 'active' }
-    });
+    const employeesData = await db
+      .select({
+        id: employees.id,
+        basicSalary: employees.basicSalary,
+      })
+      .from(employees)
+      .where(eq(employees.status, 'active'));
 
     // Process each employee
-    for (const employee of employees) {
+    for (const employee of employeesData) {
       try {
         // Generate payrolls for each month in the range
         const current = new Date(startDate);
@@ -37,90 +43,107 @@ export async function POST(request: NextRequest) {
           const year = current.getFullYear();
 
           // Check if payroll already exists for this month
-          const existingPayroll = await prisma.payroll.findFirst({
-            where: {
-              employee_id: employee.id,
-              month: month,
-              year: year
-            }
-          });
+          const existingPayrollData = await db
+            .select({ id: payrolls.id })
+            .from(payrolls)
+            .where(
+              and(
+                eq(payrolls.employeeId, employee.id),
+                eq(payrolls.month, month),
+                eq(payrolls.year, year)
+              )
+            )
+            .limit(1);
 
-          if (existingPayroll) {
+          if (existingPayrollData[0]) {
             totalSkipped++;
             current.setMonth(current.getMonth() + 1);
             continue;
           }
 
           // Check if employee has approved timesheets for this month
-          const timesheets = await prisma.timesheet.findMany({
-            where: {
-              employee_id: employee.id,
-              status: 'manager_approved',
-              date: {
-                gte: new Date(year, month - 1, 1),
-                lt: new Date(year, month, 1)
-              }
-            }
-          });
+          const timesheetsData = await db
+            .select({
+              hoursWorked: timesheets.hoursWorked,
+              overtimeHours: timesheets.overtimeHours,
+            })
+            .from(timesheets)
+            .where(
+              and(
+                eq(timesheets.employeeId, employee.id),
+                eq(timesheets.status, 'manager_approved'),
+                gte(timesheets.date, new Date(year, month - 1, 1)),
+                lt(timesheets.date, new Date(year, month, 1))
+              )
+            );
 
-          if (timesheets.length === 0) {
+          if (timesheetsData.length === 0) {
             totalSkipped++;
             current.setMonth(current.getMonth() + 1);
             continue;
           }
 
           // Calculate payroll based on timesheets
-          const totalHours = timesheets.reduce((sum, ts) => sum + Number(ts.hours_worked), 0);
-          const totalOvertimeHours = timesheets.reduce((sum, ts) => sum + Number(ts.overtime_hours), 0);
+          const totalHours = timesheetsData.reduce((sum, ts) => sum + Number(ts.hoursWorked), 0);
+          const totalOvertimeHours = timesheetsData.reduce((sum, ts) => sum + Number(ts.overtimeHours), 0);
 
-          const overtimeAmount = totalOvertimeHours * (Number(employee.basic_salary) / 160) * 1.5;
+          const overtimeAmount = totalOvertimeHours * (Number(employee.basicSalary) / 160) * 1.5;
           const bonusAmount = 0; // Manual setting only
           const deductionAmount = 0; // Manual setting only
-          const finalAmount = Number(employee.basic_salary) + overtimeAmount + bonusAmount - deductionAmount;
+          const finalAmount = Number(employee.basicSalary) + overtimeAmount + bonusAmount - deductionAmount;
 
           // Create payroll
-          const payroll = await prisma.payroll.create({
-            data: {
-              employee_id: employee.id,
+          const insertedPayrolls = await db
+            .insert(payrolls)
+            .values({
+              employeeId: employee.id,
               month: month,
               year: year,
-              base_salary: Number(employee.basic_salary),
-              overtime_amount: overtimeAmount,
-              bonus_amount: bonusAmount,
-              deduction_amount: deductionAmount,
-              advance_deduction: 0,
-              final_amount: finalAmount,
-              total_worked_hours: totalHours,
-              overtime_hours: totalOvertimeHours,
+              baseSalary: Number(employee.basicSalary).toString(),
+              overtimeAmount: overtimeAmount.toString(),
+              bonusAmount: bonusAmount.toString(),
+              deductionAmount: deductionAmount.toString(),
+              advanceDeduction: '0',
+              finalAmount: finalAmount.toString(),
+              totalWorkedHours: totalHours.toString(),
+              overtimeHours: totalOvertimeHours.toString(),
               status: 'pending',
               notes: 'Generated from approved timesheets',
-              currency: 'USD'
-            }
-          });
+              currency: 'USD',
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            })
+            .returning();
+
+          const payroll = insertedPayrolls[0];
 
           // Create payroll items
-          await prisma.payrollItem.createMany({
-            data: [
+          await db
+            .insert(payrollItems)
+            .values([
               {
-                payroll_id: payroll.id,
+                payrollId: payroll.id,
                 type: 'earnings',
                 description: 'Basic Salary',
-                amount: Number(employee.basic_salary),
-                is_taxable: true,
-                tax_rate: 15,
-                order: 1
+                amount: Number(employee.basicSalary).toString(),
+                isTaxable: true,
+                taxRate: '15',
+                order: 1,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
               },
               {
-                payroll_id: payroll.id,
+                payrollId: payroll.id,
                 type: 'overtime',
                 description: 'Overtime Pay',
-                amount: overtimeAmount,
-                is_taxable: true,
-                tax_rate: 15,
-                order: 2
+                amount: overtimeAmount.toString(),
+                isTaxable: true,
+                taxRate: '15',
+                order: 2,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
               }
-            ]
-          });
+            ]);
 
           generatedPayrolls.push(payroll.id.toString());
           totalGenerated++;
@@ -134,16 +157,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Create payroll run record
-    const payrollRun = await prisma.payrollRun.create({
-      data: {
-        batch_id: `BATCH_ALL_${Date.now()}`,
-        run_date: new Date(),
+    const insertedPayrollRuns = await db
+      .insert(payrollRuns)
+      .values({
+        batchId: `BATCH_ALL_${Date.now()}`,
+        runDate: new Date().toISOString(),
         status: 'pending',
-        run_by: 1,
-        total_employees: processedEmployees.length,
-        notes: `Multi-month payroll run - Generated: ${totalGenerated}, Skipped: ${totalSkipped}`
-      }
-    });
+        runBy: 1,
+        totalEmployees: processedEmployees.length,
+        notes: `Multi-month payroll run - Generated: ${totalGenerated}, Skipped: ${totalSkipped}`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .returning();
+
+    const payrollRun = insertedPayrollRuns[0];
 
     let message = `Payroll generation completed successfully.\n` +
       `Generated: ${totalGenerated} payrolls\n` +

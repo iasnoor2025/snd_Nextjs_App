@@ -1,280 +1,302 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { db } from '@/lib/db';
-import { withAuth } from '@/lib/rbac/api-middleware';
-import { authConfig } from '@/lib/auth-config';
-import { payrolls as payrollsTable, payrollItems as payrollItemsTable, employees as employeesTable } from '@/lib/drizzle/schema';
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
-import { sql } from 'drizzle-orm';
+import { db } from '@/lib/drizzle';
+import { payrolls, employees, payrollItems, departments, designations } from '@/lib/drizzle/schema';
+import { eq, and, inArray, desc, asc, sql } from 'drizzle-orm';
 
-const getPayrollHandler = async (request: NextRequest) => {
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const per_page = parseInt(searchParams.get('per_page') || '10');
-    const status = searchParams.get('status');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search') || '';
+    const employeeId = searchParams.get('employee_id');
     const month = searchParams.get('month');
-    const employee_id = searchParams.get('employee_id');
+    const year = searchParams.get('year');
+    const status = searchParams.get('status');
 
-    // Build where clause
-    const where: any = {};
+    const offset = (page - 1) * limit;
 
-    // Get session to check user role
-    const session = await getServerSession(authConfig);
-    const user = session?.user;
+    // Build where conditions
+    const whereConditions: any[] = [];
     
-    // For employee users, only show their own payroll records
-    const filters: any[] = [];
-    if (user?.role === 'EMPLOYEE' && user.national_id) {
-      const ownEmp = await db
-        .select({ id: employeesTable.id })
-        .from(employeesTable)
-        .where(eq(employeesTable.iqamaNumber as any, user.national_id))
-        .limit(1);
-      const ownEmployee = ownEmp[0];
-      if (ownEmployee) {
-        filters.push(eq(payrollsTable.employeeId, ownEmployee.id as number));
-      }
+    if (search) {
+      whereConditions.push(
+        sql`(${employees.firstName} ILIKE ${`%${search}%`} OR ${employees.lastName} ILIKE ${`%${search}%`} OR ${employees.fileNumber} ILIKE ${`%${search}%`})`
+      );
     }
-
-    if (status && status !== 'all') {
-      filters.push(eq(payrollsTable.status, status));
+    
+    if (employeeId) {
+      whereConditions.push(eq(payrolls.employeeId, parseInt(employeeId)));
     }
-
+    
     if (month) {
-      const [year, monthNum] = month.split('-');
-      filters.push(eq(payrollsTable.year, parseInt(year)));
-      filters.push(eq(payrollsTable.month, parseInt(monthNum)));
+      whereConditions.push(eq(payrolls.month, parseInt(month)));
+    }
+    
+    if (year) {
+      whereConditions.push(eq(payrolls.year, parseInt(year)));
+    }
+    
+    if (status && status !== 'all') {
+      whereConditions.push(eq(payrolls.status, status));
     }
 
-    if (employee_id && employee_id !== 'all') {
-      filters.push(eq(payrollsTable.employeeId, parseInt(employee_id)));
-    }
-
-    const whereExpr = filters.length ? and(...filters) : undefined;
-
-    // Get total count
-    const totalRow = await db
+    // Get total count for pagination
+    const totalResult = await db
       .select({ count: sql<number>`count(*)` })
-      .from(payrollsTable)
-      .where(whereExpr as any);
-    const total = Number((totalRow as any)[0]?.count ?? 0);
+      .from(payrolls)
+      .leftJoin(employees, eq(payrolls.employeeId, employees.id))
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
+    
+    const total = totalResult[0]?.count || 0;
 
-    // Calculate pagination
-    const skip = (page - 1) * per_page;
-    const last_page = Math.ceil(total / per_page);
-    const from = skip + 1;
-    const to = Math.min(skip + per_page, total);
-
-    // Get payrolls with employee data (Drizzle)
-    const payrollRows = await db
+    // Get payrolls with employee, department, and designation data
+    let payrollsQuery = db
       .select({
-        id: payrollsTable.id,
-        employee_id: payrollsTable.employeeId,
-        month: payrollsTable.month,
-        year: payrollsTable.year,
-        base_salary: payrollsTable.baseSalary,
-        overtime_amount: payrollsTable.overtimeAmount,
-        bonus_amount: payrollsTable.bonusAmount,
-        deduction_amount: payrollsTable.deductionAmount,
-        advance_deduction: payrollsTable.advanceDeduction,
-        final_amount: payrollsTable.finalAmount,
-        total_worked_hours: payrollsTable.totalWorkedHours,
-        overtime_hours: payrollsTable.overtimeHours,
-        status: payrollsTable.status,
-        notes: payrollsTable.notes,
-        approved_by: payrollsTable.approvedBy,
-        approved_at: payrollsTable.approvedAt,
-        paid_by: payrollsTable.paidBy,
-        paid_at: payrollsTable.paidAt,
-        payment_method: payrollsTable.paymentMethod,
-        payment_reference: payrollsTable.paymentReference,
-        payment_status: payrollsTable.paymentStatus,
-        payment_processed_at: payrollsTable.paymentProcessedAt,
-        currency: payrollsTable.currency,
-        payroll_run_id: payrollsTable.payrollRunId,
-        created_at: payrollsTable.createdAt,
-        updated_at: payrollsTable.updatedAt,
+        id: payrolls.id,
+        employeeId: payrolls.employeeId,
+        month: payrolls.month,
+        year: payrolls.year,
+        baseSalary: payrolls.baseSalary,
+        overtimeAmount: payrolls.overtimeAmount,
+        bonusAmount: payrolls.bonusAmount,
+        deductionAmount: payrolls.deductionAmount,
+        advanceDeduction: payrolls.advanceDeduction,
+        finalAmount: payrolls.finalAmount,
+        totalWorkedHours: payrolls.totalWorkedHours,
+        overtimeHours: payrolls.overtimeHours,
+        status: payrolls.status,
+        notes: payrolls.notes,
+        currency: payrolls.currency,
+        createdAt: payrolls.createdAt,
+        updatedAt: payrolls.updatedAt,
         employee: {
-          id: employeesTable.id,
-          first_name: employeesTable.firstName,
-          last_name: employeesTable.lastName,
-          email: employeesTable.email,
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          email: employees.email,
+          phone: employees.phone,
+          basicSalary: employees.basicSalary,
+          departmentId: employees.departmentId,
+          designationId: employees.designationId,
         },
+        department: {
+          id: departments.id,
+          name: departments.name,
+        },
+        designation: {
+          id: designations.id,
+          name: designations.name,
+        }
       })
-      .from(payrollsTable)
-      .leftJoin(employeesTable, eq(employeesTable.id, payrollsTable.employeeId))
-      .where(whereExpr as any)
-      .orderBy(desc(payrollsTable.createdAt))
-      .offset(skip)
-      .limit(per_page);
+      .from(payrolls)
+      .leftJoin(employees, eq(payrolls.employeeId, employees.id))
+      .leftJoin(departments, eq(employees.departmentId, departments.id))
+      .leftJoin(designations, eq(employees.designationId, designations.id))
+      .orderBy(desc(payrolls.createdAt))
+      .limit(limit)
+      .offset(offset);
 
-    const payrollIds = payrollRows.map((p) => p.id);
-    let itemsByPayrollId: Record<number, any[]> = {};
-    if (payrollIds.length > 0) {
-      const itemRows = await db
-        .select({
-          id: payrollItemsTable.id,
-          payroll_id: payrollItemsTable.payrollId,
-          type: payrollItemsTable.type,
-          description: payrollItemsTable.description,
-          amount: payrollItemsTable.amount,
-          is_taxable: payrollItemsTable.isTaxable,
-          tax_rate: payrollItemsTable.taxRate,
-          order: payrollItemsTable.order,
-          created_at: payrollItemsTable.createdAt,
-          updated_at: payrollItemsTable.updatedAt,
-        })
-        .from(payrollItemsTable)
-        .where(inArray(payrollItemsTable.payrollId, payrollIds as any))
-        .orderBy(asc(payrollItemsTable.order));
-
-      itemsByPayrollId = itemRows.reduce((acc: Record<number, any[]>, item) => {
-        const key = item.payroll_id as unknown as number;
-        if (!acc[key]) acc[key] = [];
-        acc[key].push(item);
-        return acc;
-      }, {});
+    if (whereConditions.length > 0) {
+      payrollsQuery.where(and(...whereConditions));
     }
 
-    const payrolls = payrollRows.map((p) => ({
-      ...p,
-      items: itemsByPayrollId[p.id] || [],
+    const payrollsData = await payrollsQuery;
+
+    // Get payroll items for each payroll
+    const payrollIds = payrollsData.map(p => p.id);
+    const payrollItemsData = await db
+      .select({
+        id: payrollItems.id,
+        payrollId: payrollItems.payrollId,
+        type: payrollItems.type,
+        description: payrollItems.description,
+        amount: payrollItems.amount,
+        isTaxable: payrollItems.isTaxable,
+        taxRate: payrollItems.taxRate,
+        order: payrollItems.order,
+      })
+      .from(payrollItems)
+      .where(inArray(payrollItems.payrollId, payrollIds))
+      .orderBy(asc(payrollItems.order));
+
+    // Group payroll items by payroll ID and transform to match frontend format
+    const payrollItemsMap = new Map();
+    payrollItemsData.forEach(item => {
+      if (!payrollItemsMap.has(item.payrollId)) {
+        payrollItemsMap.set(item.payrollId, []);
+      }
+      payrollItemsMap.get(item.payrollId).push({
+        id: item.id,
+        payroll_id: item.payrollId,
+        type: item.type,
+        description: item.description,
+        amount: Number(item.amount),
+        is_taxable: item.isTaxable,
+        tax_rate: Number(item.taxRate),
+        order: item.order,
+      });
+    });
+
+    // Transform data to match frontend expectations (snake_case)
+    const result = payrollsData.map(payroll => ({
+      id: payroll.id,
+      employee_id: payroll.employeeId,
+      month: payroll.month,
+      year: payroll.year,
+      base_salary: Number(payroll.baseSalary),
+      overtime_amount: Number(payroll.overtimeAmount),
+      bonus_amount: Number(payroll.bonusAmount),
+      deduction_amount: Number(payroll.deductionAmount),
+      advance_deduction: Number(payroll.advanceDeduction),
+      final_amount: Number(payroll.finalAmount),
+      total_worked_hours: Number(payroll.totalWorkedHours),
+      overtime_hours: Number(payroll.overtimeHours),
+      status: payroll.status,
+      notes: payroll.notes,
+      currency: payroll.currency,
+      created_at: payroll.createdAt,
+      updated_at: payroll.updatedAt,
+      employee: {
+        id: payroll.employee?.id || 0,
+        first_name: payroll.employee?.firstName || '',
+        last_name: payroll.employee?.lastName || '',
+        full_name: payroll.employee ? `${payroll.employee.firstName} ${payroll.employee.lastName}` : '',
+        file_number: payroll.employee?.fileNumber || '',
+        basic_salary: Number(payroll.employee?.basicSalary || 0),
+        department: payroll.department?.name || '',
+        designation: payroll.designation?.name || '',
+        status: 'active' // Default status
+      },
+      items: payrollItemsMap.get(payroll.id) || []
     }));
 
     return NextResponse.json({
       success: true,
-      data: {
-        data: payrolls,
-        current_page: page,
-        last_page: last_page,
-        per_page: per_page,
-        total: total,
-        from: from,
-        to: to,
-        next_page_url: page < last_page ? `/api/payroll?page=${page + 1}` : null,
-        prev_page_url: page > 1 ? `/api/payroll?page=${page - 1}` : null,
-        first_page_url: '/api/payroll?page=1',
-        last_page_url: `/api/payroll?page=${last_page}`,
-        path: '/api/payroll',
-        links: []
-      }
+      data: result,
+      current_page: page,
+      last_page: Math.ceil(total / limit),
+      per_page: limit,
+      total,
+      from: offset + 1,
+      to: Math.min(offset + limit, total),
+      next_page_url: page < Math.ceil(total / limit) ? `?page=${page + 1}` : null,
+      prev_page_url: page > 1 ? `?page=${page - 1}` : null,
+      first_page_url: '?page=1',
+      last_page_url: `?page=${Math.ceil(total / limit)}`,
+      path: '/api/payroll',
+      links: []
     });
+
   } catch (error) {
+    console.error('Error fetching payrolls:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to fetch payrolls: ' + (error as Error).message
-      },
+      { success: false, message: 'Failed to fetch payrolls' },
       { status: 500 }
     );
   }
-};
+}
 
-const createPayrollHandler = async (request: NextRequest) => {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-
+    
     // Validate required fields
-    if (!body.employee_id || !body.month || !body.year) {
+    const requiredFields = ['employeeId', 'month', 'year', 'baseSalary'];
+    for (const field of requiredFields) {
+      if (!body[field]) {
+        return NextResponse.json(
+          { success: false, message: `Missing required field: ${field}` },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Check if payroll already exists for this employee and month/year
+    const existingPayroll = await db
+      .select({ id: payrolls.id })
+      .from(payrolls)
+      .where(
+        and(
+          eq(payrolls.employeeId, body.employeeId),
+          eq(payrolls.month, body.month),
+          eq(payrolls.year, body.year)
+        )
+      )
+      .limit(1);
+
+    if (existingPayroll.length > 0) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Employee ID, month, and year are required'
-        },
+        { success: false, message: 'Payroll already exists for this employee and month/year' },
         { status: 400 }
       );
     }
 
-    // Get session to check user role
-    const session = await getServerSession(authConfig);
-    const user = session?.user;
+    // Calculate final amount
+    const baseSalary = Number(body.baseSalary) || 0;
+    const overtimeAmount = Number(body.overtimeAmount) || 0;
+    const bonusAmount = Number(body.bonusAmount) || 0;
+    const deductionAmount = Number(body.deductionAmount) || 0;
+    const advanceDeduction = Number(body.advanceDeduction) || 0;
     
-    // For employee users, ensure they can only create payroll records for themselves
-    if (user?.role === 'EMPLOYEE' && user.national_id) {
-      const ownEmp = await db
-        .select({ id: employeesTable.id })
-        .from(employeesTable)
-        .where(eq(employeesTable.iqamaNumber as any, user.national_id))
-        .limit(1);
-      const ownEmployee = ownEmp[0];
-      if (ownEmployee) {
-        if (body.employee_id && parseInt(body.employee_id) !== (ownEmployee.id as number)) {
-          return NextResponse.json(
-            { error: 'You can only create payroll records for yourself' },
-            { status: 403 }
-          );
-        }
-        body.employee_id = ownEmployee.id;
-      }
-    }
+    const finalAmount = baseSalary + overtimeAmount + bonusAmount - deductionAmount - advanceDeduction;
 
-    // Check if payroll already exists for this employee, month, and year
-    const existingRows = await db
-      .select({ id: payrollsTable.id })
-      .from(payrollsTable)
-      .where(and(
-        eq(payrollsTable.employeeId, Number(body.employee_id)),
-        eq(payrollsTable.month, Number(body.month)),
-        eq(payrollsTable.year, Number(body.year)),
-      ))
-      .limit(1);
-    const existingPayroll = existingRows[0];
-
-    if (existingPayroll) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Payroll record already exists for this employee, month, and year'
-        },
-        { status: 409 }
-      );
-    }
-
-    // Create payroll record (Drizzle)
-    const nowIso = new Date().toISOString();
-    const inserted = await db
-      .insert(payrollsTable)
+    // Create payroll
+    const insertedPayrolls = await db
+      .insert(payrolls)
       .values({
-        employeeId: Number(body.employee_id),
-        month: Number(body.month),
-        year: Number(body.year),
-        baseSalary: (body.base_salary != null ? String(Number(body.base_salary)) : undefined) as any,
-        finalAmount: (body.final_amount != null ? String(Number(body.final_amount)) : undefined) as any,
+        employeeId: body.employeeId,
+        month: body.month,
+        year: body.year,
+        baseSalary: baseSalary.toString(),
+        overtimeAmount: overtimeAmount.toString(),
+        bonusAmount: bonusAmount.toString(),
+        deductionAmount: deductionAmount.toString(),
+        advanceDeduction: advanceDeduction.toString(),
+        finalAmount: finalAmount.toString(),
+        totalWorkedHours: (body.totalWorkedHours || 0).toString(),
+        overtimeHours: (body.overtimeHours || 0).toString(),
         status: body.status || 'pending',
         notes: body.notes || '',
-        updatedAt: nowIso,
+        currency: body.currency || 'SAR',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
-      .returning({
-        id: payrollsTable.id,
-        employee_id: payrollsTable.employeeId,
-        month: payrollsTable.month,
-        year: payrollsTable.year,
-        base_salary: payrollsTable.baseSalary,
-        final_amount: payrollsTable.finalAmount,
-        status: payrollsTable.status,
-        notes: payrollsTable.notes,
-        created_at: payrollsTable.createdAt,
-        updated_at: payrollsTable.updatedAt,
-      });
-    const payroll = inserted[0];
+      .returning();
+
+    const payroll = insertedPayrolls[0];
+
+    // Create payroll items if provided
+    if (body.items && Array.isArray(body.items)) {
+      const payrollItemsData = body.items.map((item: any, index: number) => ({
+        payrollId: payroll.id,
+        type: item.type || 'earnings',
+        description: item.description || '',
+        amount: (item.amount || 0).toString(),
+        isTaxable: item.isTaxable || false,
+        taxRate: (item.taxRate || 0).toString(),
+        order: index + 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }));
+
+      await db
+        .insert(payrollItems)
+        .values(payrollItemsData);
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Payroll record created successfully',
+      message: 'Payroll created successfully',
       data: payroll
-    }, { status: 201 });
+    });
+
   } catch (error) {
+    console.error('Error creating payroll:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to create payroll record: ' + (error as Error).message
-      },
+      { success: false, message: 'Failed to create payroll' },
       { status: 500 }
     );
   }
-};
-
-// Export the wrapped handlers
-export const GET = withAuth(getPayrollHandler);
-export const POST = withAuth(createPayrollHandler);
+}
