@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
-import { prisma } from '@/lib/prisma';
+import { db } from '@/lib/db';
+import { employees as employeesTable, salaryIncrements, users } from '@/lib/drizzle/schema';
+import { eq, desc } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
@@ -20,41 +22,82 @@ export async function GET(
     }
 
     // Check if employee exists
-    const employee = await prisma.employee.findUnique({
-      where: { id: employeeId },
-      select: { id: true, first_name: true, last_name: true, employee_id: true },
-    });
+    const employee = await db
+      .select({ 
+        id: employeesTable.id, 
+        firstName: employeesTable.firstName, 
+        lastName: employeesTable.lastName, 
+        fileNumber: employeesTable.fileNumber 
+      })
+      .from(employeesTable)
+      .where(eq(employeesTable.id, employeeId))
+      .limit(1);
 
-    if (!employee) {
+    if (employee.length === 0) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
-    const salaryIncrements = await prisma.salaryIncrement.findMany({
-      where: { employee_id: employeeId },
-      include: {
-        requested_by_user: {
-          select: {
-            id: true,
-            name: true,
-          }
-        },
-        approved_by_user: {
-          select: {
-            id: true,
-            name: true,
-          }
-        },
-        rejected_by_user: {
-          select: {
-            id: true,
-            name: true,
-          }
-        },
-      },
-      orderBy: { effective_date: 'desc' },
-    });
+    const salaryIncrementsData = await db
+      .select({
+        id: salaryIncrements.id,
+        employeeId: salaryIncrements.employeeId,
+        currentSalary: salaryIncrements.currentSalary,
+        newSalary: salaryIncrements.newSalary,
+        incrementAmount: salaryIncrements.incrementAmount,
+        incrementPercentage: salaryIncrements.incrementPercentage,
+        effectiveDate: salaryIncrements.effectiveDate,
+        reason: salaryIncrements.reason,
+        status: salaryIncrements.status,
+        requestedAt: salaryIncrements.requestedAt,
+        approvedAt: salaryIncrements.approvedAt,
+        rejectedAt: salaryIncrements.rejectedAt,
+        requestedByUserId: salaryIncrements.requestedByUserId,
+        approvedByUserId: salaryIncrements.approvedByUserId,
+        rejectedByUserId: salaryIncrements.rejectedByUserId,
+        notes: salaryIncrements.notes,
+        createdAt: salaryIncrements.createdAt,
+        updatedAt: salaryIncrements.updatedAt,
+        requestedByUserName: users.name,
+        approvedByUserName: users.name,
+        rejectedByUserName: users.name,
+      })
+      .from(salaryIncrements)
+      .leftJoin(users, eq(users.id, salaryIncrements.requestedByUserId))
+      .where(eq(salaryIncrements.employeeId, employeeId))
+      .orderBy(desc(salaryIncrements.effectiveDate));
 
-    return NextResponse.json({ data: salaryIncrements });
+    // Transform the data to match the expected format
+    const transformedIncrements = salaryIncrementsData.map(increment => ({
+      id: increment.id,
+      employee_id: increment.employeeId,
+      current_salary: increment.currentSalary,
+      new_salary: increment.newSalary,
+      increment_amount: increment.incrementAmount,
+      increment_percentage: increment.incrementPercentage,
+      effective_date: increment.effectiveDate,
+      reason: increment.reason,
+      status: increment.status,
+      requested_at: increment.requestedAt,
+      approved_at: increment.approvedAt,
+      rejected_at: increment.rejectedAt,
+      requested_by_user: increment.requestedByUserId ? {
+        id: increment.requestedByUserId,
+        name: increment.requestedByUserName,
+      } : null,
+      approved_by_user: increment.approvedByUserId ? {
+        id: increment.approvedByUserId,
+        name: increment.approvedByUserName,
+      } : null,
+      rejected_by_user: increment.rejectedByUserId ? {
+        id: increment.rejectedByUserId,
+        name: increment.rejectedByUserName,
+      } : null,
+      notes: increment.notes,
+      created_at: increment.createdAt,
+      updated_at: increment.updatedAt,
+    }));
+
+    return NextResponse.json({ data: transformedIncrements });
   } catch (error) {
     console.error('Error fetching employee salary history:', error);
     return NextResponse.json(

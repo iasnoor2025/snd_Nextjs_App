@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
+import { employees, advancePaymentHistories, advancePayments } from '@/lib/drizzle/schema';
+import { eq, and } from 'drizzle-orm';
 
 const deleteEmployeePaymentHandler = async (
   request: NextRequest,
@@ -26,12 +28,14 @@ const deleteEmployeePaymentHandler = async (
     
     // For employee users, ensure they can only access their own payment data
     if (user?.role === 'EMPLOYEE') {
-      // Find employee record that matches user's national_id
-      const ownEmployee = await prisma.employee.findFirst({
-        where: { iqama_number: user.national_id },
-        select: { id: true },
-      });
-      if (ownEmployee && employeeId !== ownEmployee.id) {
+      // Find employee record that matches user's national_id using Drizzle
+      const ownEmployeeRows = await db
+        .select({ id: employees.id })
+        .from(employees)
+        .where(eq(employees.iqamaNumber, String(user.national_id)))
+        .limit(1);
+      
+      if (ownEmployeeRows.length > 0 && employeeId !== ownEmployeeRows[0].id) {
         return NextResponse.json(
           { error: "You can only access your own payment data" },
           { status: 403 }
@@ -39,29 +43,39 @@ const deleteEmployeePaymentHandler = async (
       }
     }
 
-    // Check if payment exists and belongs to the employee
-    const payment = await prisma.advancePaymentHistory.findFirst({
-      where: {
-        id: paymentId,
-        employee_id: employeeId,
-      },
-    });
+    // Check if payment exists and belongs to the employee using Drizzle
+    const paymentRows = await db
+      .select()
+      .from(advancePaymentHistories)
+      .where(
+        and(
+          eq(advancePaymentHistories.id, paymentId),
+          eq(advancePaymentHistories.employeeId, employeeId)
+        )
+      )
+      .limit(1);
 
-    if (!payment) {
+    if (paymentRows.length === 0) {
       return NextResponse.json({ error: "Payment not found" }, { status: 404 });
     }
 
-    // Get the associated advance payment for recalculation
-    const advancePayment = await prisma.advancePayment.findFirst({
-      where: { id: payment.advance_payment_id },
-    });
+    const payment = paymentRows[0];
 
-    if (!advancePayment) {
+    // Get the associated advance payment for recalculation using Drizzle
+    const advancePaymentRows = await db
+      .select()
+      .from(advancePayments)
+      .where(eq(advancePayments.id, payment.advancePaymentId))
+      .limit(1);
+
+    if (advancePaymentRows.length === 0) {
       return NextResponse.json({ error: "Associated advance payment not found" }, { status: 404 });
     }
 
+    const advancePayment = advancePaymentRows[0];
+
     // Calculate the new repaid amount after deleting this payment
-    const newRepaidAmount = Math.max(0, Number(advancePayment.repaid_amount || 0) - Number(payment.amount));
+    const newRepaidAmount = Math.max(0, Number(advancePayment.repaidAmount || 0) - Number(payment.amount));
     
     // Determine the new status based on the new repaid amount
     let newStatus = advancePayment.status;
@@ -73,19 +87,20 @@ const deleteEmployeePaymentHandler = async (
       newStatus = 'fully_repaid';
     }
 
-    // Update the advance payment with recalculated values
-    await prisma.advancePayment.update({
-      where: { id: advancePayment.id },
-      data: {
-        repaid_amount: newRepaidAmount,
+    // Update the advance payment with recalculated values using Drizzle
+    await db
+      .update(advancePayments)
+      .set({
+        repaidAmount: newRepaidAmount.toString(),
         status: newStatus,
-      },
-    });
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(advancePayments.id, advancePayment.id));
 
-    // Permanently delete the payment
-    await prisma.advancePaymentHistory.delete({
-      where: { id: paymentId },
-    });
+    // Permanently delete the payment using Drizzle
+    await db
+      .delete(advancePaymentHistories)
+      .where(eq(advancePaymentHistories.id, paymentId));
 
     return NextResponse.json({
       success: true,

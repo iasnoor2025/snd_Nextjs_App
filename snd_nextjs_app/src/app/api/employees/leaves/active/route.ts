@@ -28,7 +28,7 @@ export const GET = withReadPermission(
             ilike(employeesTable.middleName, s),
             ilike(employeesTable.lastName, s),
             ilike(employeesTable.fileNumber, s),
-            ilike(employeesTable.employeeId, s),
+            ilike(employeesTable.fileNumber, s),
             ilike(employeesTable.iqamaNumber, s),
             ilike(departments.name, s),
             ilike(designations.name, s),

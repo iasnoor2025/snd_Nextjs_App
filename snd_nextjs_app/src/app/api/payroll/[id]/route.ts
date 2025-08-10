@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { payrolls, payrollItems, employees } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
@@ -9,21 +11,14 @@ export async function GET(
     const { id: idParam } = await params;
     const id = parseInt(idParam);
 
-    // Connect to database
-    await prisma.$connect();
+    // Get payroll with employee and items using Drizzle
+    const payrollRows = await db
+      .select()
+      .from(payrolls)
+      .where(eq(payrolls.id, id))
+      .limit(1);
 
-    // Get payroll with employee and items
-    const payroll = await prisma.payroll.findUnique({
-      where: { id: id },
-      include: {
-        employee: true,
-        items: {
-          orderBy: { order: 'asc' }
-        }
-      }
-    });
-
-    if (!payroll) {
+    if (payrollRows.length === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -33,9 +28,34 @@ export async function GET(
       );
     }
 
+    const payroll = payrollRows[0];
+
+    // Get payroll items using Drizzle
+    const payrollItemsRows = await db
+      .select()
+      .from(payrollItems)
+      .where(eq(payrollItems.payrollId, id))
+      .orderBy(payrollItems.order);
+
+    // Get employee data using Drizzle
+    const employeeRows = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.id, payroll.employeeId))
+      .limit(1);
+
+    const employee = employeeRows[0] || null;
+
+    // Format response to match expected structure
+    const formattedPayroll = {
+      ...payroll,
+      employee,
+      items: payrollItemsRows
+    };
+
     return NextResponse.json({
       success: true,
-      data: payroll,
+      data: formattedPayroll,
       message: 'Payroll retrieved successfully'
     });
   } catch (error) {
@@ -47,8 +67,6 @@ export async function GET(
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -62,16 +80,14 @@ export async function PUT(
     const body = await request.json();
     const { base_salary, overtime_amount, bonus_amount, deduction_amount, advance_deduction, notes, status } = body;
 
-    // Connect to database
-    await prisma.$connect();
+    // Check if payroll exists using Drizzle
+    const existingPayrollRows = await db
+      .select()
+      .from(payrolls)
+      .where(eq(payrolls.id, id))
+      .limit(1);
 
-    // Check if payroll exists
-    const existingPayroll = await prisma.payroll.findUnique({
-      where: { id: id },
-      include: { employee: true }
-    });
-
-    if (!existingPayroll) {
+    if (existingPayrollRows.length === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -81,43 +97,65 @@ export async function PUT(
       );
     }
 
+    const existingPayroll = existingPayrollRows[0];
+
     // Helper function to validate numeric values
     const isValidNumber = (value: any): boolean => {
       return value !== undefined && value !== null && !isNaN(Number(value));
     };
 
     // Calculate final amount
-    const finalAmount = (isValidNumber(base_salary) ? base_salary : existingPayroll.base_salary) + 
-                       (isValidNumber(overtime_amount) ? overtime_amount : existingPayroll.overtime_amount) + 
-                       (isValidNumber(bonus_amount) ? bonus_amount : existingPayroll.bonus_amount) - 
-                       (isValidNumber(deduction_amount) ? deduction_amount : existingPayroll.deduction_amount) - 
-                       (isValidNumber(advance_deduction) ? advance_deduction : existingPayroll.advance_deduction);
+    const finalAmount = (isValidNumber(base_salary) ? base_salary : existingPayroll.baseSalary) + 
+                       (isValidNumber(overtime_amount) ? overtime_amount : existingPayroll.overtimeAmount) + 
+                       (isValidNumber(bonus_amount) ? bonus_amount : existingPayroll.bonusAmount) - 
+                       (isValidNumber(deduction_amount) ? deduction_amount : existingPayroll.deductionAmount) - 
+                       (isValidNumber(advance_deduction) ? advance_deduction : existingPayroll.advanceDeduction);
 
-    // Update payroll
-    const updatedPayroll = await prisma.payroll.update({
-      where: { id: id },
-      data: {
-        base_salary: isValidNumber(base_salary) ? base_salary : existingPayroll.base_salary,
-        overtime_amount: isValidNumber(overtime_amount) ? overtime_amount : existingPayroll.overtime_amount,
-        bonus_amount: isValidNumber(bonus_amount) ? bonus_amount : existingPayroll.bonus_amount,
-        deduction_amount: isValidNumber(deduction_amount) ? deduction_amount : existingPayroll.deduction_amount,
-        advance_deduction: isValidNumber(advance_deduction) ? advance_deduction : existingPayroll.advance_deduction,
-        final_amount: finalAmount,
+    // Update payroll using Drizzle
+    const updatedPayrollRows = await db
+      .update(payrolls)
+      .set({
+        baseSalary: isValidNumber(base_salary) ? base_salary.toString() : existingPayroll.baseSalary,
+        overtimeAmount: isValidNumber(overtime_amount) ? overtime_amount.toString() : existingPayroll.overtimeAmount,
+        bonusAmount: isValidNumber(bonus_amount) ? bonus_amount.toString() : existingPayroll.bonusAmount,
+        deductionAmount: isValidNumber(deduction_amount) ? deduction_amount.toString() : existingPayroll.deductionAmount,
+        advanceDeduction: isValidNumber(advance_deduction) ? advance_deduction.toString() : existingPayroll.advanceDeduction,
+        finalAmount: finalAmount.toString(),
         notes: notes !== undefined ? notes : existingPayroll.notes,
         status: status !== undefined ? status : existingPayroll.status,
-        updated_at: new Date()
-      },
-      include: {
-        employee: true,
-        items: {
-          orderBy: { order: 'asc' }
-        }
-      }
-    });
+        updatedAt: new Date().toISOString()
+      })
+      .where(eq(payrolls.id, id))
+      .returning();
+
+    const updatedPayroll = updatedPayrollRows[0];
+
+    // Get updated payroll items using Drizzle
+    const updatedPayrollItemsRows = await db
+      .select()
+      .from(payrollItems)
+      .where(eq(payrollItems.payrollId, id))
+      .orderBy(payrollItems.order);
+
+    // Get employee data using Drizzle
+    const employeeRows = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.id, updatedPayroll.employeeId))
+      .limit(1);
+
+    const employee = employeeRows[0] || null;
+
+    // Format response to match expected structure
+    const formattedUpdatedPayroll = {
+      ...updatedPayroll,
+      employee,
+      items: updatedPayrollItemsRows
+    };
 
     return NextResponse.json({
       success: true,
-      data: updatedPayroll,
+      data: formattedUpdatedPayroll,
       message: 'Payroll updated successfully'
     });
   } catch (error) {
@@ -129,8 +167,6 @@ export async function PUT(
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
 
@@ -142,16 +178,14 @@ export async function DELETE(
     const { id: idParam } = await params;
     const id = parseInt(idParam);
 
-    // Connect to database
-    await prisma.$connect();
+    // Check if payroll exists using Drizzle
+    const payrollRows = await db
+      .select()
+      .from(payrolls)
+      .where(eq(payrolls.id, id))
+      .limit(1);
 
-    // Check if payroll exists
-    const payroll = await prisma.payroll.findUnique({
-      where: { id: id },
-      include: { employee: true }
-    });
-
-    if (!payroll) {
+    if (payrollRows.length === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -160,6 +194,8 @@ export async function DELETE(
         { status: 404 }
       );
     }
+
+    const payroll = payrollRows[0];
 
     // Check if payroll is paid - if so, prevent deletion
     if (payroll.status === 'paid') {
@@ -172,15 +208,15 @@ export async function DELETE(
       );
     }
 
-    // Delete payroll items first (cascade)
-    await prisma.payrollItem.deleteMany({
-      where: { payroll_id: id }
-    });
+    // Delete payroll items first (cascade) using Drizzle
+    await db
+      .delete(payrollItems)
+      .where(eq(payrollItems.payrollId, id));
 
-    // Delete payroll
-    await prisma.payroll.delete({
-      where: { id: id }
-    });
+    // Delete payroll using Drizzle
+    await db
+      .delete(payrolls)
+      .where(eq(payrolls.id, id));
 
     return NextResponse.json({
       success: true,
@@ -195,7 +231,5 @@ export async function DELETE(
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

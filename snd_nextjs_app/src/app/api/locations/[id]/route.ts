@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { locations } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
@@ -16,17 +18,20 @@ export async function GET(
       );
     }
 
-    const location = await prisma.location.findUnique({
-      where: { id: locationId }
-    });
+    const locationRows = await db
+      .select()
+      .from(locations)
+      .where(eq(locations.id, locationId))
+      .limit(1);
 
-    if (!location) {
+    if (locationRows.length === 0) {
       return NextResponse.json(
         { error: 'Location not found' },
         { status: 404 }
       );
     }
 
+    const location = locationRows[0];
     return NextResponse.json({
       success: true,
       data: location
@@ -57,21 +62,25 @@ export async function PUT(
 
     const body = await request.json();
     
-    const location = await prisma.location.update({
-      where: { id: locationId },
-      data: {
+    const locationRows = await db
+      .update(locations)
+      .set({
         name: body.name,
         description: body.description,
         address: body.address,
         city: body.city,
         state: body.state,
-        zip_code: body.zip_code,
+        zipCode: body.zip_code,
         country: body.country,
         latitude: body.latitude,
         longitude: body.longitude,
-        is_active: body.is_active !== undefined ? body.is_active : true,
-      }
-    });
+        isActive: body.is_active !== undefined ? body.is_active : true,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(locations.id, locationId))
+      .returning();
+
+    const location = locationRows[0];
 
     return NextResponse.json({
       success: true,
@@ -102,9 +111,9 @@ export async function DELETE(
       );
     }
 
-    await prisma.location.delete({
-      where: { id: locationId }
-    });
+    await db
+      .delete(locations)
+      .where(eq(locations.id, locationId));
 
     return NextResponse.json({
       success: true,

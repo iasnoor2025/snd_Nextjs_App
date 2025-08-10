@@ -1,20 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { employees as employeesTable, departments, designations, organizationalUnits } from '@/lib/drizzle/schema';
+import { asc } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
-    // Fetch employees from database
-    const employees = await prisma.employee.findMany({
-      include: {
-        department: true,
-        designation: true,
-        unit: true
-      },
-      orderBy: [
-        { first_name: 'asc' },
-        { last_name: 'asc' }
-      ]
-    });
+    // Fetch employees from database using Drizzle
+    const employees = await db
+      .select({
+        id: employeesTable.id,
+        fileNumber: employeesTable.fileNumber,
+        firstName: employeesTable.firstName,
+        middleName: employeesTable.middleName,
+        lastName: employeesTable.lastName,
+        email: employeesTable.email,
+        phone: employeesTable.phone,
+        address: employeesTable.address,
+        city: employeesTable.city,
+        state: employeesTable.state,
+        country: employeesTable.country,
+        nationality: employeesTable.nationality,
+        dateOfBirth: employeesTable.dateOfBirth,
+        hireDate: employeesTable.hireDate,
+        departmentName: departments.name,
+        designationName: designations.name,
+        unitName: organizationalUnits.name,
+        supervisor: employeesTable.supervisor,
+        status: employeesTable.status,
+        currentLocation: employeesTable.currentLocation,
+        basicSalary: employeesTable.basicSalary,
+        foodAllowance: employeesTable.foodAllowance,
+        housingAllowance: employeesTable.housingAllowance,
+        transportAllowance: employeesTable.transportAllowance,
+        hourlyRate: employeesTable.hourlyRate,
+        bankName: employeesTable.bankName,
+        bankAccountNumber: employeesTable.bankAccountNumber,
+        bankIban: employeesTable.bankIban,
+        contractHoursPerDay: employeesTable.contractHoursPerDay,
+        contractDaysPerMonth: employeesTable.contractDaysPerMonth,
+        emergencyContactName: employeesTable.emergencyContactName,
+        emergencyContactPhone: employeesTable.emergencyContactPhone,
+        emergencyContactRelationship: employeesTable.emergencyContactRelationship,
+        iqamaNumber: employeesTable.iqamaNumber,
+        iqamaExpiry: employeesTable.iqamaExpiry,
+        iqamaCost: employeesTable.iqamaCost,
+        passportNumber: employeesTable.passportNumber,
+        passportExpiry: employeesTable.passportExpiry,
+        drivingLicenseNumber: employeesTable.drivingLicenseNumber,
+        drivingLicenseExpiry: employeesTable.drivingLicenseExpiry,
+        drivingLicenseCost: employeesTable.drivingLicenseCost,
+        operatorLicenseNumber: employeesTable.operatorLicenseNumber,
+        operatorLicenseExpiry: employeesTable.operatorLicenseExpiry,
+        operatorLicenseCost: employeesTable.operatorLicenseCost,
+        tuvCertificationNumber: employeesTable.tuvCertificationNumber,
+        tuvCertificationExpiry: employeesTable.tuvCertificationExpiry,
+        tuvCertificationCost: employeesTable.tuvCertificationCost,
+        spspLicenseNumber: employeesTable.spspLicenseNumber,
+        spspLicenseExpiry: employeesTable.spspLicenseExpiry,
+        spspLicenseCost: employeesTable.spspLicenseCost,
+        isOperator: employeesTable.isOperator,
+        notes: employeesTable.notes,
+      })
+      .from(employeesTable)
+      .leftJoin(departments, eq(departments.id, employeesTable.departmentId))
+      .leftJoin(designations, eq(designations.id, employeesTable.designationId))
+      .leftJoin(organizationalUnits, eq(organizationalUnits.id, employeesTable.unitId))
+      .orderBy(asc(employeesTable.firstName), asc(employeesTable.lastName));
 
     // Format employees for CSV
     const csvHeaders = [
@@ -74,12 +126,12 @@ export async function GET(request: NextRequest) {
     ];
 
     const csvRows = employees.map(employee => [
-      employee.employee_id || '',
-      employee.file_number || '',
-      employee.first_name || '',
-      employee.middle_name || '',
-      employee.last_name || '',
-      `${employee.first_name || ''} ${employee.middle_name ? employee.middle_name + ' ' : ''}${employee.last_name || ''}`.trim(),
+      employee.id || '',
+      employee.fileNumber || '',
+      employee.firstName || '',
+      employee.middleName || '',
+      employee.lastName || '',
+      `${employee.firstName || ''} ${employee.middleName ? employee.middleName + ' ' : ''}${employee.lastName || ''}`.trim(),
       employee.email || '',
       employee.phone || '',
       employee.address || '',
@@ -87,68 +139,63 @@ export async function GET(request: NextRequest) {
       employee.state || '',
       employee.country || '',
       employee.nationality || '',
-      employee.date_of_birth?.toISOString().split('T')[0] || '',
-      employee.hire_date?.toISOString().split('T')[0] || '',
-      employee.department?.name || '',
-      employee.designation?.name || '',
-      employee.unit?.name || '',
+      employee.dateOfBirth ? new Date(employee.dateOfBirth as unknown as string).toISOString().split('T')[0] : '',
+      employee.hireDate ? new Date(employee.hireDate as unknown as string).toISOString().split('T')[0] : '',
+      employee.departmentName || '',
+      employee.designationName || '',
+      employee.unitName || '',
       employee.supervisor || '',
       employee.status || '',
-      employee.current_location || '',
-      employee.basic_salary?.toString() || '0',
-      employee.food_allowance?.toString() || '0',
-      employee.housing_allowance?.toString() || '0',
-      employee.transport_allowance?.toString() || '0',
-      employee.hourly_rate?.toString() || '0',
-      employee.bank_name || '',
-      employee.bank_account_number || '',
-      employee.bank_iban || '',
-      employee.contract_hours_per_day?.toString() || '8',
-      employee.contract_days_per_month?.toString() || '26',
-      employee.emergency_contact_name || '',
-      employee.emergency_contact_phone || '',
-      employee.emergency_contact_relationship || '',
-      employee.iqama_number || '',
-      employee.iqama_expiry?.toISOString().split('T')[0] || '',
-      employee.iqama_cost?.toString() || '0',
-      employee.passport_number || '',
-      employee.passport_expiry?.toISOString().split('T')[0] || '',
-      employee.driving_license_number || '',
-      employee.driving_license_expiry?.toISOString().split('T')[0] || '',
-      employee.driving_license_cost?.toString() || '0',
-      employee.operator_license_number || '',
-      employee.operator_license_expiry?.toISOString().split('T')[0] || '',
-      employee.operator_license_cost?.toString() || '0',
-      employee.tuv_certification_number || '',
-      employee.tuv_certification_expiry?.toISOString().split('T')[0] || '',
-      employee.tuv_certification_cost?.toString() || '0',
-      employee.spsp_license_number || '',
-      employee.spsp_license_expiry?.toISOString().split('T')[0] || '',
-      employee.spsp_license_cost?.toString() || '0',
-      employee.is_operator ? 'Yes' : 'No',
+      employee.currentLocation || '',
+      employee.basicSalary?.toString() || '0',
+      employee.foodAllowance?.toString() || '0',
+      employee.housingAllowance?.toString() || '0',
+      employee.transportAllowance?.toString() || '0',
+      employee.hourlyRate?.toString() || '0',
+      employee.bankName || '',
+      employee.bankAccountNumber || '',
+      employee.bankIban || '',
+      employee.contractHoursPerDay?.toString() || '8',
+      employee.contractDaysPerMonth?.toString() || '26',
+      employee.emergencyContactName || '',
+      employee.emergencyContactPhone || '',
+      employee.emergencyContactRelationship || '',
+      employee.iqamaNumber || '',
+      employee.iqamaExpiry ? new Date(employee.iqamaExpiry as unknown as string).toISOString().split('T')[0] : '',
+      employee.iqamaCost?.toString() || '0',
+      employee.passportNumber || '',
+      employee.passportExpiry ? new Date(employee.passportExpiry as unknown as string).toISOString().split('T')[0] : '',
+      employee.drivingLicenseNumber || '',
+      employee.drivingLicenseExpiry ? new Date(employee.drivingLicenseExpiry as unknown as string).toISOString().split('T')[0] : '',
+      employee.drivingLicenseCost?.toString() || '0',
+      employee.operatorLicenseNumber || '',
+      employee.operatorLicenseExpiry ? new Date(employee.operatorLicenseExpiry as unknown as string).toISOString().split('T')[0] : '',
+      employee.operatorLicenseCost?.toString() || '0',
+      employee.tuvCertificationNumber || '',
+      employee.tuvCertificationExpiry ? new Date(employee.tuvCertificationExpiry as unknown as string).toISOString().split('T')[0] : '',
+      employee.tuvCertificationCost?.toString() || '0',
+      employee.spspLicenseNumber || '',
+      employee.spspLicenseExpiry ? new Date(employee.spspLicenseExpiry as unknown as string).toISOString().split('T')[0] : '',
+      employee.spspLicenseCost?.toString() || '0',
+      employee.isOperator ? 'Yes' : 'No',
       employee.notes || ''
     ]);
 
     // Create CSV content
-    const csvContent = [
-      csvHeaders.join(','),
-      ...csvRows.map(row => row.map(field => `"${field}"`).join(','))
-    ].join('\n');
+    const csvContent = [csvHeaders, ...csvRows]
+      .map(row => row.map(field => `"${field}"`).join(','))
+      .join('\n');
 
-    // Return CSV file
-    return new NextResponse(csvContent, {
-      status: 200,
-      headers: {
-        'Content-Type': 'text/csv',
-        'Content-Disposition': 'attachment; filename="employees.csv"',
-      },
-    });
+    // Set response headers for CSV download
+    const response = new NextResponse(csvContent);
+    response.headers.set('Content-Type', 'text/csv');
+    response.headers.set('Content-Disposition', 'attachment; filename="employees.csv"');
+
+    return response;
   } catch (error) {
+    console.error('Error exporting employees:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to export employees: ' + (error as Error).message
-      },
+      { error: 'Failed to export employees' },
       { status: 500 }
     );
   }

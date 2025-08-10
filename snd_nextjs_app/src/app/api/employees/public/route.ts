@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
         or(
           ilike(employeesTable.firstName, s),
           ilike(employeesTable.lastName, s),
-          ilike(employeesTable.employeeId, s),
+          ilike(employeesTable.fileNumber, s),
           ilike(employeesTable.email as any, s),
         )
       );
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         id: employeesTable.id,
         first_name: employeesTable.firstName,
         last_name: employeesTable.lastName,
-        employee_id: employeesTable.employeeId,
+        employee_id: employeesTable.id,
         file_number: employeesTable.fileNumber,
         email: employeesTable.email,
         phone: employeesTable.phone,

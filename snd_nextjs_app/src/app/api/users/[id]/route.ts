@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { users } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
+
 // GET /api/users/[id] - Get user by ID
 export async function GET(
   request: NextRequest,
@@ -15,26 +18,28 @@ export async function GET(
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: parseInt(id) },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role_id: true,
-        isActive: true,
-        created_at: true,
-        last_login_at: true,
-      },
-    });
+    const userRows = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role_id: users.roleId,
+        isActive: users.isActive,
+        created_at: users.createdAt,
+        last_login_at: users.lastLoginAt,
+      })
+      .from(users)
+      .where(eq(users.id, parseInt(id)))
+      .limit(1);
 
-    if (!user) {
+    if (userRows.length === 0) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       );
     }
 
+    const user = userRows[0];
     return NextResponse.json(user);
   } catch (error) {
     console.error('Error fetching user:', error);
@@ -70,37 +75,43 @@ export async function PUT(
     }
 
     // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id: parseInt(id) },
-    });
+    const existingUserRows = await db
+      .select({ id: users.id, roleId: users.roleId, isActive: users.isActive })
+      .from(users)
+      .where(eq(users.id, parseInt(id)))
+      .limit(1);
 
-    if (!existingUser) {
+    if (existingUserRows.length === 0) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       );
     }
 
+    const existingUser = existingUserRows[0];
+
     // Update user
-    const updatedUser = await prisma.user.update({
-      where: { id: parseInt(id) },
-      data: {
+    const updatedUserRows = await db
+      .update(users)
+      .set({
         name: body.name,
         email: body.email,
-        role_id: body.role_id || existingUser.role_id,
+        roleId: body.role_id || existingUser.roleId,
         isActive: body.isActive !== undefined ? body.isActive : existingUser.isActive,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role_id: true,
-        isActive: true,
-        created_at: true,
-        last_login_at: true,
-      },
-    });
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(users.id, parseInt(id)))
+      .returning({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role_id: users.roleId,
+        isActive: users.isActive,
+        created_at: users.createdAt,
+        last_login_at: users.lastLoginAt,
+      });
 
+    const updatedUser = updatedUserRows[0];
     return NextResponse.json(updatedUser);
   } catch (error) {
     console.error('Error updating user:', error);

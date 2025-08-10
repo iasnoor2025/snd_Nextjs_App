@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authConfig } from '@/lib/auth-config'
+import { employeeLeaves } from '@/lib/drizzle/schema'
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,12 +25,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { employee_id, leave_type, start_date, end_date, reason } = body
+    // Support both field names for compatibility
+    const employee_id = body.employee_id || body.employeeId
+    const { leave_type, start_date, end_date, reason } = body
 
     // Validate required fields
     if (!employee_id || !leave_type || !start_date || !end_date) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: employee_id/employeeId, leave_type, start_date, and end_date are required' },
         { status: 400 }
       )
     }
@@ -39,18 +42,23 @@ export async function POST(request: NextRequest) {
     const end = new Date(end_date)
     const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
 
-    // Create leave request
-    const leaveRequest = await prisma.employeeLeave.create({
-      data: {
-        employee_id: parseInt(employee_id),
-        leave_type,
-        start_date: new Date(start_date),
-        end_date: new Date(end_date),
+    // Create leave request using Drizzle
+    const leaveRequestRows = await db
+      .insert(employeeLeaves)
+      .values({
+        employeeId: parseInt(employee_id),
+        leaveType: leave_type,
+        startDate: new Date(start_date).toISOString(),
+        endDate: new Date(end_date).toISOString(),
         reason: reason || '',
-        days,
-        status: 'pending'
-      }
-    })
+        days: days,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .returning();
+
+    const leaveRequest = leaveRequestRows[0];
 
     return NextResponse.json({
       message: 'Leave request submitted successfully',

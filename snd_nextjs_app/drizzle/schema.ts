@@ -518,7 +518,6 @@ export const employees = pgTable("employees", {
 	erpnextId: text("erpnext_id"),
 	unitId: integer("unit_id"),
 	fileNumber: text("file_number"),
-	employeeId: text("employee_id").notNull(),
 	firstName: text("first_name").notNull(),
 	middleName: text("middle_name"),
 	lastName: text("last_name").notNull(),
@@ -590,7 +589,6 @@ export const employees = pgTable("employees", {
 	updatedAt: timestamp("updated_at", { precision: 3, mode: 'string' }).notNull(),
 	deletedAt: timestamp("deleted_at", { precision: 3, mode: 'string' }),
 }, (table) => [
-	uniqueIndex("employees_employee_id_key").using("btree", table.employeeId.asc().nullsLast().op("text_ops")),
 	uniqueIndex("employees_file_number_key").using("btree", table.fileNumber.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.designationId],

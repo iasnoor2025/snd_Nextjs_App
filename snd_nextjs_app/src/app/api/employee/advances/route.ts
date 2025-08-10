@@ -112,21 +112,27 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user has EMPLOYEE role
-    if (session.user.role !== 'EMPLOYEE') {
+    // Check if user has appropriate role to create advance requests
+    // Allow EMPLOYEE and higher roles (OPERATOR, SUPERVISOR, MANAGER, ADMIN, SUPER_ADMIN)
+    const allowedRoles = ['EMPLOYEE', 'OPERATOR', 'SUPERVISOR', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'];
+    if (!allowedRoles.includes(session.user.role)) {
       return NextResponse.json(
-        { error: 'Access denied. Employee role required.' },
+        { error: `Access denied. Role ${session.user.role} cannot create advance requests.` },
         { status: 403 }
       )
     }
 
     const body = await request.json()
-    const { employee_id, amount, reason } = body
+    // Support both field names for compatibility
+    const employee_id = body.employee_id || body.employeeId
+    const amount = body.amount
+    const reason = body.reason
+    const monthly_deduction = body.monthly_deduction
 
     // Validate required fields
     if (!employee_id || !amount) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: employee_id/employeeId and amount are required' },
         { status: 400 }
       )
     }
@@ -140,6 +146,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate monthly deduction if provided
+    let monthlyDeductionValue: string | null = null
+    if (monthly_deduction) {
+      const parsed = parseFloat(monthly_deduction)
+      if (isNaN(parsed) || parsed < 0) {
+        return NextResponse.json(
+          { error: 'Invalid monthly deduction amount' },
+          { status: 400 }
+        )
+      }
+      monthlyDeductionValue = parsed.toString()
+    }
+
     // Create advance request using Drizzle
     const advanceRows = await db
       .insert(advancePayments)
@@ -149,6 +168,7 @@ export async function POST(request: NextRequest) {
         purpose: reason || '',
         status: 'pending',
         repaidAmount: '0',
+        monthlyDeduction: monthlyDeductionValue,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })

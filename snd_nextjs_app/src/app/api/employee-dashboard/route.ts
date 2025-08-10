@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authConfig } from '@/lib/auth-config'
+import { employees, users, departments, designations, timesheets, employeeLeaves, employeeAssignments, projects, rentals, advancePayments, employeeDocuments } from '@/lib/drizzle/schema'
+import { eq, gte, desc, and } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,268 +25,230 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get employee data for the current user
-    const employee = await prisma.employee.findFirst({
-      where: {
-        user_id: parseInt(session.user.id)
-      },
-      include: {
-        user: true,
-        department: true,
-        designation: true
-      }
-    })
+    // Get employee data for the current user using Drizzle
+    const employeeRows = await db
+      .select({
+        id: employees.id,
+        employeeId: employees.employeeId,
+        firstName: employees.firstName,
+        lastName: employees.lastName,
+        email: employees.email,
+        phone: employees.phone,
+        hireDate: employees.hireDate,
+        salary: employees.salary,
+        status: employees.status,
+        departmentId: employees.departmentId,
+        designationId: employees.designationId,
+        userId: employees.userId,
+        department: {
+          id: departments.id,
+          name: departments.name,
+          code: departments.code
+        },
+        designation: {
+          id: designations.id,
+          title: designations.title,
+          code: designations.code
+        },
+        user: {
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          role: users.role
+        }
+      })
+      .from(employees)
+      .leftJoin(users, eq(employees.userId, users.id))
+      .leftJoin(departments, eq(employees.departmentId, departments.id))
+      .leftJoin(designations, eq(employees.designationId, designations.id))
+      .where(eq(employees.userId, parseInt(session.user.id)))
+      .limit(1);
 
-    if (!employee) {
+    if (employeeRows.length === 0) {
       return NextResponse.json(
         { error: 'Employee not found' },
         { status: 404 }
       )
     }
 
-    // Get recent timesheets (last 7 days)
-    const recentTimesheets = await prisma.timesheet.findMany({
-      where: {
-        employee_id: employee.id,
-        date: {
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    const employee = employeeRows[0];
+
+    // Get recent timesheets (last 7 days) using Drizzle
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const recentTimesheetsRows = await db
+      .select({
+        id: timesheets.id,
+        date: timesheets.date,
+        hoursWorked: timesheets.hoursWorked,
+        overtimeHours: timesheets.overtimeHours,
+        status: timesheets.status,
+        description: timesheets.description,
+        projectId: timesheets.projectId,
+        project: {
+          id: projects.id,
+          name: projects.name,
+          code: projects.code
         }
-      },
-      orderBy: {
-        date: 'desc'
-      },
-      take: 5,
-      include: {
-        project_rel: true
-      }
-    })
+      })
+      .from(timesheets)
+      .leftJoin(projects, eq(timesheets.projectId, projects.id))
+      .where(
+        and(
+          eq(timesheets.employeeId, employee.id),
+          gte(timesheets.date, sevenDaysAgo)
+        )
+      )
+      .orderBy(desc(timesheets.date))
+      .limit(5);
 
-    // Get recent leave requests
-    const recentLeaves = await prisma.employeeLeave.findMany({
-      where: {
-        employee_id: employee.id
-      },
-      orderBy: {
-        created_at: 'desc'
-      },
-      take: 5
-    })
+    // Get recent leave requests using Drizzle
+    const recentLeavesRows = await db
+      .select({
+        id: employeeLeaves.id,
+        leaveType: employeeLeaves.leaveType,
+        startDate: employeeLeaves.startDate,
+        endDate: employeeLeaves.endDate,
+        days: employeeLeaves.days,
+        status: employeeLeaves.status,
+        reason: employeeLeaves.reason,
+        createdAt: employeeLeaves.createdAt
+      })
+      .from(employeeLeaves)
+      .where(eq(employeeLeaves.employeeId, employee.id))
+      .orderBy(desc(employeeLeaves.createdAt))
+      .limit(5);
 
-    // Get current projects/assignments
-    const currentAssignments = await prisma.employeeAssignment.findMany({
-      where: {
-        employee_id: employee.id,
-        status: 'active'
-      },
-      include: {
-        project: true,
-        rental: true
-      },
-      orderBy: {
-        created_at: 'desc'
-      },
-      take: 5
-    })
+    // Get current projects/assignments using Drizzle
+    const currentAssignmentsRows = await db
+      .select({
+        id: employeeAssignments.id,
+        startDate: employeeAssignments.startDate,
+        endDate: employeeAssignments.endDate,
+        status: employeeAssignments.status,
+        projectId: employeeAssignments.projectId,
+        rentalId: employeeAssignments.rentalId,
+        project: {
+          id: projects.id,
+          name: projects.name,
+          code: projects.code
+        },
+        rental: {
+          id: rentals.id,
+          name: rentals.name,
+          code: rentals.code
+        }
+      })
+      .from(employeeAssignments)
+      .leftJoin(projects, eq(employeeAssignments.projectId, projects.id))
+      .leftJoin(rentals, eq(employeeAssignments.rentalId, rentals.id))
+      .where(
+        and(
+          eq(employeeAssignments.employeeId, employee.id),
+          eq(employeeAssignments.status, 'active')
+        )
+      )
+      .orderBy(desc(employeeAssignments.createdAt))
+      .limit(5);
 
-    // Get recent advances
-    const recentAdvances = await prisma.advancePayment.findMany({
-      where: {
-        employee_id: employee.id
-      },
-      orderBy: {
-        created_at: 'desc'
-      },
-      take: 5
-    })
+    // Get recent advances using Drizzle
+    const recentAdvancesRows = await db
+      .select({
+        id: advancePayments.id,
+        amount: advancePayments.amount,
+        purpose: advancePayments.purpose,
+        status: advancePayments.status,
+        monthlyDeduction: advancePayments.monthlyDeduction,
+        createdAt: advancePayments.createdAt
+      })
+      .from(advancePayments)
+      .where(eq(advancePayments.employeeId, employee.id))
+      .orderBy(desc(advancePayments.createdAt))
+      .limit(5);
 
-    // Get employee documents
-    const documents = await prisma.employeeDocument.findMany({
-      where: {
-        employee_id: employee.id
-      },
-      orderBy: {
-        created_at: 'desc'
-      },
-      take: 5
-    })
+    // Get employee documents using Drizzle
+    const employeeDocumentsRows = await db
+      .select({
+        id: employeeDocuments.id,
+        documentType: employeeDocuments.documentType,
+        fileName: employeeDocuments.fileName,
+        fileUrl: employeeDocuments.fileUrl,
+        uploadedAt: employeeDocuments.uploadedAt
+      })
+      .from(employeeDocuments)
+      .where(eq(employeeDocuments.employeeId, employee.id))
+      .orderBy(desc(employeeDocuments.uploadedAt))
+      .limit(5);
 
-    // Get employee skills
-    const skills = await prisma.employeeSkill.findMany({
-      where: {
-        employee_id: employee.id
-      },
-      include: {
-        skill: true
-      },
-      orderBy: {
-        created_at: 'desc'
-      },
-      take: 5
-    })
+    // Transform data to match expected format
+    const recentTimesheets = recentTimesheetsRows.map(ts => ({
+      id: ts.id,
+      date: ts.date,
+      hours_worked: ts.hoursWorked,
+      overtime_hours: ts.overtimeHours,
+      status: ts.status,
+      description: ts.description,
+      project_rel: ts.project
+    }));
 
-    // Get training records
-    const trainingRecords = await prisma.employeeTraining.findMany({
-      where: {
-        employee_id: employee.id
-      },
-      include: {
-        training: true
-      },
-      orderBy: {
-        created_at: 'desc'
-      },
-      take: 5
-    })
+    const recentLeaves = recentLeavesRows.map(leave => ({
+      id: leave.id,
+      leave_type: leave.leaveType,
+      start_date: leave.startDate,
+      end_date: leave.endDate,
+      days: leave.days,
+      status: leave.status,
+      reason: leave.reason,
+      created_at: leave.createdAt
+    }));
 
-    // Calculate statistics
-    const [
-      totalTimesheets,
-      pendingLeaves,
-      approvedLeaves,
-      totalAssignments,
-      totalDocuments,
-      totalAdvances,
-      totalSkills,
-      totalTrainingRecords
-    ] = await Promise.all([
-      prisma.timesheet.count({ where: { employee_id: employee.id } }),
-      prisma.employeeLeave.count({ where: { employee_id: employee.id, status: 'pending' } }),
-      prisma.employeeLeave.count({ where: { employee_id: employee.id, status: 'approved' } }),
-      prisma.employeeAssignment.count({ where: { employee_id: employee.id } }),
-      prisma.employeeDocument.count({ where: { employee_id: employee.id } }),
-      prisma.advancePayment.count({ where: { employee_id: employee.id } }),
-      prisma.employeeSkill.count({ where: { employee_id: employee.id } }),
-      prisma.employeeTraining.count({ where: { employee_id: employee.id } })
-    ])
+    const currentAssignments = currentAssignmentsRows.map(assignment => ({
+      id: assignment.id,
+      start_date: assignment.startDate,
+      end_date: assignment.endDate,
+      status: assignment.status,
+      project: assignment.project,
+      rental: assignment.rental,
+      created_at: assignment.createdAt
+    }));
 
-    // Format the response
-    const dashboardData = {
+    const recentAdvances = recentAdvancesRows.map(advance => ({
+      id: advance.id,
+      amount: advance.amount,
+      purpose: advance.purpose,
+      status: advance.status,
+      monthly_deduction: advance.monthlyDeduction,
+      created_at: advance.createdAt
+    }));
+
+    const employeeDocuments = employeeDocumentsRows.map(doc => ({
+      id: doc.id,
+      document_type: doc.documentType,
+      file_name: doc.fileName,
+      file_url: doc.fileUrl,
+      uploaded_at: doc.uploadedAt
+    }));
+
+    return NextResponse.json({
       employee: {
-        id: employee.id.toString(),
-        erpnext_id: employee.erpnext_id,
-        file_number: employee.file_number,
-        employee_id: employee.employee_id,
-        name: `${employee.first_name} ${employee.last_name}`,
-        email: employee.user?.email || '',
+        id: employee.id,
+        employee_id: employee.employeeId,
+        first_name: employee.firstName,
+        last_name: employee.lastName,
+        email: employee.email,
         phone: employee.phone,
-        address: employee.address,
-        city: employee.city,
-        state: employee.state,
-        postal_code: employee.postal_code,
-        country: employee.country,
-        nationality: employee.nationality,
-        date_of_birth: employee.date_of_birth?.toISOString().split('T')[0],
-        hire_date: employee.hire_date?.toISOString().split('T')[0],
-        supervisor: employee.supervisor,
-        designation: employee.designation?.name || 'N/A',
-        department: employee.department?.name || 'N/A',
-        location: employee.current_location,
-        hourly_rate: employee.hourly_rate ? Number(employee.hourly_rate) : null,
-        basic_salary: employee.basic_salary ? Number(employee.basic_salary) : null,
-        food_allowance: employee.food_allowance ? Number(employee.food_allowance) : null,
-        housing_allowance: employee.housing_allowance ? Number(employee.housing_allowance) : null,
-        transport_allowance: employee.transport_allowance ? Number(employee.transport_allowance) : null,
-        absent_deduction_rate: employee.absent_deduction_rate ? Number(employee.absent_deduction_rate) : null,
-        overtime_rate_multiplier: employee.overtime_rate_multiplier ? Number(employee.overtime_rate_multiplier) : null,
-        overtime_fixed_rate: employee.overtime_fixed_rate ? Number(employee.overtime_fixed_rate) : null,
-        bank_name: employee.bank_name,
-        bank_account_number: employee.bank_account_number,
-        bank_iban: employee.bank_iban,
-        contract_hours_per_day: employee.contract_hours_per_day,
-        contract_days_per_month: employee.contract_days_per_month,
-        emergency_contact_name: employee.emergency_contact_name,
-        emergency_contact_phone: employee.emergency_contact_phone,
-        current_assignment: null
+        hire_date: employee.hireDate,
+        salary: employee.salary,
+        status: employee.status,
+        department: employee.department,
+        designation: employee.designation,
+        user: employee.user
       },
-      statistics: {
-        totalTimesheets,
-        pendingLeaves,
-        approvedLeaves,
-        activeProjects: currentAssignments.length,
-        totalAssignments,
-        totalDocuments,
-        totalAdvances,
-        totalSkills,
-        totalTrainingRecords
-      },
-      recentTimesheets: recentTimesheets.map(ts => ({
-        id: ts.id.toString(),
-        date: ts.date.toISOString().split('T')[0],
-        hours_worked: Number(ts.hours_worked).toString(),
-        overtime_hours: Number(ts.overtime_hours).toString(),
-        status: ts.status,
-        created_at: ts.created_at.toISOString(),
-        start_time: ts.start_time.toISOString(),
-        end_time: ts.end_time?.toISOString() || '',
-        project: ts.project_rel ? { name: ts.project_rel.name } : undefined
-      })),
-      recentLeaves: recentLeaves.map(leave => ({
-        id: leave.id.toString(),
-        start_date: leave.start_date.toISOString().split('T')[0],
-        end_date: leave.end_date.toISOString().split('T')[0],
-        leave_type: leave.leave_type,
-        status: leave.status,
-        created_at: leave.created_at.toISOString(),
-        reason: leave.reason || '',
-        days: leave.days
-      })),
-      currentProjects: currentAssignments.map(assignment => ({
-        id: assignment.id.toString(),
-        name: assignment.name || (assignment.project?.name || assignment.rental?.rental_number || 'Assignment'),
-        description: assignment.notes || '',
-        status: assignment.status,
-        assignmentStatus: assignment.status,
-        project: assignment.project ? { name: assignment.project.name } : undefined,
-        rental: assignment.rental ? { name: assignment.rental.rental_number } : undefined
-      })),
-      documents: documents.map(doc => ({
-        id: doc.id.toString(),
-        document_type: doc.document_type,
-        file_name: doc.file_name,
-        file_path: doc.file_path,
-        description: doc.description || '',
-        created_at: doc.created_at.toISOString(),
-        updated_at: doc.updated_at.toISOString()
-      })),
-      assignments: currentAssignments.map(assignment => ({
-        id: assignment.id.toString(),
-        title: assignment.name || 'Assignment',
-        description: assignment.notes || '',
-        status: assignment.status,
-        created_at: assignment.created_at.toISOString()
-      })),
-      advances: recentAdvances.map(advance => ({
-        id: advance.id.toString(),
-        amount: Number(advance.amount),
-        reason: advance.purpose || '',
-        status: advance.status,
-        created_at: advance.created_at.toISOString()
-      })),
-      skills: skills.map(skill => ({
-        id: skill.id.toString(),
-        proficiency_level: skill.proficiency_level || '',
-        certified: skill.certified,
-        certification_date: skill.certification_date?.toISOString().split('T')[0],
-        skill: skill.skill ? {
-          name: skill.skill.name,
-          description: skill.skill.description || '',
-          category: skill.skill.category || ''
-        } : null
-      })),
-      trainingRecords: trainingRecords.map(training => ({
-        id: training.id.toString(),
-        status: training.status,
-        start_date: training.start_date?.toISOString().split('T')[0],
-        training: training.training ? {
-          name: training.training.name,
-          description: training.training.description || '',
-          duration: training.training.duration,
-          provider: training.training.provider || ''
-        } : null
-      }))
-    }
-
-    return NextResponse.json(dashboardData)
+      recentTimesheets,
+      recentLeaves,
+      currentAssignments,
+      recentAdvances,
+      employeeDocuments
+    })
 
   } catch (error) {
     console.error('Error fetching employee dashboard data:', error)

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { roles, userRoles } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 // Define role permissions based on the ability system
 const rolePermissions = {
@@ -108,23 +110,28 @@ export async function GET(
       );
     }
 
-    const role = await prisma.role.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        _count: {
-          select: {
-            user_roles: true,
-          },
-        },
-      },
-    });
+    const roleRows = await db
+      .select()
+      .from(roles)
+      .where(eq(roles.id, parseInt(id)))
+      .limit(1);
 
-    if (!role) {
+    if (roleRows.length === 0) {
       return NextResponse.json(
         { error: 'Role not found' },
         { status: 404 }
       );
     }
+
+    const role = roleRows[0];
+
+    // Get user count for this role using Drizzle
+    const userCountRows = await db
+      .select({ count: userRoles.id })
+      .from(userRoles)
+      .where(eq(userRoles.roleId, parseInt(id)));
+
+    const userCount = userCountRows.length;
 
     const roleWithUserCount = {
       id: role.id,
@@ -132,8 +139,8 @@ export async function GET(
       description: roleDescriptions[role.name as keyof typeof roleDescriptions] || '',
       permissions: rolePermissions[role.name as keyof typeof rolePermissions] || [],
       isActive: true,
-      createdAt: role.created_at.toISOString(),
-      userCount: role._count.user_roles,
+      createdAt: role.createdAt,
+      userCount: userCount,
     };
 
     return NextResponse.json(roleWithUserCount);
@@ -171,24 +178,30 @@ export async function PUT(
     }
 
     // Check if role exists
-    const existingRole = await prisma.role.findUnique({
-      where: { id: parseInt(id) },
-    });
+    const existingRoleRows = await db
+      .select()
+      .from(roles)
+      .where(eq(roles.id, parseInt(id)))
+      .limit(1);
 
-    if (!existingRole) {
+    if (existingRoleRows.length === 0) {
       return NextResponse.json(
         { error: 'Role not found' },
         { status: 404 }
       );
     }
 
+    const existingRole = existingRoleRows[0];
+
     // Check if name is being changed and if it conflicts with another role
     if (body.name !== existingRole.name) {
-      const conflictingRole = await prisma.role.findUnique({
-        where: { name: body.name },
-      });
+      const conflictingRoleRows = await db
+        .select()
+        .from(roles)
+        .where(eq(roles.name, body.name))
+        .limit(1);
 
-      if (conflictingRole) {
+      if (conflictingRoleRows.length > 0) {
         return NextResponse.json(
           { error: 'Role with this name already exists' },
           { status: 400 }
@@ -197,19 +210,24 @@ export async function PUT(
     }
 
     // Update role
-    const updatedRole = await prisma.role.update({
-      where: { id: parseInt(id) },
-      data: {
+    const updatedRoleRows = await db
+      .update(roles)
+      .set({
         name: body.name,
-      },
-      include: {
-        _count: {
-          select: {
-            user_roles: true,
-          },
-        },
-      },
-    });
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(roles.id, parseInt(id)))
+      .returning();
+
+    const updatedRole = updatedRoleRows[0];
+
+    // Get user count for this role using Drizzle
+    const userCountRows = await db
+      .select({ count: userRoles.id })
+      .from(userRoles)
+      .where(eq(userRoles.roleId, parseInt(id)));
+
+    const userCount = userCountRows.length;
 
     const roleWithUserCount = {
       id: updatedRole.id,
@@ -217,8 +235,8 @@ export async function PUT(
       description: roleDescriptions[updatedRole.name as keyof typeof roleDescriptions] || '',
       permissions: rolePermissions[updatedRole.name as keyof typeof rolePermissions] || [],
       isActive: true,
-      createdAt: updatedRole.created_at.toISOString(),
-      userCount: updatedRole._count.user_roles,
+      createdAt: updatedRole.createdAt,
+      userCount: userCount,
     };
 
     return NextResponse.json(roleWithUserCount);

@@ -17,34 +17,36 @@ const getEmployeeStatisticsHandler = async (request: NextRequest) => {
     const user = session?.user;
     
     // For employee users, only show statistics for their own record
-    let ownEmployeeId: number | null = null;
+    let ownEmployeeFileNumber: string | null = null;
     if (user?.role === 'EMPLOYEE' && user.national_id) {
       try {
         const ownRows = await db
-          .select({ id: employees.id })
+          .select({ fileNumber: employees.fileNumber })
           .from(employees)
           .where(eq(employees.iqamaNumber, String(user.national_id)))
           .limit(1);
-        ownEmployeeId = ownRows[0]?.id ?? null;
+        ownEmployeeFileNumber = ownRows[0]?.fileNumber ?? null;
       } catch (e) {
-        ownEmployeeId = null;
+        ownEmployeeFileNumber = null;
       }
     }
 
     // Get total employee count (filtered for employee users)
-    const totalEmployeesRows = ownEmployeeId
-      ? await db.select({ count: sql<number>`count(*)` }).from(employees).where(eq(employees.id, ownEmployeeId))
+    const totalEmployeesRows = ownEmployeeFileNumber
+      ? await db.select({ count: sql<number>`count(*)` }).from(employees).where(eq(employees.fileNumber, ownEmployeeFileNumber))
       : await db.select({ count: sql<number>`count(*)` }).from(employees);
     const totalEmployees = Number((totalEmployeesRows as any)[0]?.count ?? 0);
     console.log('Total employees:', totalEmployees);
 
     // Get employees with current assignments (filtered for employee users)
     let currentlyAssigned = 0;
-    if (ownEmployeeId) {
+    if (ownEmployeeFileNumber) {
+      // For employee users, check if they have any active assignments
       const rows = await db
         .select({ count: sql<number>`count(*)` })
         .from(employeeAssignments)
-        .where(and(eq(employeeAssignments.employeeId, ownEmployeeId), eq(employeeAssignments.status, 'active')));
+        .innerJoin(employees, eq(employees.id, employeeAssignments.employeeId))
+        .where(and(eq(employees.fileNumber, ownEmployeeFileNumber), eq(employeeAssignments.status, 'active')));
       currentlyAssigned = Number((rows as any)[0]?.count ?? 0) > 0 ? 1 : 0;
     } else {
       const rows = await db
@@ -57,11 +59,12 @@ const getEmployeeStatisticsHandler = async (request: NextRequest) => {
 
     // Count project assignments (filtered for employee users)
     let projectAssignments = 0;
-    if (ownEmployeeId) {
+    if (ownEmployeeFileNumber) {
       const rows = await db
         .select({ count: sql<number>`count(*)` })
         .from(employeeAssignments)
-        .where(and(eq(employeeAssignments.employeeId, ownEmployeeId), eq(employeeAssignments.status, 'active'), eq(employeeAssignments.type, 'project')));
+        .innerJoin(employees, eq(employees.id, employeeAssignments.employeeId))
+        .where(and(eq(employees.fileNumber, ownEmployeeFileNumber), eq(employeeAssignments.status, 'active'), eq(employeeAssignments.type, 'project')));
       projectAssignments = Number((rows as any)[0]?.count ?? 0) > 0 ? 1 : 0;
     } else {
       const rows = await db
@@ -75,11 +78,12 @@ const getEmployeeStatisticsHandler = async (request: NextRequest) => {
     // Count rental assignments (filtered for employee users)
     let rentalAssignments = 0;
     const rentalTypes = ['rental', 'rental_item'] as const;
-    if (ownEmployeeId) {
+    if (ownEmployeeFileNumber) {
       const rows = await db
         .select({ count: sql<number>`count(*)` })
         .from(employeeAssignments)
-        .where(and(eq(employeeAssignments.employeeId, ownEmployeeId), eq(employeeAssignments.status, 'active'), inArray(employeeAssignments.type, rentalTypes as unknown as string[])));
+        .innerJoin(employees, eq(employees.id, employeeAssignments.employeeId))
+        .where(and(eq(employees.fileNumber, ownEmployeeFileNumber), eq(employeeAssignments.status, 'active'), inArray(employeeAssignments.type, rentalTypes as unknown as string[])));
       rentalAssignments = Number((rows as any)[0]?.count ?? 0) > 0 ? 1 : 0;
     } else {
       const rows = await db

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { payrolls, employees } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export async function POST(
   request: NextRequest,
@@ -22,16 +24,14 @@ export async function POST(
       );
     }
 
-    // Connect to database
-    await prisma.$connect();
+    // Check if payroll exists using Drizzle
+    const payrollRows = await db
+      .select()
+      .from(payrolls)
+      .where(eq(payrolls.id, id))
+      .limit(1);
 
-    // Check if payroll exists
-    const payroll = await prisma.payroll.findUnique({
-      where: { id: id },
-      include: { employee: true }
-    });
-
-    if (!payroll) {
+    if (payrollRows.length === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -40,6 +40,8 @@ export async function POST(
         { status: 404 }
       );
     }
+
+    const payroll = payrollRows[0];
 
     // Check if payroll can be processed
     if (payroll.status !== 'approved') {
@@ -52,25 +54,42 @@ export async function POST(
       );
     }
 
-    // Process the payment
-    const updatedPayroll = await prisma.payroll.update({
-      where: { id: id },
-      data: {
+    // Process the payment using Drizzle
+    const updatedPayrollRows = await db
+      .update(payrolls)
+      .set({
         status: 'paid',
-        paid_by: 1, // Mock user ID - in real app, get from session
-        paid_at: new Date(),
-        payment_method: payment_method,
-        payment_reference: reference || null,
-        payment_status: 'completed',
-        payment_processed_at: new Date(),
-        updated_at: new Date()
-      },
-      include: { employee: true }
-    });
+        paidBy: 1, // Mock user ID - in real app, get from session
+        paidAt: new Date().toISOString(),
+        paymentMethod: payment_method,
+        paymentReference: reference || null,
+        paymentStatus: 'completed',
+        paymentProcessedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      })
+      .where(eq(payrolls.id, id))
+      .returning();
+
+    const updatedPayroll = updatedPayrollRows[0];
+
+    // Get employee data using Drizzle
+    const employeeRows = await db
+      .select()
+      .from(employees)
+      .where(eq(employees.id, updatedPayroll.employeeId))
+      .limit(1);
+
+    const employee = employeeRows[0] || null;
+
+    // Format response to match expected structure
+    const formattedUpdatedPayroll = {
+      ...updatedPayroll,
+      employee
+    };
 
     return NextResponse.json({
       success: true,
-      data: updatedPayroll,
+      data: formattedUpdatedPayroll,
       message: 'Payment processed successfully'
     });
   } catch (error) {
@@ -82,7 +101,5 @@ export async function POST(
       },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

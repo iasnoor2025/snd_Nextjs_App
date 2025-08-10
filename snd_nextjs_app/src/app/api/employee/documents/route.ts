@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authConfig } from '@/lib/auth-config'
+import { employeeDocuments } from '@/lib/drizzle/schema'
 import { writeFile } from 'fs/promises'
 import { join } from 'path'
 
@@ -26,7 +27,8 @@ export async function POST(request: NextRequest) {
     }
 
     const formData = await request.formData()
-    const employee_id = formData.get('employee_id') as string
+    // Support both field names for compatibility
+    const employee_id = formData.get('employee_id') || formData.get('employeeId')
     const document_type = formData.get('document_type') as string
     const description = formData.get('description') as string
     const file = formData.get('file') as File
@@ -34,7 +36,7 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!employee_id || !document_type || !file) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Missing required fields: employee_id/employeeId, document_type, and file are required' },
         { status: 400 }
       )
     }
@@ -71,18 +73,24 @@ export async function POST(request: NextRequest) {
     
     await writeFile(filePath, buffer)
 
-    // Create document record in database
-    const document = await prisma.employeeDocument.create({
-      data: {
-        employee_id: parseInt(employee_id),
-        document_type,
-        file_name: file.name,
-        file_path: `/uploads/documents/${fileName}`,
+    // Create document record in database using Drizzle
+    const documentRows = await db
+      .insert(employeeDocuments)
+      .values({
+        employeeId: parseInt(employee_id as string),
+        documentType: document_type,
+        fileName: file.name,
+        fileUrl: `/uploads/documents/${fileName}`,
         description: description || '',
-        file_size: file.size,
-        mime_type: file.type
-      }
-    })
+        fileSize: file.size.toString(),
+        mimeType: file.type,
+        uploadedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .returning();
+
+    const document = documentRows[0];
 
     return NextResponse.json({
       message: 'Document uploaded successfully',

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { companies } from '@/lib/drizzle/schema';
+import { eq, and, ne } from 'drizzle-orm';
 
 // Helper function to format company data for frontend
 function formatCompanyForFrontend(company: any) {
@@ -10,9 +12,9 @@ function formatCompanyForFrontend(company: any) {
     email: company.email,
     phone: company.phone,
     logo: company.logo,
-    legal_document: company.legal_document,
-    created_at: company.created_at?.toISOString().split('T')[0] || null,
-    updated_at: company.updated_at?.toISOString().split('T')[0] || null,
+    legal_document: company.legalDocument,
+    created_at: company.createdAt?.split('T')[0] || null,
+    updated_at: company.updatedAt?.split('T')[0] || null,
   };
 }
 
@@ -34,11 +36,13 @@ export async function GET(
       );
     }
 
-    const company = await prisma.company.findUnique({
-      where: { id }
-    });
+    const companyRows = await db
+      .select()
+      .from(companies)
+      .where(eq(companies.id, id))
+      .limit(1);
 
-    if (!company) {
+    if (companyRows.length === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -47,6 +51,8 @@ export async function GET(
         { status: 404 }
       );
     }
+
+    const company = companyRows[0];
 
     return NextResponse.json({
       success: true,
@@ -96,12 +102,14 @@ export async function PUT(
       );
     }
 
-    // Check if company exists
-    const existingCompany = await prisma.company.findUnique({
-      where: { id }
-    });
+    // Check if company exists using Drizzle
+    const existingCompanyRows = await db
+      .select()
+      .from(companies)
+      .where(eq(companies.id, id))
+      .limit(1);
 
-    if (!existingCompany) {
+    if (existingCompanyRows.length === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -111,15 +119,19 @@ export async function PUT(
       );
     }
 
-    // Check if another company with same name exists
-    const duplicateCompany = await prisma.company.findFirst({
-      where: {
-        name: body.name,
-        id: { not: id }
-      }
-    });
+    // Check if another company with same name exists using Drizzle
+    const duplicateCompanyRows = await db
+      .select()
+      .from(companies)
+      .where(
+        and(
+          eq(companies.name, body.name),
+          ne(companies.id, id)
+        )
+      )
+      .limit(1);
 
-    if (duplicateCompany) {
+    if (duplicateCompanyRows.length > 0) {
       return NextResponse.json(
         {
           success: false,
@@ -129,18 +141,22 @@ export async function PUT(
       );
     }
 
-    // Update company
-    const updatedCompany = await prisma.company.update({
-      where: { id },
-      data: {
+    // Update company using Drizzle
+    const updatedCompanyRows = await db
+      .update(companies)
+      .set({
         name: body.name,
         address: body.address,
         email: body.email,
         phone: body.phone,
         logo: body.logo,
-        legal_document: body.legal_document
-      }
-    });
+        legalDocument: body.legal_document,
+        updatedAt: new Date().toISOString()
+      })
+      .where(eq(companies.id, id))
+      .returning();
+
+    const updatedCompany = updatedCompanyRows[0];
 
     return NextResponse.json({
       success: true,
@@ -177,12 +193,14 @@ export async function DELETE(
       );
     }
 
-    // Check if company exists
-    const existingCompany = await prisma.company.findUnique({
-      where: { id }
-    });
+    // Check if company exists using Drizzle
+    const existingCompanyRows = await db
+      .select()
+      .from(companies)
+      .where(eq(companies.id, id))
+      .limit(1);
 
-    if (!existingCompany) {
+    if (existingCompanyRows.length === 0) {
       return NextResponse.json(
         {
           success: false,
@@ -192,10 +210,10 @@ export async function DELETE(
       );
     }
 
-    // Delete company
-    await prisma.company.delete({
-      where: { id }
-    });
+    // Delete company using Drizzle
+    await db
+      .delete(companies)
+      .where(eq(companies.id, id));
 
     return NextResponse.json({
       success: true,

@@ -107,7 +107,7 @@ const getTimesheetsHandler = async (request: NextRequest) => {
         or(
           ilike(employees.firstName, `%${search}%`),
           ilike(employees.lastName, `%${search}%`),
-          ilike(employees.employeeId, `%${search}%`)
+          ilike(employees.fileNumber, `%${search}%`)
         )
       );
     }
@@ -160,7 +160,7 @@ const getTimesheetsHandler = async (request: NextRequest) => {
         emp_id: employees.id,
         emp_first: employees.firstName,
         emp_last: employees.lastName,
-        emp_employee_id: employees.employeeId,
+        emp_file_number: employees.fileNumber,
       })
       .from(timesheets)
       .leftJoin(employees, eq(timesheets.employeeId, employees.id))
@@ -201,7 +201,7 @@ const getTimesheetsHandler = async (request: NextRequest) => {
         id: String(timesheet.emp_id),
         firstName: timesheet.emp_first as unknown as string,
         lastName: timesheet.emp_last as unknown as string,
-        employeeId: timesheet.emp_employee_id as unknown as string,
+        fileNumber: timesheet.emp_file_number as unknown as string,
       } : undefined,
     }));
 

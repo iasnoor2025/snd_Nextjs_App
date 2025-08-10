@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { analyticsReports } from '@/lib/drizzle/schema';
+import { eq, like, or, desc, asc } from 'drizzle-orm';
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -11,38 +14,47 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    const where: Record<string, any> = {};
+    let whereConditions: any[] = [];
 
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { created_by: { contains: search, mode: 'insensitive' } },
-      ];
+      whereConditions.push(
+        or(
+          like(analyticsReports.name, `%${search}%`),
+          like(analyticsReports.description, `%${search}%`),
+          like(analyticsReports.createdBy, `%${search}%`)
+        )
+      );
     }
 
     if (status && status !== 'all') {
-      where.status = status;
+      whereConditions.push(eq(analyticsReports.status, status));
     }
 
     if (type && type !== 'all') {
-      where.type = type;
+      whereConditions.push(eq(analyticsReports.type, type));
     }
 
-    const [analytics, total] = await Promise.all([
-      prisma.analyticsReport.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
-      }),
-      prisma.analyticsReport.count({ where }),
+    const whereClause = whereConditions.length > 0 ? whereConditions : undefined;
+
+    const [analyticsRows, totalRows] = await Promise.all([
+      db
+        .select()
+        .from(analyticsReports)
+        .where(whereClause)
+        .limit(limit)
+        .offset(skip)
+        .orderBy(desc(analyticsReports.createdAt)),
+      db
+        .select({ count: analyticsReports.id })
+        .from(analyticsReports)
+        .where(whereClause)
     ]);
 
+    const total = totalRows.length;
     const totalPages = Math.ceil(total / limit);
 
     return NextResponse.json({
-      data: analytics,
+      data: analyticsRows,
       current_page: page,
       last_page: totalPages,
       per_page: limit,
@@ -73,19 +85,24 @@ export async function POST(request: NextRequest) {
       is_active,
     } = body;
 
-    const analyticsReport = await prisma.analyticsReport.create({
-      data: {
+    const analyticsReportRows = await db
+      .insert(analyticsReports)
+      .values({
         name,
         type,
         description,
         status,
-        created_by,
+        createdBy: created_by,
         schedule,
         parameters: parameters ? JSON.stringify(parameters) : null,
-        is_active: is_active ?? true,
-        last_generated: null,
-      },
-    });
+        isActive: is_active ?? true,
+        lastGenerated: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .returning();
+
+    const analyticsReport = analyticsReportRows[0];
 
     return NextResponse.json(analyticsReport, { status: 201 });
   } catch (error) {
@@ -112,19 +129,23 @@ export async function PUT(request: NextRequest) {
       is_active,
     } = body;
 
-    const analyticsReport = await prisma.analyticsReport.update({
-      where: { id },
-      data: {
+    const analyticsReportRows = await db
+      .update(analyticsReports)
+      .set({
         name,
         type,
         description,
         status,
-        created_by,
+        createdBy: created_by,
         schedule,
         parameters: parameters ? JSON.stringify(parameters) : null,
-        is_active,
-      },
-    });
+        isActive: is_active,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(analyticsReports.id, id))
+      .returning();
+
+    const analyticsReport = analyticsReportRows[0];
 
     return NextResponse.json(analyticsReport);
   } catch (error) {
@@ -141,9 +162,9 @@ export async function DELETE(request: NextRequest) {
     const body = await request.json();
     const { id } = body;
 
-    await prisma.analyticsReport.delete({
-      where: { id },
-    });
+    await db
+      .delete(analyticsReports)
+      .where(eq(analyticsReports.id, id));
 
     return NextResponse.json({ message: 'Analytics report deleted successfully' });
   } catch (error) {

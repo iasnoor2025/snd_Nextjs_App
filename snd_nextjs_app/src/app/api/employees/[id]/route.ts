@@ -43,7 +43,7 @@ const getEmployeeHandler = async (
         last_name: employeesTable.lastName,
         email: employeesTable.email,
         phone: employeesTable.phone,
-        employee_id: employeesTable.employeeId,
+        employee_id: employeesTable.id,
         department_id: employeesTable.departmentId,
         designation_id: employeesTable.designationId,
         status: employeesTable.status,

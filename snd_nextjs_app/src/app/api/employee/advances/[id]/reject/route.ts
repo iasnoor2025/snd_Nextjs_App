@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
+import { advancePayments } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -31,14 +34,18 @@ export async function POST(
       return NextResponse.json({ error: "Invalid advance ID" }, { status: 400 });
     }
 
-    // Check if advance exists and is pending
-    const advance = await prisma.advancePayment.findUnique({
-      where: { id: advanceId },
-    });
+    // Check if advance exists and is pending using Drizzle
+    const advanceRows = await db
+      .select()
+      .from(advancePayments)
+      .where(eq(advancePayments.id, advanceId))
+      .limit(1);
 
-    if (!advance) {
+    if (advanceRows.length === 0) {
       return NextResponse.json({ error: "Advance not found" }, { status: 404 });
     }
+
+    const advance = advanceRows[0];
 
     if (advance.status !== "pending") {
       return NextResponse.json(
@@ -47,16 +54,20 @@ export async function POST(
       );
     }
 
-    // Update advance status to rejected
-    const updatedAdvance = await prisma.advancePayment.update({
-      where: { id: advanceId },
-      data: {
+    // Update advance status to rejected using Drizzle
+    const updatedAdvanceRows = await db
+      .update(advancePayments)
+      .set({
         status: "rejected",
-        rejected_by: parseInt(session.user.id),
-        rejected_at: new Date(),
-        rejection_reason: rejectionReason,
-      },
-    });
+        rejectedBy: parseInt(session.user.id),
+        rejectedAt: new Date().toISOString(),
+        rejectionReason: rejectionReason,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(advancePayments.id, advanceId))
+      .returning();
+
+    const updatedAdvance = updatedAdvanceRows[0];
 
     console.log("Advance rejected successfully:", updatedAdvance);
 

@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
     // Check if user already has a national_id - if yes, not first login
     if (user.national_id) {
       // User already has Nation ID, just return the data
-      let matchedEmployee = null;
+      let matchedEmployee: any = null;
       try {
         const employeeRows = await db
           .select({
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
             first_name: employeesTable.firstName,
             middle_name: employeesTable.middleName,
             last_name: employeesTable.lastName,
-            employee_id: employeesTable.employeeId,
+            file_number: employeesTable.fileNumber,
             phone: employeesTable.phone,
             email: employeesTable.email,
             address: employeesTable.address,
@@ -95,6 +95,8 @@ export async function GET(request: NextRequest) {
             nationality: employeesTable.nationality,
             date_of_birth: employeesTable.dateOfBirth,
             hire_date: employeesTable.hireDate,
+            designation_id: employeesTable.designationId,
+            department_id: employeesTable.departmentId,
             iqama_number: employeesTable.iqamaNumber,
             iqama_expiry: employeesTable.iqamaExpiry,
             passport_number: employeesTable.passportNumber,
@@ -112,21 +114,23 @@ export async function GET(request: NextRequest) {
           const employee = employeeRows[0];
           
           // Get designation and department names
-          let designationName = null;
-          let departmentName = null;
+          let designationName: string | null = null;
+          let departmentName: string | null = null;
           
-          if (employee.id) {
+          if (employee.designation_id) {
             const designationRows = await db
               .select({ name: designationsTable.name })
               .from(designationsTable)
-              .where(eq(designationsTable.id, employee.id))
+              .where(eq(designationsTable.id, employee.designation_id))
               .limit(1);
             designationName = designationRows[0]?.name;
-            
+          }
+          
+          if (employee.department_id) {
             const departmentRows = await db
               .select({ name: departmentsTable.name })
               .from(departmentsTable)
-              .where(eq(departmentsTable.id, employee.id))
+              .where(eq(departmentsTable.id, employee.department_id))
               .limit(1);
             departmentName = departmentRows[0]?.name;
           }
@@ -153,7 +157,7 @@ export async function GET(request: NextRequest) {
     }
 
     // This is first login - check if user email matches any employee
-    let matchedEmployee = null;
+    let matchedEmployee: any = null;
     let isFirstLogin = true;
 
     if (user.email) {
@@ -165,7 +169,7 @@ export async function GET(request: NextRequest) {
             first_name: employeesTable.firstName,
             middle_name: employeesTable.middleName,
             last_name: employeesTable.lastName,
-            employee_id: employeesTable.employeeId,
+            file_number: employeesTable.fileNumber,
             phone: employeesTable.phone,
             email: employeesTable.email,
             address: employeesTable.address,
@@ -175,6 +179,8 @@ export async function GET(request: NextRequest) {
             nationality: employeesTable.nationality,
             date_of_birth: employeesTable.dateOfBirth,
             hire_date: employeesTable.hireDate,
+            designation_id: employeesTable.designationId,
+            department_id: employeesTable.departmentId,
             iqama_number: employeesTable.iqamaNumber,
             iqama_expiry: employeesTable.iqamaExpiry,
             passport_number: employeesTable.passportNumber,
@@ -192,21 +198,23 @@ export async function GET(request: NextRequest) {
           const employee = employeeRows[0];
           
           // Get designation and department names
-          let designationName = null;
-          let departmentName = null;
+          let designationName: string | null = null;
+          let departmentName: string | null = null;
           
-          if (employee.id) {
+          if (employee.designation_id) {
             const designationRows = await db
               .select({ name: designationsTable.name })
               .from(designationsTable)
-              .where(eq(designationsTable.id, employee.id))
+              .where(eq(designationsTable.id, employee.designation_id))
               .limit(1);
             designationName = designationRows[0]?.name;
-            
+          }
+          
+          if (employee.department_id) {
             const departmentRows = await db
               .select({ name: departmentsTable.name })
               .from(departmentsTable)
-              .where(eq(departmentsTable.id, employee.id))
+              .where(eq(departmentsTable.id, employee.department_id))
               .limit(1);
             departmentName = departmentRows[0]?.name;
           }

@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
 import { employees as employeesTable, departments, designations, users as usersTable, employeeAssignments, projects, rentals } from '@/lib/drizzle/schema';
-import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, or, sql, inArray } from 'drizzle-orm';
 
 // GET /api/employees - List employees
 const getEmployeesHandler = async (request: NextRequest) => {
@@ -30,7 +30,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
         or(
           ilike(employeesTable.firstName, s),
           ilike(employeesTable.lastName, s),
-          ilike(employeesTable.employeeId, s),
+          ilike(employeesTable.fileNumber, s),
           ilike(employeesTable.email as any, s),
         )
       );
@@ -56,7 +56,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
         first_name: employeesTable.firstName,
         middle_name: employeesTable.middleName,
         last_name: employeesTable.lastName,
-        employee_id: employeesTable.employeeId,
+        employee_id: employeesTable.fileNumber,
         file_number: employeesTable.fileNumber,
         email: employeesTable.email,
         phone: employeesTable.phone,
@@ -104,13 +104,13 @@ const getEmployeesHandler = async (request: NextRequest) => {
     console.log('✅ Employee statuses updated');
 
     // Fetch latest assignment per employee in this page
-    const employeeIds = employeeRows.map(e => e.id as number);
-    let latestAssignments: Record<number, any> = {};
-    if (employeeIds.length > 0) {
+    const employeeFileNumbers = employeeRows.map(e => e.file_number as string).filter(Boolean);
+    let latestAssignments: Record<string, any> = {};
+    if (employeeFileNumbers.length > 0) {
       const assignmentRows = await db
         .select({
           id: employeeAssignments.id,
-          employee_id: employeeAssignments.employeeId,
+          employee_file_number: employeesTable.fileNumber,
           type: employeeAssignments.type,
           name: employeeAssignments.name,
           status: employeeAssignments.status,
@@ -122,14 +122,15 @@ const getEmployeesHandler = async (request: NextRequest) => {
           rental_number: rentals.rentalNumber,
         })
         .from(employeeAssignments)
+        .innerJoin(employeesTable, eq(employeesTable.id, employeeAssignments.employeeId))
         .leftJoin(projects, eq(projects.id, employeeAssignments.projectId))
         .leftJoin(rentals, eq(rentals.id, employeeAssignments.rentalId))
-        .where(or(...employeeIds.map(id => eq(employeeAssignments.employeeId, id))))
+        .where(inArray(employeesTable.fileNumber, employeeFileNumbers))
         .orderBy(desc(employeeAssignments.startDate));
       for (const row of assignmentRows) {
-        const empId = row.employee_id as number;
-        if (!latestAssignments[empId]) {
-          latestAssignments[empId] = row;
+        const empFileNumber = row.employee_file_number as string;
+        if (!latestAssignments[empFileNumber]) {
+          latestAssignments[empFileNumber] = row;
         }
       }
     }
@@ -137,7 +138,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
     // Transform
     const transformedEmployees = employeeRows.map(employee => {
       const fullName = [employee.first_name, employee.middle_name, employee.last_name].filter(Boolean).join(' ');
-      const currentAssignment = latestAssignments[employee.id as number] || null;
+      const currentAssignment = latestAssignments[employee.file_number as string] || null;
       const isAssignmentActive = currentAssignment && currentAssignment.status === 'active' && (!currentAssignment.end_date || new Date(currentAssignment.end_date as unknown as string) > new Date());
       return {
         id: employee.id,
@@ -236,7 +237,7 @@ const createEmployeeHandler = async (request: NextRequest) => {
     const existing = await db
       .select({ id: employeesTable.id })
       .from(employeesTable)
-      .where(eq(employeesTable.employeeId, employee_id))
+      .where(eq(employeesTable.fileNumber, employee_id))
       .limit(1);
     const existingEmployee = existing[0];
 
@@ -253,7 +254,7 @@ const createEmployeeHandler = async (request: NextRequest) => {
       .values({
         firstName: first_name,
         lastName: last_name,
-        employeeId: employee_id,
+        fileNumber: employee_id,
         email: email ?? null,
         phone: phone ?? null,
         departmentId: department_id ? parseInt(department_id) : null,

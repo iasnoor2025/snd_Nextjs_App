@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { withEmployeeListPermission } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
+import { advancePayments, employees, users } from '@/lib/drizzle/schema';
+import { eq, and, or, like, isNull, desc, asc } from 'drizzle-orm';
 
 // GET /api/advances - List employee advances with employee data filtering
 const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
@@ -16,61 +18,119 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
 
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      deleted_at: null,
-    };
-
     // Get session to check user role
     const session = await getServerSession(authConfig);
     const user = session?.user;
     
+    let employeeFilter = null;
+    
     // For employee users, only show their own advances
     if (user?.role === 'EMPLOYEE') {
       // Find employee record that matches user's national_id
-      const ownEmployee = await prisma.employee.findFirst({
-        where: { iqama_number: user.national_id },
-        select: { id: true },
-      });
-      if (ownEmployee) {
-        where.employee_id = ownEmployee.id;
+      const ownEmployeeRows = await db
+        .select({ id: employees.id })
+        .from(employees)
+        .where(eq(employees.iqamaNumber, user.national_id))
+        .limit(1);
+      
+      if (ownEmployeeRows.length > 0) {
+        employeeFilter = eq(advancePayments.employeeId, ownEmployeeRows[0].id);
       }
     }
 
-    if (search) {
-      where.OR = [
-        { employee: { first_name: { contains: search, mode: 'insensitive' } } },
-        { employee: { last_name: { contains: search, mode: 'insensitive' } } },
-        { employee: { employee_id: { contains: search, mode: 'insensitive' } } },
-        { reason: { contains: search, mode: 'insensitive' } },
-      ];
+    // Build where conditions
+    let whereConditions = [isNull(advancePayments.deletedAt)];
+
+    if (employeeFilter) {
+      whereConditions.push(employeeFilter);
     }
 
     if (status && status !== 'all') {
-      where.status = status;
+      whereConditions.push(eq(advancePayments.status, status));
     }
 
     if (employeeId) {
-      where.employee_id = employeeId;
+      whereConditions.push(eq(advancePayments.employeeId, parseInt(employeeId)));
     }
 
-    const [advances, total] = await Promise.all([
-      prisma.advancePayment.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
-        include: {
-          employee: {
-            include: {
-              user: true,
-            },
-          },
-        },
-      }),
-      prisma.advancePayment.count({ where }),
-    ]);
+    // Handle search with joins
+    let searchQuery = null;
+    if (search) {
+      searchQuery = or(
+        like(employees.firstName, `%${search}%`),
+        like(employees.lastName, `%${search}%`),
+        like(employees.fileNumber, `%${search}%`),
+        like(advancePayments.reason, `%${search}%`)
+      );
+    }
 
+    if (searchQuery) {
+      whereConditions.push(searchQuery);
+    }
+
+    const whereClause = and(...whereConditions);
+
+    // Get advances with employee data
+    const advancesRows = await db
+      .select({
+        id: advancePayments.id,
+        employeeId: advancePayments.employeeId,
+        amount: advancePayments.amount,
+        purpose: advancePayments.purpose,
+        reason: advancePayments.reason,
+        status: advancePayments.status,
+        notes: advancePayments.notes,
+        createdAt: advancePayments.createdAt,
+        updatedAt: advancePayments.updatedAt,
+        employee: {
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          user: {
+            id: users.id,
+            name: users.name,
+            email: users.email,
+          }
+        }
+      })
+      .from(advancePayments)
+      .leftJoin(employees, eq(advancePayments.employeeId, employees.id))
+      .leftJoin(users, eq(employees.userId, users.id))
+      .where(whereClause)
+      .orderBy(desc(advancePayments.createdAt))
+      .limit(limit)
+      .offset(skip);
+
+    // Get total count
+    const totalRows = await db
+      .select({ count: advancePayments.id })
+      .from(advancePayments)
+      .leftJoin(employees, eq(advancePayments.employeeId, employees.id))
+      .where(whereClause);
+
+    const total = totalRows.length;
     const totalPages = Math.ceil(total / limit);
+
+    // Transform data to match expected format
+    const advances = advancesRows.map(row => ({
+      id: row.id,
+      employee_id: row.employeeId,
+      amount: row.amount,
+      purpose: row.purpose,
+      reason: row.reason,
+      status: row.status,
+      notes: row.notes,
+      created_at: row.createdAt,
+      updated_at: row.updatedAt,
+      employee: row.employee ? {
+        id: row.employee.id,
+        first_name: row.employee.firstName,
+        last_name: row.employee.lastName,
+        file_number: row.employee.fileNumber,
+        user: row.employee.user
+      } : null
+    }));
 
     return NextResponse.json({
       data: advances,
@@ -115,27 +175,64 @@ const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { 
       body.employeeId = request.employeeAccess.ownEmployeeId.toString();
     }
 
-    const advance = await prisma.advancePayment.create({
-      data: {
-        employee_id: parseInt(body.employeeId),
+    const advanceRows = await db
+      .insert(advancePayments)
+      .values({
+        employeeId: parseInt(body.employeeId),
         amount: parseFloat(amount),
         purpose: reason, // Using reason as purpose
         reason,
         status,
         notes: notes || '',
-      },
-      include: {
-        employee: {
-          include: {
-            user: true,
-          },
-        },
-      },
-    });
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .returning();
+
+    const advance = advanceRows[0];
+
+    // Get employee data for response
+    const employeeRows = await db
+      .select({
+        id: employees.id,
+        firstName: employees.firstName,
+        lastName: employees.lastName,
+        employeeId: employees.employeeId,
+        user: {
+          id: users.id,
+          name: users.name,
+          email: users.email,
+        }
+      })
+      .from(employees)
+      .leftJoin(users, eq(employees.userId, users.id))
+      .where(eq(employees.id, advance.employeeId))
+      .limit(1);
+
+    const employee = employeeRows[0];
+
+    const advanceWithEmployee = {
+      id: advance.id,
+      employee_id: advance.employeeId,
+      amount: advance.amount,
+      purpose: advance.purpose,
+      reason: advance.reason,
+      status: advance.status,
+      notes: advance.notes,
+      created_at: advance.createdAt,
+      updated_at: advance.updatedAt,
+      employee: employee ? {
+        id: employee.id,
+        first_name: employee.firstName,
+        last_name: employee.lastName,
+        employee_id: employee.employeeId,
+        user: employee.user
+      } : null
+    };
 
     return NextResponse.json({
       message: 'Advance created successfully',
-      data: advance,
+      data: advanceWithEmployee,
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating advance:', error);
@@ -161,26 +258,62 @@ export const PUT = withEmployeeListPermission(
         notes,
       } = body;
 
-      const advance = await prisma.advancePayment.update({
-        where: { id },
-        data: {
-          employee_id: employeeId,
+      const advanceRows = await db
+        .update(advancePayments)
+        .set({
+          employeeId: employeeId,
           amount: parseFloat(amount),
           purpose: reason, // Using reason as purpose
           reason,
           status,
           notes: notes || '',
-        },
-        include: {
-          employee: {
-            include: {
-              user: true,
-            },
-          },
-        },
-      });
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(advancePayments.id, id))
+        .returning();
 
-      return NextResponse.json(advance);
+      const advance = advanceRows[0];
+
+      // Get employee data for response
+      const employeeRows = await db
+        .select({
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          employeeId: employees.employeeId,
+          user: {
+            id: users.id,
+            name: users.name,
+            email: users.email,
+          }
+        })
+        .from(employees)
+        .leftJoin(users, eq(employees.userId, users.id))
+        .where(eq(employees.id, advance.employeeId))
+        .limit(1);
+
+      const employee = employeeRows[0];
+
+      const advanceWithEmployee = {
+        id: advance.id,
+        employee_id: advance.employeeId,
+        amount: advance.amount,
+        purpose: advance.purpose,
+        reason: advance.reason,
+        status: advance.status,
+        notes: advance.notes,
+        created_at: advance.createdAt,
+        updated_at: advance.updatedAt,
+        employee: employee ? {
+          id: employee.id,
+          first_name: employee.firstName,
+          last_name: employee.lastName,
+          employee_id: employee.employeeId,
+          user: employee.user
+        } : null
+      };
+
+      return NextResponse.json(advanceWithEmployee);
     } catch (error) {
       console.error('Error updating advance:', error);
       return NextResponse.json(
@@ -199,9 +332,9 @@ export const DELETE = withEmployeeListPermission(
       const body = await request.json();
       const { id } = body;
 
-      await prisma.advancePayment.delete({
-        where: { id },
-      });
+      await db
+        .delete(advancePayments)
+        .where(eq(advancePayments.id, id));
 
       return NextResponse.json({ message: 'Advance deleted successfully' });
     } catch (error) {

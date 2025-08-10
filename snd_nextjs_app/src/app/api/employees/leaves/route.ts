@@ -74,7 +74,7 @@ const getLeavesHandler = async (request: NextRequest) => {
         emp_id: employeesTable.id,
         emp_first: employeesTable.firstName,
         emp_last: employeesTable.lastName,
-        emp_employee_id: employeesTable.employeeId,
+        emp_employee_id: employeesTable.id,
       })
       .from(employeeLeaves)
       .leftJoin(employeesTable, eq(employeesTable.id, employeeLeaves.employeeId))
