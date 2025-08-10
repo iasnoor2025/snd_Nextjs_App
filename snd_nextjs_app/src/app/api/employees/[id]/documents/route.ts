@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
+import { employeeDocuments, employees as employeesTable } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -22,40 +25,45 @@ export async function GET(
       );
     }
 
-    // Fetch documents from database
-    const documents = await prisma.employeeDocument.findMany({
-      where: {
-        employee_id: employeeId,
-      },
-      orderBy: {
-        created_at: 'desc',
-      },
-      include: {
-        employee: {
-          select: { file_number: true },
-        },
-      },
-    });
+    // Fetch documents from database using Drizzle
+    const documentsRows = await db
+      .select({
+        id: employeeDocuments.id,
+        employeeId: employeeDocuments.employeeId,
+        documentType: employeeDocuments.documentType,
+        filePath: employeeDocuments.filePath,
+        fileName: employeeDocuments.fileName,
+        fileSize: employeeDocuments.fileSize,
+        mimeType: employeeDocuments.mimeType,
+        description: employeeDocuments.description,
+        createdAt: employeeDocuments.createdAt,
+        updatedAt: employeeDocuments.updatedAt,
+        employeeFileNumber: employeesTable.fileNumber,
+      })
+      .from(employeeDocuments)
+      .leftJoin(employeesTable, eq(employeesTable.id, employeeDocuments.employeeId))
+      .where(eq(employeeDocuments.employeeId, employeeId))
+      .orderBy(employeeDocuments.createdAt);
 
     // Format documents to match Laravel response
     const toTitleCase = (s: string) => s.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-    const formattedDocuments = documents.map(doc => {
-      const typeLabel = doc.document_type && doc.document_type !== 'general'
-        ? toTitleCase(doc.document_type.replace(/_/g, ' '))
+    const formattedDocuments = documentsRows.map(doc => {
+      const typeLabel = doc.documentType && doc.documentType !== 'general'
+        ? toTitleCase(doc.documentType.replace(/_/g, ' '))
         : undefined;
       return {
         id: doc.id,
-        name: typeLabel || doc.file_name,
-        file_name: doc.file_name,
-        file_type: doc.mime_type?.split('/')[1]?.toUpperCase() || 'UNKNOWN',
-        size: doc.file_size || 0,
-        url: doc.file_path,
-        mime_type: doc.mime_type,
-        document_type: doc.document_type,
+        name: typeLabel || doc.fileName,
+        file_name: doc.fileName,
+        file_type: doc.mimeType?.split('/')[1]?.toUpperCase() || 'UNKNOWN',
+        size: doc.fileSize || 0,
+        url: doc.filePath,
+        mime_type: doc.mimeType,
+        document_type: doc.documentType,
         description: doc.description,
-        file_number: doc.employee?.file_number || null,
-        created_at: doc.created_at.toISOString(),
-        updated_at: doc.updated_at.toISOString(),
+        file_number: doc.employeeFileNumber || null,
+        created_at: doc.createdAt,
+        updated_at: doc.updatedAt,
       };
     });
 
@@ -93,18 +101,21 @@ export async function POST(
       );
     }
 
-    // Create document in database
-    const document = await prisma.employeeDocument.create({
-      data: {
-        employee_id: employeeId,
-        document_type: body.document_type || 'general',
-        file_path: body.file_path,
-        file_name: body.file_name,
-        file_size: body.file_size,
-        mime_type: body.mime_type,
+    // Create document in database using Drizzle
+    const documentRows = await db
+      .insert(employeeDocuments)
+      .values({
+        employeeId: employeeId,
+        documentType: body.document_type || 'general',
+        filePath: body.file_path,
+        fileName: body.file_name,
+        fileSize: body.file_size,
+        mimeType: body.mime_type,
         description: body.description,
-      },
-    });
+      })
+      .returning();
+
+    const document = documentRows[0];
 
     return NextResponse.json({
       success: true,

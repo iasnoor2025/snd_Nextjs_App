@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
 import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
+import { employees as employeesTable, departments, designations } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 // GET handler with employee data filtering
 const getEmployeeHandler = async (
@@ -31,60 +33,152 @@ const getEmployeeHandler = async (
       }
     }
 
-    // Fetch employee data from database
-    const employee = await prisma.employee.findUnique({
-      where: { id: employeeId },
-      include: {
-        department: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        designation: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
+    // Fetch employee data from database using Drizzle
+    const employeeRows = await db
+      .select({
+        id: employeesTable.id,
+        file_number: employeesTable.fileNumber,
+        first_name: employeesTable.firstName,
+        middle_name: employeesTable.middleName,
+        last_name: employeesTable.lastName,
+        email: employeesTable.email,
+        phone: employeesTable.phone,
+        employee_id: employeesTable.employeeId,
+        department_id: employeesTable.departmentId,
+        designation_id: employeesTable.designationId,
+        status: employeesTable.status,
+        hire_date: employeesTable.hireDate,
+        basic_salary: employeesTable.basicSalary,
+        nationality: employeesTable.nationality,
+        hourly_rate: employeesTable.hourlyRate,
+        overtime_rate_multiplier: employeesTable.overtimeRateMultiplier,
+        overtime_fixed_rate: employeesTable.overtimeFixedRate,
+        contract_days_per_month: employeesTable.contractDaysPerMonth,
+        contract_hours_per_day: employeesTable.contractHoursPerDay,
+        date_of_birth: employeesTable.dateOfBirth,
+        address: employeesTable.address,
+        city: employeesTable.city,
+        state: employeesTable.state,
+        postal_code: employeesTable.postalCode,
+        country: employeesTable.country,
+        emergency_contact_name: employeesTable.emergencyContactName,
+        emergency_contact_phone: employeesTable.emergencyContactPhone,
+        emergency_contact_relationship: employeesTable.emergencyContactRelationship,
+        iqama_number: employeesTable.iqamaNumber,
+        iqama_expiry: employeesTable.iqamaExpiry,
+        passport_number: employeesTable.passportNumber,
+        passport_expiry: employeesTable.passportExpiry,
+        driving_license_number: employeesTable.drivingLicenseNumber,
+        driving_license_expiry: employeesTable.drivingLicenseExpiry,
+        operator_license_number: employeesTable.operatorLicenseNumber,
+        operator_license_expiry: employeesTable.operatorLicenseExpiry,
+        tuv_certification_number: employeesTable.tuvCertificationNumber,
+        tuv_certification_expiry: employeesTable.tuvCertificationExpiry,
+        spsp_license_number: employeesTable.spspLicenseNumber,
+        spsp_license_expiry: employeesTable.spspLicenseExpiry,
+        notes: employeesTable.notes,
+        current_location: employeesTable.currentLocation,
+        food_allowance: employeesTable.foodAllowance,
+        housing_allowance: employeesTable.housingAllowance,
+        transport_allowance: employeesTable.transportAllowance,
+        supervisor: employeesTable.supervisor,
+        iqama_file: employeesTable.iqamaFile,
+        passport_file: employeesTable.passportFile,
+        driving_license_file: employeesTable.drivingLicenseFile,
+        operator_license_file: employeesTable.operatorLicenseFile,
+        tuv_certification_file: employeesTable.tuvCertificationFile,
+        spsp_license_file: employeesTable.spspLicenseFile,
+        dept_name: departments.name,
+        desig_name: designations.name,
+      })
+      .from(employeesTable)
+      .leftJoin(departments, eq(departments.id, employeesTable.departmentId))
+      .leftJoin(designations, eq(designations.id, employeesTable.designationId))
+      .where(eq(employeesTable.id, employeeId));
 
-    if (!employee) {
+    if (employeeRows.length === 0) {
       return NextResponse.json(
         { error: "Employee not found" },
         { status: 404 }
       );
     }
 
+    const employee = employeeRows[0];
+
     // Update employee status based on current leave status
     await updateEmployeeStatusBasedOnLeave(employeeId);
     
     // Fetch updated employee data after status update
-    const updatedEmployee = await prisma.employee.findUnique({
-      where: { id: employeeId },
-      include: {
-        department: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        designation: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
+    const updatedEmployeeRows = await db
+      .select({
+        id: employeesTable.id,
+        file_number: employeesTable.fileNumber,
+        first_name: employeesTable.firstName,
+        middle_name: employeesTable.middleName,
+        last_name: employeesTable.lastName,
+        email: employeesTable.email,
+        phone: employeesTable.phone,
+        employee_id: employeesTable.employeeId,
+        department_id: employeesTable.departmentId,
+        designation_id: employeesTable.designationId,
+        status: employeesTable.status,
+        hire_date: employeesTable.hireDate,
+        basic_salary: employeesTable.basicSalary,
+        nationality: employeesTable.nationality,
+        hourly_rate: employeesTable.hourlyRate,
+        overtime_rate_multiplier: employeesTable.overtimeRateMultiplier,
+        overtime_fixed_rate: employeesTable.overtimeFixedRate,
+        contract_days_per_month: employeesTable.contractDaysPerMonth,
+        contract_hours_per_day: employeesTable.contractHoursPerDay,
+        date_of_birth: employeesTable.dateOfBirth,
+        address: employeesTable.address,
+        city: employeesTable.city,
+        state: employeesTable.state,
+        postal_code: employeesTable.postalCode,
+        country: employeesTable.country,
+        emergency_contact_name: employeesTable.emergencyContactName,
+        emergency_contact_phone: employeesTable.emergencyContactPhone,
+        emergency_contact_relationship: employeesTable.emergencyContactRelationship,
+        iqama_number: employeesTable.iqamaNumber,
+        iqama_expiry: employeesTable.iqamaExpiry,
+        passport_number: employeesTable.passportNumber,
+        passport_expiry: employeesTable.passportExpiry,
+        driving_license_number: employeesTable.drivingLicenseNumber,
+        driving_license_expiry: employeesTable.drivingLicenseExpiry,
+        operator_license_number: employeesTable.operatorLicenseNumber,
+        operator_license_expiry: employeesTable.operatorLicenseExpiry,
+        tuv_certification_number: employeesTable.tuvCertificationNumber,
+        tuv_certification_expiry: employeesTable.tuvCertificationExpiry,
+        spsp_license_number: employeesTable.spspLicenseNumber,
+        spsp_license_expiry: employeesTable.spspLicenseExpiry,
+        notes: employeesTable.notes,
+        current_location: employeesTable.currentLocation,
+        food_allowance: employeesTable.foodAllowance,
+        housing_allowance: employeesTable.housingAllowance,
+        transport_allowance: employeesTable.transportAllowance,
+        supervisor: employeesTable.supervisor,
+        iqama_file: employeesTable.iqamaFile,
+        passport_file: employeesTable.passportFile,
+        driving_license_file: employeesTable.drivingLicenseFile,
+        operator_license_file: employeesTable.operatorLicenseFile,
+        tuv_certification_file: employeesTable.tuvCertificationFile,
+        spsp_license_file: employeesTable.spspLicenseFile,
+        dept_name: departments.name,
+        desig_name: designations.name,
+      })
+      .from(employeesTable)
+      .leftJoin(departments, eq(departments.id, employeesTable.departmentId))
+      .leftJoin(designations, eq(designations.id, employeesTable.designationId))
+      .where(eq(employeesTable.id, employeeId));
 
-    if (!updatedEmployee) {
+    if (updatedEmployeeRows.length === 0) {
       return NextResponse.json(
         { error: "Employee not found after status update" },
         { status: 404 }
       );
     }
+
+    const updatedEmployee = updatedEmployeeRows[0];
 
     // Format the response
     const formattedEmployee = {
@@ -97,10 +191,10 @@ const getEmployeeHandler = async (
       email: updatedEmployee.email,
       phone: updatedEmployee.phone,
       employee_id: updatedEmployee.employee_id,
-      department: updatedEmployee.department,
-      designation: updatedEmployee.designation,
+      department: updatedEmployee.dept_name ? { id: updatedEmployee.department_id, name: updatedEmployee.dept_name } : null,
+      designation: updatedEmployee.desig_name ? { id: updatedEmployee.designation_id, name: updatedEmployee.desig_name } : null,
       status: updatedEmployee.status,
-      hire_date: updatedEmployee.hire_date?.toISOString().slice(0, 10),
+      hire_date: updatedEmployee.hire_date ? updatedEmployee.hire_date.slice(0, 10) : null,
       basic_salary: updatedEmployee.basic_salary,
       nationality: updatedEmployee.nationality,
       hourly_rate: updatedEmployee.hourly_rate,
@@ -108,7 +202,7 @@ const getEmployeeHandler = async (
       overtime_fixed_rate: updatedEmployee.overtime_fixed_rate,
       contract_days_per_month: updatedEmployee.contract_days_per_month,
       contract_hours_per_day: updatedEmployee.contract_hours_per_day,
-      date_of_birth: updatedEmployee.date_of_birth?.toISOString().slice(0, 10),
+      date_of_birth: updatedEmployee.date_of_birth ? updatedEmployee.date_of_birth.slice(0, 10) : null,
       address: updatedEmployee.address,
       city: updatedEmployee.city,
       state: updatedEmployee.state,
@@ -118,18 +212,18 @@ const getEmployeeHandler = async (
       emergency_contact_phone: updatedEmployee.emergency_contact_phone,
       emergency_contact_relationship: updatedEmployee.emergency_contact_relationship,
       iqama_number: updatedEmployee.iqama_number,
-      iqama_expiry: updatedEmployee.iqama_expiry?.toISOString().slice(0, 10),
+      iqama_expiry: updatedEmployee.iqama_expiry ? updatedEmployee.iqama_expiry.slice(0, 10) : null,
       passport_number: updatedEmployee.passport_number,
-      passport_expiry: updatedEmployee.passport_expiry?.toISOString().slice(0, 10),
+      passport_expiry: updatedEmployee.passport_expiry ? updatedEmployee.passport_expiry.slice(0, 10) : null,
       driving_license_number: updatedEmployee.driving_license_number,
-      driving_license_expiry: updatedEmployee.driving_license_expiry?.toISOString().slice(0, 10),
+      driving_license_expiry: updatedEmployee.driving_license_expiry ? updatedEmployee.driving_license_expiry.slice(0, 10) : null,
       operator_license_number: updatedEmployee.operator_license_number,
-      operator_license_expiry: updatedEmployee.operator_license_expiry?.toISOString().slice(0, 10),
+      operator_license_expiry: updatedEmployee.operator_license_expiry ? updatedEmployee.operator_license_expiry.slice(0, 10) : null,
       tuv_certification_number: updatedEmployee.tuv_certification_number,
-      tuv_certification_expiry: updatedEmployee.tuv_certification_expiry?.toISOString().slice(0, 10),
+      tuv_certification_expiry: updatedEmployee.tuv_certification_expiry ? updatedEmployee.tuv_certification_expiry.slice(0, 10) : null,
       spsp_license_number: updatedEmployee.spsp_license_number,
-              spsp_license_expiry: updatedEmployee.spsp_license_expiry?.toISOString().slice(0, 10),
-        notes: updatedEmployee.notes,
+      spsp_license_expiry: updatedEmployee.spsp_license_expiry ? updatedEmployee.spsp_license_expiry.slice(0, 10) : null,
+      notes: updatedEmployee.notes,
       current_location: updatedEmployee.current_location,
       food_allowance: updatedEmployee.food_allowance,
       housing_allowance: updatedEmployee.housing_allowance,
@@ -189,7 +283,7 @@ const updateEmployeeHandler = async (
 
     // Build partial update payload: only mutate fields present in body
     const updateDataRaw: Record<string, any> = body || {};
-    const prismaData: Record<string, any> = {};
+    const drizzleData: Record<string, any> = {};
 
     const dateFields = [
       'hire_date',
@@ -204,7 +298,14 @@ const updateEmployeeHandler = async (
     for (const key of dateFields) {
       if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
         const v = updateDataRaw[key];
-        prismaData[key] = v && typeof v === 'string' && v.trim() !== '' ? new Date(v) : null;
+        drizzleData[key === 'hire_date' ? 'hireDate' : 
+                  key === 'date_of_birth' ? 'dateOfBirth' :
+                  key === 'iqama_expiry' ? 'iqamaExpiry' :
+                  key === 'passport_expiry' ? 'passportExpiry' :
+                  key === 'driving_license_expiry' ? 'drivingLicenseExpiry' :
+                  key === 'operator_license_expiry' ? 'operatorLicenseExpiry' :
+                  key === 'tuv_certification_expiry' ? 'tuvCertificationExpiry' :
+                  'spspLicenseExpiry'] = v && typeof v === 'string' && v.trim() !== '' ? v : null;
       }
     }
 
@@ -217,7 +318,10 @@ const updateEmployeeHandler = async (
     for (const key of numberFieldsFloat) {
       if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
         const v = updateDataRaw[key];
-        prismaData[key] = v === '' || v === null || v === undefined ? null : parseFloat(v);
+        drizzleData[key === 'hourly_rate' ? 'hourlyRate' :
+                  key === 'basic_salary' ? 'basicSalary' :
+                  key === 'overtime_rate_multiplier' ? 'overtimeRateMultiplier' :
+                  'overtimeFixedRate'] = v === '' || v === null || v === undefined ? null : v;
       }
     }
 
@@ -228,7 +332,7 @@ const updateEmployeeHandler = async (
     for (const key of numberFieldsInt) {
       if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
         const v = updateDataRaw[key];
-        prismaData[key] = v === '' || v === null || v === undefined ? null : parseInt(v);
+        drizzleData[key === 'contract_days_per_month' ? 'contractDaysPerMonth' : 'contractHoursPerDay'] = v === '' || v === null || v === undefined ? null : parseInt(v);
       }
     }
 
@@ -238,47 +342,80 @@ const updateEmployeeHandler = async (
     ];
     for (const key of passthroughFields) {
       if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
-        prismaData[key] = updateDataRaw[key];
+        const drizzleKey = key === 'first_name' ? 'firstName' :
+                          key === 'middle_name' ? 'middleName' :
+                          key === 'last_name' ? 'lastName' :
+                          key === 'postal_code' ? 'postalCode' :
+                          key === 'department_id' ? 'departmentId' :
+                          key === 'designation_id' ? 'designationId' :
+                          key === 'iqama_number' ? 'iqamaNumber' :
+                          key === 'passport_number' ? 'passportNumber' :
+                          key === 'driving_license_number' ? 'drivingLicenseNumber' :
+                          key === 'operator_license_number' ? 'operatorLicenseNumber' :
+                          key === 'tuv_certification_number' ? 'tuvCertificationNumber' :
+                          key === 'spsp_license_number' ? 'spspLicenseNumber' :
+                          key === 'advance_salary_eligible' ? 'advanceSalaryEligible' :
+                          key === 'advance_salary_approved_this_month' ? 'advanceSalaryApprovedThisMonth' : key;
+        drizzleData[drizzleKey] = updateDataRaw[key];
       }
     }
 
     // Auto-calc hourly_rate only if basic_salary and contract fields are part of this update
     if (
-      Object.prototype.hasOwnProperty.call(prismaData, 'basic_salary') &&
-      prismaData.basic_salary &&
-      (Object.prototype.hasOwnProperty.call(prismaData, 'contract_days_per_month') || Object.prototype.hasOwnProperty.call(prismaData, 'contract_hours_per_day'))
+      Object.prototype.hasOwnProperty.call(drizzleData, 'basicSalary') &&
+      drizzleData.basicSalary &&
+      (Object.prototype.hasOwnProperty.call(drizzleData, 'contractDaysPerMonth') || Object.prototype.hasOwnProperty.call(drizzleData, 'contractHoursPerDay'))
     ) {
-      const days = prismaData.contract_days_per_month ?? 26;
-      const hours = prismaData.contract_hours_per_day ?? 8;
+      const days = drizzleData.contractDaysPerMonth ?? 26;
+      const hours = drizzleData.contractHoursPerDay ?? 8;
       if (days > 0 && hours > 0) {
-        prismaData.hourly_rate = Math.round((Number(prismaData.basic_salary) / (days * hours)) * 100) / 100;
+        drizzleData.hourlyRate = Math.round((Number(drizzleData.basicSalary) / (days * hours)) * 100) / 100;
       }
     }
 
-    // Update employee in database
-    const updatedEmployee = await prisma.employee.update({
-      where: { id: employeeId },
-      data: prismaData,
-      include: {
-        department: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        designation: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
+    // Update employee in database using Drizzle
+    const updatedEmployeeRows = await db
+      .update(employeesTable)
+      .set({
+        ...drizzleData,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(employeesTable.id, employeeId))
+      .returning();
+
+    if (updatedEmployeeRows.length === 0) {
+      return NextResponse.json(
+        { error: "Employee not found" },
+        { status: 404 }
+      );
+    }
+
+    const updatedEmployee = updatedEmployeeRows[0];
+
+    // Fetch updated employee with department and designation info
+    const employeeWithRelations = await db
+      .select({
+        id: employeesTable.id,
+        first_name: employeesTable.firstName,
+        last_name: employeesTable.lastName,
+        dept_name: departments.name,
+        desig_name: designations.name,
+      })
+      .from(employeesTable)
+      .leftJoin(departments, eq(departments.id, employeesTable.departmentId))
+      .leftJoin(designations, eq(designations.id, employeesTable.designationId))
+      .where(eq(employeesTable.id, employeeId));
+
+    const employeeWithDept = employeeWithRelations[0];
 
     return NextResponse.json({
       success: true,
       message: 'Employee updated successfully',
-      employee: updatedEmployee
+      employee: {
+        ...updatedEmployee,
+        department: employeeWithDept?.dept_name ? { id: updatedEmployee.departmentId, name: employeeWithDept.dept_name } : null,
+        designation: employeeWithDept?.desig_name ? { id: updatedEmployee.designationId, name: employeeWithDept.desig_name } : null,
+      }
     });
   } catch (error) {
     console.error('Error in PUT /api/employees/[id]:', error);
@@ -318,11 +455,11 @@ const deleteEmployeeHandler = async (
       }
     }
 
-    // Soft delete employee
-    await prisma.employee.update({
-      where: { id: employeeId },
-      data: { deleted_at: new Date() },
-    });
+    // Soft delete employee using Drizzle
+    await db
+      .update(employeesTable)
+      .set({ deletedAt: new Date().toISOString() })
+      .where(eq(employeesTable.id, employeeId));
 
     return NextResponse.json({
       success: true,

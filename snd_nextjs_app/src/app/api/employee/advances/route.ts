@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { db } from '@/lib/db'
 import { getServerSession } from 'next-auth'
 import { authConfig } from '@/lib/auth-config'
+import { employees as employeesTable, advancePayments } from '@/lib/drizzle/schema'
+import { eq, isNull } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,10 +34,13 @@ export async function GET(request: NextRequest) {
     // Check if user has permission to view this employee's advances
     if (session.user.role === 'EMPLOYEE') {
       // For employees, they can only view their own advances
-      const employee = await prisma.employee.findFirst({
-        where: { iqama_number: session.user.national_id },
-        select: { id: true }
-      })
+      const employeeRows = await db
+        .select({ id: employeesTable.id })
+        .from(employeesTable)
+        .where(eq(employeesTable.iqamaNumber, session.user.national_id))
+        .limit(1);
+      
+      const employee = employeeRows[0];
       
       if (!employee || employee.id !== parseInt(employeeId)) {
         console.log(`GET /api/employee/advances - Access denied for employee ${employeeId}`)
@@ -46,32 +51,31 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fetch advances for the specified employee
-    const advances = await prisma.advancePayment.findMany({
-      where: {
-        employee_id: parseInt(employeeId),
-        deleted_at: null
-      },
-      include: {
-        employee: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            employee_id: true
-          }
-        }
-      },
-      orderBy: {
-        created_at: 'desc'
-      }
-    })
+    // Fetch advances for the specified employee using Drizzle
+    const advancesRows = await db
+      .select({
+        id: advancePayments.id,
+        amount: advancePayments.amount,
+        purpose: advancePayments.purpose,
+        reason: advancePayments.reason,
+        status: advancePayments.status,
+        created_at: advancePayments.createdAt,
+        monthly_deduction: advancePayments.monthlyDeduction,
+        repaid_amount: advancePayments.repaidAmount,
+        employee_id: advancePayments.employeeId,
+      })
+      .from(advancePayments)
+      .where(
+        eq(advancePayments.employeeId, parseInt(employeeId)) && 
+        isNull(advancePayments.deletedAt)
+      )
+      .orderBy(advancePayments.createdAt);
 
-    console.log(`GET /api/employee/advances - Found ${advances.length} advances for employee ${employeeId}`)
+    console.log(`GET /api/employee/advances - Found ${advancesRows.length} advances for employee ${employeeId}`)
 
     const responseData = {
       success: true,
-      advances: advances.map(advance => ({
+      advances: advancesRows.map(advance => ({
         id: advance.id,
         amount: Number(advance.amount),
         reason: advance.reason || advance.purpose,
@@ -136,15 +140,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create advance request
-    const advance = await prisma.advancePayment.create({
-      data: {
-        employee_id,
-        amount: amountValue,
+    // Create advance request using Drizzle
+    const advanceRows = await db
+      .insert(advancePayments)
+      .values({
+        employeeId: employee_id,
+        amount: amountValue.toString(),
         purpose: reason || '',
-        status: 'pending'
-      }
-    })
+        status: 'pending',
+        repaidAmount: '0',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .returning();
+
+    const advance = advanceRows[0];
 
     return NextResponse.json({
       message: 'Advance request submitted successfully',

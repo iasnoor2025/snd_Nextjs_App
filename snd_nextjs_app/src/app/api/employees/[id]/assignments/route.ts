@@ -1,52 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/db';
+import { employeeAssignments, employees as employeesTable, projects, rentals, equipmentRentalHistory } from '@/lib/drizzle/schema';
+import { eq, and, desc, asc } from 'drizzle-orm';
 
 // Helper function to manage assignment statuses
 async function manageAssignmentStatuses(employeeId: number) {
   try {
     // Get all assignments for this employee, ordered by start date and ID
-    const allAssignments = await prisma.employeeAssignment.findMany({
-      where: { employee_id: employeeId },
-      orderBy: [
-        { start_date: 'asc' },
-        { id: 'asc' }
-      ]
-    });
+    const allAssignmentsRows = await db
+      .select({
+        id: employeeAssignments.id,
+        startDate: employeeAssignments.startDate,
+        status: employeeAssignments.status,
+        endDate: employeeAssignments.endDate,
+        name: employeeAssignments.name,
+      })
+      .from(employeeAssignments)
+      .where(eq(employeeAssignments.employeeId, employeeId))
+      .orderBy(asc(employeeAssignments.startDate), asc(employeeAssignments.id));
 
-    if (allAssignments.length === 0) {
+    if (allAssignmentsRows.length === 0) {
       return;
     }
 
     // Find the current/latest assignment (the one with the latest start date)
-    const currentAssignment = allAssignments.reduce((latest, current) => {
-      const latestDate = latest.start_date ? new Date(latest.start_date) : new Date(0);
-      const currentDate = current.start_date ? new Date(current.start_date) : new Date(0);
+    const currentAssignment = allAssignmentsRows.reduce((latest, current) => {
+      const latestDate = latest.startDate ? new Date(latest.startDate) : new Date(0);
+      const currentDate = current.startDate ? new Date(current.startDate) : new Date(0);
       return currentDate > latestDate ? current : latest;
     });
 
     // Update all assignments based on their position
-    for (let i = 0; i < allAssignments.length; i++) {
-      const assignment = allAssignments[i];
+    for (let i = 0; i < allAssignmentsRows.length; i++) {
+      const assignment = allAssignmentsRows[i];
       const isCurrent = assignment.id === currentAssignment.id;
 
       console.log(`\n📝 Processing assignment ${assignment.name} (ID: ${assignment.id}):`);
       console.log(`  Current status: ${assignment.status}`);
-      console.log(`  Current end_date: ${assignment.end_date}`);
+      console.log(`  Current end_date: ${assignment.endDate}`);
       console.log(`  Is current assignment: ${isCurrent}`);
 
       if (isCurrent) {
         // Current assignment should be active and have no end date
-        if (assignment.status !== 'active' || assignment.end_date !== null) {
+        if (assignment.status !== 'active' || assignment.endDate !== null) {
           console.log(`  🔄 Updating current assignment to active with no end date`);
-          await prisma.employeeAssignment.update({
-            where: { id: assignment.id },
-            data: {
+          await db
+            .update(employeeAssignments)
+            .set({
               status: 'active',
-              end_date: null
-            }
-          });
+              endDate: null
+            })
+            .where(eq(employeeAssignments.id, assignment.id));
         } else {
           console.log(`  ✅ Current assignment already correct`);
         }
@@ -55,9 +61,9 @@ async function manageAssignmentStatuses(employeeId: number) {
         // Always update previous assignments to ensure end dates are correct
         // Find the next assignment after this one to set the correct end date
         let nextAssignment: any = null;
-        for (let j = i + 1; j < allAssignments.length; j++) {
-          if (allAssignments[j].start_date > assignment.start_date) {
-            nextAssignment = allAssignments[j];
+        for (let j = i + 1; j < allAssignmentsRows.length; j++) {
+          if (allAssignmentsRows[j].startDate > assignment.startDate) {
+            nextAssignment = allAssignmentsRows[j];
             break;
           }
         }
@@ -65,23 +71,23 @@ async function manageAssignmentStatuses(employeeId: number) {
         let endDate;
         if (nextAssignment) {
           // Set end date to the day before the next assignment starts
-          endDate = new Date((nextAssignment as any).start_date);
+          endDate = new Date(nextAssignment.startDate);
           endDate.setDate(endDate.getDate() - 1);
-          console.log(`  🔄 Updating previous assignment to completed with end date: ${endDate.toISOString().slice(0, 10)} (day before ${(nextAssignment as any).name})`);
+          console.log(`  🔄 Updating previous assignment to completed with end date: ${endDate.toISOString().slice(0, 10)} (day before ${nextAssignment.name})`);
         } else {
           // If no next assignment, set to the day before current assignment starts
-          endDate = new Date(currentAssignment.start_date);
+          endDate = new Date(currentAssignment.startDate);
           endDate.setDate(endDate.getDate() - 1);
           console.log(`  🔄 Updating previous assignment to completed with end date: ${endDate.toISOString().slice(0, 10)} (day before current assignment)`);
         }
 
-        await prisma.employeeAssignment.update({
-          where: { id: assignment.id },
-          data: {
+        await db
+          .update(employeeAssignments)
+          .set({
             status: 'completed',
-            end_date: endDate
-          }
-        });
+            endDate: endDate.toISOString()
+          })
+          .where(eq(employeeAssignments.id, assignment.id));
         console.log(`  ✅ Updated previous assignment`);
       }
     }
@@ -111,11 +117,13 @@ export async function GET(
     }
 
     // Check if employee exists
-    const employee = await prisma.employee.findUnique({
-      where: { id: employeeId },
-    });
+    const employeeRows = await db
+      .select({ id: employeesTable.id })
+      .from(employeesTable)
+      .where(eq(employeesTable.id, employeeId))
+      .limit(1);
 
-    if (!employee) {
+    if (employeeRows.length === 0) {
       return NextResponse.json(
         { error: "Employee not found" },
         { status: 404 }
@@ -127,54 +135,56 @@ export async function GET(
     await manageAssignmentStatuses(employeeId);
     console.log(`✅ Assignment statuses managed for employee ${employeeId}`);
 
-    // Get all assignments for the employee with related data
-    const assignments = await prisma.employeeAssignment.findMany({
-      where: { employee_id: employeeId },
-      include: {
-        project: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        rental: {
-          select: {
-            id: true,
-            rental_number: true,
-            customer: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
-      orderBy: { created_at: 'desc' },
-    });
+    // Get all assignments for the employee with related data using Drizzle
+    const assignmentsRows = await db
+      .select({
+        id: employeeAssignments.id,
+        name: employeeAssignments.name,
+        type: employeeAssignments.type,
+        location: employeeAssignments.location,
+        startDate: employeeAssignments.startDate,
+        endDate: employeeAssignments.endDate,
+        status: employeeAssignments.status,
+        notes: employeeAssignments.notes,
+        projectId: employeeAssignments.projectId,
+        rentalId: employeeAssignments.rentalId,
+        createdAt: employeeAssignments.createdAt,
+        updatedAt: employeeAssignments.updatedAt,
+        projectId_rel: projects.id,
+        projectName: projects.name,
+        rentalId_rel: rentals.id,
+        rentalNumber: rentals.rentalNumber,
+        customerName: rentals.customerId, // We'll need to join with customers table for this
+      })
+      .from(employeeAssignments)
+      .leftJoin(projects, eq(projects.id, employeeAssignments.projectId))
+      .leftJoin(rentals, eq(rentals.id, employeeAssignments.rentalId))
+      .where(eq(employeeAssignments.employeeId, employeeId))
+      .orderBy(desc(employeeAssignments.createdAt));
 
     // Format assignments to match the expected interface
-    const formattedAssignments = assignments.map(assignment => ({
+    const formattedAssignments = assignmentsRows.map(assignment => ({
       id: assignment.id,
       name: assignment.name || 'Unnamed Assignment',
       type: assignment.type || 'manual',
       location: assignment.location || '',
-      start_date: assignment.start_date.toISOString().slice(0, 10),
-      end_date: assignment.end_date?.toISOString().slice(0, 10) || null,
+      start_date: assignment.startDate.slice(0, 10),
+      end_date: assignment.endDate ? assignment.endDate.slice(0, 10) : null,
       status: assignment.status || 'active',
       notes: assignment.notes || '',
-      project_id: assignment.project_id,
-      rental_id: assignment.rental_id,
-      project: assignment.project ? {
-        id: assignment.project.id,
-        name: assignment.project.name,
+      project_id: assignment.projectId,
+      rental_id: assignment.rentalId,
+      project: assignment.projectId_rel ? {
+        id: assignment.projectId_rel,
+        name: assignment.projectName || 'Unknown Project',
       } : null,
-      rental: assignment.rental ? {
-        id: assignment.rental.id,
-        rental_number: assignment.rental.rental_number,
-        project_name: assignment.rental.customer?.name || 'Unknown Customer',
+      rental: assignment.rentalId_rel ? {
+        id: assignment.rentalId_rel,
+        rental_number: assignment.rentalNumber || 'Unknown Rental',
+        project_name: 'Unknown Customer', // We'll need to join with customers for this
       } : null,
-      created_at: assignment.created_at.toISOString(),
-      updated_at: assignment.updated_at.toISOString(),
+      created_at: assignment.createdAt,
+      updated_at: assignment.updatedAt,
     }));
 
     return NextResponse.json({
@@ -216,11 +226,13 @@ export async function POST(
     }
 
     // Check if employee exists
-    const employee = await prisma.employee.findUnique({
-      where: { id: employeeId },
-    });
+    const employeeRows = await db
+      .select({ id: employeesTable.id })
+      .from(employeesTable)
+      .where(eq(employeesTable.id, employeeId))
+      .limit(1);
 
-    if (!employee) {
+    if (employeeRows.length === 0) {
       return NextResponse.json(
         { error: "Employee not found" },
         { status: 404 }
@@ -235,35 +247,24 @@ export async function POST(
       );
     }
 
-    // Create assignment in database
-    const assignment = await prisma.employeeAssignment.create({
-      data: {
-        employee_id: employeeId,
+    // Create assignment in database using Drizzle
+    const assignmentRows = await db
+      .insert(employeeAssignments)
+      .values({
+        employeeId: employeeId,
         name: body.name,
         type: body.type || 'manual',
         location: body.location,
-        start_date: new Date(body.start_date),
-        end_date: null, // Always null for new assignments
+        startDate: body.start_date,
+        endDate: null, // Always null for new assignments
         status: 'active', // Always active for new assignments
         notes: body.notes,
-        project_id: body.project_id || null,
-        rental_id: body.rental_id || null,
-      },
-      include: {
-        project: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        rental: {
-          select: {
-            id: true,
-            rental_number: true,
-          },
-        },
-      },
-    });
+        projectId: body.project_id || null,
+        rentalId: body.rental_id || null,
+      })
+      .returning();
+
+    const assignment = assignmentRows[0];
 
     // Manage assignment statuses after creating new assignment
     await manageAssignmentStatuses(employeeId);
@@ -307,11 +308,13 @@ export async function PUT(
     }
 
     // Check if employee exists
-    const employee = await prisma.employee.findUnique({
-      where: { id: employeeId },
-    });
+    const employeeRows = await db
+      .select({ id: employeesTable.id })
+      .from(employeesTable)
+      .where(eq(employeesTable.id, employeeId))
+      .limit(1);
 
-    if (!employee) {
+    if (employeeRows.length === 0) {
       return NextResponse.json(
         { error: "Employee not found" },
         { status: 404 }
@@ -326,34 +329,23 @@ export async function PUT(
       );
     }
 
-    // Update assignment in database
-    const assignment = await prisma.employeeAssignment.update({
-      where: { id: body.id },
-      data: {
+    // Update assignment in database using Drizzle
+    const assignmentRows = await db
+      .update(employeeAssignments)
+      .set({
         name: body.name,
         type: body.type || 'manual',
         location: body.location,
-        start_date: new Date(body.start_date),
-        end_date: body.end_date ? new Date(body.end_date) : null,
+        startDate: body.start_date,
+        endDate: body.end_date || null,
         notes: body.notes,
-        project_id: body.project_id || null,
-        rental_id: body.rental_id || null,
-      },
-      include: {
-        project: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        rental: {
-          select: {
-            id: true,
-            rental_number: true,
-          },
-        },
-      },
-    });
+        projectId: body.project_id || null,
+        rentalId: body.rental_id || null,
+      })
+      .where(eq(employeeAssignments.id, body.id))
+      .returning();
+
+    const assignment = assignmentRows[0];
 
     // Manage assignment statuses after updating assignment
     console.log(`🔧 Managing assignment statuses after update for employee ${employeeId}...`);
@@ -368,20 +360,16 @@ export async function PUT(
         name: assignment.name,
         type: assignment.type,
         location: assignment.location,
-        start_date: assignment.start_date.toISOString().slice(0, 10),
-        end_date: assignment.end_date?.toISOString().slice(0, 10) || null,
+        start_date: assignment.startDate.slice(0, 10),
+        end_date: assignment.endDate ? assignment.endDate.slice(0, 10) : null,
         status: assignment.status,
         notes: assignment.notes,
-        project_id: assignment.project_id,
-        rental_id: assignment.rental_id,
-        project: assignment.project,
-        rental: assignment.rental ? {
-          id: assignment.rental.id,
-          rental_number: assignment.rental.rental_number,
-          project_name: null, // We'll add this later if needed
-        } : null,
-        created_at: assignment.created_at.toISOString(),
-        updated_at: assignment.updated_at.toISOString(),
+        project_id: assignment.projectId,
+        rental_id: assignment.rentalId,
+        project: null, // We'll need to fetch this separately if needed
+        rental: null, // We'll need to fetch this separately if needed
+        created_at: assignment.createdAt,
+        updated_at: assignment.updatedAt,
       }
     });
   } catch (error) {
@@ -426,11 +414,13 @@ export async function DELETE(
     }
 
     // Check if employee exists
-    const employee = await prisma.employee.findUnique({
-      where: { id: employeeId },
-    });
+    const employeeRows = await db
+      .select({ id: employeesTable.id })
+      .from(employeesTable)
+      .where(eq(employeesTable.id, employeeId))
+      .limit(1);
 
-    if (!employee) {
+    if (employeeRows.length === 0) {
       return NextResponse.json(
         { error: "Employee not found" },
         { status: 404 }
@@ -438,37 +428,50 @@ export async function DELETE(
     }
 
     // Check if assignment exists and belongs to this employee
-    const assignment = await prisma.employeeAssignment.findFirst({
-      where: {
-        id: parseInt(assignmentId),
-        employee_id: employeeId,
-      },
-    });
+    const assignmentRows = await db
+      .select({
+        id: employeeAssignments.id,
+        type: employeeAssignments.type,
+        name: employeeAssignments.name,
+      })
+      .from(employeeAssignments)
+      .where(and(
+        eq(employeeAssignments.id, parseInt(assignmentId)),
+        eq(employeeAssignments.employeeId, employeeId)
+      ))
+      .limit(1);
 
-    if (!assignment) {
+    if (assignmentRows.length === 0) {
       return NextResponse.json(
         { error: "Assignment not found" },
         { status: 404 }
       );
     }
 
+    const assignment = assignmentRows[0];
+
     // If this is a manual assignment that was created from an equipment assignment, also delete the corresponding equipment assignment
     let deletedEquipmentAssignment = null;
     if (assignment.type === 'manual' && assignment.name && assignment.name.includes('Equipment Assignment -')) {
       try {
         // Find and delete the corresponding equipment assignment
-        const equipmentAssignment = await prisma.equipmentRentalHistory.findFirst({
-          where: {
-            employee_id: employeeId,
-            assignment_type: 'manual',
-            status: 'active'
-          }
-        });
+        const equipmentAssignmentRows = await db
+          .select({
+            id: equipmentRentalHistory.id,
+          })
+          .from(equipmentRentalHistory)
+          .where(and(
+            eq(equipmentRentalHistory.employeeId, employeeId),
+            eq(equipmentRentalHistory.assignmentType, 'manual'),
+            eq(equipmentRentalHistory.status, 'active')
+          ))
+          .limit(1);
 
-        if (equipmentAssignment) {
-          await prisma.equipmentRentalHistory.delete({
-            where: { id: equipmentAssignment.id }
-          });
+        if (equipmentAssignmentRows.length > 0) {
+          const equipmentAssignment = equipmentAssignmentRows[0];
+          await db
+            .delete(equipmentRentalHistory)
+            .where(eq(equipmentRentalHistory.id, equipmentAssignment.id));
           deletedEquipmentAssignment = equipmentAssignment;
           console.log('Equipment assignment deleted automatically:', equipmentAssignment);
         }
@@ -479,9 +482,9 @@ export async function DELETE(
     }
 
     // Delete the employee assignment
-    await prisma.employeeAssignment.delete({
-      where: { id: parseInt(assignmentId) },
-    });
+    await db
+      .delete(employeeAssignments)
+      .where(eq(employeeAssignments.id, parseInt(assignmentId)));
 
     // Manage assignment statuses after deleting assignment
     await manageAssignmentStatuses(employeeId);
