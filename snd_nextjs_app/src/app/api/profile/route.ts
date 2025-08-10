@@ -134,8 +134,12 @@ export async function GET(request: NextRequest) {
           designationId: employees.designationId,
           departmentId: employees.departmentId,
           userId: employees.userId,
+          designation: designations.name,
+          department: departments.name,
         })
         .from(employees)
+        .leftJoin(designations, eq(employees.designationId, designations.id))
+        .leftJoin(departments, eq(employees.departmentId, departments.id))
         .where(eq(employees.iqamaNumber, user.nationalId))
         .limit(1);
 

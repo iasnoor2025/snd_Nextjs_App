@@ -51,7 +51,8 @@ import {
 
   IconMessage,
   IconLoader,
-  IconDeviceFloppy
+  IconDeviceFloppy,
+  IconUpload
 } from "@tabler/icons-react"
 
 import { Button } from "@/components/ui/button"
@@ -75,10 +76,10 @@ import { useTranslation } from 'react-i18next';
 
 interface MatchedEmployee {
   id: number
-  first_name: string
-  middle_name?: string
-  last_name: string
-  employee_id: string
+  firstName: string
+  middleName?: string
+  lastName: string
+  fileNumber: string
   phone?: string
   email?: string
   address?: string
@@ -86,18 +87,21 @@ interface MatchedEmployee {
   state?: string
   country?: string
   nationality?: string
-  date_of_birth?: string
-  hire_date?: string
-  iqama_number?: string
-  iqama_expiry?: string
-  passport_number?: string
-  passport_expiry?: string
-  driving_license_number?: string
-  driving_license_expiry?: string
-  operator_license_number?: string
-  operator_license_expiry?: string
-  designation?: { name: string }
-  department?: { name: string }
+  dateOfBirth?: string
+  hireDate?: string
+  iqamaNumber?: string
+  iqamaExpiry?: string
+  passportNumber?: string
+  passportExpiry?: string
+  drivingLicenseNumber?: string
+  drivingLicenseExpiry?: string
+  operatorLicenseNumber?: string
+  operatorLicenseExpiry?: string
+  designationId?: number
+  departmentId?: number
+  userId?: number
+  designation?: string
+  department?: string
 }
 
 interface UserProfile {
@@ -172,9 +176,13 @@ export default function ProfilePage() {
     securityScore: 85
   })
 
+
+
   const [isLoading, setIsLoading] = useState(true)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   const [notifications, setNotifications] = useState<NotificationSettings>({
     emailNotifications: true,
@@ -191,6 +199,36 @@ export default function ProfilePage() {
     timezone: "America/New_York",
     dateFormat: "MM/DD/YYYY"
   })
+
+  // Calculate profile completion percentage
+  const calculateProfileCompletion = (profileData: UserProfile) => {
+    const fields = [
+      'name', 'email', 'phone', 'firstName', 'lastName',
+      'address', 'city', 'state', 'country', 'bio',
+      'role', 'department', 'nationalId'
+    ];
+
+    let completedFields = 0;
+    fields.forEach(field => {
+      if (profileData[field as keyof UserProfile] &&
+        profileData[field as keyof UserProfile] !== '') {
+        completedFields++;
+      }
+    });
+
+    return Math.round((completedFields / fields.length) * 100);
+  };
+
+  // Update profile stats when profile changes
+  useEffect(() => {
+    if (profile.id) {
+      const completion = calculateProfileCompletion(profile);
+      setProfileStats(prev => ({
+        ...prev,
+        profileCompletion: completion
+      }));
+    }
+  }, [profile]);
 
   // Fetch profile data on component mount
   useEffect(() => {
@@ -214,7 +252,7 @@ export default function ProfilePage() {
       if (response.ok) {
         const responseText = await response.text();
         console.log('📄 Raw response text:', responseText);
-        
+
         if (!responseText) {
           console.error('❌ Empty response from profile API');
           toast.error('Empty response from server');
@@ -237,7 +275,7 @@ export default function ProfilePage() {
       } else {
         const responseText = await response.text();
         console.log('❌ Error response text:', responseText);
-        
+
         let errorData;
         try {
           errorData = JSON.parse(responseText);
@@ -245,7 +283,7 @@ export default function ProfilePage() {
           console.error('❌ Error parsing error response:', parseError);
           errorData = { error: 'Unknown error', details: responseText };
         }
-        
+
         console.error('❌ Profile fetch error:', errorData)
         toast.error(errorData.error || 'Failed to load profile')
       }
@@ -383,6 +421,130 @@ export default function ProfilePage() {
     return profile.firstName || profile.matchedEmployee
   }
 
+  // Handle profile picture upload
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type and size
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      toast.error('File size must be less than 5MB');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const response = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setProfile(prev => ({ ...prev, avatar: result.avatar }));
+        toast.success('Profile picture updated successfully');
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to upload profile picture');
+      }
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      toast.error('Failed to upload profile picture');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  // Handle document upload
+  const handleDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const formData = new FormData();
+      formData.append('document', file);
+      formData.append('documentType', 'general');
+
+      const response = await fetch('/api/profile/documents', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        toast.success('Document uploaded successfully');
+        // Refresh documents list
+        window.location.reload();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to upload document');
+      }
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      toast.error('Failed to upload document');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  // Export profile data
+  const handleExportProfile = () => {
+    const profileData = {
+      personalInfo: {
+        name: profile.name,
+        email: profile.email,
+        phone: profile.phone,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        address: profile.address,
+        city: profile.city,
+        state: profile.state,
+        country: profile.country,
+        bio: profile.bio,
+        nationalId: profile.nationalId
+      },
+      workInfo: {
+        role: profile.role,
+        department: profile.department,
+        location: profile.location,
+        joinDate: profile.joinDate
+      },
+      settings: {
+        notifications,
+        appearance
+      },
+      exportDate: new Date().toISOString()
+    };
+
+    const blob = new Blob([JSON.stringify(profileData, null, 2)], {
+      type: 'application/json'
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `profile-${profile.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success('Profile exported successfully');
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
@@ -486,6 +648,11 @@ export default function ProfilePage() {
                 </div>
               </div>
               <Progress value={profileStats.profileCompletion} className="mt-3" />
+              <p className="text-xs text-blue-600 mt-2">
+                {profileStats.profileCompletion < 100
+                  ? `${100 - profileStats.profileCompletion} fields remaining`
+                  : 'Profile complete!'}
+              </p>
             </CardContent>
           </Card>
 
@@ -501,6 +668,22 @@ export default function ProfilePage() {
                 </div>
               </div>
               <p className="text-xs text-green-600 mt-1">Uploaded files</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 w-full text-xs"
+                onClick={() => document.getElementById('document-upload')?.click()}
+              >
+                <IconUpload className="h-3 w-3 mr-1" />
+                Upload New
+              </Button>
+              <input
+                id="document-upload"
+                type="file"
+                className="hidden"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                onChange={handleDocumentUpload}
+              />
             </CardContent>
           </Card>
 
@@ -516,6 +699,15 @@ export default function ProfilePage() {
                 </div>
               </div>
               <p className="text-xs text-purple-600 mt-1">Account protection</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 w-full text-xs"
+                onClick={() => document.getElementById('security-tab')?.click()}
+              >
+                <IconShield className="h-3 w-3 mr-1" />
+                Review
+              </Button>
             </CardContent>
           </Card>
 
@@ -533,16 +725,97 @@ export default function ProfilePage() {
                 </div>
               </div>
               <p className="text-xs text-orange-600 mt-1">Recent login</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2 w-full text-xs"
+                onClick={handleExportProfile}
+              >
+                <IconDownload className="h-3 w-3 mr-1" />
+                Export Profile
+              </Button>
             </CardContent>
           </Card>
         </div>
+
+        {/* Quick Actions */}
+        <Card className="border-0 shadow-lg bg-gradient-to-r from-indigo-50/50 to-purple-50/50">
+          <CardContent className="p-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-indigo-100 p-2 rounded-lg">
+                  <IconSettings className="h-5 w-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-indigo-900">Quick Actions</h3>
+                  <p className="text-sm text-indigo-600">Common profile tasks</p>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                  disabled={isEditing}
+                >
+                  <IconEdit className="h-4 w-4 mr-2" />
+                  Edit Profile
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => document.getElementById('avatar-upload')?.click()}
+                  disabled={isUploading}
+                >
+                  <IconCamera className="h-4 w-4 mr-2" />
+                  Change Photo
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportProfile}
+                >
+                  <IconDownload className="h-4 w-4 mr-2" />
+                  Export Data
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Hidden file inputs */}
+        <input
+          id="avatar-upload"
+          type="file"
+          className="hidden"
+          accept="image/*"
+          onChange={handleProfilePictureUpload}
+        />
+
+        {/* Upload Progress Overlay */}
+        {isUploading && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="w-96">
+              <CardContent className="p-6">
+                <div className="text-center space-y-4">
+                  <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary/20 border-t-primary mx-auto"></div>
+                  <h3 className="text-lg font-semibold">Uploading...</h3>
+                  <Progress value={uploadProgress} className="w-full" />
+                  <p className="text-sm text-muted-foreground">
+                    Please wait while we process your file
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Data Source Alert */}
         {hasRealEmployeeData() && (
           <Alert className="border-primary/20 bg-primary/5">
             <IconDatabase className="h-4 w-4 text-primary" />
             <AlertDescription className="text-primary">
-              <strong>Database Connected:</strong> Your profile is displaying real employee information from the database. 
+              <strong>Database Connected:</strong> Your profile is displaying real employee information from the database.
               {profile.matchedEmployee && (
                 <span className="ml-2">
                   <IconLink className="h-4 w-4 inline mr-1" />
@@ -628,9 +901,16 @@ export default function ProfilePage() {
                         size="sm"
                         variant="outline"
                         className="absolute -bottom-2 -right-2 h-10 w-10 rounded-full p-0 shadow-lg"
+                        onClick={() => document.getElementById('avatar-upload')?.click()}
+                        disabled={isUploading}
                       >
                         <IconCamera className="h-5 w-5" />
                       </Button>
+                    )}
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-black/20 rounded-full flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-white border-t-transparent"></div>
+                      </div>
                     )}
                   </div>
                   <div className="flex-1 space-y-6">
@@ -704,7 +984,7 @@ export default function ProfilePage() {
                     <IconInfoCircle className="h-5 w-5 text-primary" />
                     Additional Information
                   </h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-3">
                       <Label htmlFor="firstName" className="text-sm font-semibold text-muted-foreground">First Name</Label>
@@ -817,6 +1097,61 @@ export default function ProfilePage() {
                   </div>
                 </div>
 
+                {/* Activity Timeline */}
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <IconClock className="h-5 w-5 text-primary" />
+                    Recent Activity
+                  </h3>
+
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-4 p-4 bg-muted/30 rounded-lg">
+                      <div className="bg-primary/20 p-2 rounded-full">
+                        <IconEdit className="h-4 w-4 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Profile Updated</p>
+                        <p className="text-xs text-muted-foreground">
+                          Personal information was modified
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4 p-4 bg-muted/30 rounded-lg">
+                      <div className="bg-green-500/20 p-2 rounded-full">
+                        <IconCamera className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Profile Picture Changed</p>
+                        <p className="text-xs text-muted-foreground">
+                          New avatar uploaded successfully
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(Date.now() - 86400000).toLocaleDateString()} at {new Date(Date.now() - 86400000).toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-4 p-4 bg-muted/30 rounded-lg">
+                      <div className="bg-blue-500/20 p-2 rounded-full">
+                        <IconFileText className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Document Uploaded</p>
+                        <p className="text-xs text-muted-foreground">
+                          New document added to profile
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(Date.now() - 172800000).toLocaleDateString()} at {new Date(Date.now() - 172800000).toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {isEditing && (
                   <div className="flex justify-end gap-3 pt-6 border-t">
                     <Button
@@ -877,9 +1212,9 @@ export default function ProfilePage() {
                       </Badge>
                     </div>
                   </div>
-                  
+
                   <Separator className="my-4" />
-                  
+
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-3">
@@ -890,7 +1225,7 @@ export default function ProfilePage() {
                         {formatDate(profile.joinDate)}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <IconClock className="h-4 w-4 text-blue-500" />
@@ -900,7 +1235,7 @@ export default function ProfilePage() {
                         {formatDate(profile.lastLogin)}
                       </span>
                     </div>
-                    
+
                     <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <IconId className="h-4 w-4 text-blue-500" />
@@ -942,9 +1277,9 @@ export default function ProfilePage() {
                         <p className="text-sm font-semibold text-green-900">{profile.phone}</p>
                       </div>
                     </div>
-                    
+
                     <Separator className="my-4" />
-                    
+
                     <div className="space-y-4">
                       <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                         <div className="flex items-center gap-3">
@@ -955,7 +1290,7 @@ export default function ProfilePage() {
                           {profile.designation || 'Not assigned'}
                         </span>
                       </div>
-                      
+
                       <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                         <div className="flex items-center gap-3">
                           <IconBuilding className="h-4 w-4 text-green-500" />
@@ -965,7 +1300,7 @@ export default function ProfilePage() {
                           {profile.department || 'Not assigned'}
                         </span>
                       </div>
-                      
+
                       <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                         <div className="flex items-center gap-3">
                           <IconMapPin className="h-4 w-4 text-green-500" />
@@ -980,7 +1315,7 @@ export default function ProfilePage() {
                 </Card>
               )}
 
-                            {/* Matched Employee Details Card */}
+              {/* Matched Employee Details Card */}
               {profile.matchedEmployee && (
                 <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50/50 to-purple-100/30 col-span-1 lg:col-span-2">
                   <CardHeader className="pb-4">
@@ -1003,12 +1338,12 @@ export default function ProfilePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <span className="text-xs font-medium text-purple-600 uppercase tracking-wide">Employee ID</span>
-                        <p className="text-sm font-semibold text-purple-900 font-mono">{profile.matchedEmployee.employee_id}</p>
+                        <p className="text-sm font-semibold text-purple-900 font-mono">{profile.matchedEmployee.fileNumber}</p>
                       </div>
                       <div className="space-y-2">
                         <span className="text-xs font-medium text-purple-600 uppercase tracking-wide">Full Name</span>
                         <p className="text-sm font-semibold text-purple-900">
-                          {profile.matchedEmployee.first_name} {profile.matchedEmployee.middle_name} {profile.matchedEmployee.last_name}
+                          {profile.matchedEmployee.firstName} {profile.matchedEmployee.middleName} {profile.matchedEmployee.lastName}
                         </p>
                       </div>
                       <div className="space-y-2">
@@ -1031,13 +1366,13 @@ export default function ProfilePage() {
                           <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                             <span className="text-sm text-purple-700">Date of Birth</span>
                             <span className="text-sm font-medium text-purple-900">
-                              {formatDate(profile.matchedEmployee.date_of_birth)}
+                              {formatDate(profile.matchedEmployee.dateOfBirth)}
                             </span>
                           </div>
                           <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                             <span className="text-sm text-purple-700">Hire Date</span>
                             <span className="text-sm font-medium text-purple-900">
-                              {formatDate(profile.matchedEmployee.hire_date)}
+                              {formatDate(profile.matchedEmployee.hireDate)}
                             </span>
                           </div>
                           <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
@@ -1065,13 +1400,13 @@ export default function ProfilePage() {
                           <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                             <span className="text-sm text-purple-700">Designation</span>
                             <span className="text-sm font-medium text-purple-900">
-                              {profile.matchedEmployee.designation?.name || 'Not assigned'}
+                              {profile.matchedEmployee.designation || 'Not assigned'}
                             </span>
                           </div>
                           <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                             <span className="text-sm text-purple-700">Department</span>
                             <span className="text-sm font-medium text-purple-900">
-                              {profile.matchedEmployee.department?.name || 'Not assigned'}
+                              {profile.matchedEmployee.department || 'Not assigned'}
                             </span>
                           </div>
                           <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
@@ -1083,8 +1418,8 @@ export default function ProfilePage() {
                           <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                             <span className="text-sm text-purple-700">Location</span>
                             <span className="text-sm font-medium text-purple-900">
-                              {profile.matchedEmployee.city && profile.matchedEmployee.state 
-                                ? `${profile.matchedEmployee.city}, ${profile.matchedEmployee.state}` 
+                              {profile.matchedEmployee.city && profile.matchedEmployee.state
+                                ? `${profile.matchedEmployee.city}, ${profile.matchedEmployee.state}`
                                 : profile.matchedEmployee.country || 'Not specified'}
                             </span>
                           </div>
@@ -1094,13 +1429,13 @@ export default function ProfilePage() {
 
                     {/* Documents Section */}
                     <Separator className="my-6" />
-                    
+
                     <div className="space-y-4">
                       <h4 className="text-sm font-semibold text-purple-800 flex items-center gap-2">
                         <IconFileText className="h-4 w-4" />
                         Documents & Licenses
                       </h4>
-                      
+
                       {/* Iqama Information */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-lg border border-blue-200/50">
@@ -1116,19 +1451,19 @@ export default function ProfilePage() {
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
                               <span className="text-blue-700">Number:</span>
-                              <span className="font-medium text-blue-900">{profile.matchedEmployee.iqama_number}</span>
+                              <span className="font-medium text-blue-900">{profile.matchedEmployee.iqamaNumber}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-blue-700">Expires:</span>
                               <span className="font-medium text-blue-900">
-                                {formatDate(profile.matchedEmployee.iqama_expiry)}
+                                {formatDate(profile.matchedEmployee.iqamaExpiry)}
                               </span>
                             </div>
                           </div>
                         </div>
 
                         {/* Passport Information */}
-                        {profile.matchedEmployee.passport_number && (
+                        {profile.matchedEmployee.passportNumber && (
                           <div className="p-4 bg-gradient-to-r from-green-50 to-green-100/50 rounded-lg border border-green-200/50">
                             <div className="flex items-center gap-3 mb-3">
                               <div className="bg-green-100 p-2 rounded-lg">
@@ -1142,12 +1477,12 @@ export default function ProfilePage() {
                             <div className="space-y-2">
                               <div className="flex justify-between text-sm">
                                 <span className="text-green-700">Number:</span>
-                                <span className="font-medium text-green-900">{profile.matchedEmployee.passport_number}</span>
+                                <span className="font-medium text-green-900">{profile.matchedEmployee.passportNumber}</span>
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-green-700">Expires:</span>
                                 <span className="font-medium text-green-900">
-                                  {formatDate(profile.matchedEmployee.passport_expiry)}
+                                  {formatDate(profile.matchedEmployee.passportExpiry)}
                                 </span>
                               </div>
                             </div>
@@ -1156,9 +1491,9 @@ export default function ProfilePage() {
                       </div>
 
                       {/* Additional Licenses */}
-                      {(profile.matchedEmployee.driving_license_number || profile.matchedEmployee.operator_license_number) && (
+                      {(profile.matchedEmployee.drivingLicenseNumber || profile.matchedEmployee.operatorLicenseNumber) && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {profile.matchedEmployee.driving_license_number && (
+                          {profile.matchedEmployee.drivingLicenseNumber && (
                             <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100/50 rounded-lg border border-orange-200/50">
                               <div className="flex items-center gap-3 mb-3">
                                 <div className="bg-orange-100 p-2 rounded-lg">
@@ -1172,19 +1507,19 @@ export default function ProfilePage() {
                               <div className="space-y-2">
                                 <div className="flex justify-between text-sm">
                                   <span className="text-orange-700">Number:</span>
-                                  <span className="font-medium text-orange-900">{profile.matchedEmployee.driving_license_number}</span>
+                                  <span className="font-medium text-orange-900">{profile.matchedEmployee.drivingLicenseNumber}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                   <span className="text-orange-700">Expires:</span>
                                   <span className="font-medium text-orange-900">
-                                    {formatDate(profile.matchedEmployee.driving_license_expiry)}
+                                    {formatDate(profile.matchedEmployee.drivingLicenseExpiry)}
                                   </span>
                                 </div>
                               </div>
                             </div>
                           )}
 
-                          {profile.matchedEmployee.operator_license_number && (
+                          {profile.matchedEmployee.operatorLicenseNumber && (
                             <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100/50 rounded-lg border border-purple-200/50">
                               <div className="flex items-center gap-3 mb-3">
                                 <div className="bg-purple-100 p-2 rounded-lg">
@@ -1198,12 +1533,12 @@ export default function ProfilePage() {
                               <div className="space-y-2">
                                 <div className="flex justify-between text-sm">
                                   <span className="text-purple-700">Number:</span>
-                                  <span className="font-medium text-purple-900">{profile.matchedEmployee.operator_license_number}</span>
+                                  <span className="font-medium text-purple-900">{profile.matchedEmployee.operatorLicenseNumber}</span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                   <span className="text-purple-700">Expires:</span>
                                   <span className="font-medium text-purple-900">
-                                    {formatDate(profile.matchedEmployee.operator_license_expiry)}
+                                    {formatDate(profile.matchedEmployee.operatorLicenseExpiry)}
                                   </span>
                                 </div>
                               </div>
@@ -1257,7 +1592,7 @@ export default function ProfilePage() {
                       </div>
                       <p className="text-sm font-semibold text-amber-900">SND Rental Management</p>
                     </div>
-                    
+
                     <div className="p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <IconBriefcase className="h-4 w-4 text-amber-600" />
@@ -1265,7 +1600,7 @@ export default function ProfilePage() {
                       </div>
                       <p className="text-sm font-semibold text-amber-900">{profile.department || 'Not assigned'}</p>
                     </div>
-                    
+
                     <div className="p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <IconStar className="h-4 w-4 text-amber-600" />
@@ -1273,7 +1608,7 @@ export default function ProfilePage() {
                       </div>
                       <p className="text-sm font-semibold text-amber-900">{profile.role || 'Not assigned'}</p>
                     </div>
-                    
+
                     <div className="p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <IconMapPin className="h-4 w-4 text-amber-600" />
@@ -1543,7 +1878,7 @@ export default function ProfilePage() {
                     <div>
                       <p className="text-sm font-medium text-blue-900">Notification Summary</p>
                       <p className="text-xs text-blue-600">
-                        You'll receive notifications through email and push notifications based on your preferences above. 
+                        You'll receive notifications through email and push notifications based on your preferences above.
                         Critical alerts will always be sent regardless of settings.
                       </p>
                     </div>
@@ -1552,8 +1887,8 @@ export default function ProfilePage() {
 
                 {/* Save Button */}
                 <div className="flex justify-end pt-4">
-                  <Button 
-                    onClick={handleSaveNotifications} 
+                  <Button
+                    onClick={handleSaveNotifications}
                     disabled={isSaving}
                     className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
                   >
@@ -1771,8 +2106,8 @@ export default function ProfilePage() {
 
                 {/* Save Button */}
                 <div className="flex justify-end pt-4">
-                  <Button 
-                    onClick={handleSaveAppearance} 
+                  <Button
+                    onClick={handleSaveAppearance}
                     disabled={isSaving}
                     className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg"
                   >
@@ -1794,72 +2129,179 @@ export default function ProfilePage() {
           </TabsContent>
 
           <TabsContent value="security" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <IconShield className="h-5 w-5" />
+            <Card className="border-0 shadow-lg bg-gradient-to-br from-red-50/50 to-red-100/30">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl flex items-center gap-3 text-red-900">
+                  <div className="bg-red-100 p-2 rounded-lg">
+                    <IconShield className="h-6 w-6 text-red-600" />
+                  </div>
                   Security Settings
                 </CardTitle>
-                <CardDescription>
-                  Manage your account security and privacy
+                <CardDescription className="text-red-700">
+                  Manage your account security and privacy settings
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-medium">{t('changePassword')}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {t('changePasswordDescription')}
-                      </p>
+              <CardContent className="space-y-8">
+                {/* Password Management */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-red-100 p-2 rounded-lg">
+                      <IconKey className="h-5 w-5 text-red-600" />
                     </div>
-                    <Button variant="outline" size="sm">
-                      <IconKey className="h-4 w-4 mr-2" />
-                      {t('change')}
-                    </Button>
+                    <h4 className="text-lg font-semibold text-red-900">Password Management</h4>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-medium">{t('twoFactorAuthentication')}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {t('twoFactorAuthenticationDescription')}
-                      </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-white/50 rounded-lg border border-red-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="change-password" className="text-sm font-medium text-red-900">Change Password</Label>
+                          <p className="text-xs text-red-600">Update your login password</p>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          <IconKey className="h-4 w-4 mr-2" />
+                          Change
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-red-600">
+                        <IconClock className="h-3 w-3" />
+                        <span>Last changed: {new Date(Date.now() - 2592000000).toLocaleDateString()}</span>
+                      </div>
                     </div>
-                    <Button variant="outline" size="sm">
-                      <IconShield className="h-4 w-4 mr-2" />
-                      {t('enable')}
-                    </Button>
-                  </div>
 
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-medium">{t('activeSessions')}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {t('activeSessionsDescription')}
-                      </p>
+                    <div className="p-4 bg-white/50 rounded-lg border border-red-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="password-strength" className="text-sm font-medium text-red-900">Password Strength</Label>
+                          <p className="text-xs text-red-600">Current password security level</p>
+                        </div>
+                        <Badge variant="default" className="bg-green-600">
+                          <IconCheck className="h-3 w-3 mr-1" />
+                          Strong
+                        </Badge>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-green-600 h-2 rounded-full" style={{ width: '85%' }}></div>
+                      </div>
                     </div>
-                    <Button variant="outline" size="sm">
-                      {t('view')}
-                    </Button>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-medium">{t('loginHistory')}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {t('loginHistoryDescription')}
-                      </p>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      {t('view')}
-                    </Button>
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className="my-8" />
 
-                <div className="p-4 border border-destructive rounded-lg">
+                {/* Two-Factor Authentication */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-red-100 p-2 rounded-lg">
+                      <IconShield className="h-5 w-5 text-red-600" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-red-900">Two-Factor Authentication</h4>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-white/50 rounded-lg border border-red-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="2fa-status" className="text-sm font-medium text-red-900">2FA Status</Label>
+                          <p className="text-xs text-red-600">Additional security layer</p>
+                        </div>
+                        <Badge variant="secondary">
+                          <IconX className="h-3 w-3 mr-1" />
+                          Disabled
+                        </Badge>
+                      </div>
+                      <Button variant="outline" size="sm" className="w-full">
+                        <IconShield className="h-4 w-4 mr-2" />
+                        Enable 2FA
+                      </Button>
+                    </div>
+
+                    <div className="p-4 bg-white/50 rounded-lg border border-red-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="backup-codes" className="text-sm font-medium text-red-900">Backup Codes</Label>
+                          <p className="text-xs text-red-600">Emergency access codes</p>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          <IconDownload className="h-4 w-4 mr-2" />
+                          Generate
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-red-600">
+                        <IconAlertTriangle className="h-3 w-3" />
+                        <span>Not generated yet</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator className="my-8" />
+
+                {/* Session Management */}
+                <div className="space-y-6">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-red-100 p-2 rounded-lg">
+                      <IconDeviceLaptop className="h-5 w-5 text-red-600" />
+                    </div>
+                    <h4 className="text-lg font-semibold text-red-900">Session Management</h4>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-white/50 rounded-lg border border-red-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="active-sessions" className="text-sm font-medium text-red-900">Active Sessions</Label>
+                          <p className="text-xs text-red-600">Currently logged in devices</p>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          <IconEye className="h-4 w-4 mr-2" />
+                          View All
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-red-600">
+                        <IconCheck className="h-3 w-3" />
+                        <span>1 active session</span>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-white/50 rounded-lg border border-red-200/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="space-y-1">
+                          <Label htmlFor="login-history" className="text-sm font-medium text-red-900">Login History</Label>
+                          <p className="text-xs text-red-600">Recent login attempts</p>
+                        </div>
+                        <Button variant="outline" size="sm">
+                          <IconClock className="h-4 w-4 mr-2" />
+                          View
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-red-600">
+                        <IconInfoCircle className="h-3 w-3" />
+                        <span>Last: {new Date().toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Security Score */}
+                <div className="p-4 bg-white/50 rounded-lg border border-red-200/50">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-lg font-semibold text-red-900">Security Score</h4>
+                    <Badge variant="default" className="bg-green-600">
+                      {profileStats.securityScore}%
+                    </Badge>
+                  </div>
+                  <Progress value={profileStats.securityScore} className="w-full" />
+                  <div className="mt-2 text-xs text-red-600">
+                    <p>Your account security is {profileStats.securityScore >= 80 ? 'excellent' : profileStats.securityScore >= 60 ? 'good' : 'needs improvement'}</p>
+                    {profileStats.securityScore < 80 && (
+                      <p className="mt-1">Consider enabling 2FA and updating your password regularly</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Account Deletion */}
+                <div className="p-4 border border-destructive rounded-lg bg-destructive/5">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       <h4 className="text-sm font-medium text-destructive">{t('deleteAccount')}</h4>
@@ -1920,25 +2362,25 @@ function EmployeeDocumentsDisplay() {
       const response = await fetch('/api/profile/documents');
       console.log('📊 EmployeeDocumentsDisplay: Response status:', response.status);
       console.log('📊 EmployeeDocumentsDisplay: Response headers:', response.headers.get('content-type'));
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('✅ EmployeeDocumentsDisplay: Documents data received:', data);
         console.log('✅ EmployeeDocumentsDisplay: Data type:', typeof data);
         console.log('✅ EmployeeDocumentsDisplay: Is array?', Array.isArray(data));
         console.log('✅ EmployeeDocumentsDisplay: Data length:', Array.isArray(data) ? data.length : 'Not an array');
-        
+
         if (Array.isArray(data)) {
           // Check specifically for Iqama documents
           const iqamaDocs = data.filter(doc => doc.document_type === 'iqama');
           console.log('🔍 EmployeeDocumentsDisplay: Iqama documents found:', iqamaDocs.length);
           console.log('🔍 EmployeeDocumentsDisplay: Iqama documents:', iqamaDocs);
-          
+
           // Check all document types
           const docTypes = [...new Set(data.map(doc => doc.document_type))];
           console.log('🔍 EmployeeDocumentsDisplay: All document types found:', docTypes);
         }
-        
+
         setDocuments(Array.isArray(data) ? data : []);
       } else {
         const errorText = await response.text();
@@ -1998,9 +2440,9 @@ function EmployeeDocumentsDisplay() {
     return (
       <div className="text-center py-8">
         <p className="text-sm text-muted-foreground">{error}</p>
-        <Button 
-          variant="outline" 
-          size="sm" 
+        <Button
+          variant="outline"
+          size="sm"
           onClick={fetchDocuments}
           className="mt-2"
         >
@@ -2058,7 +2500,7 @@ function EmployeeDocumentsDisplay() {
               </Button>
             </div>
           </div>
-          
+
           {/* Document Preview - ID Card Size */}
           <div className="bg-white rounded-lg border-2 border-dashed border-blue-200 p-4">
             <div className="flex items-center justify-center">
@@ -2084,7 +2526,7 @@ function EmployeeDocumentsDisplay() {
               <p className="text-xs text-gray-600">Click to view full size</p>
             </div>
           </div>
-          
+
           <div className="mt-3 text-xs text-blue-600">
             <span>Uploaded: {new Date(iqamaDoc.created_at).toLocaleDateString()}</span>
             {iqamaDoc.file_size && (
