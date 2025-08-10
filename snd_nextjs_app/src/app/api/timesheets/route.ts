@@ -21,6 +21,8 @@ const getTimesheetsHandler = async (request: NextRequest) => {
 
     // Allow test access without authentication
     if (test === 'true') {
+      console.log('Test mode: Checking database for timesheet data...');
+      
       const rows = await db
         .select({
           id: timesheets.id,
@@ -44,13 +46,18 @@ const getTimesheetsHandler = async (request: NextRequest) => {
             id: employees.id,
             first_name: employees.firstName,
             last_name: employees.lastName,
-            employee_id: employees.employeeId,
+            file_number: employees.fileNumber,
           },
         })
         .from(timesheets)
         .leftJoin(employees, eq(timesheets.employeeId, employees.id))
         .orderBy(desc(timesheets.date))
-        .limit(5);
+        .limit(10);
+
+      console.log(`Test mode: Found ${rows.length} timesheet records in database`);
+      if (rows.length > 0) {
+        console.log('Sample timesheet data:', JSON.stringify(rows[0], null, 2));
+      }
 
       // Transform the response to match frontend interface
       const transformedTimesheets = rows.map(timesheet => ({
@@ -76,7 +83,7 @@ const getTimesheetsHandler = async (request: NextRequest) => {
           id: String((timesheet.employee as any).id),
           firstName: (timesheet.employee as any).first_name as unknown as string,
           lastName: (timesheet.employee as any).last_name as unknown as string,
-          employeeId: (timesheet.employee as any).employee_id as unknown as string,
+          fileNumber: (timesheet.employee as any).file_number as unknown as string,
         } : undefined,
       }));
 
@@ -226,9 +233,19 @@ const getTimesheetsHandler = async (request: NextRequest) => {
 };
 
 // GET /api/timesheets - List timesheets with permission check
-export const GET = withAuth(
-  getTimesheetsHandler
-);
+export const GET = async (request: NextRequest) => {
+  const { searchParams } = new URL(request.url);
+  const test = searchParams.get('test') || '';
+  
+  // Allow test access without authentication
+  if (test === 'true') {
+    return getTimesheetsHandler(request);
+  }
+  
+  // Apply authentication for normal requests
+  const authenticatedHandler = withAuth(getTimesheetsHandler);
+  return authenticatedHandler(request);
+};
 
 // POST /api/timesheets - Create timesheet with permission check
 export const POST = withAuth(

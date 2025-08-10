@@ -22,7 +22,7 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
     const session = await getServerSession(authConfig);
     const user = session?.user;
     
-    let employeeFilter = null;
+    let employeeFilter: any = null;
     
     // For employee users, only show their own advances
     if (user?.role === 'EMPLOYEE') {
@@ -39,7 +39,7 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
     }
 
     // Build where conditions
-    let whereConditions = [isNull(advancePayments.deletedAt)];
+    let whereConditions: any[] = [isNull(advancePayments.deletedAt)];
 
     if (employeeFilter) {
       whereConditions.push(employeeFilter);
@@ -54,7 +54,7 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
     }
 
     // Handle search with joins
-    let searchQuery = null;
+    let searchQuery: any = null;
     if (search) {
       searchQuery = or(
         like(employees.firstName, `%${search}%`),
@@ -92,7 +92,7 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
             name: users.name,
             email: users.email,
           }
-        }
+        } as any
       })
       .from(advancePayments)
       .leftJoin(employees, eq(advancePayments.employeeId, employees.id))
@@ -179,7 +179,7 @@ const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { 
       .insert(advancePayments)
       .values({
         employeeId: parseInt(body.employeeId),
-        amount: parseFloat(amount),
+        amount: parseFloat(amount).toString(),
         purpose: reason, // Using reason as purpose
         reason,
         status,
@@ -262,7 +262,7 @@ export const PUT = withEmployeeListPermission(
         .update(advancePayments)
         .set({
           employeeId: employeeId,
-          amount: parseFloat(amount),
+          amount: parseFloat(amount).toString(),
           purpose: reason, // Using reason as purpose
           reason,
           status,

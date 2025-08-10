@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/db';
 import { employees as employeesTable, salaryIncrements, users } from '@/lib/drizzle/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, inArray } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
@@ -41,8 +41,8 @@ export async function GET(
       .select({
         id: salaryIncrements.id,
         employeeId: salaryIncrements.employeeId,
-        currentSalary: salaryIncrements.currentSalary,
-        newSalary: salaryIncrements.newSalary,
+        currentBaseSalary: salaryIncrements.currentBaseSalary,
+        newBaseSalary: salaryIncrements.newBaseSalary,
         incrementAmount: salaryIncrements.incrementAmount,
         incrementPercentage: salaryIncrements.incrementPercentage,
         effectiveDate: salaryIncrements.effectiveDate,
@@ -51,27 +51,42 @@ export async function GET(
         requestedAt: salaryIncrements.requestedAt,
         approvedAt: salaryIncrements.approvedAt,
         rejectedAt: salaryIncrements.rejectedAt,
-        requestedByUserId: salaryIncrements.requestedByUserId,
-        approvedByUserId: salaryIncrements.approvedByUserId,
-        rejectedByUserId: salaryIncrements.rejectedByUserId,
+        requestedBy: salaryIncrements.requestedBy,
+        approvedBy: salaryIncrements.approvedBy,
+        rejectedBy: salaryIncrements.rejectedBy,
         notes: salaryIncrements.notes,
         createdAt: salaryIncrements.createdAt,
         updatedAt: salaryIncrements.updatedAt,
-        requestedByUserName: users.name,
-        approvedByUserName: users.name,
-        rejectedByUserName: users.name,
       })
       .from(salaryIncrements)
-      .leftJoin(users, eq(users.id, salaryIncrements.requestedByUserId))
       .where(eq(salaryIncrements.employeeId, employeeId))
       .orderBy(desc(salaryIncrements.effectiveDate));
+
+    // Fetch user names separately to avoid complex joins
+    const userIds = salaryIncrementsData
+      .map(inc => [inc.requestedBy, inc.approvedBy, inc.rejectedBy])
+      .flat()
+      .filter(id => id !== null && id !== undefined);
+
+    const uniqueUserIds = [...new Set(userIds)];
+    let usersData: { id: number; name: string }[] = [];
+    
+    if (uniqueUserIds.length > 0) {
+      usersData = await db
+        .select({ id: users.id, name: users.name })
+        .from(users)
+        .where(inArray(users.id, uniqueUserIds));
+    }
+
+    // Create a map for quick user lookup
+    const userMap = new Map(usersData.map(user => [user.id, user.name]));
 
     // Transform the data to match the expected format
     const transformedIncrements = salaryIncrementsData.map(increment => ({
       id: increment.id,
       employee_id: increment.employeeId,
-      current_salary: increment.currentSalary,
-      new_salary: increment.newSalary,
+      current_salary: increment.currentBaseSalary,
+      new_salary: increment.newBaseSalary,
       increment_amount: increment.incrementAmount,
       increment_percentage: increment.incrementPercentage,
       effective_date: increment.effectiveDate,
@@ -80,17 +95,17 @@ export async function GET(
       requested_at: increment.requestedAt,
       approved_at: increment.approvedAt,
       rejected_at: increment.rejectedAt,
-      requested_by_user: increment.requestedByUserId ? {
-        id: increment.requestedByUserId,
-        name: increment.requestedByUserName,
+      requested_by_user: increment.requestedBy ? {
+        id: increment.requestedBy,
+        name: userMap.get(increment.requestedBy) || 'Unknown',
       } : null,
-      approved_by_user: increment.approvedByUserId ? {
-        id: increment.approvedByUserId,
-        name: increment.approvedByUserName,
+      approved_by_user: increment.approvedBy ? {
+        id: increment.approvedBy,
+        name: userMap.get(increment.approvedBy) || 'Unknown',
       } : null,
-      rejected_by_user: increment.rejectedByUserId ? {
-        id: increment.rejectedByUserId,
-        name: increment.rejectedByUserName,
+      rejected_by_user: increment.rejectedBy ? {
+        id: increment.rejectedBy,
+        name: userMap.get(increment.rejectedBy) || 'Unknown',
       } : null,
       notes: increment.notes,
       created_at: increment.createdAt,

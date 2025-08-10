@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from '@/lib/db';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
-import { advancePayments, advancePaymentHistory } from '@/lib/drizzle/schema';
+import { advancePayments, advancePaymentHistories } from '@/lib/drizzle/schema';
 import { eq, and, isNull, asc } from 'drizzle-orm';
 
 export async function POST(

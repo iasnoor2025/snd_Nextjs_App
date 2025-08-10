@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { analyticsReports } from '@/lib/drizzle/schema';
-import { eq, like, or, desc, asc } from 'drizzle-orm';
+import { eq, like, or, desc, asc, and } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       whereConditions.push(eq(analyticsReports.type, type));
     }
 
-    const whereClause = whereConditions.length > 0 ? whereConditions : undefined;
+    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
 
     const [analyticsRows, totalRows] = await Promise.all([
       db

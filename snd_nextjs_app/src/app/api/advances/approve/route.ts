@@ -39,7 +39,7 @@ export const POST = withPermission(
               id: users.id,
               name: users.name,
               email: users.email,
-            }
+            } as any
           }
         })
         .from(advancePayments)

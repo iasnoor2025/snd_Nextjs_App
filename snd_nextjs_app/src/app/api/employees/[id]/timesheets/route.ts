@@ -53,7 +53,7 @@ export async function GET(
         projectId: timesheets.projectId,
         rentalId: timesheets.rentalId,
         assignmentId: timesheets.assignmentId,
-        approvedByUserId: timesheets.approvedByUserId,
+        approvedBy: timesheets.approvedBy,
         submittedAt: timesheets.submittedAt,
         approvedAt: timesheets.approvedAt,
         createdAt: timesheets.createdAt,
@@ -62,7 +62,7 @@ export async function GET(
           id: employees.id,
           firstName: employees.firstName,
           lastName: employees.lastName,
-          employeeId: employees.id,
+          fileNumber: employees.fileNumber,
         },
         project: {
           id: projects.id,
@@ -87,19 +87,28 @@ export async function GET(
       .leftJoin(projects, eq(timesheets.projectId, projects.id))
       .leftJoin(rentals, eq(timesheets.rentalId, rentals.id))
       .leftJoin(employeeAssignments, eq(timesheets.assignmentId, employeeAssignments.id))
-      .leftJoin(users, eq(timesheets.approvedByUserId, users.id))
+      .leftJoin(users, eq(timesheets.approvedBy, users.id))
       .where(whereClause)
       .orderBy(asc(timesheets.date));
+
+    console.log('🔍 Timesheets API - Total timesheets found for employee:', timesheetsRows.length);
+    if (timesheetsRows.length > 0) {
+      console.log('🔍 Timesheets API - Sample timesheet dates:', timesheetsRows.slice(0, 3).map(t => t.date));
+    }
 
     // Filter by date range if provided
     let filteredTimesheets = timesheetsRows;
     if (startDate && endDate) {
+      console.log('🔍 Timesheets API - Filtering by date range:', startDate, 'to', endDate);
       filteredTimesheets = timesheetsRows.filter(timesheet => {
         const timesheetDate = new Date(timesheet.date);
         const start = new Date(startDate);
         const end = new Date(endDate);
-        return timesheetDate >= start && timesheetDate <= end;
+        const isInRange = timesheetDate >= start && timesheetDate <= end;
+        console.log('🔍 Timesheets API - Timesheet date:', timesheet.date, 'In range:', isInRange);
+        return isInRange;
       });
+      console.log('🔍 Timesheets API - After date filtering:', filteredTimesheets.length);
     }
 
     // Transform the data to match the expected format
@@ -108,8 +117,8 @@ export async function GET(
       date: timesheet.date,
       clock_in: timesheet.startTime ? timesheet.startTime.slice(11, 16) : null,
       clock_out: timesheet.endTime ? timesheet.endTime.slice(11, 16) : null,
-      regular_hours: timesheet.hoursWorked,
-      overtime_hours: timesheet.overtimeHours,
+      regular_hours: Number(timesheet.hoursWorked) || 0,
+      overtime_hours: Number(timesheet.overtimeHours) || 0,
       status: timesheet.status,
       description: timesheet.description,
       tasks: timesheet.tasks,
@@ -122,6 +131,12 @@ export async function GET(
       created_at: timesheet.createdAt,
       updated_at: timesheet.updatedAt,
     }));
+
+    console.log('🔍 Timesheets API - Raw data count:', filteredTimesheets.length);
+    console.log('🔍 Timesheets API - Formatted data count:', formattedTimesheets.length);
+    if (formattedTimesheets.length > 0) {
+      console.log('🔍 Timesheets API - Sample formatted timesheet:', formattedTimesheets[0]);
+    }
 
     return NextResponse.json({
       success: true,

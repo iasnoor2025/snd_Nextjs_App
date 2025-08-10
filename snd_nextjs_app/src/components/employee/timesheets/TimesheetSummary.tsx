@@ -74,16 +74,30 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
       const response = await fetch(`/api/employees/${selectedEmployeeId}/timesheets?startDate=${startDateStr}&endDate=${endDateStr}`);
       const data = await response.json();
       
+      console.log('🔍 TimesheetSummary - API Response:', data);
+      console.log('🔍 TimesheetSummary - Data count:', data.data?.length);
+      console.log('🔍 TimesheetSummary - Sample timesheet:', data.data?.[0]);
+      
       if (data.success) {
         // Create a map of existing timesheet data
         const timesheetMap = new Map();
         data.data.forEach((timesheet: any) => {
-          timesheetMap.set(timesheet.date, {
+          console.log('🔍 TimesheetSummary - Processing timesheet:', timesheet);
+          console.log('🔍 TimesheetSummary - Date:', timesheet.date, 'Regular hours:', timesheet.regular_hours, 'Overtime hours:', timesheet.overtime_hours);
+          
+          // Normalize the date to YYYY-MM-DD format by removing time component
+          const normalizedDate = timesheet.date.split(' ')[0];
+          console.log('🔍 TimesheetSummary - Normalized date:', normalizedDate);
+          
+          timesheetMap.set(normalizedDate, {
             regularHours: timesheet.regular_hours || 0,
             overtimeHours: timesheet.overtime_hours || 0,
             status: timesheet.status || 'absent'
           });
         });
+        
+        console.log('🔍 TimesheetSummary - Timesheet map size:', timesheetMap.size);
+        console.log('🔍 TimesheetSummary - Timesheet map keys (normalized):', Array.from(timesheetMap.keys()));
         
         // Generate daily records for the month with proper date handling
         const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -112,7 +126,12 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
             status: isFriday ? 'friday' : (timesheetData && timesheetData.regularHours > 0 ? 'present' : 'absent')
           };
         });
-       
+        
+        console.log('🔍 TimesheetSummary - Generated daily records count:', records.length);
+        console.log('🔍 TimesheetSummary - Sample daily records:', records.slice(0, 5));
+        console.log('🔍 TimesheetSummary - Records with timesheet data:', records.filter(r => r.regularHours > 0 || r.overtimeHours > 0));
+        console.log('🔍 TimesheetSummary - Sample daily record dates to match:', records.slice(0, 5).map(r => r.date));
+        
         setDailyRecords(records);
       }
     } catch (error) {
