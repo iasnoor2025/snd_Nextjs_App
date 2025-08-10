@@ -21,7 +21,6 @@ const getTimesheetsHandler = async (request: NextRequest) => {
 
     // Allow test access without authentication
     if (test === 'true') {
-      console.log('Test mode: Checking database for timesheet data...');
       
       const rows = await db
         .select({
@@ -53,11 +52,6 @@ const getTimesheetsHandler = async (request: NextRequest) => {
         .leftJoin(employees, eq(timesheets.employeeId, employees.id))
         .orderBy(desc(timesheets.date))
         .limit(10);
-
-      console.log(`Test mode: Found ${rows.length} timesheet records in database`);
-      if (rows.length > 0) {
-        console.log('Sample timesheet data:', JSON.stringify(rows[0], null, 2));
-      }
 
       // Transform the response to match frontend interface
       const transformedTimesheets = rows.map(timesheet => ({
@@ -235,14 +229,14 @@ const getTimesheetsHandler = async (request: NextRequest) => {
 // GET /api/timesheets - List timesheets with permission check
 export const GET = async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
-  const test = searchParams.get('test') || '';
+  const test = searchParams.get('test');
   
-  // Allow test access without authentication
+  // Check if this is a test request (bypasses authentication)
   if (test === 'true') {
     return getTimesheetsHandler(request);
   }
   
-  // Apply authentication for normal requests
+  // Apply authentication middleware for regular requests
   const authenticatedHandler = withAuth(getTimesheetsHandler);
   return authenticatedHandler(request);
 };

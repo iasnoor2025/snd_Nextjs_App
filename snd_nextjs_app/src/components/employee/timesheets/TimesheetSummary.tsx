@@ -1,5 +1,5 @@
 // TimesheetSummary.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -74,20 +74,12 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
       const response = await fetch(`/api/employees/${selectedEmployeeId}/timesheets?startDate=${startDateStr}&endDate=${endDateStr}`);
       const data = await response.json();
       
-      console.log('🔍 TimesheetSummary - API Response:', data);
-      console.log('🔍 TimesheetSummary - Data count:', data.data?.length);
-      console.log('🔍 TimesheetSummary - Sample timesheet:', data.data?.[0]);
-      
       if (data.success) {
         // Create a map of existing timesheet data
         const timesheetMap = new Map();
         data.data.forEach((timesheet: any) => {
-          console.log('🔍 TimesheetSummary - Processing timesheet:', timesheet);
-          console.log('🔍 TimesheetSummary - Date:', timesheet.date, 'Regular hours:', timesheet.regular_hours, 'Overtime hours:', timesheet.overtime_hours);
-          
           // Normalize the date to YYYY-MM-DD format by removing time component
           const normalizedDate = timesheet.date.split(' ')[0];
-          console.log('🔍 TimesheetSummary - Normalized date:', normalizedDate);
           
           timesheetMap.set(normalizedDate, {
             regularHours: timesheet.regular_hours || 0,
@@ -96,12 +88,8 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
           });
         });
         
-        console.log('🔍 TimesheetSummary - Timesheet map size:', timesheetMap.size);
-        console.log('🔍 TimesheetSummary - Timesheet map keys (normalized):', Array.from(timesheetMap.keys()));
-        
         // Generate daily records for the month with proper date handling
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        console.log('🔍 TimesheetSummary - Generating records for:', year, month, 'Days in month:', daysInMonth);
         
         const records = Array.from({ length: daysInMonth }, (_, i) => {
           const day = i + 1;
@@ -111,8 +99,6 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
           const isFriday = date.getDay() === 5;
           // Format date as YYYY-MM-DD
           const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          
-          console.log('🔍 TimesheetSummary - Day', day, 'Date:', dateString, 'Day name:', dayName);
           
           // Get real data if exists, otherwise default
           const timesheetData = timesheetMap.get(dateString);
@@ -126,11 +112,6 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
             status: isFriday ? 'friday' : (timesheetData && timesheetData.regularHours > 0 ? 'present' : 'absent')
           };
         });
-        
-        console.log('🔍 TimesheetSummary - Generated daily records count:', records.length);
-        console.log('🔍 TimesheetSummary - Sample daily records:', records.slice(0, 5));
-        console.log('🔍 TimesheetSummary - Records with timesheet data:', records.filter(r => r.regularHours > 0 || r.overtimeHours > 0));
-        console.log('🔍 TimesheetSummary - Sample daily record dates to match:', records.slice(0, 5).map(r => r.date));
         
         setDailyRecords(records);
       }
@@ -172,8 +153,6 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
   useEffect(() => {
     const year = selectedMonth.getFullYear();
     const month = selectedMonth.getMonth();
-    console.log('🔍 TimesheetSummary - Selected month:', selectedMonth.toLocaleDateString('en-US', { year: 'numeric', month: 'long' }));
-    console.log('🔍 TimesheetSummary - Year:', year, 'Month:', month);
     fetchTimesheetData(year, month);
   }, [selectedMonth, selectedEmployeeId]);
 
@@ -182,12 +161,6 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
   const month = selectedMonth.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   
-  console.log('🔍 TimesheetSummary - Display month:', selectedMonth.toLocaleDateString('en-US', { year: 'numeric', month: 'long' }));
-  console.log('🔍 TimesheetSummary - Display year:', year, 'Display month:', month, 'Days in month:', daysInMonth);
-  console.log('🔍 TimesheetSummary - Daily records count:', dailyRecords.length);
-  console.log('🔍 TimesheetSummary - Daily records dates:', dailyRecords.map(r => r.date));
-  console.log('🔍 TimesheetSummary - Table will show days 1 to', daysInMonth);
-
   return (
     <div className="space-y-4">
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
