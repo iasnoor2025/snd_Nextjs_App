@@ -121,15 +121,17 @@ const getTimesheetsHandler = async (request: NextRequest) => {
       // Parse month filter (format: YYYY-MM)
       const [year, monthNum] = month.split('-');
       if (year && monthNum) {
-        const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-        const endDate = new Date(parseInt(year), parseInt(monthNum), 0);
-
-        filters.push(
-          and(
-            gte(timesheets.date, startDate.toISOString()),
-            lte(timesheets.date, endDate.toISOString())
-          )
-        );
+        console.log(`Month filter: ${month} -> Year: ${year}, Month: ${monthNum}`);
+        
+        // Use raw SQL to avoid timezone conversion issues
+        const monthFilter = sql`
+          EXTRACT(YEAR FROM timesheets.date) = ${parseInt(year)} 
+          AND EXTRACT(MONTH FROM timesheets.date) = ${parseInt(monthNum)}
+        `;
+        
+        filters.push(monthFilter);
+        
+        console.log(`Applied month filter for ${month}`);
       }
     }
 
@@ -138,6 +140,11 @@ const getTimesheetsHandler = async (request: NextRequest) => {
     }
 
     const conditions = filters.length ? and(...filters) : undefined;
+
+    console.log(`Timesheet query filters:`, filters.length, 'filters applied');
+    if (month) {
+      console.log(`Month filter active for: ${month}`);
+    }
 
     const listRows = await db
       .select({
@@ -178,26 +185,30 @@ const getTimesheetsHandler = async (request: NextRequest) => {
 
     const total = Number(totalRow[0]?.count ?? 0);
 
+    console.log(`Timesheet query results: ${listRows.length} timesheets found, total: ${total}`);
+
     // Transform the response to match frontend interface
     const transformedTimesheets = listRows.map(timesheet => ({
       id: timesheet.id.toString(),
       employeeId: timesheet.employee_id?.toString?.() ?? String(timesheet.employee_id),
-      date: new Date(timesheet.date as unknown as string).toISOString().split('T')[0],
+      // Use the date directly without timezone conversion to avoid -1 day issue
+      date: timesheet.date ? String(timesheet.date).split('T')[0] : '',
       hoursWorked: timesheet.hours_worked,
       overtimeHours: timesheet.overtime_hours,
-      startTime: timesheet.start_time ? new Date(timesheet.start_time as unknown as string).toISOString() : '',
-      endTime: timesheet.end_time ? new Date(timesheet.end_time as unknown as string).toISOString() : '',
+      // Use times directly without timezone conversion
+      startTime: timesheet.start_time ? String(timesheet.start_time) : '',
+      endTime: timesheet.end_time ? String(timesheet.end_time) : '',
       status: timesheet.status,
       projectId: timesheet.project_id ? String(timesheet.project_id) : undefined,
       rentalId: timesheet.rental_id ? String(timesheet.rental_id) : undefined,
       assignmentId: timesheet.assignment_id ? String(timesheet.assignment_id) : undefined,
       description: timesheet.description || '',
       tasksCompleted: timesheet.tasks || '',
-      submittedAt: timesheet.submitted_at ? new Date(timesheet.submitted_at as unknown as string).toISOString() : '',
+      submittedAt: timesheet.submitted_at ? String(timesheet.submitted_at) : '',
       approvedBy: '',
-      approvedAt: timesheet.approved_at ? new Date(timesheet.approved_at as unknown as string).toISOString() : '',
-      createdAt: new Date(timesheet.created_at as unknown as string).toISOString(),
-      updatedAt: new Date(timesheet.updated_at as unknown as string).toISOString(),
+      approvedAt: timesheet.approved_at ? String(timesheet.approved_at) : '',
+      createdAt: String(timesheet.created_at),
+      updatedAt: String(timesheet.updated_at),
       employee: timesheet.emp_id ? {
         id: String(timesheet.emp_id),
         firstName: timesheet.emp_first as unknown as string,

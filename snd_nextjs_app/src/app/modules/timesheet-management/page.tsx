@@ -28,7 +28,8 @@ import {
   Clock,
   Users,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -123,6 +124,11 @@ export default function TimesheetManagementPage() {
   const [timesheets, setTimesheets] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [autoGenerating, setAutoGenerating] = useState(false);
+  const [autoGenerationProgress, setAutoGenerationProgress] = useState<{
+    current: number;
+    total: number;
+    percentage: number;
+  } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedTimesheets, setSelectedTimesheets] = useState<Set<string>>(new Set());
@@ -166,6 +172,16 @@ export default function TimesheetManagementPage() {
   // Auto-generate timesheets when page loads
   useEffect(() => {
     const autoGenerateOnLoad = async () => {
+      // Check if auto-generation was recently executed (within last hour)
+      const lastAutoGeneration = localStorage.getItem('lastAutoGeneration');
+      const now = Date.now();
+      const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
+      
+      if (lastAutoGeneration && (now - parseInt(lastAutoGeneration)) < oneHour) {
+        console.log('Auto-generation was recently executed, skipping...');
+        return;
+      }
+      
       setAutoGenerating(true);
       try {
         const response = await fetch('/api/timesheets/auto-generate', {
@@ -179,17 +195,34 @@ export default function TimesheetManagementPage() {
 
         if (result.success && result.created > 0) {
           toast.success(`${t('auto_generated_timesheets', { count: result.created })}`);
+          // Store the execution time
+          localStorage.setItem('lastAutoGeneration', now.toString());
+          // Refresh the timesheets table to show newly created timesheets
+          fetchTimesheets();
         } else if (result.success && result.created === 0) {
           // No new timesheets created, which is fine
           console.log('No new timesheets needed to be generated for the last 3 months');
+          // Store the execution time even if no timesheets were created
+          localStorage.setItem('lastAutoGeneration', now.toString());
         } else if (result.errors && result.errors.length > 0) {
           console.warn('Auto-generation completed with some errors:', result.errors);
+          // Store the execution time even if there were errors
+          localStorage.setItem('lastAutoGeneration', now.toString());
+        }
+
+        // Update progress if available
+        if (result.progress) {
+          setAutoGenerationProgress(result.progress);
         }
       } catch (error) {
         console.error('Error during auto-generation on page load:', error);
         // Don't show error toast to user as this is a background process
       } finally {
         setAutoGenerating(false);
+        // Clear progress after a delay
+        setTimeout(() => {
+          setAutoGenerationProgress(null);
+        }, 3000);
       }
     };
 
@@ -227,6 +260,11 @@ export default function TimesheetManagementPage() {
 
       const data = await response.json();
       setTimesheets(data);
+      
+      // Show success message if this was a manual refresh (not from auto-generation)
+      if (data.total !== undefined) {
+        console.log(`Refreshed timesheets: ${data.total} total timesheets`);
+      }
     } catch (error) {
       console.error('Error fetching timesheets:', error);
       toast.error(t('failed_to_fetch_timesheets'));
@@ -702,12 +740,17 @@ export default function TimesheetManagementPage() {
     <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Timesheet' }}>
       <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-2">
           <h1 className="text-2xl font-bold">{t('timesheet_management')}</h1>
           {autoGenerating && (
-            <div className="flex items-center space-x-2 text-sm text-blue-600">
-              <RefreshCw className="h-4 w-4 animate-spin" />
-              <span>{t('auto_generating_timesheets')}</span>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Auto-generating timesheets...</span>
+              {autoGenerationProgress && (
+                <span className="text-xs">
+                  ({autoGenerationProgress.current}/{autoGenerationProgress.total} - {autoGenerationProgress.percentage}%)
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -720,14 +763,22 @@ export default function TimesheetManagementPage() {
           </PermissionContent>
 
           <PermissionContent action="sync" subject="Timesheet">
-            <Button variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              {t('sync_timesheets')}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={fetchTimesheets}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? 'Refreshing...' : t('sync_timesheets')}
             </Button>
           </PermissionContent>
 
           <PermissionContent action="create" subject="Timesheet">
-            <AutoGenerateButton isAutoGenerating={autoGenerating} />
+            <AutoGenerateButton 
+              isAutoGenerating={autoGenerating} 
+              onAutoGenerateComplete={fetchTimesheets}
+            />
           </PermissionContent>
 
           <PermissionContent action="create" subject="Timesheet">

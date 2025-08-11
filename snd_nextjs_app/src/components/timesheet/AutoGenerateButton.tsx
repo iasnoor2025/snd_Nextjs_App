@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Play } from 'lucide-react';
 import { toast } from 'sonner';
@@ -10,16 +10,27 @@ interface AutoGenerateResult {
   created: number;
   errors: string[];
   message: string;
+  progress?: {
+    current: number;
+    total: number;
+    percentage: number;
+  };
 }
 
 interface AutoGenerateButtonProps {
   isAutoGenerating?: boolean;
+  onAutoGenerateComplete?: () => void;
 }
 
-export default function AutoGenerateButton({ isAutoGenerating = false }: AutoGenerateButtonProps) {
+export default function AutoGenerateButton({ isAutoGenerating = false, onAutoGenerateComplete }: AutoGenerateButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleAutoGenerate = async () => {
+  const handleAutoGenerate = useCallback(async () => {
+    // Prevent multiple clicks
+    if (isLoading || isAutoGenerating) {
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -37,6 +48,14 @@ export default function AutoGenerateButton({ isAutoGenerating = false }: AutoGen
         if (result.errors.length > 0) {
           toast.warning(`${result.errors.length} errors occurred during generation`);
         }
+        
+        // Show notification that table will refresh
+        toast.info('Refreshing timesheets table...');
+        
+        // Notify parent component to refresh the timesheets table
+        if (onAutoGenerateComplete) {
+          onAutoGenerateComplete();
+        }
       } else {
         toast.error('Failed to auto-generate timesheets');
         if (result.errors.length > 0) {
@@ -51,7 +70,7 @@ export default function AutoGenerateButton({ isAutoGenerating = false }: AutoGen
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading, isAutoGenerating, onAutoGenerateComplete]);
 
   return (
     <Button

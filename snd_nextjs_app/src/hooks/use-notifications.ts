@@ -47,7 +47,7 @@ export const useNotifications = () => {
         unread_only: unreadOnly.toString(),
       });
 
-      const response = await ApiService.get(`/api/notifications?${params}`);
+      const response = await ApiService.get(`/notifications?${params}`);
       
       if (response.success) {
         setNotifications(response.data.notifications);
@@ -64,7 +64,7 @@ export const useNotifications = () => {
   // Mark notification as read
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
-      await ApiService.put(`/api/notifications/${notificationId}/read`);
+      await ApiService.put(`/notifications/${notificationId}/read`);
       
       setNotifications(prev => 
         prev.map(n => 
@@ -81,7 +81,7 @@ export const useNotifications = () => {
   // Mark all notifications as read
   const markAllAsRead = useCallback(async () => {
     try {
-      await ApiService.put('/api/notifications/mark-all-read');
+      await ApiService.put('/notifications/mark-all-read');
       
       setNotifications(prev => 
         prev.map(n => ({ ...n, read: true }))
@@ -96,7 +96,7 @@ export const useNotifications = () => {
   // Clear all notifications
   const clearAll = useCallback(async () => {
     try {
-      await ApiService.delete('/api/notifications/clear-all');
+      await ApiService.delete('/notifications/clear-all');
       setNotifications([]);
       setUnreadCount(0);
     } catch (err) {

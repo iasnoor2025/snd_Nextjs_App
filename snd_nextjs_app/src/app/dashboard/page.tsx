@@ -131,8 +131,28 @@ export default function DashboardPage() {
   const [activityFilter, setActivityFilter] = useState<string>('all');
   const [activitySearch, setActivitySearch] = useState<string>('');
   
-  // Pagination logic
-  const filteredIqamaData = iqamaData.filter(item => item.status !== 'active');
+  // Iqama search and filtering state
+  const [iqamaSearch, setIqamaSearch] = useState<string>('');
+  const [iqamaStatusFilter, setIqamaStatusFilter] = useState<string>('all');
+  const [isSearching, setIsSearching] = useState(false);
+  
+  // Pagination logic with search and filtering
+  const filteredIqamaData = iqamaData.filter(item => {
+    // Status filter
+    const matchesStatus = iqamaStatusFilter === 'all' || item.status === iqamaStatusFilter;
+    
+    // Search filter
+    const matchesSearch = !iqamaSearch || 
+      item.employeeName?.toLowerCase().includes(iqamaSearch.toLowerCase()) ||
+      item.fileNumber?.toLowerCase().includes(iqamaSearch.toLowerCase()) ||
+      item.iqamaNumber?.toLowerCase().includes(iqamaSearch.toLowerCase()) ||
+      item.department?.toLowerCase().includes(iqamaSearch.toLowerCase()) ||
+      item.nationality?.toLowerCase().includes(iqamaSearch.toLowerCase()) ||
+      item.position?.toLowerCase().includes(iqamaSearch.toLowerCase());
+    
+    // Exclude active status and apply filters
+    return item.status !== 'active' && matchesStatus && matchesSearch;
+  });
   const totalPages = Math.ceil(filteredIqamaData.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
@@ -197,6 +217,22 @@ export default function DashboardPage() {
     setCurrentPage(1); // Reset to first page when changing page size
   };
   
+  // Reset search and filters when refreshing data
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await fetchDashboardData();
+      // Reset search and filters after refresh
+      setIqamaSearch('');
+      setIqamaStatusFilter('all');
+      setCurrentPage(1);
+    } catch (error) {
+      console.error('Error refreshing dashboard data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+  
   // Ensure user is authenticated and not an employee
   useEffect(() => {
     if (status === "loading") return;
@@ -227,6 +263,15 @@ export default function DashboardPage() {
 
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval, session]);
+  
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsSearching(false);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [iqamaSearch]);
 
   const fetchDashboardData = async () => {
     try {
@@ -291,16 +336,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      await fetchDashboardData();
-    } catch (error) {
-      console.error('Error refreshing dashboard data:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  }
+
 
   // Handle opening update modal
   const handleOpenUpdateModal = (iqama: IqamaData) => {
@@ -515,6 +551,71 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
+                    {/* Search and Filter Controls */}
+                    <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                      {/* Search Input */}
+                      <div className="flex-1">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search by name, file #, iqama #, department, nationality..."
+                            value={iqamaSearch}
+                            onChange={(e) => {
+                              setIqamaSearch(e.target.value);
+                              setIsSearching(true);
+                              setCurrentPage(1); // Reset to first page when searching
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Escape') {
+                                setIqamaSearch('');
+                                setCurrentPage(1);
+                              }
+                            }}
+                            className="pl-10"
+                          />
+                          {isSearching && (
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Status Filter */}
+                      <div className="flex-shrink-0">
+                        <select
+                          value={iqamaStatusFilter}
+                          onChange={(e) => {
+                            setIqamaStatusFilter(e.target.value);
+                            setCurrentPage(1); // Reset to first page when filtering
+                          }}
+                          className="h-10 px-3 py-2 border border-input bg-background rounded-md text-sm"
+                        >
+                          <option value="all">All Status</option>
+                          <option value="expired">Expired</option>
+                          <option value="expiring">Expiring</option>
+                          <option value="missing">Missing</option>
+                        </select>
+                      </div>
+                      
+                      {/* Clear Filters Button */}
+                      {(iqamaSearch || iqamaStatusFilter !== 'all') && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setIqamaSearch('');
+                            setIqamaStatusFilter('all');
+                            setCurrentPage(1);
+                          }}
+                          className="flex-shrink-0"
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+                    
                     {/* Status Summary */}
                     <div className="grid grid-cols-4 gap-2 mb-4">
                       <div className="text-center p-2 bg-muted rounded-lg">
@@ -539,9 +640,45 @@ export default function DashboardPage() {
                         <div className="text-lg font-bold">
                           {filteredIqamaData.length}
                         </div>
-                        <div className="text-xs text-muted-foreground">Total</div>
+                        <div className="text-xs text-muted-foreground">
+                          {iqamaSearch || iqamaStatusFilter !== 'all' ? 'Filtered' : 'Total'}
+                        </div>
                       </div>
                     </div>
+                    
+                    {/* Search Results Summary */}
+                    {(iqamaSearch || iqamaStatusFilter !== 'all') && (
+                      <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg mb-3">
+                        <div className="text-sm text-muted-foreground">
+                          <span className="font-medium">
+                            {filteredIqamaData.length} result{filteredIqamaData.length !== 1 ? 's' : ''} found
+                          </span>
+                          {iqamaSearch && (
+                            <span> for "{iqamaSearch}"</span>
+                          )}
+                          {iqamaStatusFilter !== 'all' && (
+                            <span> with status "{iqamaStatusFilter}"</span>
+                          )}
+                          {iqamaData.filter(item => item.status !== 'active').length > 0 && (
+                            <span className="text-xs opacity-60 ml-2">
+                              (from {iqamaData.filter(item => item.status !== 'active').length} total records)
+                            </span>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setIqamaSearch('');
+                            setIqamaStatusFilter('all');
+                            setCurrentPage(1);
+                          }}
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Clear All
+                        </Button>
+                      </div>
+                    )}
                     
                     {/* All Iqama Records Table */}
                     <div className="w-full overflow-x-auto">
@@ -621,8 +758,24 @@ export default function DashboardPage() {
                     {filteredIqamaData.length === 0 && (
                       <div className="text-center py-6 text-muted-foreground">
                         <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-60" />
-                        <p className="font-medium">No critical Iqama issues found</p>
-                        <p className="text-sm opacity-80">All Iqama documents are up to date</p>
+                        {iqamaSearch || iqamaStatusFilter !== 'all' ? (
+                          <>
+                            <p className="font-medium">No Iqama records found</p>
+                            <p className="text-sm opacity-80">
+                              Try adjusting your search terms or filters
+                            </p>
+                            {iqamaData.filter(item => item.status !== 'active').length > 0 && (
+                              <p className="text-xs opacity-60 mt-2">
+                                Showing {iqamaData.filter(item => item.status !== 'active').length} total records
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-medium">No critical Iqama issues found</p>
+                            <p className="text-sm opacity-80">All Iqama documents are up to date</p>
+                          </>
+                        )}
                       </div>
                     )}
                     

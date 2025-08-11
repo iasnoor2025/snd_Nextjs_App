@@ -277,7 +277,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     );
 
     try {
-      await fetch(`/api/notifications/${notificationId}/read`, {
+      await fetch(`/notifications/${notificationId}/read`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -295,7 +295,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
 
     try {
-      await fetch('/api/notifications/mark-all-read', {
+      await fetch('/notifications/mark-all-read', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -313,7 +313,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     setNotifications(prev => prev.filter(n => n.id !== notificationId));
 
     try {
-      await fetch(`/api/notifications/${notificationId}`, {
+      await fetch(`/notifications/${notificationId}`, {
         method: 'DELETE',
       });
     } catch (error) {
@@ -328,7 +328,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     setNotifications([]);
 
     try {
-      await fetch('/api/notifications/clear-all', {
+      await fetch('/notifications/clear-all', {
         method: 'DELETE',
       });
     } catch (error) {
@@ -349,7 +349,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     const loadNotifications = async () => {
       if (!isMountedRef.current) return;
       try {
-        const response = await fetch('/api/notifications');
+        const response = await fetch('/notifications');
         if (response.ok) {
           const data = await response.json();
           setNotifications(data.notifications || []);

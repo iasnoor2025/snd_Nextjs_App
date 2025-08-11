@@ -1062,8 +1062,6 @@ export const timesheets = pgTable("timesheets", {
 	project: text(),
 	tasks: text(),
 	submittedAt: timestamp("submitted_at", { precision: 3, mode: 'string' }),
-	month: integer(),
-	year: integer(),
 	createdAt: timestamp("created_at", { precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	updatedAt: timestamp("updated_at", { precision: 3, mode: 'string' }).notNull(),
 	deletedAt: timestamp("deleted_at", { precision: 3, mode: 'string' }),
