@@ -75,7 +75,19 @@ export default function ManpowerDialog({
         start_date: initialData.start_date ? new Date(initialData.start_date).toISOString().split('T')[0] : '',
         end_date: initialData.end_date ? new Date(initialData.end_date).toISOString().split('T')[0] : '',
       });
-      setUseEmployee(!!initialData.employee_id);
+      
+      // Auto-detect if this is an employee or worker based on available data
+      const hasEmployeeData = initialData.employee_id || initialData.employee_name || initialData.employee_file_number;
+      const hasWorkerData = initialData.worker_name;
+      
+      if (hasEmployeeData) {
+        setUseEmployee(true);
+      } else if (hasWorkerData) {
+        setUseEmployee(false);
+      } else {
+        // Default to worker if no data available
+        setUseEmployee(false);
+      }
     } else {
       setFormData({
         employee_id: '',
@@ -114,7 +126,7 @@ export default function ManpowerDialog({
     }
   }, [formData.start_date, formData.end_date, formData.daily_rate]);
 
-  const handleInputChange = (field: string, value: any) => {
+  const handleInputChange = async (field: string, value: any) => {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
 
@@ -123,9 +135,12 @@ export default function ManpowerDialog({
         if (value) {
           newData.employee_id = value;
           newData.worker_name = '';
-          // Name and other details will be populated when employee is selected
+          // Fetch employee details and populate the form
+          fetchEmployeeDetails(value, newData);
         } else {
           newData.employee_id = '';
+          newData.employee_name = '';
+          newData.employee_file_number = '';
           newData.name = '';
         }
       }
@@ -135,10 +150,35 @@ export default function ManpowerDialog({
         newData.worker_name = value;
         newData.name = value; // Set name to worker name
         newData.employee_id = '';
+        newData.employee_name = '';
+        newData.employee_file_number = '';
       }
 
       return newData;
     });
+  };
+
+  // Function to fetch employee details and populate form
+  const fetchEmployeeDetails = async (employeeId: string, currentFormData: ManpowerResource) => {
+    try {
+      const response = await fetch(`/api/employees/public?all=true&limit=1000`);
+      if (response.ok) {
+        const data = await response.json();
+        const employeeData = data.data || data || [];
+        const selectedEmployee = employeeData.find((emp: any) => emp.id === employeeId);
+        
+        if (selectedEmployee) {
+          setFormData(prev => ({
+            ...prev,
+            employee_name: `${selectedEmployee.first_name} ${selectedEmployee.last_name}`,
+            employee_file_number: selectedEmployee.file_number || '',
+            name: `${selectedEmployee.first_name} ${selectedEmployee.last_name}`
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching employee details:', error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -147,8 +187,8 @@ export default function ManpowerDialog({
 
     try {
       // Validation
-      if (useEmployee && !formData.employee_id) {
-        toast.error('Please select an employee');
+      if (useEmployee && !formData.employee_id && !formData.employee_name && !formData.employee_file_number) {
+        toast.error('Please select an employee or provide employee details');
         return;
       }
       if (!useEmployee && !formData.worker_name) {
@@ -169,15 +209,15 @@ export default function ManpowerDialog({
       }
       
       // Ensure we have a valid name for the resource
-      if (!formData.worker_name && !formData.employee_id) {
-        toast.error('Either worker name or employee must be provided');
+      if (!formData.worker_name && !formData.employee_id && !formData.employee_name && !formData.employee_file_number) {
+        toast.error('Either worker name or employee details must be provided');
         return;
       }
 
       const submitData = {
         ...formData,
         type: 'manpower',
-        name: formData.worker_name || formData.name || 'Unnamed Worker',
+        name: formData.worker_name || formData.employee_name || formData.name || 'Unnamed Resource',
         total_cost: (formData.daily_rate || 0) * (formData.total_days || 0)
       };
 
@@ -215,33 +255,38 @@ export default function ManpowerDialog({
 
   const handleUseEmployeeChange = (checked: boolean) => {
     setUseEmployee(checked);
-    if (checked) {
-      setFormData(prev => ({
-        ...prev,
-        worker_name: '',
-        name: '', // Clear name when switching to employee
-        employee_id: '',
-        employee_name: '',
-        employee_file_number: '',
-        job_title: '',
-        daily_rate: 0,
-        total_days: 0,
-        total_cost: 0
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        employee_id: '',
-        employee_name: '',
-        employee_file_number: '',
-        name: '', // Clear name when switching to worker
-        worker_name: '',
-        job_title: '',
-        daily_rate: 0,
-        total_days: 0,
-        total_cost: 0
-      }));
+    
+    // Only clear form data if this is a new resource (not editing)
+    if (!initialData) {
+      if (checked) {
+        setFormData(prev => ({
+          ...prev,
+          worker_name: '',
+          name: '',
+          employee_id: '',
+          employee_name: '',
+          employee_file_number: '',
+          job_title: '',
+          daily_rate: 0,
+          total_days: 0,
+          total_cost: 0
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          employee_id: '',
+          employee_name: '',
+          employee_file_number: '',
+          name: '',
+          worker_name: '',
+          job_title: '',
+          daily_rate: 0,
+          total_days: 0,
+          total_cost: 0
+        }));
+      }
     }
+    // When editing existing resources, preserve the data and just switch the view
   };
 
   return (
@@ -268,16 +313,21 @@ export default function ManpowerDialog({
               <Switch 
                 checked={useEmployee}
                 onCheckedChange={handleUseEmployeeChange}
-                disabled={!!initialData?.employee_id}
+                disabled={!!(initialData?.employee_id || initialData?.employee_name || initialData?.employee_file_number)}
               />
             </div>
           </div>
 
           {useEmployee ? (
             <div className="space-y-4">
-              {initialData && initialData.employee_id ? (
-                <div className="rounded bg-gray-100 p-2 text-gray-800">
-                  Employee ID: {initialData.employee_id}
+              {initialData && (initialData.employee_id || initialData.employee_name || initialData.employee_file_number) ? (
+                <div className="space-y-4">
+                  <div className="rounded bg-gray-100 p-3">
+                    <div className="text-sm font-medium text-gray-700">Employee Information (Read-only)</div>
+                    {initialData.employee_id && <div className="text-sm text-gray-600 mt-1">ID: {initialData.employee_id}</div>}
+                    {initialData.employee_name && <div className="text-sm text-gray-600 mt-1">Name: {initialData.employee_name}</div>}
+                    {initialData.employee_file_number && <div className="text-sm text-gray-600 mt-1">File #: {initialData.employee_file_number}</div>}
+                  </div>
                 </div>
               ) : (
                 <EmployeeDropdown
@@ -290,27 +340,51 @@ export default function ManpowerDialog({
                 />
               )}
               
-              {/* Employee Name and File Number */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="employee_name">Employee Name</Label>
-                  <Input
-                    id="employee_name"
-                    value={formData.employee_name || ''}
-                    onChange={(e) => handleInputChange('employee_name', e.target.value)}
-                    placeholder="Enter employee name"
-                  />
+              {/* Employee Name and File Number - Show as read-only when employee is selected */}
+              {formData.employee_id ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="employee_name">Employee Name</Label>
+                    <Input
+                      id="employee_name"
+                      value={formData.employee_name || ''}
+                      readOnly
+                      className="bg-muted"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="employee_file_number">File Number</Label>
+                    <Input
+                      id="employee_file_number"
+                      value={formData.employee_file_number || ''}
+                      readOnly
+                      className="bg-muted"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="employee_file_number">File Number</Label>
-                  <Input
-                    id="employee_file_number"
-                    value={formData.employee_file_number || ''}
-                    onChange={(e) => handleInputChange('employee_file_number', e.target.value)}
-                    placeholder="Enter file number"
-                  />
+              ) : (
+                /* Show editable fields only when no employee is selected */
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="employee_name">Employee Name</Label>
+                    <Input
+                      id="employee_name"
+                      value={formData.employee_name || ''}
+                      onChange={(e) => handleInputChange('employee_name', e.target.value)}
+                      placeholder="Enter employee name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="employee_file_number">File Number</Label>
+                    <Input
+                      id="employee_file_number"
+                      value={formData.employee_file_number || ''}
+                      onChange={(e) => handleInputChange('employee_file_number', e.target.value)}
+                      placeholder="Enter file number"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           ) : (
             <div className="space-y-2">

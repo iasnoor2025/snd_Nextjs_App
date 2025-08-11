@@ -9,6 +9,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
   Building2,
   Users,
   FileText,
@@ -156,6 +167,10 @@ export default function ProjectResourcesPage() {
 
   // Track the resource being edited
   const [editingResource, setEditingResource] = useState<ProjectResource | null>(null);
+  
+  // Delete confirmation state
+  const [deleteResource, setDeleteResource] = useState<ProjectResource | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -283,12 +298,17 @@ export default function ProjectResourcesPage() {
     }
   };
 
-  const handleDeleteResource = async (resource: ProjectResource) => {
-    if (!confirm('Are you sure you want to delete this resource?')) return;
+  const handleDeleteResource = (resource: ProjectResource) => {
+    setDeleteResource(resource);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteResource) return;
 
     try {
       setLoading(true);
-      await apiService.deleteProjectResource(projectId, resource.id);
+      await apiService.deleteProjectResource(projectId, deleteResource.id);
       toast.success('Resource deleted successfully');
       fetchData();
     } catch (error) {
@@ -296,6 +316,8 @@ export default function ProjectResourcesPage() {
       toast.error('Failed to delete resource');
     } finally {
       setLoading(false);
+      setDeleteDialogOpen(false);
+      setDeleteResource(null);
     }
   };
 
@@ -447,7 +469,7 @@ export default function ProjectResourcesPage() {
           <CardContent>
             <div className="text-2xl font-bold">{getResourceCount('manpower')}</div>
             <p className="text-xs text-muted-foreground">
-              ${calculateTotalCost('manpower').toLocaleString()}
+              SAR {calculateTotalCost('manpower').toLocaleString()}
             </p>
           </CardContent>
         </Card>
@@ -460,7 +482,7 @@ export default function ProjectResourcesPage() {
           <CardContent>
             <div className="text-2xl font-bold">{getResourceCount('equipment')}</div>
             <p className="text-xs text-muted-foreground">
-              ${calculateTotalCost('equipment').toLocaleString()}
+              SAR {calculateTotalCost('equipment').toLocaleString()}
             </p>
           </CardContent>
         </Card>
@@ -473,7 +495,7 @@ export default function ProjectResourcesPage() {
           <CardContent>
             <div className="text-2xl font-bold">{getResourceCount('material')}</div>
             <p className="text-xs text-muted-foreground">
-              ${calculateTotalCost('material').toLocaleString()}
+              SAR {calculateTotalCost('material').toLocaleString()}
             </p>
           </CardContent>
         </Card>
@@ -486,7 +508,7 @@ export default function ProjectResourcesPage() {
           <CardContent>
             <div className="text-2xl font-bold">{getResourceCount('fuel')}</div>
             <p className="text-xs text-muted-foreground">
-              ${calculateTotalCost('fuel').toLocaleString()}
+              SAR {calculateTotalCost('fuel').toLocaleString()}
             </p>
           </CardContent>
         </Card>
@@ -499,7 +521,7 @@ export default function ProjectResourcesPage() {
           <CardContent>
             <div className="text-2xl font-bold">{getResourceCount('expense')}</div>
             <p className="text-xs text-muted-foreground">
-              ${calculateTotalCost('expense').toLocaleString()}
+              SAR {calculateTotalCost('expense').toLocaleString()}
             </p>
           </CardContent>
         </Card>
@@ -642,7 +664,7 @@ export default function ProjectResourcesPage() {
                           {/* Rates Column */}
                           <TableCell>
                             <div className="text-sm">
-                              {resource.daily_rate ? `$${resource.daily_rate}/day` : '-'}
+                              {resource.daily_rate ? `SAR ${resource.daily_rate}/day` : '-'}
                             </div>
                           </TableCell>
                           
@@ -663,7 +685,7 @@ export default function ProjectResourcesPage() {
                           {/* Cost Column */}
                           <TableCell>
                             <div className="text-sm font-medium">
-                              ${(resource.total_cost || 0).toLocaleString()}
+                              SAR {(resource.total_cost || 0).toLocaleString()}
                             </div>
                           </TableCell>
 
@@ -835,6 +857,28 @@ export default function ProjectResourcesPage() {
         initialData={editingResource}
         onSuccess={handleResourceSuccess}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Resource</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deleteResource?.name || 'this resource'}"? 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
