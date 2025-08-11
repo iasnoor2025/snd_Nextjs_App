@@ -275,6 +275,7 @@ export async function GET(
     // Validate ID parameter
     const timesheetId = parseInt(id);
     if (isNaN(timesheetId)) {
+      console.error('GET /api/timesheets/[id] - Invalid ID parameter:', id);
       return NextResponse.json(
         { error: 'Invalid timesheet ID' },
         { status: 400 }
@@ -283,6 +284,7 @@ export async function GET(
     
     const session = await getServerSession(authOptions);
     if (!session?.user) {
+      console.error('GET /api/timesheets/[id] - Unauthorized access attempt');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -309,118 +311,223 @@ export async function GET(
       );
     }
     
-    // Fetch timesheet with related data
-    const [timesheet] = await db
-      .select({
-        id: timesheets.id,
-        employeeId: timesheets.employeeId,
-        date: timesheets.date,
-        hoursWorked: timesheets.hoursWorked,
-        overtimeHours: timesheets.overtimeHours,
-        startTime: timesheets.startTime,
-        endTime: timesheets.endTime,
-        status: timesheets.status,
-        projectId: timesheets.projectId,
-        rentalId: timesheets.rentalId,
-        assignmentId: timesheets.assignmentId,
-        description: timesheets.description,
-        tasks: timesheets.tasks,
-        notes: timesheets.notes,
-        submittedAt: timesheets.submittedAt,
-        approvedBy: timesheets.approvedBy,
-        approvedAt: timesheets.approvedAt,
-        createdAt: timesheets.createdAt,
-        updatedAt: timesheets.updatedAt,
-        employee: {
-          id: employees.id,
-          firstName: employees.firstName,
-          lastName: employees.lastName,
-          fileNumber: employees.fileNumber,
-          userId: employees.userId,
-        },
-        user: {
-          id: users.id,
-          name: users.name,
-          email: users.email,
-        },
-        project: {
-          id: projects.id,
-          name: projects.name,
-        },
-        rental: {
-          id: rentals.id,
-          rentalNumber: rentals.rentalNumber,
-        },
-        assignment: {
-          id: employeeAssignments.id,
-          assignmentType: employeeAssignments.assignmentType,
-        },
-      })
+    // First, check if the timesheet exists with a simple query
+    console.log('GET /api/timesheets/[id] - Testing basic timesheet query...');
+    const [timesheetExists] = await db
+      .select({ id: timesheets.id })
       .from(timesheets)
-      .leftJoin(employees, eq(timesheets.employeeId, employees.id))
-      .leftJoin(users, eq(employees.userId, users.id))
-      .leftJoin(projects, eq(timesheets.projectId, projects.id))
-      .leftJoin(rentals, eq(timesheets.rentalId, rentals.id))
-      .leftJoin(employeeAssignments, eq(timesheets.assignmentId, employeeAssignments.id))
       .where(eq(timesheets.id, timesheetId))
       .limit(1);
         
-    if (!timesheet) {
+    if (!timesheetExists) {
+      console.log('GET /api/timesheets/[id] - Timesheet not found in database');
       return NextResponse.json({ error: 'Timesheet not found' }, { status: 404 });
     }
 
-    console.log('GET /api/timesheets/[id] - Database query completed');
+    console.log('GET /api/timesheets/[id] - Timesheet exists, fetching basic details...');
+    
+    // Fetch basic timesheet data first (without joins)
+    let basicTimesheet;
+    try {
+      [basicTimesheet] = await db
+        .select({
+          id: timesheets.id,
+          employeeId: timesheets.employeeId,
+          date: timesheets.date,
+          hoursWorked: timesheets.hoursWorked,
+          overtimeHours: timesheets.overtimeHours,
+          startTime: timesheets.startTime,
+          endTime: timesheets.endTime,
+          status: timesheets.status,
+          projectId: timesheets.projectId,
+          rentalId: timesheets.rentalId,
+          assignmentId: timesheets.assignmentId,
+          description: timesheets.description,
+          tasks: timesheets.tasks,
+          notes: timesheets.notes,
+          submittedAt: timesheets.submittedAt,
+          approvedBy: timesheets.approvedBy,
+          approvedAt: timesheets.approvedAt,
+          createdAt: timesheets.createdAt,
+          updatedAt: timesheets.updatedAt,
+        })
+        .from(timesheets)
+        .where(eq(timesheets.id, timesheetId))
+        .limit(1);
+    } catch (basicQueryError) {
+      console.error('GET /api/timesheets/[id] - Basic timesheet query failed:', basicQueryError);
+      return NextResponse.json(
+        { error: 'Basic timesheet query failed', details: basicQueryError instanceof Error ? basicQueryError.message : 'Unknown query error' },
+        { status: 500 }
+      );
+    }
+        
+    if (!basicTimesheet) {
+      console.error('GET /api/timesheets/[id] - Basic timesheet query returned no results');
+      return NextResponse.json({ error: 'Timesheet not found' }, { status: 404 });
+    }
+
+    console.log('GET /api/timesheets/[id] - Basic timesheet query successful, fetching related data...');
+    
+    // Now try to fetch related data one by one to identify which join is failing
+    let employeeData = null;
+    let userData = null;
+    let projectData = null;
+    let rentalData = null;
+    let assignmentData = null;
+    
+    try {
+      // Try to fetch employee data
+      if (basicTimesheet.employeeId) {
+        const [employee] = await db
+          .select({
+            id: employees.id,
+            firstName: employees.firstName,
+            lastName: employees.lastName,
+            fileNumber: employees.fileNumber,
+            userId: employees.userId,
+          })
+          .from(employees)
+          .where(eq(employees.id, basicTimesheet.employeeId))
+          .limit(1);
+        employeeData = employee || null;
+        console.log('GET /api/timesheets/[id] - Employee data fetched successfully');
+      }
+    } catch (employeeError) {
+      console.warn('GET /api/timesheets/[id] - Failed to fetch employee data:', employeeError);
+    }
+    
+    try {
+      // Try to fetch user data
+      if (employeeData?.userId) {
+        const [user] = await db
+          .select({
+            id: users.id,
+            name: users.name,
+            email: users.email,
+          })
+          .from(users)
+          .where(eq(users.id, employeeData.userId))
+          .limit(1);
+        userData = user || null;
+        console.log('GET /api/timesheets/[id] - User data fetched successfully');
+      }
+    } catch (userError) {
+      console.warn('GET /api/timesheets/[id] - Failed to fetch user data:', userError);
+    }
+    
+    try {
+      // Try to fetch project data
+      if (basicTimesheet.projectId) {
+        const [project] = await db
+          .select({
+            id: projects.id,
+            name: projects.name,
+          })
+          .from(projects)
+          .where(eq(projects.id, basicTimesheet.projectId))
+          .limit(1);
+        projectData = project || null;
+        console.log('GET /api/timesheets/[id] - Project data fetched successfully');
+      }
+    } catch (projectError) {
+      console.warn('GET /api/timesheets/[id] - Failed to fetch project data:', projectError);
+    }
+    
+    try {
+      // Try to fetch rental data
+      if (basicTimesheet.rentalId) {
+        const [rental] = await db
+          .select({
+            id: rentals.id,
+            rentalNumber: rentals.rentalNumber,
+          })
+          .from(rentals)
+          .where(eq(rentals.id, basicTimesheet.rentalId))
+          .limit(1);
+        rentalData = rental || null;
+        console.log('GET /api/timesheets/[id] - Rental data fetched successfully');
+      }
+    } catch (rentalError) {
+      console.warn('GET /api/timesheets/[id] - Failed to fetch rental data:', rentalError);
+    }
+    
+    try {
+      // Try to fetch assignment data
+      if (basicTimesheet.assignmentId) {
+        const [assignment] = await db
+          .select({
+            id: employeeAssignments.id,
+            assignmentType: employeeAssignments.assignmentType,
+          })
+          .from(employeeAssignments)
+          .where(eq(employeeAssignments.id, basicTimesheet.assignmentId))
+          .limit(1);
+        assignmentData = assignment || null;
+        console.log('GET /api/timesheets/[id] - Assignment data fetched successfully');
+      }
+    } catch (assignmentError) {
+      console.warn('GET /api/timesheets/[id] - Failed to fetch assignment data:', assignmentError);
+    }
+
+    console.log('GET /api/timesheets/[id] - All related data queries completed');
 
     // Transform the response to match frontend interface
     const transformedTimesheet = {
-      id: timesheet.id.toString(),
-      employeeId: timesheet.employeeId.toString(),
-      date: String(timesheet.date).split('T')[0],
-      hoursWorked: timesheet.hoursWorked,
-      overtimeHours: timesheet.overtimeHours,
-      startTime: timesheet.startTime ? String(timesheet.startTime) : '',
-      endTime: timesheet.endTime ? String(timesheet.endTime) : '',
-      status: timesheet.status,
-      projectId: timesheet.projectId?.toString(),
-      rentalId: timesheet.rentalId?.toString(),
-      assignmentId: timesheet.assignmentId?.toString(),
-      description: timesheet.description || '',
-      tasksCompleted: timesheet.tasks || '',
-      notes: timesheet.notes || '',
-      submittedAt: timesheet.submittedAt ? String(timesheet.submittedAt) : '',
-      approvedBy: timesheet.user?.name || '',
-      approvedAt: timesheet.approvedAt ? String(timesheet.approvedAt) : '',
-      createdAt: String(timesheet.createdAt),
-      updatedAt: String(timesheet.updatedAt),
-      employee: {
-        id: timesheet.employee?.id.toString() || '', 
-        firstName: timesheet.employee?.firstName || '',
-        lastName: timesheet.employee?.lastName || '',
-        employeeId: timesheet.employee?.fileNumber || '',
-        user: timesheet.user ? {
-          name: timesheet.user.name,
-          email: timesheet.user.email,
+      id: basicTimesheet.id.toString(),
+      employeeId: basicTimesheet.employeeId.toString(),
+      date: basicTimesheet.date ? String(basicTimesheet.date).split('T')[0] : new Date().toISOString().split('T')[0],
+      hoursWorked: basicTimesheet.hoursWorked || '0',
+      overtimeHours: basicTimesheet.overtimeHours || '0',
+      startTime: basicTimesheet.startTime ? String(basicTimesheet.startTime) : '',
+      endTime: basicTimesheet.endTime ? String(basicTimesheet.endTime) : '',
+      status: basicTimesheet.status || 'pending',
+      projectId: basicTimesheet.projectId?.toString() || undefined,
+      rentalId: basicTimesheet.rentalId?.toString() || undefined,
+      assignmentId: basicTimesheet.assignmentId?.toString() || undefined,
+      description: basicTimesheet.description || '',
+      tasksCompleted: basicTimesheet.tasks || '',
+      notes: basicTimesheet.notes || '',
+      submittedAt: basicTimesheet.submittedAt ? String(basicTimesheet.submittedAt) : '',
+      approvedBy: userData?.name || '',
+      approvedAt: basicTimesheet.approvedAt ? String(basicTimesheet.approvedAt) : '',
+      createdAt: String(basicTimesheet.createdAt),
+      updatedAt: String(basicTimesheet.updatedAt),
+      employee: employeeData ? {
+        id: employeeData.id.toString(), 
+        firstName: employeeData.firstName || '',
+        lastName: employeeData.lastName || '',
+        employeeId: employeeData.fileNumber || '',
+        user: userData ? {
+          name: userData.name,
+          email: userData.email,
         } : undefined,
+      } : {
+        id: '',
+        firstName: '',
+        lastName: '',
+        employeeId: '',
+        user: undefined,
       },
-      project: timesheet.project ? {
-        id: timesheet.project.id.toString(),
-        name: timesheet.project.name,
+      project: projectData ? {
+        id: projectData.id.toString(),
+        name: projectData.name,
       } : undefined,
-      rental: timesheet.rental ? {
-        id: timesheet.rental.id.toString(),
-        rentalNumber: timesheet.rental.rentalNumber,
+      rental: rentalData ? {
+        id: rentalData.id.toString(),
+        rentalNumber: rentalData.rentalNumber,
       } : undefined,
-      assignment: timesheet.assignment ? {
-        id: timesheet.assignment.id.toString(),
-        name: timesheet.assignment.assignmentType || '',
-        type: timesheet.assignment.assignmentType,
+      assignment: assignmentData ? {
+        id: assignmentData.id.toString(),
+        name: assignmentData.assignmentType || '',
+        type: assignmentData.assignmentType,
       } : undefined,
     };
 
     console.log('GET /api/timesheets/[id] - Returning transformed timesheet');
     return NextResponse.json({ timesheet: transformedTimesheet });
   } catch (error) {
-    console.error('GET /api/timesheets/[id] - Error fetching timesheet:', error);
+    console.error('GET /api/timesheets/[id] - Unexpected error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch timesheet', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

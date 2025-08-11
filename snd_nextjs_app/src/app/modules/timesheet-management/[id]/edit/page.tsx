@@ -106,13 +106,28 @@ function TimesheetEditContent() {
         }
 
         if (!response.ok) {
-          const errorText = await response.text();
+          let errorMessage = `Failed to fetch timesheet: ${response.status} ${response.statusText}`;
+          
+          try {
+            const errorData = await response.json();
+            if (errorData.error) {
+              errorMessage = errorData.error;
+              if (errorData.details) {
+                errorMessage += ` - ${errorData.details}`;
+              }
+            }
+          } catch (parseError) {
+            // If we can't parse the error response, use the default message
+            console.warn('Could not parse error response:', parseError);
+          }
+          
           console.error('API Response Error:', {
             status: response.status,
             statusText: response.statusText,
-            body: errorText
+            errorMessage
           });
-          throw new Error(`Failed to fetch timesheet: ${response.status} ${response.statusText}`);
+          
+          throw new Error(errorMessage);
         }
 
         const data = await response.json();
@@ -143,8 +158,9 @@ function TimesheetEditContent() {
         console.log('Form data initialized:', formData);
       } catch (error) {
         console.error('Error fetching timesheet:', error);
-        setError(error instanceof Error ? error.message : 'Failed to load timesheet');
-        toast.error('Failed to load timesheet');
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load timesheet';
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setLoading(false);
       }
