@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id: projectId } = await params;
+
+    // Validate projectId
+    if (!projectId || isNaN(parseInt(projectId))) {
+      return NextResponse.json(
+        { error: 'Invalid project ID' },
+        { status: 400 }
+      );
+    }
 
     // TODO: Implement project tasks when ProjectTask model is added to schema
     // For now, return empty array
@@ -26,6 +34,14 @@ export async function POST(
   try {
     const { id: projectId } = await params;
     const body = await request.json();
+
+    // Validate projectId
+    if (!projectId || isNaN(parseInt(projectId))) {
+      return NextResponse.json(
+        { error: 'Invalid project ID' },
+        { status: 400 }
+      );
+    }
 
     // TODO: Implement project task creation when ProjectTask model is added to schema
     return NextResponse.json(

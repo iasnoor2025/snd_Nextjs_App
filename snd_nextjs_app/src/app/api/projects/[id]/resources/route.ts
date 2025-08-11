@@ -9,7 +9,22 @@ export async function GET(
 ) {
   try {
     const { id: projectId } = await params;
+    
+    console.log('Fetching resources for project ID:', projectId);
+    
+    // Validate projectId
+    if (!projectId || isNaN(parseInt(projectId))) {
+      console.log('Invalid project ID:', projectId);
+      return NextResponse.json(
+        { error: 'Invalid project ID' },
+        { status: 400 }
+      );
+    }
 
+    const projectIdNum = parseInt(projectId);
+    console.log('Parsed project ID:', projectIdNum);
+
+    console.log('Querying project resources...');
     const resources = await db
       .select({
         id: projectResources.id,
@@ -23,61 +38,12 @@ export async function GET(
         date: projectResources.date,
         status: projectResources.status,
         notes: projectResources.notes,
-        employeeId: projectResources.employeeId,
-        workerName: projectResources.workerName,
-        jobTitle: projectResources.jobTitle,
-        dailyRate: projectResources.dailyRate,
-        daysWorked: projectResources.daysWorked,
-        startDate: projectResources.startDate,
-        endDate: projectResources.endDate,
-        totalDays: projectResources.totalDays,
-        equipmentId: projectResources.equipmentId,
-        equipmentName: projectResources.equipmentName,
-        operatorName: projectResources.operatorName,
-        hourlyRate: projectResources.hourlyRate,
-        hoursWorked: projectResources.hoursWorked,
-        usageHours: projectResources.usageHours,
-        maintenanceCost: projectResources.maintenanceCost,
-        materialName: projectResources.materialName,
-        unit: projectResources.unit,
-        unitPrice: projectResources.unitPrice,
-        materialId: projectResources.materialId,
-        fuelType: projectResources.fuelType,
-        liters: projectResources.liters,
-        pricePerLiter: projectResources.pricePerLiter,
-        category: projectResources.category,
-        expenseDescription: projectResources.expenseDescription,
-        amount: projectResources.amount,
-        title: projectResources.title,
-        priority: projectResources.priority,
-        dueDate: projectResources.dueDate,
-        completionPercentage: projectResources.completionPercentage,
-        assignedToId: projectResources.assignedToId,
-        createdAt: projectResources.createdAt,
-        updatedAt: projectResources.updatedAt,
-        employee: {
-          id: employees.id,
-          firstName: employees.firstName,
-          lastName: employees.lastName,
-          designation: employees.designation
-        },
-        equipment: {
-          id: equipment.id,
-          name: equipment.name,
-          description: equipment.description
-        },
-        assignedTo: {
-          id: employees.id,
-          firstName: employees.firstName,
-          lastName: employees.lastName
-        }
       })
       .from(projectResources)
-      .leftJoin(employees, eq(projectResources.employeeId, employees.id))
-      .leftJoin(equipment, eq(projectResources.equipmentId, equipment.id))
-      .leftJoin(employees, eq(projectResources.assignedToId, employees.id))
-      .where(eq(projectResources.projectId, parseInt(projectId)))
+      .where(eq(projectResources.projectId, projectIdNum))
       .orderBy(desc(projectResources.createdAt));
+
+    console.log('Resources found:', resources.length);
 
     return NextResponse.json({ 
       success: true,
@@ -85,8 +51,9 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching project resources:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { error: 'Failed to fetch project resources' },
+      { error: 'Failed to fetch project resources', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

@@ -8,6 +8,7 @@ declare global {
 
 function getPool(): Pool {
   if (!process.env.DATABASE_URL) {
+    console.error('DATABASE_URL is not set');
     throw new Error('DATABASE_URL is not set');
   }
   
@@ -17,11 +18,13 @@ function getPool(): Pool {
   }
   
   console.log('Creating new database pool');
+  console.log('Database URL:', process.env.DATABASE_URL.replace(/\/\/.*@/, '//***:***@'));
+  
   const pool = new Pool({ 
     connectionString: process.env.DATABASE_URL, 
     max: 10,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: 5000,
   });
   
   // Test the connection
@@ -31,6 +34,15 @@ function getPool(): Pool {
   
   pool.on('error', (err, client) => {
     console.error('Unexpected error on idle client', err);
+  });
+
+  // Test connection immediately
+  pool.query('SELECT 1', (err, result) => {
+    if (err) {
+      console.error('Database connection test failed:', err);
+    } else {
+      console.log('Database connection test successful');
+    }
   });
   
   global.__drizzlePool = pool;

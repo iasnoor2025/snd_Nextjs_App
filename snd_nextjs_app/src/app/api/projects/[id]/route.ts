@@ -9,7 +9,23 @@ export async function GET(
 ) {
   try {
     const { id: projectId } = await params;
+    
+    console.log('Fetching project with ID:', projectId);
+    
+    // Validate projectId
+    if (!projectId || isNaN(parseInt(projectId))) {
+      console.log('Invalid project ID:', projectId);
+      return NextResponse.json(
+        { error: 'Invalid project ID' },
+        { status: 400 }
+      );
+    }
 
+    const projectIdNum = parseInt(projectId);
+    console.log('Parsed project ID:', projectIdNum);
+
+    // First, get the project data
+    console.log('Querying projects table...');
     const projectData = await db
       .select({
         id: projects.id,
@@ -21,25 +37,12 @@ export async function GET(
         endDate: projects.endDate,
         budget: projects.budget,
         notes: projects.notes,
-        customer: {
-          id: customers.id,
-          name: customers.name,
-          email: customers.email,
-          phone: customers.phone
-        },
-        rentals: {
-          id: rentals.id,
-          rentalNumber: rentals.rentalNumber,
-          customer: {
-            id: customers.id,
-            name: customers.name
-          }
-        }
       })
       .from(projects)
-      .leftJoin(customers, eq(projects.customerId, customers.id))
-      .leftJoin(rentals, eq(projects.id, rentals.projectId))
-      .where(eq(projects.id, parseInt(projectId)));
+      .where(eq(projects.id, projectIdNum))
+      .limit(1);
+
+    console.log('Project data found:', projectData.length > 0);
 
     if (!projectData.length) {
       return NextResponse.json(
@@ -49,34 +52,76 @@ export async function GET(
     }
 
     const project = projectData[0];
+    console.log('Project:', project);
+
+    // Get customer data if customerId exists
+    let customer: any = null;
+    if (project.customerId) {
+      try {
+        console.log('Fetching customer data for ID:', project.customerId);
+        const customerData = await db
+          .select({
+            id: customers.id,
+            name: customers.name,
+            email: customers.email,
+            phone: customers.phone
+          })
+          .from(customers)
+          .where(eq(customers.id, project.customerId))
+          .limit(1);
+        
+        customer = customerData[0] || null;
+        console.log('Customer data:', customer);
+      } catch (customerError) {
+        console.warn('Error fetching customer data:', customerError);
+        customer = null;
+      }
+    }
+
+    // Get rental data if any exists for this project
+    let rental: any = null;
+    try {
+      console.log('Fetching rental data for project ID:', project.id);
+      const rentalData = await db
+        .select({
+          id: rentals.id,
+          rentalNumber: rentals.rentalNumber,
+        })
+        .from(rentals)
+        .where(eq(rentals.projectId, project.id))
+        .limit(1);
+
+      rental = rentalData[0] || null;
+      console.log('Rental data:', rental);
+    } catch (rentalError) {
+      console.warn('Error fetching rental data:', rentalError);
+      rental = null;
+    }
 
     // Transform the data to match the frontend expectations
     const transformedProject = {
       id: project.id,
       name: project.name,
       description: project.description,
-      customer_id: project.customerId,
-      customer: project.customer,
+      client_name: customer?.name || 'Unknown Client',
+      client_contact: customer?.email || customer?.phone || 'No contact info',
       status: project.status,
       priority: 'medium', // Default value since priority field doesn't exist
-      start_date: project.startDate?.toISOString() || '',
-      end_date: project.endDate?.toISOString() || '',
+      start_date: project.startDate ? project.startDate.toString() : '',
+      end_date: project.endDate ? project.endDate.toString() : '',
       budget: Number(project.budget) || 0,
-      initial_budget: Number(project.budget) || 0,
-      current_budget: Number(project.budget) * 0.65 || 0, // Mock current budget
-      budget_status: 'On Track',
-      budget_notes: 'Project is progressing well within budget constraints.',
       progress: 0, // Default value since progress field doesn't exist
       manager: {
         id: '1',
         name: 'John Smith',
         email: 'john.smith@company.com'
       },
-      manager_id: '1', // Default value since managerId field doesn't exist
-      team_size: 25,
       location: 'Downtown Business District',
-      notes: project.notes || 'Project is progressing well with foundation work completed and structural framework 65% complete.'
+      notes: project.notes || 'Project is progressing well with foundation work completed and structural framework 65% complete.',
+      rental: rental
     };
+
+    console.log('Transformed project:', transformedProject);
 
     return NextResponse.json({ 
       success: true,
@@ -84,8 +129,9 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching project:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { error: 'Failed to fetch project' },
+      { error: 'Failed to fetch project', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
@@ -106,8 +152,8 @@ export async function PUT(
         description: body.description,
         customerId: body.customer_id ? parseInt(body.customer_id) : null,
         status: body.status,
-        startDate: body.start_date ? new Date(body.start_date) : null,
-        endDate: body.end_date ? new Date(body.end_date) : null,
+        startDate: body.start_date ? body.start_date : null,
+        endDate: body.end_date ? body.end_date : null,
         budget: body.budget ? String(parseFloat(body.budget)) : null,
         notes: body.notes || body.objectives || body.scope || body.deliverables || body.constraints || body.assumptions || body.risks || body.quality_standards || body.communication_plan || body.stakeholder_management || body.change_management || body.procurement_plan || body.resource_plan || body.schedule_plan || body.cost_plan || body.quality_plan || body.risk_plan || body.communication_plan_detailed || body.stakeholder_plan || body.change_plan || body.procurement_plan_detailed || body.resource_plan_detailed || body.schedule_plan_detailed || body.cost_plan_detailed || body.quality_plan_detailed || body.risk_plan_detailed,
       })
