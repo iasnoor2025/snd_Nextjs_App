@@ -527,7 +527,7 @@ export default function ProjectManagementPage() {
                         <span className="text-sm">{project.progress}%</span>
                     </div>
                   </TableCell>
-                  <TableCell>${project.budget.toLocaleString()}</TableCell>
+                  <TableCell>SAR {project.budget.toLocaleString()}</TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       <Calendar className="h-3 w-3" />
@@ -621,7 +621,7 @@ export default function ProjectManagementPage() {
                   <Progress value={project.progress} className="h-2" />
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">{t('budget')}</span>
-                    <span className="font-medium">${project.budget.toLocaleString()}</span>
+                    <span className="font-medium">SAR {project.budget.toLocaleString()}</span>
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">{t('timeline')}</span>

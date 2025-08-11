@@ -419,7 +419,7 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-muted-foreground">Total Revenue</span>
               </div>
-              <div className="text-2xl font-bold">${totalRevenue.toFixed(2)}</div>
+              <div className="text-2xl font-bold">SAR {totalRevenue.toFixed(2)}</div>
             </div>
             
             <div className="bg-muted p-4 rounded-lg">
@@ -475,9 +475,9 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold">${(Number(getCurrentAssignment()!.total_price) || 0).toFixed(2)}</div>
+                      <div className="text-lg font-bold">SAR {(Number(getCurrentAssignment()!.total_price) || 0).toFixed(2)}</div>
                       <div className="text-sm text-muted-foreground">
-                        {getCurrentAssignment()!.quantity} × ${(Number(getCurrentAssignment()!.unit_price) || 0).toFixed(2)} {getCurrentAssignment()!.rate_type}
+                                                  {getCurrentAssignment()!.quantity} × SAR {(Number(getCurrentAssignment()!.unit_price) || 0).toFixed(2)} {getCurrentAssignment()!.rate_type}
                       </div>
                     </div>
                   </div>
@@ -595,10 +595,10 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                         </TableCell>
                         <TableCell>
                           <div>
-                            <div className="font-medium">${(Number(assignment.total_price) || 0).toFixed(2)}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {assignment.quantity} × ${(Number(assignment.unit_price) || 0).toFixed(2)} {getRateTypeBadge(assignment.rate_type)}
-                            </div>
+                            <div className="font-medium">SAR {(Number(assignment.total_price) || 0).toFixed(2)}</div>
+                                                          <div className="text-sm text-muted-foreground">
+                                {assignment.quantity} × SAR {(Number(assignment.unit_price) || 0).toFixed(2)} {getRateTypeBadge(assignment.rate_type)}
+                              </div>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -794,11 +794,11 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Unit Price</Label>
-                  <p>${(Number(selectedAssignment.unit_price) || 0).toFixed(2)}</p>
+                  <p>SAR {(Number(selectedAssignment.unit_price) || 0).toFixed(2)}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Total Price</Label>
-                  <p className="font-bold">${(Number(selectedAssignment.total_price) || 0).toFixed(2)}</p>
+                  <p className="font-bold">SAR {(Number(selectedAssignment.total_price) || 0).toFixed(2)}</p>
                 </div>
               </div>
 

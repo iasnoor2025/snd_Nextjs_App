@@ -259,7 +259,7 @@ export default function EquipmentEditPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="daily_rate">Daily Rate ($)</Label>
+                <Label htmlFor="daily_rate">Daily Rate (SAR)</Label>
                 <Input
                   id="daily_rate"
                   type="number"
@@ -272,7 +272,7 @@ export default function EquipmentEditPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="weekly_rate">Weekly Rate ($)</Label>
+                <Label htmlFor="weekly_rate">Weekly Rate (SAR)</Label>
                 <Input
                   id="weekly_rate"
                   type="number"
@@ -285,7 +285,7 @@ export default function EquipmentEditPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="monthly_rate">Monthly Rate ($)</Label>
+                <Label htmlFor="monthly_rate">Monthly Rate (SAR)</Label>
                 <Input
                   id="monthly_rate"
                   type="number"

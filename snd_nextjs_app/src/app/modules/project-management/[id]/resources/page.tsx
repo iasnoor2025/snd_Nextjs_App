@@ -598,20 +598,67 @@ export default function ProjectResourcesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>File #</TableHead>
-                      <TableHead>Employee Name</TableHead>
-                      <TableHead>Job</TableHead>
-                      <TableHead>Rates</TableHead>
-                      <TableHead>Joining Date</TableHead>
-                      <TableHead>Days</TableHead>
-                      <TableHead>Cost</TableHead>
+                      {type === 'manpower' ? (
+                        <>
+                          <TableHead>File #</TableHead>
+                          <TableHead>Employee Name</TableHead>
+                          <TableHead>Job</TableHead>
+                          <TableHead>Rates</TableHead>
+                          <TableHead>Joining Date</TableHead>
+                          <TableHead>Days</TableHead>
+                          <TableHead>Cost</TableHead>
+                        </>
+                      ) : type === 'equipment' ? (
+                        <>
+                          <TableHead>Equipment</TableHead>
+                          <TableHead>Operator</TableHead>
+                          <TableHead>Start Date</TableHead>
+                          <TableHead>End Date</TableHead>
+                          <TableHead>Usage Hours</TableHead>
+                          <TableHead>Hourly Rate</TableHead>
+                          <TableHead>Cost</TableHead>
+                        </>
+                      ) : type === 'material' ? (
+                        <>
+                          <TableHead>Material</TableHead>
+                          <TableHead>Unit</TableHead>
+                          <TableHead>Quantity</TableHead>
+                          <TableHead>Unit Price</TableHead>
+                          <TableHead>Total Cost</TableHead>
+                        </>
+                      ) : type === 'fuel' ? (
+                        <>
+                          <TableHead>Fuel Type</TableHead>
+                          <TableHead>Liters</TableHead>
+                          <TableHead>Price/Liter</TableHead>
+                          <TableHead>Total Cost</TableHead>
+                        </>
+                      ) : type === 'expense' ? (
+                        <>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Amount</TableHead>
+                        </>
+                      ) : (
+                        <>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead>Cost</TableHead>
+                        </>
+                      )}
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filterResourcesByType(type).length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8">
+                        <TableCell colSpan={
+                          type === 'manpower' ? 8 : 
+                          type === 'equipment' ? 8 : 
+                          type === 'material' ? 6 : 
+                          type === 'fuel' ? 5 : 
+                          type === 'expense' ? 4 : 4
+                        } className="text-center py-8">
                           <div className="flex flex-col items-center space-y-2">
                             {getResourceTypeIcon(type)}
                             <p className="text-muted-foreground">No {type} resources found</p>
@@ -625,21 +672,21 @@ export default function ProjectResourcesPage() {
                     ) : (
                       filterResourcesByType(type).map((resource) => (
                         <TableRow key={resource.id}>
-                          {/* File # Column */}
-                          <TableCell>
-                            <div className="text-sm">
-                              {resource.employee_file_number || '-'}
-                            </div>
-                          </TableCell>
-                          
-                          {/* Employee Name Column */}
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div className="font-medium">
-                                {type === 'manpower' && resource.employee_name ? resource.employee_name : (resource.name || resource.title)}
-                              </div>
-                              {type === 'manpower' && (
-                                <>
+                          {type === 'manpower' ? (
+                            <>
+                              {/* File # Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.employee_file_number || '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* Employee Name Column */}
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <div className="font-medium">
+                                    {resource.employee_name ? resource.employee_name : (resource.name || resource.title)}
+                                  </div>
                                   {(resource.employee_id || resource.employee_name || resource.employee_file_number) ? (
                                     <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
                                       Internal
@@ -649,40 +696,169 @@ export default function ProjectResourcesPage() {
                                       External
                                     </Badge>
                                   ) : null}
-                                </>
-                              )}
-                            </div>
-                          </TableCell>
+                                </div>
+                              </TableCell>
+                              
+                              {/* Job Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.job_title || '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* Rates Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.daily_rate ? `SAR ${resource.daily_rate}/day` : '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* Joining Date Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.start_date ? new Date(resource.start_date).toLocaleDateString() : '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* Days Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.total_days || '-'}
+                                </div>
+                              </TableCell>
+                            </>
+                          ) : type === 'equipment' ? (
+                            <>
+                              {/* Equipment Column */}
+                              <TableCell>
+                                <div className="font-medium">
+                                  {resource.equipment_name || resource.name || '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* Operator Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.operator_name || '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* Start Date Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.start_date ? new Date(resource.start_date).toLocaleDateString() : '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* End Date Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.end_date ? new Date(resource.end_date).toLocaleDateString() : '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* Usage Hours Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.usage_hours || '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* Hourly Rate Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.hourly_rate ? `SAR ${resource.hourly_rate}/hr` : '-'}
+                                </div>
+                              </TableCell>
+                            </>
+                          ) : type === 'material' ? (
+                            <>
+                              {/* Material Column */}
+                              <TableCell>
+                                <div className="font-medium">
+                                  {resource.material_name || resource.name || '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* Unit Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.unit || '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* Quantity Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.quantity || '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* Unit Price Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.unit_price ? `SAR ${resource.unit_price}` : '-'}
+                                </div>
+                              </TableCell>
+                            </>
+                          ) : type === 'fuel' ? (
+                            <>
+                              {/* Fuel Type Column */}
+                              <TableCell>
+                                <div className="font-medium">
+                                  {resource.fuel_type || '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* Liters Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.liters || '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* Price Per Liter Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.price_per_liter ? `SAR ${resource.price_per_liter}` : '-'}
+                                </div>
+                              </TableCell>
+                            </>
+                          ) : type === 'expense' ? (
+                            <>
+                              {/* Category Column */}
+                              <TableCell>
+                                <div className="font-medium">
+                                  {resource.category || '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* Description Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.expense_description || resource.description || '-'}
+                                </div>
+                              </TableCell>
+                            </>
+                          ) : (
+                            <>
+                              {/* Name Column */}
+                              <TableCell>
+                                <div className="font-medium">
+                                  {resource.name || resource.title || '-'}
+                                </div>
+                              </TableCell>
+                              
+                              {/* Description Column */}
+                              <TableCell>
+                                <div className="text-sm">
+                                  {resource.description || '-'}
+                                </div>
+                              </TableCell>
+                            </>
+                          )}
                           
-                          {/* Job Column */}
-                          <TableCell>
-                            <div className="text-sm">
-                              {resource.job_title || '-'}
-                            </div>
-                          </TableCell>
-                          
-                          {/* Rates Column */}
-                          <TableCell>
-                            <div className="text-sm">
-                              {resource.daily_rate ? `SAR ${resource.daily_rate}/day` : '-'}
-                            </div>
-                          </TableCell>
-                          
-                          {/* Joining Date Column */}
-                          <TableCell>
-                            <div className="text-sm">
-                              {resource.start_date ? new Date(resource.start_date).toLocaleDateString() : '-'}
-                            </div>
-                          </TableCell>
-                          
-                          {/* Days Column */}
-                          <TableCell>
-                            <div className="text-sm">
-                              {resource.total_days || '-'}
-                            </div>
-                          </TableCell>
-                          
-                          {/* Cost Column */}
+                          {/* Cost Column - Common for all types */}
                           <TableCell>
                             <div className="text-sm font-medium">
                               SAR {(resource.total_cost || 0).toLocaleString()}

@@ -452,7 +452,7 @@ export default function ProjectTemplatesPage() {
                     <DollarSign className="h-4 w-4 mr-1" />
                     Budget
                   </span>
-                  <span>${template.estimated_budget.toLocaleString()}</span>
+                  <span>SAR {template.estimated_budget.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="flex items-center">

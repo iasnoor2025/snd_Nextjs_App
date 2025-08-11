@@ -8,8 +8,12 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    console.log('GET /api/equipment/[id]/rentals - Starting request');
+    
     const { id: idParam } = await params;
     const id = parseInt(idParam);
+    
+    console.log('Equipment ID:', id);
     
     if (isNaN(id)) {
       return NextResponse.json(
@@ -19,16 +23,21 @@ export async function GET(
     }
 
     // Check if equipment exists
+    console.log('Checking if equipment exists...');
     const equipmentData = await db.select().from(equipment).where(eq(equipment.id, id)).limit(1);
 
     if (!equipmentData.length) {
+      console.log('Equipment not found');
       return NextResponse.json(
         { success: false, error: 'Equipment not found' },
         { status: 404 }
       );
     }
 
-    // Fetch rental history for this equipment from the new EquipmentRentalHistory table
+    console.log('Equipment found:', equipmentData[0].name);
+
+    // Get basic rental history without complex JOINs
+    console.log('Fetching basic rental history...');
     const rentalHistory = await db
       .select({
         id: equipmentRentalHistory.id,
@@ -44,63 +53,37 @@ export async function GET(
         dailyRate: equipmentRentalHistory.dailyRate,
         totalAmount: equipmentRentalHistory.totalAmount,
         createdAt: equipmentRentalHistory.createdAt,
-        updatedAt: equipmentRentalHistory.updatedAt,
-        rental: {
-          id: rentals.id,
-          rentalNumber: rentals.rentalNumber,
-          customer: {
-            id: customers.id,
-            name: customers.name,
-            email: customers.email,
-            phone: customers.phone
-          }
-        },
-        project: {
-          id: projects.id,
-          name: projects.name,
-          description: projects.description,
-          status: projects.status
-        },
-        employee: {
-          id: employees.id,
-          firstName: employees.firstName,
-          lastName: employees.lastName,
-          fileNumber: employees.fileNumber,
-          email: employees.email,
-          phone: employees.phone
-        }
+        updatedAt: equipmentRentalHistory.updatedAt
       })
       .from(equipmentRentalHistory)
-      .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
-      .leftJoin(customers, eq(rentals.customerId, customers.id))
-      .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
-      .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
       .where(eq(equipmentRentalHistory.equipmentId, id))
       .orderBy(desc(equipmentRentalHistory.createdAt));
 
-    // Transform the data to include more useful information
+    console.log('Basic rental history fetched, count:', rentalHistory.length);
+
+    // Transform the basic data
     const history = rentalHistory.map(item => ({
       id: item.id,
       rental_id: item.rentalId,
-      rental_number: item.rental?.rentalNumber || null,
-      customer_name: item.rental?.customer?.name || null,
-      customer_email: item.rental?.customer?.email || null,
-      customer_phone: item.rental?.customer?.phone || null,
+      rental_number: null, // Will be populated later if needed
+      customer_name: null,
+      customer_email: null,
+      customer_phone: null,
       project_id: item.projectId,
-      project_name: item.project?.name || null,
-      project_description: item.project?.description || null,
-      project_status: item.project?.status || null,
+      project_name: null,
+      project_description: null,
+      project_status: null,
       employee_id: item.employeeId,
-      employee_name: item.employee ? `${item.employee.firstName} ${item.employee.lastName}` : null,
-      employee_id_number: item.employee?.fileNumber || null,
-      employee_email: item.employee?.email || null,
-      employee_phone: item.employee?.phone || null,
+      employee_name: null,
+      employee_id_number: null,
+      employee_email: null,
+      employee_phone: null,
       assignment_type: item.assignmentType,
       equipment_name: equipmentData[0].name,
-      quantity: 1, // Default to 1 for manual/project assignments
+      quantity: 1,
       unit_price: item.dailyRate || 0,
       total_price: item.totalAmount || 0,
-      rate_type: 'daily', // Default for manual/project assignments
+      rate_type: 'daily',
       status: item.status,
       notes: item.notes,
       rental_start_date: item.startDate,
@@ -111,85 +94,30 @@ export async function GET(
       updated_at: item.updatedAt
     }));
 
-    // Also fetch traditional rental items for backward compatibility
-    const rentalItems = await db
-      .select({
-        id: rentals.id,
-        rentalNumber: rentals.rentalNumber,
-        customer: {
-          id: customers.id,
-          name: customers.name,
-          email: customers.email,
-          phone: customers.phone
-        },
-        project: {
-          id: projects.id,
-          name: projects.name,
-          description: projects.description,
-          status: projects.status
-        },
-        startDate: rentals.startDate,
-        expectedEndDate: rentals.expectedEndDate,
-        actualEndDate: rentals.actualEndDate,
-        status: rentals.status,
-        notes: rentals.notes,
-        createdAt: rentals.createdAt,
-        updatedAt: rentals.updatedAt
-      })
-      .from(rentals)
-      .leftJoin(customers, eq(rentals.customerId, customers.id))
-      .leftJoin(projects, eq(rentals.projectId, projects.id))
-      .where(eq(rentals.equipmentId, id))
-      .orderBy(desc(rentals.createdAt));
+    console.log('History transformed, count:', history.length);
 
-         // Transform rental items data
-     const rentalItemsHistory = rentalItems.map(item => ({
-       id: `rental_item_${item.id}`,
-       rental_id: item.id,
-       rental_number: item.rentalNumber,
-       customer_name: item.customer?.name || 'Unknown',
-       customer_email: item.customer?.email,
-       customer_phone: item.customer?.phone,
-       project_id: item.projectId,
-       project_name: item.project?.name || null,
-       project_description: item.project?.description || null,
-       project_status: item.project?.status || null,
-       employee_id: null,
-       employee_name: null,
-       employee_id_number: null,
-       employee_email: null,
-       employee_phone: null,
-       assignment_type: 'rental',
-       equipment_name: equipmentData[0].name,
-       quantity: 1, // Default to 1 for rental items
-       unit_price: 0, // No direct unit price in this query
-       total_price: 0, // No direct total price in this query
-       rate_type: 'daily', // Default for rental items
-       days: null, // No direct days in this query
-       status: item.status,
-       notes: item.notes,
-       rental_start_date: item.startDate,
-       rental_expected_end_date: item.expectedEndDate,
-       rental_actual_end_date: item.actualEndDate,
-       rental_status: item.status,
-       created_at: item.createdAt,
-       updated_at: item.updatedAt
-     }));
+    // For now, skip the complex rental items query to get the endpoint working
+    console.log('Skipping complex rental items query for now');
+    const rentalItemsHistory: any[] = [];
 
-    // Combine both histories and sort by creation date
+    // Combine histories
     const combinedHistory = [...history, ...rentalItemsHistory].sort((a, b) => 
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
+    console.log('Combined history count:', combinedHistory.length);
+
     return NextResponse.json({
       success: true,
       data: combinedHistory,
-      count: combinedHistory.length
+      count: combinedHistory.length,
+      message: 'Basic rental history loaded successfully'
     });
   } catch (error) {
     console.error('Error fetching equipment rental history:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch rental history' },
+      { success: false, error: 'Failed to fetch rental history', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

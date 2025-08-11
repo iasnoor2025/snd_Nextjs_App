@@ -24,11 +24,9 @@ interface EquipmentResource {
   id?: string;
   equipment_id?: string;
   equipment_name?: string;
-  equipment_display?: string; // Add display field for equipment
   name?: string; // Add name field
   operator_id?: string; // Add operator ID field
   operator_name?: string;
-  operator_display?: string; // Add display field for operator
   start_date?: string;
   end_date?: string;
   hourly_rate?: number;
@@ -60,11 +58,9 @@ export default function EquipmentDialog({
   const [formData, setFormData] = useState<EquipmentResource>({
     equipment_id: '',
     equipment_name: '',
-    equipment_display: '',
     name: '', // Add name field
     operator_id: '',
     operator_name: '',
-    operator_display: '',
     start_date: '',
     end_date: '',
     hourly_rate: 0,
@@ -95,11 +91,9 @@ export default function EquipmentDialog({
       setFormData({
         equipment_id: '',
         equipment_name: '',
-        equipment_display: '',
         name: '', // Add name field
         operator_id: '',
         operator_name: '',
-        operator_display: '',
         start_date: '',
         end_date: '',
         hourly_rate: 0,
@@ -114,14 +108,11 @@ export default function EquipmentDialog({
 
   const loadEquipment = async () => {
     try {
-      console.log('Loading equipment...');
       // Use the correct API endpoint for equipment
       const response = await apiService.get<{ data: Equipment[] }>('/equipment');
-      console.log('Equipment API response:', response);
       setEquipment(response.data || []);
     } catch (error) {
       console.error('Error loading equipment:', error);
-      console.log('Using mock equipment data...');
       // Use mock data if API fails
       const mockEquipment = [
         { id: '1', name: 'Excavator', model_number: 'CAT-320', daily_rate: 800, status: 'available' },
@@ -129,24 +120,19 @@ export default function EquipmentDialog({
         { id: '3', name: 'Crane', model_number: 'LTM-1100', daily_rate: 1200, status: 'available' }
       ];
       setEquipment(mockEquipment);
-      console.log('Mock equipment set:', mockEquipment);
     }
   };
 
   const loadManpowerResources = async () => {
     try {
-      console.log('Loading manpower resources for project:', projectId);
       // Load manpower resources from the current project
       const response = await apiService.get<{ success: boolean; data: any[] }>(`/projects/${projectId}/resources`);
-      console.log('Manpower API response:', response);
       if (response.success) {
         const manpowerData = response.data.filter((resource: any) => resource.type === 'manpower');
-        console.log('Filtered manpower data:', manpowerData);
         setManpowerResources(manpowerData || []);
       }
     } catch (error) {
       console.error('Error loading manpower resources:', error);
-      console.log('Using mock manpower data...');
       // Use mock data if API fails
       const mockManpower = [
         { id: '1', employee_name: 'John Doe', worker_name: '', job_title: 'Operator', name: 'John Doe' },
@@ -154,18 +140,10 @@ export default function EquipmentDialog({
         { id: '3', employee_name: 'Sarah Johnson', worker_name: '', job_title: 'Technician', name: 'Sarah Johnson' }
       ];
       setManpowerResources(mockManpower);
-      console.log('Mock manpower set:', mockManpower);
     }
   };
 
-  // Log when equipment and manpower data changes
-  useEffect(() => {
-    console.log('Equipment data updated:', equipment);
-  }, [equipment]);
 
-  useEffect(() => {
-    console.log('Manpower resources updated:', manpowerResources);
-  }, [manpowerResources]);
 
   // Calculate usage hours when start/end dates change
   useEffect(() => {
@@ -190,25 +168,19 @@ export default function EquipmentDialog({
 
       // Handle equipment selection
       if (field === 'equipment_id') {
-        console.log('Equipment selection changed to:', value);
-        console.log('Available equipment:', equipment);
         if (value) {
           const selectedEquipment = equipment.find(eq => eq.id === value);
-          console.log('Selected equipment:', selectedEquipment);
           if (selectedEquipment) {
             newData.equipment_id = value;
             newData.equipment_name = selectedEquipment.name;
-            newData.equipment_display = `${selectedEquipment.name}${selectedEquipment.model_number ? ` (${selectedEquipment.model_number})` : ''}`;
             newData.name = selectedEquipment.name; // Set name from equipment
             // Calculate hourly rate from daily rate (assuming 8-hour workday)
             const hourlyRate = selectedEquipment.daily_rate ? selectedEquipment.daily_rate / 8 : 0;
             newData.hourly_rate = hourlyRate;
-            console.log('Updated form data:', newData);
           }
         } else {
           newData.equipment_id = '';
           newData.equipment_name = '';
-          newData.equipment_display = '';
           newData.name = ''; // Clear name
           newData.hourly_rate = 0;
         }
@@ -216,21 +188,15 @@ export default function EquipmentDialog({
 
       // Handle operator selection
       if (field === 'operator_id') {
-        console.log('Operator selection changed to:', value);
-        console.log('Available manpower resources:', manpowerResources);
         if (value) {
           const selectedOperator = manpowerResources.find(op => op.id === value);
-          console.log('Selected operator:', selectedOperator);
           if (selectedOperator) {
             newData.operator_id = value;
             newData.operator_name = selectedOperator.employee_name || selectedOperator.worker_name || selectedOperator.name;
-            newData.operator_display = `${selectedOperator.employee_name || selectedOperator.worker_name || selectedOperator.name}${selectedOperator.job_title ? ` - ${selectedOperator.job_title}` : ''}`;
-            console.log('Updated operator data:', newData);
           }
         } else {
           newData.operator_id = '';
           newData.operator_name = '';
-          newData.operator_display = '';
         }
       }
 
@@ -270,27 +236,53 @@ export default function EquipmentDialog({
       }
 
       const submitData = {
-        ...formData,
         type: 'equipment',
         name: formData.name || formData.equipment_name || (formData.equipment_id ? equipment.find(eq => eq.id === formData.equipment_id)?.name : ''),
-        total_cost: (formData.hourly_rate || 0) * (formData.usage_hours || 0)
+        description: formData.notes,
+        total_cost: (formData.hourly_rate || 0) * (formData.usage_hours || 0),
+        status: formData.status || 'pending',
+        notes: formData.notes,
+        
+        // Equipment specific fields
+        equipment_id: formData.equipment_id,
+        equipment_name: formData.equipment_name,
+        operator_name: formData.operator_name,
+        hourly_rate: formData.hourly_rate,
+        usage_hours: formData.usage_hours,
+        maintenance_cost: formData.maintenance_cost,
+        
+        // Date fields
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        
+        // Additional fields
+        date: formData.start_date,
+        quantity: 1, // Equipment resources typically have quantity 1
+        unit_cost: formData.hourly_rate
       };
 
-      // TODO: Project resource endpoints don't exist yet
-      // Implement these when the endpoints become available
+      // Make the actual API call
       if (initialData?.id) {
-        // await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
-        toast.success('Equipment resource update feature not implemented yet');
+        await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
+        toast.success('Equipment resource updated successfully');
       } else {
-        // await apiService.post(`/projects/${projectId}/resources`, submitData);
-        toast.success('Equipment resource add feature not implemented yet');
+        await apiService.post(`/projects/${projectId}/resources`, submitData);
+        toast.success('Equipment resource added successfully');
       }
 
       onSuccess();
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving equipment resource:', error);
-      toast.error('Failed to save equipment resource');
+      
+      // Show more specific error messages
+      if (error.response?.data?.error) {
+        toast.error(`API Error: ${error.response.data.error}`);
+      } else if (error.message) {
+        toast.error(`Error: ${error.message}`);
+      } else {
+        toast.error('Failed to save equipment resource');
+      }
     } finally {
       setLoading(false);
     }
@@ -318,7 +310,7 @@ export default function EquipmentDialog({
               onValueChange={(value) => handleInputChange('equipment_id', value)}
             >
               <SelectTrigger className="w-full">
-                {formData.equipment_display || <span className="text-muted-foreground">Select equipment</span>}
+                {formData.equipment_name || <span className="text-muted-foreground">Select equipment</span>}
               </SelectTrigger>
               <SelectContent>
                 {equipment.map((eq) => (
@@ -334,8 +326,8 @@ export default function EquipmentDialog({
               <div className="rounded bg-gray-100 p-3 mt-2">
                 <div className="text-sm font-medium text-gray-700">Selected Equipment</div>
                 <div className="text-sm text-gray-600 mt-1">
-                  {equipment.find(eq => eq.id === formData.equipment_id)?.name}
-                  {equipment.find(eq => eq.id === formData.equipment_id)?.model_number && 
+                  {formData.equipment_name}
+                  {formData.equipment_name && equipment.find(eq => eq.id === formData.equipment_id)?.model_number && 
                     ` (${equipment.find(eq => eq.id === formData.equipment_id)?.model_number})`
                   }
                 </div>
@@ -356,7 +348,7 @@ export default function EquipmentDialog({
               onValueChange={(value) => handleInputChange('operator_id', value)}
             >
               <SelectTrigger className="w-full">
-                {formData.operator_display || <span className="text-muted-foreground">Select operator from manpower resources</span>}
+                {formData.operator_name || <span className="text-muted-foreground">Select operator from manpower resources</span>}
               </SelectTrigger>
               <SelectContent>
                 {manpowerResources.map((resource) => (
@@ -373,9 +365,7 @@ export default function EquipmentDialog({
               <div className="rounded bg-blue-100 p-3 mt-2">
                 <div className="text-sm font-medium text-blue-700">Selected Operator</div>
                 <div className="text-sm text-blue-600 mt-1">
-                  {manpowerResources.find(op => op.id === formData.operator_id)?.employee_name || 
-                   manpowerResources.find(op => op.id === formData.operator_id)?.worker_name || 
-                   manpowerResources.find(op => op.id === formData.operator_id)?.name}
+                  {formData.operator_name}
                 </div>
                 {manpowerResources.find(op => op.id === formData.operator_id)?.job_title && (
                   <div className="text-sm text-blue-600 mt-1">

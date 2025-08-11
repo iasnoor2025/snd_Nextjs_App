@@ -236,19 +236,19 @@ export default function EquipmentShowPage() {
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Daily Rate</Label>
                 <p className="text-lg font-medium">
-                  {equipment.daily_rate ? `$${equipment.daily_rate.toFixed(2)}` : 'Not set'}
+                  {equipment.daily_rate ? `SAR ${equipment.daily_rate.toFixed(2)}` : 'Not set'}
                 </p>
               </div>
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Weekly Rate</Label>
                 <p className="text-lg font-medium">
-                  {equipment.weekly_rate ? `$${equipment.weekly_rate.toFixed(2)}` : 'Not set'}
+                  {equipment.weekly_rate ? `SAR ${equipment.weekly_rate.toFixed(2)}` : 'Not set'}
                 </p>
               </div>
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Monthly Rate</Label>
                 <p className="text-lg font-medium">
-                  {equipment.monthly_rate ? `$${equipment.monthly_rate.toFixed(2)}` : 'Not set'}
+                  {equipment.monthly_rate ? `SAR ${equipment.monthly_rate.toFixed(2)}` : 'Not set'}
                 </p>
               </div>
             </div>

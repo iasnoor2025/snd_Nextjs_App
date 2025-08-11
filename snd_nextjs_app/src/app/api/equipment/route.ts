@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withPermission, PermissionConfigs, withReadPermission } from '@/lib/rbac/api-middleware';
-import { equipment as equipmentTable } from '@/lib/drizzle/schema';
+import { equipment as equipmentTable, equipmentRentalHistory, projects, rentals, employees } from '@/lib/drizzle/schema';
 import { asc, desc, eq } from 'drizzle-orm';
 
 export const GET = withReadPermission(
@@ -29,19 +29,59 @@ export const GET = withReadPermission(
     
     console.log(`Found ${equipment.length} equipment items`);
     
-    // Get current assignments for equipment that have them
-    // Skipping live joins for now; show no current_assignment or provide separate endpoint if needed
-    const currentAssignments: any[] = [];
+    // Get current active assignments for equipment
+    console.log('Fetching current assignments...');
+    const currentAssignments = await db
+      .select({
+        equipment_id: equipmentRentalHistory.equipmentId,
+        id: equipmentRentalHistory.id,
+        assignment_type: equipmentRentalHistory.assignmentType,
+        status: equipmentRentalHistory.status,
+        project_id: equipmentRentalHistory.projectId,
+        rental_id: equipmentRentalHistory.rentalId,
+        employee_id: equipmentRentalHistory.employeeId,
+        start_date: equipmentRentalHistory.startDate,
+        end_date: equipmentRentalHistory.endDate,
+        notes: equipmentRentalHistory.notes,
+        project: {
+          id: projects.id,
+          name: projects.name,
+          location: projects.location
+        },
+        rental: {
+          id: rentals.id,
+          rental_number: rentals.rentalNumber
+        },
+        employee: {
+          id: employees.id,
+          first_name: employees.firstName,
+          last_name: employees.lastName,
+          file_number: employees.fileNumber
+        }
+      })
+      .from(equipmentRentalHistory)
+      .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
+      .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
+      .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
+      .where(eq(equipmentRentalHistory.status, 'active'));
+    
+    console.log(`Found ${currentAssignments.length} active assignments`);
     
     // Create a map of equipment_id to assignment info
     const assignmentMap = new Map();
     currentAssignments.forEach(assignment => {
       assignmentMap.set(assignment.equipment_id, assignment);
+      console.log(`  Assignment ${assignment.id} for equipment ${assignment.equipment_id}: ${assignment.assignment_type} - ${assignment.status}`);
     });
+    
+    console.log(`Assignment map size: ${assignmentMap.size}`);
+    console.log(`Assignment map keys:`, Array.from(assignmentMap.keys()));
     
     // Add assignment info to equipment
     const equipmentWithAssignments = equipment.map(item => {
       const assignment = assignmentMap.get(item.id);
+      
+      console.log(`Equipment ${item.id} (${item.name}): assignment found:`, assignment ? 'YES' : 'NO');
       
       let assignmentName = '';
       if (assignment) {
@@ -54,6 +94,7 @@ export const GET = withReadPermission(
         } else {
           assignmentName = assignment.assignment_type;
         }
+        console.log(`  Assignment details: type=${assignment.assignment_type}, name=${assignmentName}, status=${assignment.status}`);
       }
       
       return {
@@ -62,7 +103,26 @@ export const GET = withReadPermission(
           id: assignment.id,
           type: assignment.assignment_type,
           name: assignmentName,
-          status: 'active'
+          location: assignment.project?.location || null,
+          start_date: assignment.start_date,
+          end_date: assignment.end_date,
+          status: assignment.status,
+          notes: assignment.notes,
+          project: assignment.project ? {
+            id: assignment.project.id,
+            name: assignment.project.name,
+            location: assignment.project.location
+          } : null,
+          rental: assignment.rental ? {
+            id: assignment.rental.id,
+            rental_number: assignment.rental.rental_number
+          } : null,
+          employee: assignment.employee ? {
+            id: assignment.employee.id,
+            name: `${assignment.employee.first_name} ${assignment.employee.last_name}`.trim(),
+            file_number: assignment.employee.file_number,
+            full_name: `${assignment.employee.first_name} ${assignment.employee.last_name}`.trim()
+          } : null
         } : null
       };
     });
