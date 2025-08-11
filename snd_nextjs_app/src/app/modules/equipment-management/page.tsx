@@ -41,7 +41,7 @@ import {
   RotateCw,
 } from "lucide-react";
 import { toast } from "sonner";
-import { ApiService } from "@/lib/api-service";
+import ApiService from "@/lib/api-service";
 import { useRouter } from "next/navigation";
 // i18n refactor: All user-facing strings now use useTranslation('equipment')
 import { useTranslation } from 'react-i18next';

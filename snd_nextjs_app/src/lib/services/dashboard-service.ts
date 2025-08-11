@@ -28,6 +28,7 @@ export interface DashboardStats {
   todayTimesheets: number;
   expiredDocuments: number;
   expiringDocuments: number;
+  employeesOnLeave: number;
 }
 
 export interface IqamaData {
@@ -121,82 +122,136 @@ export class DashboardService {
       const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
       // Get total employees
-      const [totalEmployeesResult] = await db
-        .select({ count: count() })
-        .from(employees)
-        .where(eq(employees.status, 'active'));
+      let totalEmployeesResult = { count: 0 };
+      try {
+        [totalEmployeesResult] = await db
+          .select({ count: count() })
+          .from(employees)
+          .where(eq(employees.status, 'active'));
+      } catch (error) {
+        console.error('Error fetching total employees:', error);
+      }
 
       // Get active projects
-      const [activeProjectsResult] = await db
-        .select({ count: count() })
-        .from(projects)
-        .where(eq(projects.status, 'active'));
+      let activeProjectsResult = { count: 0 };
+      try {
+        [activeProjectsResult] = await db
+          .select({ count: count() })
+          .from(projects)
+          .where(eq(projects.status, 'active'));
+      } catch (error) {
+        console.error('Error fetching active projects:', error);
+      }
 
       // Get active rentals
-      const [activeRentalsResult] = await db
-        .select({ count: count() })
-        .from(rentals)
-        .where(eq(rentals.status, 'active'));
+      let activeRentalsResult = { count: 0 };
+      try {
+        [activeRentalsResult] = await db
+          .select({ count: count() })
+          .from(rentals)
+          .where(eq(rentals.status, 'active'));
+      } catch (error) {
+        console.error('Error fetching active rentals:', error);
+      }
 
       // Get today's timesheets
-      const [todayTimesheetsResult] = await db
-        .select({ count: count() })
-        .from(timesheets)
-        .where(
-          and(
-            eq(timesheets.date, today.toISOString().split('T')[0]),
-            eq(timesheets.status, 'pending')
-          )
-        );
+      let todayTimesheetsResult = { count: 0 };
+      try {
+        [todayTimesheetsResult] = await db
+          .select({ count: count() })
+          .from(timesheets)
+          .where(
+            and(
+              eq(timesheets.date, today.toISOString().split('T')[0]),
+              eq(timesheets.status, 'pending')
+            )
+          );
+      } catch (error) {
+        console.error('Error fetching today timesheets:', error);
+      }
 
       // Get expired documents count
-      const [expiredDocumentsResult] = await db
-        .select({ count: count() })
-        .from(employees)
-        .where(
-          and(
-            isNotNull(employees.iqamaExpiry),
-            lte(employees.iqamaExpiry, today.toISOString())
-          )
-        );
+      let expiredDocumentsResult = { count: 0 };
+      try {
+        [expiredDocumentsResult] = await db
+          .select({ count: count() })
+          .from(employees)
+          .where(
+            and(
+              isNotNull(employees.iqamaExpiry),
+              lte(employees.iqamaExpiry, today.toISOString())
+            )
+          );
+      } catch (error) {
+        console.error('Error fetching expired documents:', error);
+      }
 
       // Get expiring documents count (within 30 days)
-      const thirtyDaysFromNow = new Date();
-      thirtyDaysFromNow.setDate(today.getDate() + 30);
-      const [expiringDocumentsResult] = await db
-        .select({ count: count() })
-        .from(employees)
-        .where(
-          and(
-            isNotNull(employees.iqamaExpiry),
-            gte(employees.iqamaExpiry, today.toISOString()),
-            lte(employees.iqamaExpiry, thirtyDaysFromNow.toISOString())
-          )
-        );
+      let expiringDocumentsResult = { count: 0 };
+      try {
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(today.getDate() + 30);
+        [expiringDocumentsResult] = await db
+          .select({ count: count() })
+          .from(employees)
+          .where(
+            and(
+              isNotNull(employees.iqamaExpiry),
+              gte(employees.iqamaExpiry, today.toISOString()),
+              lte(employees.iqamaExpiry, thirtyDaysFromNow.toISOString())
+            )
+          );
+      } catch (error) {
+        console.error('Error fetching expiring documents:', error);
+      }
 
       // Get total customers
-      const [totalCustomersResult] = await db
-        .select({ count: count() })
-        .from(customers)
-        .where(eq(customers.status, 'active'));
+      let totalCustomersResult = { count: 0 };
+      try {
+        [totalCustomersResult] = await db
+          .select({ count: count() })
+          .from(customers)
+          .where(eq(customers.status, 'active'));
+      } catch (error) {
+        console.error('Error fetching total customers:', error);
+      }
 
       // Get available equipment
-      const [availableEquipmentResult] = await db
-        .select({ count: count() })
-        .from(equipment)
-        .where(eq(equipment.status, 'available'));
+      let availableEquipmentResult = { count: 0 };
+      try {
+        [availableEquipmentResult] = await db
+          .select({ count: count() })
+          .from(equipment)
+          .where(eq(equipment.status, 'available'));
+      } catch (error) {
+        console.error('Error fetching available equipment:', error);
+      }
 
       // Get pending approvals (timesheets pending approval)
-      const [pendingApprovalsResult] = await db
-        .select({ count: count() })
-        .from(timesheets)
-        .where(eq(timesheets.status, 'pending'));
+      let pendingApprovalsResult = { count: 0 };
+      try {
+        [pendingApprovalsResult] = await db
+          .select({ count: count() })
+          .from(timesheets)
+          .where(eq(timesheets.status, 'pending'));
+      } catch (error) {
+        console.error('Error fetching pending approvals:', error);
+      }
 
       // Calculate monthly revenue (placeholder - you can implement actual calculation)
       const monthlyRevenue = 0;
 
       // Calculate equipment utilization (placeholder)
       const equipmentUtilization = 0;
+
+      // Get employees currently on leave
+      let employeesCurrentlyOnLeave = [];
+      try {
+        employeesCurrentlyOnLeave = await this.getEmployeesCurrentlyOnLeave();
+      } catch (error) {
+        console.error('Error fetching employees on leave, using default:', error);
+        employeesCurrentlyOnLeave = [];
+      }
 
       return {
         totalEmployees: totalEmployeesResult.count,
@@ -210,6 +265,7 @@ export class DashboardService {
         todayTimesheets: todayTimesheetsResult.count,
         expiredDocuments: expiredDocumentsResult.count,
         expiringDocuments: expiringDocumentsResult.count,
+        employeesOnLeave: employeesCurrentlyOnLeave.length,
       };
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
@@ -413,6 +469,43 @@ export class DashboardService {
     }
   }
 
+  static async getEmployeesCurrentlyOnLeave(): Promise<LeaveRequest[]> {
+    try {
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      
+      const leaveData = await db
+        .select({
+          id: employeeLeaves.id,
+          employeeName: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
+          fileNumber: employees.fileNumber,
+          leaveType: employeeLeaves.leaveType,
+          startDate: employeeLeaves.startDate,
+          endDate: employeeLeaves.endDate,
+          days: employeeLeaves.days,
+          status: employeeLeaves.status,
+          reason: employeeLeaves.reason,
+          department: departments.name,
+        })
+        .from(employeeLeaves)
+        .innerJoin(employees, eq(employeeLeaves.employeeId, employees.id))
+        .leftJoin(departments, eq(employees.departmentId, departments.id))
+        .where(
+          and(
+            eq(employeeLeaves.status, 'approved'),
+            lte(employeeLeaves.startDate, todayStr),
+            gte(employeeLeaves.endDate, todayStr)
+          )
+        );
+
+      return leaveData;
+    } catch (error) {
+      console.error('Error fetching employees currently on leave:', error);
+      // Return empty array instead of throwing to prevent dashboard from failing
+      return [];
+    }
+  }
+
   static async getActiveRentals(limit: number = 50): Promise<ActiveRental[]> {
     try {
       const rentalData = await db
@@ -451,7 +544,8 @@ export class DashboardService {
       });
     } catch (error) {
       console.error('Error fetching rental data:', error);
-      throw error;
+      // Return empty array instead of throwing to prevent dashboard from failing
+      return [];
     }
   }
 
@@ -505,12 +599,15 @@ export class DashboardService {
       });
     } catch (error) {
       console.error('Error fetching project data:', error);
-      throw error;
+      // Return empty array instead of throwing to prevent dashboard from failing
+      return [];
     }
   }
 
   static async getRecentActivity(limit: number = 50): Promise<RecentActivity[]> {
     try {
+      const allActivities: any[] = [];
+
       // Get recent timesheet submissions
       const recentTimesheets = await db
         .select({
@@ -519,12 +616,13 @@ export class DashboardService {
           description: sql<string>`CONCAT('Timesheet submitted for ', ${timesheets.date})`,
           user: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
           timestamp: timesheets.submittedAt,
+          severity: sql<string>`'low'`,
         })
         .from(timesheets)
         .innerJoin(employees, eq(timesheets.employeeId, employees.id))
         .where(isNotNull(timesheets.submittedAt))
         .orderBy(desc(timesheets.submittedAt))
-        .limit(limit);
+        .limit(Math.ceil(limit * 0.3));
 
       // Get recent leave requests
       const recentLeaves = await db
@@ -534,26 +632,113 @@ export class DashboardService {
           description: sql<string>`CONCAT('Leave request for ', ${employeeLeaves.leaveType})`,
           user: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
           timestamp: employeeLeaves.createdAt,
+          severity: sql<string>`'medium'`,
         })
         .from(employeeLeaves)
         .innerJoin(employees, eq(employeeLeaves.employeeId, employees.id))
         .orderBy(desc(employeeLeaves.createdAt))
-        .limit(limit);
+        .limit(Math.ceil(limit * 0.2));
 
-      // Combine and sort by timestamp
-      const allActivities = [...recentTimesheets, ...recentLeaves]
-        .sort((a, b) => new Date(b.timestamp || '').getTime() - new Date(a.timestamp || '').getTime())
+      // Get recent equipment assignments
+      const recentEquipmentAssignments = await db
+        .select({
+          id: employeeAssignments.id,
+          type: sql<string>`'Equipment Assignment'`,
+          description: sql<string>`CONCAT('Equipment assigned to ', ${employees.firstName}, ' ', ${employees.lastName})`,
+          user: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
+          timestamp: employeeAssignments.createdAt,
+          severity: sql<string>`'low'`,
+        })
+        .from(employeeAssignments)
+        .innerJoin(employees, eq(employeeAssignments.employeeId, employees.id))
+        .where(eq(employeeAssignments.assignmentType, 'equipment'))
+        .orderBy(desc(employeeAssignments.createdAt))
+        .limit(Math.ceil(limit * 0.15));
+
+      // Get recent project assignments
+      const recentProjectAssignments = await db
+        .select({
+          id: employeeAssignments.id,
+          type: sql<string>`'Project Assignment'`,
+          description: sql<string>`CONCAT('Project assignment for ', ${employees.firstName}, ' ', ${employees.lastName})`,
+          user: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
+          timestamp: employeeAssignments.createdAt,
+          severity: sql<string>`'medium'`,
+        })
+        .from(employeeAssignments)
+        .innerJoin(employees, eq(employeeAssignments.employeeId, employees.id))
+        .where(eq(employeeAssignments.assignmentType, 'project'))
+        .orderBy(desc(employeeAssignments.createdAt))
+        .limit(Math.ceil(limit * 0.15));
+
+      // Get recent document updates (from employee documents)
+      const recentDocumentUpdates = await db
+        .select({
+          id: employeeDocuments.id,
+          type: sql<string>`'Document Update'`,
+          description: sql<string>`CONCAT('Document updated: ', ${employeeDocuments.documentType})`,
+          user: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
+          timestamp: employeeDocuments.updatedAt,
+          severity: sql<string>`'low'`,
+        })
+        .from(employeeDocuments)
+        .innerJoin(employees, eq(employeeDocuments.employeeId, employees.id))
+        .orderBy(desc(employeeDocuments.updatedAt))
+        .limit(Math.ceil(limit * 0.1));
+
+      // Get recent rental activities
+      const recentRentals = await db
+        .select({
+          id: rentals.id,
+          type: sql<string>`'Rental Activity'`,
+          description: sql<string>`CONCAT('Rental ', ${rentals.status}, ': ', ${rentals.equipmentName})`,
+          user: sql<string>`'System'`,
+          timestamp: rentals.createdAt,
+          severity: sql<string>`'medium'`,
+        })
+        .from(rentals)
+        .orderBy(desc(rentals.createdAt))
+        .limit(Math.ceil(limit * 0.1));
+
+      // Get recent maintenance activities
+      const recentMaintenance = await db
+        .select({
+          id: sql<number>`0`, // Placeholder since maintenance table might not exist
+          type: sql<string>`'Maintenance'`,
+          description: sql<string>`'Equipment maintenance scheduled'`,
+          user: sql<string>`'System'`,
+          timestamp: sql<string>`CURRENT_TIMESTAMP`,
+          severity: sql<string>`'high'`,
+        })
+        .from(employees)
+        .limit(1); // Just to get one record for the query structure
+
+      // Combine all activities
+      allActivities.push(
+        ...recentTimesheets,
+        ...recentLeaves,
+        ...recentEquipmentAssignments,
+        ...recentProjectAssignments,
+        ...recentDocumentUpdates,
+        ...recentRentals
+      );
+
+      // Sort by timestamp and limit
+      const sortedActivities = allActivities
+        .filter(activity => activity.timestamp) // Filter out activities without timestamps
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
         .slice(0, limit)
         .map((activity, index) => ({
           ...activity,
           id: index + 1,
-          severity: 'low' as const,
+          severity: activity.severity as 'low' | 'medium' | 'high',
         }));
 
-      return allActivities;
+      return sortedActivities;
     } catch (error) {
       console.error('Error fetching recent activity:', error);
-      throw error;
+      // Return empty array instead of throwing to prevent dashboard from failing
+      return [];
     }
   }
 }

@@ -101,11 +101,13 @@ export default function DashboardPage() {
   const [timesheetData, setTimesheetData] = useState<TimesheetData[]>([])
   const [documentData, setDocumentData] = useState<DocumentData[]>([])
   const [leaveData, setLeaveData] = useState<LeaveRequest[]>([])
+  const [employeesOnLeaveData, setEmployeesOnLeaveData] = useState<any[]>([])
   const [rentalData, setRentalData] = useState<ActiveRental[]>([])
   const [projectData, setProjectData] = useState<ActiveProject[]>([])
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
   
   // State for update modal
@@ -118,12 +120,40 @@ export default function DashboardPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   
+  // Auto-refresh state
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState(30000); // 30 seconds
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [newActivityCount, setNewActivityCount] = useState(0);
+  const [previousActivityCount, setPreviousActivityCount] = useState(0);
+  
+  // Activity filtering state
+  const [activityFilter, setActivityFilter] = useState<string>('all');
+  const [activitySearch, setActivitySearch] = useState<string>('');
+  
   // Pagination logic
   const filteredIqamaData = iqamaData.filter(item => item.status !== 'active');
   const totalPages = Math.ceil(filteredIqamaData.length / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const paginatedIqamaData = filteredIqamaData.slice(startIndex, endIndex);
+  
+  // Activity filtering logic
+  const filteredActivities = recentActivity.filter(activity => {
+    const matchesFilter = activityFilter === 'all' || 
+                         (activityFilter === 'timesheet' && activity.type.includes('Timesheet')) ||
+                         (activityFilter === 'leave' && activity.type.includes('Leave')) ||
+                         (activityFilter === 'assignment' && activity.type.includes('Assignment')) ||
+                         (activityFilter === 'document' && activity.type.includes('Document')) ||
+                         (activityFilter === 'rental' && activity.type.includes('Rental'));
+    
+    const matchesSearch = !activitySearch || 
+                         activity.description?.toLowerCase().includes(activitySearch.toLowerCase()) ||
+                         activity.user?.toLowerCase().includes(activitySearch.toLowerCase()) ||
+                         activity.type.toLowerCase().includes(activitySearch.toLowerCase());
+    
+    return matchesFilter && matchesSearch;
+  });
   
   // Generate page numbers to display (max 5 pages)
   const getPageNumbers = (): number[] => {
@@ -187,12 +217,26 @@ export default function DashboardPage() {
     }
   }, [session]);
 
+  // Auto-refresh effect
+  useEffect(() => {
+    if (!autoRefresh || !session?.user) return;
+
+    const interval = setInterval(() => {
+      fetchDashboardData();
+    }, refreshInterval);
+
+    return () => clearInterval(interval);
+  }, [autoRefresh, refreshInterval, session]);
+
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      setError(null); // Clear any previous errors
       
       // Fetch all data from the API route
-      const response = await fetch('/api/dashboard');
+      const response = await fetch('/api/dashboard', {
+        credentials: 'include'
+      });
       
       if (!response.ok) {
         throw new Error(`Failed to fetch dashboard data: ${response.statusText}`);
@@ -206,6 +250,7 @@ export default function DashboardPage() {
         timesheetData,
         documentData,
         leaveData,
+        employeesOnLeaveData,
         rentalData,
         projectData,
         recentActivity: activityData
@@ -217,13 +262,31 @@ export default function DashboardPage() {
       setTimesheetData(timesheetData);
       setDocumentData(documentData);
       setLeaveData(leaveData);
+      setEmployeesOnLeaveData(employeesOnLeaveData);
       setRentalData(rentalData);
       setProjectData(projectData);
+      
+      // Track new activities
+      if (previousActivityCount > 0 && activityData.length > previousActivityCount) {
+        setNewActivityCount(activityData.length - previousActivityCount);
+        // Clear new activity count after 5 seconds
+        setTimeout(() => setNewActivityCount(0), 5000);
+      }
+      setPreviousActivityCount(activityData.length);
       setRecentActivity(activityData);
+      setLastUpdated(new Date());
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      } finally {
+      
+      // Try to extract error details from the response
+      if (error instanceof Error) {
+        console.error('Error details:', error.message);
+      }
+      
+      // Set error state for user feedback
+      setError(error instanceof Error ? error.message : 'Failed to fetch dashboard data');
+    } finally {
       setLoading(false);
     }
   };
@@ -257,6 +320,7 @@ export default function DashboardPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           iqama_expiry: newExpiryDate
         }),
@@ -313,6 +377,12 @@ export default function DashboardPage() {
               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">
                 {session.user?.role?.replace('_', ' ')}
               </Badge>
+              {lastUpdated && (
+                <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                  <Clock3 className="h-3 w-3" />
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </div>
+              )}
               <Button 
                 onClick={handleRefresh} 
                 disabled={refreshing}
@@ -337,10 +407,21 @@ export default function DashboardPage() {
               <p className="text-slate-600 dark:text-slate-400">Loading dashboard data...</p>
             </div>
           </div>
+        ) : error ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-slate-800 dark:text-slate-200 mb-2">Error Loading Dashboard</h3>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">{error}</p>
+              <Button onClick={() => { setError(null); fetchDashboardData(); }} variant="outline">
+                Try Again
+              </Button>
+            </div>
+          </div>
         ) : (
           <div className="space-y-8">
             {/* Key Performance Indicators */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
               <Card className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -398,6 +479,21 @@ export default function DashboardPage() {
                     </div>
                     <div className="bg-purple-500/30 p-3 rounded-full backdrop-blur-sm">
                       <AlertCircle className="h-8 w-8" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-rose-600 via-rose-700 to-rose-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-rose-100 text-sm font-medium">Employees on Leave</p>
+                      <p className="text-3xl font-bold">{stats?.employeesOnLeave || '0'}</p>
+                      <p className="text-rose-100 text-sm mt-1">Currently away</p>
+                    </div>
+                    <div className="bg-rose-500/30 p-3 rounded-full backdrop-blur-sm">
+                      <Calendar className="h-8 w-8" />
                     </div>
                   </div>
                 </CardContent>
@@ -770,13 +866,68 @@ export default function DashboardPage() {
             {/* Recent Activity */}
             <Card className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-900/20 dark:to-slate-800/20 shadow-lg border-slate-200 dark:border-slate-700">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
-                  <Activity className="h-5 w-5" />
-                  Recent System Activity
-                </CardTitle>
-                <CardDescription className="text-slate-600 dark:text-slate-400">
-                  Latest system events, user actions, and important notifications
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
+                      <Activity className="h-5 w-5" />
+                      Recent System Activity
+                      {newActivityCount > 0 && (
+                        <Badge variant="destructive" className="animate-pulse">
+                          {newActivityCount} new
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    <div className="text-sm text-slate-600 dark:text-slate-400">
+                      Latest system events, user actions, and important notifications
+                      {autoRefresh && (
+                        <span className="ml-2 text-green-600 dark:text-green-400 flex items-center gap-1">
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          Live
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {/* Auto-refresh toggle */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="autoRefresh"
+                        checked={autoRefresh}
+                        onChange={(e) => setAutoRefresh(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                      />
+                      <label htmlFor="autoRefresh" className="text-sm text-slate-600 dark:text-slate-400">
+                        Auto-refresh
+                      </label>
+                    </div>
+                    
+                    {/* Refresh interval selector */}
+                    <select
+                      value={refreshInterval}
+                      onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                      disabled={!autoRefresh}
+                      className="h-8 px-2 text-sm border border-slate-300 rounded-md bg-white dark:bg-slate-800 dark:border-slate-600 disabled:opacity-50"
+                    >
+                      <option value={15000}>15s</option>
+                      <option value={30000}>30s</option>
+                      <option value={60000}>1m</option>
+                      <option value={300000}>5m</option>
+                    </select>
+                    
+                    {/* Manual refresh button */}
+                    <Button 
+                      onClick={handleRefresh} 
+                      disabled={refreshing}
+                      variant="outline" 
+                      size="sm"
+                      className="bg-white/50 hover:bg-white/80 dark:bg-slate-800/50 dark:hover:bg-slate-800/80"
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                      {refreshing ? 'Refreshing...' : 'Refresh'}
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
@@ -784,7 +935,76 @@ export default function DashboardPage() {
                     <p className="text-slate-500 dark:text-slate-400 text-center py-8">No recent activity</p>
                   ) : (
                     <>
-                      {recentActivity.slice(0, 15).map((activity) => (
+                      {/* Activity Summary */}
+                      <div className="grid grid-cols-4 gap-2 mb-4 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                            {recentActivity.filter(a => a.type.includes('Timesheet')).length}
+                          </div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400">Timesheets</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                            {recentActivity.filter(a => a.type.includes('Leave')).length}
+                          </div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400">Leave Requests</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                            {recentActivity.filter(a => a.type.includes('Assignment')).length}
+                          </div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400">Assignments</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                            {recentActivity.filter(a => a.type.includes('Document')).length}
+                          </div>
+                          <div className="text-xs text-slate-600 dark:text-slate-400">Documents</div>
+                        </div>
+                      </div>
+
+                      {/* Search and Filter Controls */}
+                      <div className="flex flex-col sm:flex-row gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <div className="flex-1">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                            <Input
+                              placeholder="Search activities..."
+                              value={activitySearch}
+                              onChange={(e) => setActivitySearch(e.target.value)}
+                              className="pl-10"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <select
+                            value={activityFilter}
+                            onChange={(e) => setActivityFilter(e.target.value)}
+                            className="h-10 px-3 text-sm border border-slate-300 rounded-md bg-white dark:bg-slate-800 dark:border-slate-600"
+                          >
+                            <option value="all">All Activities</option>
+                            <option value="timesheet">Timesheets</option>
+                            <option value="leave">Leave Requests</option>
+                            <option value="assignment">Assignments</option>
+                            <option value="document">Documents</option>
+                            <option value="rental">Rentals</option>
+                          </select>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setActivitySearch('');
+                              setActivityFilter('all');
+                            }}
+                            className="h-10"
+                          >
+                            Clear
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Activity List */}
+                      {filteredActivities.slice(0, 15).map((activity) => (
                         <div key={activity.id} className="flex items-start gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
                           <div className={`w-3 h-3 rounded-full mt-2 flex-shrink-0 ${
                             activity.severity === 'high' ? 'bg-red-500' : 
@@ -793,21 +1013,37 @@ export default function DashboardPage() {
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{activity.description}</p>
                             <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400">
-                              <span>{activity.user}</span>
+                              <span className="flex items-center gap-1">
+                                <Users className="h-3 w-3" />
+                                {activity.user}
+                              </span>
                               <span>•</span>
-                              <span>{activity.timestamp ? new Date(activity.timestamp).toLocaleString() : 'N/A'}</span>
+                              <span className="flex items-center gap-1">
+                                <Clock3 className="h-3 w-3" />
+                                {activity.timestamp ? new Date(activity.timestamp).toLocaleString() : 'N/A'}
+                              </span>
                               <span>•</span>
-                              <Badge variant="outline" className="text-xs">
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs ${
+                                  activity.type.includes('Timesheet') ? 'border-blue-300 text-blue-700 bg-blue-50' :
+                                  activity.type.includes('Leave') ? 'border-green-300 text-green-700 bg-green-50' :
+                                  activity.type.includes('Assignment') ? 'border-purple-300 text-purple-700 bg-purple-50' :
+                                  activity.type.includes('Document') ? 'border-orange-300 text-orange-700 bg-orange-50' :
+                                  'border-slate-300 text-slate-700 bg-slate-50'
+                                }`}
+                              >
                                 {activity.type}
                               </Badge>
                             </div>
                           </div>
                         </div>
                       ))}
-                      {recentActivity.length > 15 && (
+                      
+                      {filteredActivities.length > 15 && (
                         <Button variant="outline" className="w-full border-slate-300 text-slate-700 hover:bg-slate-50" 
                                 onClick={() => router.push('/modules/activity-log')}>
-                          View All Activity ({recentActivity.length} records)
+                          View All Activity ({filteredActivities.length} records)
                         </Button>
                       )}
                     </>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
-import { ApiService } from "@/lib/api-service";
+import ApiService from "@/lib/api-service";
 import DocumentManager, { type DocumentItem } from "@/components/shared/DocumentManager";
 
 interface EquipmentDocument {

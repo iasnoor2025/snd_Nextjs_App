@@ -27,7 +27,7 @@ import {
   Package
 } from "lucide-react";
 import { toast } from "sonner";
-import { ApiService } from "@/lib/api-service";
+import ApiService from "@/lib/api-service";
 
 interface Equipment {
   id: number;

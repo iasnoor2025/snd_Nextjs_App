@@ -22,26 +22,46 @@ export async function GET(request: NextRequest) {
     const isSeniorRole = session.user.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role);
     const dataLimit = isSeniorRole ? Math.min(limit, 500) : Math.min(limit, 500);
 
-    // Fetch all dashboard data
-    const [
-      stats,
-      iqamaData,
-      timesheetData,
-      documentData,
-      leaveData,
-      rentalData,
-      projectData,
-      activityData
-    ] = await Promise.all([
-      DashboardService.getDashboardStats(),
-      DashboardService.getIqamaData(10000), 
-      DashboardService.getTodayTimesheets(dataLimit),
-      DashboardService.getExpiringDocuments(dataLimit),
-      DashboardService.getActiveLeaveRequests(dataLimit),
-      DashboardService.getActiveRentals(dataLimit),
-      DashboardService.getActiveProjects(dataLimit),
-      DashboardService.getRecentActivity(dataLimit)
-    ]);
+    // Fetch all dashboard data sequentially to identify which call fails
+    console.log('Starting dashboard data fetch...');
+    
+    console.log('Fetching stats...');
+    const stats = await DashboardService.getDashboardStats();
+    console.log('Stats fetched successfully');
+    
+    console.log('Fetching iqama data...');
+    const iqamaData = await DashboardService.getIqamaData(10000);
+    console.log('Iqama data fetched successfully');
+    
+    console.log('Fetching timesheet data...');
+    const timesheetData = await DashboardService.getTodayTimesheets(dataLimit);
+    console.log('Timesheet data fetched successfully');
+    
+    console.log('Fetching document data...');
+    const documentData = await DashboardService.getExpiringDocuments(dataLimit);
+    console.log('Document data fetched successfully');
+    
+    console.log('Fetching leave data...');
+    const leaveData = await DashboardService.getActiveLeaveRequests(dataLimit);
+    console.log('Leave data fetched successfully');
+    
+    console.log('Fetching employees on leave data...');
+    const employeesOnLeaveData = await DashboardService.getEmployeesCurrentlyOnLeave();
+    console.log('Employees on leave data fetched successfully');
+    
+    console.log('Fetching rental data...');
+    const rentalData = await DashboardService.getActiveRentals(dataLimit);
+    console.log('Rental data fetched successfully');
+    
+    console.log('Fetching project data...');
+    const projectData = await DashboardService.getActiveProjects(dataLimit);
+    console.log('Project data fetched successfully');
+    
+    console.log('Fetching activity data...');
+    const activityData = await DashboardService.getRecentActivity(dataLimit);
+    console.log('Activity data fetched successfully');
+    
+    console.log('All dashboard data fetched successfully');
 
     return NextResponse.json({
       stats,
@@ -49,6 +69,7 @@ export async function GET(request: NextRequest) {
       timesheetData,
       documentData,
       leaveData,
+      employeesOnLeaveData,
       rentalData,
       projectData,
       recentActivity: activityData
@@ -56,8 +77,19 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
+    
+    // Log more detailed error information
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }

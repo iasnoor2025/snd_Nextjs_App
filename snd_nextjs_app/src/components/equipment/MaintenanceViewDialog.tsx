@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ApiService } from '@/lib/api-service';
+import ApiService from '@/lib/api-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';

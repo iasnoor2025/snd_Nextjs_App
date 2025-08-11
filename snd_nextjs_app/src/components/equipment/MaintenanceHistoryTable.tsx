@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from 'react';
-import { ApiService } from '@/lib/api-service';
+import ApiService from '@/lib/api-service';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';

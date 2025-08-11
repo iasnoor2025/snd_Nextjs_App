@@ -21,7 +21,7 @@ import {
   Plus,
 } from "lucide-react";
 import { toast } from "sonner";
-import { ApiService } from "@/lib/api-service";
+import ApiService from "@/lib/api-service";
 import { Label } from "@/components/ui/label";
 import EquipmentAssignmentHistory from "@/components/equipment/EquipmentRentalHistory";
 import EquipmentDocumentUpload from "@/components/equipment/EquipmentDocumentUpload";

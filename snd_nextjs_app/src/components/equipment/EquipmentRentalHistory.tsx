@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { ApiService } from "@/lib/api-service";
+import ApiService from "@/lib/api-service";
 import Link from "next/link";
 
 interface AssignmentHistoryItem {

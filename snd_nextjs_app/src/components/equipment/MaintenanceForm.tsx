@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
-import { ApiService } from '@/lib/api-service';
+import ApiService from '@/lib/api-service';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useState } from 'react';
 
