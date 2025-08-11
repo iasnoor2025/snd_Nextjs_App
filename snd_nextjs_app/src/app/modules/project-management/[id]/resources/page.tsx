@@ -68,6 +68,8 @@ interface ProjectResource {
     last_name: string;
     full_name?: string;
   };
+  employee_name?: string;
+  employee_file_number?: string;
   worker_name?: string;
   job_title?: string;
   daily_rate?: number;
@@ -178,66 +180,68 @@ export default function ProjectResourcesPage() {
           name: resource.name || resource.title || resource.worker_name || resource.equipment_name || resource.material_name || 'Unnamed Resource',
           description: resource.description,
           quantity: resource.quantity,
-          unit_cost: resource.unit_cost ? parseFloat(resource.unit_cost) : undefined,
-          total_cost: resource.total_cost ? parseFloat(resource.total_cost) : undefined,
+          unit_cost: resource.unitCost ? parseFloat(resource.unitCost) : undefined,
+          total_cost: resource.totalCost ? parseFloat(resource.totalCost) : undefined,
           date: resource.date,
           status: resource.status,
           notes: resource.notes,
 
           // Manpower specific fields
-          employee_id: resource.employee_id?.toString(),
+          employee_id: resource.employeeId?.toString(),
           employee: resource.employee ? {
             id: resource.employee.id.toString(),
             first_name: resource.employee.first_name,
             last_name: resource.employee.last_name,
             full_name: `${resource.employee.first_name} ${resource.employee.last_name}`
           } : undefined,
-          worker_name: resource.worker_name,
-          job_title: resource.job_title,
-          daily_rate: resource.daily_rate ? parseFloat(resource.daily_rate) : undefined,
-          days_worked: resource.days_worked,
-          start_date: resource.start_date,
-          end_date: resource.end_date,
-          total_days: resource.total_days,
+          employee_name: resource.employeeName,
+          employee_file_number: resource.employeeFileNumber,
+          worker_name: resource.workerName,
+          job_title: resource.jobTitle,
+          daily_rate: resource.dailyRate ? parseFloat(resource.dailyRate) : undefined,
+          days_worked: resource.daysWorked,
+          start_date: resource.startDate,
+          end_date: resource.endDate,
+          total_days: resource.totalDays,
 
           // Equipment specific fields
-          equipment_id: resource.equipment_id?.toString(),
-          equipment_name: resource.equipment_name,
-          operator_name: resource.operator_name,
-          hourly_rate: resource.hourly_rate ? parseFloat(resource.hourly_rate) : undefined,
-          hours_worked: resource.hours_worked ? parseFloat(resource.hours_worked) : undefined,
-          usage_hours: resource.usage_hours ? parseFloat(resource.usage_hours) : undefined,
-          maintenance_cost: resource.maintenance_cost ? parseFloat(resource.maintenance_cost) : undefined,
+          equipment_id: resource.equipmentId?.toString(),
+          equipment_name: resource.equipmentName,
+          operator_name: resource.operatorName,
+          hourly_rate: resource.hourlyRate ? parseFloat(resource.hourlyRate) : undefined,
+          hours_worked: resource.hoursWorked ? parseFloat(resource.hoursWorked) : undefined,
+          usage_hours: resource.usageHours ? parseFloat(resource.usageHours) : undefined,
+          maintenance_cost: resource.maintenanceCost ? parseFloat(resource.maintenanceCost) : undefined,
 
           // Material specific fields
-          material_name: resource.material_name,
+          material_name: resource.materialName,
           unit: resource.unit,
-          unit_price: resource.unit_price ? parseFloat(resource.unit_price) : undefined,
-          material_id: resource.material_id?.toString(),
+          unit_price: resource.unitPrice ? parseFloat(resource.unitPrice) : undefined,
+          material_id: resource.materialId?.toString(),
 
           // Fuel specific fields
-          fuel_type: resource.fuel_type,
+          fuel_type: resource.fuelType,
           liters: resource.liters ? parseFloat(resource.liters) : undefined,
-          price_per_liter: resource.price_per_liter ? parseFloat(resource.price_per_liter) : undefined,
+          price_per_liter: resource.pricePerLiter ? parseFloat(resource.pricePerLiter) : undefined,
 
           // Expense specific fields
           category: resource.category,
-          expense_description: resource.expense_description,
+          expense_description: resource.expenseDescription,
           amount: resource.amount ? parseFloat(resource.amount) : undefined,
 
           // Task specific fields
           title: resource.title,
           priority: resource.priority,
-          due_date: resource.due_date,
-          completion_percentage: resource.completion_percentage,
+          due_date: resource.dueDate,
+          completion_percentage: resource.completionPercentage,
           assigned_to: resource.assigned_to ? {
             id: resource.assigned_to.id.toString(),
             name: `${resource.assigned_to.first_name} ${resource.assigned_to.last_name}`
           } : undefined,
-          assigned_to_id: resource.assigned_to_id?.toString(),
+          assigned_to_id: resource.assignedToId?.toString(),
 
-          created_at: resource.created_at,
-          updated_at: resource.updated_at
+          created_at: resource.createdAt,
+          updated_at: resource.updatedAt
         }));
         setResources(transformedResources);
       } else {
@@ -572,18 +576,20 @@ export default function ProjectResourcesPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Details</TableHead>
+                      <TableHead>File #</TableHead>
+                      <TableHead>Employee Name</TableHead>
+                      <TableHead>Job</TableHead>
+                      <TableHead>Rates</TableHead>
+                      <TableHead>Joining Date</TableHead>
+                      <TableHead>Days</TableHead>
                       <TableHead>Cost</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filterResourcesByType(type).length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8">
+                        <TableCell colSpan={8} className="text-center py-8">
                           <div className="flex flex-col items-center space-y-2">
                             {getResourceTypeIcon(type)}
                             <p className="text-muted-foreground">No {type} resources found</p>
@@ -597,66 +603,70 @@ export default function ProjectResourcesPage() {
                     ) : (
                       filterResourcesByType(type).map((resource) => (
                         <TableRow key={resource.id}>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{resource.name || resource.title}</div>
-                              {resource.description && (
-                                <div className="text-sm text-muted-foreground truncate max-w-xs">
-                                  {resource.description}
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
+                          {/* File # Column */}
                           <TableCell>
                             <div className="text-sm">
+                              {resource.employee_file_number || '-'}
+                            </div>
+                          </TableCell>
+                          
+                          {/* Employee Name Column */}
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <div className="font-medium">
+                                {type === 'manpower' && resource.employee_name ? resource.employee_name : (resource.name || resource.title)}
+                              </div>
                               {type === 'manpower' && (
                                 <>
-                                  {resource.job_title && <div>{resource.job_title}</div>}
-                                  {resource.daily_rate && <div>Rate: ${resource.daily_rate}/day</div>}
-                                  {resource.total_days && <div>Days: {resource.total_days}</div>}
-                                </>
-                              )}
-                              {type === 'equipment' && (
-                                <>
-                                  {resource.operator_name && <div>Operator: {resource.operator_name}</div>}
-                                  {resource.hourly_rate && <div>Rate: ${resource.hourly_rate}/hr</div>}
-                                  {resource.usage_hours && <div>Hours: {resource.usage_hours}</div>}
-                                </>
-                              )}
-                              {type === 'material' && (
-                                <>
-                                  {resource.quantity && <div>Qty: {resource.quantity}</div>}
-                                  {resource.unit && <div>Unit: {resource.unit}</div>}
-                                  {resource.unit_price && <div>Price: ${resource.unit_price}</div>}
-                                </>
-                              )}
-                              {type === 'fuel' && (
-                                <>
-                                  {resource.liters && <div>Liters: {resource.liters}</div>}
-                                  {resource.price_per_liter && <div>Price: ${resource.price_per_liter}/L</div>}
-                                </>
-                              )}
-                              {type === 'expense' && (
-                                <>
-                                  {resource.category && <div>Category: {resource.category}</div>}
-                                  {resource.expense_description && <div>{resource.expense_description}</div>}
+                                  {(resource.employee_id || resource.employee_name || resource.employee_file_number) ? (
+                                    <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                                      Internal
+                                    </Badge>
+                                  ) : resource.worker_name ? (
+                                    <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
+                                      External
+                                    </Badge>
+                                  ) : null}
                                 </>
                               )}
                             </div>
                           </TableCell>
+                          
+                          {/* Job Column */}
                           <TableCell>
-                            <div className="font-medium">
+                            <div className="text-sm">
+                              {resource.job_title || '-'}
+                            </div>
+                          </TableCell>
+                          
+                          {/* Rates Column */}
+                          <TableCell>
+                            <div className="text-sm">
+                              {resource.daily_rate ? `$${resource.daily_rate}/day` : '-'}
+                            </div>
+                          </TableCell>
+                          
+                          {/* Joining Date Column */}
+                          <TableCell>
+                            <div className="text-sm">
+                              {resource.start_date ? new Date(resource.start_date).toLocaleDateString() : '-'}
+                            </div>
+                          </TableCell>
+                          
+                          {/* Days Column */}
+                          <TableCell>
+                            <div className="text-sm">
+                              {resource.total_days || '-'}
+                            </div>
+                          </TableCell>
+                          
+                          {/* Cost Column */}
+                          <TableCell>
+                            <div className="text-sm font-medium">
                               ${(resource.total_cost || 0).toLocaleString()}
                             </div>
                           </TableCell>
-                          <TableCell>
-                            <Badge className={getStatusColor(resource.status)}>
-                              {resource.status.replace('_', ' ')}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {resource.date && format(new Date(resource.date), 'MMM dd, yyyy')}
-                          </TableCell>
+
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end space-x-2">
                               <Button

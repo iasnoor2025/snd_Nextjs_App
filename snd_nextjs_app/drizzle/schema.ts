@@ -154,6 +154,8 @@ export const projectResources = pgTable("project_resources", {
 	status: text().default('pending').notNull(),
 	notes: text(),
 	employeeId: integer("employee_id"),
+	employeeName: text("employee_name"),
+	employeeFileNumber: text("employee_file_number"),
 	workerName: text("worker_name"),
 	jobTitle: text("job_title"),
 	dailyRate: numeric("daily_rate", { precision: 10, scale:  2 }),

@@ -18,6 +18,8 @@ import apiService from '@/lib/api';
 interface ManpowerResource {
   id?: string;
   employee_id?: string;
+  employee_name?: string;
+  employee_file_number?: string;
   worker_name?: string;
   name?: string; // Add name field
   job_title?: string;
@@ -49,6 +51,8 @@ export default function ManpowerDialog({
   const [useEmployee, setUseEmployee] = useState(initialData?.employee_id ? true : false);
   const [formData, setFormData] = useState<ManpowerResource>({
     employee_id: '',
+    employee_name: '',
+    employee_file_number: '',
     worker_name: '',
     name: '', // Add name field
     job_title: '',
@@ -75,6 +79,8 @@ export default function ManpowerDialog({
     } else {
       setFormData({
         employee_id: '',
+        employee_name: '',
+        employee_file_number: '',
         worker_name: '',
         name: '', // Add name field
         job_title: '',
@@ -161,11 +167,17 @@ export default function ManpowerDialog({
         toast.error('Daily rate must be positive');
         return;
       }
+      
+      // Ensure we have a valid name for the resource
+      if (!formData.worker_name && !formData.employee_id) {
+        toast.error('Either worker name or employee must be provided');
+        return;
+      }
 
       const submitData = {
         ...formData,
         type: 'manpower',
-        name: formData.name || formData.worker_name || '',
+        name: formData.worker_name || formData.name || 'Unnamed Worker',
         total_cost: (formData.daily_rate || 0) * (formData.total_days || 0)
       };
 
@@ -209,6 +221,8 @@ export default function ManpowerDialog({
         worker_name: '',
         name: '', // Clear name when switching to employee
         employee_id: '',
+        employee_name: '',
+        employee_file_number: '',
         job_title: '',
         daily_rate: 0,
         total_days: 0,
@@ -218,6 +232,8 @@ export default function ManpowerDialog({
       setFormData(prev => ({
         ...prev,
         employee_id: '',
+        employee_name: '',
+        employee_file_number: '',
         name: '', // Clear name when switching to worker
         worker_name: '',
         job_title: '',
@@ -258,7 +274,7 @@ export default function ManpowerDialog({
           </div>
 
           {useEmployee ? (
-            <div className="space-y-2">
+            <div className="space-y-4">
               {initialData && initialData.employee_id ? (
                 <div className="rounded bg-gray-100 p-2 text-gray-800">
                   Employee ID: {initialData.employee_id}
@@ -273,6 +289,28 @@ export default function ManpowerDialog({
                   showSearch={true}
                 />
               )}
+              
+              {/* Employee Name and File Number */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="employee_name">Employee Name</Label>
+                  <Input
+                    id="employee_name"
+                    value={formData.employee_name || ''}
+                    onChange={(e) => handleInputChange('employee_name', e.target.value)}
+                    placeholder="Enter employee name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="employee_file_number">File Number</Label>
+                  <Input
+                    id="employee_file_number"
+                    value={formData.employee_file_number || ''}
+                    onChange={(e) => handleInputChange('employee_file_number', e.target.value)}
+                    placeholder="Enter file number"
+                  />
+                </div>
+              </div>
             </div>
           ) : (
             <div className="space-y-2">

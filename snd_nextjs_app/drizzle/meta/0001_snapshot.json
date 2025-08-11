@@ -1,6 +1,6 @@
 {
-  "id": "b2866081-2e20-450e-9900-9c9da9f39d12",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "0ba0f955-0733-4957-bf8c-fbf081ff5e5e",
+  "prevId": "b2866081-2e20-450e-9900-9c9da9f39d12",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -4509,6 +4509,18 @@
         "employee_id": {
           "name": "employee_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "employee_name": {
+          "name": "employee_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "employee_file_number": {
+          "name": "employee_file_number",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
