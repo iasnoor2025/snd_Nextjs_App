@@ -402,7 +402,7 @@ export default function PayrollManagementPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ payroll_ids: Array.from(selectedPayrolls) }),
+        body: JSON.stringify({ ids: Array.from(selectedPayrolls) }),
       });
 
       const data = await response.json();

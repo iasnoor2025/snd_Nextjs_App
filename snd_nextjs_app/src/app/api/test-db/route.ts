@@ -1,52 +1,30 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { sql } from 'drizzle-orm';
+import { timesheets } from '@/lib/drizzle/schema';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     console.log('Testing database connection...');
     
-    // Test basic connection
-    const result = await db.execute(sql`SELECT 1 as test`);
-    console.log('Database connection test result:', result);
+    // Test basic connection by counting timesheets
+    const result = await db
+      .select({ count: timesheets.id })
+      .from(timesheets)
+      .limit(1);
     
-    // Test if we can query the employee_assignments table
-    const assignmentCount = await db.execute(sql`SELECT COUNT(*) as count FROM employee_assignments`);
-    console.log('Employee assignments count:', assignmentCount);
-    
-    // Test if we can query the timesheets table
-    const timesheetCount = await db.execute(sql`SELECT COUNT(*) as count FROM timesheets`);
-    console.log('Timesheets count:', timesheetCount);
-    
-    // Check the actual structure of the timesheets table
-    const tableStructure = await db.execute(sql`
-      SELECT column_name, data_type, is_nullable 
-      FROM information_schema.columns 
-      WHERE table_name = 'timesheets' 
-      ORDER BY ordinal_position
-    `);
-    console.log('Timesheets table structure:', tableStructure);
+    console.log('Database connection successful, result:', result);
     
     return NextResponse.json({
       success: true,
       message: 'Database connection successful',
-      data: {
-        connectionTest: result,
-        assignmentCount: assignmentCount[0]?.count,
-        timesheetCount: timesheetCount[0]?.count,
-        tableStructure: tableStructure
-      }
+      result: result.length > 0 ? 'Timesheet table accessible' : 'Timesheet table empty but accessible'
     });
   } catch (error) {
-    console.error('Database test failed:', error);
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Database test failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        stack: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.stack : undefined : undefined
-      },
-      { status: 500 }
-    );
+    console.error('Database connection test failed:', error);
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      details: error instanceof Error ? error.stack : undefined
+    }, { status: 500 });
   }
 }

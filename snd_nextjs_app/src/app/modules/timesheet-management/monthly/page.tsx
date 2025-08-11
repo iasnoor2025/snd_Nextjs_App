@@ -59,7 +59,7 @@ interface Timesheet {
     id: string;
     firstName: string;
     lastName: string;
-    employeeId: string;
+    fileNumber: string;
   };
   project?: {
     id: string;
@@ -140,6 +140,9 @@ export default function MonthlyTimesheetPage() {
       }
 
       const data = await response.json();
+      console.log('Frontend received monthly data:', data);
+      console.log('Calendar keys:', Object.keys(data.calendar || {}));
+      console.log('Sample calendar day:', data.calendar ? Object.values(data.calendar)[0] : 'No calendar data');
       setMonthlyData(data);
     } catch (error) {
       console.error('Error fetching monthly data:', error);
@@ -186,29 +189,65 @@ export default function MonthlyTimesheetPage() {
       const url = isNewTimesheet ? '/api/timesheets' : `/api/timesheets/${editingTimesheet.id}`;
       const method = isNewTimesheet ? 'POST' : 'PUT';
 
+      // Prepare the request body with only the necessary fields
+      const requestBody = {
+        hoursWorked: editForm.hoursWorked,
+        overtimeHours: editForm.overtimeHours,
+        // Include other fields that might be needed for creation
+        ...(isNewTimesheet && {
+          employeeId: editingTimesheet.employeeId,
+          date: editingTimesheet.date,
+          status: 'draft',
+          projectId: editingTimesheet.projectId,
+          rentalId: editingTimesheet.rentalId,
+          assignmentId: editingTimesheet.assignmentId,
+          description: editingTimesheet.description,
+          tasksCompleted: editingTimesheet.tasksCompleted,
+        }),
+      };
+
+      console.log('Frontend - handleSaveEdit - Request details:', {
+        isNewTimesheet,
+        url,
+        method,
+        editingTimesheetId: editingTimesheet.id,
+        editingTimesheetIdType: typeof editingTimesheet.id,
+        requestBody
+      });
+
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...editingTimesheet,
-          hoursWorked: editForm.hoursWorked,
-          overtimeHours: editForm.overtimeHours,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('Frontend - handleSaveEdit - Response status:', response.status);
+      console.log('Frontend - handleSaveEdit - Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error(isNewTimesheet ? 'Failed to create timesheet' : 'Failed to update timesheet');
+        const errorData = await response.json().catch(() => ({}));
+        console.log('Frontend - handleSaveEdit - Error response:', errorData);
+        console.log('Frontend - handleSaveEdit - Full error details:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          requestBody
+        });
+        throw new Error(errorData.error || (isNewTimesheet ? 'Failed to create timesheet' : 'Failed to update timesheet'));
       }
+
+      const responseData = await response.json().catch(() => ({}));
+      console.log('Frontend - handleSaveEdit - Success response:', responseData);
 
       toast.success(isNewTimesheet ? t('timesheet_created_successfully') : t('timesheet_updated_successfully'));
       setEditDialog(false);
       setEditingTimesheet(null);
       fetchMonthlyData();
     } catch (error) {
-      console.error('Error saving timesheet:', error);
-      toast.error(t('failed_to_save_timesheet'));
+      console.error('Frontend - handleSaveEdit - Error saving timesheet:', error);
+      toast.error(error instanceof Error ? error.message : t('failed_to_save_timesheet'));
     }
   };
 
@@ -222,6 +261,8 @@ export default function MonthlyTimesheetPage() {
     const currentYear = today.getFullYear();
     const currentMonthNum = today.getMonth() + 1;
     const currentDay = today.getDate();
+
+
 
     return Array.from({ length: daysInMonth }, (_, i) => {
       const day = i + 1;
@@ -243,10 +284,13 @@ export default function MonthlyTimesheetPage() {
         timesheets: [],
       };
 
+
+
       return {
         ...dayData,
         isCurrentMonth: true,
-        isToday: dateStr === new Date().toISOString().split('T')[0],
+        // Use local date string to avoid timezone issues
+        isToday: dateStr === new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD format
         isFutureDate,
       };
     });
@@ -462,6 +506,7 @@ export default function MonthlyTimesheetPage() {
 
                     {day.timesheets.length > 0 ? (
                       <div className="space-y-1">
+
                         {day.timesheets.map((timesheet) => {
                           const hasZeroHours = (Number(timesheet.hoursWorked) || 0) === 0 && 
                                              (Number(timesheet.overtimeHours) || 0) === 0;
@@ -513,7 +558,7 @@ export default function MonthlyTimesheetPage() {
                               id: selectedEmployee || '',
                               firstName: 'Employee',
                               lastName: '',
-                              employeeId: ''
+                              fileNumber: ''
                             }
                           };
                           handleEditOvertime(newTimesheet);

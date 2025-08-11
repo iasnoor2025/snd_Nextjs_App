@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { ToastService } from '@/lib/toast-service';
+import ApiService from '@/lib/api-service';
 
 export interface Notification {
   id: string;
@@ -277,12 +278,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     );
 
     try {
-      await fetch(`/notifications/${notificationId}/read`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      await ApiService.markNotificationAsRead(notificationId);
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
     }
@@ -295,12 +291,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
 
     try {
-      await fetch('/notifications/mark-all-read', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      await ApiService.markAllNotificationsAsRead();
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
     }
@@ -313,9 +304,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     setNotifications(prev => prev.filter(n => n.id !== notificationId));
 
     try {
-      await fetch(`/notifications/${notificationId}`, {
-        method: 'DELETE',
-      });
+      await ApiService.deleteNotification(notificationId);
     } catch (error) {
       console.error('Failed to delete notification:', error);
     }
@@ -328,9 +317,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     setNotifications([]);
 
     try {
-      await fetch('/notifications/clear-all', {
-        method: 'DELETE',
-      });
+      await ApiService.clearAllNotifications();
     } catch (error) {
       console.error('Failed to clear all notifications:', error);
     }
@@ -349,10 +336,9 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     const loadNotifications = async () => {
       if (!isMountedRef.current) return;
       try {
-        const response = await fetch('/notifications');
-        if (response.ok) {
-          const data = await response.json();
-          setNotifications(data.notifications || []);
+        const response = await ApiService.getNotifications();
+        if (response.success) {
+          setNotifications(response.data.notifications || []);
         }
       } catch (error) {
         console.error('Failed to load notifications:', error);

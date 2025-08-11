@@ -648,9 +648,6 @@ export function withAuth(
 ) {
   return async (request: NextRequest, params?: any): Promise<NextResponse> => {
     try {
-      // Ensure Prisma is initialized before any operations
-      await initializePrisma();
-      
       const session = await getServerSession(authConfig);
       if (!session?.user) {
         return NextResponse.json(

@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { payrolls, employees, payrollItems, timesheets } from '@/lib/drizzle/schema';
-import { eq, and, gte, lte, asc } from 'drizzle-orm';
+import { eq, and, gte, lte, asc, sql } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     console.log('🔍 PAYSLIP DOWNLOAD API - Starting request');
     
-    const { id: idParam } = params;
+    const { id: idParam } = await params;
     const id = parseInt(idParam);
     
     console.log('🔍 PAYSLIP DOWNLOAD API - Payroll ID:', id);
@@ -96,41 +96,42 @@ export async function GET(
 
     // Get attendance data for the payroll month
     console.log('🔍 PAYSLIP DOWNLOAD API - Fetching attendance data...');
-    const startDate = new Date(`${payroll.year}-${String(payroll.month).padStart(2, '0')}-01T00:00:00.000Z`);
-    const endDate = new Date(`${payroll.year}-${String(payroll.month).padStart(2, '0')}-${new Date(payroll.year, payroll.month, 0).getDate()}T23:59:59.999Z`);
     
-    console.log('🔍 PAYSLIP DOWNLOAD API - Date range:', { 
-      startDate: startDate.toISOString(), 
-      endDate: endDate.toISOString(), 
-      employeeId: payroll.employeeId,
-      payrollMonth: payroll.month,
-      payrollYear: payroll.year
-    });
-
+    // Use month-based filtering to avoid timezone issues
     const attendanceData = await db
       .select({
-        id: timesheets.id,
         date: timesheets.date,
-        status: timesheets.status,
         hoursWorked: timesheets.hoursWorked,
         overtimeHours: timesheets.overtimeHours,
+        status: timesheets.status,
       })
       .from(timesheets)
       .where(
         and(
           eq(timesheets.employeeId, payroll.employeeId),
-          gte(timesheets.date, startDate),
-          lte(timesheets.date, endDate)
+          // Use raw SQL for month filtering to avoid timezone conversion
+          sql`EXTRACT(YEAR FROM timesheets.date) = ${payroll.year}`,
+          sql`EXTRACT(MONTH FROM timesheets.date) = ${payroll.month}`
         )
       )
       .orderBy(asc(timesheets.date));
     
     console.log('🔍 PAYSLIP DOWNLOAD API - Attendance records found:', attendanceData.length);
+    console.log('🔍 PAYSLIP DOWNLOAD API - Month filter applied:', { year: payroll.year, month: payroll.month });
+    console.log('🔍 PAYSLIP DOWNLOAD API - Sample attendance data:', attendanceData.slice(0, 3).map(a => ({
+      date: a.date,
+      dateStr: a.date ? String(a.date).split('T')[0] : '',
+      day: a.date ? new Date(String(a.date).split('T')[0]).getDate() : 0,
+      hours: a.hoursWorked,
+      overtime: a.overtimeHours,
+      status: a.status
+    })));
 
     // Transform attendance data
     const transformedAttendanceData = attendanceData.map(attendance => ({
-      date: attendance.date.toISOString().split('T')[0],
-      day: attendance.date.getDate(),
+      // Use the date directly without timezone conversion to avoid -1 day issue
+      date: attendance.date ? String(attendance.date).split('T')[0] : '',
+      day: attendance.date ? new Date(String(attendance.date).split('T')[0]).getDate() : 0,
       status: attendance.status,
       hours: Number(attendance.hoursWorked) || 0,
       overtime: Number(attendance.overtimeHours) || 0

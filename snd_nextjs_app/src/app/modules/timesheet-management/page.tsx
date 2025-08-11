@@ -523,6 +523,8 @@ export default function TimesheetManagementPage() {
 
   const executeBulkAction = async () => {
     if (!bulkActionDialog.action || selectedTimesheets.size === 0) return;
+    
+
 
     setBulkActionLoading(true);
     try {
@@ -1130,19 +1132,21 @@ export default function TimesheetManagementPage() {
               />
             </div>
 
+
+
             {/* Approval Workflow Information */}
             {bulkActionDialog.action === 'approve' && (
               <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex items-center space-x-2 text-blue-800 mb-3">
                   <AlertCircle className="h-4 w-4" />
-                  <span className="font-medium">{t('approval_workflow')}</span>
+                  <span className="font-medium">{t('automatic_approval_workflow')}</span>
                 </div>
                 <div className="text-sm text-blue-700 space-y-2">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="font-medium">{t('current_status_next_stage')}</p>
                       <div className="space-y-1 mt-1">
-                        <p>• {t('draft')} → {t('submit_for_approval')}</p>
+                        <p>• {t('draft')} → {t('foreman_approval')}</p>
                         <p>• {t('submitted')} → {t('foreman_approval')}</p>
                         <p>• {t('foreman_approved')} → {t('incharge_approval')}</p>
                         <p>• {t('incharge_approved')} → {t('checking_approval')}</p>
@@ -1150,13 +1154,11 @@ export default function TimesheetManagementPage() {
                       </div>
                     </div>
                     <div>
-                      <p className="font-medium">{t('required_roles')}</p>
+                      <p className="font-medium">{t('system_behavior')}</p>
                       <div className="space-y-1 mt-1">
-                        <p>• {t('submit_draft')}: ADMIN, MANAGER</p>
-                        <p>• {t('foreman')}: FOREMAN, MANAGER, ADMIN</p>
-                        <p>• {t('incharge')}: INCHARGE, MANAGER, ADMIN</p>
-                        <p>• {t('checking')}: CHECKING, MANAGER, ADMIN</p>
-                        <p>• {t('manager')}: MANAGER, ADMIN</p>
+                        <p>• {t('automatically_determines_next_stage')}</p>
+                        <p>• {t('moves_to_next_approval_level')}</p>
+                        <p>• {t('no_manual_stage_selection_needed')}</p>
                       </div>
                     </div>
                   </div>
@@ -1173,7 +1175,7 @@ export default function TimesheetManagementPage() {
                 <p>• {selectedTimesheets.size} {t('timesheet_selected', { count: selectedTimesheets.size })}</p>
                 <p>• {t('action')}: {bulkActionDialog.action === 'approve' ? t('approve') : t('reject')}</p>
                 {bulkActionDialog.action === 'approve' && (
-                  <p>• {t('next_approval_stage')}: {getNextApprovalStage('pending')}</p>
+                  <p>• {t('approval_workflow')}: {t('automatic_stage_determination')}</p>
                 )}
                 <p>• {t('employees')}:</p>
                 <ul className="ml-4 space-y-1">

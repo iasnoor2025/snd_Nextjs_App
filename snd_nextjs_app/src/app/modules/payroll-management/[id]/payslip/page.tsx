@@ -865,13 +865,32 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   
   if (attendanceData && Array.isArray(attendanceData)) {
     attendanceData.forEach(day => {
-      attendanceMap.set(day.date, day);
+      // Extract just the date part (YYYY-MM-DD) from the API response
+      // Handle both "2025-07-01 00:00:00" and "2025-07-01T00:00:00.000Z" formats
+      let dateKey = '';
+      if (day.date) {
+        const dateString = String(day.date);
+        if (dateString.includes(' ')) {
+          // Format: "2025-07-01 00:00:00"
+          dateKey = dateString.split(' ')[0];
+        } else if (dateString.includes('T')) {
+          // Format: "2025-07-01T00:00:00.000Z"
+          dateKey = dateString.split('T')[0];
+        } else {
+          // Format: "2025-07-01"
+          dateKey = dateString;
+        }
+      }
+      
+      if (dateKey) {
+        attendanceMap.set(dateKey, day);
+        console.log(`🔍 PAYSLIP DEBUG - Added to attendanceMap: ${dateKey} ->`, day);
+      }
     });
   }
   
-
-  
-
+  console.log('🔍 PAYSLIP DEBUG - Final attendanceMap size:', attendanceMap.size);
+  console.log('🔍 PAYSLIP DEBUG - AttendanceMap keys:', Array.from(attendanceMap.keys()));
 
   // Calculate totals for salary details - Convert Decimal to numbers
   const totalAllowances = (Number(employee.food_allowance) || 0) + (Number(employee.housing_allowance) || 0) + (Number(employee.transport_allowance) || 0);
@@ -1083,10 +1102,10 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                   <tbody>
                     <tr>
                       {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
-                        const date = new Date(`${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`);
-                        const dateString = date.toISOString().split('T')[0];
+                        // Create date string in YYYY-MM-DD format without timezone conversion
+                        const dateString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                         const dayData = attendanceMap.get(dateString);
-                        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                        const dayName = new Date(payroll.year, payroll.month - 1, day).toLocaleDateString('en-US', { weekday: 'short' });
                         const isFriday = dayName === 'Fri';
                         
                         // Determine if absent - check if no timesheet entry exists or if hours are 0
@@ -1097,24 +1116,22 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                         let cellClass = 'bg-white';
                         
                         // Priority: Regular hours > Friday > Absent
-                        // Use original data as-is
-                        if (dayData && Number(dayData.hours) > 0) {
-                          displayValue = dayData.hours.toString();
-                          cellClass = 'text-green-700 font-semibold';
-                        } else if (isFriday && (!dayData || Number(dayData.hours) === 0)) {
+                        if (dayData && (Number(dayData.hours) > 0 || Number(dayData.overtime) > 0)) {
+                          // Has hours worked
+                          displayValue = `${Number(dayData.hours) || 0}`;
+                          cellClass = 'bg-green-100 text-green-600';
+                        } else if (isFriday) {
+                          // Friday with no hours
                           displayValue = 'F';
-                          cellClass = 'bg-blue-100';
+                          cellClass = 'bg-blue-100 text-blue-600';
                         } else if (isAbsent) {
+                          // Absent (not Friday)
                           displayValue = 'A';
-                          cellClass = 'bg-red-100 text-red-700 font-semibold';
+                          cellClass = 'bg-red-100 text-red-600';
                         }
                         
-
-                        
-
-                        
                         return (
-                          <td key={`regular-${day}`} className={`p-1 text-center text-xs border border-gray-200 ${cellClass}`}>
+                          <td key={`attendance-${day}`} className={`border p-1 text-xs text-center ${cellClass}`}>
                             {displayValue}
                           </td>
                         );
@@ -1122,38 +1139,22 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                     </tr>
                     <tr>
                       {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
-                        const date = new Date(`${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`);
-                        const dateString = date.toISOString().split('T')[0];
+                        // Create date string in YYYY-MM-DD format without timezone conversion
+                        const dateString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                         const dayData = attendanceMap.get(dateString);
-                        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-                        const isFriday = dayName === 'Fri';
                         
-                        // Determine if absent - check if no timesheet entry exists or if hours are 0
-                        const isAbsent = !dayData || (Number(dayData.hours) === 0 && Number(dayData.overtime) === 0);
-                        
-                        // Get overtime display value
-                        let overtimeValue = '-';
+                        // Show overtime hours or dash
+                        let displayValue = '-';
                         let cellClass = 'bg-white';
                         
-                        // Priority: Regular hours > Friday > Absent
-                        // Use original data as-is
-                        if (dayData && Number(dayData.hours) > 0) {
-                          const overtime = Number(dayData.overtime) || 0;
-                          if (overtime > 0) {
-                            overtimeValue = overtime.toString();
-                            cellClass = 'text-blue-700 font-semibold';
-                          } else {
-                            overtimeValue = '0';
-                          }
-                        } else if (isFriday && (!dayData || Number(dayData.hours) === 0)) {
-                          cellClass = 'bg-blue-100';
-                        } else if (isAbsent) {
-                          cellClass = 'bg-red-100';
+                        if (dayData && Number(dayData.overtime) > 0) {
+                          displayValue = `${Number(dayData.overtime)}`;
+                          cellClass = 'bg-orange-100 text-orange-600';
                         }
                         
                         return (
-                          <td key={`overtime-${day}`} className={`p-1 text-center text-xs border border-gray-200 ${cellClass}`}>
-                            {overtimeValue}
+                          <td key={`overtime-${day}`} className={`border p-1 text-xs text-center ${cellClass}`}>
+                            {displayValue}
                           </td>
                         );
                       })}

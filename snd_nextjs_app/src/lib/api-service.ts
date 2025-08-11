@@ -879,6 +879,20 @@ export class ApiService {
     });
   }
 
+  static async clearAllNotifications() {
+    return this.delete('/notifications/clear-all', {
+      toastMessage: 'All notifications cleared',
+      errorMessage: 'Failed to clear notifications',
+    });
+  }
+
+  static async deleteNotification(id: string) {
+    return this.delete(`/notifications/${id}`, {
+      toastMessage: 'Notification deleted',
+      errorMessage: 'Failed to delete notification',
+    });
+  }
+
   // ========================================
   // UTILITY METHODS
   // ========================================

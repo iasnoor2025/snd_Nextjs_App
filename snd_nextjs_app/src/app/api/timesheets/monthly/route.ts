@@ -1,16 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { timesheets, employees, users, projects as projectsTable, rentals, employeeAssignments } from '@/lib/drizzle/schema';
-import { and, eq, gte, lte, isNull, asc } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { and, eq, gte, lte, isNull, asc, sql } from 'drizzle-orm';
+import { withAuth } from '@/lib/rbac/api-middleware';
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
 
     const { searchParams } = new URL(request.url);
     const month = searchParams.get('month') || new Date().toISOString().slice(0, 7); // YYYY-MM format
@@ -23,34 +18,19 @@ export async function GET(request: NextRequest) {
     }
 
     const startDate = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-    // Fix: Use the next month's day 0 to get the last day of current month
     const endDate = new Date(parseInt(year), parseInt(monthNum), 0, 23, 59, 59, 999);
-    
-    console.log('Date range debug:', {
-      year,
-      monthNum,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString(),
-      startDateLocal: startDate.toLocaleDateString(),
-      endDateLocal: endDate.toLocaleDateString()
-    });
 
-    // Build query
+    // Build query using date range filtering instead of EXTRACT
     const whereConditions: any[] = [
       gte(timesheets.date, startDate.toISOString()),
       lte(timesheets.date, endDate.toISOString()),
-      isNull(timesheets.deletedAt)
     ];
 
     // If employeeId is provided, filter by employee
     if (employeeId) {
-      console.log('Filtering by employee ID:', employeeId, 'Type:', typeof employeeId);
       // Convert to number if it's a string, since database expects number
       const empId = typeof employeeId === 'string' ? parseInt(employeeId) : employeeId;
       whereConditions.push(eq(timesheets.employeeId, empId));
-      console.log('Converted employee ID for database:', empId);
-    } else {
-      console.log('No employee filter applied - showing all employees');
     }
 
     // Get timesheets for the month
@@ -71,10 +51,10 @@ export async function GET(request: NextRequest) {
           id: employees.id,
           firstName: employees.firstName,
           lastName: employees.lastName,
-          employeeId: employees.employeeId,
+          fileNumber: employees.fileNumber,
           user: {
-            name: users.name as string,
-            email: users.email as string,
+            name: users.name as any,
+            email: users.email as any,
           },
         },
         project: {
@@ -98,33 +78,15 @@ export async function GET(request: NextRequest) {
       .leftJoin(rentals, eq(timesheets.rentalId, rentals.id))
       .leftJoin(employeeAssignments, eq(timesheets.assignmentId, employeeAssignments.id))
       .where(and(...whereConditions))
-      .orderBy(asc(timesheets.date));
+      .orderBy(asc(timesheets.date)) as any[];
 
-    console.log('API Debug - Query params:', { month, employeeId, startDate, endDate });
-    console.log('API Debug - Found timesheets:', timesheetsData.length);
-    console.log('API Debug - Employee IDs in results:', Array.from(new Set(timesheetsData.map(t => t.employeeId))));
-    console.log('API Debug - First few timesheets:', timesheetsData.slice(0, 3).map(t => ({
-      id: t.id,
-      date: t.date,
-      dateStr: new Date(t.date as string).toISOString().split('T')[0],
-      hoursWorked: t.hoursWorked,
-      hoursWorkedType: typeof t.hoursWorked,
-      overtimeHours: t.overtimeHours,
-      overtimeHoursType: typeof t.overtimeHours,
-      employee: t.employee.firstName + ' ' + t.employee.lastName,
-      employeeId: t.employeeId
-    })));
+
 
     // Create calendar data
     const calendar: { [key: string]: any } = {};
     const daysInMonth = new Date(parseInt(year), parseInt(monthNum), 0).getDate();
     
-    console.log('Calendar debug:', {
-      year,
-      monthNum,
-      daysInMonth,
-      lastDayOfMonth: new Date(parseInt(year), parseInt(monthNum), 0).toISOString().split('T')[0]
-    });
+
 
     // Fill all days in the month with default values
     for (let day = 1; day <= daysInMonth; day++) {
@@ -145,8 +107,23 @@ export async function GET(request: NextRequest) {
 
     // Fill with actual timesheet data
     timesheetsData.forEach(timesheet => {
-      const dateStr = new Date(timesheet.date as string).toISOString().split('T')[0];
-      console.log('Processing timesheet for date:', dateStr, 'Calendar has this date:', !!calendar[dateStr]);
+      // Extract just the date part from the timesheet date string
+      let dateStr = '';
+      if (timesheet.date) {
+        const dateString = String(timesheet.date);
+        // Handle both '2025-08-01 00:00:00' and '2025-08-01T00:00:00.000Z' formats
+        if (dateString.includes(' ')) {
+          // Format: '2025-08-01 00:00:00'
+          dateStr = dateString.split(' ')[0];
+        } else if (dateString.includes('T')) {
+          // Format: '2025-08-01T00:00:00.000Z'
+          dateStr = dateString.split('T')[0];
+        } else {
+          // Format: '2025-08-01'
+          dateStr = dateString;
+        }
+      }
+      
       if (calendar[dateStr]) {
         const regularHours = typeof timesheet.hoursWorked === 'string' ? parseFloat(timesheet.hoursWorked) : Number(timesheet.hoursWorked) || 0;
         const overtimeHours = typeof timesheet.overtimeHours === 'string' ? parseFloat(timesheet.overtimeHours) : Number(timesheet.overtimeHours) || 0;
@@ -168,7 +145,7 @@ export async function GET(request: NextRequest) {
             id: timesheet.employee.id.toString(),
             firstName: timesheet.employee.firstName,
             lastName: timesheet.employee.lastName,
-            employeeId: timesheet.employee.employeeId,
+            fileNumber: timesheet.employee.fileNumber,
             user: timesheet.employee.user ? {
               name: timesheet.employee.user.name,
               email: timesheet.employee.user.email,
@@ -203,19 +180,7 @@ export async function GET(request: NextRequest) {
     const totalHours = totalRegularHours + totalOvertimeHours;
     const totalDays = timesheetsData.length;
 
-    console.log('API Summary calculation:', {
-      totalRegularHours,
-      totalOvertimeHours,
-      totalHours,
-      totalDays,
-      timesheetCount: timesheetsData.length,
-      sampleTimesheet: timesheetsData.length > 0 ? {
-        hoursWorked: timesheetsData[0].hoursWorked,
-        hoursWorkedType: typeof timesheetsData[0].hoursWorked,
-        overtimeHours: timesheetsData[0].overtimeHours,
-        overtimeHoursType: typeof timesheetsData[0].overtimeHours,
-      } : null
-    });
+
 
     // Group by projects
     const projectsSummary = timesheetsData.reduce((acc, timesheet) => {
@@ -247,10 +212,11 @@ export async function GET(request: NextRequest) {
       totalHours: Number(totalHours) || 0,
       totalDays: Number(totalDays) || 0,
       projects: Object.values(projectsSummary),
-      month: new Date(startDate).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      // Use the month parameters directly to avoid timezone issues
+      month: new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
     };
 
-    console.log('API Debug - Final summary:', summary);
+
 
     return NextResponse.json({
       calendar,
@@ -267,4 +233,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

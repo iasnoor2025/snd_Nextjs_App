@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { payrolls, payrollItems, employees, timesheets } from '@/lib/drizzle/schema';
-import { and, asc, desc, eq, gte, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, lte, sql } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
@@ -102,7 +102,8 @@ export async function GET(
         const overtimeHours = regularHours > 0 && Math.random() > 0.9 ? Math.floor(Math.random() * 3) + 1 : 0;
         
         sampleAttendanceData.push({
-          date: date.toISOString().split('T')[0],
+          // Use local date string to avoid timezone issues
+          date: date.toLocaleDateString('en-CA'), // YYYY-MM-DD format
           day: day,
           status: regularHours > 0 ? 'present' : (isFriday ? 'weekend' : 'absent'),
           hours: regularHours,
@@ -132,18 +133,8 @@ export async function GET(
 
     // Get attendance data for the payroll month
     console.log('🔍 PAYSLIP API - Fetching attendance data...');
-    // Use exact payroll month without adjustments
-    const startDate = new Date(`${payroll.year}-${String(payroll.month).padStart(2, '0')}-01T00:00:00.000Z`); // First day of the month
-    const endDate = new Date(`${payroll.year}-${String(payroll.month).padStart(2, '0')}-${new Date(payroll.year, payroll.month, 0).getDate()}T23:59:59.999Z`); // Last day of the month
     
-    console.log('🔍 PAYSLIP API - Date range:', { 
-      startDate: startDate.toISOString(), 
-      endDate: endDate.toISOString(), 
-      employeeId: payroll.employee_id,
-      payrollMonth: payroll.month,
-      payrollYear: payroll.year
-    });
-
+    // Use month-based filtering to avoid timezone issues
     const attendanceData = await db
       .select({
         date: timesheets.date,
@@ -155,16 +146,19 @@ export async function GET(
       .where(
         and(
           eq(timesheets.employeeId, payroll.employeeId),
-          gte(timesheets.date, startDate.toISOString()),
-          lte(timesheets.date, endDate.toISOString())
+          // Use raw SQL for month filtering to avoid timezone conversion
+          sql`EXTRACT(YEAR FROM timesheets.date) = ${payroll.year}`,
+          sql`EXTRACT(MONTH FROM timesheets.date) = ${payroll.month}`
         )
       )
       .orderBy(asc(timesheets.date));
     
     console.log('🔍 PAYSLIP API - Attendance records found:', attendanceData.length);
+    console.log('🔍 PAYSLIP API - Month filter applied:', { year: payroll.year, month: payroll.month });
     console.log('🔍 PAYSLIP API - All attendance data:', attendanceData.map(a => ({
-      date: new Date(a.date as unknown as string).toISOString().split('T')[0],
-      day: new Date(a.date as unknown as string).getDate(),
+      date: a.date,
+      dateStr: a.date ? String(a.date).split('T')[0] : '',
+      day: a.date ? new Date(String(a.date).split('T')[0]).getDate() : 0,
       hours: a.hours_worked,
       overtime: a.overtime_hours,
       status: a.status
@@ -172,8 +166,9 @@ export async function GET(
 
     // Transform attendance data - Convert Decimal to numbers
     const transformedAttendanceData = attendanceData.map(attendance => ({
-      date: new Date(attendance.date as unknown as string).toISOString().split('T')[0],
-      day: new Date(attendance.date as unknown as string).getDate(),
+      // Use the date directly without timezone conversion to avoid -1 day issue
+      date: attendance.date ? String(attendance.date).split('T')[0] : '',
+      day: attendance.date ? new Date(String(attendance.date).split('T')[0]).getDate() : 0,
       status: attendance.status as string,
       hours: Number(attendance.hours_worked) || 0,
       overtime: Number(attendance.overtime_hours) || 0

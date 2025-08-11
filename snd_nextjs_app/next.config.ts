@@ -10,6 +10,19 @@ const nextConfig: NextConfig = {
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
+      // Add fallbacks for Node.js modules that might be imported
+      dns: false,
+      net: false,
+      tls: false,
+      crypto: false,
+      stream: false,
+      url: false,
+      zlib: false,
+      http: false,
+      https: false,
+      assert: false,
+      os: false,
+      path: false,
     };
     
     // Optimized webpack configuration for better performance

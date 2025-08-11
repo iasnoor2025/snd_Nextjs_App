@@ -5,10 +5,10 @@ import { eq } from 'drizzle-orm';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: payrollId } = params;
+    const { id: payrollId } = await params;
     const id = parseInt(payrollId);
 
     if (isNaN(id)) {
