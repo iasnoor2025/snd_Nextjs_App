@@ -296,11 +296,11 @@ export async function POST(
            rentalNumber: rentals.rentalNumber,
            customer: {
              id: customers.id,
-             name: customers.name as any,
+             name: customers.name,
              email: customers.email,
              phone: customers.phone
            }
-         },
+         } as any,
          project: {
            id: projects.id,
            name: projects.name,
@@ -325,7 +325,7 @@ export async function POST(
        .limit(1);
 
     // If this is a manual assignment with an employee, also create an employee assignment
-    let employeeAssignment = null;
+    let employeeAssignment: any = null;
     if (assignment_type === 'manual' && employee_id) {
       try {
         employeeAssignment = await db.insert(employeeAssignments).values({

@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Public search params:', { limit, page, status, leaveType, search });
 
     // Build where conditions
-    let whereConditions = [];
+    let whereConditions: any[] = [];
     
     if (status && status !== 'all') {
       whereConditions.push(eq(employeeLeaves.status, status));
@@ -92,9 +92,9 @@ export async function GET(request: NextRequest) {
       status: leave.status,
       reason: leave.reason,
       employee: {
-        id: leave.employee.id,
-        name: `${leave.employee.firstName} ${leave.employee.lastName}`,
-        employee_id: leave.employee.fileNumber,
+        id: leave.employee?.id || 0,
+        name: leave.employee ? `${leave.employee.firstName} ${leave.employee.lastName}` : 'Unknown Employee',
+        employee_id: leave.employee?.fileNumber || 'Unknown',
       },
       created_at: leave.createdAt,
       updated_at: leave.updatedAt,

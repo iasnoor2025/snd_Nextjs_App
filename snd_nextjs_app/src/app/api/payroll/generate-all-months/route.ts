@@ -72,8 +72,8 @@ export async function POST(request: NextRequest) {
               and(
                 eq(timesheets.employeeId, employee.id),
                 eq(timesheets.status, 'manager_approved'),
-                gte(timesheets.date, new Date(year, month - 1, 1)),
-                lt(timesheets.date, new Date(year, month, 1))
+                gte(timesheets.date, new Date(year, month - 1, 1).toISOString()),
+                lt(timesheets.date, new Date(year, month, 1).toISOString())
               )
             );
 

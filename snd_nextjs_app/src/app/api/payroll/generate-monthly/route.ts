@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { employees, timesheets, payrolls, payrollItems, payrollRuns } from '@/lib/drizzle/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, gte, lt } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
@@ -117,8 +117,8 @@ export async function POST(request: NextRequest) {
           .where(
             and(
               eq(timesheets.employeeId, employee.id),
-              eq(timesheets.month, monthNum),
-              eq(timesheets.year, yearNum)
+              gte(timesheets.date, new Date(yearNum, monthNum - 1, 1).toISOString()),
+              lt(timesheets.date, new Date(yearNum, monthNum, 1).toISOString())
             )
           );
 

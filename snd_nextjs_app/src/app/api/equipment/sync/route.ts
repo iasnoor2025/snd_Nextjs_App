@@ -133,9 +133,10 @@ export async function POST(request: NextRequest) {
           modelNumber: '', // Not available in API response
           serialNumber: '', // Not available in API response
           erpnextId: erpEquipmentItem.item_code,
-          dailyRate: erpEquipmentItem.standard_rate ? parseFloat(erpEquipmentItem.standard_rate) : null,
+          dailyRate: erpEquipmentItem.standard_rate ? String(parseFloat(erpEquipmentItem.standard_rate)) : null,
           status: 'available',
           isActive: true,
+          updatedAt: new Date().toISOString(),
         };
 
         if (existingEquipment) {

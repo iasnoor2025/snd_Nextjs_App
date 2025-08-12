@@ -153,14 +153,14 @@ export async function GET(
     // Transform employee data
     const transformedEmployee = {
       ...payroll.employee,
-      basic_salary: Number(payroll.employee.basicSalary || 0),
-      food_allowance: Number(payroll.employee.foodAllowance || 0),
-      housing_allowance: Number(payroll.employee.housingAllowance || 0),
-      transport_allowance: Number(payroll.employee.transportAllowance || 0),
-      overtime_rate_multiplier: Number(payroll.employee.overtimeRateMultiplier || 1.5),
-      overtime_fixed_rate: Number(payroll.employee.overtimeFixedRate || 0),
-      contract_days_per_month: Number(payroll.employee.contractDaysPerMonth || 26),
-      contract_hours_per_day: Number(payroll.employee.contractHoursPerDay || 8)
+      basic_salary: Number(payroll.employee?.basicSalary || 0),
+      food_allowance: Number(payroll.employee?.foodAllowance || 0),
+      housing_allowance: Number(payroll.employee?.housingAllowance || 0),
+      transport_allowance: Number(payroll.employee?.transportAllowance || 0),
+      overtime_rate_multiplier: Number(payroll.employee?.overtimeRateMultiplier || 1.5),
+      overtime_fixed_rate: Number(payroll.employee?.overtimeFixedRate || 0),
+              contract_days_per_month: Number(payroll.employee?.contractDaysPerMonth || 26),
+        contract_hours_per_day: Number(payroll.employee?.contractHoursPerDay || 8)
     };
 
     // Company data

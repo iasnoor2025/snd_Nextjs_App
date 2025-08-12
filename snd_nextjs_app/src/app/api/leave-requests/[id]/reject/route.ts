@@ -66,7 +66,7 @@ export async function PUT(
       .update(employeeLeaves)
       .set({
         status: 'rejected',
-        rejectedAt: new Date(),
+        rejectedAt: new Date().toISOString(),
         rejectedBy: parseInt(session.user.id),
         rejectionReason: body.rejection_reason || 'Rejected by manager'
       })

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { equipmentRentalHistory, rentals, customers, projects, employees, employeeAssignments } from '@/lib/drizzle/schema';
-import { eq, and, like, contains } from 'drizzle-orm';
+import { equipmentRentalHistory, rentals, customers, projects, employees, employeeAssignments, equipment } from '@/lib/drizzle/schema';
+import { eq, and, like } from 'drizzle-orm';
 
 export async function PUT(
   request: NextRequest,
@@ -46,6 +46,12 @@ export async function PUT(
       );
     }
 
+    const currentAssignment = existingAssignment[0];
+    const previousEmployeeId = currentAssignment.employeeId;
+    const previousAssignmentType = currentAssignment.assignmentType;
+    const newEmployeeId = employee_id ? parseInt(employee_id) : currentAssignment.employeeId;
+    const newAssignmentType = assignment_type || currentAssignment.assignmentType;
+
     // Prepare update data
     const updateData: any = {};
     
@@ -65,6 +71,67 @@ export async function PUT(
       .update(equipmentRentalHistory)
       .set(updateData)
       .where(eq(equipmentRentalHistory.id, assignmentId));
+
+    // Handle employee assignment synchronization
+    let employeeAssignment: any = null;
+    
+    // Check if we need to handle employee assignment changes
+    const employeeAssignmentChanged = 
+      previousEmployeeId !== newEmployeeId || 
+      previousAssignmentType !== newAssignmentType;
+
+    if (employeeAssignmentChanged) {
+      try {
+        // If there was a previous manual assignment with an employee, end it
+        if (previousAssignmentType === 'manual' && previousEmployeeId) {
+          await db
+            .update(employeeAssignments)
+            .set({
+              status: 'inactive',
+              endDate: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            })
+            .where(and(
+              eq(employeeAssignments.employeeId, previousEmployeeId),
+              eq(employeeAssignments.notes, `Manual equipment assignment: ${currentAssignment.notes || 'No additional notes'}`),
+              eq(employeeAssignments.status, 'active')
+            ));
+          
+          console.log(`Ended previous employee assignment for employee ${previousEmployeeId}`);
+        }
+
+        // If this is now a manual assignment with an employee, create a new employee assignment
+        if (newAssignmentType === 'manual' && newEmployeeId) {
+          // Get equipment name for the assignment
+          const equipmentData = await db
+            .select({ name: equipment.name })
+            .from(equipment)
+            .where(eq(equipment.id, currentAssignment.equipmentId))
+            .limit(1);
+
+          const equipmentName = equipmentData[0]?.name || 'Unknown Equipment';
+
+          employeeAssignment = await db.insert(employeeAssignments).values({
+            employeeId: newEmployeeId,
+            name: `Equipment Assignment - ${equipmentName}`,
+            type: 'manual',
+            location: body.location || null,
+            startDate: start_date ? new Date(start_date).toISOString() : currentAssignment.startDate,
+            endDate: end_date ? new Date(end_date).toISOString() : currentAssignment.endDate,
+            status: status || currentAssignment.status,
+            notes: `Manual equipment assignment: ${notes || currentAssignment.notes || 'No additional notes'}`,
+            projectId: null,
+            rentalId: null,
+            updatedAt: new Date().toISOString()
+          }).returning();
+
+          console.log('Employee assignment created/updated automatically:', employeeAssignment);
+        }
+      } catch (assignmentError) {
+        console.error('Error syncing employee assignment:', assignmentError);
+        // Don't fail the equipment assignment update if employee assignment sync fails
+      }
+    }
 
     // Fetch the updated assignment with related data
     const updatedAssignment = await db
@@ -92,7 +159,7 @@ export async function PUT(
             email: customers.email,
             phone: customers.phone
           }
-        },
+        } as any,
         project: {
           id: projects.id,
           name: projects.name,
@@ -119,7 +186,8 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       data: updatedAssignment[0],
-      message: 'Equipment assignment updated successfully'
+      employeeAssignment: employeeAssignment?.[0] || null,
+      message: 'Equipment assignment updated successfully' + (employeeAssignment ? ' and employee assignment synced automatically' : '')
     });
   } catch (error) {
     console.error('Error updating equipment assignment:', error);
@@ -160,7 +228,7 @@ export async function DELETE(
     }
 
     // If this is a manual assignment with an employee, also delete the corresponding employee assignment
-    let deletedEmployeeAssignment = null;
+    let deletedEmployeeAssignment: any = null;
     if (existingAssignment[0].assignmentType === 'manual' && existingAssignment[0].employeeId) {
       try {
         // Find and delete the corresponding employee assignment

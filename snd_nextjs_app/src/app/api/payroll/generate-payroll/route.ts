@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { employees, timesheets, payrolls, payrollItems, payrollRuns } from '@/lib/drizzle/schema';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, sql } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     // Test basic connection first
     try {
       // Test connection by running a simple query
-      await db.select({ count: 1 }).from(employees).limit(1);
+      await db.select({ count: sql`1` }).from(employees).limit(1);
       console.log('✅ Database connection successful');
     } catch (connectionError) {
       console.error('❌ Database connection failed:', connectionError);

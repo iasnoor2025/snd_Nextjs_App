@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { payrolls, employees, payrollItems } from '@/lib/drizzle/schema';
-import { eq, gt, and } from 'drizzle-orm';
+import { eq, gt, and, sql } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     // Test basic connection first
     try {
       // Test connection with a simple query
-      await db.select({ count: 1 }).from(employees).limit(1);
+      await db.select({ count: sql`1` }).from(employees).limit(1);
       console.log('✅ Database connection successful');
     } catch (connectionError) {
       console.error('❌ Database connection failed:', connectionError);
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       .leftJoin(employees, eq(payrolls.employeeId, employees.id))
       .where(
         and(
-          gt(payrolls.overtimeHours, 0),
+          gt(payrolls.overtimeHours, '0'),
           eq(payrolls.overtimeAmount, '0')
         )
       );
@@ -61,6 +61,11 @@ export async function POST(request: NextRequest) {
 
     for (const payroll of payrollsToUpdateData) {
       try {
+        if (!payroll.employee) {
+          console.log(`Skipping payroll ${payroll.id} - no employee data`);
+          continue;
+        }
+
         console.log(`Updating payroll for ${payroll.employee.firstName} ${payroll.employee.lastName} - ${payroll.month}/${payroll.year}`);
         
         // Calculate overtime amount based on employee's overtime settings

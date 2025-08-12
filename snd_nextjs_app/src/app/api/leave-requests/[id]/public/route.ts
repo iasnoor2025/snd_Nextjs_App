@@ -37,10 +37,10 @@ export async function GET(
           phone: employees.phone,
           department: {
             name: departments.name,
-          },
+          } as any,
           designation: {
             name: designations.name,
-          },
+          } as any,
         },
       })
       .from(employeeLeaves)
@@ -60,8 +60,8 @@ export async function GET(
 
     const transformedLeaveRequest = {
       id: leaveRequest.id.toString(),
-      employee_name: `${leaveRequest.employee.firstName} ${leaveRequest.employee.lastName}`,
-      employee_id: leaveRequest.employee.fileNumber,
+      employee_name: leaveRequest.employee ? `${leaveRequest.employee.firstName} ${leaveRequest.employee.lastName}` : 'Unknown Employee',
+      employee_id: leaveRequest.employee?.fileNumber || 'Unknown',
       leave_type: leaveRequest.leaveType,
       start_date: leaveRequest.startDate.split('T')[0],
       end_date: leaveRequest.endDate.split('T')[0],
@@ -77,8 +77,8 @@ export async function GET(
       comments: null,
       created_at: leaveRequest.createdAt,
       updated_at: leaveRequest.updatedAt,
-      department: leaveRequest.employee.department?.name,
-      position: leaveRequest.employee.designation?.name,
+      department: leaveRequest.employee?.department?.name || 'Unknown',
+      position: leaveRequest.employee?.designation?.name || 'Unknown',
       total_leave_balance: null,
       leave_taken_this_year: null,
       attachments: [],
@@ -88,7 +88,7 @@ export async function GET(
           action: leaveRequest.status === 'pending' ? 'Submitted' : 
                   leaveRequest.status === 'approved' ? 'Approved' : 
                   leaveRequest.status === 'rejected' ? 'Rejected' : 'Submitted',
-          approver: leaveRequest.employee.firstName + ' ' + leaveRequest.employee.lastName,
+          approver: leaveRequest.employee ? (leaveRequest.employee.firstName + ' ' + leaveRequest.employee.lastName) : 'Unknown Employee',
           date: leaveRequest.createdAt,
           comments: leaveRequest.status === 'pending' ? 'Leave request submitted for approval' :
                    leaveRequest.status === 'approved' ? 'Leave request approved' :

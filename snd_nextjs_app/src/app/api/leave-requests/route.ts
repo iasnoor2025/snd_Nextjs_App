@@ -78,13 +78,13 @@ export async function POST(request: NextRequest) {
       .values({
         employeeId: parseInt(employee_id),
         leaveType: leave_type,
-        startDate: startDate,
-        endDate: endDate,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
         days: parseInt(days),
         reason: reason || null,
         status: 'pending',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .returning();
 

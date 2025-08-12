@@ -69,7 +69,7 @@ export async function PUT(
       .update(employeeLeaves)
       .set({
         status: 'approved',
-        approvedAt: new Date(),
+        approvedAt: new Date().toISOString(),
         approvedBy: parseInt(session.user.id)
       })
       .where(eq(employeeLeaves.id, parseInt(id)));

@@ -70,7 +70,7 @@ export async function PUT(
       // Task specific fields
       title: body.title,
       priority: body.priority,
-      dueDate: body.due_date ? new Date(body.due_date) : null,
+      dueDate: body.due_date ? new Date(body.due_date).toISOString() : null,
       completionPercentage: body.completion_percentage ? parseInt(body.completion_percentage) : null,
       assignedToId: body.assigned_to_id ? parseInt(body.assigned_to_id) : null,
     };
@@ -80,6 +80,8 @@ export async function PUT(
       .update(projectResources)
       .set({
         ...resourceData,
+        date: resourceData.date ? new Date(resourceData.date).toISOString() : null,
+        dueDate: resourceData.dueDate ? new Date(resourceData.dueDate).toISOString() : null,
         updatedAt: new Date().toISOString()
       })
       .where(

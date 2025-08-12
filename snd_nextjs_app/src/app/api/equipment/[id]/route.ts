@@ -131,49 +131,36 @@ export async function PUT(
     const body = await request.json();
 
     // Check if equipment exists
-    const existingEquipment = await prisma.equipment.findUnique({
-      where: { id }
-    });
+    const existingEquipment = await db
+      .select()
+      .from(equipment)
+      .where(eq(equipment.id, id))
+      .limit(1);
 
-    if (!existingEquipment) {
+    if (!existingEquipment.length) {
       return NextResponse.json(
         { success: false, error: 'Equipment not found' },
-        { status: 404 }
+        { status: 400 }
       );
     }
 
     // Update equipment
-    const updatedEquipment = await prisma.equipment.update({
-      where: { id },
-      data: {
+    const [updatedEquipment] = await db
+      .update(equipment)
+      .set({
         name: body.name,
         description: body.description,
         manufacturer: body.manufacturer,
-        model_number: body.model_number,
-        serial_number: body.serial_number,
+        modelNumber: body.model_number,
+        serialNumber: body.serial_number,
         status: body.status,
-        daily_rate: body.daily_rate ? parseFloat(body.daily_rate) : null,
-        weekly_rate: body.weekly_rate ? parseFloat(body.weekly_rate) : null,
-        monthly_rate: body.monthly_rate ? parseFloat(body.monthly_rate) : null,
-        updated_at: new Date()
-      },
-      select: {
-        id: true,
-        name: true,
-        model_number: true,
-        status: true,
-        category_id: true,
-        manufacturer: true,
-        daily_rate: true,
-        weekly_rate: true,
-        monthly_rate: true,
-        erpnext_id: true,
-        serial_number: true,
-        description: true,
-        created_at: true,
-        updated_at: true
-      }
-    });
+        dailyRate: body.daily_rate ? String(parseFloat(body.daily_rate)) : null,
+        weeklyRate: body.weekly_rate ? String(parseFloat(body.weekly_rate)) : null,
+        monthlyRate: body.monthly_rate ? String(parseFloat(body.monthly_rate)) : null,
+        updatedAt: new Date().toISOString()
+      })
+      .where(eq(equipment.id, id))
+      .returning();
 
     return NextResponse.json({
       success: true,
@@ -204,11 +191,13 @@ export async function DELETE(
     }
 
     // Check if equipment exists
-    const existingEquipment = await prisma.equipment.findUnique({
-      where: { id }
-    });
+    const existingEquipment = await db
+      .select()
+      .from(equipment)
+      .where(eq(equipment.id, id))
+      .limit(1);
 
-    if (!existingEquipment) {
+    if (!existingEquipment.length) {
       return NextResponse.json(
         { success: false, error: 'Equipment not found' },
         { status: 404 }
@@ -216,13 +205,13 @@ export async function DELETE(
     }
 
     // Soft delete by setting is_active to false
-    await prisma.equipment.update({
-      where: { id },
-      data: {
-        is_active: false,
-        updated_at: new Date()
-      }
-    });
+    await db
+      .update(equipment)
+      .set({
+        isActive: false,
+        updatedAt: new Date().toISOString()
+      })
+      .where(eq(equipment.id, id));
 
     return NextResponse.json({
       success: true,
