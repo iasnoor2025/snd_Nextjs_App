@@ -27,6 +27,7 @@ export async function POST(_request: NextRequest) {
         roleId: 1, // Admin role
         status: 1, // Active status
         isActive: true,
+        updatedAt: new Date().toISOString(),
       })
       .returning();
     

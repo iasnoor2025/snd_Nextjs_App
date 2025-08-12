@@ -249,7 +249,7 @@ export async function POST(request: NextRequest) {
           let designationId = null;
 
           if (designationName) {
-            let designation: any[] = await db.select().from(employeesTable).where(
+            let designation: any = await db.select().from(employeesTable).where(
               sql`designation = ${designationName}`
             );
 

@@ -368,12 +368,17 @@ export default function EmployeeShowPage() {
     try {
       const response = await fetch(`/api/employees/${employeeId}/leaves`);
       const data = await response.json();
+      console.log('Leave API response:', data); // Debug log
       if (data.success) {
         setLeaves(data.data || []);
+      } else {
+        console.error('Leave API error:', data.message);
+        setLeaves([]);
       }
     } catch (error) {
-      console.error('Error fetching leaves:', error);
-      toast.error('Failed to load leave data');
+      console.error("Error fetching leaves:", error);
+      toast.error("Failed to load leave data");
+      setLeaves([]);
     } finally {
       setLoadingLeaves(false);
     }
@@ -1046,6 +1051,20 @@ export default function EmployeeShowPage() {
                   </CardContent>
                 </Card>
               </div>
+
+                {/* Debug Info - Remove this section */}
+                {false && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Debug Info</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-xs space-y-2">
+                        {/* Debug info removed */}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Leave Records */}
           <Card>

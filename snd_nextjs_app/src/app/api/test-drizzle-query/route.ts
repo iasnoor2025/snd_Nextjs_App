@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { employeeAssignments } from '../../../../drizzle/schema';
+import { employeeAssignments } from '@/lib/drizzle/schema';
 
 export async function GET() {
   try {

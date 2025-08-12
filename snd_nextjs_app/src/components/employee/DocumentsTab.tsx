@@ -349,19 +349,47 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
         return [] as DocumentItem[];
       }}
       uploadDocument={async (file, extra) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('document_name', uploadForm.document_name.trim());
-        if (uploadForm.document_type) formData.append('document_type', uploadForm.document_type);
-        formData.append('description', uploadForm.description);
+        try {
+          const formData = new FormData();
+          formData.append('file', file);
+          formData.append('document_name', uploadForm.document_name.trim());
+          if (uploadForm.document_type) formData.append('document_type', uploadForm.document_type);
+          formData.append('description', uploadForm.description);
 
-        await fetch(`/api/employees/${employeeId}/documents/upload`, {
-          method: 'POST',
-          body: formData,
-        });
+          const response = await fetch(`/api/employees/${employeeId}/documents/upload`, {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Upload failed');
+          }
+
+          // Refresh documents after successful upload
+          fetchDocuments();
+          return true;
+        } catch (error) {
+          console.error('Error uploading document:', error);
+          toast.error(error instanceof Error ? error.message : 'Failed to upload document');
+          return false;
+        }
       }}
       deleteDocument={async (id) => {
-        await fetch(`/api/employees/${employeeId}/documents/${id}`, { method: 'DELETE' });
+        try {
+          const response = await fetch(`/api/employees/${employeeId}/documents/${id}`, { method: 'DELETE' });
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to delete document');
+          }
+          // Refresh documents after successful deletion
+          fetchDocuments();
+          return true;
+        } catch (error) {
+          console.error('Error deleting document:', error);
+          toast.error(error instanceof Error ? error.message : 'Failed to delete document');
+          return false;
+        }
       }}
       // RBAC-controlled actions
       canUpload={hasPermission('create', 'employee-document')}
@@ -374,7 +402,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
       showSize={false}
       showDate={false}
       // Extra controls for employee: description only (name/type asked in popup)
-      renderExtraControls={(
+      renderExtraControls={
         <div className="grid gap-3">
           <div>
             <Label htmlFor="description">Description (Optional)</Label>
@@ -386,7 +414,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
             />
           </div>
         </div>
-      )}
+      }
     />
 
     <Dialog open={showDetailsDialog} onOpenChange={(open) => { if(!open) setPendingFiles(null); setShowDetailsDialog(open); }}>
@@ -422,21 +450,48 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
             if (!uploadForm.document_name.trim() || !uploadForm.document_type.trim() || !pendingFiles) { return; }
             setUploading(true);
             try {
+              let successCount = 0;
+              let errorCount = 0;
+              
               for (const file of pendingFiles) {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('document_name', uploadForm.document_name.trim());
-                formData.append('document_type', uploadForm.document_type.trim());
-                formData.append('description', uploadForm.description);
-                const resp = await fetch(`/api/employees/${employeeId}/documents/upload`, { method: 'POST', body: formData });
-                if (!resp.ok) throw new Error('Upload failed');
+                try {
+                  const formData = new FormData();
+                  formData.append('file', file);
+                  formData.append('document_name', uploadForm.document_name.trim());
+                  formData.append('document_type', uploadForm.document_type.trim());
+                  formData.append('description', uploadForm.description);
+                  
+                  const resp = await fetch(`/api/employees/${employeeId}/documents/upload`, { method: 'POST', body: formData });
+                  
+                  if (!resp.ok) {
+                    const errorData = await resp.json();
+                    throw new Error(errorData.message || 'Upload failed');
+                  }
+                  
+                  successCount++;
+                } catch (fileError) {
+                  console.error(`Error uploading file ${file.name}:`, fileError);
+                  errorCount++;
+                }
               }
-              toast.success('Document(s) uploaded successfully');
-              setPendingFiles(null);
-              setShowDetailsDialog(false);
-              setUploadForm({ document_name: '', document_type: '', file: null, description: '' });
-              fetchDocuments();
+              
+              if (errorCount === 0) {
+                toast.success(`${successCount} document(s) uploaded successfully`);
+                setPendingFiles(null);
+                setShowDetailsDialog(false);
+                setUploadForm({ document_name: '', document_type: '', file: null, description: '' });
+                fetchDocuments();
+              } else if (successCount > 0) {
+                toast.success(`${successCount} document(s) uploaded successfully, ${errorCount} failed`);
+                setPendingFiles(null);
+                setShowDetailsDialog(false);
+                setUploadForm({ document_name: '', document_type: '', file: null, description: '' });
+                fetchDocuments();
+              } else {
+                toast.error('All document uploads failed');
+              }
             } catch (e) {
+              console.error('Error in upload process:', e);
               toast.error('Failed to upload documents');
             } finally {
               setUploading(false);

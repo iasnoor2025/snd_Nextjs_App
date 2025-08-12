@@ -1,7 +1,76 @@
-import { pgTable, serial, text, timestamp, boolean, foreignKey, integer, numeric, varchar, uniqueIndex, type AnyPgColumn, jsonb, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, serial, integer, text, numeric, timestamp, boolean, varchar, uniqueIndex, type AnyPgColumn, jsonb, primaryKey } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 
+
+export const projectResources = pgTable("project_resources", {
+	id: serial().primaryKey().notNull(),
+	projectId: integer("project_id").notNull(),
+	type: text().notNull(),
+	name: text().notNull(),
+	description: text(),
+	quantity: integer(),
+	unitCost: numeric("unit_cost", { precision: 10, scale:  2 }),
+	totalCost: numeric("total_cost", { precision: 10, scale:  2 }),
+	date: timestamp({ precision: 3, mode: 'string' }),
+	status: text().default('pending').notNull(),
+	notes: text(),
+	employeeId: integer("employee_id"),
+	workerName: text("worker_name"),
+	jobTitle: text("job_title"),
+	dailyRate: numeric("daily_rate", { precision: 10, scale:  2 }),
+	daysWorked: integer("days_worked"),
+	startDate: timestamp("start_date", { precision: 3, mode: 'string' }),
+	endDate: timestamp("end_date", { precision: 3, mode: 'string' }),
+	totalDays: integer("total_days"),
+	equipmentId: integer("equipment_id"),
+	equipmentName: text("equipment_name"),
+	operatorName: text("operator_name"),
+	hourlyRate: numeric("hourly_rate", { precision: 10, scale:  2 }),
+	hoursWorked: numeric("hours_worked", { precision: 10, scale:  2 }),
+	usageHours: numeric("usage_hours", { precision: 10, scale:  2 }),
+	maintenanceCost: numeric("maintenance_cost", { precision: 10, scale:  2 }),
+	materialName: text("material_name"),
+	unit: text(),
+	unitPrice: numeric("unit_price", { precision: 10, scale:  2 }),
+	materialId: integer("material_id"),
+	fuelType: text("fuel_type"),
+	liters: numeric({ precision: 10, scale:  2 }),
+	pricePerLiter: numeric("price_per_liter", { precision: 10, scale:  2 }),
+	category: text(),
+	expenseDescription: text("expense_description"),
+	amount: numeric({ precision: 10, scale:  2 }),
+	title: text(),
+	priority: text(),
+	dueDate: timestamp("due_date", { precision: 3, mode: 'string' }),
+	completionPercentage: integer("completion_percentage"),
+	assignedToId: integer("assigned_to_id"),
+	createdAt: timestamp("created_at", { precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+	updatedAt: timestamp("updated_at", { precision: 3, mode: 'string' }).notNull(),
+	employeeName: text("employee_name"),
+	employeeFileNumber: text("employee_file_number"),
+}, (table) => [
+	foreignKey({
+			columns: [table.projectId],
+			foreignColumns: [projects.id],
+			name: "project_resources_project_id_fkey"
+		}).onUpdate("cascade").onDelete("cascade"),
+	foreignKey({
+			columns: [table.employeeId],
+			foreignColumns: [employees.id],
+			name: "project_resources_employee_id_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+	foreignKey({
+			columns: [table.equipmentId],
+			foreignColumns: [equipment.id],
+			name: "project_resources_equipment_id_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+	foreignKey({
+			columns: [table.assignedToId],
+			foreignColumns: [employees.id],
+			name: "project_resources_assigned_to_id_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+]);
 
 export const companies = pgTable("companies", {
 	id: serial().primaryKey().notNull(),
@@ -140,75 +209,6 @@ export const locations = pgTable("locations", {
 	createdAt: timestamp("created_at", { precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
 	updatedAt: timestamp("updated_at", { precision: 3, mode: 'string' }).notNull(),
 });
-
-export const projectResources = pgTable("project_resources", {
-	id: serial().primaryKey().notNull(),
-	projectId: integer("project_id").notNull(),
-	type: text().notNull(),
-	name: text().notNull(),
-	description: text(),
-	quantity: integer(),
-	unitCost: numeric("unit_cost", { precision: 10, scale:  2 }),
-	totalCost: numeric("total_cost", { precision: 10, scale:  2 }),
-	date: timestamp({ precision: 3, mode: 'string' }),
-	status: text().default('pending').notNull(),
-	notes: text(),
-	employeeId: integer("employee_id"),
-	employeeName: text("employee_name"),
-	employeeFileNumber: text("employee_file_number"),
-	workerName: text("worker_name"),
-	jobTitle: text("job_title"),
-	dailyRate: numeric("daily_rate", { precision: 10, scale:  2 }),
-	daysWorked: integer("days_worked"),
-	startDate: timestamp("start_date", { precision: 3, mode: 'string' }),
-	endDate: timestamp("end_date", { precision: 3, mode: 'string' }),
-	totalDays: integer("total_days"),
-	equipmentId: integer("equipment_id"),
-	equipmentName: text("equipment_name"),
-	operatorName: text("operator_name"),
-	hourlyRate: numeric("hourly_rate", { precision: 10, scale:  2 }),
-	hoursWorked: numeric("hours_worked", { precision: 10, scale:  2 }),
-	usageHours: numeric("usage_hours", { precision: 10, scale:  2 }),
-	maintenanceCost: numeric("maintenance_cost", { precision: 10, scale:  2 }),
-	materialName: text("material_name"),
-	unit: text(),
-	unitPrice: numeric("unit_price", { precision: 10, scale:  2 }),
-	materialId: integer("material_id"),
-	fuelType: text("fuel_type"),
-	liters: numeric({ precision: 10, scale:  2 }),
-	pricePerLiter: numeric("price_per_liter", { precision: 10, scale:  2 }),
-	category: text(),
-	expenseDescription: text("expense_description"),
-	amount: numeric({ precision: 10, scale:  2 }),
-	title: text(),
-	priority: text(),
-	dueDate: timestamp("due_date", { precision: 3, mode: 'string' }),
-	completionPercentage: integer("completion_percentage"),
-	assignedToId: integer("assigned_to_id"),
-	createdAt: timestamp("created_at", { precision: 3, mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-	updatedAt: timestamp("updated_at", { precision: 3, mode: 'string' }).notNull(),
-}, (table) => [
-	foreignKey({
-			columns: [table.projectId],
-			foreignColumns: [projects.id],
-			name: "project_resources_project_id_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
-	foreignKey({
-			columns: [table.employeeId],
-			foreignColumns: [employees.id],
-			name: "project_resources_employee_id_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
-	foreignKey({
-			columns: [table.equipmentId],
-			foreignColumns: [equipment.id],
-			name: "project_resources_equipment_id_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
-	foreignKey({
-			columns: [table.assignedToId],
-			foreignColumns: [employees.id],
-			name: "project_resources_assigned_to_id_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
-]);
 
 export const prismaMigrations = pgTable("_prisma_migrations", {
 	id: varchar({ length: 36 }).primaryKey().notNull(),

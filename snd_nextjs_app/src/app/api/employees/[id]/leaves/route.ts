@@ -3,6 +3,7 @@ import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { db } from '@/lib/drizzle';
 import { employeeLeaves, employees } from '@/lib/drizzle/schema';
 import { eq, desc } from 'drizzle-orm';
+import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
 
 export const GET = withPermission(
   async (
@@ -11,8 +12,31 @@ export const GET = withPermission(
   ) => {
   try {
     const { id } = await params;
+    
+    if (!id || isNaN(parseInt(id))) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid employee ID' },
+        { status: 400 }
+      );
+    }
 
-    // Fetch real leave data from the database using Drizzle
+    const employeeId = parseInt(id);
+
+    const employeeCheck = await db
+      .select({ id: employees.id })
+      .from(employees)
+      .where(eq(employees.id, employeeId))
+      .limit(1);
+
+    if (employeeCheck.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'Employee not found' },
+        { status: 404 }
+      );
+    }
+
+    await updateEmployeeStatusBasedOnLeave(employeeId);
+
     const leaves = await db
       .select({
         id: employeeLeaves.id,
@@ -29,34 +53,44 @@ export const GET = withPermission(
         rejection_reason: employeeLeaves.rejectionReason,
         created_at: employeeLeaves.createdAt,
         updated_at: employeeLeaves.updatedAt,
-        employee: {
-          first_name: employees.firstName,
-          last_name: employees.lastName,
-          employee_id: employees.employeeId
-        }
+        employee_id: employeeLeaves.employeeId,
+        employee_first_name: employees.firstName,
+        employee_last_name: employees.lastName,
+        employee_file_number: employees.fileNumber
       })
       .from(employeeLeaves)
       .leftJoin(employees, eq(employees.id, employeeLeaves.employeeId))
-      .where(eq(employeeLeaves.employeeId, parseInt(id)))
+      .where(eq(employeeLeaves.employeeId, employeeId))
       .orderBy(desc(employeeLeaves.createdAt));
 
-    // Transform the data to match the expected format
+    if (leaves.length === 0) {
+      return NextResponse.json({
+        success: true,
+        data: [],
+        message: 'No leave requests found for this employee'
+      });
+    }
+
     const transformedLeaves = leaves.map(leave => ({
       id: leave.id,
-      leave_type: leave.leave_type,
-      start_date: leave.start_date.toISOString().split('T')[0],
-      end_date: leave.end_date.toISOString().split('T')[0],
-      days: leave.days,
+      leave_type: leave.leave_type || '',
+      start_date: leave.start_date ? (typeof leave.start_date === 'string' ? leave.start_date.split('T')[0] : new Date(leave.start_date).toISOString().split('T')[0]) : null,
+      end_date: leave.end_date ? (typeof leave.end_date === 'string' ? leave.end_date.split('T')[0] : new Date(leave.end_date).toISOString().split('T')[0]) : null,
+      days: leave.days || 0,
       reason: leave.reason || '',
-      status: leave.status,
-      approved_by: leave.approved_by,
-      approved_at: leave.approved_at ? leave.approved_at.toISOString() : null,
-      rejected_by: leave.rejected_by,
-      rejected_at: leave.rejected_at ? leave.rejected_at.toISOString() : null,
-      rejection_reason: leave.rejection_reason,
-      created_at: leave.created_at.toISOString(),
-      updated_at: leave.updated_at.toISOString(),
-      employee: leave.employee
+      status: leave.status || 'pending',
+      approved_by: leave.approved_by || null,
+      approved_at: leave.approved_at ? (typeof leave.approved_at === 'string' ? leave.approved_at : new Date(leave.approved_at).toISOString()) : null,
+      rejected_by: leave.rejected_by || null,
+      rejected_at: leave.rejected_at ? (typeof leave.rejected_at === 'string' ? leave.rejected_at : new Date(leave.rejected_at).toISOString()) : null,
+      rejection_reason: leave.rejection_reason || null,
+      created_at: leave.created_at ? (typeof leave.created_at === 'string' ? leave.created_at : new Date(leave.created_at).toISOString()) : null,
+      updated_at: leave.updated_at ? (typeof leave.updated_at === 'string' ? leave.updated_at : new Date(leave.updated_at).toISOString()) : null,
+      employee: {
+        first_name: leave.employee_first_name || '',
+        last_name: leave.employee_last_name || '',
+        employee_id: leave.employee_file_number || null
+      }
     }));
 
     return NextResponse.json({
@@ -66,10 +100,17 @@ export const GET = withPermission(
     });
   } catch (error) {
     console.error('Error in GET /api/employees/[id]/leaves:', error);
+    
+    let errorMessage = 'Failed to fetch leave requests';
+    if (error instanceof Error) {
+      errorMessage += ': ' + error.message;
+    }
+    
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to fetch leave requests: ' + (error as Error).message
+        message: errorMessage,
+        error: process.env.NODE_ENV === 'development' ? error : undefined
       },
       { status: 500 }
     );
@@ -85,21 +126,38 @@ export const POST = withPermission(
   ) => {
   try {
     const { id } = await params;
+    
+    if (!id || isNaN(parseInt(id))) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid employee ID' },
+        { status: 400 }
+      );
+    }
+    
     const body = await request.json();
 
-    // Create new leave request in the database using Drizzle
+    if (!body.leave_type || !body.start_date || !body.end_date) {
+      return NextResponse.json(
+        { success: false, message: 'Missing required fields: leave_type, start_date, end_date' },
+        { status: 400 }
+      );
+    }
+
     const [newLeave] = await db
       .insert(employeeLeaves)
       .values({
-        employeeId: parseInt(id),
+        employeeId: parseInt(id), 
         leaveType: body.leave_type,
-        startDate: new Date(body.start_date),
-        endDate: new Date(body.end_date),
+        startDate: body.start_date,
+        endDate: body.end_date,
         days: body.days || 0,
         reason: body.reason || '',
-        status: body.status || 'pending'
+        status: body.status || 'pending',
+        updatedAt: new Date().toISOString()
       })
       .returning();
+
+    await updateEmployeeStatusBasedOnLeave(parseInt(id));
 
     return NextResponse.json({
       success: true,
@@ -108,10 +166,17 @@ export const POST = withPermission(
     });
   } catch (error) {
     console.error('Error in POST /api/employees/[id]/leaves:', error);
+    
+    let errorMessage = 'Failed to create leave request';
+    if (error instanceof Error) {
+      errorMessage += ': ' + error.message;
+    }
+    
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to create leave request: ' + (error as Error).message
+        message: errorMessage,
+        error: process.env.NODE_ENV === 'development' ? error : undefined
       },
       { status: 500 }
     );

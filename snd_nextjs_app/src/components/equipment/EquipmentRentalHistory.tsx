@@ -127,38 +127,83 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      active: { variant: 'default' as const, label: 'Active' },
-      completed: { variant: 'secondary' as const, label: 'Completed' },
-      cancelled: { variant: 'destructive' as const, label: 'Cancelled' },
-      pending: { variant: 'outline' as const, label: 'Pending' },
+      active: { 
+        className: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200", 
+        label: 'Active' 
+      },
+      completed: { 
+        className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200", 
+        label: 'Completed' 
+      },
+      cancelled: { 
+        className: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200", 
+        label: 'Cancelled' 
+      },
+      pending: { 
+        className: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200", 
+        label: 'Pending' 
+      },
     };
     
-    const config = statusConfig[status as keyof typeof statusConfig] || { variant: 'outline' as const, label: status };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const config = statusConfig[status as keyof typeof statusConfig] || { 
+      className: "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200", 
+      label: status 
+    };
+    return <Badge className={config.className}>{config.label}</Badge>;
   };
 
   const getRentalStatusBadge = (status: string) => {
     const statusConfig = {
-      active: { variant: 'default' as const, label: 'Active' },
-      completed: { variant: 'secondary' as const, label: 'Completed' },
-      cancelled: { variant: 'destructive' as const, label: 'Cancelled' },
-      pending: { variant: 'outline' as const, label: 'Pending' },
-      approved: { variant: 'default' as const, label: 'Approved' },
+      active: { 
+        className: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200", 
+        label: 'Active' 
+      },
+      completed: { 
+        className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200", 
+        label: 'Completed' 
+      },
+      cancelled: { 
+        className: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200", 
+        label: 'Cancelled' 
+      },
+      pending: { 
+        className: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200", 
+        label: 'Pending' 
+      },
+      approved: { 
+        className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200", 
+        label: 'Approved' 
+      },
     };
     
-    const config = statusConfig[status as keyof typeof statusConfig] || { variant: 'outline' as const, label: status };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const config = statusConfig[status as keyof typeof statusConfig] || { 
+      className: "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200", 
+      label: status 
+    };
+    return <Badge className={config.className}>{config.label}</Badge>;
   };
 
   const getRateTypeBadge = (rateType: string) => {
     const typeConfig = {
-      daily: { variant: 'secondary' as const, label: 'Daily' },
-      weekly: { variant: 'secondary' as const, label: 'Weekly' },
-      monthly: { variant: 'secondary' as const, label: 'Monthly' },
+      daily: { 
+        className: "bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200", 
+        label: 'Daily' 
+      },
+      weekly: { 
+        className: "bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-200", 
+        label: 'Weekly' 
+      },
+      monthly: { 
+        className: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200", 
+        label: 'Monthly' 
+      },
     };
     
-    const config = typeConfig[rateType as keyof typeof typeConfig] || { variant: 'outline' as const, label: rateType };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const config = typeConfig[rateType as keyof typeof typeConfig] || { 
+      className: "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200", 
+      label: rateType 
+    };
+    return <Badge className={config.className}>{config.label}</Badge>;
   };
 
   const openDetailsDialog = (assignment: AssignmentHistoryItem) => {

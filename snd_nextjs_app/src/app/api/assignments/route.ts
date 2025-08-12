@@ -46,7 +46,7 @@ const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: {
       ilike(employees.lastName, `%${search}%`),
       ilike(employees.fileNumber, `%${search}%`),
       ilike(projects.name, `%${search}%`),
-      ilike(employeeAssignments.assignmentType, `%${search}%`),
+      ilike(employeeAssignments.type, `%${search}%`),
     ] : [];
 
     if (status && status !== 'all') {
@@ -67,11 +67,11 @@ const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: {
         id: employeeAssignments.id,
         employeeId: employeeAssignments.employeeId,
         projectId: employeeAssignments.projectId,
-        assignmentType: employeeAssignments.assignmentType,
+        assignmentType: employeeAssignments.type,
         status: employeeAssignments.status,
         startDate: employeeAssignments.startDate,
         endDate: employeeAssignments.endDate,
-        description: employeeAssignments.description,
+        description: employeeAssignments.notes,
         createdAt: employeeAssignments.createdAt,
         updatedAt: employeeAssignments.updatedAt,
         employee: {
@@ -96,7 +96,6 @@ const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: {
       .leftJoin(projects, eq(employeeAssignments.projectId, projects.id))
       .leftJoin(users, eq(employees.userId, users.id))
       .where(and(
-        isNull(employeeAssignments.deletedAt),
         ...(user?.role === 'EMPLOYEE' && where.employee_id ? [eq(employeeAssignments.employeeId, where.employee_id)] : []),
         ...(status && status !== 'all' ? [eq(employeeAssignments.status, status)] : []),
         ...(employeeId ? [eq(employeeAssignments.employeeId, parseInt(employeeId))] : []),
@@ -107,7 +106,6 @@ const getAssignmentsHandler = async (request: NextRequest & { employeeAccess?: {
     const [assignments, total] = await Promise.all([
       baseQuery.orderBy(desc(employeeAssignments.createdAt)).offset(skip).limit(limit),
       db.select({ count: sql<number>`count(*)` }).from(employeeAssignments).where(and(
-        isNull(employeeAssignments.deletedAt),
         ...(user?.role === 'EMPLOYEE' && where.employee_id ? [eq(employeeAssignments.employeeId, where.employee_id)] : []),
         ...(status && status !== 'all' ? [eq(employeeAssignments.status, status)] : []),
         ...(employeeId ? [eq(employeeAssignments.employeeId, parseInt(employeeId))] : []),
@@ -169,13 +167,13 @@ const createAssignmentHandler = async (request: NextRequest & { employeeAccess?:
       .values({
         employeeId: parseInt(body.employeeId),
         projectId: projectId ? parseInt(projectId) : null,
-        assignmentType: assignmentType,
-        startDate: new Date(startDate),
-        endDate: endDate ? new Date(endDate) : null,
+        type: assignmentType,
+        startDate: new Date(startDate).toISOString(),
+        endDate: endDate ? new Date(endDate).toISOString() : null,
         status,
-        description: notes || '',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        notes: notes || '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .returning();
 
@@ -185,11 +183,11 @@ const createAssignmentHandler = async (request: NextRequest & { employeeAccess?:
         id: employeeAssignments.id,
         employeeId: employeeAssignments.employeeId,
         projectId: employeeAssignments.projectId,
-        assignmentType: employeeAssignments.assignmentType,
+        assignmentType: employeeAssignments.type,
         startDate: employeeAssignments.startDate,
         endDate: employeeAssignments.endDate,
         status: employeeAssignments.status,
-        description: employeeAssignments.description,
+        description: employeeAssignments.notes,
         createdAt: employeeAssignments.createdAt,
         updatedAt: employeeAssignments.updatedAt,
         employee: {
@@ -251,12 +249,12 @@ export const PUT = withEmployeeListPermission(
         .set({
           employeeId: employeeId,
           projectId: projectId,
-          assignmentType: assignmentType || 'manual',
-          startDate: new Date(startDate),
-          endDate: endDate ? new Date(endDate) : null,
+          type: assignmentType || 'manual',
+          startDate: new Date(startDate).toISOString(),
+          endDate: endDate ? new Date(endDate).toISOString() : null,
           status,
-          description: notes,
-          updatedAt: new Date(),
+          notes: notes,
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(employeeAssignments.id, id))
         .returning();
@@ -267,11 +265,11 @@ export const PUT = withEmployeeListPermission(
           id: employeeAssignments.id,
           employeeId: employeeAssignments.employeeId,
           projectId: employeeAssignments.projectId,
-          assignmentType: employeeAssignments.assignmentType,
+          assignmentType: employeeAssignments.type,
           startDate: employeeAssignments.startDate,
           endDate: employeeAssignments.endDate,
           status: employeeAssignments.status,
-          description: employeeAssignments.description,
+          description: employeeAssignments.notes,
           createdAt: employeeAssignments.createdAt,
           updatedAt: employeeAssignments.updatedAt,
           employee: {

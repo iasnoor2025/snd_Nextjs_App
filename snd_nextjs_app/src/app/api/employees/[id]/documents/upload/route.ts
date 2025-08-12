@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db } from '@/lib/drizzle';
 import { employees, employeeDocuments } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from "next-auth";
@@ -136,6 +136,18 @@ export async function POST(
     await writeFile(filePath, buffer);
 
     // Save document record to database (use the new file name)
+    console.log('Inserting document with values:', {
+      employeeId,
+      documentType: rawDocumentType,
+      filePath: relativePath,
+      fileName: storedFileName,
+      fileSize: file.size,
+      mimeType: file.type,
+      description: description || null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
     const documentResult = await db.insert(employeeDocuments)
       .values({
         employeeId: employeeId,
@@ -150,9 +162,10 @@ export async function POST(
       }) 
       .returning();
 
+    console.log('Document inserted successfully:', documentResult);
     const document = documentResult[0];
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       message: 'Document uploaded successfully',
       data: {
@@ -165,10 +178,13 @@ export async function POST(
         mimeType: document.mimeType,
         documentType: document.documentType,
         description: document.description,
-        createdAt: document.createdAt.toISOString(),
-        updatedAt: document.updatedAt.toISOString(),
+        createdAt: document.createdAt,
+        updatedAt: document.updatedAt,
       }
-    });
+    };
+
+    console.log('Returning response:', responseData);
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error('Error in POST /api/employees/[id]/documents/upload:', error);
     return NextResponse.json(

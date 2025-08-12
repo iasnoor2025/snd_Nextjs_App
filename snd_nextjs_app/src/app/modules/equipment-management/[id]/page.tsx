@@ -106,14 +106,33 @@ export default function EquipmentShowPage() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      available: { variant: 'default' as const, label: 'Available' },
-      rented: { variant: 'secondary' as const, label: 'Rented' },
-      maintenance: { variant: 'destructive' as const, label: 'Maintenance' },
-      out_of_service: { variant: 'destructive' as const, label: 'Out of Service' },
+      available: { 
+        className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200", 
+        label: 'Available' 
+      },
+      assigned: { 
+        className: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200", 
+        label: 'Assigned' 
+      },
+      rented: { 
+        className: "bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200", 
+        label: 'Rented' 
+      },
+      maintenance: { 
+        className: "bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200", 
+        label: 'Maintenance' 
+      },
+      out_of_service: { 
+        className: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200", 
+        label: 'Out of Service' 
+      },
     };
     
-    const config = statusConfig[status as keyof typeof statusConfig] || { variant: 'outline' as const, label: status };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const config = statusConfig[status as keyof typeof statusConfig] || { 
+      className: "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200", 
+      label: status 
+    };
+    return <Badge className={config.className}>{config.label}</Badge>;
   };
 
   if (loading) {

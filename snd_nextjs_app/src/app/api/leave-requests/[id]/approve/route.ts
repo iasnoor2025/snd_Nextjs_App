@@ -76,7 +76,8 @@ export async function PUT(
 
     // Update employee status to 'on_leave' if the leave is currently active
     const today = new Date();
-    const isLeaveCurrentlyActive = leaveRequest.startDate <= today && leaveRequest.endDate >= today;
+    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const isLeaveCurrentlyActive = leaveRequest.startDate <= todayStr && leaveRequest.endDate >= todayStr;
     
     if (isLeaveCurrentlyActive) {
       await db

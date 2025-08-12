@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { employeeDocuments } from '@/lib/drizzle/schema';
+import { eq, and } from 'drizzle-orm';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
 import { readFile } from 'fs/promises';
@@ -28,14 +30,20 @@ export async function GET(
     }
 
     // Get document from database
-    const document = await prisma.employeeDocument.findFirst({
-      where: {
-        id: documentId,
-        employee_id: employeeId,
-      },
-    });
+    const document = await db
+      .select()
+      .from(employeeDocuments)
+      .where(
+        and(
+          eq(employeeDocuments.id, documentId),
+          eq(employeeDocuments.employeeId, employeeId)
+        )
+      )
+      .limit(1);
+    
+    const documentRecord = document[0];
 
-    if (!document) {
+    if (!documentRecord) {
       return NextResponse.json(
         { error: "Document not found" },
         { status: 404 }
@@ -43,7 +51,7 @@ export async function GET(
     }
 
     // Construct file path
-    const filePath = join(process.cwd(), 'public', document.file_path);
+    const filePath = join(process.cwd(), 'public', documentRecord.filePath);
 
     // Check if file exists
     if (!existsSync(filePath)) {
@@ -59,9 +67,9 @@ export async function GET(
     // Return file with appropriate headers
     return new NextResponse(fileBuffer, {
       headers: {
-        'Content-Type': document.mime_type || 'application/octet-stream',
-        'Content-Disposition': `attachment; filename="${document.file_name}"`,
-        'Content-Length': document.file_size?.toString() || fileBuffer.length.toString(),
+        'Content-Type': documentRecord.mimeType || 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${documentRecord.fileName}"`,
+        'Content-Length': documentRecord.fileSize?.toString() || fileBuffer.length.toString(),
       },
     });
   } catch (error) {

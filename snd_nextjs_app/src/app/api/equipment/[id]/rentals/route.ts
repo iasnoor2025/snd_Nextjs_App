@@ -261,15 +261,15 @@ export async function POST(
        projectId: assignment_type === 'project' ? project_id : null,
        employeeId: assignment_type === 'manual' ? employee_id : null,
        assignmentType: assignment_type,
-       startDate: new Date(start_date),
-       endDate: end_date ? new Date(end_date) : null,
+       startDate: new Date(start_date).toISOString(),
+       endDate: end_date ? new Date(end_date).toISOString() : null,
        status,
-       notes,
+       notes: notes || '',
        dailyRate: daily_rate ? parseFloat(daily_rate) : null,
        totalAmount: total_amount ? parseFloat(total_amount) : null,
        createdAt: new Date().toISOString(),
        updatedAt: new Date().toISOString()
-     }).returning();
+     } as any).returning();
 
      // Automatically update equipment status based on assignment
      await updateEquipmentStatusOnAssignmentChange(id, status);
@@ -296,7 +296,7 @@ export async function POST(
            rentalNumber: rentals.rentalNumber,
            customer: {
              id: customers.id,
-             name: customers.name,
+             name: customers.name as any,
              email: customers.email,
              phone: customers.phone
            }
@@ -333,12 +333,13 @@ export async function POST(
           name: `Equipment Assignment - ${equipmentData[0].name}`,
           type: 'manual',
           location: body.location || null,
-          startDate: new Date(start_date),
-          endDate: end_date ? new Date(end_date) : null,
+          startDate: new Date(start_date).toISOString(),
+          endDate: end_date ? new Date(end_date).toISOString() : null,
           status: 'active',
           notes: `Manual equipment assignment: ${notes || 'No additional notes'}`,
           projectId: null,
-          rentalId: null
+          rentalId: null,
+          updatedAt: new Date().toISOString()
         }).returning();
 
         console.log('Employee assignment created automatically:', employeeAssignment);

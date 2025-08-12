@@ -49,12 +49,13 @@ export async function PUT(
         name: body.name,
         type: body.type,
         location: body.location,
-        startDate: new Date(body.startDate),
-        endDate: body.endDate ? new Date(body.endDate) : null,
+        startDate: new Date(body.startDate).toISOString(),
+        endDate: body.endDate ? new Date(body.endDate).toISOString() : null,
         status: body.status,
         notes: body.notes,
         projectId: body.projectId || null,
         rentalId: body.rentalId || null,
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(employeeAssignments.id, assignmentId))
       .returning();
@@ -84,16 +85,16 @@ export async function PUT(
         name: assignment.name,
         type: assignment.type,
         location: assignment.location,
-        startDate: assignment.startDate.toISOString().slice(0, 10),
-        endDate: assignment.endDate?.toISOString().slice(0, 10) || null,
+        startDate: typeof assignment.startDate === 'string' ? assignment.startDate.slice(0, 10) : new Date(assignment.startDate).toISOString().slice(0, 10),
+        endDate: assignment.endDate ? (typeof assignment.endDate === 'string' ? assignment.endDate.slice(0, 10) : new Date(assignment.endDate).toISOString().slice(0, 10)) : null,
         status: assignment.status,
         notes: assignment.notes,
         projectId: assignment.projectId,
         rentalId: assignment.rentalId,
         project: projectData?.[0] || null,
         rental: rentalData?.[0] || null,
-        createdAt: assignment.createdAt.toISOString(),
-        updatedAt: assignment.updatedAt.toISOString(),
+        createdAt: typeof assignment.createdAt === 'string' ? assignment.createdAt : new Date(assignment.createdAt).toISOString(),
+        updatedAt: typeof assignment.updatedAt === 'string' ? assignment.updatedAt : new Date(assignment.updatedAt).toISOString(),
       }
     });
   } catch (error) {
@@ -148,7 +149,7 @@ export async function DELETE(
     const assignment = assignmentResult[0];
 
     // If this is a manual assignment that was created from an equipment assignment, also delete the corresponding equipment assignment
-    let deletedEquipmentAssignment = null;
+    let deletedEquipmentAssignment: any = null;
     if (assignment.type === 'manual' && assignment.name && assignment.name.includes('Equipment Assignment -')) {
       try {
         // Find and delete the corresponding equipment assignment

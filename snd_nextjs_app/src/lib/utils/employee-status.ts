@@ -11,6 +11,7 @@ export async function updateEmployeeStatusBasedOnLeave(employeeId: number): Prom
   try {
     // Get current date
     const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
     
     // Find any approved leave that is currently active (start_date <= today <= end_date)
     const activeLeave = await db
@@ -20,8 +21,8 @@ export async function updateEmployeeStatusBasedOnLeave(employeeId: number): Prom
         and(
           eq(employeeLeaves.employeeId, employeeId),
           eq(employeeLeaves.status, 'approved'),
-          lte(employeeLeaves.startDate, today.toISOString()),
-          gte(employeeLeaves.endDate, today.toISOString())
+          lte(employeeLeaves.startDate, todayStr),
+          gte(employeeLeaves.endDate, todayStr)
         )
       )
       .limit(1);
@@ -69,6 +70,7 @@ export async function updateEmployeeStatusBasedOnLeave(employeeId: number): Prom
 export async function isEmployeeCurrentlyOnLeave(employeeId: number): Promise<boolean> {
   try {
     const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
     
     const activeLeave = await db
       .select()
@@ -77,8 +79,8 @@ export async function isEmployeeCurrentlyOnLeave(employeeId: number): Promise<bo
         and(
           eq(employeeLeaves.employeeId, employeeId),
           eq(employeeLeaves.status, 'approved'),
-          lte(employeeLeaves.startDate, today.toISOString()),
-          gte(employeeLeaves.endDate, today.toISOString())
+          lte(employeeLeaves.startDate, todayStr),
+          gte(employeeLeaves.endDate, todayStr)
         )
       )
       .limit(1);
@@ -98,6 +100,7 @@ export async function isEmployeeCurrentlyOnLeave(employeeId: number): Promise<bo
 export async function getEmployeeLeaveStatus(employeeId: number) {
   try {
     const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
     
     // Get all approved leaves for the employee
     const approvedLeaves = await db
@@ -106,15 +109,15 @@ export async function getEmployeeLeaveStatus(employeeId: number) {
       .where(and(eq(employeeLeaves.employeeId, employeeId), eq(employeeLeaves.status, 'approved')));
 
     const currentLeave = approvedLeaves.find(leave => 
-      (leave as any).startDate <= today.toISOString() && (leave as any).endDate >= today.toISOString()
+      leave.startDate <= todayStr && leave.endDate >= todayStr
     );
 
     const upcomingLeave = approvedLeaves.find(leave => 
-      (leave as any).startDate > today.toISOString()
+      leave.startDate > todayStr
     );
 
     const pastLeave = approvedLeaves.find(leave => 
-      (leave as any).endDate < today.toISOString()
+      leave.endDate < todayStr
     );
 
     return {

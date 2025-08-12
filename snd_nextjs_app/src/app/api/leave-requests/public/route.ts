@@ -86,8 +86,8 @@ export async function GET(request: NextRequest) {
     const formattedLeaves = leaves.map(leave => ({
       id: leave.id,
       leave_type: leave.leaveType,
-      start_date: leave.startDate.toISOString().split('T')[0],
-      end_date: leave.endDate.toISOString().split('T')[0],
+      start_date: leave.startDate.split('T')[0],
+      end_date: leave.endDate.split('T')[0],
       days: leave.days,
       status: leave.status,
       reason: leave.reason,
@@ -96,8 +96,8 @@ export async function GET(request: NextRequest) {
         name: `${leave.employee.firstName} ${leave.employee.lastName}`,
         employee_id: leave.employee.fileNumber,
       },
-      created_at: leave.createdAt.toISOString(),
-      updated_at: leave.updatedAt.toISOString(),
+      created_at: leave.createdAt,
+      updated_at: leave.updatedAt,
     }));
 
     const response = {

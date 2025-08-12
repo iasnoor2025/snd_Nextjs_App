@@ -77,20 +77,20 @@ export async function GET(
       employee_name: `${leaveRequest.employee.firstName} ${leaveRequest.employee.lastName}`,
       employee_id: leaveRequest.employee.id,
       leave_type: leaveRequest.leaveType,
-      start_date: leaveRequest.startDate.toISOString().split('T')[0],
-      end_date: leaveRequest.endDate.toISOString().split('T')[0],
+      start_date: leaveRequest.startDate.split('T')[0],
+      end_date: leaveRequest.endDate.split('T')[0],
       days_requested: leaveRequest.days,
       reason: leaveRequest.reason,
       status: leaveRequest.status.charAt(0).toUpperCase() + leaveRequest.status.slice(1).toLowerCase(),
-      submitted_date: leaveRequest.createdAt.toISOString(),
+      submitted_date: leaveRequest.createdAt,
       approved_by: leaveRequest.approvedBy?.toString() || null,
-      approved_date: leaveRequest.approvedAt?.toISOString() || null,
+      approved_date: leaveRequest.approvedAt || null,
       rejected_by: leaveRequest.rejectedBy?.toString() || null,
-      rejected_at: leaveRequest.rejectedAt?.toISOString() || null,
+      rejected_at: leaveRequest.rejectedAt || null,
       rejection_reason: leaveRequest.rejectionReason || null,
       comments: null, // Not implemented in current schema
-      created_at: leaveRequest.createdAt.toISOString(),
-      updated_at: leaveRequest.updatedAt.toISOString(),
+      created_at: leaveRequest.createdAt,
+      updated_at: leaveRequest.updatedAt,
       department: leaveRequest.department?.name,
       position: leaveRequest.designation?.name,
       total_leave_balance: 20, // Default leave balance - should be calculated from employee's leave policy
@@ -103,7 +103,7 @@ export async function GET(
                   leaveRequest.status === 'approved' ? 'Approved' : 
                   leaveRequest.status === 'rejected' ? 'Rejected' : 'Submitted',
           approver: leaveRequest.employee.firstName + ' ' + leaveRequest.employee.lastName,
-          date: leaveRequest.createdAt.toISOString(),
+          date: leaveRequest.createdAt,
           comments: leaveRequest.status === 'pending' ? 'Leave request submitted for approval' :
                    leaveRequest.status === 'rejected' ? `Leave request rejected: ${leaveRequest.rejectionReason || 'No reason provided'}` :
                    'Leave request submitted for approval'
@@ -268,8 +268,8 @@ export async function PUT(
       data: {
         id: updatedLeave.id.toString(),
         leave_type: updatedLeave.leave_type,
-        start_date: updatedLeave.start_date.toISOString().split('T')[0],
-        end_date: updatedLeave.end_date.toISOString().split('T')[0],
+        start_date: updatedLeave.start_date.split('T')[0],
+        end_date: updatedLeave.end_date.split('T')[0],
         days: updatedLeave.days,
         reason: updatedLeave.reason,
         status: updatedLeave.status,
@@ -277,8 +277,8 @@ export async function PUT(
           name: `${updatedLeave.employee.first_name} ${updatedLeave.employee.last_name}`,
           employee_id: updatedLeave.employee.employee_id,
         },
-        created_at: updatedLeave.created_at.toISOString(),
-        updated_at: updatedLeave.updated_at.toISOString(),
+        created_at: updatedLeave.created_at,
+        updated_at: updatedLeave.updated_at,
       },
     });
 

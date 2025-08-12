@@ -637,6 +637,8 @@ CREATE TABLE "project_resources" (
 	"status" text DEFAULT 'pending' NOT NULL,
 	"notes" text,
 	"employee_id" integer,
+	"employee_name" text,
+	"employee_file_number" text,
 	"worker_name" text,
 	"job_title" text,
 	"daily_rate" numeric(10, 2),

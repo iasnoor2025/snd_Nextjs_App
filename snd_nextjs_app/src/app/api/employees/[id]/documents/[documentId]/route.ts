@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { employeeDocuments } from '@/lib/drizzle/schema';
+import { eq, and } from 'drizzle-orm';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
 import { unlink } from 'fs/promises';
@@ -28,14 +30,20 @@ export async function DELETE(
     }
 
     // Get document from database
-    const document = await prisma.employeeDocument.findFirst({
-      where: {
-        id: documentId,
-        employee_id: employeeId,
-      },
-    });
+    const document = await db
+      .select()
+      .from(employeeDocuments)
+      .where(
+        and(
+          eq(employeeDocuments.id, documentId),
+          eq(employeeDocuments.employeeId, employeeId)
+        )
+      )
+      .limit(1);
+    
+    const documentRecord = document[0];
 
-    if (!document) {
+    if (!documentRecord) {
       return NextResponse.json(
         { error: "Document not found" },
         { status: 404 }
@@ -43,7 +51,7 @@ export async function DELETE(
     }
 
     // Delete file from filesystem
-    const filePath = join(process.cwd(), 'public', document.file_path);
+    const filePath = join(process.cwd(), 'public', documentRecord.filePath);
     if (existsSync(filePath)) {
       try {
         await unlink(filePath);
@@ -54,11 +62,9 @@ export async function DELETE(
     }
 
     // Delete document from database
-    await prisma.employeeDocument.delete({
-      where: {
-        id: documentId,
-      },
-    });
+    await db
+      .delete(employeeDocuments)
+      .where(eq(employeeDocuments.id, documentId));
 
     return NextResponse.json({
       success: true,

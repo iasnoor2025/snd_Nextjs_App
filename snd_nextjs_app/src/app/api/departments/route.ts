@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../lib/db';
-import { departments } from '../../../../drizzle/schema';
+import { departments } from '@/lib/drizzle/schema';
 import { eq, isNull } from 'drizzle-orm';
 import { withPermission, PermissionConfigs } from '../../../lib/rbac/api-middleware';
 

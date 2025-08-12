@@ -187,24 +187,43 @@ export default function EquipmentManagementPage() {
     if (equipment.current_assignment) {
       const assignment = equipment.current_assignment;
       if (assignment.status === 'active') {
-        return <Badge variant="secondary">{t('status.assigned')}</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200">{t('status.assigned')}</Badge>;
       } else if (assignment.status === 'completed') {
-        return <Badge variant="default">{t('status.available')}</Badge>;
+        return <Badge className="bg-green-100 text-green-800 border-green-200 hover:bg-green-200">{t('status.available')}</Badge>;
       } else if (assignment.status === 'pending') {
-        return <Badge variant="outline">{t('status.pending')}</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200">{t('status.pending')}</Badge>;
       }
     }
     
     // Fall back to equipment status if no assignment
     const statusConfig = {
-      available: { variant: 'default' as const, label: t('status.available') },
-      rented: { variant: 'secondary' as const, label: t('status.rented') },
-      maintenance: { variant: 'destructive' as const, label: t('status.maintenance') },
-      out_of_service: { variant: 'destructive' as const, label: t('status.out_of_service') },
+      available: { 
+        className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200", 
+        label: t('status.available') 
+      },
+      assigned: { 
+        className: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200", 
+        label: t('status.assigned') 
+      },
+      rented: { 
+        className: "bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200", 
+        label: t('status.rented') 
+      },
+      maintenance: { 
+        className: "bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200", 
+        label: t('status.maintenance') 
+      },
+      out_of_service: { 
+        className: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200", 
+        label: t('status.out_of_service') 
+      },
     };
     
-    const config = statusConfig[equipment.status as keyof typeof statusConfig] || { variant: 'outline' as const, label: equipment.status };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const config = statusConfig[equipment.status as keyof typeof statusConfig] || { 
+      className: "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200", 
+      label: equipment.status 
+    };
+    return <Badge className={config.className}>{config.label}</Badge>;
   };
 
   const handlePageChange = (page: number) => {

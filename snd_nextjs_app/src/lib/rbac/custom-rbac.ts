@@ -25,6 +25,7 @@ export type Subject =
   | 'Advance'
   | 'Assignment'
   | 'Safety'
+  | 'employee-document'
   | 'all';
 
 export interface User {
@@ -74,6 +75,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'manage', subject: 'Settings' },
       { action: 'manage', subject: 'Company' },
       { action: 'manage', subject: 'Safety' },
+      { action: 'manage', subject: 'employee-document' },
     ],
   },
   MANAGER: {
@@ -94,6 +96,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'read', subject: 'Settings' },
       { action: 'read', subject: 'Company' },
       { action: 'read', subject: 'Safety' },
+      { action: 'manage', subject: 'employee-document' },
     ],
   },
   SUPERVISOR: {
@@ -114,6 +117,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'read', subject: 'Settings' },
       { action: 'read', subject: 'Company' },
       { action: 'read', subject: 'Safety' },
+      { action: 'manage', subject: 'employee-document' },
     ],
   },
   OPERATOR: {
@@ -134,6 +138,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'read', subject: 'Settings' },
       { action: 'read', subject: 'Company' },
       { action: 'read', subject: 'Safety' },
+      { action: 'manage', subject: 'employee-document' },
     ],
   },
   EMPLOYEE: {
@@ -153,6 +158,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'read', subject: 'Report' },
       { action: 'read', subject: 'Settings' },
       { action: 'read', subject: 'Company' },
+      { action: 'manage', subject: 'employee-document' },
     ],
   },
   USER: {
@@ -171,6 +177,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'read', subject: 'Report' },
       { action: 'read', subject: 'Settings' },
       { action: 'read', subject: 'Company' },
+      { action: 'read', subject: 'employee-document' },
     ],
   },
 };

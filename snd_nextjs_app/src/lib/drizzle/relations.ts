@@ -1,49 +1,35 @@
 import { relations } from "drizzle-orm/relations";
-import { projects, projectResources, employees, equipment, advancePayments, advancePaymentHistories, employeeAssignments, rentals, equipmentRentalHistory, users, salaryIncrements, equipmentMaintenance, equipmentMaintenanceItems, employeeLeaves, departments, designations, organizationalUnits, customers, employeeDocuments, employeeSalaries, employeePerformanceReviews, employeeResignations, employeeSkill, skills, employeeTraining, trainings, payrolls, payrollRuns, payrollItems, loans, taxDocuments, taxDocumentPayrolls, timesheets, timeEntries, weeklyTimesheets, timesheetApprovals, timeOffRequests, rentalItems, rentalOperatorAssignments, roles, modelHasRoles, permissions, roleHasPermissions, modelHasPermissions } from "./schema";
+import { advancePayments, advancePaymentHistories, employees, employeeAssignments, projects, rentals, equipment, equipmentRentalHistory, projectResources, users, salaryIncrements, equipmentMaintenance, equipmentMaintenanceItems, employeeLeaves, departments, designations, organizationalUnits, customers, employeeDocuments, employeeSalaries, employeePerformanceReviews, employeeResignations, employeeSkill, skills, employeeTraining, trainings, payrolls, payrollRuns, payrollItems, loans, taxDocuments, taxDocumentPayrolls, timesheets, timeEntries, weeklyTimesheets, timesheetApprovals, timeOffRequests, rentalItems, rentalOperatorAssignments, roles, modelHasRoles, permissions, roleHasPermissions, modelHasPermissions } from "./schema";
 
-export const projectResourcesRelations = relations(projectResources, ({one}) => ({
-	project: one(projects, {
-		fields: [projectResources.projectId],
-		references: [projects.id]
+export const advancePaymentHistoriesRelations = relations(advancePaymentHistories, ({one}) => ({
+	advancePayment: one(advancePayments, {
+		fields: [advancePaymentHistories.advancePaymentId],
+		references: [advancePayments.id]
 	}),
-	employee_employeeId: one(employees, {
-		fields: [projectResources.employeeId],
-		references: [employees.id],
-		relationName: "projectResources_employeeId_employees_id"
-	}),
-	equipment: one(equipment, {
-		fields: [projectResources.equipmentId],
-		references: [equipment.id]
-	}),
-	employee_assignedToId: one(employees, {
-		fields: [projectResources.assignedToId],
-		references: [employees.id],
-		relationName: "projectResources_assignedToId_employees_id"
+	employee: one(employees, {
+		fields: [advancePaymentHistories.employeeId],
+		references: [employees.id]
 	}),
 }));
 
-export const projectsRelations = relations(projects, ({one, many}) => ({
-	projectResources: many(projectResources),
-	employeeAssignments: many(employeeAssignments),
-	equipmentRentalHistories: many(equipmentRentalHistory),
-	customer: one(customers, {
-		fields: [projects.customerId],
-		references: [customers.id]
+export const advancePaymentsRelations = relations(advancePayments, ({one, many}) => ({
+	advancePaymentHistories: many(advancePaymentHistories),
+	employee: one(employees, {
+		fields: [advancePayments.employeeId],
+		references: [employees.id]
 	}),
-	rentals: many(rentals),
-	timesheets: many(timesheets),
 }));
 
 export const employeesRelations = relations(employees, ({one, many}) => ({
+	advancePaymentHistories: many(advancePaymentHistories),
+	employeeAssignments: many(employeeAssignments),
+	equipmentRentalHistories: many(equipmentRentalHistory),
 	projectResources_employeeId: many(projectResources, {
 		relationName: "projectResources_employeeId_employees_id"
 	}),
 	projectResources_assignedToId: many(projectResources, {
 		relationName: "projectResources_assignedToId_employees_id"
 	}),
-	advancePaymentHistories: many(advancePaymentHistories),
-	employeeAssignments: many(employeeAssignments),
-	equipmentRentalHistories: many(equipmentRentalHistory),
 	advancePayments: many(advancePayments),
 	salaryIncrements: many(salaryIncrements),
 	equipmentMaintenances: many(equipmentMaintenance),
@@ -85,36 +71,6 @@ export const employeesRelations = relations(employees, ({one, many}) => ({
 	rentalOperatorAssignments: many(rentalOperatorAssignments),
 }));
 
-export const equipmentRelations = relations(equipment, ({one, many}) => ({
-	projectResources: many(projectResources),
-	equipmentRentalHistories: many(equipmentRentalHistory),
-	equipmentMaintenances: many(equipmentMaintenance),
-	employee: one(employees, {
-		fields: [equipment.assignedTo],
-		references: [employees.id]
-	}),
-	rentalItems: many(rentalItems),
-}));
-
-export const advancePaymentHistoriesRelations = relations(advancePaymentHistories, ({one}) => ({
-	advancePayment: one(advancePayments, {
-		fields: [advancePaymentHistories.advancePaymentId],
-		references: [advancePayments.id]
-	}),
-	employee: one(employees, {
-		fields: [advancePaymentHistories.employeeId],
-		references: [employees.id]
-	}),
-}));
-
-export const advancePaymentsRelations = relations(advancePayments, ({one, many}) => ({
-	advancePaymentHistories: many(advancePaymentHistories),
-	employee: one(employees, {
-		fields: [advancePayments.employeeId],
-		references: [employees.id]
-	}),
-}));
-
 export const employeeAssignmentsRelations = relations(employeeAssignments, ({one, many}) => ({
 	employee: one(employees, {
 		fields: [employeeAssignments.employeeId],
@@ -128,6 +84,18 @@ export const employeeAssignmentsRelations = relations(employeeAssignments, ({one
 		fields: [employeeAssignments.rentalId],
 		references: [rentals.id]
 	}),
+	timesheets: many(timesheets),
+}));
+
+export const projectsRelations = relations(projects, ({one, many}) => ({
+	employeeAssignments: many(employeeAssignments),
+	equipmentRentalHistories: many(equipmentRentalHistory),
+	projectResources: many(projectResources),
+	customer: one(customers, {
+		fields: [projects.customerId],
+		references: [customers.id]
+	}),
+	rentals: many(rentals),
 	timesheets: many(timesheets),
 }));
 
@@ -178,6 +146,38 @@ export const equipmentRentalHistoryRelations = relations(equipmentRentalHistory,
 	employee: one(employees, {
 		fields: [equipmentRentalHistory.employeeId],
 		references: [employees.id]
+	}),
+}));
+
+export const equipmentRelations = relations(equipment, ({one, many}) => ({
+	equipmentRentalHistories: many(equipmentRentalHistory),
+	projectResources: many(projectResources),
+	equipmentMaintenances: many(equipmentMaintenance),
+	employee: one(employees, {
+		fields: [equipment.assignedTo],
+		references: [employees.id]
+	}),
+	rentalItems: many(rentalItems),
+}));
+
+export const projectResourcesRelations = relations(projectResources, ({one}) => ({
+	project: one(projects, {
+		fields: [projectResources.projectId],
+		references: [projects.id]
+	}),
+	employee_employeeId: one(employees, {
+		fields: [projectResources.employeeId],
+		references: [employees.id],
+		relationName: "projectResources_employeeId_employees_id"
+	}),
+	equipment: one(equipment, {
+		fields: [projectResources.equipmentId],
+		references: [equipment.id]
+	}),
+	employee_assignedToId: one(employees, {
+		fields: [projectResources.assignedToId],
+		references: [employees.id],
+		relationName: "projectResources_assignedToId_employees_id"
 	}),
 }));
 

@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },
+  serverExternalPackages: ['pg'],
   // Disable static export for API routes and dynamic pages
   trailingSlash: false,
   webpack: (config, { dev, isServer }) => {

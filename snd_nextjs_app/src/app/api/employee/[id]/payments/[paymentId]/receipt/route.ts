@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from 'next-auth';
 import { db } from '@/lib/drizzle';
-import { employees, advancePaymentHistory, advancePayments, designations } from '@/lib/drizzle/schema';
+import { employees, advancePaymentHistories, advancePayments, designations } from '@/lib/drizzle/schema';
 import { eq, and, isNull } from 'drizzle-orm';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
@@ -45,12 +45,12 @@ const getEmployeePaymentReceiptHandler = async (
     // Get the payment record
     const paymentRecord = await db
       .select({
-        id: advancePaymentHistory.id,
-        amount: advancePaymentHistory.amount,
-        paymentDate: advancePaymentHistory.paymentDate,
-        notes: advancePaymentHistory.notes,
-        createdAt: advancePaymentHistory.createdAt,
-        advancePaymentId: advancePaymentHistory.advancePaymentId,
+        id: advancePaymentHistories.id,
+        amount: advancePaymentHistories.amount,
+        paymentDate: advancePaymentHistories.paymentDate,
+        notes: advancePaymentHistories.notes,
+        createdAt: advancePaymentHistories.createdAt,
+        advancePaymentId: advancePaymentHistories.advancePaymentId,
         advancePayment: {
           id: advancePayments.id,
           amount: advancePayments.amount,
@@ -59,13 +59,13 @@ const getEmployeePaymentReceiptHandler = async (
           repaidAmount: advancePayments.repaidAmount
         }
       })
-      .from(advancePaymentHistory)
-      .leftJoin(advancePayments, eq(advancePaymentHistory.advancePaymentId, advancePayments.id))
+      .from(advancePaymentHistories)
+      .leftJoin(advancePayments, eq(advancePaymentHistories.advancePaymentId, advancePayments.id))
       .where(
         and(
-          eq(advancePaymentHistory.id, paymentId),
-          eq(advancePaymentHistory.employeeId, employeeId),
-          isNull(advancePaymentHistory.deletedAt)
+          eq(advancePaymentHistories.id, paymentId),
+          eq(advancePaymentHistories.employeeId, employeeId),
+          isNull(advancePaymentHistories.deletedAt)
         )
       )
       .limit(1);
@@ -107,16 +107,16 @@ const getEmployeePaymentReceiptHandler = async (
       payment: {
         id: paymentRecord[0].id,
         amount: paymentRecord[0].amount,
-        payment_date: paymentRecord[0].paymentDate.toISOString().slice(0, 10), // YYYY-MM-DD
+        payment_date: typeof paymentRecord[0].paymentDate === 'string' ? paymentRecord[0].paymentDate.slice(0, 10) : new Date(paymentRecord[0].paymentDate).toISOString().slice(0, 10), // YYYY-MM-DD
         notes: paymentRecord[0].notes,
         recorded_by: "System", // TODO: Add user lookup
-        created_at: paymentRecord[0].createdAt.toISOString().slice(0, 19).replace('T', ' '), // YYYY-MM-DD HH:MM:SS
+        created_at: typeof paymentRecord[0].createdAt === 'string' ? paymentRecord[0].createdAt.slice(0, 19).replace('T', ' ') : new Date(paymentRecord[0].createdAt).toISOString().slice(0, 19).replace('T', ' '), // YYYY-MM-DD HH:MM:SS
       },
       advance: paymentRecord[0].advancePayment ? {
         id: paymentRecord[0].advancePayment.id,
         amount: paymentRecord[0].advancePayment.amount,
         reason: paymentRecord[0].advancePayment.reason,
-        payment_date: paymentRecord[0].advancePayment.paymentDate?.toISOString().slice(0, 10) || null,
+        payment_date: paymentRecord[0].advancePayment.paymentDate ? (typeof paymentRecord[0].advancePayment.paymentDate === 'string' ? paymentRecord[0].advancePayment.paymentDate.slice(0, 10) : new Date(paymentRecord[0].advancePayment.paymentDate).toISOString().slice(0, 10)) : null,
         repaid_amount: paymentRecord[0].advancePayment.repaidAmount,
         balance: Number(paymentRecord[0].advancePayment.amount) - Number(paymentRecord[0].advancePayment.repaidAmount || 0),
       } : null,

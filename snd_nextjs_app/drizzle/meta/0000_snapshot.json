@@ -1,5 +1,5 @@
 {
-  "id": "b2866081-2e20-450e-9900-9c9da9f39d12",
+  "id": "e542301d-30b8-4520-949c-d9aa276f5add",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -4509,6 +4509,18 @@
         "employee_id": {
           "name": "employee_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "employee_name": {
+          "name": "employee_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "employee_file_number": {
+          "name": "employee_file_number",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
