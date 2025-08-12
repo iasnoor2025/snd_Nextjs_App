@@ -130,12 +130,12 @@ class SalaryIncrementService {
 
   async createSalaryIncrement(data: CreateSalaryIncrementData): Promise<SalaryIncrement> {
     const response = await ApiService.post('/salary-increments', data);
-    return response.data.data;
+    return response.data;
   }
 
   async updateSalaryIncrement(id: number, data: UpdateSalaryIncrementData): Promise<SalaryIncrement> {
     const response = await ApiService.put(`/salary-increments/${id}`, data);
-    return response.data.data;
+    return response.data;
   }
 
   async deleteSalaryIncrement(id: number): Promise<void> {
@@ -144,17 +144,17 @@ class SalaryIncrementService {
 
   async approveSalaryIncrement(id: number, notes?: string): Promise<SalaryIncrement> {
     const response = await ApiService.post(`/salary-increments/${id}/approve`, { notes });
-    return response.data.data;
+    return response.data;
   }
 
   async rejectSalaryIncrement(id: number, rejection_reason: string, notes?: string): Promise<SalaryIncrement> {
-    const response = await ApiService.post(`/salary-increments/${id}/reject`, { rejection_reason, notes });
-    return response.data.data;
+    const response = await ApiService.post(`/salary-increments/${id}/reject`, { notes, rejection_reason });
+    return response.data;
   }
 
   async applySalaryIncrement(id: number): Promise<SalaryIncrement> {
     const response = await ApiService.post(`/salary-increments/${id}/apply`);
-    return response.data.data;
+    return response.data;
   }
 
   async getStatistics(filters: { from_date?: string; to_date?: string } = {}): Promise<SalaryIncrementStatistics> {
@@ -167,12 +167,12 @@ class SalaryIncrementService {
     });
 
     const response = await ApiService.get(`/salary-increments/statistics?${params.toString()}`);
-    return response.data.data;
+    return response.data;
   }
 
   async getEmployeeSalaryHistory(employeeId: number): Promise<SalaryIncrement[]> {
     const response = await ApiService.get(`/employees/${employeeId}/salary-increments`);
-    return response.data.data;
+    return response.data;
   }
 
   // Helper methods for calculated values

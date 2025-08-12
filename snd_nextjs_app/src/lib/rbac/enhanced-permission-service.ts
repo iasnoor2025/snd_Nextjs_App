@@ -1,4 +1,6 @@
-import { db, ensurePrismaConnection, safePrismaOperation, prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { users, roles, permissions, modelHasRoles, roleHasPermissions, modelHasPermissions } from '@/lib/drizzle/schema';
+import { eq, and } from 'drizzle-orm';
 
 export interface PermissionGrant {
   resource: string;
@@ -82,50 +84,47 @@ export class EnhancedPermissionService {
    * Similar to AccessControl's grant() method
    */
   async grant(roleName: string, resource: string, action: string, attributes?: string[]): Promise<void> {
-    // Ensure database connection is ready
-    await ensurePrismaConnection();
-    
     const permissionName = `${action}.${resource}`;
     
-    // Create permission if it doesn't exist using safe operation
-    const permission = await safePrismaOperation(async () => {
-      return await prisma.permission.upsert({
-        where: { name: permissionName },
-        update: {},
-        create: {
-          name: permissionName,
-          guard_name: 'web',
+    // Create permission if it doesn't exist
+    const [permission] = await db
+      .insert(permissions)
+      .values({
+        name: permissionName,
+        guardName: 'web',
+        updatedAt: new Date().toISOString().split('T')[0],
+      })
+      .onConflictDoUpdate({
+        target: permissions.name,
+        set: {
+          updatedAt: new Date().toISOString().split('T')[0],
         },
-      });
-    });
+      })
+      .returning();
 
-    // Get role using safe operation
-    const role = await safePrismaOperation(async () => {
-      return await prisma.role.findUnique({
-        where: { name: roleName },
-      });
-    });
+    // Get role
+    const roleResult = await db
+      .select({
+        id: roles.id,
+      })
+      .from(roles)
+      .where(eq(roles.name, roleName))
+      .limit(1);
 
-    if (!role) {
+    if (roleResult.length === 0) {
       throw new Error(`Role ${roleName} not found`);
     }
 
-    // Grant permission to role using safe operation
-    await safePrismaOperation(async () => {
-      return await prisma.rolePermission.upsert({
-        where: {
-          permission_id_role_id: {
-            permission_id: permission.id,
-            role_id: role.id,
-          },
-        },
-        update: {},
-        create: {
-          permission_id: permission.id,
-          role_id: role.id,
-        },
-      });
-    });
+    const role = roleResult[0];
+
+    // Grant permission to role
+    await db
+      .insert(roleHasPermissions)
+      .values({
+        permissionId: permission.id,
+        roleId: role.id,
+      })
+      .onConflictDoNothing();
 
     // Clear cache
     this.clearCache();
@@ -136,40 +135,45 @@ export class EnhancedPermissionService {
    * Similar to AccessControl's revoke() method
    */
   async revoke(roleName: string, resource: string, action: string): Promise<void> {
-    // Ensure database connection is ready
-    await ensurePrismaConnection();
-    
     const permissionName = `${action}.${resource}`;
     
-    const permission = await safePrismaOperation(async () => {
-      return await prisma.permission.findUnique({
-        where: { name: permissionName },
-      });
-    });
+    const permissionResult = await db
+      .select({
+        id: permissions.id,
+      })
+      .from(permissions)
+      .where(eq(permissions.name, permissionName))
+      .limit(1);
 
-    if (!permission) {
+    if (permissionResult.length === 0) {
       return; // Permission doesn't exist, nothing to revoke
     }
 
-    const role = await safePrismaOperation(async () => {
-      return await prisma.role.findUnique({
-        where: { name: roleName },
-      });
-    });
+    const permission = permissionResult[0];
 
-    if (!role) {
+    const roleResult = await db
+      .select({
+        id: roles.id,
+      })
+      .from(roles)
+      .where(eq(roles.name, roleName))
+      .limit(1);
+
+    if (roleResult.length === 0) {
       return; // Role doesn't exist, nothing to revoke
     }
 
-    // Revoke permission from role using safe operation
-    await safePrismaOperation(async () => {
-      return await prisma.rolePermission.deleteMany({
-        where: {
-          role_id: role.id,
-          permission_id: permission.id,
-        },
-      });
-    });
+    const role = roleResult[0];
+
+    // Revoke permission from role
+    await db
+      .delete(roleHasPermissions)
+      .where(
+        and(
+          eq(roleHasPermissions.roleId, role.id),
+          eq(roleHasPermissions.permissionId, permission.id)
+        )
+      );
 
     // Clear cache
     this.clearCache();
@@ -180,51 +184,48 @@ export class EnhancedPermissionService {
    * Similar to AccessControl's permissions() method
    */
   async getUserPermissions(userId: string): Promise<string[]> {
-    // Ensure database connection is ready
-    await ensurePrismaConnection();
+    const userIdInt = parseInt(userId);
     
-    const user = await safePrismaOperation(async () => {
-      return await prisma.user.findUnique({
-        where: { id: parseInt(userId) },
-        include: {
-          user_roles: {
-            include: {
-              role: {
-                include: {
-                  role_permissions: {
-                    include: {
-                      permission: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-          user_permissions: {
-            include: {
-              permission: true,
-            },
-          },
-        },
-      });
-    });
+    const userResult = await db
+      .select({
+        id: users.id,
+        roleId: users.roleId,
+      })
+      .from(users)
+      .where(eq(users.id, userIdInt))
+      .limit(1);
 
-    if (!user) {
+    if (userResult.length === 0) {
       return [];
     }
 
+    const user = userResult[0];
     const permissions = new Set<string>();
 
     // Add role permissions
-    for (const userRole of user.user_roles) {
-      for (const rolePermission of userRole.role.role_permissions) {
-        permissions.add(rolePermission.permission.name);
-      }
+    const rolePermissions = await db
+      .select({
+        permissionName: permissions.name,
+      })
+      .from(roleHasPermissions)
+      .innerJoin(permissions, eq(roleHasPermissions.permissionId, permissions.id))
+      .where(eq(roleHasPermissions.roleId, user.roleId));
+
+    for (const rolePermission of rolePermissions) {
+      permissions.add(rolePermission.permissionName);
     }
 
     // Add direct user permissions (override role permissions)
-    for (const userPermission of user.user_permissions) {
-      permissions.add(userPermission.permission.name);
+    const userPermissions = await db
+      .select({
+        permissionName: permissions.name,
+      })
+      .from(modelHasPermissions)
+      .innerJoin(permissions, eq(modelHasPermissions.permissionId, permissions.id))
+      .where(eq(modelHasPermissions.userId, userIdInt));
+
+    for (const userPermission of userPermissions) {
+      permissions.add(userPermission.permissionName);
     }
 
     return Array.from(permissions);
@@ -234,27 +235,37 @@ export class EnhancedPermissionService {
    * Get all roles for a user
    */
   async getUserRoles(userId: string): Promise<string[]> {
-    // Ensure database connection is ready
-    await ensurePrismaConnection();
+    const userIdInt = parseInt(userId);
     
-    const user = await safePrismaOperation(async () => {
-      return await prisma.user.findUnique({
-        where: { id: parseInt(userId) },
-        include: {
-          user_roles: {
-            include: {
-              role: true,
-            },
-          },
-        },
-      });
-    });
+    const userResult = await db
+      .select({
+        id: users.id,
+        roleId: users.roleId,
+      })
+      .from(users)
+      .where(eq(users.id, userIdInt))
+      .limit(1);
 
-    if (!user) {
+    if (userResult.length === 0) {
       return [];
     }
 
-    return user.user_roles.map(userRole => userRole.role.name);
+    const user = userResult[0];
+
+    // Get user's role
+    const roleResult = await db
+      .select({
+        name: roles.name,
+      })
+      .from(roles)
+      .where(eq(roles.id, user.roleId))
+      .limit(1);
+
+    if (roleResult.length === 0) {
+      return [];
+    }
+
+    return [roleResult[0].name];
   }
 
   /**
@@ -296,54 +307,51 @@ export class EnhancedPermissionService {
    */
   private async checkPermission(userId: string, action: string, resource: string, attributes?: string[]): Promise<boolean> {
     try {
-      // Ensure database connection is ready
-      await ensurePrismaConnection();
+      const userIdInt = parseInt(userId);
       
-      const user = await safePrismaOperation(async () => {
-        return await prisma.user.findUnique({
-          where: { id: parseInt(userId) },
-          include: {
-            user_roles: {
-              include: {
-                role: {
-                  include: {
-                    role_permissions: {
-                      include: {
-                        permission: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-            user_permissions: {
-              include: {
-                permission: true,
-              },
-            },
-          },
-        });
-      });
+      // Get user with role
+      const user = await db
+        .select({
+          id: users.id,
+          roleId: users.roleId,
+        })
+        .from(users)
+        .where(eq(users.id, userIdInt))
+        .limit(1);
 
-      if (!user) {
+      if (user.length === 0) {
         return false;
       }
 
+      const userRole = user[0];
+
       // Check direct user permissions first (override role permissions)
-      for (const userPermission of user.user_permissions) {
-        const permissionName = userPermission.permission.name;
-        if (this.matchesPermission(permissionName, action, resource)) {
+      const userPermissions = await db
+        .select({
+          permissionName: permissions.name,
+        })
+        .from(modelHasPermissions)
+        .innerJoin(permissions, eq(modelHasPermissions.permissionId, permissions.id))
+        .where(eq(modelHasPermissions.userId, userIdInt));
+
+      for (const userPermission of userPermissions) {
+        if (this.matchesPermission(userPermission.permissionName, action, resource)) {
           return true;
         }
       }
 
       // Check role permissions
-      for (const userRole of user.user_roles) {
-        for (const rolePermission of userRole.role.role_permissions) {
-          const permissionName = rolePermission.permission.name;
-          if (this.matchesPermission(permissionName, action, resource)) {
-            return true;
-          }
+      const rolePermissions = await db
+        .select({
+          permissionName: permissions.name,
+        })
+        .from(roleHasPermissions)
+        .innerJoin(permissions, eq(roleHasPermissions.permissionId, permissions.id))
+        .where(eq(roleHasPermissions.roleId, userRole.roleId));
+
+      for (const rolePermission of rolePermissions) {
+        if (this.matchesPermission(rolePermission.permissionName, action, resource)) {
+          return true;
         }
       }
 
@@ -383,4 +391,9 @@ export class EnhancedPermissionService {
 }
 
 // Export singleton instance
-export const enhancedPermissionService = EnhancedPermissionService.getInstance(); 
+export const enhancedPermissionService = EnhancedPermissionService.getInstance();
+
+// Export a public checkPermission function for easy use in API routes
+export async function checkPermission(userId: string, resource: string, action: string, attributes?: string[]): Promise<boolean> {
+  return enhancedPermissionService.can(userId, action, resource, attributes);
+} 

@@ -613,6 +613,18 @@ export const PermissionConfigs = {
     delete: { action: 'delete' as Action, subject: 'User' as Subject },
     manage: { action: 'manage' as Action, subject: 'User' as Subject },
   },
+
+  // Salary Increment permissions
+  salaryIncrements: {
+    read: { action: 'read' as Action, subject: 'SalaryIncrement' as Subject },
+    create: { action: 'create' as Action, subject: 'SalaryIncrement' as Subject },
+    update: { action: 'update' as Action, subject: 'SalaryIncrement' as Subject },
+    delete: { action: 'delete' as Action, subject: 'SalaryIncrement' as Subject },
+    manage: { action: 'manage' as Action, subject: 'SalaryIncrement' as Subject },
+    approve: { action: 'approve' as Action, subject: 'SalaryIncrement' as Subject },
+    reject: { action: 'reject' as Action, subject: 'SalaryIncrement' as Subject },
+    apply: { action: 'apply' as Action, subject: 'SalaryIncrement' as Subject },
+  },
 };
 
 /**

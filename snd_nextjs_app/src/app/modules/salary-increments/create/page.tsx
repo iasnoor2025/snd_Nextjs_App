@@ -207,9 +207,9 @@ export default function CreateSalaryIncrementPage() {
       const response = await ApiService.get(`/employees/${employeeId}`);
       console.log('Employee details response:', response);
       
-      if (response.data) {
-        setSelectedEmployee(response.data);
-        console.log('Employee set:', response.data);
+      if (response.employee) {
+        setSelectedEmployee(response.employee);
+        console.log('Employee set:', response.employee);
       } else {
         console.error('No employee data in response');
         toast.error('Failed to load employee details');

@@ -42,10 +42,9 @@ export async function middleware(request: NextRequest) {
     }
 
     // Only log in development and not for every request to reduce noise
-    if (process.env.NODE_ENV === 'development' && !pathname.includes('/api/')) {
-      console.log('🔍 MIDDLEWARE - Pathname:', pathname);
-      console.log('🔍 MIDDLEWARE - User role:', user.role);
-      console.log('🔍 MIDDLEWARE - Route permission:', routePermission);
+    if (process.env.NODE_ENV === 'development' && !pathname.includes('/api/') && Math.random() < 0.1) {
+      // Only log 10% of requests to reduce noise
+      console.log('🔍 MIDDLEWARE - Pathname:', pathname, 'User role:', user.role);
     }
 
     // Check if user has required role or higher
@@ -53,7 +52,7 @@ export async function middleware(request: NextRequest) {
 
     if (!hasAccess) {
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 MIDDLEWARE - Access denied for user role:', user.role);
+        console.log('🔍 MIDDLEWARE - Access denied for user role:', user.role, 'Path:', pathname);
       }
       // Redirect to access denied page
       const accessDeniedUrl = new URL('/access-denied', request.url);

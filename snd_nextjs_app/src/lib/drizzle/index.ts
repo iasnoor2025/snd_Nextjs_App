@@ -13,12 +13,12 @@ function getPool(): Pool {
   }
   
   if (global.__drizzlePool) {
-    console.log('Reusing existing database pool');
+    // console.log('Reusing existing database pool');
     return global.__drizzlePool;
   }
   
-  console.log('Creating new database pool');
-  console.log('Database URL:', process.env.DATABASE_URL.replace(/\/\/.*@/, '//***:***@'));
+  // console.log('Creating new database pool');
+  // console.log('Database URL:', process.env.DATABASE_URL.replace(/\/\/.*@/, '//***:***@'));
   
   const pool = new Pool({ 
     connectionString: process.env.DATABASE_URL, 
@@ -29,7 +29,7 @@ function getPool(): Pool {
   
   // Test the connection
   pool.on('connect', (client) => {
-    console.log('New database client connected');
+    // console.log('New database client connected');
   });
   
   pool.on('error', (err, client) => {
@@ -41,7 +41,7 @@ function getPool(): Pool {
     if (err) {
       console.error('Database connection test failed:', err);
     } else {
-      console.log('Database connection test successful');
+      // console.log('Database connection test successful');
     }
   });
   

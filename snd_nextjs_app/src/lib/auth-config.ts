@@ -26,19 +26,19 @@ export const authConfig: NextAuthOptions = {
           const user = await findUserByEmailWithRoles(credentials.email);
 
           if (!user) {
-            console.log('🔍 AUTH - User not found:', credentials.email);
+            // console.log('🔍 AUTH - User not found:', credentials.email);
             return null;
           }
 
           if (!user.isActive) {
-            console.log('🔍 AUTH - User is inactive:', credentials.email);
+            // console.log('🔍 AUTH - User is inactive:', credentials.email);
             return null;
           }
 
           const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
 
           if (!isPasswordValid) {
-            console.log('🔍 AUTH - Invalid password for user:', credentials.email);
+            // console.log('🔍 AUTH - Invalid password for user:', credentials.email);
             return null;
           }
 
@@ -48,7 +48,7 @@ export const authConfig: NextAuthOptions = {
           // Special case for admin@ias.com - ALWAYS SUPER_ADMIN
           if (credentials.email === 'admin@ias.com') {
             role = "SUPER_ADMIN";
-            console.log('🔍 AUTH - admin@ias.com detected, setting role to SUPER_ADMIN');
+            // console.log('🔍 AUTH - admin@ias.com detected, setting role to SUPER_ADMIN');
           } else {
             // For other users, check user_roles or fallback to role_id
              if (user.user_roles && user.user_roles.length > 0) {
@@ -96,7 +96,7 @@ export const authConfig: NextAuthOptions = {
             isActive: user.isActive || true,
           };
           
-          console.log('🔍 AUTH - Login successful:', user.email, 'Role:', role);
+          // console.log('🔍 AUTH - Login successful:', user.email, 'Role:', role);
           
           return userData;
         } catch (error) {
@@ -149,15 +149,15 @@ export const authConfig: NextAuthOptions = {
           if (existingUser) {
             // User exists, check if active
             if (!existingUser.isActive) {
-              console.log('🔍 GOOGLE AUTH - User is inactive:', user.email);
+              // console.log('🔍 GOOGLE AUTH - User is inactive:', user.email);
               return false;
             }
-            console.log('🔍 GOOGLE AUTH - Existing user signed in:', user.email);
+            // console.log('🔍 GOOGLE AUTH - Existing user signed in:', user.email);
             return true;
           } else {
             // Create new user for Google OAuth
             await upsertGoogleUser(user.email!, user.name || null);
-            console.log('🔍 GOOGLE AUTH - New user created:', user.email);
+            // console.log('🔍 GOOGLE AUTH - New user created:', user.email);
             return true;
           }
         } catch (error) {
@@ -174,7 +174,7 @@ export const authConfig: NextAuthOptions = {
         token.isActive = user.isActive;
         token.id = user.id;
         token.national_id = user.national_id;
-        console.log('🔍 JWT - Setting token role:', user.role);
+        // console.log('🔍 JWT - Setting token role:', user.role);
       }
       
       // For Google OAuth users, determine role
@@ -224,7 +224,7 @@ export const authConfig: NextAuthOptions = {
             token.role = role;
             token.isActive = dbUser.isActive;
             token.id = dbUser.id.toString();
-            console.log('🔍 JWT - Google user role set to:', role);
+            // console.log('🔍 JWT - Google user role set to:', role);
           }
         } catch (error) {
           console.error('🔍 JWT - Error setting Google user role:', error);
@@ -234,10 +234,10 @@ export const authConfig: NextAuthOptions = {
       // ALWAYS ensure admin@ias.com has SUPER_ADMIN role in token
       if (token.email === 'admin@ias.com') {
         token.role = 'SUPER_ADMIN';
-        console.log('🔍 JWT - Forcing SUPER_ADMIN role for admin@ias.com');
+        // console.log('🔍 JWT - Forcing SUPER_ADMIN role for admin@ias.com');
       }
       
-      console.log('🔍 JWT - Final token role:', token.role);
+      // console.log('🔍 JWT - Final token role:', token.role);
       return token;
     },
     
@@ -246,7 +246,7 @@ export const authConfig: NextAuthOptions = {
         // ALWAYS ensure admin@ias.com has SUPER_ADMIN role in session
         if (token.email === 'admin@ias.com') {
           session.user.role = 'SUPER_ADMIN';
-          console.log('🔍 SESSION - Forcing SUPER_ADMIN role for admin@ias.com');
+          // console.log('🔍 SESSION - Forcing SUPER_ADMIN role for admin@ias.com');
         } else {
           session.user.role = token.role || "USER";
         }
@@ -255,7 +255,7 @@ export const authConfig: NextAuthOptions = {
         session.user.id = String(token.id || token.sub || 'unknown');
         session.user.national_id = token.national_id;
         
-        console.log('🔍 SESSION - Final session role:', session.user.role);
+        // console.log('🔍 SESSION - Final session role:', session.user.role);
       }
       return session;
     },

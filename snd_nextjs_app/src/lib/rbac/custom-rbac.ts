@@ -26,6 +26,7 @@ export type Subject =
   | 'Assignment'
   | 'Safety'
   | 'employee-document'
+  | 'SalaryIncrement'
   | 'all';
 
 export interface User {
@@ -76,6 +77,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'manage', subject: 'Company' },
       { action: 'manage', subject: 'Safety' },
       { action: 'manage', subject: 'employee-document' },
+      { action: 'manage', subject: 'SalaryIncrement' },
     ],
   },
   MANAGER: {
@@ -97,6 +99,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'read', subject: 'Company' },
       { action: 'read', subject: 'Safety' },
       { action: 'manage', subject: 'employee-document' },
+      { action: 'manage', subject: 'SalaryIncrement' },
     ],
   },
   SUPERVISOR: {
@@ -139,6 +142,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'read', subject: 'Company' },
       { action: 'read', subject: 'Safety' },
       { action: 'manage', subject: 'employee-document' },
+      { action: 'read', subject: 'SalaryIncrement' },
     ],
   },
   EMPLOYEE: {
@@ -159,6 +163,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'read', subject: 'Settings' },
       { action: 'read', subject: 'Company' },
       { action: 'manage', subject: 'employee-document' },
+      { action: 'read', subject: 'SalaryIncrement' },
     ],
   },
   USER: {
@@ -178,6 +183,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'read', subject: 'Settings' },
       { action: 'read', subject: 'Company' },
       { action: 'read', subject: 'employee-document' },
+      { action: 'read', subject: 'SalaryIncrement' },
     ],
   },
 };
@@ -200,6 +206,7 @@ export const routePermissions: Record<string, { action: Action; subject: Subject
   '/modules/user-management': { action: 'read', subject: 'User', roles: ['SUPER_ADMIN', 'ADMIN'] },
   '/modules/analytics': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR'] },
   '/modules/safety-management': { action: 'read', subject: 'Safety', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR'] },
+  '/modules/salary-increments': { action: 'read', subject: 'SalaryIncrement', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'OPERATOR', 'EMPLOYEE', 'USER'] },
   '/modules/reporting': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR'] },
   '/modules/settings': { action: 'read', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'] },
   '/modules/audit-compliance': { action: 'read', subject: 'Report', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR'] },

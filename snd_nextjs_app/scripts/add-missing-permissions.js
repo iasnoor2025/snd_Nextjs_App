@@ -27,6 +27,16 @@ const missingPermissions = [
   'create.final-settlement',
   'update.final-settlement',
   'delete.final-settlement',
+
+  // Salary Increment permissions
+  'read.SalaryIncrement',
+  'create.SalaryIncrement',
+  'update.SalaryIncrement',
+  'delete.SalaryIncrement',
+  'manage.SalaryIncrement',
+  'approve.SalaryIncrement',
+  'reject.SalaryIncrement',
+  'apply.SalaryIncrement',
 ];
 
 async function addMissingPermissions() {
