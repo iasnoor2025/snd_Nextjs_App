@@ -146,8 +146,8 @@ export async function POST(
       name: body.name || body.worker_name || 'Unnamed Resource',
       description: body.description,
       quantity: body.quantity ? parseInt(body.quantity) : null,
-      unitCost: body.unit_cost ? parseFloat(body.unit_cost) : null,
-      totalCost: body.total_cost ? parseFloat(body.total_cost) : null,
+      unitCost: body.unit_cost ? String(parseFloat(body.unit_cost)) : null,
+      totalCost: body.total_cost ? String(parseFloat(body.total_cost)) : null,
       date: body.date ? new Date(body.date).toISOString() : null,
       status: body.status || 'pending',
       notes: body.notes,
@@ -158,41 +158,41 @@ export async function POST(
       employeeFileNumber: body.employee_file_number,
       workerName: body.worker_name,
       jobTitle: body.job_title,
-      dailyRate: body.daily_rate ? parseFloat(body.daily_rate) : null,
+      dailyRate: body.daily_rate ? String(parseFloat(body.daily_rate)) : null,
       daysWorked: body.days_worked ? parseInt(body.days_worked) : null,
-      startDate: body.start_date ? new Date(body.start_date) : null,
-      endDate: body.end_date ? new Date(body.end_date) : null,
+      startDate: body.start_date ? new Date(body.start_date).toISOString() : null,
+      endDate: body.end_date ? new Date(body.end_date).toISOString() : null,
       totalDays: body.total_days ? parseInt(body.total_days) : null,
 
       // Equipment specific fields
       equipmentId: body.equipment_id ? parseInt(body.equipment_id) : null,
       equipmentName: body.equipment_name,
       operatorName: body.operator_name,
-      hourlyRate: body.hourly_rate ? parseFloat(body.hourly_rate) : null,
-      hoursWorked: body.hours_worked ? parseFloat(body.hours_worked) : null,
-      usageHours: body.usage_hours ? parseFloat(body.usage_hours) : null,
-      maintenanceCost: body.maintenance_cost ? parseFloat(body.maintenance_cost) : null,
+      hourlyRate: body.hourly_rate ? String(parseFloat(body.hourly_rate)) : null,
+      hoursWorked: body.hours_worked ? String(parseFloat(body.hours_worked)) : null,
+      usageHours: body.usage_hours ? String(parseFloat(body.usage_hours)) : null,
+      maintenanceCost: body.maintenance_cost ? String(parseFloat(body.maintenance_cost)) : null,
 
       // Material specific fields
       materialName: body.material_name,
       unit: body.unit,
-      unitPrice: body.unit_price ? parseFloat(body.unit_price) : null,
+      unitPrice: body.unit_price ? String(parseFloat(body.unit_price)) : null,
       materialId: body.material_id ? parseInt(body.material_id) : null,
 
       // Fuel specific fields
       fuelType: body.fuel_type,
-      liters: body.liters ? parseFloat(body.liters) : null,
-      pricePerLiter: body.price_per_liter ? parseFloat(body.price_per_liter) : null,
+      liters: body.liters ? String(parseFloat(body.liters)) : null,
+      pricePerLiter: body.price_per_liter ? String(parseFloat(body.price_per_liter)) : null,
 
       // Expense specific fields
       category: body.category,
       expenseDescription: body.expense_description,
-      amount: body.amount ? parseFloat(body.amount) : null,
+      amount: body.amount ? String(parseFloat(body.amount)) : null,
 
       // Task specific fields
       title: body.title,
       priority: body.priority,
-      dueDate: body.due_date ? new Date(body.due_date) : null,
+      dueDate: body.due_date ? new Date(body.due_date).toISOString() : null,
       completionPercentage: body.completion_percentage ? parseInt(body.completion_percentage) : null,
       assignedToId: body.assigned_to_id ? parseInt(body.assigned_to_id) : null,
 
@@ -247,9 +247,20 @@ export async function POST(
             totalAmount: body.total_cost ? parseFloat(body.total_cost) : null,
             notes: body.notes,
             status: 'active',
+            createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           });
         console.log('Equipment assignment created successfully');
+        
+        // Automatically update equipment status to 'assigned'
+        await db
+          .update(equipment)
+          .set({ 
+            status: 'assigned',
+            updatedAt: new Date().toISOString()
+          })
+          .where(eq(equipment.id, parseInt(body.equipment_id)));
+        console.log('Equipment status updated to assigned');
       } catch (assignmentError) {
         console.error('Error creating equipment assignment:', assignmentError);
         // Don't fail the resource creation if assignment creation fails

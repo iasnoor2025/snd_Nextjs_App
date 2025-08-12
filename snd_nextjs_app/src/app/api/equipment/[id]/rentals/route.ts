@@ -3,6 +3,47 @@ import { db } from '@/lib/drizzle';
 import { equipment, equipmentRentalHistory, rentals, customers, projects, employees, users, employeeAssignments } from '@/lib/drizzle/schema';
 import { eq, desc, and, isNull } from 'drizzle-orm';
 
+// Function to update equipment status when assignment status changes
+async function updateEquipmentStatusOnAssignmentChange(equipmentId: number, assignmentStatus: string) {
+  try {
+    if (assignmentStatus === 'active') {
+      await db
+        .update(equipment)
+        .set({ 
+          status: 'assigned',
+          updatedAt: new Date().toISOString()
+        })
+        .where(eq(equipment.id, equipmentId));
+      console.log(`Equipment ${equipmentId} status updated to assigned`);
+    } else if (assignmentStatus === 'completed' || assignmentStatus === 'cancelled') {
+      // Check if there are other active assignments for this equipment
+      const otherActiveAssignments = await db
+        .select({ id: equipmentRentalHistory.id })
+        .from(equipmentRentalHistory)
+        .where(and(
+          eq(equipmentRentalHistory.equipmentId, equipmentId),
+          eq(equipmentRentalHistory.status, 'active')
+        ))
+        .limit(1);
+      
+      if (otherActiveAssignments.length === 0) {
+        await db
+          .update(equipment)
+          .set({ 
+            status: 'available',
+            updatedAt: new Date().toISOString()
+          })
+          .where(eq(equipment.id, equipmentId));
+        console.log(`Equipment ${equipmentId} status updated to available`);
+      } else {
+        console.log(`Equipment ${equipmentId} still has other active assignments, keeping status as assigned`);
+      }
+    }
+  } catch (error) {
+    console.error(`Error updating equipment ${equipmentId} status:`, error);
+  }
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -53,9 +94,29 @@ export async function GET(
         dailyRate: equipmentRentalHistory.dailyRate,
         totalAmount: equipmentRentalHistory.totalAmount,
         createdAt: equipmentRentalHistory.createdAt,
-        updatedAt: equipmentRentalHistory.updatedAt
+        updatedAt: equipmentRentalHistory.updatedAt,
+        // Add JOINed data for assignment details
+        project: {
+          id: projects.id,
+          name: projects.name,
+          description: projects.description,
+          status: projects.status
+        },
+        rental: {
+          id: rentals.id,
+          rentalNumber: rentals.rentalNumber
+        },
+        employee: {
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber
+        }
       })
       .from(equipmentRentalHistory)
+      .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
+      .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
+      .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
       .where(eq(equipmentRentalHistory.equipmentId, id))
       .orderBy(desc(equipmentRentalHistory.createdAt));
 
@@ -65,17 +126,17 @@ export async function GET(
     const history = rentalHistory.map(item => ({
       id: item.id,
       rental_id: item.rentalId,
-      rental_number: null, // Will be populated later if needed
-      customer_name: null,
+      rental_number: item.rental?.rentalNumber || null,
+      customer_name: null, // Will be populated from rental if needed
       customer_email: null,
       customer_phone: null,
       project_id: item.projectId,
-      project_name: null,
-      project_description: null,
-      project_status: null,
+      project_name: item.project?.name || null,
+      project_description: item.project?.description || null,
+      project_status: item.project?.status || null,
       employee_id: item.employeeId,
-      employee_name: null,
-      employee_id_number: null,
+      employee_name: item.employee ? `${item.employee.firstName} ${item.employee.lastName}`.trim() : null,
+      employee_id_number: item.employee?.fileNumber || null,
       employee_email: null,
       employee_phone: null,
       assignment_type: item.assignmentType,
@@ -205,8 +266,13 @@ export async function POST(
        status,
        notes,
        dailyRate: daily_rate ? parseFloat(daily_rate) : null,
-       totalAmount: total_amount ? parseFloat(total_amount) : null
+       totalAmount: total_amount ? parseFloat(total_amount) : null,
+       createdAt: new Date().toISOString(),
+       updatedAt: new Date().toISOString()
      }).returning();
+
+     // Automatically update equipment status based on assignment
+     await updateEquipmentStatusOnAssignmentChange(id, status);
 
      // Fetch the created rental history with related data
      const rentalHistory = await db

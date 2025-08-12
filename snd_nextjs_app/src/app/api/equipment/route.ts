@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withPermission, PermissionConfigs, withReadPermission } from '@/lib/rbac/api-middleware';
 import { equipment as equipmentTable, equipmentRentalHistory, projects, rentals, employees } from '@/lib/drizzle/schema';
-import { asc, desc, eq } from 'drizzle-orm';
+import { asc, desc, eq, and } from 'drizzle-orm';
 
 export const GET = withReadPermission(
   async (request: NextRequest) => {
@@ -29,101 +29,90 @@ export const GET = withReadPermission(
     
     console.log(`Found ${equipment.length} equipment items`);
     
-    // Get current active assignments for equipment
-    console.log('Fetching current assignments...');
-    const currentAssignments = await db
-      .select({
-        equipment_id: equipmentRentalHistory.equipmentId,
-        id: equipmentRentalHistory.id,
-        assignment_type: equipmentRentalHistory.assignmentType,
-        status: equipmentRentalHistory.status,
-        project_id: equipmentRentalHistory.projectId,
-        rental_id: equipmentRentalHistory.rentalId,
-        employee_id: equipmentRentalHistory.employeeId,
-        start_date: equipmentRentalHistory.startDate,
-        end_date: equipmentRentalHistory.endDate,
-        notes: equipmentRentalHistory.notes,
-        project: {
-          id: projects.id,
-          name: projects.name,
-          location: projects.location
-        },
-        rental: {
-          id: rentals.id,
-          rental_number: rentals.rentalNumber
-        },
-        employee: {
-          id: employees.id,
-          first_name: employees.firstName,
-          last_name: employees.lastName,
-          file_number: employees.fileNumber
-        }
-      })
-      .from(equipmentRentalHistory)
-      .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
-      .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
-      .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
-      .where(eq(equipmentRentalHistory.status, 'active'));
+    // Get current active assignments for equipment - SIMPLIFIED APPROACH
+    console.log('=== SIMPLIFIED ASSIGNMENT FETCH ===');
+    let currentAssignments: any[] = [];
     
-    console.log(`Found ${currentAssignments.length} active assignments`);
+    try {
+      // Simple query: just get all active assignments
+      currentAssignments = await db
+        .select({
+          equipment_id: equipmentRentalHistory.equipmentId,
+          id: equipmentRentalHistory.id,
+          assignment_type: equipmentRentalHistory.assignmentType,
+          status: equipmentRentalHistory.status,
+          project_id: equipmentRentalHistory.projectId,
+          rental_id: equipmentRentalHistory.rentalId,
+          employee_id: equipmentRentalHistory.employeeId,
+          start_date: equipmentRentalHistory.startDate,
+          end_date: equipmentRentalHistory.endDate,
+          notes: equipmentRentalHistory.notes
+        })
+        .from(equipmentRentalHistory)
+        .where(eq(equipmentRentalHistory.status, 'active'));
+      
+      console.log(`Found ${currentAssignments.length} active assignments`);
+      
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+      currentAssignments = [];
+    }
+    
+    console.log('=== END SIMPLIFIED ASSIGNMENT FETCH ===');
     
     // Create a map of equipment_id to assignment info
     const assignmentMap = new Map();
     currentAssignments.forEach(assignment => {
       assignmentMap.set(assignment.equipment_id, assignment);
-      console.log(`  Assignment ${assignment.id} for equipment ${assignment.equipment_id}: ${assignment.assignment_type} - ${assignment.status}`);
     });
     
     console.log(`Assignment map size: ${assignmentMap.size}`);
-    console.log(`Assignment map keys:`, Array.from(assignmentMap.keys()));
+    
+    // Remove all the complex debugging and database checks
     
     // Add assignment info to equipment
     const equipmentWithAssignments = equipment.map(item => {
       const assignment = assignmentMap.get(item.id);
       
-      console.log(`Equipment ${item.id} (${item.name}): assignment found:`, assignment ? 'YES' : 'NO');
-      
       let assignmentName = '';
       if (assignment) {
-        if (assignment.assignment_type === 'project' && assignment.project) {
-          assignmentName = assignment.project.name;
-        } else if (assignment.assignment_type === 'rental' && assignment.rental) {
-          assignmentName = `Rental: ${assignment.rental.rental_number}`;
-        } else if (assignment.assignment_type === 'manual' && assignment.employee) {
-          assignmentName = `${assignment.employee.first_name} ${assignment.employee.last_name}`.trim();
+        // Simple assignment name logic
+        if (assignment.assignment_type === 'project' && assignment.project_id) {
+          assignmentName = `Project Assignment ${assignment.id}`;
+        } else if (assignment.assignment_type === 'rental' && assignment.rental_id) {
+          assignmentName = `Rental Assignment ${assignment.id}`;
+        } else if (assignment.assignment_type === 'manual' && assignment.employee_id) {
+          assignmentName = `Employee Assignment ${assignment.id}`;
         } else {
-          assignmentName = assignment.assignment_type;
+          assignmentName = `${assignment.assignment_type} Assignment ${assignment.id}`;
         }
-        console.log(`  Assignment details: type=${assignment.assignment_type}, name=${assignmentName}, status=${assignment.status}`);
       }
+      
+      // Determine the effective status - prioritize assignment status over equipment status
+      let effectiveStatus = item.status;
+      if (assignment && assignment.status === 'active') {
+        effectiveStatus = 'assigned';
+      } else if (assignment && assignment.status === 'completed') {
+        effectiveStatus = 'available';
+      } else if (!assignment) {
+        // If no assignment exists, force status to 'available'
+        effectiveStatus = 'available';
+      }
+      
+      const finalAssignment = assignment ? {
+        id: assignment.id,
+        type: assignment.assignment_type,
+        name: assignmentName,
+        status: assignment.status,
+        notes: assignment.notes,
+        start_date: assignment.start_date,
+        end_date: assignment.end_date
+      } : null;
       
       return {
         ...item,
-        current_assignment: assignment ? {
-          id: assignment.id,
-          type: assignment.assignment_type,
-          name: assignmentName,
-          location: assignment.project?.location || null,
-          start_date: assignment.start_date,
-          end_date: assignment.end_date,
-          status: assignment.status,
-          notes: assignment.notes,
-          project: assignment.project ? {
-            id: assignment.project.id,
-            name: assignment.project.name,
-            location: assignment.project.location
-          } : null,
-          rental: assignment.rental ? {
-            id: assignment.rental.id,
-            rental_number: assignment.rental.rental_number
-          } : null,
-          employee: assignment.employee ? {
-            id: assignment.employee.id,
-            name: `${assignment.employee.first_name} ${assignment.employee.last_name}`.trim(),
-            file_number: assignment.employee.file_number,
-            full_name: `${assignment.employee.first_name} ${assignment.employee.last_name}`.trim()
-          } : null
-        } : null
+        status: effectiveStatus, // Override with effective status
+        current_assignment: finalAssignment
       };
     });
 
