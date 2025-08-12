@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     // Recalculate final amount if any amount fields are updated
     if (updates.baseSalary !== undefined || updates.overtimeAmount !== undefined || 
         updates.bonusAmount !== undefined || updates.deductionAmount !== undefined || 
-        updates.advanceDeduction !== undefined) {
+        updates.advanceDeduction !== undefined || updates.absentDays !== undefined) {
       
       const baseSalary = Number(updates.baseSalary) || 0;
       const overtimeAmount = Number(updates.overtimeAmount) || 0;
@@ -80,7 +80,17 @@ export async function POST(request: NextRequest) {
       const deductionAmount = Number(updates.deductionAmount) || 0;
       const advanceDeduction = Number(updates.advanceDeduction) || 0;
       
-      updateData.finalAmount = (baseSalary + overtimeAmount + bonusAmount - deductionAmount - advanceDeduction).toString();
+      // Calculate absent deduction if absent days are provided
+      let absentDeduction = 0;
+      if (updates.absentDays !== undefined && updates.month && updates.year) {
+        const daysInMonth = new Date(updates.year, updates.month, 0).getDate();
+        
+        // Use simple formula: (Basic Salary / Total Days in Month) * Absent Days
+        absentDeduction = (baseSalary / daysInMonth) * Number(updates.absentDays);
+        console.log(`Bulk update absent calculation: (${baseSalary} / ${daysInMonth}) * ${updates.absentDays} = ${absentDeduction}`);
+      }
+      
+      updateData.finalAmount = (baseSalary + overtimeAmount + bonusAmount - deductionAmount - absentDeduction - advanceDeduction).toString();
     }
 
     // Update payrolls

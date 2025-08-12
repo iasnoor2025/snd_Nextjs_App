@@ -80,7 +80,22 @@ export async function PUT(
       .update(projectResources)
       .set({
         ...resourceData,
+        // Convert numeric fields to strings as expected by the schema
+        unitCost: resourceData.unitCost ? resourceData.unitCost.toString() : null,
+        totalCost: resourceData.totalCost ? resourceData.totalCost.toString() : null,
+        dailyRate: resourceData.dailyRate ? resourceData.dailyRate.toString() : null,
+        hourlyRate: resourceData.hourlyRate ? resourceData.hourlyRate.toString() : null,
+        hoursWorked: resourceData.hoursWorked ? resourceData.hoursWorked.toString() : null,
+        usageHours: resourceData.usageHours ? resourceData.usageHours.toString() : null,
+        maintenanceCost: resourceData.maintenanceCost ? resourceData.maintenanceCost.toString() : null,
+        unitPrice: resourceData.unitPrice ? resourceData.unitPrice.toString() : null,
+        liters: resourceData.liters ? resourceData.liters.toString() : null,
+        pricePerLiter: resourceData.pricePerLiter ? resourceData.pricePerLiter.toString() : null,
+        amount: resourceData.amount ? resourceData.amount.toString() : null,
+        // Convert date fields to strings
         date: resourceData.date ? new Date(resourceData.date).toISOString() : null,
+        startDate: resourceData.startDate ? new Date(resourceData.startDate).toISOString() : null,
+        endDate: resourceData.endDate ? new Date(resourceData.endDate).toISOString() : null,
         dueDate: resourceData.dueDate ? new Date(resourceData.dueDate).toISOString() : null,
         updatedAt: new Date().toISOString()
       })

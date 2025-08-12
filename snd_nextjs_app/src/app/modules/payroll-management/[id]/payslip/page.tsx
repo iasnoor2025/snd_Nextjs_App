@@ -817,19 +817,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     );
   }
 
-  // Calculate absent days from actual attendance data (excluding Fridays)
-  const absentDays = attendanceData.reduce((count, day) => {
-    // Get the day of week for this date
-    const date = new Date(day.date);
-    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-    const isFriday = dayName === 'Fri';
-    
-    // Consider absent if no hours worked and no overtime, but NOT if it's Friday
-    if (Number(day.hours) === 0 && Number(day.overtime) === 0 && !isFriday) {
-      return count + 1;
-    }
-    return count;
-  }, 0);
+
 
   // Calculate total worked hours from attendance data - Convert Decimal to numbers
   const totalWorkedHoursFromAttendance = attendanceData.reduce((total, day) => {
@@ -892,9 +880,87 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   console.log('🔍 PAYSLIP DEBUG - Final attendanceMap size:', attendanceMap.size);
   console.log('🔍 PAYSLIP DEBUG - AttendanceMap keys:', Array.from(attendanceMap.keys()));
 
+  // Calculate absent days by checking ALL days in the month (including Fridays with smart logic)
+  const absentDays = (() => {
+    let absentCount = 0;
+    const absentDates: string[] = [];
+    
+    // Loop through all days in the month
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(payroll.year, payroll.month - 1, day);
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+      const isFriday = dayName === 'Fri';
+      
+      // Create date string to check against attendance data
+      const dateString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const dayData = attendanceMap.get(dateString);
+      
+      // Check if this day has hours worked
+      const hasHoursWorked = dayData && (Number(dayData.hours) > 0 || Number(dayData.overtime) > 0);
+      
+      if (isFriday) {
+        // Special logic for Fridays
+        if (hasHoursWorked) {
+          // Friday has hours worked - count as present
+          continue;
+        } else {
+          // Friday has no hours - check if it should be counted as absent
+          const thursdayDate = new Date(payroll.year, payroll.month - 1, day - 1);
+          const saturdayDate = new Date(payroll.year, payroll.month - 1, day + 1);
+          
+          // Check if Thursday and Saturday are also absent (within month bounds)
+          const thursdayString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(thursdayDate.getDate()).padStart(2, '0')}`;
+          const saturdayString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(saturdayDate.getDate()).padStart(2, '0')}`;
+          
+          const thursdayData = attendanceMap.get(thursdayString);
+          const saturdayData = attendanceMap.get(saturdayString);
+          
+          const thursdayAbsent = !thursdayData || (Number(thursdayData.hours) === 0 && Number(thursdayData.overtime) === 0);
+          const saturdayAbsent = !saturdayData || (Number(saturdayData.hours) === 0 && Number(saturdayData.overtime) === 0);
+          
+          // Count Friday as absent only if Thursday and Saturday are also absent
+          if (thursdayAbsent && saturdayAbsent) {
+            absentCount++;
+            absentDates.push(dateString);
+          }
+        }
+      } else {
+        // Non-Friday days - count as absent if no hours worked
+        if (!hasHoursWorked) {
+          absentCount++;
+          absentDates.push(dateString);
+        }
+      }
+    }
+    
+    // Debug absent days calculation
+    console.log('🔍 PAYSLIP DEBUG - Absent Days Calculation:', {
+      totalDaysInMonth: daysInMonth,
+      absentCount,
+      absentDates,
+      attendanceMapSize: attendanceMap.size,
+      sampleAttendanceData: Array.from(attendanceMap.entries()).slice(0, 3)
+    });
+    
+    return absentCount;
+  })();
+
   // Calculate totals for salary details - Convert Decimal to numbers
   const totalAllowances = (Number(employee.food_allowance) || 0) + (Number(employee.housing_allowance) || 0) + (Number(employee.transport_allowance) || 0);
+  
+  // Calculate absent deduction: (Basic Salary / Total Days in Month) * Absent Days
+  // Use total days in month (31) instead of working days
   const absentDeduction = absentDays > 0 ? (basicSalary / daysInMonth) * absentDays : 0;
+  
+  // Debug absent calculation
+  console.log('🔍 PAYSLIP DEBUG - Absent Calculation:', {
+    totalDaysInMonth: daysInMonth,
+    absentDays,
+    basicSalary,
+    absentDeduction,
+    calculation: `(${basicSalary} / ${daysInMonth}) * ${absentDays} = ${absentDeduction}`
+  });
+  
   const netSalary = basicSalary + totalAllowances + overtimeAmount + bonusAmount - absentDeduction - advanceDeduction;
 
   return (
@@ -1081,14 +1147,14 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                 <table className="w-full border-collapse rounded-lg overflow-hidden shadow-md">
                   <thead>
                     <tr>
-                      {Array.from({ length: 31 }, (_, i) => i + 1).map((day, idx) => (
+                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day, idx) => (
                         <th key={day} className="bg-gray-900 text-white font-semibold p-1 text-center text-xs">
                           {day.toString().padStart(2, '0')}
                         </th>
                       ))}
                     </tr>
                     <tr>
-                      {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                         const date = new Date(`${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`);
                         const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
                         return (
@@ -1101,7 +1167,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                   </thead>
                   <tbody>
                     <tr>
-                      {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                         // Create date string in YYYY-MM-DD format without timezone conversion
                         const dateString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                         const dayData = attendanceMap.get(dateString);
@@ -1115,15 +1181,35 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                         let displayValue = '-';
                         let cellClass = 'bg-white';
                         
-                        // Priority: Regular hours > Friday > Absent
+                        // Priority: Regular hours > Friday logic > Absent
                         if (dayData && (Number(dayData.hours) > 0 || Number(dayData.overtime) > 0)) {
                           // Has hours worked
                           displayValue = `${Number(dayData.hours) || 0}`;
                           cellClass = 'bg-green-100 text-green-600';
                         } else if (isFriday) {
-                          // Friday with no hours
-                          displayValue = 'F';
-                          cellClass = 'bg-blue-100 text-blue-600';
+                          // Friday with no hours - check if it should be marked as absent
+                          const thursdayDate = new Date(payroll.year, payroll.month - 1, day - 1);
+                          const saturdayDate = new Date(payroll.year, payroll.month - 1, day + 1);
+                          
+                          // Check if Thursday and Saturday are also absent (within month bounds)
+                          const thursdayString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(thursdayDate.getDate()).padStart(2, '0')}`;
+                          const saturdayString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(saturdayDate.getDate()).padStart(2, '0')}`;
+                          
+                          const thursdayData = attendanceMap.get(thursdayString);
+                          const saturdayData = attendanceMap.get(saturdayString);
+                          
+                          const thursdayAbsent = !thursdayData || (Number(thursdayData.hours) === 0 && Number(thursdayData.overtime) === 0);
+                          const saturdayAbsent = !saturdayData || (Number(saturdayData.hours) === 0 && Number(saturdayData.overtime) === 0);
+                          
+                          if (thursdayAbsent && saturdayAbsent) {
+                            // Friday is absent (Thursday and Saturday are also absent)
+                            displayValue = 'A';
+                            cellClass = 'bg-red-100 text-red-600';
+                          } else {
+                            // Friday is present (has working days before or after)
+                            displayValue = 'F';
+                            cellClass = 'bg-blue-100 text-blue-600';
+                          }
                         } else if (isAbsent) {
                           // Absent (not Friday)
                           displayValue = 'A';
@@ -1138,7 +1224,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                       })}
                     </tr>
                     <tr>
-                      {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
                         // Create date string in YYYY-MM-DD format without timezone conversion
                         const dateString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                         const dayData = attendanceMap.get(dateString);
@@ -1163,7 +1249,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                 </table>
               </div>
               <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">
-                <span className="text-green-700 font-semibold">8</span> = regular hours, <span className="text-blue-700 font-semibold">More than 8</span> = overtime hours, <span className="text-red-700 font-semibold">A</span> = absent, <span className="font-semibold">F</span> = Friday (weekend)
+                <span className="text-green-700 font-semibold">8</span> = regular hours, <span className="text-blue-700 font-semibold">More than 8</span> = overtime hours, <span className="text-red-700 font-semibold">A</span> = absent, <span className="font-semibold">F</span> = Friday (present if working days before/after)
               </div>
             </div>
 

@@ -240,7 +240,17 @@ export async function POST(request: NextRequest) {
     const deductionAmount = Number(body.deductionAmount) || 0;
     const advanceDeduction = Number(body.advanceDeduction) || 0;
     
-    const finalAmount = baseSalary + overtimeAmount + bonusAmount - deductionAmount - advanceDeduction;
+    // If absent days are provided, calculate absent deduction
+    let absentDeduction = 0;
+    if (body.absentDays && body.month && body.year) {
+      const daysInMonth = new Date(body.year, body.month, 0).getDate();
+      
+      // Use simple formula: (Basic Salary / Total Days in Month) * Absent Days
+      absentDeduction = (baseSalary / daysInMonth) * Number(body.absentDays);
+      console.log(`Absent calculation: (${baseSalary} / ${daysInMonth}) * ${body.absentDays} = ${absentDeduction}`);
+    }
+    
+    const finalAmount = baseSalary + overtimeAmount + bonusAmount - deductionAmount - absentDeduction - advanceDeduction;
 
     // Create payroll
     const insertedPayrolls = await db

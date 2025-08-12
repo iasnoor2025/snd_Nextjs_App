@@ -127,6 +127,67 @@ export async function POST(request: NextRequest) {
           const totalHours = monthTimesheets.reduce((sum, ts) => sum + Number(ts.hoursWorked), 0);
           const totalOvertimeHours = monthTimesheets.reduce((sum, ts) => sum + Number(ts.overtimeHours), 0);
 
+          // Calculate absent days by checking ALL days in the month (including Fridays with smart logic)
+          const daysInMonth = new Date(year, month, 0).getDate();
+          let absentDays = 0;
+          
+          // Create a map of timesheet dates for easier lookup
+          const timesheetMap = new Map();
+          monthTimesheets.forEach(ts => {
+            // Convert date to YYYY-MM-DD format - handle both Date objects and strings
+            const dateKey = String(ts.date).split('T')[0];
+            timesheetMap.set(dateKey, ts);
+            
+            // Debug: log the date type and value
+            console.log(`Timesheet date debug - Type: ${typeof ts.date}, Value: ${ts.date}, Parsed: ${dateKey}`);
+          });
+          
+          // Loop through all days in the month
+          for (let day = 1; day <= daysInMonth; day++) {
+            const date = new Date(year, month - 1, day);
+            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+            const isFriday = dayName === 'Fri';
+            
+            // Create date string to check against timesheet data
+            const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayData = timesheetMap.get(dateString);
+            
+            // Check if this day has hours worked
+            const hasHoursWorked = dayData && (Number(dayData.hoursWorked) > 0 || Number(dayData.overtimeHours) > 0);
+            
+            if (isFriday) {
+              // Special logic for Fridays
+              if (hasHoursWorked) {
+                // Friday has hours worked - count as present
+                continue;
+              } else {
+                // Friday has no hours - check if it should be counted as absent
+                const thursdayDate = new Date(year, month - 1, day - 1);
+                const saturdayDate = new Date(year, month - 1, day + 1);
+                
+                // Check if Thursday and Saturday are also absent (within month bounds)
+                const thursdayString = `${year}-${String(month).padStart(2, '0')}-${String(thursdayDate.getDate()).padStart(2, '0')}`;
+                const saturdayString = `${year}-${String(month).padStart(2, '0')}-${String(saturdayDate.getDate()).padStart(2, '0')}`;
+                
+                const thursdayData = timesheetMap.get(thursdayString);
+                const saturdayData = timesheetMap.get(saturdayString);
+                
+                const thursdayAbsent = !thursdayData || (Number(thursdayData.hoursWorked) === 0 && Number(thursdayData.overtimeHours) === 0);
+                const saturdayAbsent = !saturdayData || (Number(saturdayData.hoursWorked) === 0 && Number(saturdayData.overtimeHours) === 0);
+                
+                // Count Friday as absent only if Thursday and Saturday are also absent
+                if (thursdayAbsent && saturdayAbsent) {
+                  absentDays++;
+                }
+              }
+            } else {
+              // Non-Friday days - consider absent if no hours worked
+              if (!hasHoursWorked) {
+                absentDays++;
+              }
+            }
+          }
+
           // Calculate overtime amount based on employee's overtime settings
           let overtimeAmount = 0;
           if (totalOvertimeHours > 0) {
@@ -155,8 +216,21 @@ export async function POST(request: NextRequest) {
             
             console.log(`- Final overtime amount: ${overtimeAmount}`);
           }
+
+          // Calculate absent deduction: (Basic Salary / Total Days in Month) * Absent Days
+          const basicSalary = Number(employee.basicSalary);
+          const absentDeduction = absentDays > 0 ? (basicSalary / daysInMonth) * absentDays : 0;
+          
+          console.log(`Absent calculation for ${employee.firstName} ${employee.lastName}:`, {
+            totalDaysInMonth: daysInMonth,
+            absentDays,
+            basicSalary,
+            absentDeduction,
+            calculation: `(${basicSalary} / ${daysInMonth}) * ${absentDays} = ${absentDeduction}`
+          });
+
           const bonusAmount = 0; // Manual setting only
-          const deductionAmount = 0; // Manual setting only
+          const deductionAmount = absentDeduction; // Include absent deduction
           const finalAmount = Number(employee.basicSalary) + overtimeAmount + bonusAmount - deductionAmount;
 
           // Create payroll
