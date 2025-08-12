@@ -56,12 +56,14 @@ export async function POST(
       );
     }
 
-    // Check if effective date is in the future
+    // Check if effective date is not in the past
     const effectiveDate = new Date(increment.effective_date);
     const today = new Date();
-    if (effectiveDate <= today) {
+    today.setHours(0, 0, 0, 0); // Reset time to start of day for fair comparison
+    
+    if (effectiveDate < today) {
       return NextResponse.json(
-        { error: 'Cannot approve salary increment with effective date in the past or today' },
+        { error: 'Cannot approve salary increment with effective date in the past' },
         { status: 400 }
       );
     }
