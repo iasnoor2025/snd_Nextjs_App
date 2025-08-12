@@ -342,24 +342,49 @@ export default function EquipmentManagementPage() {
                       currentEquipment.map((item) => (
                         <TableRow key={item.id}>
                           <TableCell className="font-medium">{getTranslatedName(item.name, isRTL, translatedNames, setTranslatedNames)}</TableCell>
-                          <TableCell>{convertToArabicNumerals(item.model_number, isRTL) || '-'}</TableCell>
-                          <TableCell>{getTranslatedName(item.manufacturer, isRTL, translatedNames, setTranslatedNames) || '-'}</TableCell>
+                          <TableCell>
+                            {item.model_number ? convertToArabicNumerals(item.model_number, isRTL) : 
+                             <span className="text-muted-foreground text-sm">{t('equipment_management.not_specified')}</span>}
+                          </TableCell>
+                          <TableCell>
+                            {item.manufacturer ? getTranslatedName(item.manufacturer, isRTL, translatedNames, setTranslatedNames) : 
+                             <span className="text-muted-foreground text-sm">{t('equipment_management.not_specified')}</span>}
+                          </TableCell>
                           <TableCell>{getStatusBadge(item)}</TableCell>
                           <TableCell>
                             {item.current_assignment ? (
                               <div className="space-y-1">
                                 <div className="text-sm font-medium">
-                                  {getTranslatedName(item.current_assignment.employee?.full_name, isRTL, translatedNames, setTranslatedNames) || t('equipment_management.no_assignment')}
+                                  {item.current_assignment.employee?.full_name || 
+                                   item.current_assignment.project?.name || 
+                                   item.current_assignment.rental?.rental_number || 
+                                   item.current_assignment.name || 
+                                   t('equipment_management.assigned')}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
-                                  {item.current_assignment.project?.name || item.current_assignment.rental?.project?.name || '-'}
+                                  {item.current_assignment.type === 'project' && item.current_assignment.project?.name && 
+                                   `Project: ${item.current_assignment.project.name}`}
+                                  {item.current_assignment.type === 'rental' && item.current_assignment.rental?.rental_number && 
+                                   `Rental: ${item.current_assignment.rental.rental_number}`}
+                                  {item.current_assignment.type === 'manual' && item.current_assignment.employee?.full_name && 
+                                   `Employee: ${item.current_assignment.employee.full_name}`}
+                                  {!item.current_assignment.project?.name && !item.current_assignment.rental?.rental_number && !item.current_assignment.employee?.full_name && 
+                                   `${item.current_assignment.type} Assignment`}
                                 </div>
                               </div>
                             ) : (
                               <span className="text-muted-foreground">{t('equipment_management.no_assignment')}</span>
                             )}
                           </TableCell>
-                          <TableCell>{convertToArabicNumerals(item.daily_rate?.toString(), isRTL) || '-'}</TableCell>
+                          <TableCell>
+                            {item.daily_rate ? (
+                              <span className="font-medium">
+                                {convertToArabicNumerals(item.daily_rate.toString(), isRTL)} {t('equipment_management.per_day')}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">{t('equipment_management.not_specified')}</span>
+                            )}
+                          </TableCell>
                           <TableCell>{convertToArabicNumerals(item.erpnext_id?.toString(), isRTL) || '-'}</TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
