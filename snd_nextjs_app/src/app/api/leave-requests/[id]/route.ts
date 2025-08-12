@@ -74,8 +74,8 @@ export async function GET(
     // Transform the data for the frontend
     const transformedLeaveRequest = {
       id: leaveRequest.id.toString(),
-      employee_name: `${leaveRequest.employee.firstName} ${leaveRequest.employee.lastName}`,
-      employee_id: leaveRequest.employee.id,
+      employee_name: `${leaveRequest.employee?.firstName} ${leaveRequest.employee?.lastName}`,
+      employee_id: leaveRequest.employee?.id,
       leave_type: leaveRequest.leaveType,
       start_date: leaveRequest.startDate.split('T')[0],
       end_date: leaveRequest.endDate.split('T')[0],
@@ -102,7 +102,7 @@ export async function GET(
           action: leaveRequest.status === 'pending' ? 'Submitted' : 
                   leaveRequest.status === 'approved' ? 'Approved' : 
                   leaveRequest.status === 'rejected' ? 'Rejected' : 'Submitted',
-          approver: leaveRequest.employee.firstName + ' ' + leaveRequest.employee.lastName,
+          approver: leaveRequest.employee?.firstName + ' ' + leaveRequest.employee?.lastName,
           date: leaveRequest.createdAt,
           comments: leaveRequest.status === 'pending' ? 'Leave request submitted for approval' :
                    leaveRequest.status === 'rejected' ? `Leave request rejected: ${leaveRequest.rejectionReason || 'No reason provided'}` :
@@ -155,9 +155,11 @@ export async function DELETE(
     }
 
     // Check if leave request exists
-    const existingLeaveRequest = await prisma.employeeLeave.findUnique({
-      where: { id: parseInt(id) },
-    });
+    const [existingLeaveRequest] = await db
+      .select()
+      .from(employeeLeaves)
+      .where(eq(employeeLeaves.id, parseInt(id)))
+      .limit(1);
 
     if (!existingLeaveRequest) {
       return NextResponse.json(
@@ -167,9 +169,9 @@ export async function DELETE(
     }
 
     // Delete the leave request
-    await prisma.employeeLeave.delete({
-      where: { id: parseInt(id) },
-    });
+    await db
+      .delete(employeeLeaves)
+      .where(eq(employeeLeaves.id, parseInt(id)));
 
     console.log('✅ Leave request deleted:', id);
 
@@ -226,12 +228,21 @@ export async function PUT(
     }
 
     // Check if leave request exists
-    const existingLeave = await prisma.employeeLeave.findUnique({
-      where: { id: parseInt(id) },
-      include: {
-        employee: true,
-      },
-    });
+    const [existingLeave] = await db
+      .select({
+        id: employeeLeaves.id,
+        employeeId: employeeLeaves.employeeId,
+        employee: {
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+        }
+      })
+      .from(employeeLeaves)
+      .leftJoin(employees, eq(employeeLeaves.employeeId, employees.id))
+      .where(eq(employeeLeaves.id, parseInt(id)))
+      .limit(1);
 
     if (!existingLeave) {
       return NextResponse.json(
@@ -241,44 +252,46 @@ export async function PUT(
     }
 
     // Update the leave request
-    const updatedLeave = await prisma.employeeLeave.update({
-      where: { id: parseInt(id) },
-      data: {
-        leave_type,
-        start_date: new Date(start_date),
-        end_date: new Date(end_date),
-        days,
-        reason,
-        status,
-        updated_at: new Date(),
-      },
-      include: {
-        employee: {
-          select: {
-            first_name: true,
-            last_name: true,
-            employee_id: true,
-          },
-        },
-      },
-    });
+    const [updatedLeave] = await db
+      .update(employeeLeaves)
+      .set({
+        leaveType: leave_type,
+        startDate: start_date,
+        endDate: end_date,
+        days: days,
+        reason: reason,
+        status: status,
+        updatedAt: new Date().toISOString().split('T')[0],
+      })
+      .where(eq(employeeLeaves.id, parseInt(id)))
+      .returning({
+        id: employeeLeaves.id,
+        leaveType: employeeLeaves.leaveType,
+        startDate: employeeLeaves.startDate,
+        endDate: employeeLeaves.endDate,
+        days: employeeLeaves.days,
+        reason: employeeLeaves.reason,
+        status: employeeLeaves.status,
+        createdAt: employeeLeaves.createdAt,
+        updatedAt: employeeLeaves.updatedAt,
+      });
 
     return NextResponse.json({
       success: true,
       data: {
         id: updatedLeave.id.toString(),
-        leave_type: updatedLeave.leave_type,
-        start_date: updatedLeave.start_date.split('T')[0],
-        end_date: updatedLeave.end_date.split('T')[0],
+        leave_type: updatedLeave.leaveType,
+        start_date: updatedLeave.startDate.split('T')[0],
+        end_date: updatedLeave.endDate.split('T')[0],
         days: updatedLeave.days,
         reason: updatedLeave.reason,
         status: updatedLeave.status,
         employee: {
-          name: `${updatedLeave.employee.first_name} ${updatedLeave.employee.last_name}`,
-          employee_id: updatedLeave.employee.employee_id,
+          name: existingLeave.employee ? `${existingLeave.employee.firstName} ${existingLeave.employee.lastName}` : 'Unknown',
+          employee_id: existingLeave.employee?.fileNumber || 'Unknown',
         },
-        created_at: updatedLeave.created_at,
-        updated_at: updatedLeave.updated_at,
+        created_at: updatedLeave.createdAt,
+        updated_at: updatedLeave.updatedAt,
       },
     });
 
