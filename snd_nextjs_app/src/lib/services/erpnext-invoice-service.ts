@@ -507,6 +507,17 @@ export class ERPNextInvoiceService {
     }
   }
 
+  // Check if invoice exists in ERPNext without throwing error
+  static async checkInvoiceExists(invoiceId: string): Promise<boolean> {
+    try {
+      const response = await this.makeERPNextRequest(`/api/resource/Sales Invoice/${encodeURIComponent(invoiceId)}`);
+      return response.data && response.data.name === invoiceId;
+    } catch (error) {
+      console.log('Invoice not found in ERPNext:', invoiceId);
+      return false;
+    }
+  }
+
   static async updateInvoice(invoiceId: string, updateData: Partial<ERPNextInvoiceData>): Promise<any> {
     try {
       const response = await this.makeERPNextRequest(`/api/resource/Sales Invoice/${encodeURIComponent(invoiceId)}`, {

@@ -102,10 +102,43 @@ export async function POST(
       erpnextInvoiceDetails = erpnextInvoice;
     }
 
+    // Check if ERPNext invoice was deleted and reset rental if needed
+    if (!erpnextInvoiceDetails || erpnextInvoiceDetails.error) {
+      console.log('⚠️ ERPNext invoice not found or deleted, resetting rental invoice status...');
+      
+      // Reset rental invoice information
+      const resetData = {
+        invoiceId: null,
+        invoiceDate: null,
+        paymentDueDate: null,
+        paymentStatus: 'pending',
+        erpnextInvoiceStatus: null,
+        outstandingAmount: '0.00',
+        lastErpNextSync: new Date().toISOString()
+      };
+      
+      await db
+        .update(rentals)
+        .set(resetData)
+        .where(eq(rentals.id, parseInt(id)));
+      
+      console.log('✅ Rental invoice status reset - can create new invoice');
+      
+      return NextResponse.json({
+        success: false,
+        message: 'ERPNext invoice was deleted, rental reset for new invoice creation',
+        data: {
+          invoiceId: null,
+          status: 'reset',
+          message: 'You can now create a new invoice for this rental'
+        }
+      });
+    }
+
     // Extract payment status and other details from ERPNext
-    const paymentStatus = erpnextInvoiceDetails?.docstatus === 1 ? 'submitted' : 'pending';
+    let paymentStatus = erpnextInvoiceDetails?.docstatus === 1 ? 'submitted' : 'pending';
     const outstandingAmount = erpnextInvoiceDetails?.outstanding_amount || erpnextInvoiceDetails?.grand_total || 0;
-    const invoiceStatus = erpnextInvoiceDetails?.status || 'Draft';
+    let invoiceStatus = erpnextInvoiceDetails?.status || 'Draft';
 
     // Update rental with invoice information
     const updateData = {
@@ -113,7 +146,11 @@ export async function POST(
       invoiceDate: new Date().toISOString().split('T')[0],
       paymentDueDate: new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       status: 'active',
-      paymentStatus: 'pending' as const,
+      paymentStatus: paymentStatus as any, // Use synced payment status from ERPNext
+      // Add ERPNext synced data
+      erpnextInvoiceStatus: invoiceStatus,
+      outstandingAmount: outstandingAmount.toString(),
+      lastErpNextSync: new Date().toISOString()
     };
 
     console.log('💾 Updating rental with invoice information:', updateData);
@@ -124,15 +161,32 @@ export async function POST(
 
     console.log('✅ Rental updated with invoice information');
 
+    // Optionally submit the invoice in ERPNext if it's in draft status
+    if (invoiceStatus === 'Draft') {
+      console.log('📤 Submitting invoice in ERPNext...');
+      try {
+        await ERPNextInvoiceService.submitInvoice(invoiceId);
+        console.log('✅ Invoice submitted successfully in ERPNext');
+        // Update the status
+        invoiceStatus = 'Submitted';
+      } catch (submitError) {
+        console.log('⚠️ Could not submit invoice in ERPNext:', submitError);
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      message: 'Invoice generated successfully',
+      message: 'Invoice generated and synced successfully',
       data: {
         invoiceId: invoiceId,
         invoiceNumber: invoiceNumber,
         invoiceDate: updateData.invoiceDate,
         paymentDueDate: updateData.paymentDueDate,
-        erpnextInvoice: erpnextInvoice
+        paymentStatus: paymentStatus,
+        erpnextInvoiceStatus: invoiceStatus,
+        outstandingAmount: outstandingAmount,
+        lastErpNextSync: updateData.lastErpNextSync,
+        erpnextInvoice: erpnextInvoiceDetails
       }
     });
 
