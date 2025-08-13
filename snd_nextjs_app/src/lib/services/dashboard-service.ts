@@ -245,7 +245,7 @@ export class DashboardService {
       const equipmentUtilization = 0;
 
       // Get employees currently on leave
-      let employeesCurrentlyOnLeave = [];
+      let employeesCurrentlyOnLeave: any[] = [];
       try {
         employeesCurrentlyOnLeave = await this.getEmployeesCurrentlyOnLeave();
       } catch (error) {
@@ -651,7 +651,7 @@ export class DashboardService {
         })
         .from(employeeAssignments)
         .innerJoin(employees, eq(employeeAssignments.employeeId, employees.id))
-        .where(eq(employeeAssignments.assignmentType, 'equipment'))
+        .where(eq(employeeAssignments.type, 'equipment'))
         .orderBy(desc(employeeAssignments.createdAt))
         .limit(Math.ceil(limit * 0.15));
 
@@ -667,7 +667,7 @@ export class DashboardService {
         })
         .from(employeeAssignments)
         .innerJoin(employees, eq(employeeAssignments.employeeId, employees.id))
-        .where(eq(employeeAssignments.assignmentType, 'project'))
+        .where(eq(employeeAssignments.type, 'project'))
         .orderBy(desc(employeeAssignments.createdAt))
         .limit(Math.ceil(limit * 0.15));
 

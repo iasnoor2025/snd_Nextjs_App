@@ -30,11 +30,9 @@ export async function POST(request: NextRequest) {
           firstName: employees.firstName,
           lastName: employees.lastName,
           fileNumber: employees.fileNumber,
-          user: {
-            id: users.id,
-            name: users.name,
-            email: users.email
-          }
+          userId: users.id,
+          userName: users.name,
+          userEmail: users.email
         }
       })
       .from(timesheets)
@@ -116,7 +114,7 @@ export async function POST(request: NextRequest) {
       .update(timesheets)
       .set({
         status: 'submitted',
-        submittedAt: new Date(),
+        submittedAt: new Date().toISOString().split('T')[0],
         notes: notes || timesheet.notes
       })
       .where(eq(timesheets.id, parseInt(timesheetId)));
@@ -137,11 +135,9 @@ export async function POST(request: NextRequest) {
           firstName: employees.firstName,
           lastName: employees.lastName,
           fileNumber: employees.fileNumber,
-          user: {
-            id: users.id,
-            name: users.name,
-            email: users.email
-          }
+          userId: users.id,
+          userName: users.name,
+          userEmail: users.email
         }
       })
       .from(timesheets)

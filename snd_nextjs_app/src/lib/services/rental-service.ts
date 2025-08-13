@@ -273,7 +273,7 @@ export class RentalService {
     const [rental] = await db
       .insert(rentals)
       .values({
-        customerId: rentalData.customerId,
+        customerId: rentalData.customerId || null,
         rentalNumber: rentalData.rentalNumber || `RENTAL-${Date.now()}`,
         startDate: rentalData.startDate.toISOString().split('T')[0],
         expectedEndDate: rentalData.expectedEndDate?.toISOString().split('T')[0],

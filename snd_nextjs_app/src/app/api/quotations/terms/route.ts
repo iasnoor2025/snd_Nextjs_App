@@ -4,8 +4,8 @@ import { rentals } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { withPermission } from '@/lib/rbac/api-middleware';
 
-export async function POST(request: NextRequest) {
-  return withPermission(['rental:write'], async () => {
+export const POST = withPermission(
+  async (request: NextRequest) => {
     try {
       const body = await request.json();
       const { rentalId, terms, notes } = body;
@@ -58,5 +58,6 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-  });
-}
+  },
+  { action: 'update', subject: 'Rental' }
+);

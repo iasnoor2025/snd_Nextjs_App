@@ -424,14 +424,14 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
               Generate Invoice
             </Button>
           );
-        } else if (rental.invoiceDate && rental.invoiceId) {
+        } else if (rental.invoiceDate && rental.invoices && rental.invoices.length > 0) {
           return (
             <div className="flex gap-2 mt-2">
               <Button size="sm" variant="outline" onClick={() => window.open(`/api/rentals/${rental.id}/invoice/download`, '_blank')}>
                 <Download className="w-3 h-3 mr-1" />
                 Download PDF
               </Button>
-              <Button size="sm" variant="outline" onClick={() => window.open(`${process.env.NEXT_PUBLIC_ERPNEXT_URL}/app/sales-invoice/${rental.invoiceId}`, '_blank')}>
+              <Button size="sm" variant="outline" onClick={() => window.open(`${process.env.NEXT_PUBLIC_ERPNEXT_URL}/app/sales-invoice/${rental.invoices?.[0]?.id || ''}`, '_blank')}>
                 <ExternalLink className="w-3 h-3 mr-1" />
                 View in ERPNext
               </Button>

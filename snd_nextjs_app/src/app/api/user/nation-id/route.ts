@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     const user = userRows[0];
 
     // Only check for matched employee if user has a national ID
-    let matchedEmployee = null;
+    let matchedEmployee: any = null;
     if (user.national_id) {
       try {
         const matchedEmployeeRows = await db
@@ -99,7 +99,7 @@ export async function GET(request: NextRequest) {
             operator_license_number: employees.operatorLicenseNumber,
             operator_license_expiry: employees.operatorLicenseExpiry,
             designation: {
-              name: designations.title
+              name: designations.name
             },
             department: {
               name: departments.name

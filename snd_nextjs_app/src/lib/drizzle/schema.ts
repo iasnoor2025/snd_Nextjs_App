@@ -213,11 +213,11 @@ export const projectResources = pgTable("project_resources", {
 export const prismaMigrations = pgTable("_prisma_migrations", {
 	id: varchar({ length: 36 }).primaryKey().notNull(),
 	checksum: varchar({ length: 64 }).notNull(),
-	finishedAt: date("finished_at", { withTimezone: true, mode: 'string' }),
+	        finishedAt: date("finished_at", { mode: 'string' }),
 	migrationName: varchar("migration_name", { length: 255 }).notNull(),
 	logs: text(),
-	rolledBackAt: date("rolled_back_at", { withTimezone: true, mode: 'string' }),
-	startedAt: date("started_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	        rolledBackAt: date("rolled_back_at", { mode: 'string' }),
+	        startedAt: date("started_at", { mode: 'string' }).defaultNow().notNull(),
 	appliedStepsCount: integer("applied_steps_count").default(0).notNull(),
 });
 

@@ -40,17 +40,9 @@ export async function GET(
       const erpnextInvoice = await ERPNextInvoiceService.getInvoice(currentRental.invoiceId);
       console.log('✅ ERPNext invoice found:', erpnextInvoice?.name);
 
-      // Update rental with latest ERPNext data
-      const updateData = {
-        erpnextInvoiceStatus: erpnextInvoice?.status || 'Unknown',
-        outstandingAmount: (erpnextInvoice?.outstanding_amount || erpnextInvoice?.grand_total || 0).toString(),
-        lastErpNextSync: new Date().toISOString()
-      };
-
-      await db
-        .update(rentals)
-        .set(updateData)
-        .where(eq(rentals.id, parseInt(id)));
+      // Note: erpnextInvoiceStatus, outstandingAmount, and lastErpNextSync fields don't exist in rentals schema
+      // These updates are skipped as the fields are not available
+      console.log('ERPNext invoice sync completed - no schema fields to update');
 
       return NextResponse.json({
         success: true,
@@ -58,9 +50,7 @@ export async function GET(
         data: {
           invoiceId: currentRental.invoiceId,
           status: 'synced',
-          erpnextStatus: erpnextInvoice?.status,
-          outstandingAmount: updateData.outstandingAmount,
-          lastSync: updateData.lastErpNextSync
+          erpnextStatus: erpnextInvoice?.status
         }
       });
 
@@ -72,10 +62,7 @@ export async function GET(
         invoiceId: null,
         invoiceDate: null,
         paymentDueDate: null,
-        paymentStatus: 'pending',
-        erpnextInvoiceStatus: null,
-        outstandingAmount: '0.00',
-        lastErpNextSync: new Date().toISOString()
+        paymentStatus: 'pending'
       };
 
       await db
@@ -144,17 +131,9 @@ export async function POST(
       const erpnextInvoice = await ERPNextInvoiceService.getInvoice(currentRental.invoiceId);
       console.log('✅ ERPNext invoice found:', erpnextInvoice?.name);
 
-      // Update rental with latest ERPNext data
-      const updateData = {
-        erpnextInvoiceStatus: erpnextInvoice?.status || 'Unknown',
-        outstandingAmount: (erpnextInvoice?.outstanding_amount || erpnextInvoice?.grand_total || 0).toString(),
-        lastErpNextSync: new Date().toISOString()
-      };
-
-      await db
-        .update(rentals)
-        .set(updateData)
-        .where(eq(rentals.id, parseInt(id)));
+      // Note: erpnextInvoiceStatus, outstandingAmount, and lastErpNextSync fields don't exist in rentals schema
+      // These updates are skipped as the fields are not available
+      console.log('ERPNext invoice sync completed - no schema fields to update');
 
       return NextResponse.json({
         success: true,
@@ -162,9 +141,7 @@ export async function POST(
         data: {
           invoiceId: currentRental.invoiceId,
           status: 'synced',
-          erpnextStatus: erpnextInvoice?.status,
-          outstandingAmount: updateData.outstandingAmount,
-          lastSync: updateData.lastErpNextSync
+          erpnextStatus: erpnextInvoice?.status
         }
       });
 

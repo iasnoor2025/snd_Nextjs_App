@@ -200,35 +200,35 @@ export class EnhancedPermissionService {
     }
 
     const user = userResult[0];
-    const permissions = new Set<string>();
+    const userPermissionsSet = new Set<string>();
 
     // Add role permissions
     const rolePermissions = await db
       .select({
-        permissionName: permissions.name,
+        permissionName: permissions.name as any,
       })
       .from(roleHasPermissions)
       .innerJoin(permissions, eq(roleHasPermissions.permissionId, permissions.id))
       .where(eq(roleHasPermissions.roleId, user.roleId));
 
     for (const rolePermission of rolePermissions) {
-      permissions.add(rolePermission.permissionName);
+      userPermissionsSet.add(rolePermission.permissionName);
     }
 
     // Add direct user permissions (override role permissions)
     const userPermissions = await db
       .select({
-        permissionName: permissions.name,
+        permissionName: permissions.name as any,
       })
       .from(modelHasPermissions)
       .innerJoin(permissions, eq(modelHasPermissions.permissionId, permissions.id))
       .where(eq(modelHasPermissions.userId, userIdInt));
 
     for (const userPermission of userPermissions) {
-      permissions.add(userPermission.permissionName);
+      userPermissionsSet.add(userPermission.permissionName);
     }
 
-    return Array.from(permissions);
+    return Array.from(userPermissionsSet);
   }
 
   /**
@@ -328,7 +328,7 @@ export class EnhancedPermissionService {
       // Check direct user permissions first (override role permissions)
       const userPermissions = await db
         .select({
-          permissionName: permissions.name,
+          permissionName: permissions.name as any,
         })
         .from(modelHasPermissions)
         .innerJoin(permissions, eq(modelHasPermissions.permissionId, permissions.id))
@@ -343,7 +343,7 @@ export class EnhancedPermissionService {
       // Check role permissions
       const rolePermissions = await db
         .select({
-          permissionName: permissions.name,
+          permissionName: permissions.name as any,
         })
         .from(roleHasPermissions)
         .innerJoin(permissions, eq(roleHasPermissions.permissionId, permissions.id))

@@ -27,9 +27,9 @@ export async function GET(
       rental: {
         id: rental.id,
         customerId: rental.customerId,
-        customerName: rental.customerName,
-        customerEmail: rental.customerEmail,
-        customerPhone: rental.customerPhone,
+        customerName: rental.customer?.name,
+        customerEmail: rental.customer?.email,
+        customerPhone: rental.customer?.phone,
         customer: rental.customer,
         quotationId: rental.quotationId,
         rental_items: rental.rental_items,

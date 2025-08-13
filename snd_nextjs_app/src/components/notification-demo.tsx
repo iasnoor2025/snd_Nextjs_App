@@ -50,21 +50,8 @@ export const NotificationDemo: React.FC = () => {
   };
 
   const handlePromiseNotification = () => {
-    const promise = new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (Math.random() > 0.5) {
-          resolve('Success!');
-        } else {
-          reject('Failed!');
-        }
-      }, 2000);
-    });
-
-    notify.promise(promise, {
-      loading: 'Processing your request...',
-      success: 'Request completed successfully!',
-      error: 'Request failed. Please try again.',
-    });
+    // Promise-based notifications not supported by current notification service
+    notify.info('Info', 'Promise notifications are not currently supported');
   };
 
   return (
