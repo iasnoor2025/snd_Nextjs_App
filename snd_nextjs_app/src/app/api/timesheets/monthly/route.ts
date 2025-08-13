@@ -47,29 +47,20 @@ export const GET = withAuth(async (request: NextRequest) => {
         assignmentId: timesheets.assignmentId,
         description: timesheets.description,
         tasks: timesheets.tasks,
-        employee: {
-          id: employees.id,
-          firstName: employees.firstName,
-          lastName: employees.lastName,
-          fileNumber: employees.fileNumber,
-          user: {
-            name: users.name as any,
-            email: users.email as any,
-          },
-        },
-        project: {
-          id: projectsTable.id,
-          name: projectsTable.name,
-        },
-        rental: {
-          id: rentals.id,
-          rentalNumber: rentals.rentalNumber,
-        },
-        assignment: {
-          id: employeeAssignments.id,
-          name: employeeAssignments.name,
-          type: employeeAssignments.type,
-        },
+        // Employee fields
+        employeeFirstName: employees.firstName,
+        employeeLastName: employees.lastName,
+        employeeFileNumber: employees.fileNumber,
+        // User fields
+        userName: users.name,
+        userEmail: users.email,
+        // Project fields
+        projectName: projectsTable.name,
+        // Rental fields
+        rentalNumber: rentals.rentalNumber,
+        // Assignment fields
+        assignmentName: employeeAssignments.name,
+        assignmentType: employeeAssignments.type,
       })
       .from(timesheets)
       .leftJoin(employees, eq(timesheets.employeeId, employees.id))
@@ -142,27 +133,27 @@ export const GET = withAuth(async (request: NextRequest) => {
           description: timesheet.description || '',
           tasksCompleted: timesheet.tasks || '',
           employee: {
-            id: timesheet.employee.id.toString(),
-            firstName: timesheet.employee.firstName,
-            lastName: timesheet.employee.lastName,
-            fileNumber: timesheet.employee.fileNumber,
-            user: timesheet.employee.user ? {
-              name: timesheet.employee.user.name,
-              email: timesheet.employee.user.email,
+            id: timesheet.employeeId.toString(),
+            firstName: timesheet.employeeFirstName,
+            lastName: timesheet.employeeLastName,
+            fileNumber: timesheet.employeeFileNumber,
+            user: timesheet.userName ? {
+              name: timesheet.userName,
+              email: timesheet.userEmail,
             } : undefined,
           },
-          project: timesheet.project ? {
-            id: timesheet.project.id.toString(),
-            name: timesheet.project.name,
+          project: timesheet.projectId ? {
+            id: timesheet.projectId.toString(),
+            name: timesheet.projectName,
           } : undefined,
-          rental: timesheet.rental ? {
-            id: timesheet.rental.id.toString(),
-            rentalNumber: timesheet.rental.rentalNumber,
+          rental: timesheet.rentalId ? {
+            id: timesheet.rentalId.toString(),
+            rentalNumber: timesheet.rentalNumber,
           } : undefined,
-          assignment: timesheet.assignment ? {
-            id: timesheet.assignment.id.toString(),
-            name: timesheet.assignment.name || '',
-            type: timesheet.assignment.type,
+          assignment: timesheet.assignmentId ? {
+            id: timesheet.assignmentId.toString(),
+            name: timesheet.assignmentName || '',
+            type: timesheet.assignmentType,
           } : undefined,
         });
       }
@@ -185,7 +176,7 @@ export const GET = withAuth(async (request: NextRequest) => {
     // Group by projects
     const projectsSummary = timesheetsData.reduce((acc, timesheet) => {
       const projectId = timesheet.projectId?.toString() || 'no-project';
-      const projectName = timesheet.project?.name || 'No Project';
+      const projectName = timesheet.projectName || 'No Project';
       
       if (!acc[projectId]) {
         acc[projectId] = {

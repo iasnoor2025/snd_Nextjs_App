@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService } from '@/lib/database';
+import { RentalService } from '@/lib/services/rental-service';
 
 export async function GET(
   request: NextRequest,
@@ -7,44 +7,74 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const rental = await DatabaseService.getRental(parseInt(id));
+    console.log('🔍 Fetching rental with ID:', id);
+    
+    const rental = await RentalService.getRental(parseInt(id));
+    console.log('📦 Rental data received:', rental);
 
     if (!rental) {
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
     }
 
-    if (!rental.quotation_id) {
+    if (!rental.quotationId) {
       return NextResponse.json({ error: 'No quotation found for this rental' }, { status: 404 });
     }
 
+    // Ensure customer data exists
+    if (!rental.customer) {
+      console.log('❌ Customer data missing from rental:', rental);
+      return NextResponse.json({ error: 'Customer data not found for this rental' }, { status: 404 });
+    }
+
+    console.log('👤 Customer data found:', rental.customer);
+
     // Generate quotation data for display
     const quotation = {
-      id: rental.quotation_id,
-      rental_id: rental.id,
-      quotation_number: rental.quotation_id,
-      customer: rental.customer,
-      rental_items: rental.rental_items,
-      subtotal: rental.subtotal,
-      tax_amount: rental.tax_amount,
-      total_amount: rental.total_amount,
-      discount: rental.discount,
-      tax: rental.tax,
-      final_amount: rental.final_amount,
-      deposit_amount: rental.deposit_amount,
-      payment_terms_days: rental.payment_terms_days,
-      start_date: rental.start_date,
-      expected_end_date: rental.expected_end_date,
-      notes: rental.notes,
-      created_at: rental.created_at,
-      status: 'draft'
+      id: rental.quotationId,
+      quotationNumber: `QT-${rental.quotationId}`,
+      displayNumber: `QT-${rental.quotationId.toString().padStart(6, '0')}`,
+      customer: {
+        name: rental.customer.name || 'Unknown Customer',
+        company: rental.customer.company || '',
+        address: rental.customer.address || '',
+        vat: rental.customer.vat || '',
+        email: rental.customer.email || '',
+        phone: rental.customer.phone || ''
+      },
+      rentalItems: rental.rental_items || [],
+      subtotal: rental.subtotal || 0,
+      taxAmount: rental.taxAmount || 0,
+      totalAmount: rental.totalAmount || 0,
+      discount: rental.discount || 0,
+      tax: rental.tax || 0,
+      finalAmount: rental.finalAmount || 0,
+      depositAmount: rental.depositAmount || 0,
+      paymentTermsDays: rental.paymentTermsDays || 30,
+      startDate: rental.startDate ? new Date(rental.startDate).toISOString() : new Date().toISOString(),
+      expectedEndDate: rental.expectedEndDate ? new Date(rental.expectedEndDate).toISOString() : undefined,
+      notes: rental.notes || '',
+      createdAt: rental.createdAt ? new Date(rental.createdAt).toISOString() : new Date().toISOString(),
+      status: 'draft',
+      validity: rental.validity || '',
+      customerReference: rental.customerReference || '',
+      deliveryAddress: rental.deliveryAddress || '',
+      projectName: rental.projectName || '',
+      deliveryRequiredBy: rental.deliveryRequiredBy || '',
+      deliveryTerms: rental.deliveryTerms || '',
+      shipVia: rental.shipVia || '',
+      shipmentTerms: rental.shipmentTerms || '',
+      rentalTerms: rental.rentalTerms || '',
+      paymentTerms: rental.paymentTerms || '',
+      additionalTerms: rental.additionalTerms || '',
+      mdTerms: rental.mdTerms || ''
     };
 
-    return NextResponse.json({
-      quotation,
-      rental
-    });
+    console.log('📄 Generated quotation data:', quotation);
+
+    // Return quotation data directly (not wrapped in an object)
+    return NextResponse.json(quotation);
   } catch (error) {
-    console.error('Error fetching quotation:', error);
+    console.error('❌ Error fetching quotation:', error);
     return NextResponse.json(
       { error: 'Failed to fetch quotation' },
       { status: 500 }

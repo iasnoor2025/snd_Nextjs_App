@@ -191,7 +191,7 @@ export async function PUT(
         },
         assignment: {
           id: employeeAssignments.id,
-          assignmentType: employeeAssignments.assignmentType,
+          assignmentType: employeeAssignments.type,
         },
       })
       .from(timesheets)
@@ -370,11 +370,11 @@ export async function GET(
     console.log('GET /api/timesheets/[id] - Basic timesheet query successful, fetching related data...');
     
     // Now try to fetch related data one by one to identify which join is failing
-    let employeeData = null;
-    let userData = null;
-    let projectData = null;
-    let rentalData = null;
-    let assignmentData = null;
+    let employeeData: any = null;
+    let userData: any = null;
+    let projectData: any = null;
+    let rentalData: any = null;
+    let assignmentData: any = null;
     
     try {
       // Try to fetch employee data
@@ -458,7 +458,7 @@ export async function GET(
         const [assignment] = await db
           .select({
             id: employeeAssignments.id,
-            assignmentType: employeeAssignments.assignmentType,
+            assignmentType: employeeAssignments.type,
           })
           .from(employeeAssignments)
           .where(eq(employeeAssignments.id, basicTimesheet.assignmentId))

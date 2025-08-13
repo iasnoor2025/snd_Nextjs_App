@@ -34,7 +34,8 @@ import {
   CircleDashed,
   Receipt,
   Truck,
-  CalendarCheck
+  CalendarCheck,
+  ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -423,6 +424,19 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
               Generate Invoice
             </Button>
           );
+        } else if (rental.invoiceDate && rental.invoiceId) {
+          return (
+            <div className="flex gap-2 mt-2">
+              <Button size="sm" variant="outline" onClick={() => window.open(`/api/rentals/${rental.id}/invoice/download`, '_blank')}>
+                <Download className="w-3 h-3 mr-1" />
+                Download PDF
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => window.open(`${process.env.NEXT_PUBLIC_ERPNEXT_URL}/app/sales-invoice/${rental.invoiceId}`, '_blank')}>
+                <ExternalLink className="w-3 h-3 mr-1" />
+                View in ERPNext
+              </Button>
+            </div>
+          );
         }
         break;
     }
@@ -614,14 +628,13 @@ export default function RentalDetailPage() {
     id: '',
     equipmentId: '',
     equipmentName: '',
-    quantity: 1,
     unitPrice: 0,
     totalPrice: 0,
-    days: 1,
     rateType: 'daily',
     operatorId: '',
     status: 'active',
     notes: '',
+    actionType: 'update', // 'handover', 'remove', 'add', 'update'
   });
 
   const [equipment, setEquipment] = useState<any[]>([]);
@@ -927,14 +940,14 @@ export default function RentalDetailPage() {
     if (!rental) return;
 
     // Validate required fields
-    if (!itemFormData.equipmentName || !itemFormData.quantity || !itemFormData.unitPrice) {
-      toast.error('Please fill in all required fields: Equipment, Quantity, and Unit Price');
+    if (!itemFormData.equipmentName || !itemFormData.unitPrice) {
+      toast.error('Please fill in all required fields: Equipment and Unit Price');
       return;
     }
 
     try {
       // Calculate total price
-      const totalPrice = itemFormData.quantity * itemFormData.unitPrice * itemFormData.days;
+      const totalPrice = itemFormData.unitPrice;
 
       const requestData = {
         ...itemFormData,
@@ -964,14 +977,13 @@ export default function RentalDetailPage() {
         id: '',
         equipmentId: '',
         equipmentName: '',
-        quantity: 1,
         unitPrice: 0,
         totalPrice: 0,
-        days: 1,
         rateType: 'daily',
         operatorId: '',
         status: 'active',
         notes: '',
+        actionType: 'update',
       });
       
       // Refresh rental data
@@ -986,14 +998,13 @@ export default function RentalDetailPage() {
       id: item.id,
       equipmentId: item.equipment_id?.toString() || item.equipmentId?.toString() || '',
       equipmentName: item.equipment_name || item.equipmentName || '',
-      quantity: item.quantity || 1,
       unitPrice: item.unit_price || item.unitPrice || 0,
       totalPrice: item.total_price || item.totalPrice || 0,
-      days: item.days || 1,
       rateType: item.rate_type || item.rateType || 'daily',
       operatorId: item.operatorId?.toString() || '',
       status: item.status || 'active',
       notes: item.notes || '',
+      actionType: 'update', // Default to update mode
     });
     setIsEditItemDialogOpen(true);
   };
@@ -1002,14 +1013,14 @@ export default function RentalDetailPage() {
     if (!rental) return;
 
     // Validate required fields
-    if (!itemFormData.equipmentName || !itemFormData.quantity || !itemFormData.unitPrice) {
-      toast.error('Please fill in all required fields: Equipment, Quantity, and Unit Price');
+    if (!itemFormData.equipmentName || !itemFormData.unitPrice) {
+      toast.error('Please fill in all required fields: Equipment and Unit Price');
       return;
     }
 
     try {
       // Calculate total price
-      const totalPrice = itemFormData.quantity * itemFormData.unitPrice * itemFormData.days;
+      const totalPrice = itemFormData.unitPrice;
 
       const requestData = {
         ...itemFormData,
@@ -1038,20 +1049,39 @@ export default function RentalDetailPage() {
         id: '',
         equipmentId: '',
         equipmentName: '',
-        quantity: 1,
         unitPrice: 0,
         totalPrice: 0,
-        days: 1,
         rateType: 'daily',
         operatorId: '',
         status: 'active',
         notes: '',
+        actionType: 'update',
       });
       
       // Refresh rental data
       fetchRental();
     } catch (err) {
       toast.error('Failed to update rental item');
+    }
+  };
+
+  const handleOperatorAction = (actionType: string) => {
+    setItemFormData(prev => ({ ...prev, actionType }));
+    
+    // Show appropriate message based on action type
+    switch (actionType) {
+      case 'handover':
+        toast.info('Operator Handover Mode: Previous operator will be ended, new operator will be assigned');
+        break;
+      case 'remove':
+        toast.info('Remove Operator Mode: Current operator assignment will be deleted');
+        break;
+      case 'add':
+        toast.info('Add Operator Mode: New operator will be assigned');
+        break;
+      case 'update':
+        toast.info('Update Mode: Operator will be updated based on rental status');
+        break;
     }
   };
 
@@ -1303,10 +1333,8 @@ export default function RentalDetailPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Equipment</TableHead>
-                        <TableHead>Quantity</TableHead>
                         <TableHead>Unit Price</TableHead>
                         <TableHead>Total Price</TableHead>
-                        <TableHead>Days</TableHead>
                         <TableHead>Rate Type</TableHead>
                         <TableHead>Operator</TableHead>
                         <TableHead>Status</TableHead>
@@ -1323,10 +1351,8 @@ export default function RentalDetailPage() {
                         return (
                           <TableRow key={item.id}>
                             <TableCell>{item.equipmentName}</TableCell>
-                            <TableCell>{item.quantity}</TableCell>
                             <TableCell>${formatAmount(item.unitPrice)}</TableCell>
                             <TableCell>${formatAmount(item.totalPrice)}</TableCell>
-                            <TableCell>{item.days || 1}</TableCell>
                             <TableCell>{item.rateType}</TableCell>
                             <TableCell>{operatorName}</TableCell>
                             <TableCell>
@@ -1752,16 +1778,6 @@ export default function RentalDetailPage() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="quantity">Quantity</Label>
-              <Input
-                id="quantity"
-                type="number"
-                value={itemFormData.quantity}
-                onChange={(e) => setItemFormData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
-                placeholder="1"
-              />
-            </div>
-            <div>
               <Label htmlFor="unitPrice">Unit Price</Label>
               <Input
                 id="unitPrice"
@@ -1770,16 +1786,6 @@ export default function RentalDetailPage() {
                 value={itemFormData.unitPrice}
                 onChange={(e) => setItemFormData(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
                 placeholder="0.00"
-              />
-            </div>
-            <div>
-              <Label htmlFor="days">Days</Label>
-              <Input
-                id="days"
-                type="number"
-                value={itemFormData.days}
-                onChange={(e) => setItemFormData(prev => ({ ...prev, days: parseInt(e.target.value) || 0 }))}
-                placeholder="1"
               />
             </div>
             <div>
@@ -1827,6 +1833,36 @@ export default function RentalDetailPage() {
               placeholder="Enter any additional notes"
             />
           </div>
+
+          {/* Operator Action Type Selection for Add Item */}
+          <div className="space-y-3">
+            <Label>Operator Assignment Action</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={itemFormData.actionType === 'add' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleOperatorAction('add')}
+                className="text-xs"
+              >
+                ➕ Add New
+              </Button>
+              <Button
+                type="button"
+                variant={itemFormData.actionType === 'update' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleOperatorAction('update')}
+                className="text-xs"
+              >
+                🔧 Update
+              </Button>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {itemFormData.actionType === 'add' && 'New operator will be assigned'}
+              {itemFormData.actionType === 'update' && 'Operator will be updated based on rental status'}
+            </div>
+          </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddItemDialogOpen(false)}>
               Cancel
@@ -1891,16 +1927,6 @@ export default function RentalDetailPage() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="editQuantity">Quantity</Label>
-              <Input
-                id="editQuantity"
-                type="number"
-                value={itemFormData.quantity}
-                onChange={(e) => setItemFormData(prev => ({ ...prev, quantity: parseInt(e.target.value) || 0 }))}
-                placeholder="1"
-              />
-            </div>
-            <div>
               <Label htmlFor="editUnitPrice">Unit Price</Label>
               <Input
                 id="editUnitPrice"
@@ -1909,16 +1935,6 @@ export default function RentalDetailPage() {
                 value={itemFormData.unitPrice}
                 onChange={(e) => setItemFormData(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
                 placeholder="0.00"
-              />
-            </div>
-            <div>
-              <Label htmlFor="editDays">Days</Label>
-              <Input
-                id="editDays"
-                type="number"
-                value={itemFormData.days}
-                onChange={(e) => setItemFormData(prev => ({ ...prev, days: parseInt(e.target.value) || 0 }))}
-                placeholder="1"
               />
             </div>
             <div>
@@ -1965,6 +1981,56 @@ export default function RentalDetailPage() {
               placeholder="Enter any additional notes"
             />
           </div>
+
+          {/* Operator Action Type Selection */}
+          <div className="space-y-3">
+            <Label>Operator Change Action</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant={itemFormData.actionType === 'handover' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleOperatorAction('handover')}
+                className="text-xs"
+              >
+                🔄 Handover
+              </Button>
+              <Button
+                type="button"
+                variant={itemFormData.actionType === 'remove' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleOperatorAction('remove')}
+                className="text-xs"
+              >
+                ❌ Remove
+              </Button>
+              <Button
+                type="button"
+                variant={itemFormData.actionType === 'add' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleOperatorAction('add')}
+                className="text-xs"
+              >
+                ➕ Add New
+              </Button>
+              <Button
+                type="button"
+                variant={itemFormData.actionType === 'update' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleOperatorAction('update')}
+                className="text-xs"
+              >
+                🔧 Update
+              </Button>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {itemFormData.actionType === 'handover' && 'Previous operator will be ended, new operator will be assigned'}
+              {itemFormData.actionType === 'remove' && 'Current operator assignment will be deleted'}
+              {itemFormData.actionType === 'add' && 'New operator will be assigned'}
+              {itemFormData.actionType === 'update' && 'Operator will be updated based on rental status'}
+            </div>
+          </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditItemDialogOpen(false)}>
               Cancel

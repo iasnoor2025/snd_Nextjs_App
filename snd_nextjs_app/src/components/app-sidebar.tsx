@@ -83,6 +83,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: IconCalendar,
     },
     {
+      title: t('quotationManagement'),
+      url: "/modules/quotation-management",
+      icon: IconFileDescription,
+    },
+    {
       title: t('timesheetManagement'),
       url: "/modules/timesheet-management",
       icon: IconCalendar,

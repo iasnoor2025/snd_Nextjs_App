@@ -31,10 +31,8 @@ export async function GET(
       .select({
         permissionId: roleHasPermissions.permissionId,
         permission: {
-          id: permissions.id,
-          name: permissions.name,
-          description: permissions.description,
-          module: permissions.module,
+                  id: permissions.id,
+        name: permissions.name,
         }
       })
       .from(roleHasPermissions)
@@ -44,8 +42,6 @@ export async function GET(
     const rolePermissions = rolePermissionRows.map(row => ({
       id: row.permissionId,
       name: row.permission?.name || '',
-      description: row.permission?.description || '',
-      module: row.permission?.module || '',
     }));
 
     return NextResponse.json({

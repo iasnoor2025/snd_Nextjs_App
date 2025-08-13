@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { DatabaseService } from '@/lib/database'
+import { RentalService } from '@/lib/services/rental-service'
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const rental = await DatabaseService.getRental(parseInt(id))
+    const rental = await RentalService.getRental(parseInt(id))
 
     if (!rental) {
       return NextResponse.json(
@@ -72,7 +72,7 @@ export async function PUT(
       rentalItems: body.rentalItems || [],
     }
 
-    const rental = await DatabaseService.updateRental(parseInt(id), updateData)
+    const rental = await RentalService.updateRental(parseInt(id), updateData)
 
     if (!rental) {
       return NextResponse.json(
@@ -97,7 +97,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const success = await DatabaseService.deleteRental(parseInt(id))
+    const success = await RentalService.deleteRental(parseInt(id))
 
     if (!success) {
       return NextResponse.json(

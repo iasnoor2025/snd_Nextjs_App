@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService } from '@/lib/database';
+import { RentalService } from '@/lib/services/rental-service';
 import { db } from '@/lib/db';
 import { rentals } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
@@ -10,7 +10,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const rental = await DatabaseService.getRental(parseInt(id));
+    const rental = await RentalService.getRental(parseInt(id));
 
     if (!rental) {
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });

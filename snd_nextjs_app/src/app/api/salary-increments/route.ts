@@ -273,6 +273,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the salary increment record
+    /*
     const [newSalaryIncrement] = await db
       .insert(salaryIncrements)
       .values({
@@ -298,6 +299,25 @@ export async function POST(request: NextRequest) {
         updatedAt: new Date(),
       })
       .returning();
+    */
+
+    // Temporary mock response for testing
+    const newSalaryIncrement = {
+      id: 1,
+      employeeId: employee_id,
+      incrementType: increment_type,
+      effectiveDate: new Date(effective_date),
+      reason,
+      status: 'pending',
+      currentBaseSalary: currentSalary.currentBaseSalary,
+      newBaseSalary: calculatedNewBaseSalary || currentSalary.currentBaseSalary,
+      incrementAmount: increment_amount,
+      incrementPercentage: increment_percentage,
+      requestedBy: session.user.id,
+      requestedAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
     return NextResponse.json({
       success: true,

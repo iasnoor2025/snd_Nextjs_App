@@ -32,17 +32,13 @@ export const POST = withPermission(
         .select({
           id: timesheets.id,
           status: timesheets.status,
-          employee: {
-            id: employees.id,
-            firstName: employees.firstName,
-            lastName: employees.lastName,
-            fileNumber: employees.fileNumber,
-            user: {
-              id: users.id,
-              name: users.name,
-              email: users.email
-            }
-          }
+          employeeId: employees.id,
+          employeeFirstName: employees.firstName,
+          employeeLastName: employees.lastName,
+          employeeFileNumber: employees.fileNumber,
+          userId: users.id,
+          userName: users.name,
+          userEmail: users.email
         })
         .from(timesheets)
         .leftJoin(employees, eq(timesheets.employeeId, employees.id))
@@ -88,17 +84,13 @@ export const POST = withPermission(
           id: timesheets.id,
           status: timesheets.status,
           rejectionReason: timesheets.rejectionReason,
-          employee: {
-            id: employees.id,
-            firstName: employees.firstName,
-            lastName: employees.lastName,
-            fileNumber: employees.fileNumber,
-            user: {
-              id: users.id,
-              name: users.name,
-              email: users.email
-            }
-          }
+          employeeId: employees.id,
+          employeeFirstName: employees.firstName,
+          employeeLastName: employees.lastName,
+          employeeFileNumber: employees.fileNumber,
+          userId: users.id,
+          userName: users.name,
+          userEmail: users.email
         })
         .from(timesheets)
         .leftJoin(employees, eq(timesheets.employeeId, employees.id))

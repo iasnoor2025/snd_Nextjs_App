@@ -1110,7 +1110,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                     <span className="text-xs text-gray-600 font-medium">Basic Salary</span>
                     <span className="text-xs font-semibold text-green-700">{formatCurrency(basicSalary)}</span>
                   </div>
-                  {employee?.food_allowance && employee.food_allowance > 0 && (
+                  {/* {employee?.food_allowance && employee.food_allowance > 0 && (
                     <div className="flex justify-between items-center py-1 border-b border-gray-200">
                       <span className="text-xs text-gray-600 font-medium">Food Allowance</span>
                       <span className="text-xs font-semibold text-gray-900">{formatCurrency(employee.food_allowance)}</span>
@@ -1127,7 +1127,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                       <span className="text-xs text-gray-600 font-medium">Transport Allowance</span>
                       <span className="text-xs font-semibold text-gray-900">{formatCurrency(employee.transport_allowance)}</span>
                     </div>
-                  )}
+                  )} */}
                   <div className="flex justify-between items-center py-1 border-b border-gray-200">
                     <span className="text-xs text-gray-600 font-medium">Overtime Pay</span>
                     <span className="text-xs font-semibold text-green-700">{formatCurrency(overtimeAmount)}</span>

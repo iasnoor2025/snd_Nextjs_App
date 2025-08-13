@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { DatabaseService } from '@/lib/database'
-import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware'
+import { RentalService } from '@/lib/services/rental-service'
+import { withReadPermission, PermissionConfigs } from '@/lib/rbac/api-middleware'
 
-export const GET = withPermission(
+export const GET = withReadPermission(
   async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url)
@@ -21,12 +21,18 @@ export const GET = withPermission(
     if (startDate) filters.startDate = startDate
     if (endDate) filters.endDate = endDate
 
-    const rentals = await DatabaseService.getRentals(filters)
+    const rentals = await RentalService.getRentals(filters)
     return NextResponse.json(rentals)
   } catch (error) {
     console.error('Error fetching rentals:', error)
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json(
-      { error: 'Failed to fetch rentals' },
+      { 
+        error: 'Failed to fetch rentals',
+        details: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     )
   }
@@ -34,7 +40,7 @@ export const GET = withPermission(
   PermissionConfigs.rental.read
 );
 
-export const POST = withPermission(
+export const POST = withReadPermission(
   async (request: NextRequest) => {
   try {
     const body = await request.json()
@@ -83,7 +89,7 @@ export const POST = withPermission(
       rentalItems: body.rentalItems || [],
     }
 
-    const rental = await DatabaseService.createRental(rentalData)
+    const rental = await RentalService.createRental(rentalData)
     return NextResponse.json(rental, { status: 201 })
   } catch (error) {
     console.error('Error creating rental:', error)

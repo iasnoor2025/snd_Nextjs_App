@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { projectResources, employees, equipment, employeeAssignments, equipmentRentalHistory } from '@/lib/drizzle/schema';
+import { projectResources, employees, equipment, employeeAssignments } from '@/lib/drizzle/schema';
 import { eq, desc } from 'drizzle-orm';
 
 export async function GET(
@@ -217,12 +217,12 @@ export async function POST(
             employeeId: parseInt(body.employee_id), 
             projectId: parseInt(projectId),
             name: `${body.name} Assignment`,
-            startDate: body.start_date ? new Date(body.start_date) : new Date(),
-            endDate: body.end_date ? new Date(body.end_date) : null,
+            startDate: body.start_date ? new Date(body.start_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+            endDate: body.end_date ? new Date(body.end_date).toISOString().split('T')[0] : null,
             notes: body.notes,
             status: 'active',
             type: 'project',
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString().split('T')[0]
           });
         console.log('Employee assignment created successfully');
       } catch (assignmentError) {
@@ -236,20 +236,12 @@ export async function POST(
       try {
         console.log('Creating equipment assignment for equipment:', body.equipment_id);
         await db
-          .insert(equipmentRentalHistory)
-          .values({
-            equipmentId: parseInt(body.equipment_id),
-            assignmentType: 'project',
-            projectId: parseInt(projectId),
-            startDate: body.start_date ? new Date(body.start_date) : new Date(),
-            endDate: body.end_date ? new Date(body.end_date) : null,
-            dailyRate: body.hourly_rate ? parseFloat(body.hourly_rate) * 8 : null, // Convert hourly to daily
-            totalAmount: body.total_cost ? parseFloat(body.total_cost) : null,
-            notes: body.notes,
-            status: 'active',
-            createdAt: new Date().toISOString(),
+          .update(equipment)
+          .set({
+            status: 'assigned',
             updatedAt: new Date().toISOString()
-          });
+          })
+          .where(eq(equipment.id, parseInt(body.equipment_id)));
         console.log('Equipment assignment created successfully');
         
         // Automatically update equipment status to 'assigned'

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { DatabaseService } from '@/lib/database';
+import { RentalService } from '@/lib/services/rental-service';
 import { db } from '@/lib/db';
 import { employeeAssignments } from '@/lib/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
@@ -16,14 +16,14 @@ export async function PUT(
     console.log('Updating rental item:', { rentalId, itemId, body });
 
     // Get current rental item to check if operator changed
-    const currentItem = await DatabaseService.getRentalItem(parseInt(itemId));
+    const currentItem = await RentalService.getRentalItem(parseInt(itemId));
     const previousOperatorId = currentItem?.operatorId;
     const newOperatorId = body.operatorId ? parseInt(body.operatorId) : null;
+    const actionType = body.actionType || 'update'; // 'handover', 'remove', 'add', 'update'
 
     // Validate required fields
     const missingFields: string[] = [];
     if (!body.equipmentName) missingFields.push('equipmentName');
-    if (!body.quantity) missingFields.push('quantity');
     if (!body.unitPrice) missingFields.push('unitPrice');
 
     if (missingFields.length > 0) {
@@ -37,65 +37,47 @@ export async function PUT(
     }
 
     // Update rental item
-    const rentalItem = await DatabaseService.updateRentalItem(parseInt(itemId), {
+    const rentalItem = await RentalService.updateRentalItem(parseInt(itemId), {
       equipmentId: body.equipmentId ? parseInt(body.equipmentId) : null,
       equipmentName: body.equipmentName,
-      quantity: parseInt(body.quantity),
       unitPrice: parseFloat(body.unitPrice),
-      totalPrice: parseFloat(body.totalPrice || 0),
-      days: parseInt(body.days) || 1,
+      totalPrice: parseFloat(body.totalPrice || body.unitPrice),
       rateType: body.rateType || 'daily',
       operatorId: newOperatorId,
       status: body.status || 'active',
       notes: body.notes || '',
     });
 
-    // Handle operator assignment changes
-    if (newOperatorId !== previousOperatorId) {
-      try {
-        // If there was a previous operator, end their assignment
-        if (previousOperatorId) {
-          await db.update(employeeAssignments)
-            .set({
-              status: 'inactive',
-              endDate: new Date(),
-            })
-            .where(and(
-              eq(employeeAssignments.employeeId, previousOperatorId),
-              eq(employeeAssignments.rentalId, parseInt(rentalId)),
-              eq(employeeAssignments.type, 'rental_item'),
-              eq(employeeAssignments.status, 'active')
-            ));
+    // Handle different operator change scenarios
+    // Temporarily commented out to test quotation generation
+    /*
+    if (actionType === 'handover' && newOperatorId !== previousOperatorId) {
+      // Scenario 1: Operator Changes with handover
+      if (newOperatorId !== undefined && newOperatorId !== null) {
+        await handleOperatorHandover(rentalId, previousOperatorId, newOperatorId, body.equipmentName);
+      }
+    } else if (actionType === 'remove' && previousOperatorId) {
+      // Scenario 2: Operator Removed - delete assignment
+      await deleteOperatorAssignment(rentalId, previousOperatorId);
+    } else if (actionType === 'add' && newOperatorId && !previousOperatorId) {
+      // Scenario 3: New Operator Added
+      if (newOperatorId !== undefined && newOperatorId !== null) {
+        await createNewOperatorAssignment(rentalId, newOperatorId, body.equipmentName);
+      }
+    } else if (actionType === 'update' && newOperatorId !== previousOperatorId) {
+      // Scenario 4: Update operator based on rental status
+      if (newOperatorId !== undefined && newOperatorId !== null) {
+        const rental = await RentalService.getRental(parseInt(rentalId));
+        if (rental?.status === 'active') {
+          // If rental is active, use handover logic
+          await handleOperatorHandover(rentalId, previousOperatorId, newOperatorId, body.equipmentName);
+        } else {
+          // If rental is not active, just update the operator
+          await updateOperatorInRentalItem(rentalId, previousOperatorId, newOperatorId, body.equipmentName);
         }
-
-        // If there's a new operator, create a new assignment
-        if (newOperatorId) {
-          // Get rental details for assignment name
-          const rental = await DatabaseService.getRental(parseInt(rentalId));
-          const customerName = rental?.customer?.name || 'Unknown Customer';
-          
-          // Create employee assignment
-          await db.insert(employeeAssignments).values({
-            employeeId: newOperatorId,
-            name: `${customerName} - ${body.equipmentName} Rental`,
-            type: 'rental_item',
-            location: 'Rental Site',
-            startDate: new Date(),
-            endDate: null,
-            status: 'active',
-            notes: `Assigned to rental item: ${body.equipmentName}`,
-            rentalId: parseInt(rentalId),
-            projectId: null,
-          });
-
-          console.log(`Employee assignment updated for operator ${newOperatorId} on rental ${rentalId}`);
-        }
-      } catch (assignmentError) {
-        console.error('Error updating employee assignment:', assignmentError);
-        // Don't fail the rental item update if assignment update fails
-        // Just log the error
       }
     }
+    */
 
     return NextResponse.json(rentalItem);
   } catch (error) {
@@ -110,6 +92,124 @@ export async function PUT(
   }
 }
 
+// Helper function for Scenario 1: Operator Handover
+async function handleOperatorHandover(rentalId: string, previousOperatorId: number | null, newOperatorId: number | null, equipmentName: string) {
+  try {
+    // End previous operator assignment
+    if (previousOperatorId) {
+      await db.update(employeeAssignments)
+        .set({
+          status: 'completed',
+          endDate: new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString().split('T')[0],
+        })
+        .where(and(
+          eq(employeeAssignments.employeeId, previousOperatorId),
+          eq(employeeAssignments.rentalId, parseInt(rentalId)),
+          eq(employeeAssignments.type, 'rental_item'),
+          eq(employeeAssignments.status, 'active')
+        ));
+      
+      console.log(`Ended employee assignment for previous operator ${previousOperatorId} on rental ${rentalId} (Handover)`);
+    }
+
+    // Create new operator assignment
+    if (newOperatorId) {
+      const rental = await RentalService.getRental(parseInt(rentalId));
+      const customerName = rental?.customer?.name || 'Unknown Customer';
+      
+      await db.insert(employeeAssignments).values({
+        employeeId: newOperatorId,
+        name: `${customerName} - ${equipmentName} Rental (Handover)`,
+        type: 'rental_item',
+        location: 'Rental Site',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: null,
+        status: 'active',
+        notes: `Handover from previous operator - assigned to rental item: ${equipmentName}`,
+        rentalId: parseInt(rentalId),
+        projectId: null,
+        updatedAt: new Date().toISOString().split('T')[0]
+      });
+
+      console.log(`Created new employee assignment for operator ${newOperatorId} on rental ${rentalId} (Handover)`);
+    }
+  } catch (error) {
+    console.error('Error handling operator handover:', error);
+  }
+}
+
+// Helper function for Scenario 2: Remove Operator Assignment
+async function deleteOperatorAssignment(rentalId: string, operatorId: number | null) {
+  try {
+    if (operatorId) {
+      await db.delete(employeeAssignments)
+        .where(and(
+          eq(employeeAssignments.employeeId, operatorId),
+          eq(employeeAssignments.rentalId, parseInt(rentalId)),
+          eq(employeeAssignments.type, 'rental_item'),
+          eq(employeeAssignments.status, 'active')
+        ));
+      
+      console.log(`Deleted employee assignment for operator ${operatorId} on rental ${rentalId}`);
+    }
+  } catch (error) {
+    console.error('Error deleting operator assignment:', error);
+  }
+}
+
+// Helper function for Scenario 3: Add New Operator
+async function createNewOperatorAssignment(rentalId: string, operatorId: number | null, equipmentName: string) {
+  try {
+    if (operatorId) {
+      const rental = await RentalService.getRental(parseInt(rentalId));
+      const customerName = rental?.customer?.name || 'Unknown Customer';
+      
+      await db.insert(employeeAssignments).values({
+        employeeId: operatorId,
+        name: `${customerName} - ${equipmentName} Rental`,
+        type: 'rental_item',
+        location: 'Rental Site',
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: null,
+        status: 'active',
+        notes: `New operator assigned to rental item: ${equipmentName}`,
+        rentalId: parseInt(rentalId),
+        projectId: null,
+        updatedAt: new Date().toISOString().split('T')[0]
+      });
+
+      console.log(`Created new employee assignment for operator ${operatorId} on rental ${rentalId}`);
+    }
+  } catch (error) {
+    console.error('Error creating new operator assignment:', error);
+  }
+}
+
+// Helper function for Scenario 4: Update Operator in Rental Item Only
+async function updateOperatorInRentalItem(rentalId: string, previousOperatorId: number | null, newOperatorId: number | null, equipmentName: string) {
+  try {
+    // Just update the existing assignment if it exists
+    if (previousOperatorId && newOperatorId) {
+      await db.update(employeeAssignments)
+        .set({
+          employeeId: newOperatorId,
+          updatedAt: new Date().toISOString().split('T')[0],
+        })
+        .where(and(
+          eq(employeeAssignments.employeeId, previousOperatorId),
+          eq(employeeAssignments.rentalId, parseInt(rentalId)),
+          eq(employeeAssignments.type, 'rental_item'),
+          eq(employeeAssignments.status, 'active')
+        ));
+      
+      console.log(`Updated operator assignment from ${previousOperatorId} to ${newOperatorId} on rental ${rentalId}`);
+    }
+  } catch (error) {
+    console.error('Error updating operator in rental item:', error);
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; itemId: string }> }
@@ -121,11 +221,11 @@ export async function DELETE(
     console.log('Deleting rental item:', { rentalId, itemId });
 
     // Get current rental item to check if it has an operator
-    const currentItem = await DatabaseService.getRentalItem(parseInt(itemId));
+    const currentItem = await RentalService.getRentalItem(parseInt(itemId));
     const operatorId = currentItem?.operatorId;
 
     // Delete rental item
-    await DatabaseService.deleteRentalItem(parseInt(itemId));
+    await RentalService.deleteRentalItem(parseInt(itemId));
 
     // If the item had an operator, end their assignment
     if (operatorId) {
@@ -133,7 +233,7 @@ export async function DELETE(
         await db.update(employeeAssignments)
           .set({
             status: 'inactive',
-            endDate: new Date(),
+            endDate: new Date().toISOString().split('T')[0],
           })
           .where(and(
             eq(employeeAssignments.employeeId, operatorId),

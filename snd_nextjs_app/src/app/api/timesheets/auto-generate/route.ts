@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     const resultPromise = autoGenerateTimesheets();
     
     // Race between timeout and completion
-    const result = await Promise.race([resultPromise, timeoutPromise]);
+    const result = await Promise.race([resultPromise, timeoutPromise]) as any;
     
     console.log('API: Auto-generation completed with result:', {
       success: result.success,

@@ -49,10 +49,8 @@ interface Customer {
 interface RentalItem {
   equipmentId: string;
   equipmentName: string;
-  quantity: number;
   unitPrice: number;
   totalPrice: number;
-  days: number;
   rateType: string;
   operatorId?: string;
   notes?: string;
@@ -152,10 +150,8 @@ export default function CreateRentalPage() {
     const newItem: RentalItem = {
       equipmentId: '',
       equipmentName: '',
-      quantity: 1,
       unitPrice: 0,
       totalPrice: 0,
-      days: 1,
       rateType: 'daily',
       operatorId: '',
       notes: '',
@@ -177,14 +173,14 @@ export default function CreateRentalPage() {
         if (selectedEquipment) {
         updatedItems[index].equipmentName = selectedEquipment.name;
         updatedItems[index].unitPrice = selectedEquipment.dailyRate;
-        updatedItems[index].totalPrice = selectedEquipment.dailyRate * updatedItems[index].quantity * updatedItems[index].days;
+        updatedItems[index].totalPrice = selectedEquipment.dailyRate;
       }
     }
 
-    // If quantity or days changed, recalculate total price
-    if (field === 'quantity' || field === 'days' || field === 'unitPrice') {
+    // If unitPrice changed, recalculate total price
+    if (field === 'unitPrice') {
       const item = updatedItems[index];
-      updatedItems[index].totalPrice = item.unitPrice * item.quantity * item.days;
+      updatedItems[index].totalPrice = item.unitPrice;
     }
 
     setFormData(prev => ({
@@ -513,21 +509,12 @@ export default function CreateRentalPage() {
                               </Select>
                             </div>
                       <div>
-                        <Label>Quantity</Label>
+                        <Label>Unit Price</Label>
                         <Input
                           type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) => updateRentalItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                        />
-                      </div>
-                      <div>
-                        <Label>Days</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.days}
-                          onChange={(e) => updateRentalItem(index, 'days', parseInt(e.target.value) || 1)}
+                          step="0.01"
+                          value={item.unitPrice}
+                          onChange={(e) => updateRentalItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
                         />
                       </div>
                             <div>
@@ -545,15 +532,6 @@ export default function CreateRentalPage() {
                                   <SelectItem value="monthly">Monthly</SelectItem>
                                 </SelectContent>
                               </Select>
-                            </div>
-                            <div>
-                        <Label>Unit Price</Label>
-                              <Input
-                                type="number"
-                                step="0.01"
-                          value={item.unitPrice}
-                          onChange={(e) => updateRentalItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                              />
                             </div>
                             <div>
                         <Label>Total Price</Label>

@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     const toDate = searchParams.get('to_date');
 
     // Build where conditions for date filtering
-    const whereConditions = [];
+    const whereConditions: any[] = [];
     
     if (fromDate) {
       whereConditions.push(gte(salaryIncrements.effectiveDate, fromDate));

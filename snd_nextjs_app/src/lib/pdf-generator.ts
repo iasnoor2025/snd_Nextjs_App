@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { LogoLoader } from './logo-loader';
 
 interface QuotationData {
   quotationNumber: string;
@@ -15,20 +15,30 @@ interface QuotationData {
     vat?: string;
   };
   rentalItems: Array<{
+    id: number;
+    rentalId: number;
+    equipmentId: number;
     equipmentName: string;
-    quantity: number;
-    unitPrice: number;
-    totalPrice: number;
+    unitPrice: string;
+    totalPrice: string;
     rateType: string;
+    operatorId?: number;
+    status: string;
+    notes: string;
+    createdAt: string;
+    updatedAt: string;
+    equipmentModelNumber?: string;
+    equipmentCategoryId?: number;
+    quantity?: number;
     rentalPeriod?: string;
     delivery?: string;
   }>;
-  subtotal: number;
-  taxAmount: number;
-  totalAmount: number;
-  discount: number;
-  tax: number;
-  depositAmount: number;
+  subtotal: string;
+  taxAmount: string;
+  totalAmount: string;
+  discount: string;
+  tax: string;
+  depositAmount: string;
   paymentTermsDays: number;
   startDate: string;
   expectedEndDate?: string;
@@ -43,6 +53,63 @@ interface QuotationData {
   status?: string;
   shipVia?: string;
   shipmentTerms?: string;
+}
+
+interface RentalInvoiceData {
+  invoiceNumber: string;
+  invoiceDate: string;
+  dueDate: string;
+  customer: {
+    name: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    postalCode?: string;
+    company?: string;
+    vat?: string;
+  };
+  rentalItems: Array<{
+    id: number;
+    rentalId: number;
+    equipmentId: number;
+    equipmentName: string;
+    unitPrice: string;
+    totalPrice: string;
+    rateType: string;
+    operatorId?: number;
+    status: string;
+    notes: string;
+    createdAt: string;
+    updatedAt: string;
+    equipmentModelNumber?: string;
+    equipmentCategoryId?: number;
+    quantity?: number;
+    rentalPeriod?: string;
+    delivery?: string;
+  }>;
+  subtotal: string;
+  taxAmount: string;
+  totalAmount: string;
+  discount: string;
+  tax: string;
+  depositAmount: string;
+  paymentTermsDays: number;
+  startDate: string;
+  expectedEndDate?: string;
+  notes?: string;
+  createdAt: string;
+  validity?: string;
+  customerReference?: string;
+  deliveryAddress?: string;
+  projectName?: string;
+  deliveryRequiredBy?: string;
+  deliveryTerms?: string;
+  status?: string;
+  shipVia?: string;
+  shipmentTerms?: string;
+  erpnextInvoiceId?: string;
 }
 
 export class PDFGenerator {
@@ -61,410 +128,629 @@ export class PDFGenerator {
         throw new Error('At least one rental item is required');
       }
 
-      // Validate each rental item
-  
-      quotationData.rentalItems.forEach((item, index) => {
-        
-        if (!item.equipmentName) {
-          throw new Error(`Rental item ${index + 1} is missing equipment name`);
-        }
-        if (typeof item.quantity !== 'number' || item.quantity <= 0) {
-          throw new Error(`Rental item ${index + 1} has invalid quantity`);
-        }
-        if (typeof item.unitPrice !== 'number' || item.unitPrice < 0) {
-          throw new Error(`Rental item ${index + 1} has invalid unit price`);
-        }
-        if (typeof item.totalPrice !== 'number' || item.totalPrice < 0) {
-          throw new Error(`Rental item ${index + 1} has invalid total price`);
-        }
-        if (!item.rateType) {
-          throw new Error(`Rental item ${index + 1} is missing rate type`);
-        }
-      });
-
-      // Validate financial fields
-      if (typeof quotationData.subtotal !== 'number' || quotationData.subtotal < 0) {
-        throw new Error('Invalid subtotal amount');
-      }
-      if (typeof quotationData.taxAmount !== 'number' || quotationData.taxAmount < 0) {
-        throw new Error('Invalid tax amount');
-      }
-      if (typeof quotationData.totalAmount !== 'number' || quotationData.totalAmount < 0) {
-        throw new Error('Invalid total amount');
-      }
-      if (typeof quotationData.discount !== 'number' || quotationData.discount < 0) {
-        throw new Error('Invalid discount amount');
-      }
-      if (typeof quotationData.tax !== 'number' || quotationData.tax < 0) {
-        throw new Error('Invalid tax percentage');
-      }
-      if (typeof quotationData.depositAmount !== 'number' || quotationData.depositAmount < 0) {
-        throw new Error('Invalid deposit amount');
-      }
-
-      // Validate required string fields
-      if (!quotationData.quotationNumber) {
-        throw new Error('Quotation number is required');
-      }
-      if (!quotationData.startDate) {
-        throw new Error('Start date is required');
-      }
-      if (!quotationData.createdAt) {
-        throw new Error('Created date is required');
-      }
-      if (typeof quotationData.paymentTermsDays !== 'number' || quotationData.paymentTermsDays <= 0) {
-        throw new Error('Invalid payment terms days');
-      }
-
+      // Create new PDF document
       const pdf = new jsPDF('p', 'mm', 'a4');
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const margin = 20;
-    let yPosition = margin;
+      
+      // Generate quotation
+      PDFGenerator.generateQuotation(pdf, quotationData);
 
-    // Helper function to format amounts
-    const formatAmount = (amount: any): string => {
-      if (amount === null || amount === undefined) return '0.00';
-
-      // Handle Decimal types from Prisma
-      let num: number;
-      if (typeof amount === 'object' && amount !== null) {
-        // Handle Prisma Decimal type
-        if (amount.toFixed) {
-          num = parseFloat(amount.toFixed(2));
-        } else if (amount.toString) {
-          num = parseFloat(amount.toString());
-        } else {
-          num = 0;
-        }
-      } else if (typeof amount === 'string') {
-        num = parseFloat(amount);
-      } else {
-        num = Number(amount);
-      }
-
-      // Ensure we return a valid string
-      if (isNaN(num) || !isFinite(num)) {
-        return '0.00';
-      }
-
-      return num.toFixed(2);
-    };
-
-    // Helper function to format dates
-    const formatDate = (dateString: string): string => {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    };
-
-    // Add company header with logo placeholder
-    pdf.setFontSize(16);
-    pdf.setTextColor(59, 130, 246); // Blue color
-    pdf.text('Samhan Naser Al-Dosri Est.', margin, yPosition);
-    yPosition += 8;
-
-    // Add quotation number and revision
-    pdf.setFontSize(10);
-    pdf.setTextColor(100, 100, 100);
-    pdf.text(`QNO. ${quotationData.quotationNumber}`, margin, yPosition);
-    pdf.text('REVISED : 01', pageWidth - margin - 40, yPosition);
-    yPosition += 15;
-
-    // Add main title
-    pdf.setFontSize(20);
-    pdf.setTextColor(59, 130, 246);
-    pdf.text('Equipment Rental Quotation', pageWidth / 2 - 60, yPosition);
-    yPosition += 20;
-
-    // Add client and project information in two columns
-    const leftColumnX = margin;
-    const rightColumnX = pageWidth / 2 + 10;
-    const columnWidth = (pageWidth - 2 * margin - 10) / 2;
-
-    // Left column - Client Information
-    pdf.setFontSize(12);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('Client Information:', leftColumnX, yPosition);
-    yPosition += 8;
-
-    pdf.setFontSize(10);
-    pdf.setTextColor(100, 100, 100);
-    pdf.text(`Name: ${quotationData.customer.name || ''}`, leftColumnX, yPosition);
-    yPosition += 5;
-    pdf.text(`Company: ${quotationData.customer.company || ''}`, leftColumnX, yPosition);
-    yPosition += 5;
-    pdf.text(`Address: ${quotationData.customer.address || ''}`, leftColumnX, yPosition);
-    yPosition += 5;
-    pdf.text(`VAT: ${quotationData.customer.vat || ''}`, leftColumnX, yPosition);
-    yPosition += 5;
-    pdf.text(`Email: ${quotationData.customer.email || ''}`, leftColumnX, yPosition);
-    yPosition += 5;
-    pdf.text(`Validity: ${quotationData.validity || ''}`, leftColumnX, yPosition);
-    yPosition += 5;
-    pdf.text(`Customer Reference: ${quotationData.customerReference || ''}`, leftColumnX, yPosition);
-
-    // Right column - Project/Delivery Information
-    yPosition -= 35; // Reset to same level as left column
-    pdf.setFontSize(12);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('Project/Delivery Information:', rightColumnX, yPosition);
-    yPosition += 8;
-
-    pdf.setFontSize(10);
-    pdf.setTextColor(100, 100, 100);
-    pdf.text(`Ship / Deliver to: ${quotationData.deliveryAddress || ''}`, rightColumnX, yPosition);
-    yPosition += 5;
-    pdf.text(`Project Name: ${quotationData.projectName || ''}`, rightColumnX, yPosition);
-    yPosition += 5;
-    pdf.text(`Date: ${formatDate(quotationData.createdAt)}`, rightColumnX, yPosition);
-    yPosition += 5;
-    pdf.text(`Delivery required by: ${quotationData.deliveryRequiredBy || ''}`, rightColumnX, yPosition);
-    yPosition += 5;
-    pdf.text(`Payment terms: ${quotationData.paymentTermsDays || 30} Days Credit`, rightColumnX, yPosition);
-    yPosition += 5;
-    pdf.text(`Delivery Terms: ${quotationData.deliveryTerms || ''}`, rightColumnX, yPosition);
-    yPosition += 5;
-    pdf.text(`Status: ${quotationData.status || ''}`, rightColumnX, yPosition);
-    yPosition += 5;
-    pdf.text(`Ship via: ${quotationData.shipVia || 'Your Truck'}`, rightColumnX, yPosition);
-    yPosition += 5;
-    pdf.text(`Shipment terms: ${quotationData.shipmentTerms || ''}`, rightColumnX, yPosition);
-
-    yPosition += 15;
-
-    // Add rental details
-    pdf.setFontSize(14);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('Rental Details', margin, yPosition);
-    yPosition += 10;
-
-    pdf.setFontSize(10);
-    pdf.setTextColor(100, 100, 100);
-    pdf.text(`Start Date: ${formatDate(quotationData.startDate)}`, margin, yPosition);
-    yPosition += 5;
-    pdf.text(`Expected End Date: ${quotationData.expectedEndDate ? formatDate(quotationData.expectedEndDate) : 'To be determined'}`, margin, yPosition);
-    yPosition += 5;
-    pdf.text(`Payment Terms: ${quotationData.paymentTermsDays} days`, margin, yPosition);
-    yPosition += 5;
-    pdf.text(`Deposit Required: $${formatAmount(quotationData.depositAmount)}`, margin, yPosition);
-    yPosition += 15;
-
-    // Add equipment table
-    pdf.setFontSize(14);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('Rental Items', margin, yPosition);
-    yPosition += 10;
-
-    // Table headers matching the image format
-    const tableHeaders = ['L/I No.', 'Description', 'Qty', 'Rental Rate (per unit)', 'Rental Period (days)', 'Amount', 'Delivery'];
-    const columnWidths = [15, 60, 15, 25, 25, 25, 20];
-    const tableStartX = margin;
-    let currentX = tableStartX;
-
-    pdf.setFontSize(10);
-    pdf.setTextColor(0, 0, 0);
-    pdf.setFillColor(240, 240, 240);
-    pdf.rect(tableStartX, yPosition - 5, pageWidth - 2 * margin, 8, 'F');
-
-    tableHeaders.forEach((header, index) => {
-      pdf.text(header, currentX + 2, yPosition);
-      currentX += columnWidths[index];
-    });
-    yPosition += 10;
-
-    // Table rows
-    pdf.setFontSize(9);
-    quotationData.rentalItems.forEach((item, index) => {
-      if (yPosition > pageHeight - 60) {
-        pdf.addPage();
-        yPosition = margin;
-      }
-
-      currentX = tableStartX;
-      pdf.text((index + 1).toString(), currentX + 2, yPosition); // L/I No.
-      currentX += columnWidths[0];
-      pdf.text(item.equipmentName || '', currentX + 2, yPosition); // Description
-      currentX += columnWidths[1];
-      pdf.text((item.quantity || 0).toString(), currentX + 2, yPosition); // Qty
-      currentX += columnWidths[2];
-      pdf.text(`$${formatAmount(item.unitPrice)}`, currentX + 2, yPosition); // Rental Rate
-      currentX += columnWidths[3];
-      pdf.text(item.rentalPeriod || '26/10', currentX + 2, yPosition); // Rental Period
-      currentX += columnWidths[4];
-      pdf.text(`$${formatAmount(item.totalPrice)}`, currentX + 2, yPosition); // Amount
-      currentX += columnWidths[5];
-      pdf.text(item.delivery || '', currentX + 2, yPosition); // Delivery
-      yPosition += 6;
-    });
-    yPosition += 10;
-
-    // Add financial summary
-    pdf.setFontSize(12);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('Summary', pageWidth - margin - 60, yPosition);
-    yPosition += 10;
-
-    pdf.setFontSize(10);
-    pdf.setTextColor(100, 100, 100);
-    pdf.text(`Subtotal: $${formatAmount(quotationData.subtotal)}`, pageWidth - margin - 60, yPosition);
-    yPosition += 5;
-    pdf.text(`Vat: $${formatAmount(quotationData.taxAmount)}`, pageWidth - margin - 60, yPosition);
-    yPosition += 8;
-
-    // Total line
-    pdf.setFontSize(12);
-    pdf.setTextColor(0, 0, 0);
-    pdf.setLineWidth(0.5);
-    pdf.line(pageWidth - margin - 60, yPosition, pageWidth - margin, yPosition);
-    yPosition += 5;
-    pdf.text(`Grand Total: $${formatAmount(quotationData.totalAmount)}`, pageWidth - margin - 60, yPosition);
-    yPosition += 5;
-
-    // Amount in words
-    pdf.setFontSize(9);
-    pdf.setTextColor(100, 100, 100);
-    const amountInWords = PDFGenerator.numberToWords(quotationData.totalAmount);
-    pdf.text(`Amount in Words: ${amountInWords}`, margin, yPosition);
-    yPosition += 15;
-
-    // Add rental terms
-    if (yPosition > pageHeight - 80) {
-      pdf.addPage();
-      yPosition = margin;
+      return pdf.output('blob');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      throw error;
     }
+  }
 
-    pdf.setFontSize(12);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('Rental Terms:', margin, yPosition);
-    yPosition += 10;
+  static async generateRentalInvoicePDF(invoiceData: RentalInvoiceData): Promise<Blob> {
+    try {
+      // Validate required data
+      if (!invoiceData || !invoiceData.customer || !invoiceData.rentalItems) {
+        throw new Error('Invalid invoice data provided');
+      }
 
-    pdf.setFontSize(9);
-    pdf.setTextColor(100, 100, 100);
-    const terms = [
-      '1. The equipment will operate for 10 hours per day, 26 days per month. Any work performed on Fridays or holidays will be considered overtime.',
-      `2. ${quotationData.customer.company || 'C.A.T. INTERNATIONAL L.L.C.'} to provide Fuel(diesel) for the Equipments.`,
-      `3. ${quotationData.customer.company || 'C.A.T. INTERNATIONAL L.L.C.'} shall provide a accommodation, Food and transportation for the Drives.`
-    ];
+      if (!invoiceData.customer.name) {
+        throw new Error('Customer name is required');
+      }
 
-    terms.forEach(term => {
-      if (yPosition > pageHeight - 20) {
-        pdf.addPage();
+      if (!invoiceData.rentalItems.length) {
+        throw new Error('At least one rental item is required');
+      }
+
+      // Create new PDF document
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      // Generate invoice
+      PDFGenerator.generateRentalInvoice(pdf, invoiceData);
+
+      return pdf.output('blob');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      throw error;
+    }
+  }
+
+  // Generate clean quotation
+  private static generateQuotation(doc: jsPDF, quotationData: QuotationData): void {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - (margin * 2);
+    
+    let yPosition = margin;
+    
+    // Company Header
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('C.A.T. INTERNATIONAL L.L.C.', pageWidth / 2, yPosition, { align: 'center' });
+    
+    yPosition += 15;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text('Equipment Rental & Construction Services', pageWidth / 2, yPosition, { align: 'center' });
+    
+    yPosition += 25;
+    
+    // Quotation Title
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('QUOTATION', pageWidth / 2, yPosition, { align: 'center' });
+    
+    yPosition += 25;
+    
+    // Quotation Details
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    
+    // Left side - Quotation info
+    doc.text(`Quotation #: ${quotationData.quotationNumber}`, margin, yPosition);
+    doc.text(`Date: ${new Date(quotationData.createdAt).toLocaleDateString()}`, margin, yPosition + 15);
+    doc.text(`Valid Until: ${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}`, margin, yPosition + 30);
+    
+    // Right side - Customer info
+    doc.text('Bill To:', pageWidth - margin - 60, yPosition);
+    doc.text(quotationData.customer.name, pageWidth - margin - 60, yPosition + 15);
+    if (quotationData.customer.company) {
+      doc.text(quotationData.customer.company, pageWidth - margin - 60, yPosition + 30);
+    }
+    if (quotationData.customer.address) {
+      doc.text(quotationData.customer.address, pageWidth - margin - 60, yPosition + 45);
+    }
+    
+    yPosition += 70;
+    
+    // Project Information (if available)
+    if (quotationData.projectName || quotationData.startDate) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Project Information', margin, yPosition);
+      
+      yPosition += 15;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      
+      if (quotationData.projectName) {
+        doc.text(`Project: ${quotationData.projectName}`, margin, yPosition);
+        yPosition += 12;
+      }
+      if (quotationData.startDate) {
+        doc.text(`Start Date: ${new Date(quotationData.startDate).toLocaleDateString()}`, margin, yPosition);
+        yPosition += 12;
+      }
+      if (quotationData.expectedEndDate) {
+        doc.text(`End Date: ${new Date(quotationData.expectedEndDate).toLocaleDateString()}`, margin, yPosition);
+        yPosition += 12;
+      }
+      
+      yPosition += 15;
+    }
+    
+    // Items Table
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Rental Items', margin, yPosition);
+    
+    yPosition += 15;
+    
+    // Table Headers
+    const colWidths = [80, 25, 35, 35];
+    const tableHeaders = ['Equipment', 'Qty', 'Unit Price', 'Total'];
+    
+    // Header background
+    doc.setFillColor(240, 240, 240);
+    doc.rect(margin, yPosition, contentWidth, 15, 'F');
+    
+    // Header text
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    let xPos = margin + 5;
+    tableHeaders.forEach((header, index) => {
+      doc.text(header, xPos, yPosition + 10);
+      xPos += colWidths[index];
+    });
+    
+    yPosition += 20;
+    
+    // Table rows
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    
+    quotationData.rentalItems.forEach((item, index) => {
+      if (yPosition > pageHeight - 100) {
+        doc.addPage();
         yPosition = margin;
       }
-      pdf.text(term, margin, yPosition);
+      
+      const rowHeight = 15;
+      
+      // Row border
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(margin, yPosition, contentWidth, rowHeight, 'S');
+      
+      // Row content
+      xPos = margin + 5;
+      doc.text(item.equipmentName, xPos, yPosition + 10);
+      xPos += colWidths[0];
+      
+      doc.text((item.quantity || 1).toString(), xPos, yPosition + 10);
+      xPos += colWidths[1];
+      
+      doc.text(`SAR ${item.unitPrice}`, xPos, yPosition + 10);
+      xPos += colWidths[2];
+      
+      doc.text(`SAR ${item.totalPrice}`, xPos, yPosition + 10);
+      
+      yPosition += rowHeight;
+    });
+    
+    yPosition += 20;
+    
+    // Financial Summary
+    const summaryBoxWidth = 200;
+    const summaryBoxX = pageWidth - margin - summaryBoxWidth;
+    
+    doc.setFillColor(248, 248, 248);
+    doc.rect(summaryBoxX, yPosition, summaryBoxWidth, 80, 'F');
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(summaryBoxX, yPosition, summaryBoxWidth, 80, 'S');
+    
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Summary', summaryBoxX + 10, yPosition + 15);
+    
+    yPosition += 25;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    
+    const summaryItems = [
+      { label: 'Subtotal:', value: `SAR ${parseFloat(quotationData.subtotal).toFixed(2)}` },
+      { label: `Tax (${quotationData.tax}%):`, value: `SAR ${parseFloat(quotationData.taxAmount).toFixed(2)}` },
+      { label: 'Total:', value: `SAR ${parseFloat(quotationData.totalAmount).toFixed(2)}` },
+      { label: 'Discount:', value: `SAR ${parseFloat(quotationData.discount).toFixed(2)}` },
+      { label: 'Deposit:', value: `SAR ${parseFloat(quotationData.depositAmount).toFixed(2)}` }
+    ];
+    
+    summaryItems.forEach((item, index) => {
+      doc.text(item.label, summaryBoxX + 10, yPosition + (index * 12));
+      doc.text(item.value, summaryBoxX + summaryBoxWidth - 10, yPosition + (index * 12), { align: 'right' });
+    });
+    
+    // Final Amount
+    yPosition += 60;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    const finalAmount = parseFloat(quotationData.totalAmount) - parseFloat(quotationData.discount);
+    doc.text(`Final Amount: SAR ${finalAmount.toFixed(2)}`, summaryBoxX + 10, yPosition);
+    
+    // Terms and Conditions
+    yPosition += 30;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Terms & Conditions', margin, yPosition);
+    
+    yPosition += 15;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    
+    const terms = [
+      `• Payment terms: Net ${quotationData.paymentTermsDays} days`,
+      '• This quotation is valid for 30 days',
+      '• All prices are subject to change without notice',
+      '• Delivery charges may apply',
+      '• Equipment availability subject to confirmation'
+    ];
+    
+    terms.forEach(term => {
+      if (yPosition > pageHeight - 50) {
+        doc.addPage();
+        yPosition = margin;
+      }
+      doc.text(term, margin, yPosition);
+      yPosition += 12;
+    });
+    
+    // Footer
+    yPosition = pageHeight - 30;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text('Thank you for your business!', pageWidth / 2, yPosition, { align: 'center' });
+    
+    yPosition += 8;
+    doc.text('Contact: info@cat-international.com | Tel: +966-XX-XXX-XXXX', pageWidth / 2, yPosition, { align: 'center' });
+    
+    // Add compact signature section on the same page
+    yPosition += 20;
+    PDFGenerator.addCompactSignatureSection(doc, quotationData, margin, yPosition);
+  }
+
+  // Generate rental invoice
+  private static generateRentalInvoice(doc: jsPDF, invoiceData: RentalInvoiceData): void {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - (margin * 2);
+    
+    let yPosition = margin;
+    
+    // Company Header
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('C.A.T. INTERNATIONAL L.L.C.', pageWidth / 2, yPosition, { align: 'center' });
+    
+    yPosition += 15;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text('Equipment Rental & Construction Services', pageWidth / 2, yPosition, { align: 'center' });
+    
+    yPosition += 25;
+    
+    // Invoice Title
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('INVOICE', pageWidth / 2, yPosition, { align: 'center' });
+    
+    yPosition += 25;
+    
+    // Invoice Details
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    
+    // Left side - Invoice info
+    doc.text(`Invoice #: ${invoiceData.invoiceNumber}`, margin, yPosition);
+    doc.text(`Date: ${new Date(invoiceData.invoiceDate).toLocaleDateString()}`, margin, yPosition + 15);
+    doc.text(`Due Date: ${new Date(invoiceData.dueDate).toLocaleDateString()}`, margin, yPosition + 30);
+    if (invoiceData.erpnextInvoiceId) {
+      doc.text(`ERPNext ID: ${invoiceData.erpnextInvoiceId}`, margin, yPosition + 45);
+    }
+    
+    // Right side - Customer info
+    doc.text('Bill To:', pageWidth - margin - 60, yPosition);
+    doc.text(invoiceData.customer.name, pageWidth - margin - 60, yPosition + 15);
+    if (invoiceData.customer.company) {
+      doc.text(invoiceData.customer.company, pageWidth - margin - 60, yPosition + 30);
+    }
+    if (invoiceData.customer.address) {
+      doc.text(invoiceData.customer.address, pageWidth - margin - 60, yPosition + 45);
+    }
+    
+    yPosition += 70;
+    
+    // Project Information (if available)
+    if (invoiceData.projectName || invoiceData.startDate) {
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 0, 0);
+      doc.text('Project Information', margin, yPosition);
+      
+      yPosition += 15;
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      
+      if (invoiceData.projectName) {
+        doc.text(`Project: ${invoiceData.projectName}`, margin, yPosition);
+        yPosition += 12;
+      }
+      if (invoiceData.startDate) {
+        doc.text(`Start Date: ${new Date(invoiceData.startDate).toLocaleDateString()}`, margin, yPosition);
+        yPosition += 12;
+      }
+      if (invoiceData.expectedEndDate) {
+        doc.text(`End Date: ${new Date(invoiceData.expectedEndDate).toLocaleDateString()}`, margin, yPosition);
+        yPosition += 12;
+      }
+      
+      yPosition += 15;
+    }
+    
+    // Items Table
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Rental Items', margin, yPosition);
+    
+    yPosition += 15;
+    
+    // Table Headers
+    const colWidths = [80, 25, 35, 35];
+    const tableHeaders = ['Equipment', 'Qty', 'Unit Price', 'Total'];
+    
+    // Header background
+    doc.setFillColor(240, 240, 240);
+    doc.rect(margin, yPosition, contentWidth, 15, 'F');
+    
+    // Header text
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    let xPos = margin + 5;
+    tableHeaders.forEach((header, index) => {
+      doc.text(header, xPos, yPosition + 10);
+      xPos += colWidths[index];
+    });
+    
+    yPosition += 20;
+    
+    // Table rows
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    
+    invoiceData.rentalItems.forEach((item, index) => {
+      if (yPosition > pageHeight - 100) {
+        doc.addPage();
+        yPosition = margin;
+      }
+      
+      const rowHeight = 15;
+      
+      // Row border
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(margin, yPosition, contentWidth, rowHeight, 'S');
+      
+      // Row content
+      xPos = margin + 5;
+      doc.text(item.equipmentName, xPos, yPosition + 10);
+      xPos += colWidths[0];
+      
+      doc.text((item.quantity || 1).toString(), xPos, yPosition + 10);
+      xPos += colWidths[1];
+      
+      doc.text(`SAR ${item.unitPrice}`, xPos, yPosition + 10);
+      xPos += colWidths[2];
+      
+      doc.text(`SAR ${item.totalPrice}`, xPos, yPosition + 10);
+      
+      yPosition += rowHeight;
+    });
+    
+    yPosition += 20;
+    
+    // Financial Summary
+    const summaryBoxWidth = 200;
+    const summaryBoxX = pageWidth - margin - summaryBoxWidth;
+    
+    doc.setFillColor(248, 248, 248);
+    doc.rect(summaryBoxX, yPosition, summaryBoxWidth, 80, 'F');
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(summaryBoxX, yPosition, summaryBoxWidth, 80, 'S');
+    
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Summary', summaryBoxX + 10, yPosition + 15);
+    
+    yPosition += 25;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    
+    const summaryItems = [
+      { label: 'Subtotal:', value: `SAR ${parseFloat(invoiceData.subtotal).toFixed(2)}` },
+      { label: `Tax (${invoiceData.tax}%):`, value: `SAR ${parseFloat(invoiceData.taxAmount).toFixed(2)}` },
+      { label: 'Total:', value: `SAR ${parseFloat(invoiceData.totalAmount).toFixed(2)}` },
+      { label: 'Discount:', value: `SAR ${parseFloat(invoiceData.discount).toFixed(2)}` },
+      { label: 'Deposit:', value: `SAR ${parseFloat(invoiceData.depositAmount).toFixed(2)}` }
+    ];
+    
+    summaryItems.forEach((item, index) => {
+      doc.text(item.label, summaryBoxX + 10, yPosition + (index * 12));
+      doc.text(item.value, summaryBoxX + summaryBoxWidth - 10, yPosition + (index * 12), { align: 'right' });
+    });
+    
+    // Final Amount
+    yPosition += 60;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    const finalAmount = parseFloat(invoiceData.totalAmount) - parseFloat(invoiceData.discount);
+    doc.text(`Final Amount: SAR ${finalAmount.toFixed(2)}`, summaryBoxX + 10, yPosition);
+    
+    // Payment Terms
+    yPosition += 30;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('Payment Terms', margin, yPosition);
+    
+    yPosition += 15;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    
+    const paymentTerms = [
+      `• Payment due: ${new Date(invoiceData.dueDate).toLocaleDateString()}`,
+      `• Payment terms: Net ${invoiceData.paymentTermsDays} days`,
+      '• Late payment may incur additional charges',
+      '• Please include invoice number with payment'
+    ];
+    
+    paymentTerms.forEach(term => {
+      if (yPosition > pageHeight - 50) {
+        doc.addPage();
+        yPosition = margin;
+      }
+      doc.text(term, margin, yPosition);
+      yPosition += 12;
+    });
+    
+    // Footer
+    yPosition = pageHeight - 30;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100, 100, 100);
+    doc.text('Thank you for your business!', pageWidth / 2, yPosition, { align: 'center' });
+    
+    yPosition += 8;
+    doc.text('Contact: info@cat-international.com | Tel: +966-XX-XXX-XXXX', pageWidth / 2, yPosition, { align: 'center' });
+  }
+  
+  // Add compact signature section on the same page
+  private static addCompactSignatureSection(doc: jsPDF, quotationData: QuotationData, margin: number, yPosition: number): void {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const contentWidth = pageWidth - (margin * 2);
+    
+    // Divider line
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.5);
+    doc.line(margin, yPosition, pageWidth - margin, yPosition);
+    
+    yPosition += 15;
+    
+    // Terms and Conditions (compact)
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('TERMS & CONDITIONS', margin, yPosition);
+    
+    yPosition += 12;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    
+    const terms = [
+      `• Payment: Net ${quotationData.paymentTermsDays} days`,
+      '• Valid for 30 days',
+      '• Prices subject to change',
+      '• Delivery charges may apply'
+    ];
+    
+    terms.forEach((term, index) => {
+      doc.text(term, margin, yPosition);
       yPosition += 8;
     });
-
-    // Add signature section
-    yPosition += 20;
-    pdf.setFontSize(10);
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('Authorized Signature', margin, yPosition);
-    pdf.text('Client Signature', pageWidth - margin - 50, yPosition);
+    
+    yPosition += 10;
+    
+    // Acceptance Statement (compact)
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('ACCEPTANCE:', margin, yPosition);
+    
+    yPosition += 8;
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    doc.text('By signing below, you agree to all terms and conditions.', margin, yPosition);
+    
     yPosition += 15;
-
-    // Add document identifier
-    pdf.setFontSize(8);
-    pdf.setTextColor(100, 100, 100);
-    pdf.text('SND-FRM-302', pageWidth - margin - 30, yPosition);
-
-    if (quotationData.notes) {
-      yPosition += 10;
-      pdf.setFontSize(10);
-      pdf.setTextColor(0, 0, 0);
-      pdf.text('Additional Notes:', margin, yPosition);
-      yPosition += 5;
-      pdf.setFontSize(9);
-      pdf.setTextColor(100, 100, 100);
-      pdf.text(quotationData.notes || '', margin, yPosition);
-    }
-
-    return pdf.output('blob');
-    } catch (error) {
-      console.error('PDF generation error:', error);
-      throw new Error(`Failed to generate PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
-
-  // Helper function to convert numbers to words
-  static numberToWords(num: number): string {
-    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
-    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-    const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-
-    function convertLessThanOneThousand(n: number): string {
-      if (n === 0) return '';
-
-      if (n < 10) return ones[n];
-      if (n < 20) return teens[n - 10];
-      if (n < 100) {
-        return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + ones[n % 10] : '');
-      }
-      if (n < 1000) {
-        return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 !== 0 ? ' ' + convertLessThanOneThousand(n % 100) : '');
-      }
-      return '';
-    }
-
-    function convert(n: number): string {
-      if (n === 0) return 'Zero';
-      if (n < 1000) return convertLessThanOneThousand(n);
-      if (n < 1000000) {
-        return convertLessThanOneThousand(Math.floor(n / 1000)) + ' Thousand' + (n % 1000 !== 0 ? ' ' + convertLessThanOneThousand(n % 1000) : '');
-      }
-      if (n < 1000000000) {
-        return convertLessThanOneThousand(Math.floor(n / 1000000)) + ' Million' + (n % 1000000 !== 0 ? ' ' + convert(n % 1000000) : '');
-      }
-      return convertLessThanOneThousand(Math.floor(n / 1000000000)) + ' Billion' + (n % 1000000000 !== 0 ? ' ' + convert(n % 1000000000) : '');
-    }
-
-    const wholePart = Math.floor(num);
-    const decimalPart = Math.round((num - wholePart) * 100);
-
-    let result = convert(wholePart) + ' Riyals';
-    if (decimalPart > 0) {
-      result += ' and ' + convert(decimalPart) + ' Halalas';
-    }
-
-    return result;
-  }
-
-  static async generatePDFFromHTML(elementId: string, filename: string): Promise<Blob> {
-    const element = document.getElementById(elementId);
-    if (!element) {
-      throw new Error('Element not found');
-    }
-
-    const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff'
+    
+    // Two-column signature layout (compact)
+    const leftColX = margin;
+    const rightColX = pageWidth / 2 + 10;
+    
+    // Left Column - Customer
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('CUSTOMER:', leftColX, yPosition);
+    
+    yPosition += 10;
+    
+    const customerFields = [
+      'Name:',
+      'Position:',
+      'Signature:',
+      'Date:'
+    ];
+    
+    customerFields.forEach((field, index) => {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.text(field, leftColX, yPosition);
+      
+      // Underlined field
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.3);
+      doc.line(leftColX + 35, yPosition + 1, leftColX + 120, yPosition + 1);
+      
+      yPosition += 12;
     });
-
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 210;
-    const pageHeight = 295;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
-
-    let position = 0;
-
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-    }
-
-    return pdf.output('blob');
+    
+    // Right Column - Company
+    yPosition -= 48; // Reset to same level
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('COMPANY:', rightColX, yPosition);
+    
+    yPosition += 10;
+    
+    const companyFields = [
+      'Authorized By:',
+      'Position:',
+      'Signature:',
+      'Date:'
+    ];
+    
+    companyFields.forEach((field, index) => {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(0, 0, 0);
+      doc.text(field, rightColX, yPosition);
+      
+      // Underlined field
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.3);
+      doc.line(rightColX + 50, yPosition + 1, rightColX + 135, yPosition + 1);
+      
+      yPosition += 12;
+    });
+    
+    yPosition += 10;
+    
+    // Additional Notes (compact)
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 0, 0);
+    doc.text('NOTES:', margin, yPosition);
+    
+    yPosition += 8;
+    
+    // Notes box (smaller)
+    doc.setFillColor(255, 255, 255);
+    doc.rect(margin, yPosition, contentWidth, 25, 'F');
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(margin, yPosition, contentWidth, 25, 'S');
   }
 }

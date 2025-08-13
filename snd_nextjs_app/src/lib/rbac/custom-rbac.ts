@@ -12,6 +12,7 @@ export type Subject =
   | 'Equipment' 
   | 'Maintenance'
   | 'Rental' 
+  | 'Quotation'
   | 'Payroll' 
   | 'Timesheet' 
   | 'Project' 
@@ -66,6 +67,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'manage', subject: 'Customer' },
       { action: 'manage', subject: 'Equipment' },
       { action: 'manage', subject: 'Rental' },
+      { action: 'manage', subject: 'Quotation' },
       { action: 'manage', subject: 'Payroll' },
       { action: 'manage', subject: 'Timesheet' },
       { action: 'manage', subject: 'Project' },
@@ -88,6 +90,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'manage', subject: 'Customer' },
       { action: 'manage', subject: 'Equipment' },
       { action: 'manage', subject: 'Rental' },
+      { action: 'manage', subject: 'Quotation' },
       { action: 'read', subject: 'Payroll' },
       { action: 'manage', subject: 'Timesheet' },
       { action: 'manage', subject: 'Project' },
@@ -110,6 +113,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'read', subject: 'Customer' },
       { action: 'read', subject: 'Equipment' },
       { action: 'read', subject: 'Rental' },
+      { action: 'manage', subject: 'Quotation' },
       { action: 'read', subject: 'Payroll' },
       { action: 'manage', subject: 'Timesheet' },
       { action: 'manage', subject: 'Project' },
@@ -131,6 +135,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'manage', subject: 'Customer' },
       { action: 'manage', subject: 'Equipment' },
       { action: 'manage', subject: 'Rental' },
+      { action: 'manage', subject: 'Quotation' },
       { action: 'read', subject: 'Payroll' },
       { action: 'manage', subject: 'Timesheet' },
       { action: 'manage', subject: 'Project' },
@@ -153,6 +158,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'read', subject: 'Customer' },
       { action: 'read', subject: 'Equipment' },
       { action: 'read', subject: 'Rental' },
+      { action: 'read', subject: 'Quotation' },
       { action: 'read', subject: 'Payroll' },
       { action: 'manage', subject: 'Timesheet' },
       { action: 'read', subject: 'Project' },
@@ -174,6 +180,7 @@ const rolePermissions: Record<UserRole, { can: Array<{ action: Action; subject: 
       { action: 'read', subject: 'Customer' },
       { action: 'read', subject: 'Equipment' },
       { action: 'read', subject: 'Rental' },
+      { action: 'read', subject: 'Quotation' },
       { action: 'read', subject: 'Timesheet' },
       { action: 'read', subject: 'Project' },
       { action: 'read', subject: 'Leave' },
@@ -198,6 +205,7 @@ export const routePermissions: Record<string, { action: Action; subject: Subject
   '/modules/maintenance-management': { action: 'read', subject: 'Maintenance', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR'] },
   '/modules/company-management': { action: 'manage', subject: 'Company', roles: ['SUPER_ADMIN', 'ADMIN'] },
   '/modules/rental-management': { action: 'read', subject: 'Rental', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'] },
+  '/modules/quotation-management': { action: 'read', subject: 'Quotation', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'] },
   '/modules/payroll-management': { action: 'read', subject: 'Payroll', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR'] },
   '/modules/timesheet-management': { action: 'read', subject: 'Timesheet', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE'] },
   '/modules/project-management': { action: 'read', subject: 'Project', roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'] },

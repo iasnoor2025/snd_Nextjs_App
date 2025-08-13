@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { roles, modelHasRoles } from '@/lib/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { roles, modelHasRoles, users } from '@/lib/drizzle/schema';
+import { eq, sql } from 'drizzle-orm';
 
 // Define role permissions based on the ability system
 const rolePermissions = {
@@ -127,9 +127,9 @@ export async function GET(
 
     // Get user count for this role using Drizzle
     const userCountRows = await db
-      .select({ count: userRoles.id })
-      .from(userRoles)
-      .where(eq(userRoles.roleId, parseInt(id)));
+      .select({ count: sql`count(*)` })
+      .from(users)
+      .where(eq(users.roleId, parseInt(id)));
 
     const userCount = userCountRows.length;
 
