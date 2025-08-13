@@ -1,5 +1,5 @@
 {
-  "id": "e542301d-30b8-4520-949c-d9aa276f5add",
+  "id": "20d03036-bac1-4292-81a8-e0ba5713f612",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -34,7 +34,7 @@
         },
         "payment_date": {
           "name": "payment_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
@@ -52,20 +52,20 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "deleted_at": {
           "name": "deleted_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         }
@@ -154,7 +154,7 @@
         },
         "approved_at": {
           "name": "approved_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -166,7 +166,7 @@
         },
         "rejected_at": {
           "name": "rejected_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -178,7 +178,7 @@
         },
         "repayment_date": {
           "name": "repayment_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -196,7 +196,7 @@
         },
         "payment_date": {
           "name": "payment_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -209,26 +209,26 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "deleted_at": {
           "name": "deleted_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "financeApprovalAt": {
           "name": "financeApprovalAt",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -246,7 +246,7 @@
         },
         "hrApprovalAt": {
           "name": "hrApprovalAt",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -264,7 +264,7 @@
         },
         "managerApprovalAt": {
           "name": "managerApprovalAt",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -371,20 +371,20 @@
         },
         "last_generated": {
           "name": "last_generated",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -476,20 +476,20 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "deleted_at": {
           "name": "deleted_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         }
@@ -642,20 +642,20 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "deleted_at": {
           "name": "deleted_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         }
@@ -736,20 +736,20 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "deleted_at": {
           "name": "deleted_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         }
@@ -799,20 +799,20 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "deleted_at": {
           "name": "deleted_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         }
@@ -869,13 +869,13 @@
         },
         "start_date": {
           "name": "start_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "end_date": {
           "name": "end_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -894,14 +894,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
@@ -1027,14 +1027,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -1085,13 +1085,13 @@
         },
         "start_date": {
           "name": "start_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "end_date": {
           "name": "end_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
@@ -1122,26 +1122,26 @@
         },
         "approved_at": {
           "name": "approved_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "rejected_at": {
           "name": "rejected_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -1198,7 +1198,7 @@
         },
         "review_date": {
           "name": "review_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
@@ -1235,14 +1235,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -1287,13 +1287,13 @@
         },
         "resignation_date": {
           "name": "resignation_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "last_working_date": {
           "name": "last_working_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -1318,20 +1318,20 @@
         },
         "approved_at": {
           "name": "approved_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -1396,20 +1396,20 @@
         },
         "effective_date": {
           "name": "effective_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -1473,20 +1473,20 @@
         },
         "certification_date": {
           "name": "certification_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -1574,13 +1574,13 @@
         },
         "start_date": {
           "name": "start_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "end_date": {
           "name": "end_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -1605,14 +1605,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -1748,13 +1748,13 @@
         },
         "date_of_birth": {
           "name": "date_of_birth",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "hire_date": {
           "name": "hire_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -1914,7 +1914,7 @@
         },
         "iqama_expiry": {
           "name": "iqama_expiry",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -1932,7 +1932,7 @@
         },
         "passport_expiry": {
           "name": "passport_expiry",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -1944,7 +1944,7 @@
         },
         "driving_license_expiry": {
           "name": "driving_license_expiry",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -1962,7 +1962,7 @@
         },
         "operator_license_expiry": {
           "name": "operator_license_expiry",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -1980,7 +1980,7 @@
         },
         "tuv_certification_expiry": {
           "name": "tuv_certification_expiry",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -1998,7 +1998,7 @@
         },
         "spsp_license_expiry": {
           "name": "spsp_license_expiry",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -2059,19 +2059,19 @@
         },
         "access_restricted_until": {
           "name": "access_restricted_until",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "access_start_date": {
           "name": "access_start_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "access_end_date": {
           "name": "access_end_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -2096,20 +2096,20 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "deleted_at": {
           "name": "deleted_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         }
@@ -2240,7 +2240,7 @@
         },
         "purchase_date": {
           "name": "purchase_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -2252,7 +2252,7 @@
         },
         "warranty_expiry_date": {
           "name": "warranty_expiry_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -2277,13 +2277,13 @@
         },
         "last_maintenance_date": {
           "name": "last_maintenance_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "next_maintenance_date": {
           "name": "next_maintenance_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -2380,7 +2380,7 @@
         },
         "last_metric_update": {
           "name": "last_metric_update",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -2422,7 +2422,7 @@
         },
         "next_performance_review": {
           "name": "next_performance_review",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -2464,7 +2464,7 @@
         },
         "last_utilization_update": {
           "name": "last_utilization_update",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -2500,13 +2500,13 @@
         },
         "last_depreciation_update": {
           "name": "last_depreciation_update",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "expected_replacement_date": {
           "name": "expected_replacement_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -2543,20 +2543,20 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "deleted_at": {
           "name": "deleted_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         }
@@ -2680,25 +2680,25 @@
         },
         "scheduled_date": {
           "name": "scheduled_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "due_date": {
           "name": "due_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "started_at": {
           "name": "started_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "completed_at": {
           "name": "completed_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -2722,14 +2722,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -2826,14 +2826,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -3055,10 +3055,10 @@
         },
         "failed_at": {
           "name": "failed_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         }
       },
       "indexes": {
@@ -3135,14 +3135,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -3271,7 +3271,7 @@
         },
         "approved_at": {
           "name": "approved_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -3283,14 +3283,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -3390,14 +3390,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -3471,14 +3471,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -3672,20 +3672,20 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "deleted_at": {
           "name": "deleted_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         }
@@ -3760,7 +3760,7 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         }
@@ -3830,14 +3830,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -3882,7 +3882,7 @@
         },
         "run_date": {
           "name": "run_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
@@ -3914,14 +3914,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -4054,7 +4054,7 @@
         },
         "approved_at": {
           "name": "approved_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -4066,7 +4066,7 @@
         },
         "paid_at": {
           "name": "paid_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -4090,7 +4090,7 @@
         },
         "payment_processed_at": {
           "name": "payment_processed_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -4109,20 +4109,20 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "deleted_at": {
           "name": "deleted_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         }
@@ -4244,14 +4244,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -4323,26 +4323,26 @@
         },
         "last_used_at": {
           "name": "last_used_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "expires_at": {
           "name": "expires_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -4390,7 +4390,7 @@
         },
         "finished_at": {
           "name": "finished_at",
-          "type": "timestamp with time zone",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -4408,13 +4408,13 @@
         },
         "rolled_back_at": {
           "name": "rolled_back_at",
-          "type": "timestamp with time zone",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "started_at": {
           "name": "started_at",
-          "type": "timestamp with time zone",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
           "default": "now()"
@@ -4489,7 +4489,7 @@
         },
         "date": {
           "name": "date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -4550,13 +4550,13 @@
         },
         "start_date": {
           "name": "start_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "end_date": {
           "name": "end_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -4586,12 +4586,6 @@
         },
         "hourly_rate": {
           "name": "hourly_rate",
-          "type": "numeric(10, 2)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "hours_worked": {
-          "name": "hours_worked",
           "type": "numeric(10, 2)",
           "primaryKey": false,
           "notNull": false
@@ -4682,7 +4676,7 @@
         },
         "due_date": {
           "name": "due_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -4700,14 +4694,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -4803,13 +4797,13 @@
         },
         "start_date": {
           "name": "start_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "end_date": {
           "name": "end_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -4834,20 +4828,20 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "deleted_at": {
           "name": "deleted_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         }
@@ -4902,13 +4896,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "quantity": {
-          "name": "quantity",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 1
-        },
         "unit_price": {
           "name": "unit_price",
           "type": "numeric(10, 2)",
@@ -4927,12 +4914,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'daily'"
-        },
-        "days": {
-          "name": "days",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
         },
         "operator_id": {
           "name": "operator_id",
@@ -4955,14 +4936,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -5026,13 +5007,13 @@
         },
         "start_date": {
           "name": "start_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "end_date": {
           "name": "end_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -5051,14 +5032,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -5128,19 +5109,19 @@
         },
         "start_date": {
           "name": "start_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "expected_end_date": {
           "name": "expected_end_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "actual_end_date": {
           "name": "actual_end_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -5206,6 +5187,54 @@
           "primaryKey": false,
           "notNull": false
         },
+        "delivery_terms": {
+          "name": "delivery_terms",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "shipment_terms": {
+          "name": "shipment_terms",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rental_terms": {
+          "name": "rental_terms",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payment_terms": {
+          "name": "payment_terms",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "additional_terms": {
+          "name": "additional_terms",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "md_terms": {
+          "name": "md_terms",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "terms_last_updated": {
+          "name": "terms_last_updated",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "terms_update_notes": {
+          "name": "terms_update_notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_by": {
           "name": "created_by",
           "type": "integer",
@@ -5232,13 +5261,13 @@
         },
         "mobilization_date": {
           "name": "mobilization_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "invoice_date": {
           "name": "invoice_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -5258,7 +5287,7 @@
         },
         "payment_due_date": {
           "name": "payment_due_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -5284,7 +5313,7 @@
         },
         "completed_at": {
           "name": "completed_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -5296,7 +5325,7 @@
         },
         "approved_at": {
           "name": "approved_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -5309,7 +5338,7 @@
         },
         "deposit_paid_date": {
           "name": "deposit_paid_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -5322,7 +5351,7 @@
         },
         "deposit_refund_date": {
           "name": "deposit_refund_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -5340,20 +5369,20 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "deleted_at": {
           "name": "deleted_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         }
@@ -5534,14 +5563,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -5595,7 +5624,7 @@
         },
         "effective_date": {
           "name": "effective_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
@@ -5613,7 +5642,7 @@
         },
         "approved_at": {
           "name": "approved_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -5626,14 +5655,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
@@ -5666,7 +5695,7 @@
         },
         "deleted_at": {
           "name": "deleted_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -5717,7 +5746,7 @@
         },
         "rejected_at": {
           "name": "rejected_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -5735,10 +5764,10 @@
         },
         "requested_at": {
           "name": "requested_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "requested_by": {
           "name": "requested_by",
@@ -5887,14 +5916,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -5937,14 +5966,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -6033,14 +6062,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -6116,16 +6145,16 @@
         },
         "occurred_at": {
           "name": "occurred_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         }
       },
       "indexes": {
@@ -6259,14 +6288,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -6330,13 +6359,13 @@
         },
         "start_date": {
           "name": "start_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "end_date": {
           "name": "end_date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
@@ -6367,20 +6396,20 @@
         },
         "approved_at": {
           "name": "approved_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -6443,20 +6472,20 @@
         },
         "approved_at": {
           "name": "approved_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -6525,7 +6554,7 @@
         },
         "date": {
           "name": "date",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
@@ -6576,7 +6605,7 @@
         },
         "approved_at": {
           "name": "approved_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -6618,20 +6647,20 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "deleted_at": {
           "name": "deleted_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         }
@@ -6776,14 +6805,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -6832,7 +6861,7 @@
         },
         "email_verified_at": {
           "name": "email_verified_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -6889,20 +6918,20 @@
         },
         "last_login_at": {
           "name": "last_login_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }
@@ -6950,13 +6979,13 @@
         },
         "week_start": {
           "name": "week_start",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
         "week_end": {
           "name": "week_end",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
@@ -6987,7 +7016,7 @@
         },
         "approved_at": {
           "name": "approved_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": false
         },
@@ -6999,14 +7028,14 @@
         },
         "created_at": {
           "name": "created_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true,
-          "default": "CURRENT_TIMESTAMP"
+          "default": "CURRENT_DATE"
         },
         "updated_at": {
           "name": "updated_at",
-          "type": "timestamp(3)",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         }

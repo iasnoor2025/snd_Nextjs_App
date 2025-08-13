@@ -270,7 +270,7 @@ export class RentalService {
   }) {
     const { rentalItems: itemsToCreate, ...rentalData } = data;
 
-    const [rental] = await db
+    const [rental] = await (db
       .insert(rentals)
       .values({
         customerId: rentalData.customerId || null,
@@ -292,8 +292,8 @@ export class RentalService {
         hasOperators: rentalData.hasOperators || false,
         notes: rentalData.notes || '',
         updatedAt: new Date().toISOString().split('T')[0],
-      })
-      .returning();
+      } as any)
+      .returning());
 
     // Create rental items if provided
     if (itemsToCreate && itemsToCreate.length > 0) {
@@ -455,7 +455,7 @@ export class RentalService {
     status?: string
     notes?: string
   }) {
-    const [result] = await db
+    const [result] = await (db
       .insert(rentalItems)
       .values({
         rentalId: data.rentalId,
@@ -468,8 +468,8 @@ export class RentalService {
         status: data.status || 'active',
         notes: data.notes || '',
         updatedAt: new Date().toISOString().split('T')[0],
-      })
-      .returning();
+      } as any)
+      .returning());
 
     return this.getRentalItem(result.id);
   }

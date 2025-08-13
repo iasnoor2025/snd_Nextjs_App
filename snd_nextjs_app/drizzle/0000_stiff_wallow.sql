@@ -3,12 +3,12 @@ CREATE TABLE "advance_payment_histories" (
 	"advance_payment_id" integer NOT NULL,
 	"employee_id" integer NOT NULL,
 	"amount" numeric(10, 2) NOT NULL,
-	"payment_date" timestamp(3) NOT NULL,
+	"payment_date" date NOT NULL,
 	"notes" text,
 	"recorded_by" integer,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
-	"deleted_at" timestamp(3)
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
+	"deleted_at" date
 );
 --> statement-breakpoint
 CREATE TABLE "advance_payments" (
@@ -19,25 +19,25 @@ CREATE TABLE "advance_payments" (
 	"reason" text,
 	"status" text DEFAULT 'pending' NOT NULL,
 	"approved_by" integer,
-	"approved_at" timestamp(3),
+	"approved_at" date,
 	"rejected_by" integer,
-	"rejected_at" timestamp(3),
+	"rejected_at" date,
 	"rejection_reason" text,
-	"repayment_date" timestamp(3),
+	"repayment_date" date,
 	"estimated_months" integer,
 	"monthly_deduction" numeric(10, 2),
-	"payment_date" timestamp(3),
+	"payment_date" date,
 	"repaid_amount" numeric(10, 2) DEFAULT '0' NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
-	"deleted_at" timestamp(3),
-	"financeApprovalAt" timestamp(3),
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
+	"deleted_at" date,
+	"financeApprovalAt" date,
 	"financeApprovalBy" integer,
 	"financeApprovalNotes" text,
-	"hrApprovalAt" timestamp(3),
+	"hrApprovalAt" date,
 	"hrApprovalBy" integer,
 	"hrApprovalNotes" text,
-	"managerApprovalAt" timestamp(3),
+	"managerApprovalAt" date,
 	"managerApprovalBy" integer,
 	"managerApprovalNotes" text,
 	"notes" text
@@ -53,9 +53,9 @@ CREATE TABLE "analytics_reports" (
 	"schedule" text,
 	"parameters" text,
 	"is_active" boolean DEFAULT true NOT NULL,
-	"last_generated" timestamp(3),
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"last_generated" date,
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "cache" (
@@ -72,9 +72,9 @@ CREATE TABLE "companies" (
 	"phone" text,
 	"logo" text,
 	"legal_document" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
-	"deleted_at" timestamp(3)
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
+	"deleted_at" date
 );
 --> statement-breakpoint
 CREATE TABLE "customers" (
@@ -100,9 +100,9 @@ CREATE TABLE "customers" (
 	"user_id" integer,
 	"erpnext_id" text,
 	"company_name" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
-	"deleted_at" timestamp(3)
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
+	"deleted_at" date
 );
 --> statement-breakpoint
 CREATE TABLE "departments" (
@@ -111,9 +111,9 @@ CREATE TABLE "departments" (
 	"code" text,
 	"description" text,
 	"active" boolean DEFAULT true NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
-	"deleted_at" timestamp(3)
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
+	"deleted_at" date
 );
 --> statement-breakpoint
 CREATE TABLE "designations" (
@@ -122,9 +122,9 @@ CREATE TABLE "designations" (
 	"description" text,
 	"department_id" integer,
 	"is_active" boolean DEFAULT true NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
-	"deleted_at" timestamp(3)
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
+	"deleted_at" date
 );
 --> statement-breakpoint
 CREATE TABLE "employee_assignments" (
@@ -132,12 +132,12 @@ CREATE TABLE "employee_assignments" (
 	"employee_id" integer NOT NULL,
 	"project_id" integer,
 	"rental_id" integer,
-	"start_date" timestamp(3) NOT NULL,
-	"end_date" timestamp(3),
+	"start_date" date NOT NULL,
+	"end_date" date,
 	"status" text DEFAULT 'active' NOT NULL,
 	"notes" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
 	"location" text,
 	"name" text,
 	"type" text DEFAULT 'manual' NOT NULL
@@ -152,24 +152,24 @@ CREATE TABLE "employee_documents" (
 	"file_size" integer,
 	"mime_type" text,
 	"description" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "employee_leaves" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"employee_id" integer NOT NULL,
 	"leave_type" text NOT NULL,
-	"start_date" timestamp(3) NOT NULL,
-	"end_date" timestamp(3) NOT NULL,
+	"start_date" date NOT NULL,
+	"end_date" date NOT NULL,
 	"days" integer NOT NULL,
 	"reason" text,
 	"status" text DEFAULT 'pending' NOT NULL,
 	"approved_by" integer,
-	"approved_at" timestamp(3),
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
-	"rejected_at" timestamp(3),
+	"approved_at" date,
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
+	"rejected_at" date,
 	"rejected_by" integer,
 	"rejection_reason" text
 );
@@ -177,27 +177,27 @@ CREATE TABLE "employee_leaves" (
 CREATE TABLE "employee_performance_reviews" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"employee_id" integer NOT NULL,
-	"review_date" timestamp(3) NOT NULL,
+	"review_date" date NOT NULL,
 	"reviewer_id" integer,
 	"rating" integer,
 	"comments" text,
 	"goals" text,
 	"status" text DEFAULT 'pending' NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "employee_resignations" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"employee_id" integer NOT NULL,
-	"resignation_date" timestamp(3) NOT NULL,
-	"last_working_date" timestamp(3),
+	"resignation_date" date NOT NULL,
+	"last_working_date" date,
 	"reason" text,
 	"status" text DEFAULT 'pending' NOT NULL,
 	"approved_by" integer,
-	"approved_at" timestamp(3),
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"approved_at" date,
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "employee_salaries" (
@@ -206,9 +206,9 @@ CREATE TABLE "employee_salaries" (
 	"basic_salary" numeric(10, 2) NOT NULL,
 	"allowances" numeric(10, 2) DEFAULT '0' NOT NULL,
 	"deductions" numeric(10, 2) DEFAULT '0' NOT NULL,
-	"effective_date" timestamp(3) NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"effective_date" date NOT NULL,
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "employee_skill" (
@@ -217,22 +217,22 @@ CREATE TABLE "employee_skill" (
 	"skill_id" integer NOT NULL,
 	"proficiency_level" text,
 	"certified" boolean DEFAULT false NOT NULL,
-	"certification_date" timestamp(3),
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"certification_date" date,
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "employee_training" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"employee_id" integer NOT NULL,
 	"training_id" integer NOT NULL,
-	"start_date" timestamp(3),
-	"end_date" timestamp(3),
+	"start_date" date,
+	"end_date" date,
 	"status" text DEFAULT 'planned' NOT NULL,
 	"certificate" text,
 	"notes" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "employees" (
@@ -251,8 +251,8 @@ CREATE TABLE "employees" (
 	"postal_code" text,
 	"country" text,
 	"nationality" text,
-	"date_of_birth" timestamp(3),
-	"hire_date" timestamp(3),
+	"date_of_birth" date,
+	"hire_date" date,
 	"designation_id" integer,
 	"department_id" integer,
 	"user_id" integer,
@@ -277,21 +277,21 @@ CREATE TABLE "employees" (
 	"advance_salary_eligible" boolean DEFAULT true NOT NULL,
 	"advance_salary_approved_this_month" boolean DEFAULT false NOT NULL,
 	"iqama_number" text,
-	"iqama_expiry" timestamp(3),
+	"iqama_expiry" date,
 	"iqama_cost" numeric(10, 2),
 	"passport_number" text,
-	"passport_expiry" timestamp(3),
+	"passport_expiry" date,
 	"driving_license_number" text,
-	"driving_license_expiry" timestamp(3),
+	"driving_license_expiry" date,
 	"driving_license_cost" numeric(10, 2),
 	"operator_license_number" text,
-	"operator_license_expiry" timestamp(3),
+	"operator_license_expiry" date,
 	"operator_license_cost" numeric(10, 2),
 	"tuv_certification_number" text,
-	"tuv_certification_expiry" timestamp(3),
+	"tuv_certification_expiry" date,
 	"tuv_certification_cost" numeric(10, 2),
 	"spsp_license_number" text,
-	"spsp_license_expiry" timestamp(3),
+	"spsp_license_expiry" date,
 	"spsp_license_cost" numeric(10, 2),
 	"driving_license_file" text,
 	"operator_license_file" text,
@@ -301,15 +301,15 @@ CREATE TABLE "employees" (
 	"iqama_file" text,
 	"custom_certifications" jsonb,
 	"is_operator" boolean DEFAULT false NOT NULL,
-	"access_restricted_until" timestamp(3),
-	"access_start_date" timestamp(3),
-	"access_end_date" timestamp(3),
+	"access_restricted_until" date,
+	"access_start_date" date,
+	"access_end_date" date,
 	"access_restriction_reason" text,
 	"status" text DEFAULT 'active' NOT NULL,
 	"current_location" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
-	"deleted_at" timestamp(3)
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
+	"deleted_at" date
 );
 --> statement-breakpoint
 CREATE TABLE "equipment" (
@@ -320,14 +320,14 @@ CREATE TABLE "equipment" (
 	"manufacturer" text,
 	"model_number" text,
 	"serial_number" text,
-	"purchase_date" timestamp(3),
+	"purchase_date" date,
 	"purchase_price" numeric(12, 2),
-	"warranty_expiry_date" timestamp(3),
+	"warranty_expiry_date" date,
 	"status" text DEFAULT 'available' NOT NULL,
 	"location_id" integer,
 	"assigned_to" integer,
-	"last_maintenance_date" timestamp(3),
-	"next_maintenance_date" timestamp(3),
+	"last_maintenance_date" date,
+	"next_maintenance_date" date,
 	"notes" text,
 	"unit" text,
 	"default_unit_cost" numeric(12, 2),
@@ -343,36 +343,36 @@ CREATE TABLE "equipment" (
 	"initial_operating_hours" numeric(10, 2),
 	"initial_mileage" numeric(10, 2),
 	"initial_cycle_count" integer,
-	"last_metric_update" timestamp(3),
+	"last_metric_update" date,
 	"avg_daily_usage_hours" numeric(10, 2),
 	"avg_daily_usage_miles" numeric(10, 2),
 	"avg_operating_cost_per_hour" numeric(10, 2),
 	"avg_operating_cost_per_mile" numeric(10, 2),
 	"lifetime_maintenance_cost" numeric(15, 2),
 	"efficiency_rating" numeric(5, 2),
-	"next_performance_review" timestamp(3),
+	"next_performance_review" date,
 	"current_utilization_rate" numeric(5, 2),
 	"avg_daily_utilization" numeric(5, 2),
 	"avg_weekly_utilization" numeric(5, 2),
 	"avg_monthly_utilization" numeric(5, 2),
 	"idle_periods_count" integer,
 	"total_idle_days" integer,
-	"last_utilization_update" timestamp(3),
+	"last_utilization_update" date,
 	"optimal_utilization_target" numeric(5, 2),
 	"utilization_cost_impact" numeric(10, 2),
 	"purchase_cost" numeric(12, 2),
 	"depreciated_value" numeric(12, 2),
 	"depreciation_rate" numeric(8, 4),
-	"last_depreciation_update" timestamp(3),
-	"expected_replacement_date" timestamp(3),
+	"last_depreciation_update" date,
+	"expected_replacement_date" date,
 	"is_fully_depreciated" boolean DEFAULT false NOT NULL,
 	"replacement_cost_estimate" numeric(12, 2),
 	"value_appreciation" numeric(12, 2),
 	"asset_condition" text,
 	"supplier_id" integer,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
-	"deleted_at" timestamp(3)
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
+	"deleted_at" date
 );
 --> statement-breakpoint
 CREATE TABLE "equipment_maintenance" (
@@ -385,15 +385,15 @@ CREATE TABLE "equipment_maintenance" (
 	"priority" text DEFAULT 'medium' NOT NULL,
 	"requested_by" integer,
 	"assigned_to_employee_id" integer,
-	"scheduled_date" timestamp(3),
-	"due_date" timestamp(3),
-	"started_at" timestamp(3),
-	"completed_at" timestamp(3),
+	"scheduled_date" date,
+	"due_date" date,
+	"started_at" date,
+	"completed_at" date,
 	"cost" numeric(12, 2),
 	"meter_reading" numeric(12, 2),
 	"notes" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "equipment_maintenance_items" (
@@ -405,8 +405,8 @@ CREATE TABLE "equipment_maintenance_items" (
 	"unit" text,
 	"unit_cost" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"total_cost" numeric(12, 2) DEFAULT '0' NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "equipment_rental_history" (
@@ -433,7 +433,7 @@ CREATE TABLE "failed_jobs" (
 	"queue" text NOT NULL,
 	"payload" text NOT NULL,
 	"exception" text NOT NULL,
-	"failed_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL
+	"failed_at" date DEFAULT CURRENT_DATE NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "geofence_zones" (
@@ -444,8 +444,8 @@ CREATE TABLE "geofence_zones" (
 	"longitude" numeric(11, 8) NOT NULL,
 	"radius" numeric(8, 2) NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "jobs" (
@@ -468,10 +468,10 @@ CREATE TABLE "loans" (
 	"monthly_payment" numeric(10, 2) NOT NULL,
 	"status" text DEFAULT 'pending' NOT NULL,
 	"approved_by" integer,
-	"approved_at" timestamp(3),
+	"approved_at" date,
 	"notes" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "locations" (
@@ -486,8 +486,8 @@ CREATE TABLE "locations" (
 	"latitude" numeric(10, 8),
 	"longitude" numeric(11, 8),
 	"is_active" boolean DEFAULT true NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "media" (
@@ -500,8 +500,8 @@ CREATE TABLE "media" (
 	"collection" text,
 	"model_type" text,
 	"model_id" integer,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "model_has_permissions" (
@@ -526,15 +526,15 @@ CREATE TABLE "organizational_units" (
 	"level" integer DEFAULT 0 NOT NULL,
 	"description" text,
 	"metadata" jsonb,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
-	"deleted_at" timestamp(3)
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
+	"deleted_at" date
 );
 --> statement-breakpoint
 CREATE TABLE "password_reset_tokens" (
 	"email" text PRIMARY KEY NOT NULL,
 	"token" text NOT NULL,
-	"created_at" timestamp(3)
+	"created_at" date
 );
 --> statement-breakpoint
 CREATE TABLE "payroll_items" (
@@ -546,20 +546,20 @@ CREATE TABLE "payroll_items" (
 	"is_taxable" boolean DEFAULT true NOT NULL,
 	"tax_rate" numeric(5, 2) DEFAULT '0' NOT NULL,
 	"order" integer DEFAULT 1 NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "payroll_runs" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"batch_id" text NOT NULL,
-	"run_date" timestamp(3) NOT NULL,
+	"run_date" date NOT NULL,
 	"status" text DEFAULT 'pending' NOT NULL,
 	"run_by" integer NOT NULL,
 	"total_employees" integer DEFAULT 0 NOT NULL,
 	"notes" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "payrolls" (
@@ -578,26 +578,26 @@ CREATE TABLE "payrolls" (
 	"status" text DEFAULT 'pending' NOT NULL,
 	"notes" text,
 	"approved_by" integer,
-	"approved_at" timestamp(3),
+	"approved_at" date,
 	"paid_by" integer,
-	"paid_at" timestamp(3),
+	"paid_at" date,
 	"payment_method" text,
 	"payment_reference" text,
 	"payment_status" text,
-	"payment_processed_at" timestamp(3),
+	"payment_processed_at" date,
 	"currency" text DEFAULT 'SAR' NOT NULL,
 	"payroll_run_id" integer,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
-	"deleted_at" timestamp(3)
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
+	"deleted_at" date
 );
 --> statement-breakpoint
 CREATE TABLE "permissions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"guard_name" text DEFAULT 'web' NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "personal_access_tokens" (
@@ -607,20 +607,20 @@ CREATE TABLE "personal_access_tokens" (
 	"name" text NOT NULL,
 	"token" text NOT NULL,
 	"abilities" text,
-	"last_used_at" timestamp(3),
-	"expires_at" timestamp(3),
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"last_used_at" date,
+	"expires_at" date,
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "_prisma_migrations" (
 	"id" varchar(36) PRIMARY KEY NOT NULL,
 	"checksum" varchar(64) NOT NULL,
-	"finished_at" timestamp with time zone,
+	"finished_at" date,
 	"migration_name" varchar(255) NOT NULL,
 	"logs" text,
-	"rolled_back_at" timestamp with time zone,
-	"started_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"rolled_back_at" date,
+	"started_at" date DEFAULT now() NOT NULL,
 	"applied_steps_count" integer DEFAULT 0 NOT NULL
 );
 --> statement-breakpoint
@@ -633,7 +633,7 @@ CREATE TABLE "project_resources" (
 	"quantity" integer,
 	"unit_cost" numeric(10, 2),
 	"total_cost" numeric(10, 2),
-	"date" timestamp(3),
+	"date" date,
 	"status" text DEFAULT 'pending' NOT NULL,
 	"notes" text,
 	"employee_id" integer,
@@ -643,14 +643,13 @@ CREATE TABLE "project_resources" (
 	"job_title" text,
 	"daily_rate" numeric(10, 2),
 	"days_worked" integer,
-	"start_date" timestamp(3),
-	"end_date" timestamp(3),
+	"start_date" date,
+	"end_date" date,
 	"total_days" integer,
 	"equipment_id" integer,
 	"equipment_name" text,
 	"operator_name" text,
 	"hourly_rate" numeric(10, 2),
-	"hours_worked" numeric(10, 2),
 	"usage_hours" numeric(10, 2),
 	"maintenance_cost" numeric(10, 2),
 	"material_name" text,
@@ -665,11 +664,11 @@ CREATE TABLE "project_resources" (
 	"amount" numeric(10, 2),
 	"title" text,
 	"priority" text,
-	"due_date" timestamp(3),
+	"due_date" date,
 	"completion_percentage" integer,
 	"assigned_to_id" integer,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "projects" (
@@ -677,14 +676,14 @@ CREATE TABLE "projects" (
 	"name" text NOT NULL,
 	"description" text,
 	"customer_id" integer,
-	"start_date" timestamp(3),
-	"end_date" timestamp(3),
+	"start_date" date,
+	"end_date" date,
 	"status" text DEFAULT 'active' NOT NULL,
 	"budget" numeric(12, 2),
 	"notes" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
-	"deleted_at" timestamp(3)
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
+	"deleted_at" date
 );
 --> statement-breakpoint
 CREATE TABLE "rental_items" (
@@ -692,28 +691,26 @@ CREATE TABLE "rental_items" (
 	"rental_id" integer NOT NULL,
 	"equipment_id" integer,
 	"equipment_name" text,
-	"quantity" integer DEFAULT 1 NOT NULL,
 	"unit_price" numeric(10, 2) NOT NULL,
 	"total_price" numeric(10, 2) NOT NULL,
 	"rate_type" text DEFAULT 'daily' NOT NULL,
-	"days" integer,
 	"operator_id" integer,
 	"status" text DEFAULT 'active' NOT NULL,
 	"notes" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "rental_operator_assignments" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"rental_id" integer NOT NULL,
 	"employee_id" integer NOT NULL,
-	"start_date" timestamp(3) NOT NULL,
-	"end_date" timestamp(3),
+	"start_date" date NOT NULL,
+	"end_date" date,
 	"status" text DEFAULT 'active' NOT NULL,
 	"notes" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "rentals" (
@@ -721,9 +718,9 @@ CREATE TABLE "rentals" (
 	"customer_id" integer,
 	"rental_number" text NOT NULL,
 	"project_id" integer,
-	"start_date" timestamp(3) NOT NULL,
-	"expected_end_date" timestamp(3),
-	"actual_end_date" timestamp(3),
+	"start_date" date NOT NULL,
+	"expected_end_date" date,
+	"actual_end_date" date,
 	"status" text DEFAULT 'pending' NOT NULL,
 	"subtotal" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"tax_amount" numeric(12, 2) DEFAULT '0' NOT NULL,
@@ -733,30 +730,38 @@ CREATE TABLE "rentals" (
 	"final_amount" numeric(12, 2) DEFAULT '0' NOT NULL,
 	"payment_status" text DEFAULT 'pending' NOT NULL,
 	"notes" text,
+	"delivery_terms" text,
+	"shipment_terms" text,
+	"rental_terms" text,
+	"payment_terms" text,
+	"additional_terms" text,
+	"md_terms" text,
+	"terms_last_updated" timestamp(3),
+	"terms_update_notes" text,
 	"created_by" integer,
 	"equipment_name" text,
 	"description" text,
 	"quotation_id" integer,
-	"mobilization_date" timestamp(3),
-	"invoice_date" timestamp(3),
+	"mobilization_date" date,
+	"invoice_date" date,
 	"deposit_amount" numeric(10, 2) DEFAULT '0' NOT NULL,
 	"payment_terms_days" integer DEFAULT 30 NOT NULL,
-	"payment_due_date" timestamp(3),
+	"payment_due_date" date,
 	"has_timesheet" boolean DEFAULT false NOT NULL,
 	"has_operators" boolean DEFAULT false NOT NULL,
 	"completed_by" integer,
-	"completed_at" timestamp(3),
+	"completed_at" date,
 	"approved_by" integer,
-	"approved_at" timestamp(3),
+	"approved_at" date,
 	"deposit_paid" boolean DEFAULT false NOT NULL,
-	"deposit_paid_date" timestamp(3),
+	"deposit_paid_date" date,
 	"deposit_refunded" boolean DEFAULT false NOT NULL,
-	"deposit_refund_date" timestamp(3),
+	"deposit_refund_date" date,
 	"invoice_id" text,
 	"location_id" integer,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
-	"deleted_at" timestamp(3)
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
+	"deleted_at" date
 );
 --> statement-breakpoint
 CREATE TABLE "role_has_permissions" (
@@ -769,26 +774,26 @@ CREATE TABLE "roles" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"guard_name" text DEFAULT 'web' NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "salary_increments" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"employee_id" integer NOT NULL,
 	"increment_type" text NOT NULL,
-	"effective_date" timestamp(3) NOT NULL,
+	"effective_date" date NOT NULL,
 	"reason" text NOT NULL,
 	"approved_by" integer,
-	"approved_at" timestamp(3),
+	"approved_at" date,
 	"status" text DEFAULT 'pending' NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
 	"current_base_salary" numeric(10, 2) NOT NULL,
 	"current_food_allowance" numeric(10, 2) DEFAULT '0' NOT NULL,
 	"current_housing_allowance" numeric(10, 2) DEFAULT '0' NOT NULL,
 	"current_transport_allowance" numeric(10, 2) DEFAULT '0' NOT NULL,
-	"deleted_at" timestamp(3),
+	"deleted_at" date,
 	"increment_amount" numeric(10, 2),
 	"increment_percentage" numeric(5, 2),
 	"new_base_salary" numeric(10, 2) NOT NULL,
@@ -796,10 +801,10 @@ CREATE TABLE "salary_increments" (
 	"new_housing_allowance" numeric(10, 2) DEFAULT '0' NOT NULL,
 	"new_transport_allowance" numeric(10, 2) DEFAULT '0' NOT NULL,
 	"notes" text,
-	"rejected_at" timestamp(3),
+	"rejected_at" date,
 	"rejected_by" integer,
 	"rejection_reason" text,
-	"requested_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	"requested_at" date DEFAULT CURRENT_DATE NOT NULL,
 	"requested_by" integer NOT NULL
 );
 --> statement-breakpoint
@@ -817,8 +822,8 @@ CREATE TABLE "skills" (
 	"name" text NOT NULL,
 	"description" text,
 	"category" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "tax_document_payrolls" (
@@ -826,8 +831,8 @@ CREATE TABLE "tax_document_payrolls" (
 	"tax_document_id" integer NOT NULL,
 	"payroll_id" integer NOT NULL,
 	"amount" numeric(10, 2) NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "tax_documents" (
@@ -838,8 +843,8 @@ CREATE TABLE "tax_documents" (
 	"amount" numeric(10, 2) NOT NULL,
 	"file_path" text,
 	"status" text DEFAULT 'pending' NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "telescope_entries" (
@@ -850,8 +855,8 @@ CREATE TABLE "telescope_entries" (
 	"should_index_on_display" boolean DEFAULT true NOT NULL,
 	"type" text NOT NULL,
 	"content" text NOT NULL,
-	"occurred_at" timestamp(3) NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL
+	"occurred_at" date NOT NULL,
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "telescope_entry_tags" (
@@ -873,23 +878,23 @@ CREATE TABLE "time_entries" (
 	"hours" numeric(5, 2) NOT NULL,
 	"description" text,
 	"location" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "time_off_requests" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"employee_id" integer NOT NULL,
 	"leave_type" text NOT NULL,
-	"start_date" timestamp(3) NOT NULL,
-	"end_date" timestamp(3) NOT NULL,
+	"start_date" date NOT NULL,
+	"end_date" date NOT NULL,
 	"days" integer NOT NULL,
 	"reason" text,
 	"status" text DEFAULT 'pending' NOT NULL,
 	"approved_by" integer,
-	"approved_at" timestamp(3),
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"approved_at" date,
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "timesheet_approvals" (
@@ -898,9 +903,9 @@ CREATE TABLE "timesheet_approvals" (
 	"approver_id" integer NOT NULL,
 	"status" text NOT NULL,
 	"comments" text,
-	"approved_at" timestamp(3) NOT NULL,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"approved_at" date NOT NULL,
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "timesheets" (
@@ -910,7 +915,7 @@ CREATE TABLE "timesheets" (
 	"project_id" integer,
 	"rental_id" integer,
 	"description" text,
-	"date" timestamp(3) NOT NULL,
+	"date" date NOT NULL,
 	"start_time" timestamp(3) NOT NULL,
 	"end_time" timestamp(3),
 	"hours_worked" numeric(5, 2) DEFAULT '0' NOT NULL,
@@ -918,16 +923,16 @@ CREATE TABLE "timesheets" (
 	"status" text DEFAULT 'pending' NOT NULL,
 	"created_by" integer,
 	"approved_by" integer,
-	"approved_at" timestamp(3),
+	"approved_at" date,
 	"notes" text,
 	"rejection_reason" text,
 	"location" text,
 	"project" text,
 	"tasks" text,
 	"submitted_at" timestamp(3),
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL,
-	"deleted_at" timestamp(3)
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL,
+	"deleted_at" date
 );
 --> statement-breakpoint
 CREATE TABLE "trainings" (
@@ -937,8 +942,8 @@ CREATE TABLE "trainings" (
 	"duration" integer,
 	"cost" numeric(10, 2),
 	"provider" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
@@ -947,7 +952,7 @@ CREATE TABLE "users" (
 	"email" text NOT NULL,
 	"password" text NOT NULL,
 	"national_id" text,
-	"email_verified_at" timestamp(3),
+	"email_verified_at" date,
 	"provider" text,
 	"provider_id" text,
 	"remember_token" text,
@@ -956,24 +961,24 @@ CREATE TABLE "users" (
 	"isActive" boolean DEFAULT true NOT NULL,
 	"locale" text,
 	"avatar" text,
-	"last_login_at" timestamp(3),
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"last_login_at" date,
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "weekly_timesheets" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"employee_id" integer NOT NULL,
-	"week_start" timestamp(3) NOT NULL,
-	"week_end" timestamp(3) NOT NULL,
+	"week_start" date NOT NULL,
+	"week_end" date NOT NULL,
 	"total_hours" numeric(8, 2) NOT NULL,
 	"overtime_hours" numeric(8, 2) NOT NULL,
 	"status" text DEFAULT 'pending' NOT NULL,
 	"approved_by" integer,
-	"approved_at" timestamp(3),
+	"approved_at" date,
 	"notes" text,
-	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	"updated_at" timestamp(3) NOT NULL
+	"created_at" date DEFAULT CURRENT_DATE NOT NULL,
+	"updated_at" date NOT NULL
 );
 --> statement-breakpoint
 ALTER TABLE "advance_payment_histories" ADD CONSTRAINT "advance_payment_histories_advance_payment_id_fkey" FOREIGN KEY ("advance_payment_id") REFERENCES "public"."advance_payments"("id") ON DELETE restrict ON UPDATE cascade;--> statement-breakpoint

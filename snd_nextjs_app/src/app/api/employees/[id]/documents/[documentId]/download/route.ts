@@ -65,7 +65,7 @@ export async function GET(
     const fileBuffer = await readFile(filePath);
 
     // Return file with appropriate headers
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(fileBuffer as any, {
       headers: {
         'Content-Type': documentRecord.mimeType || 'application/octet-stream',
         'Content-Disposition': `attachment; filename="${documentRecord.fileName}"`,
