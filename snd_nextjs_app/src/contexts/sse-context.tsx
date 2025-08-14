@@ -226,13 +226,12 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
           const data = JSON.parse(event.data);
           handleSSEMessage(data);
         } catch (error) {
-          console.error('Error parsing SSE message:', error);
+          // Error parsing SSE message
         }
       };
 
       const handleError = (error: Event) => {
         if (!isMountedRef.current) return;
-        console.error('SSE connection error:', error);
         setIsConnected(false);
         setConnectionStatus('error');
         
@@ -264,7 +263,6 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
       };
 
     } catch (error) {
-      console.error('Failed to create SSE connection:', error);
       setConnectionStatus('error');
     }
   }, [session?.user?.email, handleSSEMessage, maxReconnectAttempts, cleanup, connectionStatus]);
@@ -280,7 +278,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     try {
       await ApiService.markNotificationAsRead(notificationId);
     } catch (error) {
-      console.error('Failed to mark notification as read:', error);
+      // Failed to mark notification as read
     }
   }, []);
 
@@ -293,7 +291,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     try {
       await ApiService.markAllNotificationsAsRead();
     } catch (error) {
-      console.error('Failed to mark all notifications as read:', error);
+      // Failed to mark all notifications as read
     }
   }, []);
 
@@ -306,7 +304,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     try {
       await ApiService.deleteNotification(notificationId);
     } catch (error) {
-      console.error('Failed to delete notification:', error);
+      // Failed to delete notification
     }
   }, []);
 
@@ -319,7 +317,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     try {
       await ApiService.clearAllNotifications();
     } catch (error) {
-      console.error('Failed to clear all notifications:', error);
+      // Failed to clear all notifications
     }
   }, []);
 
@@ -341,7 +339,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
           setNotifications(response.data.notifications || []);
         }
       } catch (error) {
-        console.error('Failed to load notifications:', error);
+        // Failed to load notifications
       }
     };
 

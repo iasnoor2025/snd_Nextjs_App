@@ -244,7 +244,7 @@ export const POST = withPermission(
         weeklyRate: body.weeklyRate ? String(parseFloat(body.weeklyRate)) : null,
         monthlyRate: body.monthlyRate ? String(parseFloat(body.monthlyRate)) : null,
         istimara: body.istimara ?? null,
-        istimaraExpiryDate: body.istimaraExpiryDate ? new Date(body.istimaraExpiryDate).toISOString() : null,
+        istimaraExpiryDate: body.istimara_expiry_date ? new Date(body.istimara_expiry_date).toISOString() : null,
         isActive: true as any,
         updatedAt: new Date().toISOString(),
       })
@@ -287,7 +287,7 @@ export const PUT = withPermission(
       weeklyRate,
       monthlyRate,
       istimara,
-      istimaraExpiryDate,
+      istimara_expiry_date,
     } = body;
 
     const updated = await db
@@ -308,7 +308,7 @@ export const PUT = withPermission(
         weeklyRate: weeklyRate ? String(parseFloat(weeklyRate)) : null,
         monthlyRate: monthlyRate ? String(parseFloat(monthlyRate)) : null,
         istimara: istimara ?? null,
-        istimaraExpiryDate: istimaraExpiryDate ? new Date(istimaraExpiryDate).toISOString() : null,
+        istimaraExpiryDate: istimara_expiry_date ? new Date(istimara_expiry_date).toISOString() : null,
         updatedAt: new Date().toISOString(),
       })
       .where(eq(equipmentTable.id, id))

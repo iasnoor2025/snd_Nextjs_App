@@ -38,7 +38,16 @@
     "rental": "Rental",
     "unknown_project": "Unknown Project",
     "since": "Since",
-    "manage_assignments": "Manage Assignments"
+    "manage_assignments": "Manage Assignments",
+    "istimara_status": "Istimara Status",
+    "all_istimara": "All Istimara",
+    "valid": "Valid",
+    "expired": "Expired",
+    "expiring_soon": "Expiring Soon",
+    "clear_filters": "Clear Filters",
+    "total_equipment": "Total",
+    "expired_istimara": "expired Istimara",
+    "expiring_soon_istimara": "expiring soon"
   },
   "fields": {
     "name": "Equipment Name",

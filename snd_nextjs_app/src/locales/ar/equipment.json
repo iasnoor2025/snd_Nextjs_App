@@ -38,7 +38,16 @@
     "rental": "الإيجار",
     "unknown_project": "مشروع غير معروف",
     "since": "منذ",
-    "manage_assignments": "إدارة التعيينات"
+    "manage_assignments": "إدارة التعيينات",
+    "istimara_status": "حالة الإستمارة",
+    "all_istimara": "جميع الإستمارات",
+    "valid": "صالح",
+    "expired": "منتهي الصلاحية",
+    "expiring_soon": "ينتهي قريباً",
+    "clear_filters": "مسح الفلاتر",
+    "total_equipment": "المجموع",
+    "expired_istimara": "إستمارة منتهية الصلاحية",
+    "expiring_soon_istimara": "ينتهي قريباً"
   },
   "fields": {
     "name": "اسم المعدة",

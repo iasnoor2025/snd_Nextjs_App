@@ -32,7 +32,7 @@ interface EquipmentFormData {
   monthlyRate: string;
   erpnextId: string;
   istimara: string;
-  istimaraExpiryDate: string;
+  istimara_expiry_date: string;
 }
 
 export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: AddEquipmentModalProps) {
@@ -52,7 +52,7 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
     monthlyRate: '',
     erpnextId: '',
     istimara: '',
-    istimaraExpiryDate: '',
+    istimara_expiry_date: '',
   });
 
   const handleInputChange = (field: keyof EquipmentFormData, value: string) => {
@@ -85,7 +85,7 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
         weeklyRate: formData.weeklyRate ? parseFloat(formData.weeklyRate) : undefined,
         monthlyRate: formData.monthlyRate ? parseFloat(formData.monthlyRate) : undefined,
         istimara: formData.istimara.trim() || undefined,
-        istimaraExpiryDate: formData.istimaraExpiryDate || undefined,
+        istimara_expiry_date: formData.istimara_expiry_date || undefined,
         erpnextId: formData.erpnextId.trim() || undefined,
       };
 
@@ -110,13 +110,12 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
           monthlyRate: '',
           erpnextId: '',
           istimara: '',
-          istimaraExpiryDate: '',
+          istimara_expiry_date: '',
         });
       } else {
         toast.error(response.message || 'Failed to create equipment');
       }
     } catch (error) {
-      console.error('Error creating equipment:', error);
       toast.error('Failed to create equipment');
     } finally {
       setLoading(false);
@@ -324,13 +323,13 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="istimaraExpiryDate">Istimara Expiry Date</Label>
-                <Input
-                  id="istimaraExpiryDate"
-                  type="date"
-                  value={formData.istimaraExpiryDate}
-                  onChange={(e) => handleInputChange('istimaraExpiryDate', e.target.value)}
-                />
+                                  <Label htmlFor="istimara_expiry_date">Istimara Expiry Date</Label>
+                  <Input
+                    id="istimara_expiry_date"
+                    type="date"
+                    value={formData.istimara_expiry_date}
+                    onChange={(e) => handleInputChange('istimara_expiry_date', e.target.value)}
+                  />
               </div>
             </div>
           </div>

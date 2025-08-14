@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import EquipmentAssignmentHistory from "@/components/equipment/EquipmentRentalHistory";
 import EquipmentDocumentUpload from "@/components/equipment/EquipmentDocumentUpload";
 import { useDeleteConfirmations } from "@/lib/utils/confirmation-utils";
+import ExpiryDateDisplay from "@/components/shared/ExpiryDateDisplay";
 
 interface Equipment {
   id: number;
@@ -318,11 +319,11 @@ export default function EquipmentShowPage() {
               </div>
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Expiry Date</Label>
-                <p className="text-sm">
-                  {equipment.istimara_expiry_date 
-                    ? new Date(equipment.istimara_expiry_date).toLocaleDateString() 
-                    : 'Not specified'}
-                </p>
+                <ExpiryDateDisplay 
+                  date={equipment.istimara_expiry_date}
+                  showIcon={true}
+                  showPrefix={true}
+                />
               </div>
             </div>
           </CardContent>

@@ -1,14 +1,9 @@
 import type { NextConfig } from "next";
-import { DefinePlugin } from "webpack";
 
 const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: [
       'lucide-react',
-      '@radix-ui/react-dialog',
-      '@radix-ui/react-dropdown-menu',
-      '@radix-ui/react-select',
-      '@radix-ui/react-tabs',
       'react-hook-form',
       'zod',
       '@tanstack/react-query',
@@ -22,15 +17,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['pg'],
   // Disable static export for API routes and dynamic pages
   trailingSlash: false,
-  webpack: (config, { dev, isServer, webpack }) => {
-    // Add webpack plugins to handle global variables
-    config.plugins.push(
-      new DefinePlugin({
-        'self': 'globalThis',
-        'global': 'globalThis',
-      })
-    );
-
+  webpack: (config, { dev, isServer }) => {
     // Handle client-side only libraries
     if (isServer) {
       config.externals = config.externals || [];
@@ -38,30 +25,49 @@ const nextConfig: NextConfig = {
         'canvas': 'canvas',
         'jsdom': 'jsdom',
       });
+      
+      // Handle module compatibility on the server
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        // Only add fallbacks that don't interfere with Next.js internals
+        fs: false,
+        dns: false,
+        net: false,
+        tls: false,
+        crypto: false,
+        stream: false,
+        url: false,
+        zlib: false,
+        http: false,
+        https: false,
+        assert: false,
+        os: false,
+        path: false,
+      };
+    } else {
+      // Client-side fallbacks can include more aggressive handling
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        dns: false,
+        net: false,
+        tls: false,
+        crypto: false,
+        stream: false,
+        url: false,
+        zlib: false,
+        http: false,
+        https: false,
+        assert: false,
+        os: false,
+        path: false,
+        // Add fallbacks for browser globals
+        'self': false,
+        'window': false,
+        'document': false,
+      };
     }
 
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      // Add fallbacks for Node.js modules that might be imported
-      dns: false,
-      net: false,
-      tls: false,
-      crypto: false,
-      stream: false,
-      url: false,
-      zlib: false,
-      http: false,
-      https: false,
-      assert: false,
-      os: false,
-      path: false,
-      // Add fallbacks for browser globals
-      'self': false,
-      'window': false,
-      'document': false,
-    };
-    
     // Memory-optimized webpack configuration
     if (!dev) {
       // Production build optimizations
@@ -70,123 +76,100 @@ const nextConfig: NextConfig = {
         splitChunks: {
           chunks: 'all',
           maxInitialRequests: 25,
-          minSize: 20000,
-          maxSize: 244000, // Limit chunk size to ~240KB
+          maxAsyncRequests: 25,
           cacheGroups: {
-            default: {
-              minChunks: 1,
-              priority: -20,
-              reuseExistingChunk: true,
-            },
+            ...config.optimization?.splitChunks?.cacheGroups,
+            // Vendor chunk splitting
             vendor: {
               test: /[\\/]node_modules[\\/]/,
               name: 'vendors',
-              priority: -10,
-              enforce: true,
-              chunks: 'all',
-            },
-            // Split large packages to reduce memory usage
-            react: {
-              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-              name: 'react',
               priority: 10,
               chunks: 'all',
             },
+            // React and Next.js specific chunks
+            react: {
+              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+              name: 'react',
+              priority: 20,
+              chunks: 'all',
+            },
+            next: {
+              test: /[\\/]node_modules[\\/](next)[\\/]/,
+              name: 'next',
+              priority: 15,
+              chunks: 'all',
+            },
+            // UI component libraries
             ui: {
-              test: /[\\/]node_modules[\\/](@radix-ui|lucide-react)[\\/]/,
+              test: /[\\/]node_modules[\\/](@radix-ui|lucide-react|class-variance-authority|clsx|tailwind-merge)[\\/]/,
               name: 'ui',
               priority: 5,
               chunks: 'all',
             },
-            // Split heavy libraries
-            charts: {
-              test: /[\\/]node_modules[\\/](recharts|d3)[\\/]/,
-              name: 'charts',
-              priority: 5,
-              chunks: 'all',
-            },
+            // Form and validation libraries
             forms: {
-              test: /[\\/]node_modules[\\/](react-hook-form|@hookform|zod)[\\/]/,
+              test: /[\\/]node_modules[\\/](@hookform|react-hook-form|zod)[\\/]/,
               name: 'forms',
               priority: 5,
               chunks: 'all',
             },
-            tables: {
+            // Data fetching and state management
+            data: {
               test: /[\\/]node_modules[\\/](@tanstack)[\\/]/,
-              name: 'tables',
+              name: 'data',
               priority: 5,
               chunks: 'all',
             },
-            // Split large API routes and middleware
-            api: {
-              test: /[\\/]app[\\/]api[\\/]/,
-              name: 'api',
-              priority: 5,
-              chunks: 'all',
-              minSize: 10000,
-            },
-            // Split middleware and edge runtime
-            middleware: {
-              test: /[\\/](middleware|edge-runtime)[\\/]/,
-              name: 'middleware',
-              priority: 5,
-              chunks: 'all',
-              minSize: 10000,
-            },
-          },
-        },
-        // Enable tree shaking and optimization
-        concatenateModules: true,
-        usedExports: true,
-        sideEffects: false,
-      };
-    } else {
-      // Development optimizations - apply chunk splitting to reduce bundle size warnings
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: 'all',
-          maxInitialRequests: 25,
-          minSize: 20000,
-          maxSize: 244000, // Apply same size limits in development
-          cacheGroups: {
-            default: {
-              minChunks: 1,
-              priority: -20,
-              reuseExistingChunk: true,
-            },
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              priority: -10,
-              enforce: true,
-              chunks: 'all',
-            },
-            // Split large packages in development too
-            react: {
-              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-              name: 'react',
-              priority: 10,
-              chunks: 'all',
-            },
-            ui: {
-              test: /[\\/]node_modules[\\/](@radix-ui|lucide-react)[\\/]/,
-              name: 'ui',
-              priority: 5,
-              chunks: 'all',
-            },
+            // Charts and visualization
             charts: {
-              test: /[\\/]node_modules[\\/](recharts|d3)[\\/]/,
+              test: /[\\/]node_modules[\\/](recharts)[\\/]/,
               name: 'charts',
               priority: 5,
               chunks: 'all',
             },
-            forms: {
-              test: /[\\/]node_modules[\\/](react-hook-form|@hookform|zod)[\\/]/,
-              name: 'forms',
+            // Date handling
+            dates: {
+              test: /[\\/]node_modules[\\/](date-fns)[\\/]/,
+              name: 'dates',
               priority: 5,
               chunks: 'all',
             },
+            // Database and ORM
+            database: {
+              test: /[\\/]node_modules[\\/](drizzle-orm|pg)[\\/]/,
+              name: 'database',
+              priority: 5,
+              chunks: 'all',
+            },
+            // Authentication
+            auth: {
+              test: /[\\/]node_modules[\\/](next-auth|bcryptjs)[\\/]/,
+              name: 'auth',
+              priority: 5,
+              chunks: 'all',
+            },
+            // File handling
+            files: {
+              test: /[\\/]node_modules[\\/](formidable|@aws-sdk)[\\/]/,
+              name: 'files',
+              priority: 5,
+              chunks: 'all',
+            },
+            // PDF and document generation
+            documents: {
+              test: /[\\/]node_modules[\\/](jspdf|html2canvas)[\\/]/,
+              name: 'documents',
+              priority: 5,
+              chunks: 'all',
+            },
+            // Drag and drop
+            dnd: {
+              test: /[\\/]node_modules[\\/](@dnd-kit)[\\/]/,
+              name: 'dnd',
+              priority: 5,
+              chunks: 'all',
+            },
+            // Tables
             tables: {
               test: /[\\/]node_modules[\\/](@tanstack)[\\/]/,
               name: 'tables',

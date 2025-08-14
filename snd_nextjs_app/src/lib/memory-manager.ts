@@ -109,7 +109,6 @@ class MemoryManager {
       return; // Skip if too soon since last cleanup
     }
 
-    console.log('Performing memory cleanup...');
     this.lastCleanupTime = now;
     
     // Clear all cleanup callbacks
@@ -160,7 +159,6 @@ class MemoryManager {
       return; // Skip if too soon since last cleanup
     }
 
-    console.log('Performing partial memory cleanup...');
     this.lastCleanupTime = now;
     
     // Only perform non-destructive cleanup

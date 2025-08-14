@@ -52,6 +52,7 @@ import {
   batchTranslateNames 
 } from '@/lib/translation-utils';
 import AddEquipmentModal from "@/components/equipment/AddEquipmentModal";
+import ExpiryDateDisplay from "@/components/shared/ExpiryDateDisplay";
 
 interface Equipment {
   id: number;
@@ -108,6 +109,7 @@ export default function EquipmentManagementPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterAssignment, setFilterAssignment] = useState("all");
+  const [filterIstimara, setFilterIstimara] = useState("all");
   const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({});
   
   // Pagination state
@@ -178,7 +180,32 @@ export default function EquipmentManagementPage() {
     const matchesAssignment = filterAssignment === 'all' || 
                              (filterAssignment === 'assigned' && item.current_assignment) ||
                              (filterAssignment === 'unassigned' && !item.current_assignment);
-    return matchesSearch && matchesStatus && matchesAssignment;
+    
+    // Istimara status filtering
+    let matchesIstimara = true;
+    if (filterIstimara !== 'all' && item.istimara_expiry_date) {
+      const isExpired = new Date(item.istimara_expiry_date) < new Date();
+      const isExpiringSoon = (() => {
+        const date = new Date(item.istimara_expiry_date);
+        const today = new Date();
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(today.getDate() + 30);
+        today.setHours(0, 0, 0, 0);
+        date.setHours(0, 0, 0, 0);
+        thirtyDaysFromNow.setHours(0, 0, 0, 0);
+        return date >= today && date <= thirtyDaysFromNow;
+      })();
+      
+      if (filterIstimara === 'expired') {
+        matchesIstimara = isExpired;
+      } else if (filterIstimara === 'expiring_soon') {
+        matchesIstimara = isExpiringSoon;
+      } else if (filterIstimara === 'valid') {
+        matchesIstimara = !isExpired && !isExpiringSoon;
+      }
+    }
+    
+    return matchesSearch && matchesStatus && matchesAssignment && matchesIstimara;
   });
 
   // Pagination calculations
@@ -314,6 +341,37 @@ export default function EquipmentManagementPage() {
                 <option value="unassigned">{t('equipment_management.not_assigned')}</option>
               </select>
             </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="istimara-filter" className="text-sm font-medium">
+                {t('equipment_management.istimara_status')}:
+              </Label>
+              <select
+                id="istimara-filter"
+                value={filterIstimara}
+                onChange={(e) => setFilterIstimara(e.target.value)}
+                className="border rounded-md px-3 py-2 text-sm"
+              >
+                <option value="all">{t('equipment_management.all_istimara')}</option>
+                <option value="valid">{t('equipment_management.valid')}</option>
+                <option value="expired">{t('equipment_management.expired')}</option>
+                <option value="expiring_soon">{t('equipment_management.expiring_soon')}</option>
+              </select>
+            </div>
+            {(filterStatus !== 'all' || filterAssignment !== 'all' || filterIstimara !== 'all' || searchTerm) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setFilterStatus('all');
+                  setFilterAssignment('all');
+                  setFilterIstimara('all');
+                  setSearchTerm('');
+                }}
+                className="text-xs"
+              >
+                {t('equipment_management.clear_filters')}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -325,6 +383,40 @@ export default function EquipmentManagementPage() {
             <Database className="h-5 w-5" />
             <span>{t('equipment_management.equipment_inventory')}</span>
           </CardTitle>
+          <CardDescription className="flex items-center gap-4 text-sm">
+            <span>{t('equipment_management.total_equipment')}: {equipment.length}</span>
+            {(() => {
+              const expiredCount = equipment.filter(item => 
+                item.istimara_expiry_date && new Date(item.istimara_expiry_date) < new Date()
+              ).length;
+              const expiringSoonCount = equipment.filter(item => {
+                if (!item.istimara_expiry_date) return false;
+                const date = new Date(item.istimara_expiry_date);
+                const today = new Date();
+                const thirtyDaysFromNow = new Date();
+                thirtyDaysFromNow.setDate(today.getDate() + 30);
+                today.setHours(0, 0, 0, 0);
+                date.setHours(0, 0, 0, 0);
+                thirtyDaysFromNow.setHours(0, 0, 0, 0);
+                return date >= today && date <= thirtyDaysFromNow;
+              }).length;
+              
+              return (
+                <>
+                  {expiredCount > 0 && (
+                    <span className="text-red-600 font-medium">
+                      ⚠️ {expiredCount} {t('equipment_management.expired_istimara')}
+                    </span>
+                  )}
+                  {expiringSoonCount > 0 && (
+                    <span className="text-orange-600 font-medium">
+                      ⏰ {expiringSoonCount} {t('equipment_management.expiring_soon_istimara')}
+                    </span>
+                  )}
+                </>
+              );
+            })()}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -345,14 +437,28 @@ export default function EquipmentManagementPage() {
                       <TableHead>{t('equipment_management.current_assignment')}</TableHead>
                       <TableHead>{t('equipment_management.daily_rate')}</TableHead>
                       <TableHead>{t('equipment_management.erpnext_id')}</TableHead>
-                      <TableHead>{t('equipment_management.istimara')}</TableHead>
+                      <TableHead>
+                        <div className="flex items-center gap-2">
+                          <span>{t('equipment_management.istimara')}</span>
+                          {(() => {
+                            const expiredCount = equipment.filter(item => 
+                              item.istimara_expiry_date && new Date(item.istimara_expiry_date) < new Date()
+                            ).length;
+                            return expiredCount > 0 ? (
+                              <Badge variant="destructive" className="text-xs">
+                                {expiredCount} {t('equipment_management.expired')}
+                              </Badge>
+                            ) : null;
+                          })()}
+                        </div>
+                      </TableHead>
                       <TableHead>{t('equipment_management.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {currentEquipment.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                           {equipment.length === 0 ? (
                             <div className="flex flex-col items-center space-y-2">
                               <Package className="h-8 w-8 text-muted-foreground" />
@@ -417,9 +523,11 @@ export default function EquipmentManagementPage() {
                               <div className="space-y-1">
                                 <div className="text-sm font-medium">{item.istimara}</div>
                                 {item.istimara_expiry_date && (
-                                  <div className="text-xs text-muted-foreground">
-                                    Expires: {new Date(item.istimara_expiry_date).toLocaleDateString()}
-                                  </div>
+                                  <ExpiryDateDisplay 
+                                    date={item.istimara_expiry_date}
+                                    showIcon={false}
+                                    className="text-xs"
+                                  />
                                 )}
                               </div>
                             ) : (

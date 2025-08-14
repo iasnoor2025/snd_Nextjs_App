@@ -22,18 +22,20 @@ export async function GET(
       .select({
         id: equipment.id,
         name: equipment.name,
-        modelNumber: equipment.modelNumber,
+        model_number: equipment.modelNumber,
         status: equipment.status,
-        categoryId: equipment.categoryId,
+        category_id: equipment.categoryId,
         manufacturer: equipment.manufacturer,
-        dailyRate: equipment.dailyRate,
-        weeklyRate: equipment.weeklyRate,
-        monthlyRate: equipment.monthlyRate,
-        erpnextId: equipment.erpnextId,
-        serialNumber: equipment.serialNumber,
+        daily_rate: equipment.dailyRate,
+        weekly_rate: equipment.weeklyRate,
+        monthly_rate: equipment.monthlyRate,
+        erpnext_id: equipment.erpnextId,
+        istimara: equipment.istimara,
+        istimara_expiry_date: equipment.istimaraExpiryDate,
+        serial_number: equipment.serialNumber,
         description: equipment.description,
-        createdAt: equipment.createdAt,
-        updatedAt: equipment.updatedAt
+        created_at: equipment.createdAt,
+        updated_at: equipment.updatedAt
       })
       .from(equipment)
       .where(eq(equipment.id, id))
@@ -101,7 +103,6 @@ export async function GET(
       data: equipmentWithAssignment
     });
   } catch (error) {
-    console.error('Error fetching equipment:', error);
     return NextResponse.json(
       { 
         success: false,
@@ -157,6 +158,8 @@ export async function PUT(
         dailyRate: body.daily_rate ? String(parseFloat(body.daily_rate)) : null,
         weeklyRate: body.weekly_rate ? String(parseFloat(body.weekly_rate)) : null,
         monthlyRate: body.monthly_rate ? String(parseFloat(body.monthly_rate)) : null,
+        istimara: body.istimara || null,
+        istimaraExpiryDate: body.istimara_expiry_date ? new Date(body.istimara_expiry_date).toISOString() : null,
         updatedAt: new Date().toISOString()
       })
       .where(eq(equipment.id, id))
@@ -167,7 +170,6 @@ export async function PUT(
       data: updatedEquipment
     });
   } catch (error) {
-    console.error('Error updating equipment:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to update equipment' },
       { status: 500 }
@@ -218,7 +220,6 @@ export async function DELETE(
       message: 'Equipment deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting equipment:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to delete equipment' },
       { status: 500 }

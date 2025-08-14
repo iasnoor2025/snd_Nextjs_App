@@ -41,19 +41,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // Only log in development and not for every request to reduce noise
-    if (process.env.NODE_ENV === 'development' && !pathname.includes('/api/') && Math.random() < 0.1) {
-      // Only log 10% of requests to reduce noise
-      console.log('🔍 MIDDLEWARE - Pathname:', pathname, 'User role:', user.role);
-    }
+    // Development logging removed for production
 
     // Check if user has required role or higher
     const hasAccess = hasRequiredRole(user.role, routePermission.roles);
 
     if (!hasAccess) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔍 MIDDLEWARE - Access denied for user role:', user.role, 'Path:', pathname);
-      }
       // Redirect to access denied page
       const accessDeniedUrl = new URL('/access-denied', request.url);
       accessDeniedUrl.searchParams.set('requiredRole', routePermission.roles.join(','));
@@ -68,7 +61,6 @@ export async function middleware(request: NextRequest) {
 
     return NextResponse.next();
   } catch (error) {
-    console.error('Middleware error:', error);
     return NextResponse.redirect(new URL('/login', request.url));
   }
 }

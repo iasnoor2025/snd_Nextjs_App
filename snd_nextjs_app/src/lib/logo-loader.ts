@@ -31,7 +31,6 @@ export class LogoLoader {
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.error('Failed to load logo image:', error);
       return null;
     }
   }
@@ -58,7 +57,6 @@ export class LogoLoader {
         reader.readAsDataURL(blob);
       });
     } catch (error) {
-      console.error('Failed to load logo from URL:', error);
       return null;
     }
   }

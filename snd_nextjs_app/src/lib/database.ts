@@ -602,8 +602,6 @@ export class DatabaseService {
     status?: string
     notes?: string
   }) {
-    console.log('DatabaseService.addRentalItem called with:', data);
-    
     try {
       const result = await prisma.rentalItem.create({
         data: {
@@ -624,10 +622,8 @@ export class DatabaseService {
         }
       });
       
-      console.log('Rental item created successfully:', result);
       return result;
     } catch (error) {
-      console.error('DatabaseService.addRentalItem error:', error);
       throw error;
     }
   }
