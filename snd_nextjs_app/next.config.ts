@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
-import { DefinePlugin } from "webpack";
+import { DefinePlugin, ProvidePlugin } from "webpack";
+
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -45,11 +46,52 @@ const nextConfig: NextConfig = {
         })
       );
       
+      // Also use ProvidePlugin to ensure self is available globally
+      config.plugins.push(
+        new ProvidePlugin({
+          'self': 'globalThis',
+        })
+      );
+      
       // Also add alias to ensure self is resolved correctly
       config.resolve.alias = {
         ...config.resolve.alias,
         'self': 'globalThis',
       };
+      
+      // Add self to fallback to ensure it's available
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        'self': 'globalThis',
+      };
+      
+      // Ensure the DefinePlugin is applied to all chunks including vendors
+      config.optimization = config.optimization || {};
+      config.optimization.splitChunks = {
+        ...config.optimization.splitChunks,
+        cacheGroups: {
+          ...config.optimization.splitChunks?.cacheGroups,
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+            enforce: true,
+          },
+        },
+      };
+      
+      // Add a more comprehensive DefinePlugin configuration
+      config.plugins.push(
+        new DefinePlugin({
+          'self': 'globalThis',
+          'typeof self': JSON.stringify('object'),
+          'global': 'globalThis',
+          'window': 'globalThis',
+          'document': 'undefined',
+        })
+      );
+      
+
     }
     
     // Production optimizations

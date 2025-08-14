@@ -15,6 +15,10 @@ export async function generateStaticParams() {
   return [];
 }
 
+// Additional route configuration for Next.js 15
+export const runtime = 'nodejs';
+export const preferredRegion = 'auto';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
