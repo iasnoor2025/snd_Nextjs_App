@@ -4,7 +4,12 @@ import { db } from '@/lib/db';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
 import { employees as employeesTable, advancePayments, advancePaymentHistories } from '@/lib/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq, or } from 'drizzle-orm';
+
+// Explicit route configuration for Next.js 15
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 const getEmployeePaymentsHandler = async (
   request: NextRequest,
@@ -27,6 +32,12 @@ const getEmployeePaymentsHandler = async (
     
     // For employee users, ensure they can only access their own payment data
     if (user?.role === 'EMPLOYEE') {
+      if (!user.national_id) {
+        return NextResponse.json(
+          { error: "Missing national ID on user account" },
+          { status: 403 }
+        );
+      }
       // Find employee record that matches user's national_id
       const ownEmployeeRows = await db
         .select({ id: employeesTable.id })
@@ -127,8 +138,13 @@ const getEmployeePaymentsHandler = async (
       })
       .from(advancePayments)
       .where(
-        eq(advancePayments.employeeId, employeeId) &&
-        (eq(advancePayments.status, 'approved') || eq(advancePayments.status, 'partially_repaid'))
+        and(
+          eq(advancePayments.employeeId, employeeId),
+          or(
+            eq(advancePayments.status, 'approved'),
+            eq(advancePayments.status, 'partially_repaid')
+          )
+        )
       )
       .orderBy(advancePayments.createdAt);
 

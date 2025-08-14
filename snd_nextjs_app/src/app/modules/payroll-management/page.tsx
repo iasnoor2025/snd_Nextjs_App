@@ -22,7 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Link from "next/link";
-import { loadHtml2Canvas, loadJsPDF } from "@/lib/client-libraries";
+import { loadJsPDF } from "@/lib/client-libraries";
 import {
   Plus,
   Search,
@@ -938,59 +938,52 @@ export default function PayrollManagementPage() {
         // Wait for content to load, then generate PDF
         setTimeout(async () => {
           try {
-            // Dynamically load libraries
-            const html2canvas = await loadHtml2Canvas();
+            // Dynamically load jsPDF library
             const jsPDF = await loadJsPDF();
             
-            const canvas = await html2canvas(iframe.contentDocument?.body || iframe.contentDocument?.documentElement || iframe, {
-              scale: 1.8,
-              useCORS: true,
-              allowTaint: true,
-              backgroundColor: '#ffffff',
-              width: 1200,
-              height: 900
-            });
-
-            const imgData = canvas.toDataURL('image/png');
+            // Create PDF using jsPDF only (without html2canvas)
             const pdf = new jsPDF('landscape', 'mm', 'a4');
-            const imgWidth = 297;
-            const imgHeight = 210;
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const margin = 20;
             
-            // Fit the image to one page with proper scaling
-            const aspectRatio = canvas.width / canvas.height;
-            const pageAspectRatio = imgWidth / imgHeight;
+            // Set font
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(24);
             
-            let finalWidth, finalHeight;
+            // Company header
+            pdf.text('C.A.T. INTERNATIONAL L.L.L.C.', pageWidth / 2, margin, { align: 'center' });
             
-            if (aspectRatio > pageAspectRatio) {
-              // Image is wider than page - fit to width
-              finalWidth = imgWidth;
-              finalHeight = imgWidth / aspectRatio;
-            } else {
-              // Image is taller than page - fit to height
-              finalHeight = imgHeight;
-              finalWidth = imgHeight * aspectRatio;
-            }
+            pdf.setFontSize(14);
+            pdf.setFont('helvetica', 'normal');
+            pdf.text('Equipment Rental & Construction Services', pageWidth / 2, margin + 15, { align: 'center' });
             
-            // Ensure it doesn't exceed page bounds
-            if (finalWidth > imgWidth) {
-              finalWidth = imgWidth;
-              finalHeight = imgWidth / aspectRatio;
-            }
-            if (finalHeight > imgHeight) {
-              finalHeight = imgHeight;
-              finalWidth = imgHeight * aspectRatio;
-            }
+            // Payslip title
+            pdf.setFontSize(20);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('PAYSLIP', pageWidth / 2, margin + 40, { align: 'center' });
             
-            // Center the image on the page
-            const x = Math.max(0, (imgWidth - finalWidth) / 2);
-            const y = Math.max(0, (imgHeight - finalHeight) / 2);
+            // Employee information
+            pdf.setFontSize(12);
+            pdf.setFont('helvetica', 'normal');
+            const employeeName = data.data.employee.full_name || 'Unknown Employee';
+            const employeeId = data.data.employee.file_number || data.data.employee.id;
+            const monthName = new Date(data.data.payroll.year, data.data.payroll.month - 1).toLocaleDateString("en-US", { month: "long" });
             
-            pdf.addImage(imgData, 'PNG', x, y, finalWidth, finalHeight);
+            pdf.text(`Employee: ${employeeName}`, margin, margin + 70);
+            pdf.text(`Employee ID: ${employeeId}`, margin, margin + 85);
+            pdf.text(`Month: ${monthName} ${data.data.payroll.year}`, margin, margin + 100);
             
-                             const monthName = new Date(data.data.payroll.year, data.data.payroll.month - 1).toLocaleDateString("en-US", { month: "long" });
-                 const fileName = `payslip_${data.data.employee.file_number || data.data.employee.id}_${monthName}_${data.data.payroll.year}.pdf`;
-                 pdf.save(fileName);
+            // Salary details
+            pdf.text(`Basic Salary: ${formatCurrency(Number(data.data.payroll.base_salary || 0))}`, margin, margin + 125);
+            pdf.text(`Overtime: ${formatCurrency(Number(data.data.payroll.overtime_amount || 0))}`, margin, margin + 140);
+            pdf.text(`Bonus: ${formatCurrency(Number(data.data.payroll.bonus_amount || 0))}`, margin, margin + 155);
+            pdf.text(`Deductions: ${formatCurrency(Number(data.data.payroll.deduction_amount || 0))}`, margin, margin + 170);
+            pdf.text(`Final Amount: ${formatCurrency(Number(data.data.payroll.final_amount || 0))}`, margin, margin + 185);
+            
+            // Save PDF
+            const fileName = `payslip_${employeeId}_${monthName}_${data.data.payroll.year}.pdf`;
+            pdf.save(fileName);
             
             // Clean up
             document.body.removeChild(iframe);

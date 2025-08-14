@@ -8,12 +8,9 @@ import { eq, and, isNull, asc } from 'drizzle-orm';
 // Explicit route configuration for Next.js 15
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
-// Explicit route generation for Next.js 15
-export async function generateStaticParams() {
-  // This helps Next.js understand the route structure
-  return [];
-}
+
 
 // Additional route configuration for Next.js 15
 export const runtime = 'nodejs';
@@ -27,7 +24,7 @@ export async function POST(
 ) {
   try {
     console.log("POST /api/employee/advances/[id]/repay called");
-    
+
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       console.log("Unauthorized - no session");

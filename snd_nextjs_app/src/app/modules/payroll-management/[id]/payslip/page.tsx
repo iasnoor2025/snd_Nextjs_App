@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { usePrint } from "@/hooks/use-print";
-import { loadHtml2Canvas, loadJsPDF } from "@/lib/client-libraries";
+import { loadJsPDF } from "@/lib/client-libraries";
 
 // Professional print styles to match the exact payslip layout
 const printStyles = `
@@ -710,38 +710,50 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
 
   const handleDownloadPDF = async () => {
     try {
-      const input = payslipRef.current;
-      if (!input) return;
-      
-      // Dynamically load libraries
-      const html2canvas = await loadHtml2Canvas();
       const jsPDF = await loadJsPDF();
       
-      const canvas = await html2canvas(input, {
-        scale: 2,
-        useCORS: true,
-      });
-      const imgData = canvas.toDataURL('image/png');
+      // Create PDF using jsPDF only (without html2canvas)
       const pdf = new jsPDF('landscape', 'mm', 'a4');
-      const imgWidth = 297;
-      const pageHeight = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 20;
+      
+      // Set font
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(24);
+      
+      // Company header
+      pdf.text('C.A.T. INTERNATIONAL L.L.L.C.', pageWidth / 2, margin, { align: 'center' });
+      
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Equipment Rental & Construction Services', pageWidth / 2, margin + 15, { align: 'center' });
+      
+      // Payslip title
+      pdf.setFontSize(20);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('PAYSLIP', pageWidth / 2, margin + 40, { align: 'center' });
+      
+      // Employee information
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      const employeeName = payslipData?.employee?.full_name || 'Unknown Employee';
+      const employeeId = payslipData?.employee?.file_number || payslipData?.employee?.id;
       const monthName = new Date(payslipData?.payroll.year || 0, (payslipData?.payroll.month || 1) - 1).toLocaleDateString("en-US", { month: "long" });
-      pdf.save(`payslip_${payslipData?.employee?.file_number || payslipData?.employee?.id}_${monthName}_${payslipData?.payroll.year}.pdf`);
+      
+      pdf.text(`Employee: ${employeeName}`, margin, margin + 70);
+      pdf.text(`Employee ID: ${employeeId}`, margin, margin + 85);
+      pdf.text(`Month: ${monthName} ${payslipData?.payroll.year}`, margin, margin + 100);
+      
+      // Salary details
+      pdf.text(`Basic Salary: ${formatCurrency(Number(payslipData?.payroll.base_salary || 0))}`, margin, margin + 125);
+      pdf.text(`Overtime: ${formatCurrency(Number(payslipData?.payroll.overtime_amount || 0))}`, margin, margin + 140);
+      pdf.text(`Bonus: ${formatCurrency(Number(payslipData?.payroll.bonus_amount || 0))}`, margin, margin + 155);
+      pdf.text(`Deductions: ${formatCurrency(Number(payslipData?.payroll.deduction_amount || 0))}`, margin, margin + 170);
+      pdf.text(`Final Amount: ${formatCurrency(Number(payslipData?.payroll.final_amount || 0))}`, margin, margin + 185);
+      
+      // Save PDF
+      pdf.save(`payslip_${employeeId}_${monthName}_${payslipData?.payroll.year}.pdf`);
       toast.success('Payslip PDF generated successfully');
     } catch (error) {
       console.error('PDF generation failed:', error);

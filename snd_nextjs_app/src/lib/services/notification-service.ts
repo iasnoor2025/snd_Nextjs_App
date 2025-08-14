@@ -1,5 +1,4 @@
 import { toast } from 'sonner';
-import { db } from '@/lib/drizzle';
 // import { notifications } from '@/lib/drizzle/schema';
 
 export interface NotificationOptions {

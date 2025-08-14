@@ -8,15 +8,13 @@ import { eq } from 'drizzle-orm';
 // Explicit route configuration for Next.js 15
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 // Additional route configuration for Next.js 15
 export const runtime = 'nodejs';
 export const preferredRegion = 'auto';
 
-// Help Next.js understand this is a dynamic route
-export async function generateStaticParams() {
-  return [];
-}
+
 
 export async function PATCH(
   request: NextRequest,
