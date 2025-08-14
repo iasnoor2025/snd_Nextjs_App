@@ -1,13 +1,39 @@
 import type { NextConfig } from "next";
+import { DefinePlugin } from "webpack";
 
 const nextConfig: NextConfig = {
   experimental: {
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: [
+      'lucide-react',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-select',
+      '@radix-ui/react-tabs',
+      'react-hook-form',
+      'zod'
+    ],
   },
   serverExternalPackages: ['pg'],
   // Disable static export for API routes and dynamic pages
   trailingSlash: false,
   webpack: (config, { dev, isServer }) => {
+    // Add webpack plugins to handle global variables
+    config.plugins.push(
+      new DefinePlugin({
+        'self': 'globalThis',
+        'global': 'globalThis',
+      })
+    );
+
+    // Handle client-side only libraries
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push({
+        'canvas': 'canvas',
+        'jsdom': 'jsdom',
+      });
+    }
+
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
@@ -24,12 +50,16 @@ const nextConfig: NextConfig = {
       assert: false,
       os: false,
       path: false,
+      // Add fallbacks for browser globals
+      'self': false,
+      'window': false,
+      'document': false,
     };
     
-    // Optimized webpack configuration for better performance
+    // Simplified webpack configuration to isolate issues
     config.optimization = {
       ...config.optimization,
-      // Better chunk splitting for faster loading
+      // Basic chunk splitting
       splitChunks: {
         chunks: 'async',
         cacheGroups: {
@@ -38,17 +68,19 @@ const nextConfig: NextConfig = {
             priority: -20,
             reuseExistingChunk: true,
           },
-          // Vendor chunks for better caching
           vendor: {
             test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
             chunks: 'async',
             priority: -10,
+            enforce: true,
           },
         },
       },
-      // Enable module concatenation for better performance
-      concatenateModules: !dev,
+      // Disable complex optimizations temporarily
+      concatenateModules: false,
+      usedExports: false,
+      sideEffects: false,
     };
 
     // Add performance hints for development

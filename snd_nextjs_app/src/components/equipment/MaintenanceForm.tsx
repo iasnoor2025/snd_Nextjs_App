@@ -22,8 +22,8 @@ const itemSchema = z.object({
 });
 
 const formSchema = z.object({
-  equipment_id: z.coerce.number({ required_error: 'Equipment is required' }),
-  assigned_to_employee_id: z.coerce.number().optional(),
+  equipment_id: z.number().min(1, 'Equipment is required'),
+  assigned_to_employee_id: z.number().optional(),
   type: z.enum(['corrective', 'scheduled']),
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),

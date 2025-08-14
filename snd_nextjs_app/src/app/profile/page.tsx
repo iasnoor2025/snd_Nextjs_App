@@ -2,58 +2,56 @@
 
 import { useState, useEffect } from "react"
 import {
-  IconUser,
-  IconMail,
-  IconPhone,
-  IconMapPin,
-  IconBuilding,
-  IconShield,
-  IconBell,
-  IconPalette,
-  IconLanguage,
-  IconKey,
-  IconTrash,
-  IconEdit,
-  IconCamera,
-  IconCheck,
-  IconX,
-  IconDatabase,
-  IconLink,
-  IconInfoCircle,
-  IconPhoto,
-  IconDownload,
-  IconEye,
-  IconFileText,
-  IconId,
-  IconCalendar,
-  IconFlag,
-  IconBriefcase,
-  IconHome,
-  IconGlobe,
-  IconClock,
-  IconStar,
-  IconSettings,
-  IconLock,
-  IconEyeOff,
-  IconQrcode,
-  IconFingerprint,
-  IconDeviceMobile,
-  IconDeviceLaptop,
-  IconWorld,
-  IconMoon,
-  IconSun,
-  IconDeviceDesktop,
-  IconRotate,
-  IconCar,
-  IconTools,
-  IconAlertTriangle,
-  IconPlane,
-
-  IconMessage,
-  IconLoader,
-  IconDeviceFloppy,
-  IconUpload
-} from "@tabler/icons-react"
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Building,
+  Shield,
+  Bell,
+  Palette,
+  Languages,
+  Key,
+  Trash2,
+  Edit,
+  Camera,
+  Check,
+  X,
+  Database,
+  Link,
+  Info,
+  Image,
+  Download,
+  Eye,
+  FileText,
+  IdCard,
+  Calendar,
+  Flag,
+  Briefcase,
+  Home,
+  Globe,
+  Clock,
+  Star,
+  Settings,
+  Lock,
+  EyeOff,
+  QrCode,
+  Fingerprint,
+  Smartphone,
+  Laptop,
+  Moon,
+  Sun,
+  Monitor,
+  RotateCcw,
+  Car,
+  Wrench,
+  AlertTriangle,
+  Plane,
+  MessageSquare,
+  Loader2,
+  Save,
+  Upload
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -565,7 +563,7 @@ export default function ProfilePage() {
                 onClick={retryFetch}
                 className="mt-4"
               >
-                <IconRotate className="h-4 w-4 mr-2" />
+                <RotateCcw className="h-4 w-4 mr-2" />
                 Retry
               </Button>
             </div>
@@ -604,11 +602,11 @@ export default function ProfilePage() {
                   </p>
                   <div className="flex items-center gap-4">
                     <Badge variant="secondary" className="px-3 py-1">
-                      <IconId className="h-3 w-3 mr-1" />
+                      <IdCard className="h-3 w-3 mr-1" />
                       {profile.nationalId || 'No National ID'}
                     </Badge>
                     <Badge variant={profile.status === "active" ? "default" : "secondary"}>
-                      <IconCheck className="h-3 w-3 mr-1" />
+                      <Check className="h-3 w-3 mr-1" />
                       {profile.status}
                     </Badge>
                   </div>
@@ -622,11 +620,11 @@ export default function ProfilePage() {
                   disabled={isSaving}
                   className="shadow-lg"
                 >
-                  {isEditing ? <IconX className="h-4 w-4 mr-2" /> : <IconEdit className="h-4 w-4 mr-2" />}
+                  {isEditing ? <X className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
                   {isEditing ? "Cancel" : "Edit Profile"}
                 </Button>
                 <Button variant="outline" size="lg" className="shadow-lg">
-                  <IconSettings className="h-4 w-4 mr-2" />
+                  <Settings className="h-4 w-4 mr-2" />
                   Settings
                 </Button>
               </div>
@@ -644,7 +642,7 @@ export default function ProfilePage() {
                   <p className="text-2xl font-bold text-blue-900">{profileStats.profileCompletion}%</p>
                 </div>
                 <div className="bg-blue-100 p-3 rounded-full">
-                  <IconUser className="h-6 w-6 text-blue-600" />
+                  <User className="h-6 w-6 text-blue-600" />
                 </div>
               </div>
               <Progress value={profileStats.profileCompletion} className="mt-3" />
@@ -664,7 +662,7 @@ export default function ProfilePage() {
                   <p className="text-2xl font-bold text-green-900">{profileStats.documentsCount}</p>
                 </div>
                 <div className="bg-green-100 p-3 rounded-full">
-                  <IconFileText className="h-6 w-6 text-green-600" />
+                  <FileText className="h-6 w-6 text-green-600" />
                 </div>
               </div>
               <p className="text-xs text-green-600 mt-1">Uploaded files</p>
@@ -674,7 +672,7 @@ export default function ProfilePage() {
                 className="mt-2 w-full text-xs"
                 onClick={() => document.getElementById('document-upload')?.click()}
               >
-                <IconUpload className="h-3 w-3 mr-1" />
+                <Upload className="h-3 w-3 mr-1" />
                 Upload New
               </Button>
               <input
@@ -695,7 +693,7 @@ export default function ProfilePage() {
                   <p className="text-2xl font-bold text-purple-900">{profileStats.securityScore}%</p>
                 </div>
                 <div className="bg-purple-100 p-3 rounded-full">
-                  <IconShield className="h-6 w-6 text-purple-600" />
+                  <Shield className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
               <p className="text-xs text-purple-600 mt-1">Account protection</p>
@@ -705,7 +703,7 @@ export default function ProfilePage() {
                 className="mt-2 w-full text-xs"
                 onClick={() => document.getElementById('security-tab')?.click()}
               >
-                <IconShield className="h-3 w-3 mr-1" />
+                <Shield className="h-3 w-3 mr-1" />
                 Review
               </Button>
             </CardContent>
@@ -721,7 +719,7 @@ export default function ProfilePage() {
                   </p>
                 </div>
                 <div className="bg-orange-100 p-3 rounded-full">
-                  <IconClock className="h-6 w-6 text-orange-600" />
+                  <Clock className="h-6 w-6 text-orange-600" />
                 </div>
               </div>
               <p className="text-xs text-orange-600 mt-1">Recent login</p>
@@ -731,7 +729,7 @@ export default function ProfilePage() {
                 className="mt-2 w-full text-xs"
                 onClick={handleExportProfile}
               >
-                <IconDownload className="h-3 w-3 mr-1" />
+                <Download className="h-3 w-3 mr-1" />
                 Export Profile
               </Button>
             </CardContent>
@@ -744,7 +742,7 @@ export default function ProfilePage() {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="bg-indigo-100 p-2 rounded-lg">
-                  <IconSettings className="h-5 w-5 text-indigo-600" />
+                  <Settings className="h-5 w-5 text-indigo-600" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-indigo-900">Quick Actions</h3>
@@ -758,7 +756,7 @@ export default function ProfilePage() {
                   onClick={() => setIsEditing(true)}
                   disabled={isEditing}
                 >
-                  <IconEdit className="h-4 w-4 mr-2" />
+                  <Edit className="h-4 w-4 mr-2" />
                   Edit Profile
                 </Button>
                 <Button
@@ -767,7 +765,7 @@ export default function ProfilePage() {
                   onClick={() => document.getElementById('avatar-upload')?.click()}
                   disabled={isUploading}
                 >
-                  <IconCamera className="h-4 w-4 mr-2" />
+                  <Camera className="h-4 w-4 mr-2" />
                   Change Photo
                 </Button>
                 <Button
@@ -775,7 +773,7 @@ export default function ProfilePage() {
                   size="sm"
                   onClick={handleExportProfile}
                 >
-                  <IconDownload className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 mr-2" />
                   Export Data
                 </Button>
               </div>
@@ -813,12 +811,12 @@ export default function ProfilePage() {
         {/* Data Source Alert */}
         {hasRealEmployeeData() && (
           <Alert className="border-primary/20 bg-primary/5">
-            <IconDatabase className="h-4 w-4 text-primary" />
+            <Database className="h-4 w-4 text-primary" />
             <AlertDescription className="text-primary">
               <strong>Database Connected:</strong> Your profile is displaying real employee information from the database.
               {profile.matchedEmployee && (
                 <span className="ml-2">
-                  <IconLink className="h-4 w-4 inline mr-1" />
+                  <Link className="h-4 w-4 inline mr-1" />
                   Employee matched via National ID (Iqama Number)
                 </span>
               )}
@@ -829,19 +827,19 @@ export default function ProfilePage() {
         <Tabs defaultValue="profile" className="space-y-8">
           <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/50">
             <TabsTrigger value="profile" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <IconUser className="h-4 w-4 mr-2" />
+              <User className="h-4 w-4 mr-2" />
               Profile
             </TabsTrigger>
             <TabsTrigger value="notifications" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <IconBell className="h-4 w-4 mr-2" />
+              <Bell className="h-4 w-4 mr-2" />
               Notifications
             </TabsTrigger>
             <TabsTrigger value="appearance" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <IconPalette className="h-4 w-4 mr-2" />
+              <Palette className="h-4 w-4 mr-2" />
               Appearance
             </TabsTrigger>
             <TabsTrigger value="security" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              <IconShield className="h-4 w-4 mr-2" />
+              <Shield className="h-4 w-4 mr-2" />
               Security
             </TabsTrigger>
           </TabsList>
@@ -853,7 +851,7 @@ export default function ProfilePage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-2xl flex items-center gap-2">
-                      <IconUser className="h-6 w-6 text-primary" />
+                      <User className="h-6 w-6 text-primary" />
                       Personal Information
                     </CardTitle>
                     <CardDescription className="text-base">
@@ -869,7 +867,7 @@ export default function ProfilePage() {
                         disabled={isSaving}
                         className="shadow-md"
                       >
-                        <IconX className="h-4 w-4 mr-2" />
+                        <X className="h-4 w-4 mr-2" />
                         Cancel
                       </Button>
                     )}
@@ -880,7 +878,7 @@ export default function ProfilePage() {
                       disabled={isSaving}
                       className="shadow-md"
                     >
-                      {isEditing ? <IconCheck className="h-4 w-4 mr-2" /> : <IconEdit className="h-4 w-4 mr-2" />}
+                      {isEditing ? <Check className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
                       {isEditing ? "Save Changes" : "Edit Profile"}
                     </Button>
                   </div>
@@ -904,7 +902,7 @@ export default function ProfilePage() {
                         onClick={() => document.getElementById('avatar-upload')?.click()}
                         disabled={isUploading}
                       >
-                        <IconCamera className="h-5 w-5" />
+                        <Camera className="h-5 w-5" />
                       </Button>
                     )}
                     {isUploading && (
@@ -917,7 +915,7 @@ export default function ProfilePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-3">
                         <Label htmlFor="name" className="text-sm font-semibold text-muted-foreground">
-                          <IconUser className="h-4 w-4 inline mr-2" />
+                          <User className="h-4 w-4 inline mr-2" />
                           Full Name
                         </Label>
                         <Input
@@ -931,7 +929,7 @@ export default function ProfilePage() {
                       </div>
                       <div className="space-y-3">
                         <Label htmlFor="email" className="text-sm font-semibold text-muted-foreground">
-                          <IconMail className="h-4 w-4 inline mr-2" />
+                          <Mail className="h-4 w-4 inline mr-2" />
                           Email Address
                         </Label>
                         <Input
@@ -946,7 +944,7 @@ export default function ProfilePage() {
                       </div>
                       <div className="space-y-3">
                         <Label htmlFor="phone" className="text-sm font-semibold text-muted-foreground">
-                          <IconPhone className="h-4 w-4 inline mr-2" />
+                          <Phone className="h-4 w-4 inline mr-2" />
                           Phone Number
                         </Label>
                         <Input
@@ -960,7 +958,7 @@ export default function ProfilePage() {
                       </div>
                       <div className="space-y-3">
                         <Label htmlFor="nationalId" className="text-sm font-semibold text-muted-foreground">
-                          <IconId className="h-4 w-4 inline mr-2" />
+                          <IdCard className="h-4 w-4 inline mr-2" />
                           National ID (Iqama)
                         </Label>
                         <Input
@@ -981,7 +979,7 @@ export default function ProfilePage() {
                 {/* Additional Information */}
                 <div className="space-y-6">
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                    <IconInfoCircle className="h-5 w-5 text-primary" />
+                    <Info className="h-5 w-5 text-primary" />
                     Additional Information
                   </h3>
 
@@ -1031,7 +1029,7 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-3">
                       <Label htmlFor="address" className="text-sm font-semibold text-muted-foreground">
-                        <IconHome className="h-4 w-4 inline mr-2" />
+                        <Home className="h-4 w-4 inline mr-2" />
                         Address
                       </Label>
                       <Input
@@ -1044,7 +1042,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="space-y-3">
                       <Label htmlFor="city" className="text-sm font-semibold text-muted-foreground">
-                        <IconMapPin className="h-4 w-4 inline mr-2" />
+                        <MapPin className="h-4 w-4 inline mr-2" />
                         City
                       </Label>
                       <Input
@@ -1057,7 +1055,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="space-y-3">
                       <Label htmlFor="state" className="text-sm font-semibold text-muted-foreground">
-                        <IconMapPin className="h-4 w-4 inline mr-2" />
+                        <MapPin className="h-4 w-4 inline mr-2" />
                         State/Province
                       </Label>
                       <Input
@@ -1070,7 +1068,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="space-y-3">
                       <Label htmlFor="country" className="text-sm font-semibold text-muted-foreground">
-                        <IconGlobe className="h-4 w-4 inline mr-2" />
+                        <Globe className="h-4 w-4 inline mr-2" />
                         Country
                       </Label>
                       <Input
@@ -1100,14 +1098,14 @@ export default function ProfilePage() {
                 {/* Activity Timeline */}
                 <div className="space-y-6">
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                    <IconClock className="h-5 w-5 text-primary" />
+                    <Clock className="h-5 w-5 text-primary" />
                     Recent Activity
                   </h3>
 
                   <div className="space-y-4">
                     <div className="flex items-start gap-4 p-4 bg-muted/30 rounded-lg">
                       <div className="bg-primary/20 p-2 rounded-full">
-                        <IconEdit className="h-4 w-4 text-primary" />
+                        <Edit className="h-4 w-4 text-primary" />
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium">Profile Updated</p>
@@ -1122,7 +1120,7 @@ export default function ProfilePage() {
 
                     <div className="flex items-start gap-4 p-4 bg-muted/30 rounded-lg">
                       <div className="bg-green-500/20 p-2 rounded-full">
-                        <IconCamera className="h-4 w-4 text-green-600" />
+                        <Camera className="h-4 w-4 text-green-600" />
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium">Profile Picture Changed</p>
@@ -1137,7 +1135,7 @@ export default function ProfilePage() {
 
                     <div className="flex items-start gap-4 p-4 bg-muted/30 rounded-lg">
                       <div className="bg-blue-500/20 p-2 rounded-full">
-                        <IconFileText className="h-4 w-4 text-blue-600" />
+                        <FileText className="h-4 w-4 text-blue-600" />
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-medium">Document Uploaded</p>
@@ -1176,7 +1174,7 @@ export default function ProfilePage() {
                         </>
                       ) : (
                         <>
-                          <IconCheck className="h-4 w-4 mr-2" />
+                          <Check className="h-4 w-4 mr-2" />
                           Save Changes
                         </>
                       )}
@@ -1193,7 +1191,7 @@ export default function ProfilePage() {
                 <CardHeader className="pb-4">
                   <CardTitle className="text-xl flex items-center gap-3 text-blue-900">
                     <div className="bg-blue-100 p-2 rounded-lg">
-                      <IconUser className="h-6 w-6 text-blue-600" />
+                      <User className="h-6 w-6 text-blue-600" />
                     </div>
                     Account Information
                   </CardTitle>
@@ -1207,7 +1205,7 @@ export default function ProfilePage() {
                     <div className="space-y-2">
                       <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">Status</span>
                       <Badge variant={profile.status === "active" ? "default" : "secondary"} className="w-fit">
-                        <IconCheck className="h-3 w-3 mr-1" />
+                        <Check className="h-3 w-3 mr-1" />
                         {profile.status}
                       </Badge>
                     </div>
@@ -1218,7 +1216,7 @@ export default function ProfilePage() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <IconCalendar className="h-4 w-4 text-blue-500" />
+                        <Calendar className="h-4 w-4 text-blue-500" />
                         <span className="text-sm text-blue-700">Join Date</span>
                       </div>
                       <span className="text-sm font-medium text-blue-900">
@@ -1228,7 +1226,7 @@ export default function ProfilePage() {
 
                     <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <IconClock className="h-4 w-4 text-blue-500" />
+                        <Clock className="h-4 w-4 text-blue-500" />
                         <span className="text-sm text-blue-700">Last Login</span>
                       </div>
                       <span className="text-sm font-medium text-blue-900">
@@ -1238,7 +1236,7 @@ export default function ProfilePage() {
 
                     <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-3">
-                        <IconId className="h-4 w-4 text-blue-500" />
+                        <IdCard className="h-4 w-4 text-blue-500" />
                         <span className="text-sm text-blue-700">National ID</span>
                       </div>
                       <span className="text-sm font-medium text-blue-900">
@@ -1255,11 +1253,11 @@ export default function ProfilePage() {
                   <CardHeader className="pb-4">
                     <CardTitle className="text-xl flex items-center gap-3 text-green-900">
                       <div className="bg-green-100 p-2 rounded-lg">
-                        <IconBriefcase className="h-6 w-6 text-green-600" />
+                        <Briefcase className="h-6 w-6 text-green-600" />
                       </div>
                       Employee Information
                       <Badge variant="outline" className="ml-2 bg-green-100 text-green-700 border-green-300">
-                        <IconDatabase className="h-3 w-3 mr-1" />
+                        <Database className="h-3 w-3 mr-1" />
                         Database
                       </Badge>
                     </CardTitle>
@@ -1283,7 +1281,7 @@ export default function ProfilePage() {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                         <div className="flex items-center gap-3">
-                          <IconStar className="h-4 w-4 text-green-500" />
+                          <Star className="h-4 w-4 text-green-500" />
                           <span className="text-sm text-green-700">Designation</span>
                         </div>
                         <span className="text-sm font-medium text-green-900">
@@ -1293,7 +1291,7 @@ export default function ProfilePage() {
 
                       <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                         <div className="flex items-center gap-3">
-                          <IconBuilding className="h-4 w-4 text-green-500" />
+                          <Building className="h-4 w-4 text-green-500" />
                           <span className="text-sm text-green-700">Department</span>
                         </div>
                         <span className="text-sm font-medium text-green-900">
@@ -1303,7 +1301,7 @@ export default function ProfilePage() {
 
                       <div className="flex items-center justify-between p-3 bg-white/50 rounded-lg">
                         <div className="flex items-center gap-3">
-                          <IconMapPin className="h-4 w-4 text-green-500" />
+                          <MapPin className="h-4 w-4 text-green-500" />
                           <span className="text-sm text-green-700">Location</span>
                         </div>
                         <span className="text-sm font-medium text-green-900">
@@ -1321,11 +1319,11 @@ export default function ProfilePage() {
                   <CardHeader className="pb-4">
                     <CardTitle className="text-xl flex items-center gap-3 text-purple-900">
                       <div className="bg-purple-100 p-2 rounded-lg">
-                        <IconLink className="h-6 w-6 text-purple-600" />
+                        <Link className="h-6 w-6 text-purple-600" />
                       </div>
                       Matched Employee Details
                       <Badge variant="outline" className="ml-2 bg-purple-100 text-purple-700 border-purple-300">
-                        <IconCheck className="h-3 w-3 mr-1" />
+                        <Check className="h-3 w-3 mr-1" />
                         Auto-Matched
                       </Badge>
                     </CardTitle>
@@ -1359,7 +1357,7 @@ export default function ProfilePage() {
                       {/* Personal Details */}
                       <div className="space-y-4">
                         <h4 className="text-sm font-semibold text-purple-800 flex items-center gap-2">
-                          <IconUser className="h-4 w-4" />
+                          <User className="h-4 w-4" />
                           Personal Details
                         </h4>
                         <div className="space-y-3">
@@ -1393,7 +1391,7 @@ export default function ProfilePage() {
                       {/* Work Details */}
                       <div className="space-y-4">
                         <h4 className="text-sm font-semibold text-purple-800 flex items-center gap-2">
-                          <IconBriefcase className="h-4 w-4" />
+                          <Briefcase className="h-4 w-4" />
                           Work Details
                         </h4>
                         <div className="space-y-3">
@@ -1432,7 +1430,7 @@ export default function ProfilePage() {
 
                     <div className="space-y-4">
                       <h4 className="text-sm font-semibold text-purple-800 flex items-center gap-2">
-                        <IconFileText className="h-4 w-4" />
+                        <FileText className="h-4 w-4" />
                         Documents & Licenses
                       </h4>
 
@@ -1441,7 +1439,7 @@ export default function ProfilePage() {
                         <div className="p-4 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-lg border border-blue-200/50">
                           <div className="flex items-center gap-3 mb-3">
                             <div className="bg-blue-100 p-2 rounded-lg">
-                              <IconId className="h-5 w-5 text-blue-600" />
+                              <IdCard className="h-5 w-5 text-blue-600" />
                             </div>
                             <div>
                               <h5 className="font-semibold text-blue-900">Iqama</h5>
@@ -1467,7 +1465,7 @@ export default function ProfilePage() {
                           <div className="p-4 bg-gradient-to-r from-green-50 to-green-100/50 rounded-lg border border-green-200/50">
                             <div className="flex items-center gap-3 mb-3">
                               <div className="bg-green-100 p-2 rounded-lg">
-                                <IconGlobe className="h-5 w-5 text-green-600" />
+                                <Globe className="h-5 w-5 text-green-600" />
                               </div>
                               <div>
                                 <h5 className="font-semibold text-green-900">Passport</h5>
@@ -1497,7 +1495,7 @@ export default function ProfilePage() {
                             <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100/50 rounded-lg border border-orange-200/50">
                               <div className="flex items-center gap-3 mb-3">
                                 <div className="bg-orange-100 p-2 rounded-lg">
-                                  <IconCar className="h-5 w-5 text-orange-600" />
+                                  <Car className="h-5 w-5 text-orange-600" />
                                 </div>
                                 <div>
                                   <h5 className="font-semibold text-orange-900">Driving License</h5>
@@ -1523,7 +1521,7 @@ export default function ProfilePage() {
                             <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-100/50 rounded-lg border border-purple-200/50">
                               <div className="flex items-center gap-3 mb-3">
                                 <div className="bg-purple-100 p-2 rounded-lg">
-                                  <IconTools className="h-5 w-5 text-purple-600" />
+                                  <Wrench className="h-5 w-5 text-purple-600" />
                                 </div>
                                 <div>
                                   <h5 className="font-semibold text-purple-900">Operator License</h5>
@@ -1556,11 +1554,11 @@ export default function ProfilePage() {
                 <CardHeader className="pb-4">
                   <CardTitle className="text-xl flex items-center gap-3 text-indigo-900">
                     <div className="bg-indigo-100 p-2 rounded-lg">
-                      <IconFileText className="h-6 w-6 text-indigo-600" />
+                      <FileText className="h-6 w-6 text-indigo-600" />
                     </div>
                     Employee Documents
                     <Badge variant="outline" className="ml-2 bg-indigo-100 text-indigo-700 border-indigo-300">
-                      <IconDatabase className="h-3 w-3 mr-1" />
+                      <Database className="h-3 w-3 mr-1" />
                       {profileStats.documentsCount} Files
                     </Badge>
                   </CardTitle>
@@ -1578,7 +1576,7 @@ export default function ProfilePage() {
                 <CardHeader className="pb-4">
                   <CardTitle className="text-xl flex items-center gap-3 text-amber-900">
                     <div className="bg-amber-100 p-2 rounded-lg">
-                      <IconBuilding className="h-6 w-6 text-amber-600" />
+                      <Building className="h-6 w-6 text-amber-600" />
                     </div>
                     Company Information
                   </CardTitle>
@@ -1587,7 +1585,7 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <IconBuilding className="h-4 w-4 text-amber-600" />
+                        <Building className="h-4 w-4 text-amber-600" />
                         <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">Company</span>
                       </div>
                       <p className="text-sm font-semibold text-amber-900">SND Rental Management</p>
@@ -1595,7 +1593,7 @@ export default function ProfilePage() {
 
                     <div className="p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <IconBriefcase className="h-4 w-4 text-amber-600" />
+                        <Briefcase className="h-4 w-4 text-amber-600" />
                         <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">Department</span>
                       </div>
                       <p className="text-sm font-semibold text-amber-900">{profile.department || 'Not assigned'}</p>
@@ -1603,7 +1601,7 @@ export default function ProfilePage() {
 
                     <div className="p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <IconStar className="h-4 w-4 text-amber-600" />
+                        <Star className="h-4 w-4 text-amber-600" />
                         <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">Role</span>
                       </div>
                       <p className="text-sm font-semibold text-amber-900">{profile.role || 'Not assigned'}</p>
@@ -1611,7 +1609,7 @@ export default function ProfilePage() {
 
                     <div className="p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
-                        <IconMapPin className="h-4 w-4 text-amber-600" />
+                        <MapPin className="h-4 w-4 text-amber-600" />
                         <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">Location</span>
                       </div>
                       <p className="text-sm font-semibold text-amber-900">{profile.location || 'Not specified'}</p>
@@ -1627,7 +1625,7 @@ export default function ProfilePage() {
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl flex items-center gap-3 text-blue-900">
                   <div className="bg-blue-100 p-2 rounded-lg">
-                    <IconBell className="h-6 w-6 text-blue-600" />
+                    <Bell className="h-6 w-6 text-blue-600" />
                   </div>
                   Notification Preferences
                 </CardTitle>
@@ -1640,7 +1638,7 @@ export default function ProfilePage() {
                 <div className="space-y-6">
                   <div className="flex items-center gap-3">
                     <div className="bg-blue-100 p-2 rounded-lg">
-                      <IconMail className="h-5 w-5 text-blue-600" />
+                      <Mail className="h-5 w-5 text-blue-600" />
                     </div>
                     <h4 className="text-lg font-semibold text-blue-900">Email Notifications</h4>
                   </div>
@@ -1660,7 +1658,7 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="flex items-center gap-2 text-xs text-blue-600">
-                        <IconClock className="h-3 w-3" />
+                        <Clock className="h-3 w-3" />
                         <span>Daily digest</span>
                       </div>
                     </div>
@@ -1680,7 +1678,7 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="flex items-center gap-2 text-xs text-blue-600">
-                        <IconAlertTriangle className="h-3 w-3" />
+                        <AlertTriangle className="h-3 w-3" />
                         <span>Immediate alerts</span>
                       </div>
                     </div>
@@ -1700,7 +1698,7 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="flex items-center gap-2 text-xs text-blue-600">
-                        <IconShield className="h-3 w-3" />
+                        <Shield className="h-3 w-3" />
                         <span>Priority alerts</span>
                       </div>
                     </div>
@@ -1720,7 +1718,7 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="flex items-center gap-2 text-xs text-blue-600">
-                        <IconCalendar className="h-3 w-3" />
+                        <Calendar className="h-3 w-3" />
                         <span>Weekly</span>
                       </div>
                     </div>
@@ -1733,7 +1731,7 @@ export default function ProfilePage() {
                 <div className="space-y-6">
                   <div className="flex items-center gap-3">
                     <div className="bg-blue-100 p-2 rounded-lg">
-                      <IconDeviceMobile className="h-5 w-5 text-blue-600" />
+                      <Smartphone className="h-5 w-5 text-blue-600" />
                     </div>
                     <h4 className="text-lg font-semibold text-blue-900">Push Notifications</h4>
                   </div>
@@ -1753,7 +1751,7 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="flex items-center gap-2 text-xs text-blue-600">
-                        <IconBell className="h-3 w-3" />
+                        <Bell className="h-3 w-3" />
                         <span>9:00 AM daily</span>
                       </div>
                     </div>
@@ -1773,7 +1771,7 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="flex items-center gap-2 text-xs text-blue-600">
-                        <IconCheck className="h-3 w-3" />
+                        <Check className="h-3 w-3" />
                         <span>Immediate</span>
                       </div>
                     </div>
@@ -1793,7 +1791,7 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="flex items-center gap-2 text-xs text-blue-600">
-                        <IconPlane className="h-3 w-3" />
+                        <Plane className="h-3 w-3" />
                         <span>Status changes</span>
                       </div>
                     </div>
@@ -1813,7 +1811,7 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="flex items-center gap-2 text-xs text-blue-600">
-                        <IconSettings className="h-3 w-3" />
+                        <Settings className="h-3 w-3" />
                         <span>Important updates</span>
                       </div>
                     </div>
@@ -1824,7 +1822,7 @@ export default function ProfilePage() {
                 <div className="space-y-6">
                   <div className="flex items-center gap-3">
                     <div className="bg-blue-100 p-2 rounded-lg">
-                      <IconMessage className="h-5 w-5 text-blue-600" />
+                      <MessageSquare className="h-5 w-5 text-blue-600" />
                     </div>
                     <h4 className="text-lg font-semibold text-blue-900">Additional Notifications</h4>
                   </div>
@@ -1844,7 +1842,7 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="flex items-center gap-2 text-xs text-blue-600">
-                        <IconPhone className="h-3 w-3" />
+                        <Phone className="h-3 w-3" />
                         <span>Emergency only</span>
                       </div>
                     </div>
@@ -1864,7 +1862,7 @@ export default function ProfilePage() {
                         />
                       </div>
                       <div className="flex items-center gap-2 text-xs text-blue-600">
-                        <IconMail className="h-3 w-3" />
+                        <Mail className="h-3 w-3" />
                         <span>Monthly digest</span>
                       </div>
                     </div>
@@ -1874,7 +1872,7 @@ export default function ProfilePage() {
                 {/* Notification Summary */}
                 <div className="mt-8 p-4 bg-blue-50/50 rounded-lg border border-blue-200/50">
                   <div className="flex items-center gap-3">
-                    <IconInfoCircle className="h-5 w-5 text-blue-600" />
+                    <Info className="h-5 w-5 text-blue-600" />
                     <div>
                       <p className="text-sm font-medium text-blue-900">Notification Summary</p>
                       <p className="text-xs text-blue-600">
@@ -1894,12 +1892,12 @@ export default function ProfilePage() {
                   >
                     {isSaving ? (
                       <>
-                        <IconLoader className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         Saving...
                       </>
                     ) : (
                       <>
-                        <IconDeviceFloppy className="h-4 w-4 mr-2" />
+                        <Save className="h-4 w-4 mr-2" />
                         Save Preferences
                       </>
                     )}
@@ -1914,7 +1912,7 @@ export default function ProfilePage() {
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl flex items-center gap-3 text-purple-900">
                   <div className="bg-purple-100 p-2 rounded-lg">
-                    <IconPalette className="h-6 w-6 text-purple-600" />
+                    <Palette className="h-6 w-6 text-purple-600" />
                   </div>
                   Appearance Settings
                 </CardTitle>
@@ -1927,7 +1925,7 @@ export default function ProfilePage() {
                 <div className="space-y-6">
                   <div className="flex items-center gap-3">
                     <div className="bg-purple-100 p-2 rounded-lg">
-                      <IconSun className="h-5 w-5 text-purple-600" />
+                      <Sun className="h-5 w-5 text-purple-600" />
                     </div>
                     <h4 className="text-lg font-semibold text-purple-900">Theme & Display</h4>
                   </div>
@@ -1947,19 +1945,19 @@ export default function ProfilePage() {
                           <SelectContent>
                             <SelectItem value="light">
                               <div className="flex items-center gap-2">
-                                <IconSun className="h-4 w-4" />
+                                <Sun className="h-4 w-4" />
                                 Light Theme
                               </div>
                             </SelectItem>
                             <SelectItem value="dark">
                               <div className="flex items-center gap-2">
-                                <IconMoon className="h-4 w-4" />
+                                <Moon className="h-4 w-4" />
                                 Dark Theme
                               </div>
                             </SelectItem>
                             <SelectItem value="system">
                               <div className="flex items-center gap-2">
-                                <IconDeviceDesktop className="h-4 w-4" />
+                                <Monitor className="h-4 w-4" />
                                 System Default
                               </div>
                             </SelectItem>
@@ -1984,31 +1982,31 @@ export default function ProfilePage() {
                           <SelectContent>
                             <SelectItem value="en">
                               <div className="flex items-center gap-2">
-                                <IconFlag className="h-4 w-4" />
+                                <Flag className="h-4 w-4" />
                                 English
                               </div>
                             </SelectItem>
                             <SelectItem value="es">
                               <div className="flex items-center gap-2">
-                                <IconFlag className="h-4 w-4" />
+                                <Flag className="h-4 w-4" />
                                 Español
                               </div>
                             </SelectItem>
                             <SelectItem value="fr">
                               <div className="flex items-center gap-2">
-                                <IconFlag className="h-4 w-4" />
+                                <Flag className="h-4 w-4" />
                                 Français
                               </div>
                             </SelectItem>
                             <SelectItem value="de">
                               <div className="flex items-center gap-2">
-                                <IconFlag className="h-4 w-4" />
+                                <Flag className="h-4 w-4" />
                                 Deutsch
                               </div>
                             </SelectItem>
                             <SelectItem value="ar">
                               <div className="flex items-center gap-2">
-                                <IconFlag className="h-4 w-4" />
+                                <Flag className="h-4 w-4" />
                                 العربية
                               </div>
                             </SelectItem>
@@ -2026,7 +2024,7 @@ export default function ProfilePage() {
                 <div className="space-y-6">
                   <div className="flex items-center gap-3">
                     <div className="bg-purple-100 p-2 rounded-lg">
-                      <IconClock className="h-5 w-5 text-purple-600" />
+                      <Clock className="h-5 w-5 text-purple-600" />
                     </div>
                     <h4 className="text-lg font-semibold text-purple-900">Time & Date</h4>
                   </div>
@@ -2085,7 +2083,7 @@ export default function ProfilePage() {
                 {/* Preview Section */}
                 <div className="p-4 bg-white/50 rounded-lg border border-purple-200/50">
                   <div className="flex items-center gap-3 mb-4">
-                    <IconEye className="h-5 w-5 text-purple-600" />
+                    <Eye className="h-5 w-5 text-purple-600" />
                     <h4 className="text-lg font-semibold text-purple-900">Preview</h4>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -2113,12 +2111,12 @@ export default function ProfilePage() {
                   >
                     {isSaving ? (
                       <>
-                        <IconLoader className="h-4 w-4 mr-2 animate-spin" />
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                         Saving...
                       </>
                     ) : (
                       <>
-                        <IconDeviceFloppy className="h-4 w-4 mr-2" />
+                        <Save className="h-4 w-4 mr-2" />
                         Save Settings
                       </>
                     )}
@@ -2133,7 +2131,7 @@ export default function ProfilePage() {
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl flex items-center gap-3 text-red-900">
                   <div className="bg-red-100 p-2 rounded-lg">
-                    <IconShield className="h-6 w-6 text-red-600" />
+                    <Shield className="h-6 w-6 text-red-600" />
                   </div>
                   Security Settings
                 </CardTitle>
@@ -2146,7 +2144,7 @@ export default function ProfilePage() {
                 <div className="space-y-6">
                   <div className="flex items-center gap-3">
                     <div className="bg-red-100 p-2 rounded-lg">
-                      <IconKey className="h-5 w-5 text-red-600" />
+                      <Key className="h-5 w-5 text-red-600" />
                     </div>
                     <h4 className="text-lg font-semibold text-red-900">Password Management</h4>
                   </div>
@@ -2159,12 +2157,12 @@ export default function ProfilePage() {
                           <p className="text-xs text-red-600">Update your login password</p>
                         </div>
                         <Button variant="outline" size="sm">
-                          <IconKey className="h-4 w-4 mr-2" />
+                          <Key className="h-4 w-4 mr-2" />
                           Change
                         </Button>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-red-600">
-                        <IconClock className="h-3 w-3" />
+                        <Clock className="h-3 w-3" />
                         <span>Last changed: {new Date(Date.now() - 2592000000).toLocaleDateString()}</span>
                       </div>
                     </div>
@@ -2176,7 +2174,7 @@ export default function ProfilePage() {
                           <p className="text-xs text-red-600">Current password security level</p>
                         </div>
                         <Badge variant="default" className="bg-green-600">
-                          <IconCheck className="h-3 w-3 mr-1" />
+                          <Check className="h-3 w-3 mr-1" />
                           Strong
                         </Badge>
                       </div>
@@ -2193,7 +2191,7 @@ export default function ProfilePage() {
                 <div className="space-y-6">
                   <div className="flex items-center gap-3">
                     <div className="bg-red-100 p-2 rounded-lg">
-                      <IconShield className="h-5 w-5 text-red-600" />
+                      <Shield className="h-5 w-5 text-red-600" />
                     </div>
                     <h4 className="text-lg font-semibold text-red-900">Two-Factor Authentication</h4>
                   </div>
@@ -2206,12 +2204,12 @@ export default function ProfilePage() {
                           <p className="text-xs text-red-600">Additional security layer</p>
                         </div>
                         <Badge variant="secondary">
-                          <IconX className="h-3 w-3 mr-1" />
+                          <X className="h-3 w-3 mr-1" />
                           Disabled
                         </Badge>
                       </div>
                       <Button variant="outline" size="sm" className="w-full">
-                        <IconShield className="h-4 w-4 mr-2" />
+                        <Shield className="h-4 w-4 mr-2" />
                         Enable 2FA
                       </Button>
                     </div>
@@ -2223,12 +2221,12 @@ export default function ProfilePage() {
                           <p className="text-xs text-red-600">Emergency access codes</p>
                         </div>
                         <Button variant="outline" size="sm">
-                          <IconDownload className="h-4 w-4 mr-2" />
+                          <Download className="h-4 w-4 mr-2" />
                           Generate
                         </Button>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-red-600">
-                        <IconAlertTriangle className="h-3 w-3" />
+                        <AlertTriangle className="h-3 w-3" />
                         <span>Not generated yet</span>
                       </div>
                     </div>
@@ -2241,7 +2239,7 @@ export default function ProfilePage() {
                 <div className="space-y-6">
                   <div className="flex items-center gap-3">
                     <div className="bg-red-100 p-2 rounded-lg">
-                      <IconDeviceLaptop className="h-5 w-5 text-red-600" />
+                      <Laptop className="h-5 w-5 text-red-600" />
                     </div>
                     <h4 className="text-lg font-semibold text-red-900">Session Management</h4>
                   </div>
@@ -2254,12 +2252,12 @@ export default function ProfilePage() {
                           <p className="text-xs text-red-600">Currently logged in devices</p>
                         </div>
                         <Button variant="outline" size="sm">
-                          <IconEye className="h-4 w-4 mr-2" />
+                          <Eye className="h-4 w-4 mr-2" />
                           View All
                         </Button>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-red-600">
-                        <IconCheck className="h-3 w-3" />
+                        <Check className="h-3 w-3" />
                         <span>1 active session</span>
                       </div>
                     </div>
@@ -2271,12 +2269,12 @@ export default function ProfilePage() {
                           <p className="text-xs text-red-600">Recent login attempts</p>
                         </div>
                         <Button variant="outline" size="sm">
-                          <IconClock className="h-4 w-4 mr-2" />
+                          <Clock className="h-4 w-4 mr-2" />
                           View
                         </Button>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-red-600">
-                        <IconInfoCircle className="h-3 w-3" />
+                        <Info className="h-3 w-3" />
                         <span>Last: {new Date().toLocaleDateString()}</span>
                       </div>
                     </div>
@@ -2312,7 +2310,7 @@ export default function ProfilePage() {
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button variant="destructive" size="sm">
-                          <IconTrash className="h-4 w-4 mr-2" />
+                          <Trash2 className="h-4 w-4 mr-2" />
                           {t('delete')}
                         </Button>
                       </DialogTrigger>
@@ -2414,9 +2412,9 @@ function EmployeeDocumentsDisplay() {
 
   const getDocumentIcon = (mimeType: string) => {
     if (mimeType?.startsWith('image/')) {
-      return <IconPhoto className="h-4 w-4 text-blue-500" />;
+      return <Image className="h-4 w-4 text-blue-500" />;
     }
-    return <IconFileText className="h-4 w-4 text-gray-500" />;
+    return <FileText className="h-4 w-4 text-gray-500" />;
   };
 
   const formatFileSize = (bytes: number) => {
@@ -2455,7 +2453,7 @@ function EmployeeDocumentsDisplay() {
   if (documents.length === 0) {
     return (
       <div className="text-center py-8">
-        <IconFileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+        <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <p className="text-sm text-muted-foreground">No documents uploaded yet</p>
         <p className="text-xs text-muted-foreground mt-1">
           Your Iqama and other documents will appear here once uploaded
@@ -2472,7 +2470,7 @@ function EmployeeDocumentsDisplay() {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className="bg-blue-100 p-2 rounded-lg">
-                <IconFileText className="h-6 w-6 text-blue-600" />
+                <FileText className="h-6 w-6 text-blue-600" />
               </div>
               <div>
                 <h4 className="font-semibold text-blue-900">Iqama Document</h4>
@@ -2486,7 +2484,7 @@ function EmployeeDocumentsDisplay() {
                 onClick={() => handlePreview(iqamaDoc)}
                 className="h-8 px-3"
               >
-                <IconEye className="h-4 w-4 mr-1" />
+                <Eye className="h-4 w-4 mr-1" />
                 View
               </Button>
               <Button
@@ -2495,7 +2493,7 @@ function EmployeeDocumentsDisplay() {
                 onClick={() => handleDownload(iqamaDoc)}
                 className="h-8 px-3"
               >
-                <IconDownload className="h-4 w-4 mr-1" />
+                <Download className="h-4 w-4 mr-1" />
                 Download
               </Button>
             </div>
@@ -2513,12 +2511,12 @@ function EmployeeDocumentsDisplay() {
                     onClick={() => handlePreview(iqamaDoc)}
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded flex items-center justify-center">
-                    <IconEye className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Eye className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </div>
               ) : (
                 <div className="w-32 h-20 bg-gray-100 rounded border flex items-center justify-center">
-                  <IconFileText className="h-8 w-8 text-gray-400" />
+                  <FileText className="h-8 w-8 text-gray-400" />
                 </div>
               )}
             </div>
@@ -2562,7 +2560,7 @@ function EmployeeDocumentsDisplay() {
                       onClick={() => handlePreview(document)}
                       className="h-8 px-2"
                     >
-                      <IconEye className="h-4 w-4" />
+                      <Eye className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -2570,7 +2568,7 @@ function EmployeeDocumentsDisplay() {
                       onClick={() => handleDownload(document)}
                       className="h-8 px-2"
                     >
-                      <IconDownload className="h-4 w-4" />
+                      <Download className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>

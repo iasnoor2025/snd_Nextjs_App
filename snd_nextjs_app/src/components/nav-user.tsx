@@ -1,12 +1,12 @@
 "use client"
 
 import {
-  IconCreditCard,
-  IconDotsVertical,
-  IconLogout,
-  IconNotification,
-  IconUserCircle,
-} from "@tabler/icons-react"
+  CreditCard,
+  MoreVertical,
+  LogOut,
+  Bell,
+  UserCircle,
+} from "lucide-react"
 import { signOut, useSession } from "next-auth/react"
 
 import {
@@ -79,7 +79,7 @@ export function NavUser() {
                   {user.email}
                 </span>
               </div>
-              <IconDotsVertical className="ml-auto size-4" />
+              <MoreVertical className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -105,22 +105,22 @@ export function NavUser() {
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
                 <a href="/profile">
-                  <IconUserCircle />
+                  <UserCircle />
                   Profile
                 </a>
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <IconCreditCard />
+                <CreditCard />
                 Billing
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <IconNotification />
+                <Bell />
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/login' })}>
-              <IconLogout />
+              <LogOut />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

@@ -2,17 +2,17 @@
 
 import React from "react"
 import {
-  IconChevronDown,
-  IconChevronLeft,
-  IconChevronRight,
-  IconChevronsLeft,
-  IconChevronsRight,
-  IconCircleCheckFilled,
-  IconDotsVertical,
-  IconLayoutColumns,
-  IconLoader,
-  IconPlus,
-} from "@tabler/icons-react"
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  CheckCircle,
+  MoreVertical,
+  Columns,
+  Loader2,
+  Plus,
+} from "lucide-react"
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -127,9 +127,9 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     cell: ({ row }) => (
       <Badge variant="outline" className="text-muted-foreground px-1.5">
         {row.original.status === "Done" ? (
-          <IconCircleCheckFilled className="fill-green-500 dark:fill-green-400" />
+          <CheckCircle className="fill-green-500 dark:fill-green-400" />
         ) : (
-          <IconLoader />
+          <Loader2 />
         )}
         {row.original.status}
       </Badge>
@@ -229,7 +229,7 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
             className="data-[state=open]:bg-muted text-muted-foreground flex size-8"
             size="icon"
           >
-            <IconDotsVertical />
+            <MoreVertical />
             <span className="sr-only">Open menu</span>
           </Button>
         </DropdownMenuTrigger>
@@ -325,10 +325,10 @@ export function DataTable({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
-                <IconLayoutColumns />
+                <Columns />
                 <span className="hidden lg:inline">Customize Columns</span>
                 <span className="lg:hidden">Columns</span>
-                <IconChevronDown />
+                <ChevronDown />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
@@ -356,7 +356,7 @@ export function DataTable({
             </DropdownMenuContent>
           </DropdownMenu>
           <Button variant="outline" size="sm">
-            <IconPlus />
+            <Plus />
             <span className="hidden lg:inline">Add Section</span>
           </Button>
         </div>
@@ -454,7 +454,7 @@ export function DataTable({
                 disabled={!table.getCanPreviousPage()}
               >
                 <span className="sr-only">Go to first page</span>
-                <IconChevronsLeft />
+                <ChevronsLeft />
               </Button>
               <Button
                 variant="outline"
@@ -464,7 +464,7 @@ export function DataTable({
                 disabled={!table.getCanPreviousPage()}
               >
                 <span className="sr-only">Go to previous page</span>
-                <IconChevronLeft />
+                <ChevronLeft />
               </Button>
               <Button
                 variant="outline"
@@ -474,7 +474,7 @@ export function DataTable({
                 disabled={!table.getCanNextPage()}
               >
                 <span className="sr-only">Go to next page</span>
-                <IconChevronRight />
+                <ChevronRight />
               </Button>
               <Button
                 variant="outline"
@@ -484,7 +484,7 @@ export function DataTable({
                 disabled={!table.getCanNextPage()}
               >
                 <span className="sr-only">Go to last page</span>
-                <IconChevronsRight />
+                <ChevronsRight />
               </Button>
             </div>
           </div>
