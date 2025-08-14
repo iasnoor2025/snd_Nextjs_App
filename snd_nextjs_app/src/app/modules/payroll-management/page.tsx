@@ -22,8 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import Link from "next/link";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
+import { loadHtml2Canvas, loadJsPDF } from "@/lib/client-libraries";
 import {
   Plus,
   Search,
@@ -939,6 +938,10 @@ export default function PayrollManagementPage() {
         // Wait for content to load, then generate PDF
         setTimeout(async () => {
           try {
+            // Dynamically load libraries
+            const html2canvas = await loadHtml2Canvas();
+            const jsPDF = await loadJsPDF();
+            
             const canvas = await html2canvas(iframe.contentDocument?.body || iframe.contentDocument?.documentElement || iframe, {
               scale: 1.8,
               useCORS: true,

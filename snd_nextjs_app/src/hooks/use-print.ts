@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { useReactToPrint } from "react-to-print";
+import { useRef, useCallback } from "react";
+import { loadReactToPrint } from "@/lib/client-libraries";
 import { toast } from "sonner";
 
 interface UsePrintOptions {
@@ -21,42 +21,53 @@ export const usePrint = (options: UsePrintOptions = {}) => {
     waitForImages = true
   } = options;
 
-  const handlePrint = useReactToPrint({
-    contentRef: printRef,
-    documentTitle,
-    onBeforePrint: async () => {
-      onBeforePrint?.();
+  const handlePrint = useCallback(async () => {
+    try {
+      const useReactToPrint = await loadReactToPrint();
       
-      // Preload images if waitForImages is true
-      if (waitForImages && printRef.current) {
-        const images = printRef.current.querySelectorAll('img');
-        const imagePromises = Array.from(images).map((img) => {
-          return new Promise((resolve, reject) => {
-            if (img.complete) {
-              resolve(img);
-            } else {
-              img.onload = () => resolve(img);
-              img.onerror = () => {
-                console.warn('Image failed to load for printing:', img.src);
-                resolve(img); // Resolve anyway to continue printing
-              };
-            }
-          });
-        });
-        
-        await Promise.all(imagePromises);
-      }
-    },
-    onAfterPrint: () => {
-      onAfterPrint?.();
-      toast.success("Print completed successfully");
-    },
-    onPrintError: (error) => {
-      onPrintError?.(error);
-      console.error("Print error:", error);
-      toast.error("Print failed. Please try again.");
-    },
-  });
+      const printFunction = useReactToPrint({
+        contentRef: printRef,
+        documentTitle,
+        onBeforePrint: async () => {
+          onBeforePrint?.();
+          
+          // Preload images if waitForImages is true
+          if (waitForImages && printRef.current) {
+            const images = printRef.current.querySelectorAll('img');
+            const imagePromises = Array.from(images).map((img) => {
+              return new Promise((resolve, reject) => {
+                if (img.complete) {
+                  resolve(img);
+                } else {
+                  img.onload = () => resolve(img);
+                  img.onerror = () => {
+                    console.warn('Image failed to load for printing:', img.src);
+                    resolve(img); // Resolve anyway to continue printing
+                  };
+                }
+              });
+            });
+            
+            await Promise.all(imagePromises);
+          }
+        },
+        onAfterPrint: () => {
+          onAfterPrint?.();
+          toast.success("Print completed successfully");
+        },
+        onPrintError: (error) => {
+          onPrintError?.(error);
+          console.error("Print error:", error);
+          toast.error("Print failed. Please try again.");
+        },
+      });
+      
+      printFunction();
+    } catch (error) {
+      console.error('Failed to load print functionality:', error);
+      toast.error('Print functionality not available');
+    }
+  }, [documentTitle, onBeforePrint, onAfterPrint, onPrintError, waitForImages]);
 
   return {
     printRef,

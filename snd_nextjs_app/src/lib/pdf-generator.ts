@@ -1,5 +1,20 @@
-import jsPDF from 'jspdf';
 import { LogoLoader } from './logo-loader';
+
+// Dynamic import for jsPDF to avoid server-side issues
+let jsPDF: any = null;
+
+const loadJsPDF = async () => {
+  if (!jsPDF) {
+    try {
+      const { jsPDF: jsPDFModule } = await import('jspdf');
+      jsPDF = jsPDFModule;
+    } catch (error) {
+      console.error('Failed to load jsPDF:', error);
+      throw new Error('jsPDF library not available');
+    }
+  }
+  return jsPDF;
+};
 
 interface QuotationData {
   quotationNumber: string;
@@ -129,7 +144,8 @@ export class PDFGenerator {
       }
 
       // Create new PDF document
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const jsPDFModule = await loadJsPDF();
+      const pdf = new jsPDFModule('p', 'mm', 'a4');
       
       // Generate quotation
       PDFGenerator.generateQuotation(pdf, quotationData);
@@ -157,7 +173,8 @@ export class PDFGenerator {
       }
 
       // Create new PDF document
-      const pdf = new jsPDF('p', 'mm', 'a4');
+      const jsPDFModule = await loadJsPDF();
+      const pdf = new jsPDFModule('p', 'mm', 'a4');
       
       // Generate invoice
       PDFGenerator.generateRentalInvoice(pdf, invoiceData);
@@ -170,7 +187,7 @@ export class PDFGenerator {
   }
 
   // Generate clean quotation
-  private static generateQuotation(doc: jsPDF, quotationData: QuotationData): void {
+  private static generateQuotation(doc: any, quotationData: QuotationData): void {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 20;
@@ -398,7 +415,7 @@ export class PDFGenerator {
   }
 
   // Generate rental invoice
-  private static generateRentalInvoice(doc: jsPDF, invoiceData: RentalInvoiceData): void {
+  private static generateRentalInvoice(doc: any, invoiceData: RentalInvoiceData): void {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 20;
@@ -624,7 +641,7 @@ export class PDFGenerator {
   }
   
   // Add compact signature section on the same page
-  private static addCompactSignatureSection(doc: jsPDF, quotationData: QuotationData, margin: number, yPosition: number): void {
+  private static addCompactSignatureSection(doc: any, quotationData: QuotationData, margin: number, yPosition: number): void {
     const pageWidth = doc.internal.pageSize.getWidth();
     const contentWidth = pageWidth - (margin * 2);
     

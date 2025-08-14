@@ -10,8 +10,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Separator } from "@/components/ui/separator";
 import { usePrint } from "@/hooks/use-print";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
+import { loadHtml2Canvas, loadJsPDF } from "@/lib/client-libraries";
 
 // Professional print styles to match the exact payslip layout
 const printStyles = `
@@ -710,34 +709,44 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   };
 
   const handleDownloadPDF = async () => {
-    const input = payslipRef.current;
-    if (!input) return;
-    const canvas = await html2canvas(input, {
-      scale: 2,
-      useCORS: true,
-    });
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('landscape', 'mm', 'a4');
-    const imgWidth = 297;
-    const pageHeight = 210;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    let heightLeft = imgHeight;
+    try {
+      const input = payslipRef.current;
+      if (!input) return;
+      
+      // Dynamically load libraries
+      const html2canvas = await loadHtml2Canvas();
+      const jsPDF = await loadJsPDF();
+      
+      const canvas = await html2canvas(input, {
+        scale: 2,
+        useCORS: true,
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('landscape', 'mm', 'a4');
+      const imgWidth = 297;
+      const pageHeight = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
 
-    let position = 0;
+      let position = 0;
 
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-
-    while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
-    }
 
-            const monthName = new Date(payslipData?.payroll.year || 0, (payslipData?.payroll.month || 1) - 1).toLocaleDateString("en-US", { month: "long" });
-        pdf.save(`payslip_${payslipData?.employee?.file_number || payslipData?.employee?.id}_${monthName}_${payslipData?.payroll.year}.pdf`);
-            toast.success('Payslip PDF generated successfully');
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const monthName = new Date(payslipData?.payroll.year || 0, (payslipData?.payroll.month || 1) - 1).toLocaleDateString("en-US", { month: "long" });
+      pdf.save(`payslip_${payslipData?.employee?.file_number || payslipData?.employee?.id}_${monthName}_${payslipData?.payroll.year}.pdf`);
+      toast.success('Payslip PDF generated successfully');
+    } catch (error) {
+      console.error('PDF generation failed:', error);
+      toast.error('Failed to generate PDF. Please try again.');
+    }
   };
 
   const formatCurrency = (amount: number) => {
