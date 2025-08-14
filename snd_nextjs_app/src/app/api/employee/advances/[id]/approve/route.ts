@@ -9,9 +9,12 @@ import { eq } from 'drizzle-orm';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// Explicit route generation for Next.js 15
+// Additional route configuration for Next.js 15
+export const runtime = 'nodejs';
+export const preferredRegion = 'auto';
+
+// Help Next.js understand this is a dynamic route
 export async function generateStaticParams() {
-  // This helps Next.js understand the route structure
   return [];
 }
 

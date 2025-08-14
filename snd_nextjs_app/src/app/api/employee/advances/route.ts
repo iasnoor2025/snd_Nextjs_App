@@ -9,6 +9,10 @@ import { eq, isNull } from 'drizzle-orm'
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+// Additional route configuration for Next.js 15
+export const runtime = 'nodejs';
+export const preferredRegion = 'auto';
+
 export async function GET(request: NextRequest) {
   try {
     // Get the current user session

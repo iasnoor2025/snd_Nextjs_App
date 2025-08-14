@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
-import { DefinePlugin, ProvidePlugin } from "webpack";
+import { DefinePlugin, ProvidePlugin, IgnorePlugin } from "webpack";
+
+
 
 
 const nextConfig: NextConfig = {
@@ -13,6 +15,7 @@ const nextConfig: NextConfig = {
       'recharts',
       'date-fns'
     ],
+
   },
   
   // Handle external packages properly
@@ -20,7 +23,81 @@ const nextConfig: NextConfig = {
   
   // Simple, clean webpack configuration
   webpack: (config, { dev, isServer }) => {
-    if (isServer) {
+    // Apply fixes for BOTH development and production, server and client
+    console.log(`Webpack config: dev=${dev}, isServer=${isServer}`);
+    
+    // Only apply webpack fixes in production builds
+    if (!dev) {
+      config.plugins = config.plugins || [];
+      config.plugins.push(
+        new DefinePlugin({
+          'self': 'globalThis',
+          'typeof self': JSON.stringify('object'),
+          'global': 'globalThis',
+        })
+      );
+      
+      config.plugins.push(
+        new ProvidePlugin({
+          'self': 'globalThis',
+        })
+      );
+    }
+    
+    // Handle OpenTelemetry context issue only in production
+    if (!dev) {
+      config.externals = config.externals || [];
+      config.externals.push({
+        '@opentelemetry/api': 'commonjs @opentelemetry/api',
+      });
+      
+      // Ignore problematic modules that cause self is not defined
+      config.plugins.push(
+        new IgnorePlugin({
+          resourceRegExp: /^(canvas|jsdom)$/,
+        })
+      );
+      
+      // Control module resolution
+      config.resolve.modules = ['node_modules'];
+    }
+    
+    // Add basic alias and fallback only in production
+    if (!dev) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'self': 'globalThis',
+      };
+      
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        'self': 'globalThis',
+      };
+    }
+    
+    // Handle CommonJS modules only in production builds
+    if (!dev) {
+      config.module.rules = config.module.rules || [];
+      config.module.rules.push({
+        test: /\.m?js$/,
+        resolve: {
+          fullySpecified: false,
+        },
+      });
+      
+      // Ensure proper module resolution only in production
+      config.resolve.extensionAlias = {
+        '.js': ['.js', '.ts', '.tsx'],
+        '.mjs': ['.mjs', '.js', '.ts', '.tsx'],
+      };
+    }
+    
+
+    
+
+    
+    // Server-specific configurations only in production
+    if (isServer && !dev) {
       // Server-side: Only essential externals
       config.externals = config.externals || [];
       config.externals.push({
@@ -35,34 +112,17 @@ const nextConfig: NextConfig = {
         path: false,
       };
       
-      // PROFESSIONAL SOLUTION: Use webpack DefinePlugin for self global
-      // This is the standard, reliable way to handle global references
-      config.plugins = config.plugins || [];
-      config.plugins.push(
-        new DefinePlugin({
-          'self': 'globalThis',
-          'typeof self': JSON.stringify('object'),
-          'global': 'globalThis',
-        })
-      );
+      // Server-specific: Only essential externals
+      config.externals = config.externals || [];
+      config.externals.push({
+        'self': 'globalThis'
+      });
       
-      // Also use ProvidePlugin to ensure self is available globally
-      config.plugins.push(
-        new ProvidePlugin({
-          'self': 'globalThis',
-        })
-      );
-      
-      // Also add alias to ensure self is resolved correctly
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        'self': 'globalThis',
-      };
-      
-      // Add self to fallback to ensure it's available
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        'self': 'globalThis',
+      // Handle Node.js modules properly for server
+      config.node = {
+        __dirname: 'mock',
+        __filename: 'mock',
+        global: true,
       };
       
       // Ensure the DefinePlugin is applied to all chunks including vendors
@@ -80,18 +140,59 @@ const nextConfig: NextConfig = {
         },
       };
       
-      // Add a more comprehensive DefinePlugin configuration
-      config.plugins.push(
-        new DefinePlugin({
+      // Add a more comprehensive DefinePlugin configuration for vendor chunks (production only)
+      if (!dev) {
+        config.plugins.push(
+          new DefinePlugin({
+            'self': 'globalThis',
+            'typeof self': JSON.stringify('object'),
+            'global': 'globalThis',
+            'window': 'globalThis',
+            'document': 'undefined',
+          })
+        );
+      }
+      
+      // Ensure vendor chunks get the self definition (production only)
+      if (!dev) {
+        config.module.rules = config.module.rules || [];
+        config.module.rules.push({
+          test: /\.js$/,
+          include: /node_modules/,
+          use: {
+            loader: 'string-replace-loader',
+            options: {
+              search: 'self\\.',
+              replace: 'globalThis.',
+              flags: 'g'
+            }
+          }
+        });
+      }
+      
+      // More aggressive externals handling for vendor chunks (production only)
+      if (!dev) {
+        config.externals = config.externals || [];
+        config.externals.push({
           'self': 'globalThis',
-          'typeof self': JSON.stringify('object'),
-          'global': 'globalThis',
           'window': 'globalThis',
           'document': 'undefined',
-        })
-      );
+        });
+      }
       
-
+      // Ensure the DefinePlugin is applied to vendor chunks (production only)
+      if (!dev) {
+        config.plugins.push(
+          new DefinePlugin({
+            'self': 'globalThis',
+            'typeof self': JSON.stringify('object'),
+            'global': 'globalThis',
+            'window': 'globalThis',
+            'document': 'undefined',
+            'navigator': 'undefined',
+          })
+        );
+      }
     }
     
     // Production optimizations

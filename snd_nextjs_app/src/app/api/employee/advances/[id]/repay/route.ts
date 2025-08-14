@@ -19,6 +19,8 @@ export async function generateStaticParams() {
 export const runtime = 'nodejs';
 export const preferredRegion = 'auto';
 
+
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
