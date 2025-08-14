@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm/relations";
+import { relations } from "drizzle-orm/relations"; 
 import { advancePayments, advancePaymentHistories, employees, employeeAssignments, projects, rentals, equipment, equipmentRentalHistory, projectResources, users, salaryIncrements, equipmentMaintenance, equipmentMaintenanceItems, employeeLeaves, departments, designations, organizationalUnits, customers, employeeDocuments, employeeSalaries, employeePerformanceReviews, employeeResignations, employeeSkill, skills, employeeTraining, trainings, payrolls, payrollRuns, payrollItems, loans, taxDocuments, taxDocumentPayrolls, timesheets, timeEntries, weeklyTimesheets, timesheetApprovals, timeOffRequests, rentalItems, rentalOperatorAssignments, roles, modelHasRoles, permissions, roleHasPermissions, modelHasPermissions } from "./schema";
 
 export const advancePaymentHistoriesRelations = relations(advancePaymentHistories, ({one}) => ({
