@@ -9,6 +9,12 @@ import { eq } from 'drizzle-orm';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+// Explicit route generation for Next.js 15
+export async function generateStaticParams() {
+  // This helps Next.js understand the route structure
+  return [];
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

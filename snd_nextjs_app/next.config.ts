@@ -41,6 +41,7 @@ const nextConfig: NextConfig = {
         new DefinePlugin({
           'self': 'globalThis',
           'typeof self': JSON.stringify('object'),
+          'global': 'globalThis',
         })
       );
       

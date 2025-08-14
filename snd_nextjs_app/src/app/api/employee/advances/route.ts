@@ -5,6 +5,10 @@ import { authConfig } from '@/lib/auth-config'
 import { employees as employeesTable, advancePayments } from '@/lib/drizzle/schema'
 import { eq, isNull } from 'drizzle-orm'
 
+// Explicit route configuration for Next.js 15
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
   try {
     // Get the current user session
