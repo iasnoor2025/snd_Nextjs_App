@@ -38,6 +38,8 @@ interface Equipment {
   weekly_rate?: number;
   monthly_rate?: number;
   erpnext_id?: string;
+  istimara?: string;
+  istimara_expiry_date?: string;
   serial_number?: string;
   description?: string;
   created_at?: string;
@@ -295,6 +297,32 @@ export default function EquipmentShowPage() {
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Category ID</Label>
                 <p className="text-sm">{equipment.category_id || 'Not assigned'}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Istimara Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Hash className="h-5 w-5" />
+              <span>Istimara Information</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Istimara Number</Label>
+                <p className="text-sm font-mono">{equipment.istimara || 'Not specified'}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Expiry Date</Label>
+                <p className="text-sm">
+                  {equipment.istimara_expiry_date 
+                    ? new Date(equipment.istimara_expiry_date).toLocaleDateString() 
+                    : 'Not specified'}
+                </p>
               </div>
             </div>
           </CardContent>

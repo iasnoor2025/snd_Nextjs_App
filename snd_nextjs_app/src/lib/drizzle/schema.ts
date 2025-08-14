@@ -1254,6 +1254,8 @@ export const equipment = pgTable("equipment", {
 	weeklyRate: numeric("weekly_rate", { precision: 12, scale:  2 }),
 	monthlyRate: numeric("monthly_rate", { precision: 12, scale:  2 }),
 	erpnextId: text("erpnext_id"),
+	istimara: text("istimara"),
+	istimaraExpiryDate: date("istimara_expiry_date"),
 	doorNumber: text("door_number"),
 	currentOperatingHours: numeric("current_operating_hours", { precision: 10, scale:  2 }),
 	currentMileage: numeric("current_mileage", { precision: 10, scale:  2 }),

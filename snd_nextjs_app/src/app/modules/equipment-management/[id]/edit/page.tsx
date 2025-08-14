@@ -29,6 +29,8 @@ interface Equipment {
   weekly_rate?: number;
   monthly_rate?: number;
   erpnext_id?: string;
+  istimara?: string;
+  istimara_expiry_date?: string;
   serial_number?: string;
   description?: string;
 }
@@ -49,6 +51,8 @@ export default function EquipmentEditPage() {
     monthly_rate: '',
     serial_number: '',
     description: '',
+    istimara: '',
+    istimara_expiry_date: '',
   });
 
   const equipmentId = params.id as string;
@@ -75,6 +79,8 @@ export default function EquipmentEditPage() {
           monthly_rate: response.data.monthly_rate?.toString() || '',
           serial_number: response.data.serial_number || '',
           description: response.data.description || '',
+          istimara: response.data.istimara || '',
+          istimara_expiry_date: response.data.istimara_expiry_date || '',
         });
       } else {
         toast.error('Failed to load equipment');
@@ -295,6 +301,38 @@ export default function EquipmentEditPage() {
                   onChange={(e) => handleInputChange('monthly_rate', e.target.value)}
                   placeholder="0.00"
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Istimara Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Istimara Information</CardTitle>
+              <CardDescription>
+                Vehicle registration details
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="istimara">Istimara Number</Label>
+                  <Input
+                    id="istimara"
+                    value={formData.istimara}
+                    onChange={(e) => handleInputChange('istimara', e.target.value)}
+                    placeholder="Istimara number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="istimara_expiry_date">Expiry Date</Label>
+                  <Input
+                    id="istimara_expiry_date"
+                    type="date"
+                    value={formData.istimara_expiry_date}
+                    onChange={(e) => handleInputChange('istimara_expiry_date', e.target.value)}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -51,6 +51,7 @@ import {
   getTranslatedName, 
   batchTranslateNames 
 } from '@/lib/translation-utils';
+import AddEquipmentModal from "@/components/equipment/AddEquipmentModal";
 
 interface Equipment {
   id: number;
@@ -63,6 +64,8 @@ interface Equipment {
   weekly_rate?: number;
   monthly_rate?: number;
   erpnext_id?: string;
+  istimara?: string;
+  istimara_expiry_date?: string;
   serial_number?: string;
   description?: string;
   current_assignment?: {
@@ -109,7 +112,10 @@ export default function EquipmentManagementPage() {
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(10);
+  
+  // Modal state
+  const [showAddEquipmentModal, setShowAddEquipmentModal] = useState(false);
 
   const router = useRouter();
 
@@ -231,8 +237,8 @@ export default function EquipmentManagementPage() {
   };
 
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
-    setItemsPerPage(newItemsPerPage);
-    setCurrentPage(1); // Reset to first page when changing items per page
+    // Since we're not changing items per page dynamically, just reset to first page
+    setCurrentPage(1);
   };
 
   return (
@@ -254,7 +260,7 @@ export default function EquipmentManagementPage() {
             )}
             {t('equipment_management.sync_erpnext')}
           </Button>
-          <Button>
+          <Button onClick={() => setShowAddEquipmentModal(true)}>
             <Plus className="h-4 w-4 mr-2" />
             {t('equipment_management.add_equipment')}
           </Button>
@@ -339,6 +345,7 @@ export default function EquipmentManagementPage() {
                       <TableHead>{t('equipment_management.current_assignment')}</TableHead>
                       <TableHead>{t('equipment_management.daily_rate')}</TableHead>
                       <TableHead>{t('equipment_management.erpnext_id')}</TableHead>
+                      <TableHead>{t('equipment_management.istimara')}</TableHead>
                       <TableHead>{t('equipment_management.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -405,6 +412,20 @@ export default function EquipmentManagementPage() {
                             )}
                           </TableCell>
                           <TableCell>{convertToArabicNumerals(item.erpnext_id?.toString(), isRTL) || '-'}</TableCell>
+                          <TableCell>
+                            {item.istimara ? (
+                              <div className="space-y-1">
+                                <div className="text-sm font-medium">{item.istimara}</div>
+                                {item.istimara_expiry_date && (
+                                  <div className="text-xs text-muted-foreground">
+                                    Expires: {new Date(item.istimara_expiry_date).toLocaleDateString()}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">{t('equipment_management.not_specified')}</span>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <div className="flex items-center space-x-2">
                               <Button 
@@ -547,6 +568,12 @@ export default function EquipmentManagementPage() {
         </CardContent>
       </Card>
 
+      {/* Add Equipment Modal */}
+      <AddEquipmentModal
+        open={showAddEquipmentModal}
+        onOpenChange={setShowAddEquipmentModal}
+        onSuccess={fetchEquipment}
+      />
 
     </div>
   );
