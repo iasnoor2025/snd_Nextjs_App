@@ -1,10 +1,9 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "next-themes";
 import { SessionProvider } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { RBACProvider } from "@/lib/rbac/rbac-context";
 import SSEProvider from "@/contexts/sse-context";
 import { I18nProvider } from "@/components/i18n-provider";
@@ -13,6 +12,9 @@ import { ConfirmationProvider } from "@/components/providers/confirmation-provid
 import { NotificationProvider } from "@/contexts/notification-context";
 import { addCleanupCallback, startMemoryMonitoring } from "@/lib/memory-manager";
 import '@/lib/i18n-client'; // Initialize i18n on client side
+
+// Dynamic imports for heavy components
+const ReactQueryDevtools = lazy(() => import("@tanstack/react-query-devtools").then(mod => ({ default: mod.ReactQueryDevtools })));
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -101,7 +103,9 @@ export function Providers({ children }: ProvidersProps) {
                   </ConfirmationProvider>
                 </I18nProvider>
               </I18nWrapper>
-              <ReactQueryDevtools initialIsOpen={false} />
+              <Suspense fallback={null}>
+                <ReactQueryDevtools initialIsOpen={false} />
+              </Suspense>
             </SSEProvider>
           </QueryClientProvider>
         </ThemeProvider>

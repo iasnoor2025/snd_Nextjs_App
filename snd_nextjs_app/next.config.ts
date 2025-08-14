@@ -10,7 +10,11 @@ const nextConfig: NextConfig = {
       '@radix-ui/react-select',
       '@radix-ui/react-tabs',
       'react-hook-form',
-      'zod'
+      'zod',
+      '@tanstack/react-query',
+      '@tanstack/react-table',
+      'recharts',
+      'date-fns'
     ],
     // Memory optimization settings for build
     workerThreads: false,
@@ -18,7 +22,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['pg'],
   // Disable static export for API routes and dynamic pages
   trailingSlash: false,
-  webpack: (config, { dev, isServer }) => {
+  webpack: (config, { dev, isServer, webpack }) => {
     // Add webpack plugins to handle global variables
     config.plugins.push(
       new DefinePlugin({
@@ -67,6 +71,7 @@ const nextConfig: NextConfig = {
           chunks: 'all',
           maxInitialRequests: 25,
           minSize: 20000,
+          maxSize: 244000, // Limit chunk size to ~240KB
           cacheGroups: {
             default: {
               minChunks: 1,
@@ -78,48 +83,137 @@ const nextConfig: NextConfig = {
               name: 'vendors',
               priority: -10,
               enforce: true,
+              chunks: 'all',
             },
             // Split large packages to reduce memory usage
             react: {
               test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
               name: 'react',
               priority: 10,
+              chunks: 'all',
             },
             ui: {
               test: /[\\/]node_modules[\\/](@radix-ui|lucide-react)[\\/]/,
               name: 'ui',
               priority: 5,
+              chunks: 'all',
+            },
+            // Split heavy libraries
+            charts: {
+              test: /[\\/]node_modules[\\/](recharts|d3)[\\/]/,
+              name: 'charts',
+              priority: 5,
+              chunks: 'all',
+            },
+            forms: {
+              test: /[\\/]node_modules[\\/](react-hook-form|@hookform|zod)[\\/]/,
+              name: 'forms',
+              priority: 5,
+              chunks: 'all',
+            },
+            tables: {
+              test: /[\\/]node_modules[\\/](@tanstack)[\\/]/,
+              name: 'tables',
+              priority: 5,
+              chunks: 'all',
+            },
+            // Split large API routes and middleware
+            api: {
+              test: /[\\/]app[\\/]api[\\/]/,
+              name: 'api',
+              priority: 5,
+              chunks: 'all',
+              minSize: 10000,
+            },
+            // Split middleware and edge runtime
+            middleware: {
+              test: /[\\/](middleware|edge-runtime)[\\/]/,
+              name: 'middleware',
+              priority: 5,
+              chunks: 'all',
+              minSize: 10000,
             },
           },
         },
-        // Disable expensive optimizations during build
-        concatenateModules: false,
-        usedExports: false,
+        // Enable tree shaking and optimization
+        concatenateModules: true,
+        usedExports: true,
         sideEffects: false,
       };
     } else {
-      // Development optimizations
+      // Development optimizations - apply chunk splitting to reduce bundle size warnings
       config.optimization = {
         ...config.optimization,
         splitChunks: {
-          chunks: 'async',
+          chunks: 'all',
+          maxInitialRequests: 25,
+          minSize: 20000,
+          maxSize: 244000, // Apply same size limits in development
           cacheGroups: {
             default: {
-              minChunks: 2,
+              minChunks: 1,
               priority: -20,
               reuseExistingChunk: true,
             },
             vendor: {
               test: /[\\/]node_modules[\\/]/,
               name: 'vendors',
-              chunks: 'async',
               priority: -10,
               enforce: true,
+              chunks: 'all',
+            },
+            // Split large packages in development too
+            react: {
+              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+              name: 'react',
+              priority: 10,
+              chunks: 'all',
+            },
+            ui: {
+              test: /[\\/]node_modules[\\/](@radix-ui|lucide-react)[\\/]/,
+              name: 'ui',
+              priority: 5,
+              chunks: 'all',
+            },
+            charts: {
+              test: /[\\/]node_modules[\\/](recharts|d3)[\\/]/,
+              name: 'charts',
+              priority: 5,
+              chunks: 'all',
+            },
+            forms: {
+              test: /[\\/]node_modules[\\/](react-hook-form|@hookform|zod)[\\/]/,
+              name: 'forms',
+              priority: 5,
+              chunks: 'all',
+            },
+            tables: {
+              test: /[\\/]node_modules[\\/](@tanstack)[\\/]/,
+              name: 'tables',
+              priority: 5,
+              chunks: 'all',
+            },
+            // Split large API routes and middleware
+            api: {
+              test: /[\\/]app[\\/]api[\\/]/,
+              name: 'api',
+              priority: 5,
+              chunks: 'all',
+              minSize: 10000,
+            },
+            // Split middleware and edge runtime
+            middleware: {
+              test: /[\\/](middleware|edge-runtime)[\\/]/,
+              name: 'middleware',
+              priority: 5,
+              chunks: 'all',
+              minSize: 10000,
             },
           },
         },
-        concatenateModules: false,
-        usedExports: false,
+        // Enable some optimizations in development for better chunk splitting
+        concatenateModules: false, // Keep false for development
+        usedExports: false, // Keep false for development
         sideEffects: false,
       };
     }
@@ -130,6 +224,27 @@ const nextConfig: NextConfig = {
         hints: 'warning',
         maxEntrypointSize: 512000,
         maxAssetSize: 512000,
+      };
+      
+      // Add development-specific optimizations
+      config.optimization = {
+        ...config.optimization,
+        removeAvailableModules: true,
+        removeEmptyChunks: true,
+        splitChunks: {
+          ...config.optimization?.splitChunks,
+          chunks: 'all',
+          cacheGroups: {
+            ...config.optimization?.splitChunks?.cacheGroups,
+            // Force smaller chunks in development
+            default: {
+              minChunks: 1,
+              priority: -20,
+              reuseExistingChunk: true,
+              enforce: true,
+            },
+          },
+        },
       };
     }
     
@@ -161,8 +276,6 @@ const nextConfig: NextConfig = {
   generateBuildId: async () => {
     return 'build-' + Date.now();
   },
-  // Disable telemetry during build
-  telemetry: false,
   // Optimize images
   images: {
     formats: ['image/webp', 'image/avif'],

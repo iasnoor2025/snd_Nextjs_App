@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "NODE_OPTIONS=--max-old-space-size=8192 next build",
+    "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 next build",
     "start": "next start",
     "lint": "next lint",
     "drizzle:introspect": "drizzle-kit introspect",
@@ -16,7 +16,10 @@
     "cleanup": "node scripts/cleanup-dev.js",
     "dev:fresh": "npm run cleanup && npm run dev",
     "build:optimized": "node scripts/optimize-build.js && npm run build",
-    "build:clean": "rm -rf .next && rm -rf node_modules/.cache && npm run build"
+    "build:clean": "rm -rf .next && rm -rf node_modules/.cache && npm run build",
+    "analyze": "ANALYZE=true npm run build",
+    "build:analyze": "cross-env ANALYZE=true npm run build",
+    "analyze:bundle": "cross-env ANALYZE=true next build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.864.0",
@@ -82,11 +85,13 @@
     "zod": "^4.0.17"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^15.4.6",
     "@tailwindcss/postcss": "^4.1.11",
     "@types/node": "22.17.1",
     "@types/react": "18.3.23",
     "@types/react-dom": "^18.3.7",
     "@types/webpack": "^5.28.5",
+    "cross-env": "^10.0.0",
     "dotenv": "^17.2.1",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9",
