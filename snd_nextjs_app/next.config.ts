@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
       'react-hook-form',
       'zod'
     ],
+    // Memory optimization settings for build
+    workerThreads: false,
   },
   serverExternalPackages: ['pg'],
   // Disable static export for API routes and dynamic pages
@@ -56,32 +58,71 @@ const nextConfig: NextConfig = {
       'document': false,
     };
     
-    // Simplified webpack configuration to isolate issues
-    config.optimization = {
-      ...config.optimization,
-      // Basic chunk splitting
-      splitChunks: {
-        chunks: 'async',
-        cacheGroups: {
-          default: {
-            minChunks: 2,
-            priority: -20,
-            reuseExistingChunk: true,
-          },
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            chunks: 'async',
-            priority: -10,
-            enforce: true,
+    // Memory-optimized webpack configuration
+    if (!dev) {
+      // Production build optimizations
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'all',
+          maxInitialRequests: 25,
+          minSize: 20000,
+          cacheGroups: {
+            default: {
+              minChunks: 1,
+              priority: -20,
+              reuseExistingChunk: true,
+            },
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              priority: -10,
+              enforce: true,
+            },
+            // Split large packages to reduce memory usage
+            react: {
+              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+              name: 'react',
+              priority: 10,
+            },
+            ui: {
+              test: /[\\/]node_modules[\\/](@radix-ui|lucide-react)[\\/]/,
+              name: 'ui',
+              priority: 5,
+            },
           },
         },
-      },
-      // Disable complex optimizations temporarily
-      concatenateModules: false,
-      usedExports: false,
-      sideEffects: false,
-    };
+        // Disable expensive optimizations during build
+        concatenateModules: false,
+        usedExports: false,
+        sideEffects: false,
+      };
+    } else {
+      // Development optimizations
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          chunks: 'async',
+          cacheGroups: {
+            default: {
+              minChunks: 2,
+              priority: -20,
+              reuseExistingChunk: true,
+            },
+            vendor: {
+              test: /[\\/]node_modules[\\/]/,
+              name: 'vendors',
+              chunks: 'async',
+              priority: -10,
+              enforce: true,
+            },
+          },
+        },
+        concatenateModules: false,
+        usedExports: false,
+        sideEffects: false,
+      };
+    }
 
     // Add performance hints for development
     if (dev) {
@@ -116,6 +157,12 @@ const nextConfig: NextConfig = {
     // Number of pages that should be kept simultaneously without being disposed
     pagesBufferLength: 4, // Increased for better performance
   },
+  // Build optimization to reduce memory usage
+  generateBuildId: async () => {
+    return 'build-' + Date.now();
+  },
+  // Disable telemetry during build
+  telemetry: false,
   // Optimize images
   images: {
     formats: ['image/webp', 'image/avif'],
