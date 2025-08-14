@@ -44,10 +44,8 @@ export function Providers({ children }: ProvidersProps) {
   // Optimized cleanup function to prevent memory leaks without affecting performance
   useEffect(() => {
     const handleBeforeUnload = () => {
-      // Only clear queries on actual page unload, not on refresh
-      if (performance.navigation.type === 1) { // NavigationType.RELOAD
-        queryClient.clear();
-      }
+      // Clear queries on page unload
+      queryClient.clear();
     };
 
     const handleVisibilityChange = () => {

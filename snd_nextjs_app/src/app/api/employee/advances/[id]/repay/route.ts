@@ -5,6 +5,10 @@ import { authOptions } from "@/lib/auth-config";
 import { advancePayments, advancePaymentHistories } from '@/lib/drizzle/schema';
 import { eq, and, isNull, asc } from 'drizzle-orm';
 
+// Explicit route configuration for Next.js 15
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

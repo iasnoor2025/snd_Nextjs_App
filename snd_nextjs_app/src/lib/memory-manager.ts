@@ -228,14 +228,8 @@ class MemoryManager {
 
     return {
       memory: this.getMemoryInfo(),
-      navigation: performance.navigation ? {
-        type: performance.navigation.type,
-        redirectCount: performance.navigation.redirectCount
-      } : null,
-      timing: performance.timing ? {
-        loadEventEnd: performance.timing.loadEventEnd,
-        domContentLoadedEventEnd: performance.timing.domContentLoadedEventEnd
-      } : null
+      navigation: null, // Removed deprecated performance.navigation
+      timing: null, // Removed deprecated performance.timing
     };
   }
 }
