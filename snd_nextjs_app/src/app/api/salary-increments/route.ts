@@ -195,7 +195,7 @@ export async function $1(_request: NextRequest) {
   }
 }
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -208,7 +208,7 @@ export async function $1(_request: NextRequest) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const {
       employee_id,
       increment_type,

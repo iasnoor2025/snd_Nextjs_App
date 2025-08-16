@@ -43,12 +43,12 @@ function empty(value: any): boolean {
   return value === null || value === undefined || value === '' || value === 0;
 }
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     console.log('Starting data matching process...');
 
     // Parse request body
-    const body = await request.json();
+    const body = await _request.json();
     const { erpnextData } = body;
 
     if (!erpnextData || !erpnextData.erpnextCustomers) {

@@ -63,9 +63,9 @@ export async function $1(_request: NextRequest) {
   }
 }
 
-export async function $1(_request: NextRequest) {
+export async function DELETE(_request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await _request.json();
     const { timesheetIds } = body;
 
     if (!Array.isArray(timesheetIds)) {
@@ -83,7 +83,7 @@ export async function $1(_request: NextRequest) {
     const nonDraftTimesheets = timesheetsList.filter(t => t.status !== 'draft');
 
     // Check user role from request headers or session
-    const userRole = request.headers.get('x-user-role') || 'USER'; // Default to USER if not provided
+    const userRole = _request.headers.get('x-user-role') || 'USER'; // Default to USER if not provided
 
     // Only admin can delete non-draft timesheets
     if (nonDraftTimesheets.length > 0 && userRole !== 'ADMIN') {

@@ -33,9 +33,9 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   return response.json();
 }
 
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const filters = searchParams.get('filters');
 
     let endpoint = '/api/resource/Sales Invoice?limit_page_length=1000';
@@ -62,9 +62,9 @@ export async function $1(_request: NextRequest) {
   }
 }
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
-    const invoiceData = await request.json();
+    const invoiceData = await _request.json();
 
     const response = await makeERPNextRequest('/api/resource/Sales Invoice', {
       method: 'POST',

@@ -33,9 +33,9 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   return response.json();
 }
 
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const action = searchParams.get('action');
 
     if (action === 'sync') {
@@ -66,9 +66,9 @@ export async function $1(_request: NextRequest) {
   }
 }
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await _request.json();
     const { action } = body;
 
     if (action === 'sync') {

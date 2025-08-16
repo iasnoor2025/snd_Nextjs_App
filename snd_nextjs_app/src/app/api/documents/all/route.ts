@@ -6,14 +6,14 @@ import { employeeDocuments, employees, media, equipment } from '@/lib/drizzle/sc
 import { eq, ilike, or, and, desc } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const search = searchParams.get('search') || '';
     const type = searchParams.get('type') || 'all'; // 'all', 'employee', 'equipment'
     const limit = parseInt(searchParams.get('limit') || '100');

@@ -3,10 +3,10 @@ import { db } from '@/lib/drizzle';
 import { employees, employeeLeaves } from '@/lib/drizzle/schema';
 import { and, eq, lte, gte, sql } from 'drizzle-orm';
 
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Verify the request is from a legitimate cron service
-    const authHeader = request.headers.get('authorization');
+    const authHeader = _request.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
 
     if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {

@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
 
 // GET /api/profile/settings - Get user settings
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Get the current user session
     const session = await getServerSession(authConfig);
@@ -17,7 +17,7 @@ export async function $1(_request: NextRequest) {
     }
 
     // const userId = session.user.id;
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const type = searchParams.get('type'); // 'notifications' or 'appearance'
 
     // Get user settings from database
@@ -56,7 +56,7 @@ export async function $1(_request: NextRequest) {
 }
 
 // PUT /api/profile/settings - Update user settings
-export async function $1(_request: NextRequest) {
+export async function PUT(_request: NextRequest) {
   try {
     // Get the current user session
     const session = await getServerSession(authConfig);
@@ -68,7 +68,7 @@ export async function $1(_request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { type, settings } = body;
 
     if (!type || !settings) {

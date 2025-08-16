@@ -3,9 +3,9 @@ import { db } from '@/lib/db';
 import { analyticsReports } from '@/lib/drizzle/schema';
 import { eq, like, or, desc, and } from 'drizzle-orm';
 
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';

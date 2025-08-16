@@ -198,9 +198,9 @@ export async function $1(_request: NextRequest) {
   }
 }
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await _request.json();
     
     // Validate required fields
     const requiredFields = ['employeeId', 'month', 'year', 'baseSalary'];

@@ -153,9 +153,9 @@ const getMockQuotationsData = (search: string = '', status: string = 'all', star
   };
 };
 
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || 'all';
     const startDate = searchParams.get('start_date') || '';
@@ -183,9 +183,9 @@ export async function $1(_request: NextRequest) {
   }
 }
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await _request.json();
 
     // In a real implementation, this would call the Laravel API
     // const response = await fetch(`${process.env.LARAVEL_API_URL}/api/quotations`, {

@@ -10,12 +10,12 @@ import { eq } from 'drizzle-orm';
 
 
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     console.log('Starting sync process with matched data...');
 
     // Parse request body to get matched data
-    const body = await request.json();
+    const body = await _request.json();
     const { matchedData } = body;
 
     if (!matchedData) {

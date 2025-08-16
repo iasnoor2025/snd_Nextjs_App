@@ -157,7 +157,7 @@ export async function $1(_request: NextRequest) {
 }
 
 // PUT /api/user/nation-id - Update user's nation ID
-export async function $1(_request: NextRequest) {
+export async function PUT(_request: NextRequest) {
   const session = await getServerSession(authConfig);
 
   if (!session?.user?.id) {
@@ -168,7 +168,7 @@ export async function $1(_request: NextRequest) {
   }
 
   try {
-    const body = await request.json();
+    const body = await _request.json();
     const { nationId } = body;
 
     if (!nationId || typeof nationId !== 'string' || nationId.trim() === '') {

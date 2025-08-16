@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
@@ -43,7 +43,7 @@ export async function $1(_request: NextRequest) {
           }, 30000); // Send heartbeat every 30 seconds
 
           // Cleanup on close
-          request.signal.addEventListener('abort', () => {
+          _request.signal.addEventListener('abort', () => {
             clearInterval(heartbeat);
             controller.close();
           });
@@ -67,7 +67,7 @@ export async function $1(_request: NextRequest) {
   }
 }
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);
@@ -75,7 +75,7 @@ export async function $1(_request: NextRequest) {
       return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { type, payload, targetUserId } = body;
 
     // Validate request
