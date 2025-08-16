@@ -94,7 +94,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid permission ID' }, { status: 400 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { name, guard_name } = body;
 
     if (!name) {

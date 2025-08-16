@@ -77,7 +77,7 @@ export const GET = withPermission(
 export const POST = withPermission(
   async (request: NextRequest) => {
   try {
-    const body = await request.json();
+    const body = await _request.json();
     
     const inserted = await db
       .insert(locationsTable)

@@ -4,11 +4,11 @@ import { employees as employeesTable, departments, designations } from '@/lib/dr
 import { and, asc, eq, ilike, or } from 'drizzle-orm';
 
 // GET /api/employees/public - Get employees for dropdown (no auth required)
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     console.log('🔍 Starting public employee fetch...');
 
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const limit = parseInt(searchParams.get('limit') || '1000');
     const search = searchParams.get('search') || '';
     const all = searchParams.get('all') === 'true';

@@ -153,7 +153,7 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
 // POST /api/advances - Create employee advance with employee data filtering
 const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
   try {
-    const body = await request.json();
+    const body = await request.json();  
     const {
       employeeId,
       amount,

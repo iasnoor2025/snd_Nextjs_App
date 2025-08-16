@@ -212,7 +212,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
 // POST /api/employees - Create new employee
 const createEmployeeHandler = async (request: NextRequest) => {
   try {
-    const body = await request.json();
+    const body = await _request.json();
     const {
       first_name,
       last_name,

@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -14,7 +14,7 @@ export async function $1(_request: NextRequest) {
     }
 
     // Get query parameters
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const perPage = parseInt(searchParams.get('per_page') || '50');
 

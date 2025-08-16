@@ -4,11 +4,11 @@ import { employeeLeaves, employees } from '@/lib/drizzle/schema';
 import { eq, ilike, or, desc, sql, and } from 'drizzle-orm';
 
 // GET /api/leave-requests/public - Get leave requests for management (no auth required)
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     console.log('🔍 Starting public leave requests fetch...');
     
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const limit = parseInt(searchParams.get('limit') || '10');
     const page = parseInt(searchParams.get('page') || '1');
     const status = searchParams.get('status') || '';

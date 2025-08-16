@@ -36,7 +36,7 @@ function isValidFileSize(size: number): boolean {
   return size <= maxSize;
 }
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     console.log('File upload API called');
 

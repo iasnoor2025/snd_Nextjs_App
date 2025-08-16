@@ -7,7 +7,7 @@ import { permissions as permissionsTable, roles as rolesTable, roleHasPermission
 import { and, asc, eq, ilike, or, sql } from 'drizzle-orm';
 
 // GET /api/permissions - List all permissions
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -24,7 +24,7 @@ export async function $1(_request: NextRequest) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const search = searchParams.get('search') || '';

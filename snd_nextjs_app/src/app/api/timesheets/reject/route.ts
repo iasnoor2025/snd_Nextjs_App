@@ -25,7 +25,7 @@ function getRejectionPermission(rejectionStage: string): string {
 export const POST = withPermission(
   async (request: NextRequest) => {
     try {
-      const { timesheetId, rejectionReason, rejectionStage } = await request.json();
+      const { timesheetId, rejectionReason, rejectionStage } = await _request.json();
 
       // Get the timesheet with employee and user details
       const timesheetData = await db

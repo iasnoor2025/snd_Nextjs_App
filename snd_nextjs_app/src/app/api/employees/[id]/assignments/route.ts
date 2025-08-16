@@ -220,7 +220,7 @@ export async function POST(
 
     const { id } = await params;
     const employeeId = parseInt(id);
-    const body = await request.json();
+    const body = await _request.json();
 
     if (!employeeId) {
       return NextResponse.json(
@@ -304,7 +304,7 @@ export async function PUT(
 
     const { id } = await params;
     const employeeId = parseInt(id);
-    const body = await request.json();
+    const body = await _request.json();
 
     if (!employeeId) {
       return NextResponse.json(
@@ -403,7 +403,7 @@ export async function DELETE(
 
     const { id } = await params;
     const employeeId = parseInt(id);
-    const url = new URL(request.url);
+    const url = new URL(_request.url);
     const assignmentId = url.searchParams.get('assignmentId');
 
     if (!employeeId) {

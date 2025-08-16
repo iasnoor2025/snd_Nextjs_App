@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/db';
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
 
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -17,7 +17,7 @@ export async function $1(_request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';

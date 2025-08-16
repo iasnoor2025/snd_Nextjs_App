@@ -17,7 +17,7 @@ function parseNumber(value: any): number | undefined {
 
 export const GET = withAuth(async (request: NextRequest) => {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const equipmentId = parseNumber(searchParams.get('equipmentId'));
     const mechanicId = parseNumber(searchParams.get('mechanicId'));
     const status = searchParams.get('status') || undefined;
@@ -105,7 +105,7 @@ export const GET = withAuth(async (request: NextRequest) => {
 
 export const POST = withPermission(async (request: NextRequest) => {
   try {
-    const body = await request.json();
+    const body = await _request.json();
     const {
       equipment_id,
       assigned_to_employee_id,

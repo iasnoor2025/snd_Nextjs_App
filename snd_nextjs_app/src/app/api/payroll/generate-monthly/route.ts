@@ -3,9 +3,9 @@ import { db } from '@/lib/drizzle';
 import { employees, timesheets, payrolls, payrollItems, payrollRuns } from '@/lib/drizzle/schema';
 import { eq, and, inArray, gte, lt } from 'drizzle-orm';
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await _request.json();
     const { month, year, employeeIds } = body;
 
     if (!month || !year) {

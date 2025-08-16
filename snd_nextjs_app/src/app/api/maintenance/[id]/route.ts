@@ -74,7 +74,7 @@ export const PUT = withPermission(async (request: NextRequest, { params }: { par
   try {
     const id = parseInt(params.id);
     if (!id) return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });
-    const body = await request.json();
+    const body = await _request.json();
     const { status, assigned_to_employee_id, type, title, description, scheduled_date, due_date, items } = body;
 
     const nowIso = new Date().toISOString();

@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 import { authConfig } from '@/lib/auth-config';
 
 // POST /api/leave-requests - Create a new leave request
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authConfig);
     
@@ -17,7 +17,7 @@ export async function $1(_request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const {
       employee_id,
       leave_type,

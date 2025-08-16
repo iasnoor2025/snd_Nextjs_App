@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 // Simple in-memory cache for translations
 const translationCache = new Map<string, string>();
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
-    const { text, targetLang = 'ar' } = await request.json();
+    const { text, targetLang = 'ar' } = await _request.json();
 
     if (!text) {
       return NextResponse.json({ error: 'Text is required' }, { status: 400 });

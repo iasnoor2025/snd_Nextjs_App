@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { timesheets } from '@/lib/drizzle/schema';
 import { and, eq } from 'drizzle-orm';
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await _request.json();
     const { assignments } = body;
 
     if (!Array.isArray(assignments) || assignments.length === 0) {

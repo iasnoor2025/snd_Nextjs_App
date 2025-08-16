@@ -6,7 +6,7 @@ import { users as usersTable, employees as employeesTable, departments as depart
 import { eq } from 'drizzle-orm';
 
 // GET /api/user/first-login-check - Check if this is first login and establish employee relationship
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authConfig);
 

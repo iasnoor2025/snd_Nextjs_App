@@ -3,9 +3,9 @@ import { db } from '@/lib/drizzle';
 import { payrolls, employees, payrollItems, departments, designations } from '@/lib/drizzle/schema';
 import { eq, and, inArray, desc, asc, sql } from 'drizzle-orm';
 
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';

@@ -5,14 +5,14 @@ import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
 import { eq, and } from 'drizzle-orm';
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authConfig);
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { timesheetId, notes } = await request.json();
+    const { timesheetId, notes } = await _request.json();
 
     // Get the timesheet with employee and user details
     const timesheetData = await db

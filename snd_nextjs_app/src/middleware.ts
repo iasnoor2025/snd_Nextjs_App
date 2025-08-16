@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { routePermissions, hasRequiredRole, createUserFromSession } from './lib/rbac/custom-rbac';
 
-export async function $1(_request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip middleware for public routes and static assets
@@ -41,8 +41,6 @@ export async function $1(_request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // Development logging removed for production
-
     // Check if user has required role or higher
     const hasAccess = hasRequiredRole(user.role, routePermission.roles);
 
@@ -61,7 +59,6 @@ export async function $1(_request: NextRequest) {
 
     return NextResponse.next();
   } catch (error) {
-    // Ensure we always return a proper Response object
     console.error('Middleware error:', error);
     
     // Try to redirect to login, but fallback to next() if that fails

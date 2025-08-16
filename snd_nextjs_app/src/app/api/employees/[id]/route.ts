@@ -265,7 +265,7 @@ const updateEmployeeHandler = async (
   try {
     const { id } = await params;
     const employeeId = parseInt(id);
-    const body = await request.json();
+    const body = await _request.json();
 
     if (!employeeId) {
       return NextResponse.json(

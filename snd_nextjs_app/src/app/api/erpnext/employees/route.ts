@@ -66,9 +66,9 @@ export async function GET() {
   }
 }
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
-    const employeeData = await request.json();
+    const employeeData = await _request.json();
 
     // Check if employee exists
     const name = employeeData.employee_name || employeeData.name;

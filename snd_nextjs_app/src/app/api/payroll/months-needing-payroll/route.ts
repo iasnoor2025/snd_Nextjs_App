@@ -3,9 +3,9 @@ import { db } from '@/lib/drizzle';
 import { employees, timesheets, payrolls } from '@/lib/drizzle/schema';
 import { eq, and, gte, lt } from 'drizzle-orm';
 
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const employee_id = searchParams.get('employee_id');
     const start_month = searchParams.get('start_month');
     const end_month = searchParams.get('end_month');

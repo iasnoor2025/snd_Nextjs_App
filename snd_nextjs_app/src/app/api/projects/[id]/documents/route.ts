@@ -41,7 +41,7 @@ export async function POST(
 ) {
   try {
     const { id: projectId } = await params;
-    const body = await request.json();
+    const body = await _request.json();
 
     const document = await prisma.media.create({
       data: {

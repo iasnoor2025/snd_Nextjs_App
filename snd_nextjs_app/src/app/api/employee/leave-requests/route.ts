@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authConfig } from '@/lib/auth-config'
 import { employeeLeaves } from '@/lib/drizzle/schema'
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // Get the current user session
     const session = await getServerSession(authConfig)
@@ -24,7 +24,7 @@ export async function $1(_request: NextRequest) {
       )
     }
 
-    const body = await request.json()
+    const body = await _request.json()
     // Support both field names for compatibility
     const employee_id = body.employee_id || body.employeeId
     const { leave_type, start_date, end_date, reason } = body

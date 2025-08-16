@@ -6,7 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
 
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -19,7 +19,7 @@ export async function $1(_request: NextRequest) {
     //   return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     // }
 
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const fromDate = searchParams.get('from_date');
     const toDate = searchParams.get('to_date');
 

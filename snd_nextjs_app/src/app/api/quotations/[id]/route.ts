@@ -127,7 +127,7 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
-    const body = await request.json();
+    const body = await _request.json();
 
     // In a real implementation, this would call the Laravel API
     // const response = await fetch(`${process.env.LARAVEL_API_URL}/api/quotations/${id}`, {

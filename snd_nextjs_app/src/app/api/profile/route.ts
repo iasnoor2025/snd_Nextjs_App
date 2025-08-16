@@ -321,7 +321,7 @@ export async function GET(_request: NextRequest) {
 }
 
 // PUT /api/profile - Update user profile
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // Get the current user session
     const session = await getServerSession(authConfig);
@@ -333,7 +333,7 @@ export async function $1(_request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const {
       name,
       email,
