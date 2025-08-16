@@ -128,6 +128,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: FileSpreadsheet,
     },
     {
+      title: t('documentManagement'),
+      url: "/modules/document-management",
+      icon: FileText,
+    },
+    {
       title: t('userManagement'),
       url: "/modules/user-management",
       icon: Users,
