@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { equipment } from '@/lib/drizzle/schema';
 import { eq, or, count } from 'drizzle-orm';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // Validate environment variables
     const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;

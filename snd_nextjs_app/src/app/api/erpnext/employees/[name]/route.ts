@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 // ERPNext configuration
 const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
@@ -34,7 +34,6 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
 }
 
 export async function GET(
-  request: NextRequest,
   { params }: { params: Promise<{ name: string }> }
 ) {
   try {

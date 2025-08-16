@@ -33,7 +33,7 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   return response.json();
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const data = await makeERPNextRequest('/api/resource/Employee?limit_page_length=1000');
     const employees: any[] = [];

@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withPermission, PermissionConfigs, withReadPermission } from '@/lib/rbac/api-middleware';
 import { equipment as equipmentTable, equipmentRentalHistory, projects, rentals, employees } from '@/lib/drizzle/schema';
-import { asc, desc, eq, and, inArray } from 'drizzle-orm';
+import { asc, eq, inArray } from 'drizzle-orm';
 
 export const GET = withReadPermission(
-  async (request: NextRequest) => {
+  async (_request: NextRequest) => {
   try {
     console.log('Fetching equipment from database...');
     

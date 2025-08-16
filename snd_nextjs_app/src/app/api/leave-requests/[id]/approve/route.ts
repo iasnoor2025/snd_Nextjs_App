@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { db } from '@/lib/drizzle';
 import { employeeLeaves, employees } from '@/lib/drizzle/schema';
@@ -6,7 +6,6 @@ import { authConfig } from '@/lib/auth-config';
 import { eq } from 'drizzle-orm';
 
 export async function PUT(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

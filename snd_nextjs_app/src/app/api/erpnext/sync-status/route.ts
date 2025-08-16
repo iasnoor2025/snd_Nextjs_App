@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Get real counts from database
     const employeeCount = await prisma.employee.count();

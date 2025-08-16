@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { equipmentRentalHistory, rentals, customers, projects, employees, employeeAssignments, equipment } from '@/lib/drizzle/schema';
 import { eq, and, like } from 'drizzle-orm';
@@ -235,7 +235,15 @@ export async function DELETE(
 
     // If this is a manual assignment with an employee, also delete the corresponding employee assignment
     let deletedEmployeeAssignment: any = null;
-    if (existingAssignment[0].assignmentType === 'manual' && existingAssignment[0].employeeId) {
+    const assignmentToDelete = existingAssignment[0];
+    if (!assignmentToDelete) {
+      return NextResponse.json(
+        { success: false, error: 'Assignment data not found' },
+        { status: 404 }
+      );
+    }
+    
+    if (assignmentToDelete.assignmentType === 'manual' && assignmentToDelete.employeeId) {
       try {
         // Find and delete the corresponding employee assignment
         const employeeAssignment = await db
@@ -243,7 +251,7 @@ export async function DELETE(
           .from(employeeAssignments)
           .where(
             and(
-              eq(employeeAssignments.employeeId, existingAssignment[0].employeeId),
+              eq(employeeAssignments.employeeId, assignmentToDelete.employeeId),
               eq(employeeAssignments.type, 'manual'),
               like(employeeAssignments.name, '%Equipment Assignment -%')
             )
@@ -251,11 +259,14 @@ export async function DELETE(
           .limit(1);
 
         if (employeeAssignment.length) {
-          await db
-            .delete(employeeAssignments)
-            .where(eq(employeeAssignments.id, employeeAssignment[0].id));
-          deletedEmployeeAssignment = employeeAssignment[0];
-          console.log('Employee assignment deleted automatically:', employeeAssignment[0]);
+          const employeeAssignmentToDelete = employeeAssignment[0];
+          if (employeeAssignmentToDelete) {
+            await db
+              .delete(employeeAssignments)
+              .where(eq(employeeAssignments.id, employeeAssignmentToDelete.id));
+            deletedEmployeeAssignment = employeeAssignmentToDelete;
+            console.log('Employee assignment deleted automatically:', employeeAssignmentToDelete);
+          }
         }
       } catch (assignmentError) {
         console.error('Error deleting employee assignment:', assignmentError);
@@ -272,7 +283,7 @@ export async function DELETE(
       success: true,
       message: 'Equipment assignment deleted successfully' + (deletedEmployeeAssignment ? ' and employee assignment deleted automatically' : ''),
       data: {
-        deletedEquipmentAssignment: existingAssignment[0],
+        deletedEquipmentAssignment: assignmentToDelete,
         deletedEmployeeAssignment
       }
     });
