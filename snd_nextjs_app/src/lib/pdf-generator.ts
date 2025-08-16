@@ -670,7 +670,7 @@ export class PDFGenerator {
       '• Delivery charges may apply'
     ];
     
-    terms.forEach((term, index) => {
+    terms.forEach((term) => {
       doc.text(term, margin, yPosition);
       yPosition += 8;
     });
@@ -710,7 +710,7 @@ export class PDFGenerator {
       'Date:'
     ];
     
-    customerFields.forEach((field, index) => {
+    customerFields.forEach((field) => {
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(0, 0, 0);
@@ -740,7 +740,7 @@ export class PDFGenerator {
       'Date:'
     ];
     
-    companyFields.forEach((field, index) => {
+    companyFields.forEach((field) => {
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(0, 0, 0);

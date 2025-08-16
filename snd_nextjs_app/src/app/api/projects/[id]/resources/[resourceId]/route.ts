@@ -85,7 +85,7 @@ export async function PUT(
         totalCost: resourceData.totalCost ? resourceData.totalCost.toString() : null,
         dailyRate: resourceData.dailyRate ? resourceData.dailyRate.toString() : null,
         hourlyRate: resourceData.hourlyRate ? resourceData.hourlyRate.toString() : null,
-        hoursWorked: resourceData.hoursWorked ? resourceData.hoursWorked.toString() : null,
+        // hoursWorked field removed - not in schema
         usageHours: resourceData.usageHours ? resourceData.usageHours.toString() : null,
         maintenanceCost: resourceData.maintenanceCost ? resourceData.maintenanceCost.toString() : null,
         unitPrice: resourceData.unitPrice ? resourceData.unitPrice.toString() : null,

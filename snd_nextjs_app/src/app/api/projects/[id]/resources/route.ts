@@ -56,7 +56,7 @@ export async function GET(
         equipmentName: projectResources.equipmentName,
         operatorName: projectResources.operatorName,
         hourlyRate: projectResources.hourlyRate,
-        hoursWorked: projectResources.hoursWorked,
+        // hoursWorked field removed - not in schema
         usageHours: projectResources.usageHours,
         maintenanceCost: projectResources.maintenanceCost,
         

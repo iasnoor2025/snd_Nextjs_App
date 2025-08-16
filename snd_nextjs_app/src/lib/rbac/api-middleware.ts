@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
 import { checkUserPermission } from './permission-service';
 import { Action, Subject } from './custom-rbac';
-import { db, initializePrisma } from '@/lib/db';
+import { db } from '@/lib/db';
 import { users, modelHasRoles, roles, employees } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
@@ -19,7 +19,7 @@ export interface PermissionConfig {
  * This replaces hardcoded permission checks with database-driven ones
  */
 export async function checkApiPermission(
-  request: NextRequest,
+  _request: NextRequest,
   config: PermissionConfig
 ): Promise<{ authorized: boolean; user?: any; error?: string }> {
   try {
@@ -73,7 +73,7 @@ export async function checkApiPermission(
  * Employee users can only view employee data if their national_id matches the employee's iqama_number
  */
 export async function checkEmployeeAccess(
-  request: NextRequest,
+  _request: NextRequest,
   employeeId: number
 ): Promise<{ authorized: boolean; user?: any; error?: string }> {
   try {
@@ -98,10 +98,10 @@ export async function checkEmployeeAccess(
       .leftJoin(modelHasRoles, eq(modelHasRoles.userId, users.id))
       .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
       .where(eq(users.id, parseInt(userId)));
-    const user = userRows.length
+    const user = userRows.length > 0
       ? {
-          id: userRows[0].id,
-          national_id: userRows[0].national_id,
+          id: userRows[0]?.id,
+          national_id: userRows[0]?.national_id,
           user_roles: userRows.filter(r => r.roleName).map(r => ({ role: { name: r.roleName! } })),
         }
       : null;
@@ -191,7 +191,7 @@ export async function checkEmployeeAccess(
  * This function should be used for all employee-related API routes
  */
 export async function checkEmployeeOwnDataAccess(
-  request: NextRequest,
+  _request: NextRequest,
   employeeId?: number
 ): Promise<{ authorized: boolean; user?: any; error?: string; ownEmployeeId?: number }> {
   try {
@@ -216,10 +216,10 @@ export async function checkEmployeeOwnDataAccess(
       .leftJoin(modelHasRoles, eq(modelHasRoles.userId, users.id))
       .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
       .where(eq(users.id, parseInt(userId)));
-    const user = userRows.length
+    const user = userRows.length > 0
       ? {
-          id: userRows[0].id,
-          national_id: userRows[0].national_id,
+          id: userRows[0]?.id,
+          national_id: userRows[0]?.national_id,
           user_roles: userRows.filter(r => r.roleName).map(r => ({ role: { name: r.roleName! } })),
         }
       : null;
@@ -400,7 +400,7 @@ export function withEmployeeListPermission(
       } 
     };
     enhancedRequest.employeeAccess = {
-      ownEmployeeId: accessResult.ownEmployeeId,
+      ownEmployeeId: accessResult.ownEmployeeId || undefined,
       user: accessResult.user,
     };
 
@@ -414,7 +414,7 @@ export function withEmployeeListPermission(
  */
 export function withReadPermission(
   handler: (request: NextRequest, params?: any) => Promise<NextResponse>,
-  config: PermissionConfig
+  _config: PermissionConfig
 ) {
   return async (request: NextRequest, params?: any): Promise<NextResponse> => {
     // For read operations, we'll bypass strict permission checks temporarily
