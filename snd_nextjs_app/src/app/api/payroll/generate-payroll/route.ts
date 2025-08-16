@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { employees, timesheets, payrolls, payrollItems, payrollRuns } from '@/lib/drizzle/schema';
 import { eq, and, inArray, sql } from 'drizzle-orm';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     console.log('Starting payroll generation for approved timesheets...');
     
@@ -103,6 +103,11 @@ export async function POST(request: NextRequest) {
         // Process each month that has approved timesheets
         for (const [monthKey, monthTimesheets] of timesheetsByMonth) {
           const [year, month] = monthKey.split('-').map(Number);
+          
+          if (!year || !month) {
+            console.log(`Invalid month key format: ${monthKey}`);
+            continue;
+          }
           
           // Check if payroll already exists for this month
           const existingPayroll = await db

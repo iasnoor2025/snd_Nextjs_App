@@ -42,6 +42,16 @@ export async function POST(
     }
 
     const payroll = payrollRows[0];
+    
+    if (!payroll) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Payroll not found'
+        },
+        { status: 404 }
+      );
+    }
 
     // Check if payroll can be processed
     if (payroll.status !== 'approved') {
@@ -71,6 +81,16 @@ export async function POST(
       .returning();
 
     const updatedPayroll = updatedPayrollRows[0];
+    
+    if (!updatedPayroll) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Failed to update payroll'
+        },
+        { status: 500 }
+      );
+    }
 
     // Get employee data using Drizzle
     const employeeRows = await db

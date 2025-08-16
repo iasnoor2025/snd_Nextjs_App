@@ -17,7 +17,6 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const perPage = parseInt(searchParams.get('per_page') || '50');
-    const userEmail = session.user.email;
 
     // Return empty notifications since the table doesn't exist yet
     return NextResponse.json({

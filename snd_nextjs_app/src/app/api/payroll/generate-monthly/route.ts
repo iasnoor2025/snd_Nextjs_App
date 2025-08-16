@@ -241,6 +241,10 @@ export async function POST(request: NextRequest) {
           .returning();
 
         const payroll = insertedPayrolls[0];
+        
+        if (!payroll) {
+          throw new Error('Failed to create payroll record');
+        }
 
         // Create payroll items
         const payrollItemsData = [
@@ -311,6 +315,10 @@ export async function POST(request: NextRequest) {
       .returning();
 
     const payrollRun = insertedPayrollRuns[0];
+    
+    if (!payrollRun) {
+      throw new Error('Failed to create payroll run record');
+    }
 
     let message = `Monthly payroll generation completed for ${month}/${year}.\n` +
       `Generated: ${totalGenerated} payrolls\n` +

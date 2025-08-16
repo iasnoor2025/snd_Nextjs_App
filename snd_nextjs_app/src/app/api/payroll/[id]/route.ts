@@ -4,7 +4,6 @@ import { payrolls, employees, payrollItems, departments, designations } from '@/
 import { eq } from 'drizzle-orm';
 
 export async function GET(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -79,6 +78,13 @@ export async function GET(
     }
 
     const payroll = payrollData[0];
+    
+    if (!payroll) {
+      return NextResponse.json(
+        { success: false, error: 'Payroll not found' },
+        { status: 404 }
+      );
+    }
 
     // Get payroll items
     const payrollItemsData = await db
@@ -275,7 +281,6 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { payrolls, employees } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 export async function POST(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

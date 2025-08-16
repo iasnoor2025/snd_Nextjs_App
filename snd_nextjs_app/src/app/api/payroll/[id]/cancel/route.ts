@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 // Mock data (same as in the main route)
 const mockPayrolls = [
@@ -193,7 +193,6 @@ const mockPayrolls = [
 ];
 
 export async function POST(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -212,6 +211,16 @@ export async function POST(
     }
 
     const payroll = mockPayrolls[payrollIndex];
+    
+    if (!payroll) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Payroll not found'
+        },
+        { status: 404 }
+      );
+    }
 
     // Check if payroll can be cancelled
     if (payroll.status === 'paid') {

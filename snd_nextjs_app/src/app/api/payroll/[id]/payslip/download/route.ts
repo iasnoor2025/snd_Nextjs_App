@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { payrolls, employees, payrollItems, timesheets } from '@/lib/drizzle/schema';
-import { eq, and, gte, lte, asc, sql } from 'drizzle-orm';
+import { eq, and, asc, sql } from 'drizzle-orm';
 
 export async function GET(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -121,7 +120,7 @@ export async function GET(
     console.log('🔍 PAYSLIP DOWNLOAD API - Sample attendance data:', attendanceData.slice(0, 3).map(a => ({
       date: a.date,
       dateStr: a.date ? String(a.date).split('T')[0] : '',
-      day: a.date ? new Date(String(a.date).split('T')[0]).getDate() : 0,
+      day: a.date ? new Date(String(a.date).split('T')[0] || '').getDate() : 0,
       hours: a.hoursWorked,
       overtime: a.overtimeHours,
       status: a.status
@@ -131,7 +130,7 @@ export async function GET(
     const transformedAttendanceData = attendanceData.map(attendance => ({
       // Use the date directly without timezone conversion to avoid -1 day issue
       date: attendance.date ? String(attendance.date).split('T')[0] : '',
-      day: attendance.date ? new Date(String(attendance.date).split('T')[0]).getDate() : 0,
+      day: attendance.date ? new Date(String(attendance.date).split('T')[0] || '').getDate() : 0,
       status: attendance.status,
       hours: Number(attendance.hoursWorked) || 0,
       overtime: Number(attendance.overtimeHours) || 0
