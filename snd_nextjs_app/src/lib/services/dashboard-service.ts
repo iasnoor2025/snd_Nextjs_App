@@ -44,6 +44,19 @@ export interface IqamaData {
   position: string | null;
 }
 
+export interface EquipmentData {
+  id: number;
+  equipmentName: string;
+  equipmentNumber: string | null;
+  istimaraExpiry: string | null;
+  daysRemaining: number | null;
+  department: string | null;
+  status: 'available' | 'expired' | 'expiring' | 'missing';
+  manufacturer: string | null;
+  modelNumber: string | null;
+  serialNumber: string | null;
+}
+
 export interface TimesheetData {
   id: number;
   employeeName: string;
@@ -329,6 +342,85 @@ export class DashboardService {
     } catch (error) {
       console.error('Error fetching iqama data:', error);
       throw error;
+    }
+  }
+
+  static async getEquipmentData(limit: number = 50): Promise<EquipmentData[]> {
+    try {
+      const today = new Date();
+      const thirtyDaysFromNow = new Date();
+      thirtyDaysFromNow.setDate(today.getDate() + 30);
+
+      console.log('🔍 Getting equipment data...');
+      console.log('🔍 Database connection test...');
+      
+      // Test basic database connection first
+      const testQuery = await db.select().from(equipment).limit(1);
+      console.log('🔍 Basic connection test result:', testQuery.length);
+      
+      const equipmentData = await db
+        .select({
+          id: equipment.id,
+          equipmentName: equipment.name,
+          equipmentNumber: equipment.doorNumber,
+          istimaraExpiry: equipment.istimaraExpiryDate,
+          manufacturer: equipment.manufacturer,
+          modelNumber: equipment.modelNumber,
+          serialNumber: equipment.serialNumber,
+          department: null, // Equipment doesn't have department in current schema
+        })
+        .from(equipment)
+        .limit(limit);
+
+      console.log('🔍 Equipment data fetched:', equipmentData.length, 'items');
+      console.log('🔍 Sample equipment data:', JSON.stringify(equipmentData.slice(0, 2), null, 2));
+
+      const result = equipmentData.map(doc => {
+        let status: 'available' | 'expired' | 'expiring' | 'missing' = 'available';
+        let daysRemaining: number | null = null;
+
+        if (!doc.istimaraExpiry) {
+          status = 'missing';
+        } else {
+          const expiryDate = new Date(doc.istimaraExpiry);
+          const diffTime = expiryDate.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+          if (diffDays < 0) {
+            status = 'expired';
+            daysRemaining = Math.abs(diffDays);
+          } else if (diffDays <= 30) {
+            status = 'expiring';
+            daysRemaining = diffDays;
+          } else {
+            daysRemaining = diffDays;
+          }
+        }
+
+        return {
+          ...doc,
+          status,
+          daysRemaining,
+        };
+      });
+
+      console.log('🔍 Final processed equipment data:', result.length, 'items');
+      console.log('🔍 Status breakdown:', {
+        available: result.filter(item => item.status === 'available').length,
+        expired: result.filter(item => item.status === 'expired').length,
+        expiring: result.filter(item => item.status === 'expiring').length,
+        missing: result.filter(item => item.status === 'missing').length
+      });
+
+      return result;
+    } catch (error) {
+      console.error('❌ Error fetching Equipment data:', error);
+      if (error instanceof Error) {
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error stack:', error.stack);
+      }
+      // Return empty array instead of throwing to prevent dashboard crash
+      return [];
     }
   }
 
