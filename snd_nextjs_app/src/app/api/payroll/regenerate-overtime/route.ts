@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { payrolls, employees, payrollItems } from '@/lib/drizzle/schema';
 import { eq, gt, and, sql } from 'drizzle-orm';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     console.log('Starting overtime recalculation for existing payrolls...');
     

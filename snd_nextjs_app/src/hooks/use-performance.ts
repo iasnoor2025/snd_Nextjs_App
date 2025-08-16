@@ -71,7 +71,7 @@ export function usePerformance(options: UsePerformanceOptions = {}) {
       const entries = list.getEntries();
       const fidEntry = entries[entries.length - 1];
       if (fidEntry) {
-        updateMetrics({ fid: fidEntry.processingStart - fidEntry.startTime });
+        updateMetrics({ fid: fidEntry.processingStart - fidEntry.startTime }); 
       }
     });
 

@@ -262,6 +262,10 @@ export async function POST() {
             .returning();
 
           const payroll = insertedPayrolls[0];
+          
+          if (!payroll) {
+            throw new Error('Failed to create payroll record');
+          }
 
           // Create payroll items
           const payrollItemsData = [
@@ -334,6 +338,10 @@ export async function POST() {
       .returning();
 
     const payrollRun = insertedPayrollRuns[0];
+    
+    if (!payrollRun) {
+      throw new Error('Failed to create payroll run record');
+    }
 
     let message = `Payroll generation completed successfully.\n` +
       `Generated: ${totalGenerated} payrolls\n` +
