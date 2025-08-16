@@ -52,7 +52,9 @@ export interface TimesheetData {
   checkIn: string | null;
   checkOut: string | null;
   totalHours: number;
+  overtimeHours: number;
   status: 'present' | 'absent' | 'late' | 'half-day';
+  approvalStatus: string;
   date: string;
 }
 
@@ -343,7 +345,9 @@ export class DashboardService {
           department: departments.name,
           checkIn: timesheets.startTime,
           checkOut: timesheets.endTime,
-          totalHours: sql<number>`CAST(${timesheets.hoursWorked} AS DECIMAL)`,
+          totalHours: timesheets.hoursWorked,
+          overtimeHours: timesheets.overtimeHours,
+          approvalStatus: timesheets.status,
           date: timesheets.date,
         })
         .from(timesheets)
@@ -372,6 +376,8 @@ export class DashboardService {
         return {
           ...timesheet,
           status,
+          totalHours: Number(timesheet.totalHours) || 0,
+          overtimeHours: Number(timesheet.overtimeHours) || 0,
         };
       });
     } catch (error) {

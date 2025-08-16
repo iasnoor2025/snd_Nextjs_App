@@ -51,6 +51,7 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  UserX,
   Activity,
   BarChart3,
   PieChart,
@@ -115,6 +116,26 @@ export default function DashboardPage() {
   const [selectedIqama, setSelectedIqama] = useState<IqamaData | null>(null);
   const [newExpiryDate, setNewExpiryDate] = useState('');
   const [updating, setUpdating] = useState(false);
+  
+  // State for timesheet approval
+  const [approvingTimesheet, setApprovingTimesheet] = useState<number | null>(null);
+  const [approvalSuccess, setApprovalSuccess] = useState<string | null>(null);
+  
+  // State for timesheet rejection
+  const [rejectingTimesheet, setRejectingTimesheet] = useState<number | null>(null);
+  
+  // State for marking absent
+  const [markingAbsent, setMarkingAbsent] = useState<number | null>(null);
+  
+  // State for edit hours modal
+  const [isEditHoursModalOpen, setIsEditHoursModalOpen] = useState(false);
+  const [selectedTimesheetForEdit, setSelectedTimesheetForEdit] = useState<any>(null);
+  const [editHours, setEditHours] = useState('');
+  const [editOvertimeHours, setEditOvertimeHours] = useState('');
+  const [updatingHours, setUpdatingHours] = useState(false);
+  
+  // State for current time
+  const [currentTime, setCurrentTime] = useState(new Date());
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -264,6 +285,15 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval, session]);
   
+  // Update current time every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
+  
   // Debounced search effect
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -301,6 +331,8 @@ export default function DashboardPage() {
         recentActivity: activityData
       } = data;
 
+
+      
       // Set all the data
       setStats(stats);
       setIqamaData(iqamaData);
@@ -381,6 +413,202 @@ export default function DashboardPage() {
     }
   }
 
+  // Helper function to get the next approval stage
+  const getNextApprovalStage = (currentStatus: string): string => {
+    switch (currentStatus) {
+      case 'draft':
+        return 'foreman';
+      case 'submitted':
+        return 'foreman';
+      case 'foreman_approved':
+        return 'incharge';
+      case 'incharge_approved':
+        return 'checking';
+      case 'checking_approved':
+        return 'manager';
+      case 'manager_approved':
+        return 'final';
+      default:
+        return 'next';
+    }
+  };
+
+  // Handle approving timesheet
+  const handleApproveTimesheet = async (timesheetId: number) => {
+    setApprovingTimesheet(timesheetId);
+    try {
+      const response = await fetch(`/api/timesheets/${timesheetId}/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to approve timesheet');
+      }
+
+      const result = await response.json();
+      
+      // Show success message
+      setApprovalSuccess(result.message);
+      console.log('Timesheet approved successfully:', result.message);
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setApprovalSuccess(null), 5000);
+      
+      // Refresh dashboard data to show updated approval status
+      await fetchDashboardData();
+    } catch (error) {
+      console.error('Error approving timesheet:', error);
+      alert(error instanceof Error ? error.message : 'Failed to approve timesheet. Please try again.');
+    } finally {
+      setApprovingTimesheet(null);
+    }
+  }
+
+  // Handle rejecting timesheet
+  const handleRejectTimesheet = async (timesheetId: number) => {
+    setRejectingTimesheet(timesheetId);
+    try {
+      const response = await fetch(`/api/timesheets/${timesheetId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          reason: 'Rejected by foreman/supervisor'
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to reject timesheet');
+      }
+
+      const result = await response.json();
+      
+      // Show success message
+      setApprovalSuccess(`Timesheet rejected: ${result.message}`);
+      console.log('Timesheet rejected successfully:', result.message);
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setApprovalSuccess(null), 5000);
+      
+      // Refresh dashboard data to show updated status
+      await fetchDashboardData();
+    } catch (error) {
+      console.error('Error rejecting timesheet:', error);
+      alert(error instanceof Error ? error.message : 'Failed to reject timesheet. Please try again.');
+    } finally {
+      setRejectingTimesheet(null);
+    }
+  }
+
+  // Handle marking employee as absent
+  const handleMarkAbsent = async (timesheetId: number) => {
+    setMarkingAbsent(timesheetId);
+    try {
+      const response = await fetch(`/api/timesheets/${timesheetId}/mark-absent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          status: 'absent',
+          reason: 'Marked absent by foreman/supervisor'
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to mark employee as absent');
+      }
+
+      const result = await response.json();
+      
+      // Show success message
+      setApprovalSuccess(`Employee marked as absent: ${result.message}`);
+      console.log('Employee marked as absent successfully:', result.message);
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setApprovalSuccess(null), 5000);
+      
+      // Refresh dashboard data to show updated status
+      await fetchDashboardData();
+    } catch (error) {
+      console.error('Error marking employee as absent:', error);
+      alert(error instanceof Error ? error.message : 'Failed to mark employee as absent. Please try again.');
+    } finally {
+      setMarkingAbsent(null);
+    }
+  }
+
+  // Handle opening edit hours modal
+  const handleEditHours = (timesheetId: number) => {
+    const timesheet = timesheetData.find(t => t.id === timesheetId);
+    if (timesheet) {
+      setSelectedTimesheetForEdit(timesheet);
+      const hours = Number(timesheet.totalHours) || 0;
+      const otHours = Number(timesheet.overtimeHours) || 0;
+      setEditHours(isNaN(hours) ? '0.0' : hours.toFixed(1));
+      setEditOvertimeHours(isNaN(otHours) ? '0.0' : otHours.toFixed(1));
+      setIsEditHoursModalOpen(true);
+    }
+  }
+
+  // Handle updating hours and overtime
+  const handleUpdateHours = async () => {
+    if (!selectedTimesheetForEdit || !editHours) return;
+    
+    setUpdatingHours(true);
+    try {
+      const response = await fetch(`/api/timesheets/${selectedTimesheetForEdit.id}/update-hours`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          hoursWorked: parseFloat(editHours),
+          overtimeHours: parseFloat(editOvertimeHours) || 0
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to update hours');
+      }
+
+      const result = await response.json();
+      
+      // Show success message
+      setApprovalSuccess(`Hours updated successfully: ${result.message}`);
+      console.log('Hours updated successfully:', result.message);
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setApprovalSuccess(null), 5000);
+      
+      // Close modal and reset state
+      setIsEditHoursModalOpen(false);
+      setSelectedTimesheetForEdit(null);
+      setEditHours('');
+      setEditOvertimeHours('');
+      
+      // Refresh dashboard data to show updated hours
+      await fetchDashboardData();
+    } catch (error) {
+      console.error('Error updating hours:', error);
+      alert(error instanceof Error ? error.message : 'Failed to update hours. Please try again.');
+    } finally {
+      setUpdatingHours(false);
+    }
+  }
+
   // Show loading while checking authentication
   if (status === "loading") {
     return (
@@ -413,6 +641,10 @@ export default function DashboardPage() {
               <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">
                 {session.user?.role?.replace('_', ' ')}
               </Badge>
+              <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                <Clock3 className="h-3 w-3" />
+                Current: {currentTime.toLocaleTimeString()}
+              </div>
               {lastUpdated && (
                 <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                   <Clock3 className="h-3 w-3" />
@@ -897,78 +1129,388 @@ export default function DashboardPage() {
                 </CardContent>
               </Card>
 
-              {/* Today's Timesheets */}
-              <Card className="border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 shadow-lg">
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
-                    <Timer className="h-5 w-5" />
-                    Today's Attendance
-                  </CardTitle>
-                  <CardDescription className="text-blue-700 dark:text-blue-300">
-                    Employee attendance and timesheet status for today
-                  </CardDescription>
+                            {/* Today's Timesheets */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Timer className="h-5 w-5" />
+                        Today's Attendance
+                      </CardTitle>
+                      <CardDescription>
+                        Employee attendance and timesheet status for today
+                        <span className="ml-2 text-muted-foreground">
+                          ({currentTime.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })})
+                        </span>
+                      </CardDescription>
+                    </div>
+                    <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Can Approve
+                        </Badge>
+                        <div className="text-xs text-muted-foreground">
+                          Role: {session?.user?.role?.replace('_', ' ')}
+                        </div>
+                      </div>
+                    </RoleBased>
+                  </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {/* Attendance Summary */}
-                    <div className="grid grid-cols-3 gap-2 mb-4">
-                      <div className="text-center p-2 bg-green-200 dark:bg-green-800/30 rounded-lg">
-                        <div className="text-lg font-bold text-green-800 dark:text-green-200">
-                          {timesheetData.filter(item => item.status === 'present').length}
-            </div>
-                        <div className="text-xs text-green-600 dark:text-green-400">Present</div>
+                <CardContent className="space-y-4">
+                  {/* Attendance Summary */}
+                  <div className="grid grid-cols-5 gap-4">
+                    <div className="text-center p-3 rounded-lg border bg-card">
+                      <div className="text-2xl font-bold text-green-600">
+                        {timesheetData.filter(item => item.status === 'present').length}
                       </div>
-                      <div className="text-center p-2 bg-yellow-200 dark:bg-yellow-800/30 rounded-lg">
-                        <div className="text-lg font-bold text-yellow-800 dark:text-yellow-200">
-                          {timesheetData.filter(item => item.status === 'late').length}
-                        </div>
-                        <div className="text-xs text-yellow-600 dark:text-yellow-400">Late</div>
+                      <div className="text-sm text-muted-foreground">Present</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg border bg-card">
+                      <div className="text-2xl font-bold text-yellow-600">
+                        {timesheetData.filter(item => item.status === 'late').length}
                       </div>
-                      <div className="text-center p-2 bg-red-200 dark:bg-red-800/30 rounded-lg">
-                        <div className="text-lg font-bold text-red-800 dark:text-red-200">
-                          {timesheetData.filter(item => item.status === 'absent').length}
+                      <div className="text-sm text-muted-foreground">Late</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg border bg-card">
+                      <div className="text-2xl font-bold text-red-600">
+                        {timesheetData.filter(item => item.status === 'absent').length}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Absent</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg border bg-card">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {timesheetData.filter(item => item.approvalStatus === 'manager_approved').length}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Approved</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg border bg-card">
+                      <div className="text-2xl font-bold text-orange-600">
+                        {timesheetData.filter(item => item.approvalStatus !== 'manager_approved').length}
+                      </div>
+                      <div className="text-sm text-muted-foreground">Pending</div>
+                    </div>
+                  </div>
+                  
+                  {/* Approval Workflow Indicator */}
+                  <div className="p-4 rounded-lg border bg-muted/50">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-sm font-medium">Approval Workflow</div>
+                      <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+                        <div className="text-xs text-muted-foreground">
+                          Your Role: {session?.user?.role?.replace('_', ' ')}
                         </div>
-                        <div className="text-xs text-red-600 dark:text-red-400">Absent</div>
+                      </RoleBased>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <span>Draft/Submitted</span>
+                      </div>
+                      <div className="text-muted-foreground">→</div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <span>Foreman</span>
+                      </div>
+                      <div className="text-muted-foreground">→</div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <span>Incharge</span>
+                      </div>
+                      <div className="text-muted-foreground">→</div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        <span>Checking</span>
+                      </div>
+                      <div className="text-muted-foreground">→</div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-green-600">Manager (Final)</span>
                       </div>
                     </div>
-                    
-                    {/* Timesheet Table */}
-                    <div className="max-h-64 overflow-y-auto">
-              <Table>
-                <TableHeader>
-                          <TableRow className="bg-blue-100 dark:bg-blue-900/20">
-                            <TableHead className="text-blue-800 dark:text-blue-200">Employee</TableHead>
-                            <TableHead className="text-blue-800 dark:text-blue-200">Status</TableHead>
-                            <TableHead className="text-blue-800 dark:text-blue-200">Hours</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                          {timesheetData.slice(0, 10).map((item) => (
-                            <TableRow key={item.id} className="hover:bg-blue-50 dark:hover:bg-blue-900/10">
-                              <TableCell className="font-medium">{item.employeeName}</TableCell>
-                              <TableCell>
-                                <Badge 
-                                  variant={item.status === 'present' ? 'default' : 
-                                         item.status === 'late' ? 'secondary' : 
-                                         item.status === 'half-day' ? 'outline' : 'destructive'}
-                                >
-                                  {item.status}
-                                </Badge>
+                  </div>
+                  
+                  {/* Success Message */}
+                  {approvalSuccess && (
+                    <div className="p-4 rounded-lg border bg-green-50 dark:bg-green-950/50 border-green-200 dark:border-green-800">
+                      <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
+                        <CheckCircle className="h-4 w-4" />
+                        <span className="font-medium">{approvalSuccess}</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Timesheet Table */}
+                  <div className="rounded-lg border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Employee</TableHead>
+                          <TableHead>Attendance</TableHead>
+                          <TableHead>Approval</TableHead>
+                          <TableHead>Hours</TableHead>
+                          <TableHead>OT</TableHead>
+                          <TableHead>Total</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {timesheetData.slice(0, 10).map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell className="font-medium">{item.employeeName}</TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={item.status === 'present' ? 'default' : 
+                                       item.status === 'late' ? 'secondary' : 
+                                       item.status === 'half-day' ? 'outline' : 'destructive'}
+                                className={`${
+                                  item.status === 'present' ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800' :
+                                  item.status === 'late' ? 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800' :
+                                  item.status === 'half-day' ? 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800' :
+                                  'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
+                                }`}
+                              >
+                                {item.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={
+                                  item.approvalStatus === 'manager_approved' ? 'default' :
+                                  item.approvalStatus === 'foreman_approved' ? 'secondary' :
+                                  item.approvalStatus === 'incharge_approved' ? 'outline' :
+                                  item.approvalStatus === 'checking_approved' ? 'secondary' :
+                                  item.approvalStatus === 'submitted' ? 'secondary' :
+                                  item.approvalStatus === 'pending' ? 'outline' :
+                                  item.approvalStatus === 'draft' ? 'outline' :
+                                  'destructive'
+                                }
+                                className={`capitalize ${
+                                  item.approvalStatus === 'manager_approved' ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800' :
+                                  item.approvalStatus === 'foreman_approved' ? 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800' :
+                                  item.approvalStatus === 'incharge_approved' ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800' :
+                                  item.approvalStatus === 'checking_approved' ? 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800' :
+                                  item.approvalStatus === 'submitted' ? 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800' :
+                                  item.approvalStatus === 'pending' ? 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800' :
+                                  item.approvalStatus === 'draft' ? 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800' :
+                                  'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
+                                }`}
+                              >
+                                {item.approvalStatus === 'manager_approved' ? 'Final Approved' :
+                                 item.approvalStatus === 'foreman_approved' ? 'Foreman Approved' :
+                                 item.approvalStatus === 'incharge_approved' ? 'Incharge Approved' :
+                                 item.approvalStatus === 'checking_approved' ? 'Checking Approved' :
+                                 item.approvalStatus === 'submitted' ? 'Submitted' :
+                                 item.approvalStatus === 'pending' ? 'Pending' :
+                                 item.approvalStatus === 'draft' ? 'Draft' :
+                                 item.approvalStatus}
+                              </Badge>
+                              {item.approvalStatus !== 'manager_approved' && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Next: {getNextApprovalStage(item.approvalStatus)}
+                                </div>
+                              )}
+                            </TableCell>
+                                                          <TableCell className="text-sm">
+                                <div className="text-center">
+                                  <div className="font-medium">
+                                    {(() => {
+                                      try {
+                                        const hours = Number(item.totalHours) || 0;
+                                        return isNaN(hours) ? '0.0' : hours.toFixed(1);
+                                      } catch (error) {
+                                        console.error('Error formatting totalHours:', error, item.totalHours);
+                                        return '0.0';
+                                      }
+                                    })()}h
+                                  </div>
+                                </div>
                               </TableCell>
-                              <TableCell className="text-sm">{item.totalHours}h</TableCell>
-                      </TableRow>
-                          ))}
-                </TableBody>
-              </Table>
-            </div>
-                    
-                    {timesheetData.length > 0 && (
-                      <Button variant="outline" size="sm" className="w-full border-blue-300 text-blue-700 hover:bg-blue-50" 
+                              <TableCell className="text-sm">
+                                <div className="text-center">
+                                  <div className="font-medium text-orange-600 dark:text-orange-400">
+                                    {(() => {
+                                      try {
+                                        const otHours = Number(item.overtimeHours) || 0;
+                                        return isNaN(otHours) ? '0.0' : otHours.toFixed(1);
+                                      } catch (error) {
+                                        console.error('Error formatting overtimeHours:', error, item.overtimeHours);
+                                        return '0.0';
+                                      }
+                                    })()}h
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-sm">
+                                <div className="text-center">
+                                  <div className="font-medium text-blue-600 dark:text-blue-400">
+                                    {(() => {
+                                      try {
+                                        const hours = Number(item.totalHours) || 0;
+                                        const otHours = Number(item.overtimeHours) || 0;
+                                        const total = (isNaN(hours) ? 0 : hours) + (isNaN(otHours) ? 0 : otHours);
+                                        return total.toFixed(1);
+                                      } catch (error) {
+                                        console.error('Error calculating total:', error, { totalHours: item.totalHours, overtimeHours: item.overtimeHours });
+                                        return '0.0';
+                                      }
+                                    })()}h
+                                  </div>
+                                </div>
+                              </TableCell>
+                            <TableCell>
+                              <div className="flex gap-1">
+                                {/* Approve Button */}
+                                {item.approvalStatus !== 'manager_approved' && (
+                                  <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleApproveTimesheet(item.id)}
+                                      disabled={approvingTimesheet === item.id}
+                                      title={`Approve to next stage: ${getNextApprovalStage(item.approvalStatus)}`}
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      {approvingTimesheet === item.id ? (
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <CheckCircle className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </RoleBased>
+                                )}
+                                
+                                {/* Reject Button - Only for foreman and above */}
+                                {item.approvalStatus !== 'manager_approved' && item.approvalStatus !== 'rejected' && (
+                                  <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleRejectTimesheet(item.id)}
+                                      disabled={rejectingTimesheet === item.id}
+                                      title="Reject timesheet"
+                                      className="h-8 w-8 p-0 border-red-200 text-red-700 hover:bg-red-50"
+                                    >
+                                      {rejectingTimesheet === item.id ? (
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                      ) : (
+                                        <XCircle className="h-4 w-4" />
+                                      )}
+                                    </Button>
+                                  </RoleBased>
+                                )}
+                                
+                                {/* Mark Absent Button - Only for foreman and above */}
+                                <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleMarkAbsent(item.id)}
+                                    disabled={markingAbsent === item.id}
+                                    title="Mark employee as absent"
+                                    className="h-8 w-8 p-0 border-orange-200 text-orange-700 hover:bg-orange-50"
+                                  >
+                                    {markingAbsent === item.id ? (
+                                      <RefreshCw className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <UserX className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </RoleBased>
+                                
+                                {/* Edit Hours Button - Only for foreman and above */}
+                                <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleEditHours(item.id)}
+                                    title="Edit hours and overtime"
+                                    className="h-8 w-8 p-0 border-blue-200 text-blue-700 hover:bg-blue-50"
+                                  >
+                                    <Clock className="h-4 w-4" />
+                                  </Button>
+                                </RoleBased>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  
+                  {/* No timesheets message */}
+                  {timesheetData.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Timer className="h-8 w-8 mx-auto mb-2 opacity-60" />
+                      <p className="font-medium">No timesheets found for today</p>
+                      <p className="text-sm opacity-80">Employees may not have submitted timesheets yet</p>
+                    </div>
+                  )}
+                  
+                  {timesheetData.length > 0 && (
+                    <>
+                      {/* Approval Progress Summary */}
+                      <div className="p-4 rounded-lg border bg-muted/50">
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-4">
+                            <span className="font-medium">Approval Progress:</span>
+                            <div className="flex items-center gap-2">
+                              <span className="flex items-center gap-1">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                Final Approved: {timesheetData.filter(item => item.approvalStatus === 'manager_approved').length}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                In Progress: {timesheetData.filter(item => item.approvalStatus !== 'manager_approved').length}
+                              </span>
+                              <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+                                <span className="flex items-center gap-1">
+                                  <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                                  Can Approve: {timesheetData.filter(item => item.approvalStatus !== 'manager_approved').length}
+                                </span>
+                              </RoleBased>
+                            </div>
+                          </div>
+                          <div className="text-muted-foreground">
+                            {Math.round((timesheetData.filter(item => item.approvalStatus === 'manager_approved').length / timesheetData.length) * 100)}% Complete
+                          </div>
+                        </div>
+                        
+                        {/* Approval Stage Breakdown */}
+                        <div className="mt-3 pt-3 border-t">
+                          <div className="text-xs text-muted-foreground mb-2">Stage Breakdown:</div>
+                          <div className="grid grid-cols-5 gap-2 text-xs">
+                            <div className="text-center">
+                              <div className="font-medium">{timesheetData.filter(item => item.approvalStatus === 'submitted' || item.approvalStatus === 'draft').length}</div>
+                              <div className="text-muted-foreground">Submitted</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-medium">{timesheetData.filter(item => item.approvalStatus === 'foreman_approved').length}</div>
+                              <div className="text-muted-foreground">Foreman</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-medium">{timesheetData.filter(item => item.approvalStatus === 'incharge_approved').length}</div>
+                              <div className="text-muted-foreground">Incharge</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-medium">{timesheetData.filter(item => item.approvalStatus === 'checking_approved').length}</div>
+                              <div className="text-muted-foreground">Checking</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="font-medium">{timesheetData.filter(item => item.approvalStatus === 'manager_approved').length}</div>
+                              <div className="text-muted-foreground">Manager</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <Button variant="outline" className="w-full" 
                               onClick={() => router.push('/modules/timesheet-management')}>
                         View All Timesheets ({timesheetData.length} records)
                       </Button>
-                    )}
-            </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
           </div>
@@ -1244,6 +1786,69 @@ export default function DashboardPage() {
                   >
                     {updating ? 'Updating...' : 'Update'}
                       </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Edit Hours Modal */}
+            <Dialog open={isEditHoursModalOpen} onOpenChange={setIsEditHoursModalOpen}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Edit Timesheet Hours</DialogTitle>
+                  <DialogDescription>
+                    Update hours and overtime for {selectedTimesheetForEdit?.employeeName}'s timesheet.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="hoursWorked" className="text-right">
+                      Hours Worked
+                    </Label>
+                    <Input
+                      id="hoursWorked"
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      max="24"
+                      value={editHours}
+                      onChange={(e) => setEditHours(e.target.value)}
+                      className="col-span-3"
+                      placeholder="8.0"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="overtimeHours" className="text-right">
+                      Overtime Hours
+                    </Label>
+                    <Input
+                      id="overtimeHours"
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      max="12"
+                      value={editOvertimeHours}
+                      onChange={(e) => setEditOvertimeHours(e.target.value)}
+                      className="col-span-3"
+                      placeholder="2.0"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditHoursModalOpen(false)}
+                    disabled={updatingHours}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleUpdateHours}
+                    disabled={!editHours || updatingHours}
+                  >
+                    {updatingHours ? 'Updating...' : 'Update Hours'}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
