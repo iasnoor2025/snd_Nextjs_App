@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { withAuth, PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
+import { withAuth, withPermission } from '@/lib/rbac/api-middleware';
 import {
   equipmentMaintenance as equipmentMaintenanceTable,
   equipment as equipmentTable,
@@ -138,6 +138,9 @@ export const POST = withPermission(async (request: NextRequest) => {
           updatedAt: nowIso,
         })
         .returning({ id: equipmentMaintenanceTable.id, status: equipmentMaintenanceTable.status });
+      if (!inserted[0]) {
+        throw new Error('Failed to create maintenance record');
+      }
       const maintenanceId = inserted[0].id;
 
       let totalCostNum = 0;
@@ -165,6 +168,10 @@ export const POST = withPermission(async (request: NextRequest) => {
         .set({ cost: String(totalCostNum) as any, updatedAt: nowIso })
         .where(eq(equipmentMaintenanceTable.id, maintenanceId))
         .returning({ id: equipmentMaintenanceTable.id, status: equipmentMaintenanceTable.status, equipmentId: equipmentMaintenanceTable.equipmentId });
+
+      if (!updatedMaintenance[0]) {
+        throw new Error('Failed to update maintenance record');
+      }
 
       const newStatus = updatedMaintenance[0].status === 'completed' ? 'available' : 'under_maintenance';
       await tx

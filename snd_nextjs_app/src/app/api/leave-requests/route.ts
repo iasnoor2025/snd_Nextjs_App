@@ -88,6 +88,13 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
+    if (!leaveRequest) {
+      return NextResponse.json(
+        { error: 'Failed to create leave request' },
+        { status: 500 }
+      );
+    }
+
     console.log('✅ Leave request created:', leaveRequest.id);
 
     return NextResponse.json({

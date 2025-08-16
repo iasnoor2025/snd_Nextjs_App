@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE() {
   try {
     const session = await getServerSession(authOptions);
     

@@ -7,7 +7,6 @@ import { authConfig } from '@/lib/auth-config';
 
 // GET /api/leave-requests/[id] - Get a specific leave request
 export async function GET(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -130,7 +129,6 @@ export async function GET(
 
 // DELETE /api/leave-requests/[id] - Delete a leave request
 export async function DELETE(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -209,7 +207,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { leave_type, start_date, end_date, days, reason, status, comments } = body;
+    const { leave_type, start_date, end_date, days, reason, status } = body;
 
     // Validate required fields
     if (!leave_type || !start_date || !end_date || !days || !reason || !status) {
@@ -275,6 +273,13 @@ export async function PUT(
         createdAt: employeeLeaves.createdAt,
         updatedAt: employeeLeaves.updatedAt,
       });
+
+    if (!updatedLeave) {
+      return NextResponse.json(
+        { error: 'Failed to update leave request' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

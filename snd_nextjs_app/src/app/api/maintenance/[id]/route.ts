@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { withAuth, withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { withAuth, withPermission } from '@/lib/rbac/api-middleware';
 import {
   equipmentMaintenance as equipmentMaintenanceTable,
   equipment as equipmentTable,
   employees as employeesTable,
   equipmentMaintenanceItems as maintenanceItemsTable,
 } from '@/lib/drizzle/schema';
-import { and, desc, eq } from 'drizzle-orm';
-import { sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
-export const GET = withAuth(async (request: NextRequest, { params }: { params: { id: string } }) => {
+export const GET = withAuth(async (_request: NextRequest, { params }: { params: { id: string } }) => {
   try {
     const id = parseInt(params.id);
     if (!id) return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });
@@ -100,6 +99,9 @@ export const PUT = withPermission(async (request: NextRequest, { params }: { par
           cost: equipmentMaintenanceTable.cost,
         });
 
+      if (!updatedMaint[0]) {
+        throw new Error('Failed to update maintenance record');
+      }
       let totalCostNum = Number(updatedMaint[0].cost || 0);
       if (Array.isArray(items)) {
         await tx.delete(maintenanceItemsTable).where(eq(maintenanceItemsTable.maintenanceId, id));
@@ -185,7 +187,7 @@ export const PUT = withPermission(async (request: NextRequest, { params }: { par
   }
 }, { action: 'update', subject: 'Maintenance', fallbackAction: 'update', fallbackSubject: 'Equipment' });
 
-export const DELETE = withPermission(async (request: NextRequest, { params }: { params: { id: string } }) => {
+export const DELETE = withPermission(async (_request: NextRequest, { params }: { params: { id: string } }) => {
   try {
     const id = parseInt(params.id);
     if (!id) return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });
