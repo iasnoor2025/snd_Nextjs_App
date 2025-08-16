@@ -122,11 +122,9 @@ export async function GET(
 }
 
 export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  _request: NextRequest
 ) {
   try {
-    const { id } = await params;
     const body = await _request.json();
 
     // In a real implementation, this would call the Laravel API
@@ -154,11 +152,9 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  _request: NextRequest
 ) {
   try {
-    const { id } = await params;
     // In a real implementation, this would call the Laravel API
     // const response = await fetch(`${process.env.LARAVEL_API_URL}/api/quotations/${id}`, {
     //   method: 'DELETE',

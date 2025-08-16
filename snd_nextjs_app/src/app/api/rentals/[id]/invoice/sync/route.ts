@@ -5,7 +5,7 @@ import { rentals } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -24,6 +24,9 @@ export async function GET(
     }
 
     const currentRental = rental[0];
+    if (!currentRental) {
+      return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
+    }
     
     if (!currentRental.invoiceId) {
       return NextResponse.json({
@@ -96,7 +99,7 @@ export async function GET(
 }
 
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -115,6 +118,9 @@ export async function POST(
     }
 
     const currentRental = rental[0];
+    if (!currentRental) {
+      return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
+    }
     
     if (!currentRental.invoiceId) {
       return NextResponse.json({

@@ -4,7 +4,7 @@ import { projects, customers, rentals } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -52,6 +52,12 @@ export async function GET(
     }
 
     const project = projectData[0];
+    if (!project) {
+      return NextResponse.json(
+        { error: 'Project not found' },
+        { status: 404 }
+      );
+    }
     console.log('Project:', project);
 
     // Get customer data if customerId exists
@@ -145,7 +151,7 @@ export async function PUT(
     const { id: projectId } = await params;
     const body = await request.json();
 
-    const updatedProject = await db
+    await db
       .update(projects)
       .set({
         name: body.name,
@@ -157,10 +163,7 @@ export async function PUT(
         budget: body.budget ? String(parseFloat(body.budget)) : null,
         notes: body.notes || body.objectives || body.scope || body.deliverables || body.constraints || body.assumptions || body.risks || body.quality_standards || body.communication_plan || body.stakeholder_management || body.change_management || body.procurement_plan || body.resource_plan || body.schedule_plan || body.cost_plan || body.quality_plan || body.risk_plan || body.communication_plan_detailed || body.stakeholder_plan || body.change_plan || body.procurement_plan_detailed || body.resource_plan_detailed || body.schedule_plan_detailed || body.cost_plan_detailed || body.quality_plan_detailed || body.risk_plan_detailed,
       })
-      .where(eq(projects.id, parseInt(projectId)))
-      .returning();
-
-    const project = updatedProject[0];
+      .where(eq(projects.id, parseInt(projectId)));
 
     // Fetch the updated project with customer details
     const projectWithCustomer = await db
@@ -201,7 +204,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

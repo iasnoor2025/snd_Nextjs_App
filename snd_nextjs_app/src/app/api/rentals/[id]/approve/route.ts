@@ -5,7 +5,7 @@ import { rentals } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

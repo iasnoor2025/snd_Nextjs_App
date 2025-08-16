@@ -3,7 +3,7 @@ import { RentalService } from '@/lib/services/rental-service';
 import { PDFGenerator } from '@/lib/pdf-generator';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -28,8 +28,8 @@ export async function GET(
     // Prepare invoice data for PDF generation
     const invoiceData = {
       invoiceNumber: rental.invoiceId,
-      invoiceDate: rental.invoiceDate || new Date().toISOString().split('T')[0],
-      dueDate: rental.paymentDueDate || new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      invoiceDate: (rental.invoiceDate || new Date().toISOString().split('T')[0])!,
+      dueDate: (rental.paymentDueDate || new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0])!,
       customer: {
         name: rental.customer?.name || 'Unknown Customer',
         email: rental.customer?.email || '',
@@ -48,13 +48,13 @@ export async function GET(
           unitPrice: item.unitPrice,
           totalPrice: item.totalPrice,
           rateType: item.rateType,
-          operatorId: item.operatorId || undefined,
+          operatorId: item.operatorId || 0,
           status: item.status,
           notes: item.notes || '',
-          createdAt: item.createdAt || new Date().toISOString().split('T')[0],
-          updatedAt: item.updatedAt || new Date().toISOString().split('T')[0],
-          equipmentModelNumber: item.equipmentModelNumber || undefined,
-          equipmentCategoryId: item.equipmentCategoryId || undefined,
+          createdAt: (item.createdAt || new Date().toISOString().split('T')[0])!,
+          updatedAt: (item.updatedAt || new Date().toISOString().split('T')[0])!,
+          equipmentModelNumber: item.equipmentModelNumber || '',
+          equipmentCategoryId: item.equipmentCategoryId || 0,
         })),
       subtotal: rental.subtotal?.toString() || '0',
       taxAmount: rental.taxAmount?.toString() || '0',
@@ -63,10 +63,10 @@ export async function GET(
       tax: rental.tax?.toString() || '0',
       depositAmount: rental.depositAmount?.toString() || '0',
       paymentTermsDays: rental.paymentTermsDays || 30,
-      startDate: rental.startDate || new Date().toISOString().split('T')[0],
-      expectedEndDate: rental.expectedEndDate || undefined,
+      startDate: (rental.startDate || new Date().toISOString().split('T')[0])!,
+      expectedEndDate: rental.expectedEndDate || '',
       notes: rental.notes || '',
-      createdAt: rental.createdAt || new Date().toISOString().split('T')[0],
+      createdAt: (rental.createdAt || new Date().toISOString().split('T')[0])!,
       erpnextInvoiceId: rental.invoiceId,
     };
 

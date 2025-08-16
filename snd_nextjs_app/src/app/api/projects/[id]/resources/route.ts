@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { projectResources, employees, equipment, employeeAssignments } from '@/lib/drizzle/schema';
+import { projectResources, employeeAssignments, equipment } from '@/lib/drizzle/schema';
 import { eq, desc } from 'drizzle-orm';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -223,7 +223,7 @@ export async function POST(
             status: 'active',
             type: 'project',
             updatedAt: new Date().toISOString().split('T')[0]
-          });
+          } as any);
         console.log('Employee assignment created successfully');
       } catch (assignmentError) {
         console.error('Error creating employee assignment:', assignmentError);

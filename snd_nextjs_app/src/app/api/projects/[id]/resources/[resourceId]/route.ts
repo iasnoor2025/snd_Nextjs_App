@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { projectResources, employees, equipment } from '@/lib/drizzle/schema';
+import { projectResources } from '@/lib/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 export async function PUT(
   request: NextRequest,
@@ -130,7 +130,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string; resourceId: string }> }
 ) {
   try {
@@ -149,19 +149,20 @@ export async function DELETE(
       )
       .returning();
 
-    if (deletedResource.length === 0) {
+    if (deletedResource.length === 0 || !deletedResource[0]) {
       return NextResponse.json(
         { error: 'Resource not found' },
         { status: 404 }
       );
     }
 
-    console.log('Resource deleted successfully:', deletedResource[0].id);
+    const deletedResourceItem = deletedResource[0];
+    console.log('Resource deleted successfully:', deletedResourceItem.id);
 
     return NextResponse.json({ 
       success: true,
       message: 'Resource deleted successfully',
-      data: deletedResource[0]
+      data: deletedResourceItem
     });
   } catch (error) {
     console.error('Error deleting project resource:', error);

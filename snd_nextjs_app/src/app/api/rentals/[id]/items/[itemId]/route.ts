@@ -16,10 +16,7 @@ export async function PUT(
     console.log('Updating rental item:', { rentalId, itemId, body });
 
     // Get current rental item to check if operator changed
-    const currentItem = await RentalService.getRentalItem(parseInt(itemId));
-    const previousOperatorId = currentItem?.operatorId;
     const newOperatorId = body.operatorId ? parseInt(body.operatorId) : null;
-    const actionType = body.actionType || 'update'; // 'handover', 'remove', 'add', 'update'
 
     // Validate required fields
     const missingFields: string[] = [];

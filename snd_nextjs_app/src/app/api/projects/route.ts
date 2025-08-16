@@ -102,14 +102,10 @@ export const POST = withPermission(
       name,
       description,
       customer_id,
-      location_id,
-      manager_id,
       start_date,
       end_date,
       status,
-      priority,
       budget,
-      initial_budget,
       notes,
       objectives,
       scope,
@@ -180,12 +176,9 @@ export const PUT = withPermission(
       name,
       description,
       status,
-      priority,
       start_date,
       end_date,
       budget,
-      progress,
-      manager_id,
     } = body;
 
     const updated = await db
