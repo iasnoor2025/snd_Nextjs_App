@@ -13,7 +13,7 @@ export const revalidate = 0;
 export const runtime = 'nodejs';
 export const preferredRegion = 'auto';
 
-export async function $1(_request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Get the current user session
     const session = await getServerSession(authConfig)
@@ -26,7 +26,7 @@ export async function $1(_request: NextRequest) {
       )
     }
 
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new URL(_request.url)
     const employeeId = searchParams.get('employeeId')
 
     if (!employeeId) {

@@ -6,7 +6,7 @@ import { employeeDocuments } from '@/lib/drizzle/schema'
 import { writeFile } from 'fs/promises'
 import { join } from 'path'
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // Get the current user session
     const session = await getServerSession(authConfig)
@@ -26,7 +26,7 @@ export async function $1(_request: NextRequest) {
       )
     }
 
-    const formData = await request.formData()
+    const formData = await _request.formData()
     // Support both field names for compatibility
     const employee_id = formData.get('employee_id') || formData.get('employeeId')
     const document_type = formData.get('document_type') as string

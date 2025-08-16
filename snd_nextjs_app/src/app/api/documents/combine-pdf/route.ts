@@ -7,14 +7,14 @@ import { eq, inArray } from 'drizzle-orm';
 
 import { DocumentCombinerService } from '@/lib/services/document-combiner-service';
 
-export async function $1(_request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
+    const body = await _request.json();
     const { documentIds, type = 'all' } = body;
 
     if (!documentIds || !Array.isArray(documentIds) || documentIds.length === 0) {
