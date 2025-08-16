@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { withEmployeeListPermission } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
 import { advancePayments, employees, users } from '@/lib/drizzle/schema';
-import { eq, and, or, like, isNull, desc, asc } from 'drizzle-orm';
+import { eq, and, or, like, isNull, desc } from 'drizzle-orm';
 
 // GET /api/advances - List employee advances with employee data filtering
 const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
@@ -33,7 +33,7 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
         .where(eq(employees.iqamaNumber, user.national_id))
         .limit(1);
       
-      if (ownEmployeeRows.length > 0) {
+      if (ownEmployeeRows.length > 0 && ownEmployeeRows[0]?.id) {
         employeeFilter = eq(advancePayments.employeeId, ownEmployeeRows[0].id);
       }
     }
@@ -158,7 +158,6 @@ const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { 
       employeeId,
       amount,
       reason,
-      repaymentPlan,
       status = 'pending',
       notes,
     } = body;
@@ -190,6 +189,10 @@ const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { 
       .returning();
 
     const advance = advanceRows[0];
+    
+    if (!advance) {
+      return NextResponse.json({ error: 'Failed to create advance' }, { status: 500 });
+    }
 
     // Get employee data for response
     const employeeRows = await db
@@ -253,7 +256,6 @@ export const PUT = withEmployeeListPermission(
         employeeId,
         amount,
         reason,
-        repaymentPlan,
         status,
         notes,
       } = body;
@@ -273,6 +275,10 @@ export const PUT = withEmployeeListPermission(
         .returning();
 
       const advance = advanceRows[0];
+      
+      if (!advance) {
+        return NextResponse.json({ error: 'Failed to update advance' }, { status: 500 });
+      }
 
       // Get employee data for response
       const employeeRows = await db

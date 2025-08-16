@@ -173,6 +173,16 @@ export const POST = withPermission(
       });
 
     const newCompany = newCompanyRows[0];
+    
+    if (!newCompany) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Failed to create company'
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

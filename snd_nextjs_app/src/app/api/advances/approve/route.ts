@@ -1,23 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withPermission } from '@/lib/rbac/api-middleware';
-import { checkUserPermission } from '@/lib/rbac/permission-service';
+
 import { advancePayments, employees, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
-// Helper function to get the appropriate permission for approval stage
-function getAdvanceApprovalPermission(approvalStage: string): string {
-  switch (approvalStage) {
-    case 'manager':
-      return 'approve.advance.manager';
-    case 'hr':
-      return 'approve.advance.hr';
-    case 'finance':
-      return 'approve.advance.finance';
-    default:
-      return 'approve.advance';
-  }
-}
+
 
 // POST /api/advances/approve - Approve advance at specific stage
 export const POST = withPermission(
@@ -53,6 +41,10 @@ export const POST = withPermission(
       }
 
       const advance = advanceRows[0];
+      
+      if (!advance) {
+        return NextResponse.json({ error: 'Advance not found' }, { status: 404 });
+      }
 
       // Validate approval stage
       const validStages = ['manager', 'hr', 'finance'];
@@ -66,7 +58,7 @@ export const POST = withPermission(
 
       switch (approvalStage) {
         case 'manager':
-          canApprove = advance.status === 'pending';
+          canApprove = advance.status === 'pending'; 
           newStatus = 'manager_approved';
           break;
         case 'hr':
@@ -116,6 +108,10 @@ export const POST = withPermission(
         .returning();
 
       const updatedAdvance = updatedAdvanceRows[0];
+      
+      if (!updatedAdvance) {
+        return NextResponse.json({ error: 'Failed to update advance' }, { status: 500 });
+      }
 
       // Get updated employee data for response
       const employeeRows = await db

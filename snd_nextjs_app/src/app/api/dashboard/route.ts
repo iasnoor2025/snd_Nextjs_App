@@ -35,7 +35,15 @@ export async function GET(request: NextRequest) {
     
          console.log('Fetching equipment data...');
      console.log('🔍 EQUIPMENT DATA SECTION STARTED');
-     let equipmentData = [];
+     let equipmentData: Array<{
+       status: 'available' | 'expired' | 'expiring' | 'missing';
+       daysRemaining: number | null;
+       id: number;
+       equipmentName: string;
+       equipmentNumber: string | null;
+       istimara: string | null;
+       istimaraExpiry: string | null;
+     }> = [];
     
          // Test direct database access first
      try {

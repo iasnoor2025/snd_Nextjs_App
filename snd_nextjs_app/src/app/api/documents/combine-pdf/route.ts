@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     const filename = generateDescriptiveFilename(documents, timestamp);
 
     // Return the PDF data directly for download (no file saving)
-    return new NextResponse(combinedPdfBuffer, {
+    return new NextResponse(combinedPdfBuffer as any, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',

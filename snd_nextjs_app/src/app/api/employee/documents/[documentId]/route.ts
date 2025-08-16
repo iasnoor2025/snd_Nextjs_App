@@ -8,7 +8,7 @@ import fs from 'fs'
 import path from 'path'
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ documentId: string }> }
 ) {
   try {

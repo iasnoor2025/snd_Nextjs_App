@@ -9,19 +9,18 @@ export const GET = withPermission(
     
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
-    const search = searchParams.get('search') || undefined
-    const status = searchParams.get('status') || undefined
-    const sortBy = searchParams.get('sortBy') || undefined
-    const sortOrder = searchParams.get('sortOrder') as 'asc' | 'desc' || undefined
+    const search = searchParams.get('search') ?? undefined
+    const status = searchParams.get('status') ?? undefined
+    const sortBy = searchParams.get('sortBy') ?? undefined
+    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') ?? undefined
 
-    const result = await DatabaseService.getCustomers({
-      page,
-      limit,
-      search,
-      status,
-      sortBy,
-      sortOrder
-    })
+    const params: any = { page, limit };
+    if (search) params.search = search;
+    if (status) params.status = status;
+    if (sortBy) params.sortBy = sortBy;
+    if (sortOrder) params.sortOrder = sortOrder;
+
+    const result = await DatabaseService.getCustomers(params)
 
     // Get customer statistics for the summary cards
     const statistics = await DatabaseService.getCustomerStatistics()
@@ -47,25 +46,26 @@ export const POST = withPermission(
     const body = await request.json()
     
     // Map the request body to match the database schema
-    const customerData = {
+    const customerData: any = {
       name: body.name,
-      contact_person: body.contactPerson || body.contact_person,
-      email: body.email,
-      phone: body.phone,
-      address: body.address,
-      city: body.city,
-      state: body.state,
-      postal_code: body.postal_code,
-      country: body.country,
-      website: body.website,
-      tax_number: body.tax_number,
-      credit_limit: body.credit_limit ? parseFloat(body.credit_limit) : undefined,
-      payment_terms: body.payment_terms,
-      notes: body.notes,
       is_active: body.isActive !== undefined ? body.isActive : true,
-      company_name: body.companyName || body.company_name,
-      erpnext_id: body.erpnext_id,
-    }
+    };
+    
+    if (body.contactPerson || body.contact_person) customerData.contact_person = body.contactPerson || body.contact_person;
+    if (body.email) customerData.email = body.email;
+    if (body.phone) customerData.phone = body.phone;
+    if (body.address) customerData.address = body.address;
+    if (body.city) customerData.city = body.city;
+    if (body.state) customerData.state = body.state;
+    if (body.postal_code) customerData.postal_code = body.postal_code;
+    if (body.country) customerData.country = body.country;
+    if (body.website) customerData.website = body.website;
+    if (body.tax_number) customerData.tax_number = body.tax_number;
+    if (body.credit_limit) customerData.credit_limit = parseFloat(body.credit_limit);
+    if (body.payment_terms) customerData.payment_terms = body.payment_terms;
+    if (body.notes) customerData.notes = body.notes;
+    if (body.companyName || body.company_name) customerData.company_name = body.companyName || body.company_name;
+    if (body.erpnext_id) customerData.erpnext_id = body.erpnext_id;
     
     const customer = await DatabaseService.createCustomer(customerData)
         return NextResponse.json(customer, { status: 201 })

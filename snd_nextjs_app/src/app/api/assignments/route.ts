@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { db } from '@/lib/drizzle';
 import { employeeAssignments, employees, users, projects } from '@/lib/drizzle/schema';
-import { and, desc, eq, ilike, or, isNull, asc, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
 import { withEmployeeListPermission } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
 
@@ -145,7 +145,6 @@ const createAssignmentHandler = async (request: NextRequest & { employeeAccess?:
       assignmentType,
       startDate,
       endDate,
-      hoursPerDay,
       status = 'pending',
       notes,
     } = body;
@@ -176,6 +175,10 @@ const createAssignmentHandler = async (request: NextRequest & { employeeAccess?:
         updatedAt: new Date().toISOString(),
       })
       .returning();
+
+    if (!assignment) {
+      return NextResponse.json({ error: 'Failed to create assignment' }, { status: 500 });
+    }
 
     // Fetch the created assignment with related data
     const [assignmentWithDetails] = await db
@@ -239,12 +242,11 @@ export const PUT = withEmployeeListPermission(
         assignmentType,
         startDate,
         endDate,
-        hoursPerDay,
         status,
         notes,
       } = body;
 
-      const [assignment] = await db
+      await db
         .update(employeeAssignments)
         .set({
           employeeId: employeeId,
@@ -256,8 +258,7 @@ export const PUT = withEmployeeListPermission(
           notes: notes,
           updatedAt: new Date().toISOString(),
         })
-        .where(eq(employeeAssignments.id, id))
-        .returning();
+        .where(eq(employeeAssignments.id, id));
 
       // Fetch the updated assignment with related data
       const [assignmentWithDetails] = await db

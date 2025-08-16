@@ -19,7 +19,7 @@ export async function GET() {
     return NextResponse.json({
       success: true,
       message: 'Database tables check successful',
-      tables: result.rows.map(row => row.table_name),
+      tables: result.rows.map((row: any) => row.table_name),
       count: result.rows.length
     });
   } catch (error) {

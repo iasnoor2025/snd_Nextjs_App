@@ -4,15 +4,11 @@ import tailwindcssAnimate from 'tailwindcss-animate';
 const config = {
     darkMode: 'class',
     content: [
-        './src/pages/**/*.{ts,tsx}',
-        './src/components/**/*.{ts,tsx}',
-        './src/app/**/*.{ts,tsx}',
-        './src/**/*.{ts,tsx}',
-        './resources/**/*.{js,ts,jsx,tsx,blade.php}',
-        './Modules/**/resources/**/*.{js,ts,jsx,tsx,blade.php}',
-        './storage/framework/views/*.php',
-        './app/View/Components/**/*.php',
         './src/**/*.{js,ts,jsx,tsx}',
+        './src/app/**/*.{js,ts,jsx,tsx}',
+        './src/components/**/*.{js,ts,jsx,tsx}',
+        './src/modules/**/*.{js,ts,jsx,tsx}',
+        './src/pages/**/*.{js,ts,jsx,tsx}',
     ],
     prefix: '',
     theme: {
@@ -86,14 +82,70 @@ const config = {
                     from: { height: 'var(--radix-accordion-content-height)' },
                     to: { height: '0' },
                 },
+                'fade-in': {
+                    '0%': { opacity: '0' },
+                    '100%': { opacity: '1' },
+                },
+                'slide-in': {
+                    '0%': { transform: 'translateY(10px)', opacity: '0' },
+                    '100%': { transform: 'translateY(0)', opacity: '1' },
+                },
             },
             animation: {
                 'accordion-down': 'accordion-down 0.2s ease-out',
                 'accordion-up': 'accordion-up 0.2s ease-out',
+                'fade-in': 'fade-in 0.3s ease-out',
+                'slide-in': 'slide-in 0.3s ease-out',
+            },
+            screens: {
+                'xs': '475px',
+                '3xl': '1600px',
+                '4xl': '1920px',
             },
         },
     },
-    plugins: [tailwindcssAnimate],
+    plugins: [
+        tailwindcssAnimate,
+        // Custom plugin for component extraction
+        function({ addComponents, theme }: any) {
+            addComponents({
+                '.btn-primary': {
+                    backgroundColor: theme('colors.primary.DEFAULT'),
+                    color: theme('colors.primary.foreground'),
+                    padding: '0.5rem 1rem',
+                    borderRadius: theme('borderRadius.md'),
+                    fontWeight: '500',
+                    '&:hover': {
+                        opacity: '0.9',
+                    },
+                },
+                '.card-hover': {
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: theme('boxShadow.lg'),
+                    },
+                },
+            });
+        },
+    ],
+    // JIT mode optimizations
+    mode: 'jit',
+    purge: {
+        enabled: process.env.NODE_ENV === 'production',
+        content: [
+            './src/**/*.{js,ts,jsx,tsx}',
+        ],
+        options: {
+            safelist: [
+                'rtl',
+                'dark',
+                'sidebar-layout',
+                'sidebar-content',
+                'sidebar-inset',
+            ],
+        },
+    },
 } satisfies Config;
 
 export default config;

@@ -7,7 +7,7 @@ import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
 
 const getEmployeePaymentReceiptHandler = async (
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string; paymentId: string }> }
 ) => {
   try {
@@ -34,7 +34,7 @@ const getEmployeePaymentReceiptHandler = async (
         .from(employees)
         .where(eq(employees.iqamaNumber, user.national_id))
         .limit(1);
-      if (ownEmployee.length && employeeId !== ownEmployee[0].id) {
+      if (ownEmployee.length > 0 && ownEmployee[0]?.id && employeeId !== ownEmployee[0].id) {
         return NextResponse.json(
           { error: "You can only access your own payment data" },
           { status: 403 }
@@ -90,8 +90,14 @@ const getEmployeePaymentReceiptHandler = async (
       .where(eq(employees.id, employeeId))
       .limit(1);
 
-    if (!employee.length) {
+    if (!employee || employee.length === 0) {
       return NextResponse.json({ error: "Employee not found" }, { status: 404 });
+    }
+
+    const employeeData = employee[0];
+    
+    if (!employeeData) {
+      return NextResponse.json({ error: "Employee data not found" }, { status: 404 });
     }
 
     // Get company information (you can customize this based on your needs)
@@ -103,28 +109,44 @@ const getEmployeePaymentReceiptHandler = async (
     };
 
     // Format the receipt data
+    if (!paymentRecord || paymentRecord.length === 0) {
+      return NextResponse.json(
+        { error: "Payment record not found" },
+        { status: 404 }
+      );
+    }
+
+    const payment = paymentRecord[0];
+    
+    if (!payment) {
+      return NextResponse.json(
+        { error: "Payment record not found" },
+        { status: 404 }
+      );
+    }
+    
     const receiptData = {
       payment: {
-        id: paymentRecord[0].id,
-        amount: paymentRecord[0].amount,
-        payment_date: typeof paymentRecord[0].paymentDate === 'string' ? paymentRecord[0].paymentDate.slice(0, 10) : new Date(paymentRecord[0].paymentDate).toISOString().slice(0, 10), // YYYY-MM-DD
-        notes: paymentRecord[0].notes,
+        id: payment.id,
+        amount: payment.amount,
+        payment_date: typeof payment.paymentDate === 'string' ? payment.paymentDate.slice(0, 10) : new Date(payment.paymentDate).toISOString().slice(0, 10), // YYYY-MM-DD
+        notes: payment.notes,
         recorded_by: "System", // TODO: Add user lookup
-        created_at: typeof paymentRecord[0].createdAt === 'string' ? paymentRecord[0].createdAt.slice(0, 19).replace('T', ' ') : new Date(paymentRecord[0].createdAt).toISOString().slice(0, 19).replace('T', ' '), // YYYY-MM-DD HH:MM:SS
+        created_at: typeof payment.createdAt === 'string' ? payment.createdAt.slice(0, 19).replace('T', ' ') : new Date(payment.createdAt).toISOString().slice(0, 19).replace('T', ' '), // YYYY-MM-DD HH:MM:SS
       },
-      advance: paymentRecord[0].advancePayment ? {
-        id: paymentRecord[0].advancePayment.id,
-        amount: paymentRecord[0].advancePayment.amount,
-        reason: paymentRecord[0].advancePayment.reason,
-        payment_date: paymentRecord[0].advancePayment.paymentDate ? (typeof paymentRecord[0].advancePayment.paymentDate === 'string' ? paymentRecord[0].advancePayment.paymentDate.slice(0, 10) : new Date(paymentRecord[0].advancePayment.paymentDate).toISOString().slice(0, 10)) : null,
-        repaid_amount: paymentRecord[0].advancePayment.repaidAmount,
-        balance: Number(paymentRecord[0].advancePayment.amount) - Number(paymentRecord[0].advancePayment.repaidAmount || 0),
+      advance: payment.advancePayment ? {
+        id: payment.advancePayment.id,
+        amount: payment.advancePayment.amount,
+        reason: payment.advancePayment.reason,
+        payment_date: payment.advancePayment.paymentDate ? (typeof payment.advancePayment.paymentDate === 'string' ? payment.advancePayment.paymentDate.slice(0, 10) : new Date(payment.advancePayment.paymentDate).toISOString().slice(0, 10)) : null,
+        repaid_amount: payment.advancePayment.repaidAmount,
+        balance: Number(payment.advancePayment.amount) - Number(payment.advancePayment.repaidAmount || 0),
       } : null,
       employee: {
-        id: employee[0].id,
-        name: `${employee[0].firstName} ${employee[0].lastName}`,
-        position: employee[0].designation?.name || "Employee",
-        employee_id: employee[0].fileNumber,
+        id: employeeData.id,
+        name: `${employeeData.firstName} ${employeeData.lastName}`,
+        position: employeeData.designation?.name || "Employee",
+        employee_id: employeeData.fileNumber,
       },
       company: company,
     };

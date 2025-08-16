@@ -5,21 +5,35 @@
   "scripts": {
     "dev": "cross-env NEXT_TELEMETRY_DISABLED=1 OTEL_TRACES_SAMPLER=always_off OTEL_TRACES_SAMPLER_ARG=0 next dev",
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=8192 next build",
+    "build:analyze": "cross-env ANALYZE=true npm run build",
+    "build:analyze:open": "cross-env ANALYZE=true BUNDLE_ANALYZER_OPEN=true npm run build",
+    "build:production": "cross-env NODE_ENV=production npm run build",
+    "build:optimized": "node scripts/optimize-build.js && npm run build",
+    "build:clean": "rm -rf .next && rm -rf node_modules/.cache && npm run build",
     "start": "next start",
+    "start:production": "cross-env NODE_ENV=production next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "type-check:strict": "tsc --noEmit --strict",
+    "db:reset": "node scripts/reset-db.js",
+    "dev:clean": "rm -rf .next && rm -rf node_modules/.cache && npm run drizzle:generate && npm run dev",
+    "cleanup": "node scripts/cleanup-dev.js",
+    "dev:fresh": "npm run cleanup && npm run dev",
+    "analyze": "ANALYZE=true npm run build",
+    "analyze:bundle": "cross-env ANALYZE=true next build",
     "drizzle:introspect": "drizzle-kit introspect",
     "drizzle:generate": "drizzle-kit generate",
     "drizzle:migrate": "drizzle-kit migrate",
-    "type-check": "tsc --noEmit",
-    "db:reset": "node scripts/reset-db.js",
-    "dev:clean": "rm -rf .next && rm -rf node_modules/.cache && npm run db:generate && npm run dev",
-    "cleanup": "node scripts/cleanup-dev.js",
-    "dev:fresh": "npm run cleanup && npm run dev",
-    "build:optimized": "node scripts/optimize-build.js && npm run build",
-    "build:clean": "rm -rf .next && rm -rf node_modules/.cache && npm run build",
-    "analyze": "ANALYZE=true npm run build",
-    "build:analyze": "cross-env ANALYZE=true npm run build",
-    "analyze:bundle": "cross-env ANALYZE=true next build"
+    "drizzle:studio": "drizzle-kit studio",
+    "drizzle:push": "drizzle-kit push",
+    "drizzle:drop": "drizzle-kit drop",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "prepare": "husky",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.864.0",
@@ -59,6 +73,7 @@
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "critters": "^0.0.23",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.44.4",
     "formidable": "^3.5.4",
@@ -88,15 +103,26 @@
   "devDependencies": {
     "@next/bundle-analyzer": "^15.4.6",
     "@tailwindcss/postcss": "^4.1.11",
+    "@testing-library/jest-dom": "^6.7.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "22.17.1",
     "@types/react": "18.3.23",
     "@types/react-dom": "^18.3.7",
     "@types/webpack": "^5.28.5",
+    "@typescript-eslint/eslint-plugin": "^8.39.1",
+    "@typescript-eslint/parser": "^8.39.1",
     "cross-env": "^10.0.0",
     "dotenv": "^17.2.1",
     "drizzle-kit": "^0.31.4",
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-prettier": "^5.5.4",
+    "husky": "^9.1.7",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^30.0.5",
+    "lint-staged": "^15.5.2",
     "postcss": "^8.5.6",
     "prettier": "^3.4.2",
     "prettier-plugin-organize-imports": "^4.1.0",
@@ -104,6 +130,20 @@
     "string-replace-loader": "^3.2.0",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.20.3",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "webpack-bundle-analyzer": "^4.10.2"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

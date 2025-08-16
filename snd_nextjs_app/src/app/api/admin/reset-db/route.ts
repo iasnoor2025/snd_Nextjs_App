@@ -32,6 +32,10 @@ export async function POST(_request: NextRequest) {
       .returning();
     
     const adminUser = adminUserResult[0];
+    
+    if (!adminUser) {
+      throw new Error('Failed to create admin user');
+    }
 
     return NextResponse.json({
       success: true,

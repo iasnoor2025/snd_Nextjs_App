@@ -1,0 +1,75 @@
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  // Performance optimizations
+  experimental: {
+    optimizeCss: true,
+    scrollRestoration: true,
+  },
+
+  // Bundle optimization
+  compress: true,
+  poweredByHeader: false,
+  
+  // Image optimization
+  images: {
+    formats: ['image/webp', 'image/avif'],
+    minimumCacheTTL: 60,
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+  },
+
+  // Headers for security and caching
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'no-store, must-revalidate' },
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'DENY' },
+          { key: 'X-XSS-Protection', value: '1; mode=block' },
+        ],
+      },
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+      {
+        source: '/images/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
+        ],
+      },
+    ];
+  },
+
+  // Environment variables
+  env: {
+    NEXT_TELEMETRY_DISABLED: "1",
+  },
+
+  // Transpile packages
+  transpilePackages: ["jspdf", "html2canvas", "pdf-lib"],
+
+  // Server external packages
+  serverExternalPackages: ["pg"],
+
+  // Output configuration
+  output: 'standalone',
+
+  // Trailing slash for better SEO
+  trailingSlash: false,
+
+  // React strict mode for better development
+  reactStrictMode: true,
+  
+
+
+
+};
+
+export default nextConfig;

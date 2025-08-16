@@ -5,7 +5,7 @@ import { eq, isNull } from 'drizzle-orm';
 import { withPermission, PermissionConfigs } from '../../../../lib/rbac/api-middleware';
 
 export const GET = withPermission(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (_request: NextRequest, { params }: { params: { id: string } }) => {
     try {
       const { id } = params;
       const departmentId = parseInt(id);
@@ -116,18 +116,22 @@ export const PUT = withPermission(
         )
         .limit(1);
 
-      if (existingDepartment.length === 0) {
+      if (!existingDepartment || existingDepartment.length === 0) {
         return NextResponse.json(
-          {
-            success: false,
-            message: 'Department not found',
-          },
+          { success: false, message: 'Department not found' },
           { status: 404 }
         );
       }
 
       const trimmedName = name.trim();
-      const currentName = existingDepartment[0].name;
+      const currentName = existingDepartment[0]?.name;
+      
+      if (!currentName) {
+        return NextResponse.json(
+          { success: false, message: 'Department name not found' },
+          { status: 404 }
+        );
+      }
 
       console.log('PUT /api/departments/[id] - Current name:', currentName, 'New name:', trimmedName);
 
@@ -208,7 +212,7 @@ export const PUT = withPermission(
 );
 
 export const DELETE = withPermission(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (_request: NextRequest, { params }: { params: { id: string } }) => {
     try {
       const { id } = params;
       const departmentId = parseInt(id);

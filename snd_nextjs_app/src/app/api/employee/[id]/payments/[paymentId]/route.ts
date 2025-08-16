@@ -7,7 +7,7 @@ import { employees, advancePaymentHistories, advancePayments } from '@/lib/drizz
 import { eq, and } from 'drizzle-orm';
 
 const deleteEmployeePaymentHandler = async (
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string; paymentId: string }> }
 ) => {
   try {
@@ -35,7 +35,7 @@ const deleteEmployeePaymentHandler = async (
         .where(eq(employees.iqamaNumber, String(user.national_id)))
         .limit(1);
       
-      if (ownEmployeeRows.length > 0 && employeeId !== ownEmployeeRows[0].id) {
+      if (ownEmployeeRows.length > 0 && ownEmployeeRows[0]?.id && employeeId !== ownEmployeeRows[0].id) {
         return NextResponse.json(
           { error: "You can only access your own payment data" },
           { status: 403 }
@@ -60,12 +60,19 @@ const deleteEmployeePaymentHandler = async (
     }
 
     const payment = paymentRows[0];
+    
+    if (!payment) {
+      return NextResponse.json(
+        { error: "Payment record not found" },
+        { status: 404 }
+      );
+    }
 
     // Get the associated advance payment for recalculation using Drizzle
     const advancePaymentRows = await db
       .select()
       .from(advancePayments)
-      .where(eq(advancePayments.id, payment.advancePaymentId))
+      .where(eq(advancePayments.id, payment?.advancePaymentId || 0))
       .limit(1);
 
     if (advancePaymentRows.length === 0) {
@@ -73,6 +80,13 @@ const deleteEmployeePaymentHandler = async (
     }
 
     const advancePayment = advancePaymentRows[0];
+
+    if (!advancePayment) {
+      return NextResponse.json(
+        { error: "Advance payment not found" },
+        { status: 404 }
+      );
+    }
 
     // Calculate the new repaid amount after deleting this payment
     const newRepaidAmount = Math.max(0, Number(advancePayment.repaidAmount || 0) - Number(payment.amount));

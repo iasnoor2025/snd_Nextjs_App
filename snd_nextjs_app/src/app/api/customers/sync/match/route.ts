@@ -137,8 +137,8 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Check if customer already exists by ERPNext ID
-        const existingCustomer = dbCustomers.find(dbCustomer => 
+                // Check if customer already exists by ERPNext ID
+        const existingCustomer = dbCustomers.find((dbCustomer: any) =>
           dbCustomer.erpnext_id === mappedData.erpnext_id
         );
 

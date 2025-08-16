@@ -59,6 +59,13 @@ export async function POST(
     }
 
     const advance = advanceRows[0];
+    
+    if (!advance) {
+      return NextResponse.json(
+        { error: "Advance not found" },
+        { status: 404 }
+      );
+    }
 
     if (advance.status !== "approved" && advance.status !== "partially_repaid") {
       return NextResponse.json(

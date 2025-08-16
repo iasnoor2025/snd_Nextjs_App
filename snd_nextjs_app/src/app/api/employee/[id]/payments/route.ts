@@ -12,7 +12,7 @@ export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
 const getEmployeePaymentsHandler = async (
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
   try {
@@ -157,8 +157,8 @@ const getEmployeePaymentsHandler = async (
       success: true,
       data: {
         employee: {
-          id: employee.id,
-          name: `${employee.first_name} ${employee.last_name}`,
+          id: employee?.id,
+          name: `${employee?.first_name} ${employee?.last_name}`,
         },
         summary: {
           total_advance_amount: totalAdvanceAmount,

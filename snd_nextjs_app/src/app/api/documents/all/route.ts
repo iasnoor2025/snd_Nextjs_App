@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
     // Fetch equipment documents
     if (type === 'all' || type === 'equipment') {
       console.log('🔍 Fetching equipment documents...');
-      let equipmentQuery = db
+      const equipmentQuery = db
         .select({
           id: media.id,
           fileName: media.fileName,
@@ -99,18 +99,19 @@ export async function GET(request: NextRequest) {
         })
         .from(media)
         .leftJoin(equipment, eq(equipment.id, media.modelId))
-        .where(eq(media.modelType, 'Equipment'));
-
-      if (search) {
-        equipmentQuery = equipmentQuery.where(
-          or(
-            ilike(equipment.name, `%${search}%`),
-            ilike(equipment.modelNumber, `%${search}%`),
-            ilike(equipment.serialNumber, `%${search}%`),
-            ilike(media.fileName, `%${search}%`)
-          )
+        .where(
+          search
+            ? and(
+                eq(media.modelType, 'Equipment'),
+                or(
+                  ilike(equipment.name, `%${search}%`),
+                  ilike(equipment.modelNumber, `%${search}%`),
+                  ilike(equipment.serialNumber, `%${search}%`),
+                  ilike(media.fileName, `%${search}%`)
+                )
+              )
+            : eq(media.modelType, 'Equipment')
         );
-      }
 
       const equipmentResults = await equipmentQuery
         .orderBy(desc(media.createdAt))
@@ -150,44 +151,44 @@ export async function GET(request: NextRequest) {
     let totalEquipmentDocs = 0;
 
     if (type === 'all' || type === 'employee') {
-      let employeeCountQuery = db
+      const employeeCountQuery = db
         .select({ count: sql<number>`count(*)` })
         .from(employeeDocuments)
-        .leftJoin(employees, eq(employees.id, employeeDocuments.employeeId));
-
-      if (search) {
-        employeeCountQuery = employeeCountQuery.where(
-          or(
-            ilike(employees.firstName, `%${search}%`),
-            ilike(employees.lastName, `%${search}%`),
-            ilike(employees.fileNumber, `%${search}%`),
-            ilike(employeeDocuments.fileName, `%${search}%`),
-            ilike(employeeDocuments.documentType, `%${search}%`)
-          )
+        .leftJoin(employees, eq(employees.id, employeeDocuments.employeeId))
+        .where(
+          search
+            ? or(
+                ilike(employees.firstName, `%${search}%`),
+                ilike(employees.lastName, `%${search}%`),
+                ilike(employees.fileNumber, `%${search}%`),
+                ilike(employeeDocuments.fileName, `%${search}%`),
+                ilike(employeeDocuments.documentType, `%${search}%`)
+              )
+            : undefined
         );
-      }
 
       const employeeCountResult = await employeeCountQuery;
       totalEmployeeDocs = employeeCountResult[0]?.count || 0;
     }
 
     if (type === 'all' || type === 'equipment') {
-      let equipmentCountQuery = db
+      const equipmentCountQuery = db
         .select({ count: sql<number>`count(*)` })
         .from(media)
         .leftJoin(equipment, eq(equipment.id, media.modelId))
-        .where(eq(media.modelType, 'Equipment'));
-
-      if (search) {
-        equipmentCountQuery = equipmentCountQuery.where(
-          or(
-            ilike(equipment.name, `%${search}%`),
-            ilike(equipment.modelNumber, `%${search}%`),
-            ilike(equipment.serialNumber, `%${search}%`),
-            ilike(media.fileName, `%${search}%`)
-          )
+        .where(
+          search
+            ? and(
+                eq(media.modelType, 'Equipment'),
+                or(
+                  ilike(equipment.name, `%${search}%`),
+                  ilike(equipment.modelNumber, `%${search}%`),
+                  ilike(equipment.serialNumber, `%${search}%`),
+                  ilike(media.fileName, `%${search}%`)
+                )
+              )
+            : eq(media.modelType, 'Equipment')
         );
-      }
 
       const equipmentCountResult = await equipmentCountQuery;
       totalEquipmentDocs = equipmentCountResult[0]?.count || 0;

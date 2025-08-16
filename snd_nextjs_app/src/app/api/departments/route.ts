@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../lib/db';
 import { departments } from '@/lib/drizzle/schema';
-import { eq, isNull } from 'drizzle-orm';
+import { isNull } from 'drizzle-orm';
 import { withPermission, PermissionConfigs } from '../../../lib/rbac/api-middleware';
 
 export const GET = withPermission(
-  async (request: NextRequest) => {
+  async (_request: NextRequest) => {
     try {
       console.log('GET /api/departments - Fetching all departments');
       

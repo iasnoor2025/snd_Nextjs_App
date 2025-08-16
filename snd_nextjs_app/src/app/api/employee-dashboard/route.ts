@@ -5,7 +5,7 @@ import { authConfig } from '@/lib/auth-config'
 import { employees, users, departments, designations, timesheets, employeeLeaves, employeeAssignments, projects, rentals, advancePayments, employeeDocuments } from '@/lib/drizzle/schema'
 import { eq, gte, desc, and } from 'drizzle-orm'
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Get the current user session
     const session = await getServerSession(authConfig)
@@ -72,6 +72,13 @@ export async function GET(request: NextRequest) {
     }
 
     const employee = employeeRows[0];
+    
+    if (!employee) {
+      return NextResponse.json(
+        { error: 'Employee not found' },
+        { status: 404 }
+      )
+    }
 
     // Get recent timesheets (last 7 days) using Drizzle
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();

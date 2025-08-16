@@ -5,7 +5,7 @@ import { eq, isNull } from 'drizzle-orm';
 import { withPermission, PermissionConfigs } from '../../../lib/rbac/api-middleware';
 
 export const GET = withPermission(
-  async (request: NextRequest) => {
+  async (_request: NextRequest) => {
     try {
       console.log('GET /api/designations - Fetching all designations');
       
@@ -136,9 +136,16 @@ export const POST = withPermission(
           updated_at: designations.updatedAt,
         });
 
+      if (!newDesignation) {
+        return NextResponse.json(
+          { success: false, message: 'Failed to create designation' },
+          { status: 500 }
+        );
+      }
+
       // Fetch department details if department_id was provided
       let departmentData: { id: number; name: string; code: string | null } | null = null;
-      if (newDesignation.department_id) {
+      if (newDesignation?.department_id) { 
         const department = await db
           .select({
             id: departments.id,

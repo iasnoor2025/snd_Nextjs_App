@@ -5,7 +5,7 @@ import { eq, isNull } from 'drizzle-orm';
 import { withPermission, PermissionConfigs } from '../../../../lib/rbac/api-middleware';
 
 export const GET = withPermission(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (_request: NextRequest, { params }: { params: { id: string } }) => {
     try {
       const { id } = params;
       const designationId = parseInt(id);
@@ -47,9 +47,16 @@ export const GET = withPermission(
         );
       }
 
+      if (!designation || designation.length === 0) {
+        return NextResponse.json(
+          { success: false, message: 'Designation not found' },
+          { status: 404 }
+        );
+      }
+
       // Fetch department details if department_id exists
       let departmentData: { id: number; name: string; code: string | null } | null = null;
-      if (designation[0].department_id) {
+      if (designation[0]?.department_id) {
         const department = await db
           .select({
             id: departments.id,
@@ -142,8 +149,22 @@ export const PUT = withPermission(
         );
       }
 
+      if (!existingDesignation || existingDesignation.length === 0) {
+        return NextResponse.json(
+          { success: false, message: 'Designation not found' },
+          { status: 404 }
+        );
+      }
+
       const trimmedName = name.trim();
-      const currentName = existingDesignation[0].name;
+      const currentName = existingDesignation[0]?.name;
+      
+      if (!currentName) {
+        return NextResponse.json(
+          { success: false, message: 'Designation name not found' },
+          { status: 404 }
+        );
+      }
 
       console.log('PUT /api/designations/[id] - Current name:', currentName, 'New name:', trimmedName);
 
@@ -204,9 +225,16 @@ export const PUT = withPermission(
 
       console.log('PUT /api/designations/[id] - Designation updated successfully:', updatedDesignation);
 
+      if (!updatedDesignation) {
+        return NextResponse.json(
+          { success: false, message: 'Failed to update designation' },
+          { status: 500 }
+        );
+      }
+
       // Fetch department details if department_id exists
       let departmentData: { id: number; name: string; code: string | null } | null = null;
-      if (updatedDesignation.department_id) {
+      if (updatedDesignation?.department_id) {
         const department = await db
           .select({
             id: departments.id,
@@ -244,7 +272,7 @@ export const PUT = withPermission(
 );
 
 export const DELETE = withPermission(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (_request: NextRequest, { params }: { params: { id: string } }) => {
     try {
       const { id } = params;
       const designationId = parseInt(id);

@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { SessionProvider } from "next-auth/react";
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense, useMemo } from "react";
 import { RBACProvider } from "@/lib/rbac/rbac-context";
 import SSEProvider from "@/contexts/sse-context";
 import { I18nProvider } from "@/components/i18n-provider";
@@ -13,35 +13,47 @@ import { NotificationProvider } from "@/contexts/notification-context";
 import { addCleanupCallback, startMemoryMonitoring } from "@/lib/memory-manager";
 import '@/lib/i18n-client'; // Initialize i18n on client side
 
-// Dynamic imports for heavy components
-const ReactQueryDevtools = lazy(() => import("@tanstack/react-query-devtools").then(mod => ({ default: mod.ReactQueryDevtools })));
+// Dynamic imports for heavy components with better chunking
+const ReactQueryDevtools = lazy(() => 
+  import("@tanstack/react-query-devtools").then(mod => ({ 
+    default: mod.ReactQueryDevtools 
+  }))
+);
 
 interface ProvidersProps {
   children: React.ReactNode;
 }
 
 export function Providers({ children }: ProvidersProps) {
-  const [queryClient] = useState<QueryClient>(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 5 * 60 * 1000, // 5 minutes - increased for better performance
-            gcTime: 10 * 60 * 1000, // 10 minutes - increased for better performance
-            retry: 1,
-            refetchOnWindowFocus: false,
-            refetchOnReconnect: false,
-            // Add optimistic updates for faster perceived performance
-            placeholderData: (previousData: any) => previousData,
-          },
-          mutations: {
-            retry: 1,
-          },
+  // Memoize QueryClient to prevent unnecessary re-renders
+  const queryClient = useMemo(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 5 * 60 * 1000, // 5 minutes
+        gcTime: 10 * 60 * 1000, // 10 minutes
+        retry: (failureCount, error: any) => {
+          // Don't retry on 4xx errors
+          if (error?.status >= 400 && error?.status < 500) {
+            return false;
+          }
+          return failureCount < 2;
         },
-      })
-  );
+        refetchOnWindowFocus: false,
+        refetchOnReconnect: false,
+        refetchOnMount: true,
+        // Optimistic updates for better perceived performance
+        placeholderData: (previousData: any) => previousData,
+      },
+      mutations: {
+        retry: 1,
+        onError: (error: any) => {
+          console.error('Mutation error:', error);
+        },
+      },
+    },
+  }), []);
 
-  // Optimized cleanup function to prevent memory leaks without affecting performance
+  // Optimized cleanup function with reduced frequency
   useEffect(() => {
     const handleBeforeUnload = () => {
       // Clear queries on page unload
@@ -49,21 +61,24 @@ export function Providers({ children }: ProvidersProps) {
     };
 
     const handleVisibilityChange = () => {
-      // Only clear stale queries when page is hidden for a long time
+      // Only clear stale queries when page is hidden for extended time
       if (document.hidden) {
-        // Don't clear immediately, wait a bit
         setTimeout(() => {
           if (document.hidden) {
-            queryClient.clear();
+            // Only clear if memory usage is high
+            const memoryStats = (performance as any).memory;
+            if (memoryStats && memoryStats.usedJSHeapSize > memoryStats.jsHeapSizeLimit * 0.8) {
+              queryClient.clear();
+            }
           }
-        }, 30000); // 30 seconds delay
+        }, 60000); // 1 minute delay
       }
     };
 
-    // Add cleanup callback to memory manager with reduced frequency
+    // Add cleanup callback to memory manager
     const cleanupCallback = () => {
-      // Only clear if memory usage is actually high
-      if ((performance as any).memory && (performance as any).memory.usedJSHeapSize > (performance as any).memory.jsHeapSizeLimit * 0.8) {
+      const memoryStats = (performance as any).memory;
+      if (memoryStats && memoryStats.usedJSHeapSize > memoryStats.jsHeapSizeLimit * 0.8) {
         queryClient.clear();
       }
     };
@@ -73,7 +88,7 @@ export function Providers({ children }: ProvidersProps) {
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Start memory monitoring with higher threshold and longer interval
-    startMemoryMonitoring(90, 60000); // Monitor every 60 seconds, cleanup if >90% usage
+    startMemoryMonitoring(90, 120000); // Monitor every 2 minutes, cleanup if >90% usage
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
@@ -101,9 +116,16 @@ export function Providers({ children }: ProvidersProps) {
                   </ConfirmationProvider>
                 </I18nProvider>
               </I18nWrapper>
-              <Suspense fallback={null}>
-                <ReactQueryDevtools initialIsOpen={false} />
-              </Suspense>
+              {/* Only load devtools in development */}
+              {process.env.NODE_ENV === 'development' && (
+                <Suspense fallback={null}>
+                  <ReactQueryDevtools 
+                    initialIsOpen={false}
+                    position="bottom-right"
+                    buttonPosition="bottom-right"
+                  />
+                </Suspense>
+              )}
             </SSEProvider>
           </QueryClientProvider>
         </ThemeProvider>

@@ -1,6 +1,6 @@
 /**
- * Memory Manager Utility
- * Helps prevent memory leaks and improve performance during page refreshes
+ * Optimized Memory Manager Utility
+ * Lightweight memory management with minimal performance impact
  */
 
 class MemoryManager {
@@ -8,7 +8,8 @@ class MemoryManager {
   private cleanupCallbacks: Set<() => void> = new Set();
   private isInitialized = false;
   private lastCleanupTime = 0;
-  private cleanupCooldown = 30000; // 30 seconds cooldown between cleanups
+  private cleanupCooldown = 60000; // Increased to 1 minute
+  private memoryThreshold = 0.85; // 85% memory usage threshold
 
   private constructor() {
     this.initialize();
@@ -35,51 +36,34 @@ class MemoryManager {
     // Only run on client side
     if (typeof window === 'undefined') return;
 
-    // Handle page unload - only on actual unload, not refresh
+    // Handle page unload - less aggressive
     const handleBeforeUnload = () => {
-      // Only perform cleanup if it's been a while since last cleanup
       const now = Date.now();
       if (now - this.lastCleanupTime > this.cleanupCooldown) {
-        this.performCleanup();
+        this.performLightCleanup();
       }
     };
 
-    // Handle page visibility change - less aggressive
+    // Handle page visibility change - minimal impact
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // Only perform partial cleanup after a longer delay
+        // Only perform cleanup after extended hidden time
         setTimeout(() => {
           if (document.hidden) {
-            this.performPartialCleanup();
+            this.performLightCleanup();
           }
-        }, 60000); // 1 minute delay
-      }
-    };
-
-    // Handle memory pressure (if available) - less frequent
-    const handleMemoryPressure = () => {
-      const now = Date.now();
-      if (now - this.lastCleanupTime > this.cleanupCooldown) {
-        this.performCleanup();
+        }, 120000); // 2 minutes delay
       }
     };
 
     // Add event listeners
     window.addEventListener('beforeunload', handleBeforeUnload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    // Add memory pressure listener if available
-    if ('memory' in performance) {
-      window.addEventListener('memorypressure', handleMemoryPressure);
-    }
 
     // Store cleanup function for the event listeners
     this.addCleanupCallback(() => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if ('memory' in performance) {
-        window.removeEventListener('memorypressure', handleMemoryPressure);
-      }
     });
   }
 
@@ -98,146 +82,122 @@ class MemoryManager {
   }
 
   /**
-   * Perform full cleanup with cooldown
+   * Start memory monitoring with optimized settings
    */
-  performCleanup() {
-    // Only run on client side
+  startMemoryMonitoring(threshold: number = 85, interval: number = 120000) {
     if (typeof window === 'undefined') return;
 
-    const now = Date.now();
-    if (now - this.lastCleanupTime < this.cleanupCooldown) {
-      return; // Skip if too soon since last cleanup
-    }
+    this.memoryThreshold = threshold / 100;
 
-    this.lastCleanupTime = now;
-    
-    // Clear all cleanup callbacks
-    this.cleanupCallbacks.forEach(callback => {
-      try {
-        callback();
-      } catch (error) {
-        console.error('Error during cleanup:', error);
+    const monitorMemory = () => {
+      if (this.shouldPerformCleanup()) {
+        this.performLightCleanup();
       }
-    });
-
-    // Clear browser caches if possible - less aggressive
-    if ('caches' in window) {
-      caches.keys().then(cacheNames => {
-        // Only clear old caches, not all
-        const oldCaches = cacheNames.filter(name => 
-          name.includes('old') || name.includes('temp')
-        );
-        oldCaches.forEach(cacheName => {
-          caches.delete(cacheName);
-        });
-      });
-    }
-
-    // Don't clear localStorage by default - too aggressive
-    // localStorage.clear(); // Uncomment if you want to clear localStorage
-
-    // Only clear sessionStorage if it's very large
-    if (sessionStorage.length > 100) {
-      sessionStorage.clear();
-    }
-
-    // Force garbage collection if available and memory usage is high
-    if ('gc' in window && this.isMemoryUsageHigh(85)) {
-      (window as any).gc();
-    }
-  }
-
-  /**
-   * Perform partial cleanup (for when page is hidden) - less aggressive
-   */
-  performPartialCleanup() {
-    // Only run on client side
-    if (typeof window === 'undefined') return;
-
-    const now = Date.now();
-    if (now - this.lastCleanupTime < this.cleanupCooldown) {
-      return; // Skip if too soon since last cleanup
-    }
-
-    this.lastCleanupTime = now;
-    
-    // Only perform non-destructive cleanup
-    this.cleanupCallbacks.forEach(callback => {
-      try {
-        callback();
-      } catch (error) {
-        console.error('Error during partial cleanup:', error);
-      }
-    });
-  }
-
-  /**
-   * Get memory usage information
-   */
-  getMemoryInfo() {
-    if (typeof window === 'undefined') return null;
-    
-    if ('memory' in performance) {
-      const memory = (performance as any).memory;
-      return {
-        usedJSHeapSize: memory.usedJSHeapSize,
-        totalJSHeapSize: memory.totalJSHeapSize,
-        jsHeapSizeLimit: memory.jsHeapSizeLimit,
-        usagePercentage: (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100
-      };
-    }
-    return null;
-  }
-
-  /**
-   * Check if memory usage is high
-   */
-  isMemoryUsageHigh(threshold = 85): boolean {
-    const memoryInfo = this.getMemoryInfo();
-    if (memoryInfo) {
-      return memoryInfo.usagePercentage > threshold;
-    }
-    return false;
-  }
-
-  /**
-   * Monitor memory usage and perform cleanup if needed - less frequent
-   */
-  startMemoryMonitoring(threshold = 85, interval = 120000) { // 2 minutes interval
-    // Only run on client side
-    if (typeof window === 'undefined') return;
-
-    const monitor = setInterval(() => {
-      if (this.isMemoryUsageHigh(threshold)) {
-        console.warn('High memory usage detected, performing cleanup...');
-        this.performCleanup();
-      }
-    }, interval);
-
-    // Store the interval ID for cleanup
-    this.addCleanupCallback(() => {
-      clearInterval(monitor);
-    });
-  }
-
-  /**
-   * Get performance metrics for debugging
-   */
-  getPerformanceMetrics() {
-    if (typeof window === 'undefined') return null;
-
-    return {
-      memory: this.getMemoryInfo(),
-      navigation: null, // Removed deprecated performance.navigation
-      timing: null, // Removed deprecated performance.timing
     };
+
+    // Monitor every 2 minutes instead of every minute
+    const memoryInterval = setInterval(monitorMemory, interval);
+
+    // Store cleanup function
+    this.addCleanupCallback(() => {
+      clearInterval(memoryInterval);
+    });
+  }
+
+  /**
+   * Check if cleanup should be performed
+   */
+  private shouldPerformCleanup(): boolean {
+    if (typeof performance === 'undefined' || !('memory' in performance)) {
+      return false;
+    }
+
+    const memory = (performance as any).memory;
+    const memoryUsage = memory.usedJSHeapSize / memory.jsHeapSizeLimit;
+
+    return memoryUsage > this.memoryThreshold;
+  }
+
+  /**
+   * Perform light cleanup to minimize performance impact
+   */
+  private performLightCleanup() {
+    const now = Date.now();
+    if (now - this.lastCleanupTime < this.cleanupCooldown) {
+      return;
+    }
+
+    this.lastCleanupTime = now;
+
+    // Execute cleanup callbacks with error handling
+    this.cleanupCallbacks.forEach(callback => {
+      try {
+        callback();
+      } catch (error) {
+        console.warn('Memory cleanup callback failed:', error);
+      }
+    });
+  }
+
+  /**
+   * Perform full cleanup (only when necessary)
+   */
+  private performFullCleanup() {
+    const now = Date.now();
+    if (now - this.lastCleanupTime < this.cleanupCooldown) {
+      return;
+    }
+
+    this.lastCleanupTime = now;
+    this.performLightCleanup();
+
+    // Force garbage collection if available
+    if (typeof window !== 'undefined' && (window as any).gc) {
+      try {
+        (window as any).gc();
+      } catch (error) {
+        // GC not available or failed
+      }
+    }
+  }
+
+  /**
+   * Manual cleanup trigger
+   */
+  manualCleanup() {
+    this.performFullCleanup();
+  }
+
+  /**
+   * Get memory usage statistics
+   */
+  getMemoryStats() {
+    if (typeof performance === 'undefined' || !('memory' in performance)) {
+      return null;
+    }
+
+    const memory = (performance as any).memory;
+    return {
+      used: memory.usedJSHeapSize,
+      total: memory.totalJSHeapSize,
+      limit: memory.jsHeapSizeLimit,
+      usage: memory.usedJSHeapSize / memory.jsHeapSizeLimit,
+    };
+  }
+
+  /**
+   * Cleanup on destroy
+   */
+  destroy() {
+    this.cleanupCallbacks.clear();
+    this.isInitialized = false;
   }
 }
 
 // Export singleton instance
 export const memoryManager = MemoryManager.getInstance();
 
-// Export utility functions
+// Export convenience functions
 export const addCleanupCallback = (callback: () => void) => {
   memoryManager.addCleanupCallback(callback);
 };
@@ -246,22 +206,14 @@ export const removeCleanupCallback = (callback: () => void) => {
   memoryManager.removeCleanupCallback(callback);
 };
 
-export const performCleanup = () => {
-  memoryManager.performCleanup();
-};
-
-export const getMemoryInfo = () => {
-  return memoryManager.getMemoryInfo();
-};
-
-export const isMemoryUsageHigh = (threshold = 85) => {
-  return memoryManager.isMemoryUsageHigh(threshold);
-};
-
-export const startMemoryMonitoring = (threshold = 85, interval = 120000) => {
+export const startMemoryMonitoring = (threshold: number = 85, interval: number = 120000) => {
   memoryManager.startMemoryMonitoring(threshold, interval);
 };
 
-export const getPerformanceMetrics = () => {
-  return memoryManager.getPerformanceMetrics();
+export const manualCleanup = () => {
+  memoryManager.manualCleanup();
+};
+
+export const getMemoryStats = () => {
+  return memoryManager.getMemoryStats();
 };
