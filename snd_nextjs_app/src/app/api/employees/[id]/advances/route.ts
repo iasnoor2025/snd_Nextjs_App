@@ -75,7 +75,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
-    const body = await _request.json();
+    const body = await request.json();
 
     // Mock create response
     return NextResponse.json({

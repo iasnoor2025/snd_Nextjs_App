@@ -9,7 +9,7 @@ export const POST = withPermission(async (request: NextRequest, { params }: { pa
     const id = parseInt(params.id);
     if (!id) return NextResponse.json({ success: false, message: 'Invalid ID' }, { status: 400 });
 
-    const body = await _request.json();
+    const body = await request.json();
     const name = String(body.name || '').trim();
     const quantity = Number(body.quantity || 1);
     const unit_cost = Number(body.unit_cost || 0);

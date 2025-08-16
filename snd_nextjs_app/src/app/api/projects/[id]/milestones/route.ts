@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: projectId } = await params;
+    const { id: _projectId } = await params;
 
     // TODO: Implement milestones when Milestone model is added to schema
     // For now, return empty array
@@ -24,8 +23,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: projectId } = await params;
-    const body = await request.json();
+    const { id: _projectId } = await params;
 
     // TODO: Implement milestone creation when Milestone model is added to schema
     return NextResponse.json(

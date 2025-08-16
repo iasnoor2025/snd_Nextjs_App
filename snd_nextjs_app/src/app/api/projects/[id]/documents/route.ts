@@ -16,7 +16,7 @@ export async function GET(
     });
 
     // Transform the data to match the frontend expectations
-    const transformedDocuments = documents.map(doc => ({
+    const transformedDocuments = documents.map((doc: any) => ({
       id: doc.id,
       name: doc.file_name,
       type: doc.mime_type || 'Unknown',
@@ -41,7 +41,7 @@ export async function POST(
 ) {
   try {
     const { id: projectId } = await params;
-    const body = await _request.json();
+    const body = await request.json();
 
     const document = await prisma.media.create({
       data: {

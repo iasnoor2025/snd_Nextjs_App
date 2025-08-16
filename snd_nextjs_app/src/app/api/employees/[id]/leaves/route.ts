@@ -134,7 +134,7 @@ export const POST = withPermission(
       );
     }
     
-    const body = await _request.json();
+    const body = await request.json();
 
     if (!body.leave_type || !body.start_date || !body.end_date) {
       return NextResponse.json(

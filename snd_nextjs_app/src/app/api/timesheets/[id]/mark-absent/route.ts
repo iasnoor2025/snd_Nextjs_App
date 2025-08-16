@@ -17,7 +17,7 @@ export const POST = withPermission(
         return NextResponse.json({ error: 'Invalid timesheet ID' }, { status: 400 });
       }
 
-      const body = await _request.json();
+      const body = await request.json();
       const { status, reason } = body;
 
       // Get the timesheet

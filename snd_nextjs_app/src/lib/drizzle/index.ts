@@ -8,6 +8,7 @@ declare global {
 
 function createPool(): Pool {
 	if (!process.env.DATABASE_URL) {
+		console.error('DATABASE_URL is not set');
 		throw new Error('DATABASE_URL is not set');
 	}
 
@@ -15,6 +16,8 @@ function createPool(): Pool {
 		return global.__drizzlePool;
 	}
 
+	console.log('Creating new database pool...');
+	
 	const pool = new Pool({
 		connectionString: process.env.DATABASE_URL,
 		max: 10,
@@ -22,12 +25,12 @@ function createPool(): Pool {
 		connectionTimeoutMillis: 5000,
 	});
 
-	pool.on('error', (err) => {
+	pool.on('error', (err: Error) => {
 		console.error('Unexpected error on idle client', err);
 	});
 
 	// Light connection test (runs only when pool is first created)
-	pool.query('SELECT 1').catch((err) => {
+	pool.query('SELECT 1').catch((err: Error) => {
 		console.error('Database connection test failed:', err);
 	});
 
@@ -36,17 +39,32 @@ function createPool(): Pool {
 }
 
 export function getPool(): Pool {
-	return createPool();
+	try {
+		return createPool();
+	} catch (error) {
+		console.error('Error creating database pool:', error);
+		throw error;
+	}
 }
 
 function createDb() {
-	const pool = getPool();
-	return drizzle(pool);
+	try {
+		const pool = getPool();
+		return drizzle(pool);
+	} catch (error) {
+		console.error('Error creating database instance:', error);
+		throw error;
+	}
 }
 
 export function getDb() {
 	if (!global.__drizzleDb) {
-		global.__drizzleDb = createDb();
+		try {
+			global.__drizzleDb = createDb();
+		} catch (error) {
+			console.error('Error initializing database:', error);
+			throw error;
+		}
 	}
 	return global.__drizzleDb;
 }
@@ -54,13 +72,23 @@ export function getDb() {
 // Lazy proxies avoid touching the database at import-time during build
 export const pool: Pool = new Proxy({} as Pool, {
 	get(_target, prop) {
-		return (getPool() as any)[prop];
+		try {
+			return (getPool() as any)[prop];
+		} catch (error) {
+			console.error('Error accessing database pool:', error);
+			throw error;
+		}
 	},
 });
 
 export const db = new Proxy({} as ReturnType<typeof drizzle>, {
 	get(_target, prop) {
-		return (getDb() as any)[prop];
+		try {
+			return (getDb() as any)[prop];
+		} catch (error) {
+			console.error('Error accessing database:', error);
+			throw error;
+		}
 	},
 });
 

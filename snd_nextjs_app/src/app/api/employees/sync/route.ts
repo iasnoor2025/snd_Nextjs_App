@@ -359,7 +359,7 @@ export async function POST() {
             if (!existingEmployeeData) {
               console.log('Creating new employee (no existing data):', employeeData.employee_id);
               const newEmployee = await db.insert(employeesTable).values(employeeData).returning();
-              return { type: 'created', employee: newEmployee[0] };
+              return { type: 'created', employee: (newEmployee as any[])[0] };
             }
             
             // Check if data has changed - comprehensive comparison
@@ -421,7 +421,7 @@ export async function POST() {
           } else {
             console.log('Creating new employee:', employeeData.employee_id);
             const newEmployee = await db.insert(employeesTable).values(employeeData).returning();
-            return { type: 'created', employee: newEmployee[0] };
+            return { type: 'created', employee: (newEmployee as any[])[0] };
           }
         } catch (error) {
           console.error(`Error processing employee ${erpEmployee.name}:`, error);

@@ -111,7 +111,7 @@ export const PUT = withPermission(
         );
       }
 
-      const body = await _request.json();
+      const body = await request.json();
       const { name, description, department_id, is_active } = body;
 
       console.log('PUT /api/designations/[id] - Request body:', body);

@@ -7,7 +7,7 @@ import { withAuth } from '@/lib/rbac/api-middleware';
 export const GET = withAuth(async (request: NextRequest) => {
   try {
 
-    const { searchParams } = new URL(_request.url);
+    const { searchParams } = new URL(request.url);
     const month = searchParams.get('month') || new Date().toISOString().slice(0, 7); // YYYY-MM format
     const employeeId = searchParams.get('employeeId') || '';
 

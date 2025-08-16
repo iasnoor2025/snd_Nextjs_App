@@ -18,7 +18,7 @@ export async function PUT(
     const resolvedParams = await params;
     const employeeId = parseInt(resolvedParams.id);
     const assignmentId = parseInt(resolvedParams.assignmentId);
-    const body = await _request.json();
+    const body = await request.json();
 
     if (!employeeId || !assignmentId) {
       return NextResponse.json(

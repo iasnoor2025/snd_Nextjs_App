@@ -35,7 +35,7 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid advance ID" }, { status: 400 });
     }
 
-    const body = await _request.json();
+    const body = await request.json();
     const { monthly_deduction } = body;
 
     // Check if advance exists using Drizzle

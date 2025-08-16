@@ -47,7 +47,7 @@ export const GET = withPermission(
 export const POST = withPermission(
   async (request: NextRequest) => {
     try {
-      const body = await _request.json();
+      const body = await request.json();
       const { name, code, description } = body;
 
       console.log('POST /api/departments - Request body:', body);

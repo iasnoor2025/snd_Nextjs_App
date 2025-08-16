@@ -212,7 +212,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
 // POST /api/employees - Create new employee
 const createEmployeeHandler = async (request: NextRequest) => {
   try {
-    const body = await _request.json();
+    const body = await request.json();
     const {
       first_name,
       last_name,
@@ -265,7 +265,7 @@ const createEmployeeHandler = async (request: NextRequest) => {
         updatedAt: new Date().toISOString(),
       })
       .returning();
-    const employee = inserted[0];
+    const employee = (inserted as any[])[0];
 
     return NextResponse.json({
       message: 'Employee created successfully',
