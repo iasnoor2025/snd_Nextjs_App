@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { autoGenerateTimesheets } from '@/lib/timesheet-auto-generator';
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     // Verify the request is from a legitimate cron service
     const authHeader = request.headers.get('authorization');

@@ -46,7 +46,7 @@ export async function GET() {
 }
 
 // POST /api/roles - Create new role
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const body = await request.json();
     const { name, guard_name } = body;
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
 }
 
 // PUT /api/roles - Update role
-export async function PUT(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const body = await request.json();
     const { id, name, guard_name } = body;
@@ -191,7 +191,7 @@ export async function PUT(request: NextRequest) {
 }
 
 // DELETE /api/roles - Delete role
-export async function DELETE(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const body = await request.json();
     const { id } = body;

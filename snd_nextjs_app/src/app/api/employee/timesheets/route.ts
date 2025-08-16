@@ -5,7 +5,7 @@ import { authConfig } from '@/lib/auth-config'
 import { timesheets } from '@/lib/drizzle/schema'
 import { eq, and } from 'drizzle-orm'
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     // Get the current user session
     const session = await getServerSession(authConfig)

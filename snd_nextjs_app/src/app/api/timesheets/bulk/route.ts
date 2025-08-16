@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { timesheets as timesheetsTable } from '@/lib/drizzle/schema';
 import { inArray } from 'drizzle-orm';
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const body = await request.json();
     const { timesheets } = body;
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const body = await request.json();
     const { timesheetIds } = body;

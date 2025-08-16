@@ -43,7 +43,7 @@ function empty(value: any): boolean {
   return value === null || value === undefined || value === '' || value === 0;
 }
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     console.log('Starting data matching process...');
 

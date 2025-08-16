@@ -5,7 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
 import { eq, and } from 'drizzle-orm';
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const session = await getServerSession(authConfig);
     if (!session?.user?.id) {

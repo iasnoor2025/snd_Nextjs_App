@@ -4,7 +4,7 @@ import { payrolls, payrollItems } from '@/lib/drizzle/schema';
 import { eq, inArray } from 'drizzle-orm';
 import { and } from 'drizzle-orm';
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const body = await request.json();
     const { ids } = body;

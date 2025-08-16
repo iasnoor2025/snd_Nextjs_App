@@ -6,7 +6,7 @@ import { hasPermission, createUserFromSession } from '@/lib/rbac/custom-rbac';
 
 // GET /api/permissions/[id] - Get specific permission
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -151,7 +151,7 @@ export async function PUT(
 
 // DELETE /api/permissions/[id] - Delete permission
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

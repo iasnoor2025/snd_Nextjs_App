@@ -6,7 +6,7 @@ import { employeeDocuments, employees, media, equipment } from '@/lib/drizzle/sc
 import { eq, ilike, or, and, desc } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 
-export async function GET(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {

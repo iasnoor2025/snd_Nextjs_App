@@ -14,7 +14,7 @@ import {
   departments,
   designations
 } from '@/lib/drizzle/schema';
-import { eq, and, gte, lte, isNull, isNotNull, count, sql, desc, asc } from 'drizzle-orm';
+import { eq, and, gte, lte, isNull, isNotNull, count, sql, desc } from 'drizzle-orm';
 
 export interface DashboardStats {
   totalEmployees: number;
@@ -133,16 +133,17 @@ export class DashboardService {
   static async getDashboardStats(): Promise<DashboardStats> {
     try {
       const today = new Date();
-      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+              // const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        // const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
       // Get total employees
       let totalEmployeesResult = { count: 0 };
       try {
-        [totalEmployeesResult] = await db
+        const result = await db
           .select({ count: count() })
           .from(employees)
           .where(eq(employees.status, 'active'));
+        totalEmployeesResult = result[0] || { count: 0 };
       } catch (error) {
         console.error('Error fetching total employees:', error);
       }

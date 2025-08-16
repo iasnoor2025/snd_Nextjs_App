@@ -4,7 +4,6 @@ import React, { createContext, useContext, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { 
   User, 
-  UserRole, 
   Action, 
   Subject,
   hasPermission, 

@@ -205,7 +205,7 @@ export class PermissionExamples {
  * 
  * import { enhancedPermissionService } from '@/lib/rbac/enhanced-permission-service';
  * 
- * export async function POST(request: NextRequest) {
+ * export async function $1(_request: NextRequest) {
  *   const userId = request.headers.get('user-id');
  *   
  *   // Check permission

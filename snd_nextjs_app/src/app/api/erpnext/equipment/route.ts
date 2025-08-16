@@ -33,7 +33,7 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   return response.json();
 }
 
-export async function GET(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const body = await request.json();
     const { action } = body;

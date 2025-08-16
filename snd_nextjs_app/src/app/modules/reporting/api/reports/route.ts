@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth-config';
 import { prisma } from '@/lib/db';
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
 
-export async function GET(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {

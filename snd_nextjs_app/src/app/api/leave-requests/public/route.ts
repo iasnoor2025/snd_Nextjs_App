@@ -4,7 +4,7 @@ import { employeeLeaves, employees } from '@/lib/drizzle/schema';
 import { eq, ilike, or, desc, sql, and } from 'drizzle-orm';
 
 // GET /api/leave-requests/public - Get leave requests for management (no auth required)
-export async function GET(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     console.log('🔍 Starting public leave requests fetch...');
     

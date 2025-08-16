@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
-import { rentals, rentalItems, customers, equipment, users } from '@/lib/drizzle/schema';
-import { eq, and, or, ilike, gte, lte, desc, isNull, isNotNull } from 'drizzle-orm';
+import { rentals, rentalItems, customers, equipment } from '@/lib/drizzle/schema';
+import { eq, and, or, ilike, gte, lte, desc } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { equipmentRentalHistory, employeeAssignments } from '@/lib/drizzle/schema';
 

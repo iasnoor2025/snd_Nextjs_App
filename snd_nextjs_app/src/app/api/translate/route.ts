@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // Simple in-memory cache for translations
 const translationCache = new Map<string, string>();
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const { text, targetLang = 'ar' } = await request.json();
 

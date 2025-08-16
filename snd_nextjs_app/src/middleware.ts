@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { routePermissions, hasRequiredRole, createUserFromSession } from './lib/rbac/custom-rbac';
 
-export async function middleware(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip middleware for public routes and static assets
@@ -25,7 +25,7 @@ export async function middleware(request: NextRequest) {
     // Get JWT token
     const token = await getToken({
       req: request,
-      secret: process.env.NEXTAUTH_SECRET
+      secret: process.env.NEXTAUTH_SECRET || 'fallback-secret'
     });
 
     if (!token) {

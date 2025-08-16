@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { analyticsReports } from '@/lib/drizzle/schema';
 import { eq, like, or, desc, and } from 'drizzle-orm';
 
-export async function GET(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -71,9 +71,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await _request.json();
     const {
       name,
       type,
@@ -114,9 +114,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PUT(request: NextRequest) {
+export async function PUT(_request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await _request.json();
     const {
       id,
       name,
@@ -157,9 +157,9 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE(_request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await _request.json();
     const { id } = body;
 
     await db

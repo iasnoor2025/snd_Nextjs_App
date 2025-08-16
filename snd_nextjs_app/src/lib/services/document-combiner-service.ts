@@ -1,5 +1,5 @@
-import { PDFDocument, PDFPage } from 'pdf-lib';
-import * as sharp from 'sharp';
+import { PDFDocument } from 'pdf-lib';
+import sharp from 'sharp';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 

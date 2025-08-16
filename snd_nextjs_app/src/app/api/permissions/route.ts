@@ -7,7 +7,7 @@ import { permissions as permissionsTable, roles as rolesTable, roleHasPermission
 import { and, asc, eq, ilike, or, sql } from 'drizzle-orm';
 
 // GET /api/permissions - List all permissions
-export async function GET(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/permissions - Create new permission
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {

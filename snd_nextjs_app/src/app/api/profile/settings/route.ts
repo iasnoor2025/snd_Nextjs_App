@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+// import { prisma } from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
 
 // GET /api/profile/settings - Get user settings
-export async function GET(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     // Get the current user session
     const session = await getServerSession(authConfig);
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const userId = session.user.id;
+    // const userId = session.user.id;
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type'); // 'notifications' or 'appearance'
 
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
 }
 
 // PUT /api/profile/settings - Update user settings
-export async function PUT(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     // Get the current user session
     const session = await getServerSession(authConfig);
@@ -78,11 +78,11 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const userId = session.user.id;
+    // const userId = session.user.id;
 
     // In a real app, you would save these settings to a database
     // For now, we'll just return success
-    console.log(`Updating ${type} settings for user ${userId}:`, settings);
+    console.log(`Updating ${type} settings for user:`, settings);
 
     return NextResponse.json({
       message: `${type} settings updated successfully`,

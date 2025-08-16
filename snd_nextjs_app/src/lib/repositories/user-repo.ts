@@ -39,13 +39,13 @@ export async function findUserByEmailWithRoles(email: string): Promise<UserWithR
     .map((r) => ({ role: { name: r.roleName! } }));
 
   return {
-    id: base.id,
-    email: base.email,
-    name: base.name,
-    password: base.password,
-    isActive: base.isActive,
-    role_id: base.role_id,
-    national_id: base.national_id,
+    id: base?.id || 0,
+    email: base?.email || '',
+    name: base?.name || '',
+    password: base?.password || '',
+    isActive: base?.isActive || false,
+    role_id: base?.role_id || null,
+    national_id: base?.national_id || null,
     user_roles: roleNames,
   };
 }

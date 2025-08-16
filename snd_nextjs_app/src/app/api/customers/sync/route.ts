@@ -10,7 +10,7 @@ import { eq } from 'drizzle-orm';
 
 
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     console.log('Starting sync process with matched data...');
 

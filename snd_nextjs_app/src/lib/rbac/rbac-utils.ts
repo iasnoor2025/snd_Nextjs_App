@@ -21,11 +21,11 @@ export async function getRBACPermissions(userId: string) {
       .where(eq(users.id, parseInt(userId)));
     const user = rows.length
       ? {
-          id: rows[0].id,
-          email: rows[0].email,
-          name: rows[0].name,
-          isActive: rows[0].isActive,
-          role_id: rows[0].roleId,
+          id: rows[0]?.id || 0,
+          email: rows[0]?.email || '',
+          name: rows[0]?.name || '',
+          isActive: rows[0]?.isActive || false,
+          role_id: rows[0]?.roleId || 0,
           user_roles: rows.filter(r => r.roleName).map(r => ({ role: { name: r.roleName! } })),
           user_permissions: [],
         }

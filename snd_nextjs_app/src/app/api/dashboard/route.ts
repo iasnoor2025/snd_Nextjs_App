@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { DashboardService } from '@/lib/services/dashboard-service';
 
-export async function GET(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     // Check authentication
     const session = await getServerSession(authOptions);

@@ -1,6 +1,6 @@
 import { db } from './drizzle';
-import { eq, and, isNull } from 'drizzle-orm';
-import { employeeAssignments, timesheets, employees, projects, rentals } from '@/lib/drizzle/schema';
+import { isNull } from 'drizzle-orm';
+import { employeeAssignments, timesheets } from '@/lib/drizzle/schema';
 import { sql } from 'drizzle-orm';
 
 // Global flag to prevent multiple simultaneous executions

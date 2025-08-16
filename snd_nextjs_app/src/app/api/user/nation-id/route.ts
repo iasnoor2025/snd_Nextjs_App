@@ -6,7 +6,7 @@ import { authConfig } from '@/lib/auth-config';
 import { eq, and, ne } from 'drizzle-orm';
 
 // GET /api/user/nation-id - Check if user has nation ID
-export async function GET(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const session = await getServerSession(authConfig);
 
@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
 }
 
 // PUT /api/user/nation-id - Update user's nation ID
-export async function PUT(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   const session = await getServerSession(authConfig);
 
   if (!session?.user?.id) {

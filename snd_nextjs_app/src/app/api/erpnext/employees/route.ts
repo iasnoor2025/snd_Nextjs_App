@@ -66,7 +66,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const employeeData = await request.json();
 

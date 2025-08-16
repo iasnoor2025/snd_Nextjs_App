@@ -98,15 +98,14 @@ export async function POST() {
         }
 
         // Update the payroll
-        const updatedPayrollsResult = await db
+        await db
           .update(payrolls)
           .set({
             overtimeAmount: overtimeAmount.toString(),
             finalAmount: (Number(payroll.baseSalary) + overtimeAmount + Number(payroll.bonusAmount) - Number(payroll.deductionAmount)).toString(),
             updatedAt: new Date().toISOString()
           })
-          .where(eq(payrolls.id, payroll.id))
-          .returning();
+          .where(eq(payrolls.id, payroll.id));
 
         // Update or create overtime payroll item
         const existingOvertimeItemData = await db

@@ -7,7 +7,7 @@ import { eq, inArray } from 'drizzle-orm';
 
 import { DocumentCombinerService } from '@/lib/services/document-combiner-service';
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {

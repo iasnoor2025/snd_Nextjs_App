@@ -161,7 +161,7 @@ export async function getUserPermissions(userId: string): Promise<UserPermission
     // User rows already validated above
 
     const roleId = userRows[0].roleId || 0;
-    const roleName = userRows[0].roleName || 'No Role';
+    const roleName = userRows[0]?.roleName || 'No Role';
     const directPermRows2 = await db
       .select({ name: permissionsTable.name })
       .from(modelHasPermissions)
@@ -286,7 +286,7 @@ export async function getPermissions(filters?: {
 }> {
   try {
     const { search, roleId, page = 1, limit = 50 } = filters || {};
-    const skip = (page - 1) * limit;
+    // const skip = (page - 1) * limit;
 
     // Build where clause
     // Fetch permissions via Drizzle and filter in-memory for search

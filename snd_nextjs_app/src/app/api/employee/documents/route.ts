@@ -6,7 +6,7 @@ import { employeeDocuments } from '@/lib/drizzle/schema'
 import { writeFile } from 'fs/promises'
 import { join } from 'path'
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     // Get the current user session
     const session = await getServerSession(authConfig)

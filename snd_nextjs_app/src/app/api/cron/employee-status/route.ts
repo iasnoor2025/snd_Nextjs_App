@@ -3,7 +3,7 @@ import { db } from '@/lib/drizzle';
 import { employees, employeeLeaves } from '@/lib/drizzle/schema';
 import { and, eq, lte, gte, sql } from 'drizzle-orm';
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     // Verify the request is from a legitimate cron service
     const authHeader = request.headers.get('authorization');

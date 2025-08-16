@@ -6,7 +6,7 @@ import { employeeDocuments, employees } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 // GET /api/profile/documents - Get current user's documents
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     console.log('🔍 Documents API: Starting request...');
     
@@ -55,7 +55,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json([]);
     }
 
-    const employeeId = employee[0].id;
+    const employeeId = employee[0]?.id;
+    if (!employeeId) {
+      return NextResponse.json(
+        { success: false, message: 'Employee not found' },
+        { status: 404 }
+      );
+    }
     console.log('✅ Documents API: Found employee ID:', employeeId);
 
     // Fetch documents for the employee

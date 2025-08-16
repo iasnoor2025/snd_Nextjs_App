@@ -3,7 +3,7 @@ import { db } from '@/lib/drizzle';
 import { employees, timesheets, payrolls, payrollItems, payrollRuns } from '@/lib/drizzle/schema';
 import { eq, and, gte, lt } from 'drizzle-orm';
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const { start_month, end_month } = await request.json();
 

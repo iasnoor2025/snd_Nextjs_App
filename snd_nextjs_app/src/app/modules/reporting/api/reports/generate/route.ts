@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 // TODO: This route still uses ORM-like aggregations; for now, disable DB updates to prevent crashes after Prisma removal.
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {

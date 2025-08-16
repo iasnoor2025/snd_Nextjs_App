@@ -13,7 +13,7 @@ export const revalidate = 0;
 export const runtime = 'nodejs';
 export const preferredRegion = 'auto';
 
-export async function GET(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     // Get the current user session
     const session = await getServerSession(authConfig)
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     // Get the current user session
     const session = await getServerSession(authConfig)

@@ -6,7 +6,7 @@ import { users, employees, designations, departments } from '@/lib/drizzle/schem
 import { eq } from 'drizzle-orm';
 
 // GET /api/profile - Get current user profile
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   // Get the current user session
   const session = await getServerSession(authConfig);
   
@@ -321,7 +321,7 @@ export async function GET(request: NextRequest) {
 }
 
 // PUT /api/profile - Update user profile
-export async function PUT(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     // Get the current user session
     const session = await getServerSession(authConfig);
@@ -345,8 +345,8 @@ export async function PUT(request: NextRequest) {
       city,
       state,
       country,
-      designation,
-      department,
+      // designation,
+      // department,
       nationalId
     } = body;
 

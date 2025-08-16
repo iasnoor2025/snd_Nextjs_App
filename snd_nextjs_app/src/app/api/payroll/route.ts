@@ -3,7 +3,7 @@ import { db } from '@/lib/drizzle';
 import { payrolls, employees, payrollItems, departments, designations } from '@/lib/drizzle/schema';
 import { eq, and, inArray, desc, asc, sql } from 'drizzle-orm';
 
-export async function GET(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -198,7 +198,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function $1(_request: NextRequest) {
   try {
     const body = await request.json();
     
@@ -276,6 +276,12 @@ export async function POST(request: NextRequest) {
       .returning();
 
     const payroll = insertedPayrolls[0];
+    if (!payroll) {
+      return NextResponse.json(
+        { success: false, message: 'Failed to create payroll' },
+        { status: 500 }
+      );
+    }
 
     // Create payroll items if provided
     if (body.items && Array.isArray(body.items)) {
