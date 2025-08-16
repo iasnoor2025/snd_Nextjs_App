@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { equipment, equipmentRentalHistory, rentals, customers, projects, employees, users, employeeAssignments } from '@/lib/drizzle/schema';
-import { eq, desc, and, isNull } from 'drizzle-orm';
+import { equipment, equipmentRentalHistory, rentals, customers, projects, employees, employeeAssignments } from '@/lib/drizzle/schema';
+import { eq, desc, and } from 'drizzle-orm';
 
 // Function to update equipment status when assignment status changes
 async function updateEquipmentStatusOnAssignmentChange(equipmentId: number, assignmentStatus: string) {
@@ -45,7 +45,6 @@ async function updateEquipmentStatusOnAssignmentChange(equipmentId: number, assi
 }
 
 export async function GET(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -75,7 +74,16 @@ export async function GET(
       );
     }
 
-    console.log('Equipment found:', equipmentData[0].name);
+    const equipmentItem = equipmentData[0];
+    if (!equipmentItem) {
+      console.log('Equipment data not found');
+      return NextResponse.json(
+        { success: false, error: 'Equipment data not found' },
+        { status: 404 }
+      );
+    }
+
+    console.log('Equipment found:', equipmentItem.name);
 
     // Get basic rental history without complex JOINs
     console.log('Fetching basic rental history...');
@@ -140,7 +148,7 @@ export async function GET(
       employee_email: null,
       employee_phone: null,
       assignment_type: item.assignmentType,
-      equipment_name: equipmentData[0].name,
+      equipment_name: equipmentItem.name,
       quantity: 1,
       unit_price: item.dailyRate || 0,
       total_price: item.totalAmount || 0,
@@ -254,6 +262,14 @@ export async function POST(
       );
     }
 
+    const equipmentItem = equipmentData[0];
+    if (!equipmentItem) {
+      return NextResponse.json(
+        { success: false, error: 'Equipment data not found' },
+        { status: 404 }
+      );
+    }
+
          // Create the rental history entry
      const [createdRentalHistory] = await db.insert(equipmentRentalHistory).values({
        equipmentId: id,
@@ -321,7 +337,7 @@ export async function POST(
        .leftJoin(customers, eq(rentals.customerId, customers.id))
        .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
        .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
-       .where(eq(equipmentRentalHistory.id, createdRentalHistory.id))
+               .where(eq(equipmentRentalHistory.id, createdRentalHistory?.id || 0))
        .limit(1);
 
     // If this is a manual assignment with an employee, also create an employee assignment
@@ -330,7 +346,7 @@ export async function POST(
       try {
         employeeAssignment = await db.insert(employeeAssignments).values({
           employeeId: parseInt(employee_id),
-          name: `Equipment Assignment - ${equipmentData[0].name}`,
+          name: `Equipment Assignment - ${equipmentItem.name}`,
           type: 'manual',
           location: body.location || null,
           startDate: new Date(start_date).toISOString(),

@@ -9,7 +9,7 @@ import { join } from 'path';
 import { existsSync } from 'fs';
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string; documentId: string }> }
 ) {
   try {

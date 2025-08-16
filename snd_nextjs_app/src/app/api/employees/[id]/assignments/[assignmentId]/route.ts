@@ -62,6 +62,13 @@ export async function PUT(
 
     const assignment = assignmentResult[0];
 
+    if (!assignment) {
+      return NextResponse.json(
+        { error: "Assignment not found" },
+        { status: 404 }
+      );
+    }
+
     // Fetch related data
     const projectData = assignment.projectId ? await db.select({
       id: projects.id,
@@ -110,7 +117,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string; assignmentId: string }> }
 ) {
   try {

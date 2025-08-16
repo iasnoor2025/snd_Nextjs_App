@@ -8,7 +8,6 @@ import { existsSync } from 'fs';
 
 // GET /api/equipment/[id]/documents
 export async function GET(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -108,7 +107,16 @@ export async function POST(
       );
     }
     
-    console.log('Equipment found:', equipmentData[0].name);
+    const equipmentItem = equipmentData[0];
+    if (!equipmentItem) {
+      console.log('Equipment data not found');
+      return NextResponse.json(
+        { success: false, error: 'Equipment data not found' },
+        { status: 404 }
+      );
+    }
+    
+    console.log('Equipment found:', equipmentItem.name);
 
     const formData = await request.formData();
     console.log('Form data received:', Array.from(formData.entries()).map(([key, value]) => [key, value instanceof File ? `${value.name} (${value.size} bytes)` : value]));
@@ -205,7 +213,6 @@ export async function POST(
     // Generate unique filename
     const timestamp = Date.now();
     const originalName = file.name;
-    const extension = originalName.split('.').pop();
     const fileName = `${timestamp}_${originalName}`;
     const filePath = join(uploadsDir, fileName);
     
@@ -239,6 +246,9 @@ export async function POST(
         updatedAt: new Date().toISOString()
       }).returning();
       insertedDocument = document;
+      if (!insertedDocument) {
+        throw new Error('Failed to insert document into database');
+      }
       console.log('Document inserted successfully:', insertedDocument);
     } catch (dbError) {
       console.error('Error inserting document into database:', dbError);

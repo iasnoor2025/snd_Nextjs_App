@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { employees as employeesTable, departments, designations, organizationalUnits } from '@/lib/drizzle/schema';
 import { asc } from 'drizzle-orm';
 import { eq } from 'drizzle-orm';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Fetch employees from database using Drizzle
     const employees = await db

@@ -12,7 +12,6 @@ export const GET = withReadPermission(
       const range = (searchParams.get('range') || 'next').toLowerCase(); // 'next' | 'past'
       const includeExpired = searchParams.get('includeExpired') === '1';
       const includeMissing = searchParams.get('includeMissing') === '1';
-      const expiredDaysParam = parseInt(searchParams.get('expiredDays') || '30', 10);
       const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
       const limit = Math.max(1, Math.min(100, parseInt(searchParams.get('limit') || '10', 10)));
       const search = (searchParams.get('search') || '').trim();

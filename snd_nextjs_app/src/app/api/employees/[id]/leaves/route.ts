@@ -7,7 +7,7 @@ import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
 
 export const GET = withPermission(
   async (
-    request: NextRequest,
+    _request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
   ) => {
   try {

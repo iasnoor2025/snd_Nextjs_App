@@ -164,6 +164,10 @@ export async function POST(
 
     console.log('Document inserted successfully:', documentResult);
     const document = documentResult[0];
+    
+    if (!document) {
+      throw new Error('Failed to insert document into database');
+    }
 
     const responseData = {
       success: true,

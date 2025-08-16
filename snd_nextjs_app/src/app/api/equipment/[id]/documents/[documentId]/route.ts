@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { media } from '@/lib/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
@@ -8,7 +8,6 @@ import { existsSync } from 'fs';
 
 // DELETE /api/equipment/[id]/documents/[documentId]
 export async function DELETE(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string; documentId: string }> }
 ) {
   try {
@@ -44,8 +43,16 @@ export async function DELETE(
       );
     }
 
+    const documentData = document[0];
+    if (!documentData) {
+      return NextResponse.json(
+        { success: false, error: 'Document data not found' },
+        { status: 404 }
+      );
+    }
+
     // Delete file from disk
-    const filePath = join(process.cwd(), 'public', 'uploads', 'documents', document[0].filePath);
+    const filePath = join(process.cwd(), 'public', 'uploads', 'documents', documentData.filePath);
     if (existsSync(filePath)) {
       await unlink(filePath);
     }

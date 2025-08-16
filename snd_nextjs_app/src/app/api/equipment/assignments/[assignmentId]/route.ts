@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { equipmentRentalHistory, rentals, customers, projects, employees, employeeAssignments, equipment } from '@/lib/drizzle/schema';
 import { eq, and, like } from 'drizzle-orm';
@@ -47,6 +47,13 @@ export async function PUT(
     }
 
     const currentAssignment = existingAssignment[0];
+    if (!currentAssignment) {
+      return NextResponse.json(
+        { success: false, error: 'Assignment data not found' },
+        { status: 404 }
+      );
+    }
+    
     const previousEmployeeId = currentAssignment.employeeId;
     const previousAssignmentType = currentAssignment.assignmentType;
     const newEmployeeId = employee_id ? parseInt(employee_id) : currentAssignment.employeeId;
@@ -199,7 +206,6 @@ export async function PUT(
 }
 
 export async function DELETE(
-  request: NextRequest,
   { params }: { params: Promise<{ assignmentId: string }> }
 ) {
   try {

@@ -6,7 +6,6 @@ import { employeeDocuments, employees as employeesTable } from '@/lib/drizzle/sc
 import { eq } from 'drizzle-orm';
 
 export async function GET(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

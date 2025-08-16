@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { db } from '@/lib/db';
 import { employees, employeeAssignments } from '@/lib/drizzle/schema';
@@ -6,7 +6,7 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
 
-const getEmployeeStatisticsHandler = async (request: NextRequest) => {
+const getEmployeeStatisticsHandler = async () => {
   try {
     console.log('Employee Statistics API called');
 

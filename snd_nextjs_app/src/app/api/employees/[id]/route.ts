@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { db } from '@/lib/db';
 import { withAuth } from '@/lib/rbac/api-middleware';
-import { authConfig } from '@/lib/auth-config';
 import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
 import { employees as employeesTable, departments, designations } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
@@ -103,8 +101,6 @@ const getEmployeeHandler = async (
       );
     }
 
-    const employee = employeeRows[0];
-
     // Update employee status based on current leave status
     await updateEmployeeStatusBasedOnLeave(employeeId);
     
@@ -179,6 +175,13 @@ const getEmployeeHandler = async (
     }
 
     const updatedEmployee = updatedEmployeeRows[0];
+    
+    if (!updatedEmployee) {
+      return NextResponse.json(
+        { error: "Employee not found after status update" },
+        { status: 404 }
+      );
+    }
 
     // Format the response
     const formattedEmployee = {
@@ -391,6 +394,13 @@ const updateEmployeeHandler = async (
     }
 
     const updatedEmployee = updatedEmployeeRows[0];
+    
+    if (!updatedEmployee) {
+      return NextResponse.json(
+        { error: "Employee not found" },
+        { status: 404 }
+      );
+    }
 
     // Fetch updated employee with department and designation info
     const employeeWithRelations = await db

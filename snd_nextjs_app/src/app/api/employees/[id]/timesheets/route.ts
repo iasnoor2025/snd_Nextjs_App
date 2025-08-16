@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
-import { timesheets, employees, projects, rentals, employeeAssignments, users } from '@/lib/drizzle/schema';
+import { timesheets, employeeAssignments, users } from '@/lib/drizzle/schema';
 import { eq, gte, lte, asc, and } from 'drizzle-orm';
 
 export async function GET(
@@ -147,6 +147,13 @@ export async function POST(
     }).returning();
 
     const timesheet = timesheetRows[0];
+    
+    if (!timesheet) {
+      return NextResponse.json(
+        { success: false, message: 'Failed to create timesheet' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

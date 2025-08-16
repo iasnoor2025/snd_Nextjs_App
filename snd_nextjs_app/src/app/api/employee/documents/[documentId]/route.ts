@@ -52,9 +52,25 @@ export async function DELETE(
       )
     }
 
+    if (!document || document.length === 0) {
+      return NextResponse.json(
+        { error: "Document not found" },
+        { status: 404 }
+      );
+    }
+
+    const documentData = document[0];
+    
+    if (!documentData) {
+      return NextResponse.json(
+        { error: "Document data not found" },
+        { status: 404 }
+      );
+    }
+    
     // Delete the physical file if it exists
-    if (document[0].employeeDocument.filePath) {
-      const filePath = path.join(process.cwd(), 'public', document[0].employeeDocument.filePath)
+    if (documentData.employeeDocument?.filePath) {
+      const filePath = path.join(process.cwd(), 'public', documentData.employeeDocument.filePath)
       try {
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath)

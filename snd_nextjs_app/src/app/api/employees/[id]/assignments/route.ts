@@ -35,7 +35,10 @@ async function manageAssignmentStatuses(employeeId: number) {
     // Update all assignments based on their position
     for (let i = 0; i < allAssignmentsRows.length; i++) {
       const assignment = allAssignmentsRows[i];
-      const isCurrent = assignment.id === currentAssignment.id;
+      
+      if (!assignment) continue;
+      
+      const isCurrent = assignment.id === currentAssignment?.id;
 
       console.log(`\n📝 Processing assignment ${assignment.name} (ID: ${assignment.id}):`);
       console.log(`  Current status: ${assignment.status}`);
@@ -62,8 +65,9 @@ async function manageAssignmentStatuses(employeeId: number) {
         // Find the next assignment after this one to set the correct end date
         let nextAssignment: any = null;
         for (let j = i + 1; j < allAssignmentsRows.length; j++) {
-          if (allAssignmentsRows[j].startDate > assignment.startDate) {
-            nextAssignment = allAssignmentsRows[j];
+          const nextAssignmentCandidate = allAssignmentsRows[j];
+          if (nextAssignmentCandidate && nextAssignmentCandidate.startDate > assignment.startDate) {
+            nextAssignment = nextAssignmentCandidate;
             break;
           }
         }
@@ -97,7 +101,7 @@ async function manageAssignmentStatuses(employeeId: number) {
 }
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -359,20 +363,20 @@ export async function PUT(
       success: true,
       message: 'Assignment updated successfully',
       data: {
-        id: assignment.id,
-        name: assignment.name,
-        type: assignment.type,
-        location: assignment.location,
-        start_date: assignment.startDate.slice(0, 10),
-        end_date: assignment.endDate ? assignment.endDate.slice(0, 10) : null,
-        status: assignment.status,
-        notes: assignment.notes,
-        project_id: assignment.projectId,
-        rental_id: assignment.rentalId,
+        id: assignment?.id,
+        name: assignment?.name,
+        type: assignment?.type,
+        location: assignment?.location,
+        start_date: assignment?.startDate?.slice(0, 10),
+        end_date: assignment?.endDate ? assignment.endDate.slice(0, 10) : null,
+        status: assignment?.status,
+        notes: assignment?.notes,
+        project_id: assignment?.projectId,
+        rental_id: assignment?.rentalId,
         project: null, // We'll need to fetch this separately if needed
         rental: null, // We'll need to fetch this separately if needed
-        created_at: assignment.createdAt,
-        updated_at: assignment.updatedAt,
+        created_at: assignment?.createdAt,
+        updated_at: assignment?.updatedAt,
       }
     });
   } catch (error) {
@@ -455,7 +459,7 @@ export async function DELETE(
 
     // If this is a manual assignment that was created from an equipment assignment, also delete the corresponding equipment assignment
     let deletedEquipmentAssignment: any = null;
-    if (assignment.type === 'manual' && assignment.name && assignment.name.includes('Equipment Assignment -')) {
+    if (assignment?.type === 'manual' && assignment?.name && assignment.name.includes('Equipment Assignment -')) {
       try {
         // Find and delete the corresponding equipment assignment
         const equipmentAssignmentRows = await db
@@ -472,11 +476,14 @@ export async function DELETE(
 
         if (equipmentAssignmentRows.length > 0) {
           const equipmentAssignment = equipmentAssignmentRows[0];
-          await db
-            .delete(equipmentRentalHistory)
-            .where(eq(equipmentRentalHistory.id, equipmentAssignment.id));
-          deletedEquipmentAssignment = equipmentAssignment;
-          console.log('Equipment assignment deleted automatically:', equipmentAssignment);
+          
+          if (equipmentAssignment && equipmentAssignment.id) {
+            await db
+              .delete(equipmentRentalHistory)
+              .where(eq(equipmentRentalHistory.id, equipmentAssignment.id));
+            deletedEquipmentAssignment = equipmentAssignment;
+            console.log('Equipment assignment deleted automatically:', equipmentAssignment);
+          }
         }
       } catch (assignmentError) {
         console.error('Error deleting equipment assignment:', assignmentError);
