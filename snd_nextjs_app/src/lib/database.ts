@@ -2,6 +2,10 @@
 import { eq, desc, asc, ilike, or, and, sql } from 'drizzle-orm'
 import { db } from '@/lib/drizzle'
 import { customers } from '@/lib/drizzle/schema'
+import { equipment } from '@/lib/drizzle/schema'
+import { rentals } from '@/lib/drizzle/schema'
+import { users } from '@/lib/drizzle/schema'
+import { rentalItems } from '@/lib/drizzle/schema'
 
 export class DatabaseService {
   // Customer operations
@@ -236,15 +240,35 @@ export class DatabaseService {
     return null
   }
 
-  // Equipment operations - TODO: Implement with Drizzle
+  // Equipment operations - Implemented with Drizzle
   static async getEquipment() {
-    console.warn('getEquipment not yet implemented with Drizzle')
-    return []
+    try {
+      const equipmentRows = await db
+        .select()
+        .from(equipment)
+        .where(eq(equipment.isActive, true))
+        .orderBy(desc(equipment.createdAt));
+      
+      return equipmentRows;
+    } catch (error) {
+      console.error('Error fetching equipment:', error);
+      return [];
+    }
   }
 
   static async getEquipmentById(id: number) {
-    console.warn('getEquipmentById not yet implemented with Drizzle')
-    return null
+    try {
+      const equipmentRows = await db
+        .select()
+        .from(equipment)
+        .where(eq(equipment.id, id))
+        .limit(1);
+      
+      return equipmentRows[0] || null;
+    } catch (error) {
+      console.error('Error fetching equipment by ID:', error);
+      return null;
+    }
   }
 
   static async createEquipment(data: {
@@ -253,8 +277,25 @@ export class DatabaseService {
     category: string
     dailyRate: number
   }) {
-    console.warn('createEquipment not yet implemented with Drizzle')
-    return null
+    try {
+      const equipmentRows = await db
+        .insert(equipment)
+        .values({
+          name: data.name,
+          description: data.description || null,
+          dailyRate: data.dailyRate.toString(),
+          status: 'available',
+          isActive: true,
+          createdAt: new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString().split('T')[0],
+        })
+        .returning();
+      
+      return equipmentRows[0] || null;
+    } catch (error) {
+      console.error('Error creating equipment:', error);
+      return null;
+    }
   }
 
   static async updateEquipment(id: number, data: {
@@ -264,16 +305,44 @@ export class DatabaseService {
     status?: 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'RETIRED'
     dailyRate?: number
   }) {
-    console.warn('updateEquipment not yet implemented with Drizzle')
-    return null
+    try {
+      const updateData: any = {};
+      
+      if (data.name !== undefined) updateData.name = data.name;
+      if (data.description !== undefined) updateData.description = data.description;
+      if (data.status !== undefined) updateData.status = data.status;
+      if (data.dailyRate !== undefined) updateData.dailyRate = data.dailyRate.toString();
+      
+      updateData.updatedAt = new Date().toISOString().split('T')[0];
+
+      const equipmentRows = await db
+        .update(equipment)
+        .set(updateData)
+        .where(eq(equipment.id, id))
+        .returning();
+      
+      return equipmentRows[0] || null;
+    } catch (error) {
+      console.error('Error updating equipment:', error);
+      return null;
+    }
   }
 
   static async deleteEquipment(id: number) {
-    console.warn('deleteEquipment not yet implemented with Drizzle')
-    return false
+    try {
+      await db
+        .update(equipment)
+        .set({ isActive: false })
+        .where(eq(equipment.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting equipment:', error);
+      return false;
+    }
   }
 
-  // Rental operations - TODO: Implement with Drizzle 
+  // Rental operations - Implemented with Drizzle
   static async getRentals(filters?: {
     search?: string
     status?: string
@@ -282,13 +351,36 @@ export class DatabaseService {
     startDate?: string
     endDate?: string
   }) {
-    console.warn('getRentals not yet implemented with Drizzle')
-    return []
+    try {
+      // TODO: Implement rental filtering with Drizzle
+      // This would require proper joins with customers and rental_items tables
+      console.warn('getRentals filtering not yet fully implemented with Drizzle');
+      
+      const rentalRows = await db
+        .select()
+        .from(rentals)
+        .orderBy(desc(rentals.createdAt));
+      
+      return rentalRows;
+    } catch (error) {
+      console.error('Error fetching rentals:', error);
+      return [];
+    }
   }
 
   static async getRental(id: number) {
-    console.warn('getRental not yet implemented with Drizzle')
-    return null
+    try {
+      const rentalRows = await db
+        .select()
+        .from(rentals)
+        .where(eq(rentals.id, id))
+        .limit(1);
+      
+      return rentalRows[0] || null;
+    } catch (error) {
+      console.error('Error fetching rental by ID:', error);
+      return null;
+    }
   }
 
   static async createRental(data: {
@@ -312,8 +404,44 @@ export class DatabaseService {
     notes?: string
     rentalItems?: any[]
   }) {
-    console.warn('createRental not yet implemented with Drizzle')
-    return null
+    try {
+      // TODO: Implement rental creation with items
+      // This would require transaction handling for rental + rental items
+      console.warn('createRental with items not yet fully implemented with Drizzle');
+      
+      const { rentalItems, ...rentalData } = data;
+      
+      const rentalRows = await db
+        .insert(rentals)
+        .values({
+          customerId: rentalData.customerId,
+          rentalNumber: rentalData.rentalNumber || `RENTAL-${Date.now()}`,
+          startDate: rentalData.startDate.toISOString().split('T')[0],
+          expectedEndDate: rentalData.expectedEndDate?.toISOString().split('T')[0] || null,
+          actualEndDate: rentalData.actualEndDate?.toISOString().split('T')[0] || null,
+          status: rentalData.status || 'pending',
+          paymentStatus: rentalData.paymentStatus || 'pending',
+          subtotal: rentalData.subtotal || 0,
+          taxAmount: rentalData.taxAmount || 0,
+          totalAmount: rentalData.totalAmount || 0,
+          discount: rentalData.discount || 0,
+          tax: rentalData.tax || 0,
+          finalAmount: rentalData.finalAmount || 0,
+          depositAmount: rentalData.depositAmount || 0,
+          paymentTermsDays: rentalData.paymentTermsDays || 30,
+          hasTimesheet: rentalData.hasTimesheet || false,
+          hasOperators: rentalData.hasOperators || false,
+          notes: rentalData.notes || '',
+          createdAt: new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString().split('T')[0],
+        })
+        .returning();
+      
+      return rentalRows[0] || null;
+    } catch (error) {
+      console.error('Error creating rental:', error);
+      return null;
+    }
   }
 
   static async updateRental(id: number, data: {
@@ -341,29 +469,104 @@ export class DatabaseService {
     completedAt?: string
     invoiceDate?: string
   }) {
-    console.warn('updateRental not yet implemented with Drizzle')
-    return null
+    try {
+      // TODO: Implement rental update with items
+      console.warn('updateRental with items not yet fully implemented with Drizzle');
+      
+      const updateData: any = {};
+      
+      if (data.customerId !== undefined) updateData.customerId = data.customerId;
+      if (data.rentalNumber !== undefined) updateData.rentalNumber = data.rentalNumber;
+      if (data.startDate !== undefined) updateData.startDate = data.startDate.toISOString().split('T')[0];
+      if (data.expectedEndDate !== undefined) updateData.expectedEndDate = data.expectedEndDate?.toISOString().split('T')[0] || null;
+      if (data.actualEndDate !== undefined) updateData.actualEndDate = data.actualEndDate?.toISOString().split('T')[0] || null;
+      if (data.status !== undefined) updateData.status = data.status;
+      if (data.paymentStatus !== undefined) updateData.paymentStatus = data.paymentStatus;
+      if (data.subtotal !== undefined) updateData.subtotal = data.subtotal;
+      if (data.taxAmount !== undefined) updateData.taxAmount = data.taxAmount;
+      if (data.totalAmount !== undefined) updateData.totalAmount = data.totalAmount;
+      if (data.discount !== undefined) updateData.discount = data.discount;
+      if (data.tax !== undefined) updateData.tax = data.tax;
+      if (data.finalAmount !== undefined) updateData.finalAmount = data.finalAmount;
+      if (data.depositAmount !== undefined) updateData.depositAmount = data.depositAmount;
+      if (data.paymentTermsDays !== undefined) updateData.paymentTermsDays = data.paymentTermsDays;
+      if (data.hasTimesheet !== undefined) updateData.hasTimesheet = data.hasTimesheet;
+      if (data.hasOperators !== undefined) updateData.hasOperators = data.hasOperators;
+      if (data.notes !== undefined) updateData.notes = data.notes;
+      
+      updateData.updatedAt = new Date().toISOString().split('T')[0];
+
+      const rentalRows = await db
+        .update(rentals)
+        .set(updateData)
+        .where(eq(rentals.id, id))
+        .returning();
+      
+      return rentalRows[0] || null;
+    } catch (error) {
+      console.error('Error updating rental:', error);
+      return null;
+    }
   }
 
   static async deleteRental(id: number) {
-    console.warn('deleteRental not yet implemented with Drizzle')
-    return false
+    try {
+      await db
+        .update(rentals)
+        .set({ isActive: false })
+        .where(eq(rentals.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting rental:', error);
+      return false;
+    }
   }
 
-  // User operations - TODO: Implement with Drizzle
+  // User operations - Implemented with Drizzle
   static async getUsers() {
-    console.warn('getUsers not yet implemented with Drizzle')
-    return []
+    try {
+      const userRows = await db
+        .select()
+        .from(users)
+        .where(eq(users.isActive, true))
+        .orderBy(desc(users.createdAt));
+      
+      return userRows;
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      return [];
+    }
   }
 
   static async getUserById(id: number) {
-    console.warn('getUserById not yet implemented with Drizzle')
-    return null
+    try {
+      const userRows = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, id))
+        .limit(1);
+      
+      return userRows[0] || null;
+    } catch (error) {
+      console.error('Error fetching user by ID:', error);
+      return null;
+    }
   }
 
   static async getUserByEmail(email: string) {
-    console.warn('getUserByEmail not yet implemented with Drizzle')
-    return null
+    try {
+      const userRows = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+      
+      return userRows[0] || null;
+    } catch (error) {
+      console.error('Error fetching user by email:', error);
+      return null;
+    }
   }
 
   static async createUser(data: {
@@ -372,8 +575,28 @@ export class DatabaseService {
     role?: 'ADMIN' | 'USER' | 'MANAGER' | 'SUPER_ADMIN'
     password: string
   }) {
-    console.warn('createUser not yet implemented with Drizzle')
-    return null
+    try {
+      // TODO: Implement password hashing
+      console.warn('createUser password hashing not yet implemented');
+      
+      const userRows = await db
+        .insert(users)
+        .values({
+          email: data.email,
+          name: data.name || 'Unknown User',
+          roleId: data.role || 'USER',
+          password: data.password, // Should be hashed
+          isActive: true,
+          createdAt: new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString().split('T')[0],
+        })
+        .returning();
+      
+      return userRows[0] || null;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      return null;
+    }
   }
 
   static async updateUser(id: number, data: {
@@ -381,16 +604,43 @@ export class DatabaseService {
     name?: string
     role?: 'ADMIN' | 'USER' | 'MANAGER' | 'SUPER_ADMIN'
   }) {
-    console.warn('updateUser not yet implemented with Drizzle')
-    return null
+    try {
+      const updateData: any = {};
+      
+      if (data.email !== undefined) updateData.email = data.email;
+      if (data.name !== undefined) updateData.name = data.name;
+      if (data.role !== undefined) updateData.roleId = data.role;
+      
+      updateData.updatedAt = new Date().toISOString().split('T')[0];
+
+      const userRows = await db
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, id))
+        .returning();
+      
+      return userRows[0] || null;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return null;
+    }
   }
 
   static async deleteUser(id: number) {
-    console.warn('deleteUser not yet implemented with Drizzle')
-    return false
+    try {
+      await db
+        .update(users)
+        .set({ isActive: false })
+        .where(eq(users.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      return false;
+    }
   }
 
-  // Rental Item operations - TODO: Implement with Drizzle
+  // Rental Item operations - Implemented with Drizzle
   static async addRentalItem(data: {
     rentalId: number
     equipmentId?: number | null
@@ -404,18 +654,60 @@ export class DatabaseService {
     status?: string
     notes?: string
   }) {
-    console.warn('addRentalItem not yet implemented with Drizzle')
-    return null
+    try {
+      const rentalItemRows = await db
+        .insert(rentalItems)
+        .values({
+          rentalId: data.rentalId,
+          equipmentId: data.equipmentId,
+          equipmentName: data.equipmentName,
+          unitPrice: data.unitPrice.toString(),
+          totalPrice: data.totalPrice.toString(),
+          days: data.days || 1,
+          rateType: data.rateType || 'daily',
+          operatorId: data.operatorId,
+          status: data.status || 'active',
+          notes: data.notes || '',
+          createdAt: new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString().split('T')[0],
+        })
+        .returning();
+      
+      return rentalItemRows[0] || null;
+    } catch (error) {
+      console.error('Error adding rental item:', error);
+      return null;
+    }
   }
 
   static async getRentalItems(rentalId: number) {
-    console.warn('getRentalItems not yet implemented with Drizzle')
-    return []
+    try {
+      const rentalItemRows = await db
+        .select()
+        .from(rentalItems)
+        .where(eq(rentalItems.rentalId, rentalId))
+        .orderBy(desc(rentalItems.createdAt));
+      
+      return rentalItemRows;
+    } catch (error) {
+      console.error('Error fetching rental items:', error);
+      return [];
+    }
   }
 
   static async getRentalItem(id: number) {
-    console.warn('getRentalItem not yet implemented with Drizzle')
-    return null
+    try {
+      const rentalItemRows = await db
+        .select()
+        .from(rentalItems)
+        .where(eq(rentalItems.id, id))
+        .limit(1);
+      
+      return rentalItemRows[0] || null;
+    } catch (error) {
+      console.error('Error fetching rental item by ID:', error);
+      return null;
+    }
   }
 
   static async updateRentalItem(id: number, data: {
@@ -430,12 +722,46 @@ export class DatabaseService {
     status?: string
     notes?: string
   }) {
-    console.warn('updateRentalItem not yet implemented with Drizzle')
-    return null
+    try {
+      const updateData: any = {};
+      
+      if (data.equipmentId !== undefined) updateData.equipmentId = data.equipmentId;
+      if (data.equipmentName !== undefined) updateData.equipmentName = data.equipmentName;
+      if (data.quantity !== undefined) updateData.quantity = data.quantity;
+      if (data.unitPrice !== undefined) updateData.unitPrice = data.unitPrice.toString();
+      if (data.totalPrice !== undefined) updateData.totalPrice = data.totalPrice.toString();
+      if (data.days !== undefined) updateData.days = data.days;
+      if (data.rateType !== undefined) updateData.rateType = data.rateType;
+      if (data.operatorId !== undefined) updateData.operatorId = data.operatorId;
+      if (data.status !== undefined) updateData.status = data.status;
+      if (data.notes !== undefined) updateData.notes = data.notes;
+      
+      updateData.updatedAt = new Date().toISOString().split('T')[0];
+
+      const rentalItemRows = await db
+        .update(rentalItems)
+        .set(updateData)
+        .where(eq(rentalItems.id, id))
+        .returning();
+      
+      return rentalItemRows[0] || null;
+    } catch (error) {
+      console.error('Error updating rental item:', error);
+      return null;
+    }
   }
 
   static async deleteRentalItem(id: number) {
-    console.warn('deleteRentalItem not yet implemented with Drizzle')
-    return false
+    try {
+      await db
+        .update(rentalItems)
+        .set({ status: 'deleted' })
+        .where(eq(rentalItems.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error('Error deleting rental item:', error);
+      return false;
+    }
   }
 }
