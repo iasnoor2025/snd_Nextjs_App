@@ -11,7 +11,11 @@ interface I18nWrapperProps {
 export function I18nWrapper({ children }: I18nWrapperProps) {
   const { i18n } = useTranslation();
   const { data: session, status } = useSession();
-  const [isReady, setIsReady] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.id) {
@@ -20,34 +24,26 @@ export function I18nWrapper({ children }: I18nWrapperProps) {
           const response = await fetch('/api/user/language');
           if (response.ok) {
             const data = await response.json();
-            if (data.language) {
+            if (data.success && data.language) {
               i18n.changeLanguage(data.language);
             }
+          } else {
+            console.warn('Failed to load user language preference, using default');
           }
         } catch (error) {
-          console.error('Failed to load user language preference:', error);
+          console.warn('Failed to load user language preference, using default:', error);
         }
       };
 
       loadUserLanguage();
     }
-
-    // Set ready state when translations are loaded
-    if (i18n.isInitialized) {
-      setIsReady(true);
-    }
   }, [status, session?.user?.id, i18n]);
 
-  if (!isReady) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading translations...</p>
-        </div>
-      </div>
-    );
+  // Don't render anything until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return null;
   }
 
+  // Always render children, let the i18n system handle its own initialization
   return <>{children}</>;
 } 

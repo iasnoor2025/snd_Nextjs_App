@@ -20,9 +20,9 @@ export interface UseI18nReturn {
 
 export function useI18n(): UseI18nReturn {
   const { t, i18n } = useTranslation();
-  const [currentLanguage, setCurrentLanguage] = useState(i18n?.language || 'en');
+  const [currentLanguage, setCurrentLanguage] = useState('en'); // Default to English
   const [isRTL, setIsRTL] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const languages = [
     {
@@ -41,7 +41,7 @@ export function useI18n(): UseI18nReturn {
 
   const changeLanguage = (language: string) => {
     const selectedLanguage = languages.find((lang) => lang.code === language);
-    if (selectedLanguage && typeof window !== 'undefined') {
+    if (selectedLanguage && mounted) {
       try {
         // Change language in i18next
         i18n.changeLanguage(language);
@@ -72,9 +72,14 @@ export function useI18n(): UseI18nReturn {
 
   const direction = isRTL ? 'rtl' : 'ltr';
 
-  // Initialize language and direction on mount
+  // Set mounted state to prevent hydration mismatch
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    setMounted(true);
+  }, []);
+
+  // Initialize language and direction after mount
+  useEffect(() => {
+    if (mounted) {
       const savedLanguage = localStorage.getItem('i18nextLng') || 'en';
       const selectedLanguage = languages.find((lang) => lang.code === savedLanguage);
       
@@ -94,17 +99,7 @@ export function useI18n(): UseI18nReturn {
         }
       }
     }
-  }, []);
-
-  // Listen for language changes
-  useEffect(() => {
-    if (i18n && i18n.isInitialized) {
-      setIsReady(true);
-    } else {
-      const timer = setTimeout(() => setIsReady(true), 100);
-      return () => clearTimeout(timer);
-    }
-  }, [i18n]);
+  }, [mounted, languages]);
 
   return {
     t,

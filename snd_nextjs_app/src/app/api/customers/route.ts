@@ -1,81 +1,236 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { DatabaseService } from '@/lib/database'
-import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware'
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/drizzle';
+import { customers } from '@/lib/drizzle/schema';
+import { eq, like, desc } from 'drizzle-orm';
 
-export const GET = withPermission(
-  async (request: NextRequest) => {
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search') || '';
+
+    // Calculate offset
+    const offset = (page - 1) * limit;
+
+    // Build where conditions
+    let whereCondition = undefined;
+    if (search) {
+      whereCondition = like(customers.name, `%${search}%`);
+    }
+
+    // Get total count
+    let total = 0;
     try {
-    const { searchParams } = new URL(request.url)
-    
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const search = searchParams.get('search') ?? undefined
-    const status = searchParams.get('status') ?? undefined
-    const sortBy = searchParams.get('sortBy') ?? undefined
-    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') ?? undefined
+      if (whereCondition) {
+        const countResult = await db.select().from(customers).where(whereCondition);
+        total = countResult.length;
+      } else {
+        const countResult = await db.select().from(customers);
+        total = countResult.length;
+      }
+    } catch (error) {
+      console.error('Error counting customers:', error);
+      total = 0;
+    }
 
-    const params: any = { page, limit };
-    if (search) params.search = search;
-    if (status) params.status = status;
-    if (sortBy) params.sortBy = sortBy;
-    if (sortOrder) params.sortOrder = sortOrder;
+    // Get customers with pagination
+    let customersResult: { id: number; name: string; email: string | null; phone: string | null; companyName: string | null; status: string; createdAt: string; isActive: boolean; }[];
+    try {
+      if (whereCondition) {
+        customersResult = await db
+          .select({
+            id: customers.id,
+            name: customers.name,
+            email: customers.email,
+            phone: customers.phone,
+            companyName: customers.companyName,
+            status: customers.status,
+            createdAt: customers.createdAt,
+            isActive: customers.isActive,
+          })
+          .from(customers)
+          .where(whereCondition)
+          .orderBy(desc(customers.createdAt))
+          .limit(limit)
+          .offset(offset);
+      } else {
+        customersResult = await db
+          .select({
+            id: customers.id,
+            name: customers.name,
+            email: customers.email,
+            phone: customers.phone,
+            companyName: customers.companyName,
+            status: customers.status,
+            createdAt: customers.createdAt,
+            isActive: customers.isActive,
+          })
+          .from(customers)
+          .orderBy(desc(customers.createdAt))
+          .limit(limit)
+          .offset(offset);
+      }
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      customersResult = [];
+    }
 
-    const result = await DatabaseService.getCustomers(params)
-
-    // Get customer statistics for the summary cards
-    const statistics = await DatabaseService.getCustomerStatistics()
+    // Calculate pagination info
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrev = page > 1;
 
     return NextResponse.json({
-      ...result,
-      statistics
-    })
+      success: true,
+      customers: customersResult, 
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext,
+        hasPrev,
+      },
+      statistics: {
+        totalCustomers: total,
+        activeCustomers: total,
+        erpnextSyncedCustomers: 0,
+        localOnlyCustomers: total,
+      },
+    });
   } catch (error) {
-    console.error('Error fetching customers:', error)
+    console.error('Error fetching customers:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch customers' },
+      { 
+        success: false, 
+        message: 'Failed to fetch customers',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
-    )
+    );
   }
-  },
-  PermissionConfigs.customer.read
-);
+}
 
-export const POST = withPermission(
-  async (request: NextRequest) => {
-    try {
-    const body = await request.json()
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
     
-    // Map the request body to match the database schema
-    const customerData: any = {
+    const newCustomer = await db.insert(customers).values({
       name: body.name,
-      is_active: body.isActive !== undefined ? body.isActive : true,
-    };
-    
-    if (body.contactPerson || body.contact_person) customerData.contact_person = body.contactPerson || body.contact_person;
-    if (body.email) customerData.email = body.email;
-    if (body.phone) customerData.phone = body.phone;
-    if (body.address) customerData.address = body.address;
-    if (body.city) customerData.city = body.city;
-    if (body.state) customerData.state = body.state;
-    if (body.postal_code) customerData.postal_code = body.postal_code;
-    if (body.country) customerData.country = body.country;
-    if (body.website) customerData.website = body.website;
-    if (body.tax_number) customerData.tax_number = body.tax_number;
-    if (body.credit_limit) customerData.credit_limit = parseFloat(body.credit_limit);
-    if (body.payment_terms) customerData.payment_terms = body.payment_terms;
-    if (body.notes) customerData.notes = body.notes;
-    if (body.companyName || body.company_name) customerData.company_name = body.companyName || body.company_name;
-    if (body.erpnext_id) customerData.erpnext_id = body.erpnext_id;
-    
-    const customer = await DatabaseService.createCustomer(customerData)
-        return NextResponse.json(customer, { status: 201 })
+      email: body.email || null,
+      phone: body.phone || null,
+      companyName: body.companyName || null,
+      status: body.status || 'active',
+      isActive: body.isActive !== undefined ? body.isActive : true,
+      createdAt: new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString().split('T')[0],
+    }).returning();
+
+    return NextResponse.json({
+      success: true,
+      customer: newCustomer[0],
+      message: 'Customer created successfully'
+    });
   } catch (error) {
-    console.error('Error creating customer:', error)
+    console.error('Error creating customer:', error);
     return NextResponse.json(
-      { error: 'Failed to create customer' },
+      { 
+        success: false, 
+        message: 'Failed to create customer',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
-    )
+    );
   }
-  },
-  PermissionConfigs.customer.create
-);
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    
+    if (!body.id) {
+      return NextResponse.json(
+        { success: false, message: 'Customer ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const updatedCustomer = await db
+      .update(customers)
+      .set({
+        name: body.name,
+        email: body.email || null,
+        phone: body.phone || null,
+        companyName: body.companyName || null,
+        status: body.status || 'active',
+        isActive: body.isActive !== undefined ? body.isActive : true,
+        updatedAt: new Date().toISOString().split('T')[0],
+      })
+      .where(eq(customers.id, body.id))
+      .returning();
+
+    if (updatedCustomer.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'Customer not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      customer: updatedCustomer[0],
+      message: 'Customer updated successfully'
+    });
+  } catch (error) {
+    console.error('Error updating customer:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Failed to update customer',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    
+    if (!body.id) {
+      return NextResponse.json(
+        { success: false, message: 'Customer ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const deletedCustomer = await db
+      .delete(customers)
+      .where(eq(customers.id, body.id))
+      .returning();
+
+    if (deletedCustomer.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'Customer not found' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Customer deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting customer:', error);
+    return NextResponse.json(
+      { 
+        success: false, 
+        message: 'Failed to delete customer',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
+}

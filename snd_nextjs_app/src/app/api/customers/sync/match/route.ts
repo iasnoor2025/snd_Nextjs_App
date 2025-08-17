@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { customers } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 /**
  * Map ERPNext customer fields to local fields
  */
@@ -65,16 +67,7 @@ export async function POST(_request: NextRequest) {
     console.log(`Processing ${erpnextCustomers.length} ERPNext customers for matching`);
 
     // Get existing customers from database
-    const dbCustomers = await prisma.customer.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        erpnext_id: true,
-        company_name: true,
-      }
-    });
+    const dbCustomers = await db.select().from(customers);
 
     console.log(`Found ${dbCustomers.length} existing customers in database`);
 
@@ -139,7 +132,7 @@ export async function POST(_request: NextRequest) {
 
                 // Check if customer already exists by ERPNext ID
         const existingCustomer = dbCustomers.find((dbCustomer: any) =>
-          dbCustomer.erpnext_id === mappedData.erpnext_id
+          dbCustomer.erpnextId === mappedData.erpnext_id
         );
 
         if (existingCustomer) {
@@ -148,7 +141,7 @@ export async function POST(_request: NextRequest) {
             existingCustomer.name !== mappedData.name ||
             existingCustomer.email !== mappedData.email ||
             existingCustomer.phone !== mappedData.phone ||
-            existingCustomer.company_name !== mappedData.company_name;
+            existingCustomer.companyName !== mappedData.company_name;
 
           if (needsUpdate) {
             console.log('Customer needs update:', mappedData.name);
@@ -160,7 +153,7 @@ export async function POST(_request: NextRequest) {
                 name: existingCustomer.name !== mappedData.name,
                 email: existingCustomer.email !== mappedData.email,
                 phone: existingCustomer.phone !== mappedData.phone,
-                company_name: existingCustomer.company_name !== mappedData.company_name,
+                company_name: existingCustomer.companyName !== mappedData.company_name,
               }
             });
             matchResults.summary.toUpdate++;
@@ -213,6 +206,6 @@ export async function POST(_request: NextRequest) {
       { status: 500 }
     );
   } finally {
-    await prisma.$disconnect();
+    // No explicit disconnect needed for Drizzle, it's managed by the ORM
   }
 } 

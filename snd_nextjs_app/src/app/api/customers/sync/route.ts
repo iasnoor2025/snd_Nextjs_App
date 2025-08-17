@@ -1,18 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db } from '@/lib/drizzle';
 import { customers } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
-
-
-
-
-
-
-
 export async function POST(_request: NextRequest) {
   try {
-    console.log('Starting sync process with matched data...');
+    console.log('Starting customer sync process...');
 
     // Parse request body to get matched data
     const body = await _request.json();
@@ -52,6 +45,7 @@ export async function POST(_request: NextRequest) {
     let processedCount = 0;
     let createdCount = 0;
     let updatedCount = 0;
+    let errors: string[] = [];
 
     // Process customers to create
     if (matchedData.toCreate && matchedData.toCreate.length > 0) {
@@ -62,25 +56,39 @@ export async function POST(_request: NextRequest) {
           const customerData = createItem.data;
           console.log('Creating customer:', customerData.name);
           
+          // Check if customer already exists by ERPNext ID
+          if (customerData.erpnext_id) {
+            const existingCustomer = await db
+              .select()
+              .from(customers)
+              .where(eq(customers.erpnextId, customerData.erpnext_id));
+            
+            if (existingCustomer.length > 0) {
+              console.log('Customer already exists, skipping:', customerData.name);
+              continue;
+            }
+          }
+          
           await db.insert(customers).values({
-            name: customerData.name,
-            companyName: customerData.company_name,
-            contactPerson: customerData.contact_person,
-            email: customerData.email,
-            phone: customerData.phone,
-            address: customerData.address,
-            city: customerData.city,
-            state: customerData.state,
-            postalCode: customerData.postal_code,
-            country: customerData.country,
-            taxNumber: customerData.tax_number,
-            creditLimit: customerData.credit_limit as any,
-            paymentTerms: customerData.payment_terms,
-            notes: customerData.notes,
-            isActive: customerData.is_active,
-            erpnextId: customerData.erpnext_id,
+            name: customerData.name || 'Unknown Customer',
+            companyName: customerData.company_name || customerData.name || 'Unknown Company',
+            contactPerson: customerData.contact_person || null,
+            email: customerData.email || null,
+            phone: customerData.phone || null,
+            address: customerData.address || null,
+            city: customerData.city || null,
+            state: customerData.state || null,
+            postalCode: customerData.postal_code || null,
+            country: customerData.country || null,
+            taxNumber: customerData.tax_number || null,
+            creditLimit: customerData.credit_limit ? customerData.credit_limit : null,
+            paymentTerms: customerData.payment_terms || null,
+            notes: customerData.notes || null,
+            isActive: customerData.is_active !== false,
+            erpnextId: customerData.erpnext_id || null,
             status: 'active',
-            updatedAt: new Date().toISOString(),
+            createdAt: new Date().toISOString().split('T')[0],
+            updatedAt: new Date().toISOString().split('T')[0],
           });
           
           createdCount++;
@@ -89,6 +97,8 @@ export async function POST(_request: NextRequest) {
           
         } catch (error) {
           console.error('Error creating customer:', error);
+          const customerName = createItem.data?.name || 'Unknown';
+          errors.push(`Failed to create ${customerName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
     }
@@ -105,22 +115,22 @@ export async function POST(_request: NextRequest) {
           await db
             .update(customers)
             .set({
-              name: newData.name,
-              companyName: newData.company_name,
-              contactPerson: newData.contact_person,
-              email: newData.email,
-              phone: newData.phone,
-              address: newData.address,
-              city: newData.city,
-              state: newData.state,
-              postalCode: newData.postal_code,
-              country: newData.country,
-              taxNumber: newData.tax_number,
-              creditLimit: newData.credit_limit as any,
-              paymentTerms: newData.payment_terms,
-              notes: newData.notes,
-              isActive: newData.is_active,
-              updatedAt: new Date().toISOString(),
+              name: newData.name || '',
+              companyName: newData.company_name || newData.name || '',
+              contactPerson: newData.contact_person || '',
+              email: newData.email || null,
+              phone: newData.phone || null,
+              address: newData.address || null,
+              city: newData.city || null,
+              state: newData.state || null,
+              postalCode: newData.postal_code || null,
+              country: newData.country || null,
+              taxNumber: newData.tax_number || null,
+              creditLimit: newData.credit_limit ? parseFloat(newData.credit_limit) : null,
+              paymentTerms: newData.payment_terms || null,
+              notes: newData.notes || null,
+              isActive: newData.is_active !== false,
+              updatedAt: new Date().toISOString().split('T')[0],
             })
             .where(eq(customers.id, existingId));
           
@@ -130,6 +140,8 @@ export async function POST(_request: NextRequest) {
           
         } catch (error) {
           console.error('Error updating customer:', error);
+          const customerName = updateItem.newData?.name || 'Unknown';
+          errors.push(`Failed to update ${customerName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
     }
@@ -137,14 +149,19 @@ export async function POST(_request: NextRequest) {
     console.log(`Sync completed: ${processedCount} customers processed.`);
     console.log(`Created: ${createdCount}, Updated: ${updatedCount}`);
 
+    if (errors.length > 0) {
+      console.warn('Sync completed with errors:', errors);
+    }
+
     return NextResponse.json({
       success: true,
-      message: `Sync completed successfully. ${processedCount} customers processed.`,
+      message: `Customer sync completed successfully. ${processedCount} customers processed.`,
       data: {
         processed: processedCount,
         created: createdCount,
         updated: updatedCount,
-        total: (matchedData.toCreate?.length || 0) + (matchedData.toUpdate?.length || 0)
+        total: (matchedData.toCreate?.length || 0) + (matchedData.toUpdate?.length || 0),
+        errors: errors.length > 0 ? errors : undefined
       }
     });
 
@@ -157,9 +174,7 @@ export async function POST(_request: NextRequest) {
       },
       { status: 500 }
     );
-  } finally {
-    // Drizzle pool stays connected
   }
 }
 
- 
+

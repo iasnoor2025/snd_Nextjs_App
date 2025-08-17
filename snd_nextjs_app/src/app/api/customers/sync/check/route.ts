@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { customers } from '@/lib/drizzle/schema';
 
 import { sql } from 'drizzle-orm';
 // ERPNext configuration

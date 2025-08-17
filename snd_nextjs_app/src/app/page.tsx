@@ -1,80 +1,44 @@
 'use client';
 
-import { ProtectedRoute } from '@/components/protected-route';
-import { useTranslation } from 'react-i18next';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
-
 export default function HomePage() {
-  const { t } = useTranslation('common');
-  const { data: session, status } = useSession();
-
-  // Show loading while checking authentication
-  if (status === 'loading') {
-    return (
-      <div className="flex h-full w-full items-center justify-center">
-                  <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">{t('loading')}</p>
-          </div>
-      </div>
-    );
-  }
-
   return (
-    <ProtectedRoute>
-      <div className="h-full w-full bg-background">
-        <div className="w-full p-4">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-primary mb-4">
-              {t('app.name')}
-            </h1>
-            <p className="text-muted-foreground mb-8">
-              {t('welcome_back', { name: session?.user?.name || t('user') })} {t('app.welcome')}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-card border rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-2">{t('navigation.dashboard')}</h2>
-              <p className="text-muted-foreground">
-                {t('dashboard.description')}
-              </p>
-            </div>
-
-            <div className="bg-card border rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-2">{t('navigation.customers')}</h2>
-              <p className="text-muted-foreground">
-                {t('customers.description')}
-              </p>
-            </div>
-
-            <div className="bg-card border rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-2">{t('navigation.equipment')}</h2>
-              <p className="text-muted-foreground">
-                {t('equipment.description')}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-8">
-            <Link
-              href="/modules/employee-management"
-              className="inline-flex items-center px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-            >
-              {t('go_to_employee_management')}
-            </Link>
-          </div>
-
-          <div className="mt-8 p-4 bg-secondary rounded-lg">
-            <h3 className="text-lg font-semibold mb-2">{t('layout_test')}</h3>
-            <p className="text-secondary-foreground">
-              {t('layout_test_description')}
-            </p>
-          </div>
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-center space-y-8">
+        <div>
+          <h1 className="text-4xl font-bold text-primary mb-4">
+            SND Rental Management System
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            Welcome to the comprehensive rental management system
+          </p>
+        </div>
+        
+        <div className="space-y-4">
+          <Link
+            href="/login"
+            className="inline-flex items-center px-8 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-lg font-medium"
+          >
+            Sign In
+          </Link>
+          
+          <br />
+          
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center px-8 py-3 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 transition-colors text-lg font-medium"
+          >
+            Go to Dashboard
+          </Link>
+        </div>
+        
+        <div className="text-sm text-muted-foreground">
+          <p>Default Admin Credentials:</p>
+          <p>Email: admin@ias.com</p>
+          <p>Password: password</p>
         </div>
       </div>
-    </ProtectedRoute>
-  )
+    </div>
+  );
 }

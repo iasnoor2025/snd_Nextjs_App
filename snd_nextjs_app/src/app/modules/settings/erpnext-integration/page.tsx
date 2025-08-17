@@ -129,19 +129,61 @@ export default function ERPNextIntegrationPage() {
   const syncCustomers = async () => {
     setLoading(true);
     try {
+      // First fetch customers from ERPNext
       const response = await fetch('/api/erpnext/customers');
       const result = await response.json();
 
-      if (result.success) {
-        toast.success(`Synced ${result.count} customers from ERPNext`);
-        setSyncStatus(prev => ({
-          ...prev,
-          customers: { count: result.count, lastSync: new Date().toISOString() }
-        }));
+      if (result.success && result.data) {
+        // Now call the sync endpoint to save the data
+        const syncResponse = await fetch('/api/customers/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            matchedData: {
+              toCreate: result.data.map((customer: any) => ({
+                data: {
+                  name: customer.customer_name || customer.name || '',
+                  company_name: customer.customer_name || customer.name || '',
+                  contact_person: customer.contact_person || customer.customer_name || '',
+                  email: customer.email_id || customer.email || '',
+                  phone: customer.mobile_no || customer.phone || '',
+                  address: customer.customer_address || customer.address || '',
+                  city: customer.city || '',
+                  state: customer.state || '',
+                  postal_code: customer.pincode || customer.postal_code || '',
+                  country: customer.country || '',
+                  tax_number: customer.tax_id || customer.tax_number || '',
+                  credit_limit: customer.credit_limit || 0,
+                  payment_terms: customer.payment_terms || '',
+                  notes: customer.notes || '',
+                  is_active: !customer.disabled,
+                  erpnext_id: customer.name || '',
+                }
+              })),
+              toUpdate: [],
+              toSkip: []
+            }
+          })
+        });
+
+        const syncResult = await syncResponse.json();
+
+        if (syncResult.success) {
+          toast.success(`Synced ${syncResult.data.processed} customers from ERPNext`);
+          setSyncStatus(prev => ({
+            ...prev,
+            customers: { count: syncResult.data.processed, lastSync: new Date().toISOString() }
+          }));
+        } else {
+          toast.error(`Failed to sync customers: ${syncResult.message}`);
+        }
       } else {
-        toast.error('Failed to sync customers');
+        toast.error('Failed to fetch customers from ERPNext');
       }
     } catch (error) {
+      console.error('Error syncing customers:', error);
       toast.error('Error syncing customers');
     } finally {
       setLoading(false);

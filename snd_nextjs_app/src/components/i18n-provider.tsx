@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useI18n } from '@/hooks/use-i18n';
 
 interface I18nProviderProps {
@@ -9,10 +9,16 @@ interface I18nProviderProps {
 
 export function I18nProvider({ children }: I18nProviderProps) {
   const { currentLanguage, isRTL } = useI18n();
+  const [mounted, setMounted] = useState(false);
 
-  // Update document attributes when language changes
+  // Set mounted state to prevent hydration mismatch
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    setMounted(true);
+  }, []);
+
+  // Update document attributes when language changes, but only after mount
+  useEffect(() => {
+    if (mounted) {
       try {
         document.documentElement.lang = currentLanguage;
         document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
@@ -26,7 +32,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
         console.error('Error setting document attributes:', error);
       }
     }
-  }, [currentLanguage, isRTL]);
+  }, [currentLanguage, isRTL, mounted]);
 
   return <>{children}</>;
 } 
