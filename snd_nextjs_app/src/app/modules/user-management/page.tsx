@@ -16,28 +16,37 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Eye, User, Shield, Mail, Calendar, CheckCircle, XCircle, Settings } from 'lucide-react';
-// i18n refactor: All user-facing strings now use useTranslation('user')
+import { Plus, Edit, Trash2, Eye, User, Shield, Mail, Calendar, CheckCircle, XCircle, Settings, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
+// Drizzle schema types
 interface User {
-  id: string;
+  id: number;
   name: string;
   email: string;
-  role: string;
-  role_id: number;
+  roleId?: number; // Optional since API might not always return it
+  role_id?: number; // API returns this field
+  role: string; // API returns role name as string
   isActive: boolean;
   createdAt: string;
   lastLoginAt?: string;
 }
 
 interface Role {
-  id: string;
+  id: number;
   name: string;
-  guard_name: string;
+  guardName: string;
   createdAt: string;
   updatedAt: string;
-  userCount: number;
+  userCount?: number;
+}
+
+interface Permission {
+  id: number;
+  name: string;
+  guardName?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export default function UserManagementPage() {
@@ -46,6 +55,7 @@ export default function UserManagementPage() {
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,7 +70,7 @@ export default function UserManagementPage() {
     name: '',
     email: '',
     password: '',
-    role: '',
+    roleId: '',
     isActive: true
   });
 
@@ -70,17 +80,17 @@ export default function UserManagementPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [roleFormData, setRoleFormData] = useState({
     name: '',
-    guard_name: 'web'
+    guardName: 'web'
   });
 
   // Permissions state
-  const [permissions, setPermissions] = useState<any[]>([]);
   const [loadingPermissions, setLoadingPermissions] = useState(false);
-  const [selectedRolePermissions, setSelectedRolePermissions] = useState<any[]>([]);
+  const [selectedRolePermissions, setSelectedRolePermissions] = useState<Permission[]>([]);
   const [isPermissionDialogOpen, setIsPermissionDialogOpen] = useState(false);
   const [selectedRoleForPermissions, setSelectedRoleForPermissions] = useState<Role | null>(null);
+  const [rolePermissions, setRolePermissions] = useState<Record<number, Permission[]>>({});
 
-  // Fetch users
+  // Fetch users with role information
   const fetchUsers = async () => {
     try {
       const response = await fetch('/api/users');
@@ -129,18 +139,49 @@ export default function UserManagementPage() {
   };
 
   // Fetch permissions for a specific role
-  const fetchRolePermissions = async (roleId: string) => {
+  const fetchRolePermissions = async (roleId: number) => {
     try {
       const response = await fetch(`/api/roles/${roleId}/permissions`);
       if (!response.ok) {
         throw new Error('Failed to fetch role permissions');
       }
       const data = await response.json();
-      setSelectedRolePermissions(data.permissions || []);
+      setSelectedRolePermissions(data.data || []);
       return data;
     } catch (error) {
       console.error('Error fetching role permissions:', error);
       throw error;
+    }
+  };
+
+  // Fetch permissions for all roles
+  const fetchAllRolePermissions = async () => {
+    try {
+      console.log('🔍 Fetching permissions for all roles...');
+      const permissionsMap: Record<number, Permission[]> = {};
+      
+      for (const role of roles) {
+        try {
+          console.log(`📋 Fetching permissions for role: ${role.name} (ID: ${role.id})`);
+          const response = await fetch(`/api/roles/${role.id}/permissions`);
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`✅ Role ${role.name} permissions:`, data);
+            permissionsMap[role.id] = data.data || [];
+          } else {
+            console.error(`❌ Failed to fetch permissions for role ${role.name}:`, response.status, response.statusText);
+            permissionsMap[role.id] = [];
+          }
+        } catch (error) {
+          console.error(`❌ Error fetching permissions for role ${role.id}:`, error);
+          permissionsMap[role.id] = [];
+        }
+      }
+      
+      console.log('📊 Final permissions map:', permissionsMap);
+      setRolePermissions(permissionsMap);
+    } catch (error) {
+      console.error('❌ Error fetching all role permissions:', error);
     }
   };
 
@@ -181,22 +222,33 @@ export default function UserManagementPage() {
   // Create user
   const createUser = async () => {
     try {
+      // Convert roleId to role name for API
+      const selectedRole = roles.find(r => r.id.toString() === userFormData.roleId);
+      const roleName = selectedRole?.name || 'EMPLOYEE';
+      
       const response = await fetch('/api/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userFormData),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...userFormData,
+          role: roleName
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create user');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create user');
       }
 
-      toast.success(t('userCreatedSuccess'));
+      toast.success('User created successfully');
       setIsCreateUserDialogOpen(false);
-      resetUserForm();
+      setUserFormData({ name: '', email: '', password: '', roleId: '', isActive: true });
       fetchUsers();
-    } catch (err) {
-      toast.error(t('userCreateFailed'));
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to create user');
     }
   };
 
@@ -205,47 +257,61 @@ export default function UserManagementPage() {
     if (!selectedUser) return;
 
     try {
+      // Convert roleId to role name for API
+      const selectedRole = roles.find(r => r.id.toString() === userFormData.roleId);
+      const roleName = selectedRole?.name || 'EMPLOYEE';
+      
       const response = await fetch('/api/users', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           id: selectedUser.id,
           ...userFormData,
+          role: roleName
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update user');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update user');
       }
 
-      toast.success(t('userUpdatedSuccess'));
+      toast.success('User updated successfully');
       setIsEditUserDialogOpen(false);
-      resetUserForm();
+      setSelectedUser(null);
+      setUserFormData({ name: '', email: '', password: '', roleId: '', isActive: true });
       fetchUsers();
-    } catch (err) {
-      toast.error(t('userUpdateFailed'));
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to update user');
     }
   };
 
   // Delete user
-  const deleteUser = async (id: string) => {
-    if (!confirm(t('confirmDeleteUser'))) return;
+  const deleteUser = async (userId: number) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
 
     try {
       const response = await fetch('/api/users', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: userId }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete user');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete user');
       }
 
-      toast.success(t('userDeletedSuccess'));
+      toast.success('User deleted successfully');
       fetchUsers();
-    } catch (err) {
-      toast.error(t('userDeleteFailed'));
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete user');
     }
   };
 
@@ -254,20 +320,24 @@ export default function UserManagementPage() {
     try {
       const response = await fetch('/api/roles', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(roleFormData),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create role');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create role');
       }
 
-      toast.success(t('roleCreatedSuccess'));
+      toast.success('Role created successfully');
       setIsCreateRoleDialogOpen(false);
-      resetRoleForm();
+      setRoleFormData({ name: '', guardName: 'web' });
       fetchRoles();
-    } catch (err) {
-      toast.error(t('roleCreateFailed'));
+    } catch (error) {
+      console.error('Error creating role:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to create role');
     }
   };
 
@@ -278,7 +348,9 @@ export default function UserManagementPage() {
     try {
       const response = await fetch('/api/roles', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
           id: selectedRole.id,
           ...roleFormData,
@@ -286,74 +358,71 @@ export default function UserManagementPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update role');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update role');
       }
 
-      toast.success(t('roleUpdatedSuccess'));
+      toast.success('Role updated successfully');
       setIsEditRoleDialogOpen(false);
-      resetRoleForm();
+      setSelectedRole(null);
+      setRoleFormData({ name: '', guardName: 'web' });
       fetchRoles();
-    } catch (err) {
-      toast.error(t('roleUpdateFailed'));
+    } catch (error) {
+      console.error('Error updating role:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to update role');
     }
   };
 
   // Delete role
-  const deleteRole = async (id: string) => {
-    if (!confirm(t('confirmDeleteRole'))) return;
+  const deleteRole = async (roleId: number) => {
+    if (!confirm('Are you sure you want to delete this role?')) return;
 
     try {
       const response = await fetch('/api/roles', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: roleId }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to delete role');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete role');
       }
 
-      toast.success(t('roleDeletedSuccess'));
+      toast.success('Role deleted successfully');
       fetchRoles();
-    } catch (err) {
-      toast.error(t('roleDeleteFailed'));
+    } catch (error) {
+      console.error('Error deleting role:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete role');
     }
   };
 
-  const resetUserForm = () => {
-    setUserFormData({
-      name: '',
-      email: '',
-      password: '',
-      role: roles.length > 0 ? roles[0].name : '',
-      isActive: true
-    });
-  };
-
-  const resetRoleForm = () => {
-    setRoleFormData({
-      name: '',
-      guard_name: 'web'
-    });
-  };
-
+  // Open edit user dialog
   const openEditUserDialog = (user: User) => {
     setSelectedUser(user);
+    
+    // Find the role ID by matching the role name
+    const matchingRole = roles.find(r => r.name === user.role);
+    const roleId = matchingRole?.id?.toString() || user.role_id?.toString() || '';
+    
     setUserFormData({
       name: user.name,
       email: user.email,
       password: '',
-      role: user.role,
+      roleId: roleId,
       isActive: user.isActive
     });
     setIsEditUserDialogOpen(true);
   };
 
+  // Open edit role dialog
   const openEditRoleDialog = (role: Role) => {
     setSelectedRole(role);
     setRoleFormData({
       name: role.name,
-      guard_name: role.guard_name
+      guardName: role.guardName
     });
     setIsEditRoleDialogOpen(true);
   };
@@ -376,15 +445,22 @@ export default function UserManagementPage() {
     fetchData();
   }, []);
 
+  // Fetch role permissions when roles are loaded
+  useEffect(() => {
+    if (roles.length > 0) {
+      fetchAllRolePermissions();
+    }
+  }, [roles]);
+
   // Set default role when roles are loaded
   useEffect(() => {
-    if (roles.length > 0 && !userFormData.role) {
+    if (roles.length > 0 && !userFormData.roleId) {
       setUserFormData(prev => ({
         ...prev,
-        role: roles[0].name
+        roleId: roles[0]?.id.toString() || ''
       }));
     }
-  }, [roles, userFormData.role]);
+  }, [roles, userFormData.roleId]);
 
   if (loading) {
     return (
@@ -451,14 +527,14 @@ export default function UserManagementPage() {
                 <div className="flex justify-between items-center">
                   <div>
                     <CardTitle>{t('users')}</CardTitle>
-                    <CardDescription>{t('manageSystemUsersAndRoles')}</CardDescription>
+                    <CardDescription>{t('manageUsersDescription')}</CardDescription>
                   </div>
-                  <PermissionContent action="create" subject="User">
+                  {allowedActions.includes('create') && (
                     <Button onClick={() => setIsCreateUserDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
-                      {t('newUser')}
+                      {t('createUser')}
                     </Button>
-                  </PermissionContent>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -470,7 +546,6 @@ export default function UserManagementPage() {
                       <TableHead>{t('role')}</TableHead>
                       <TableHead>{t('status')}</TableHead>
                       <TableHead>{t('lastLogin')}</TableHead>
-                      <TableHead>{t('created')}</TableHead>
                       <TableHead>{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -480,62 +555,43 @@ export default function UserManagementPage() {
                         <TableCell className="font-medium">{user.name}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Badge variant={user.role === 'SUPER_ADMIN' ? 'destructive' : 
-                                           user.role === 'ADMIN' ? 'default' : 
-                                           user.role === 'MANAGER' ? 'secondary' :
-                                           user.role === 'SUPERVISOR' ? 'outline' :
-                                           user.role === 'OPERATOR' ? 'secondary' :
-                                           user.role === 'EMPLOYEE' ? 'default' : 'outline'}>
-                              {user.role}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {user.role === 'SUPER_ADMIN' && '(1)'}
-                              {user.role === 'ADMIN' && '(2)'}
-                              {user.role === 'MANAGER' && '(3)'}
-                              {user.role === 'SUPERVISOR' && '(4)'}
-                              {user.role === 'OPERATOR' && '(5)'}
-                              {user.role === 'EMPLOYEE' && '(6)'}
-                              {user.role === 'USER' && '(7)'}
-                            </span>
-                          </div>
+                          <Badge variant="secondary">
+                            {user.role || 'Unknown'}
+                          </Badge>
                         </TableCell>
                         <TableCell>
-                          {user.isActive ? (
-                            <Badge variant="default" className="flex items-center gap-1">
-                              <CheckCircle className="h-3 w-3" />
-                              {t('active')}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="flex items-center gap-1">
-                              <XCircle className="h-3 w-3" />
-                              {t('inactive')}
-                            </Badge>
-                          )}
+                          <Badge variant={user.isActive ? "default" : "secondary"}>
+                            {user.isActive ? t('active') : t('inactive')}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : t('never')}
                         </TableCell>
-                        <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => router.push(`/modules/user-management/${user.id}`)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <PermissionContent action="update" subject="User">
-                              <Button size="sm" variant="outline" onClick={() => openEditUserDialog(user)}>
+                          <div className="flex gap-2">
+                            {allowedActions.includes('read') && (
+                              <Button variant="outline" size="sm">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {allowedActions.includes('update') && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => openEditUserDialog(user)}
+                              >
                                 <Edit className="h-4 w-4" />
                               </Button>
-                            </PermissionContent>
-                            <PermissionContent action="delete" subject="User">
-                              <Button size="sm" variant="outline" onClick={() => deleteUser(user.id)}>
+                            )}
+                            {allowedActions.includes('delete') && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => deleteUser(user.id)}
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
-                            </PermissionContent>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -548,108 +604,153 @@ export default function UserManagementPage() {
 
           {/* Roles Tab */}
           <TabsContent value="roles" className="space-y-4">
+            {/* Roles Summary Card */}
+            <Card>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-5 w-5" />
+                      Roles Overview
+                    </CardTitle>
+                    <CardDescription>
+                      Summary of roles and their permissions
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    onClick={fetchAllRolePermissions}
+                    disabled={loadingPermissions}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${loadingPermissions ? 'animate-spin' : ''}`} />
+                    Refresh Permissions
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-primary">{roles.length}</div>
+                    <div className="text-sm text-muted-foreground">Total Roles</div>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">
+                      {Object.values(rolePermissions).reduce((total, perms) => total + (perms?.length || 0), 0)}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Total Permissions Assigned</div>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {permissions.length}
+                    </div>
+                    <div className="text-sm text-muted-foreground">System Permissions</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <div>
                     <CardTitle>{t('roles')}</CardTitle>
-                    <CardDescription>{t('manageSystemRolesAndPermissions')}</CardDescription>
+                    <CardDescription>{t('manageRolesDescription')}</CardDescription>
                   </div>
-                  <PermissionContent action="create" subject="User">
-                    <Button onClick={() => setIsCreateRoleDialogOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      {t('newRole')}
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={fetchAllRolePermissions}
+                      disabled={loadingPermissions}
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-2 ${loadingPermissions ? 'animate-spin' : ''}`} />
+                      {t('refreshPermissions') || 'Refresh'}
                     </Button>
-                  </PermissionContent>
+                    {allowedActions.includes('create') && (
+                      <Button onClick={() => setIsCreateRoleDialogOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        {t('createRole')}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('roleName')}</TableHead>
+                      <TableHead>{t('name')}</TableHead>
                       <TableHead>{t('guardName')}</TableHead>
+                      <TableHead>{t('permissions')}</TableHead>
                       <TableHead>{t('users')}</TableHead>
-                      <TableHead>{t('status')}</TableHead>
-                      <TableHead>{t('created')}</TableHead>
-                      <TableHead>{t('updated')}</TableHead>
+                      <TableHead>{t('createdAt')}</TableHead>
                       <TableHead>{t('actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {roles.map((role) => (
                       <TableRow key={role.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <Badge variant={
-                              role.name === 'SUPER_ADMIN' ? 'destructive' :
-                              role.name === 'ADMIN' ? 'default' :
-                              role.name === 'MANAGER' ? 'secondary' :
-                              role.name === 'SUPERVISOR' ? 'outline' :
-                              role.name === 'OPERATOR' ? 'secondary' :
-                              role.name === 'EMPLOYEE' ? 'default' : 'outline'
-                            }>
-                              {role.name}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {role.name === 'SUPER_ADMIN' && t('fullSystemAccess')}
-                              {role.name === 'ADMIN' && t('systemAdministration')}
-                              {role.name === 'MANAGER' && t('departmentManagement')}
-                              {role.name === 'SUPERVISOR' && t('teamSupervision')}
-                              {role.name === 'OPERATOR' && t('basicOperations')}
-                              {role.name === 'EMPLOYEE' && t('employeeAccess')}
-                              {role.name === 'USER' && t('readOnlyAccess')}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{role.guard_name}</TableCell>
+                        <TableCell className="font-medium">{role.name}</TableCell>
+                        <TableCell>{role.guardName}</TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{role.userCount}</span>
-                            <span className="text-sm text-muted-foreground">{t('users')}</span>
+                          <div className="max-w-xs">
+                            {rolePermissions[role.id] ? (
+                              <div className="space-y-2">
+                                <div className="flex flex-wrap gap-1">
+                                  {rolePermissions[role.id]?.slice(0, 3).map((permission) => (
+                                    <Badge key={permission.id} variant="outline" className="text-xs">
+                                      {permission.name}
+                                    </Badge>
+                                  ))}
+                                  {(rolePermissions[role.id]?.length || 0) > 3 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      +{(rolePermissions[role.id]?.length || 0) - 3} more
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  Total: {rolePermissions[role.id]?.length || 0} permissions
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground text-sm">Loading...</span>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="default" className="flex items-center gap-1">
-                            <CheckCircle className="h-3 w-3" />
-                            {t('active')}
+                          <Badge variant="secondary">
+                            {users.filter(u => u.role === role.name).length}
                           </Badge>
                         </TableCell>
                         <TableCell>{new Date(role.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell>{new Date(role.updatedAt).toLocaleDateString()}</TableCell>
                         <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
                               size="sm"
-                              variant="outline"
-                              onClick={() => router.push(`/modules/user-management/role/${role.id}`)}
+                              onClick={() => openPermissionDialog(role)}
                             >
-                              <Eye className="h-4 w-4" />
+                              <Shield className="h-4 w-4" />
                             </Button>
-                            <PermissionContent action="update" subject="User">
+                            {allowedActions.includes('update') && (
                               <Button 
-                                size="sm" 
                                 variant="outline" 
-                                onClick={() => openPermissionDialog(role)}
+                                size="sm"
+                                onClick={() => openEditRoleDialog(role)}
                               >
-                                <Shield className="h-4 w-4" />
-                              </Button>
-                            </PermissionContent>
-                            <PermissionContent action="update" subject="User">
-                              <Button size="sm" variant="outline" onClick={() => openEditRoleDialog(role)}>
                                 <Edit className="h-4 w-4" />
                               </Button>
-                            </PermissionContent>
-                            <PermissionContent action="delete" subject="User">
+                            )}
+                            {allowedActions.includes('delete') && (
                               <Button 
-                                size="sm" 
                                 variant="outline" 
+                                size="sm"
                                 onClick={() => deleteRole(role.id)}
-                                disabled={role.userCount > 0}
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
-                            </PermissionContent>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -664,569 +765,288 @@ export default function UserManagementPage() {
           <TabsContent value="permissions" className="space-y-4">
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>{t('permissions')}</CardTitle>
-                    <CardDescription>{t('manageSystemPermissionsAndAccess')}</CardDescription>
-                  </div>
-                  <PermissionContent action="create" subject="Settings">
-                    <Button onClick={() => {}}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      {t('newPermission')}
-                    </Button>
-                  </PermissionContent>
-                </div>
+                <CardTitle>{t('permissions')}</CardTitle>
+                <CardDescription>{t('systemPermissionsDescription')}</CardDescription>
               </CardHeader>
               <CardContent>
-                {loadingPermissions ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="text-lg">{t('loadingPermissions')}</div>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {/* Permission Categories */}
-                    {(() => {
-                      // Group permissions by resource
-                      const permissionGroups: { [key: string]: any[] } = {};
-                      permissions.forEach(permission => {
-                        const [action, resource] = permission.name.split('.');
-                        if (!permissionGroups[resource]) {
-                          permissionGroups[resource] = [];
-                        }
-                        permissionGroups[resource].push(permission);
-                      });
-
-                      return Object.entries(permissionGroups).map(([resource, perms]) => (
-                        <div key={resource} className="border rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold capitalize">
-                              {resource.replace('-', ' ')}
-                            </h3>
-                            <Badge variant="outline">{perms.length} permissions</Badge>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                            {perms.map(permission => (
-                              <div key={permission.id} className="flex items-center justify-between p-3 border rounded-lg">
-                                <div className="flex items-center space-x-2">
-                                  <div className="w-2 h-2 bg-primary rounded-full"></div>
-                                  <span className="text-sm font-medium">
-                                    {permission.name.split('.')[0]}
-                                  </span>
-                                </div>
-                                <Badge variant="secondary" className="text-xs">
-                                  {permission.name}
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ));
-                    })()}
-                  </div>
-                )}
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('name')}</TableHead>
+                      <TableHead>{t('guardName')}</TableHead>
+                      <TableHead>{t('createdAt')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {permissions.map((permission) => (
+                      <TableRow key={permission.id}>
+                        <TableCell className="font-medium">{permission.name}</TableCell>
+                        <TableCell>{permission.guardName}</TableCell>
+                        <TableCell>{permission.createdAt ? new Date(permission.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
 
-        {/* Role Summary Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('roleSummary')}</CardTitle>
-            <CardDescription>{t('roleHierarchyAndStatistics')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Role Hierarchy */}
-              <div className="space-y-3">
-                <h4 className="font-semibold text-sm">{t('roleHierarchy')}</h4>
-                <div className="space-y-2 text-sm">
-                  {roles.map((role) => {
-                    // Define role hierarchy priority (lower number = higher priority)
-                    const roleHierarchy = {
-                      'SUPER_ADMIN': 1,
-                      'ADMIN': 2,
-                      'MANAGER': 3,
-                      'SUPERVISOR': 4,
-                      'OPERATOR': 5,
-                      'EMPLOYEE': 6,
-                      'USER': 7
-                    };
-                    
-                    const priority = roleHierarchy[role.name as keyof typeof roleHierarchy] || 7;
-                    
-                    return (
-                      <div key={role.id} className="flex items-center justify-between">
-                        <span className="flex items-center gap-2">
-                          <Badge variant={
-                            role.name === 'SUPER_ADMIN' ? 'destructive' :
-                            role.name === 'ADMIN' ? 'default' :
-                            role.name === 'MANAGER' ? 'secondary' :
-                            role.name === 'SUPERVISOR' ? 'outline' :
-                            role.name === 'OPERATOR' ? 'secondary' :
-                            role.name === 'EMPLOYEE' ? 'default' : 'outline'
-                          } className="text-xs">
-                            {role.name}
-                          </Badge>
-                          <span className="text-muted-foreground">({priority})</span>
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {role.name === 'SUPER_ADMIN' && t('fullSystemAccess')}
-                          {role.name === 'ADMIN' && t('systemAdministration')}
-                          {role.name === 'MANAGER' && t('departmentManagement')}
-                          {role.name === 'SUPERVISOR' && t('teamSupervision')}
-                          {role.name === 'OPERATOR' && t('basicOperations')}
-                          {role.name === 'EMPLOYEE' && t('employeeAccess')}
-                          {role.name === 'USER' && t('readOnlyAccess')}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Role Statistics */}
-              <div className="space-y-3">
-                <h4 className="font-semibold text-sm">{t('roleStatistics')}</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>{t('totalRoles')}</span>
-                    <span className="font-medium">{roles.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>{t('totalUsers')}</span>
-                    <span className="font-medium">{users.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>{t('activeRoles')}</span>
-                    <span className="font-medium">{roles.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>{t('rolesWithUsers')}</span>
-                    <span className="font-medium">{roles.filter(r => r.userCount > 0).length}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Permissions Summary */}
-              <div className="space-y-3">
-                <h4 className="font-semibold text-sm">{t('permissionsSummary')}</h4>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>{t('totalPermissions')}</span>
-                    <span className="font-medium">{permissions.length}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>{t('permissionCategories')}</span>
-                    <span className="font-medium">
-                      {(() => {
-                        const categories = new Set();
-                        permissions.forEach(permission => {
-                          const [, resource] = permission.name.split('.');
-                          categories.add(resource);
-                        });
-                        return categories.size;
-                      })()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>{t('mostUsedPermissions')}</span>
-                    <span className="font-medium">
-                      {(() => {
-                        const permissionCounts: { [key: string]: number } = {};
-                        permissions.forEach(permission => {
-                          const [action] = permission.name.split('.');
-                          permissionCounts[action] = (permissionCounts[action] || 0) + 1;
-                        });
-                        const mostUsed = Object.entries(permissionCounts)
-                          .sort(([,a], [,b]) => b - a)[0];
-                        return mostUsed ? mostUsed[0] : 'N/A';
-                      })()}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Actions */}
-              <div className="space-y-3">
-                <h4 className="font-semibold text-sm">{t('quickActions')}</h4>
-                <div className="space-y-2">
-                  <Button size="sm" variant="outline" className="w-full justify-start">
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t('createNewRole')}
-                  </Button>
-                  <Button size="sm" variant="outline" className="w-full justify-start">
-                    <Shield className="h-4 w-4 mr-2" />
-                    {t('managePermissions')}
-                  </Button>
-                  <Button size="sm" variant="outline" className="w-full justify-start">
-                    <Settings className="h-4 w-4 mr-2" />
-                    {t('roleSettings')}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* User Administration Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('userAdministration')}</CardTitle>
-            <CardDescription>{t('advancedUserManagementFeaturesForAdministrators')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
-              <Button variant="outline">
-                <Settings className="h-4 w-4 mr-2" />
-                {t('userSettings')}
-              </Button>
-              <Button variant="outline">
-                <Shield className="h-4 w-4 mr-2" />
-                {t('exportAllUsers')}
-              </Button>
-              <Button variant="outline">
-                <User className="h-4 w-4 mr-2" />
-                {t('bulkUserOperations')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Create User Dialog */}
-      <Dialog open={isCreateUserDialogOpen} onOpenChange={setIsCreateUserDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('createNewUser')}</DialogTitle>
-            <DialogDescription>{t('createNewUserDescription')}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="name">{t('name')}</Label>
-              <Input
-                id="name"
-                value={userFormData.name}
-                onChange={(e) => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder={t('enterName')}
-              />
-            </div>
-            <div>
-              <Label htmlFor="email">{t('email')}</Label>
-              <Input
-                id="email"
-                type="email"
-                value={userFormData.email}
-                onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
-                placeholder={t('enterEmail')}
-              />
-            </div>
-            <div>
-              <Label htmlFor="password">{t('password')}</Label>
-              <Input
-                id="password"
-                type="password"
-                value={userFormData.password}
-                onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
-                placeholder={t('enterPassword')}
-              />
-            </div>
-            <div>
-              <Label htmlFor="role">{t('role')}</Label>
-              <Select value={userFormData.role} onValueChange={(value) => setUserFormData(prev => ({ ...prev, role: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('selectRole')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.name}>
-                      {role.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="isActive"
-                checked={userFormData.isActive}
-                onChange={(e) => setUserFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-              />
-              <Label htmlFor="isActive">{t('active')}</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateUserDialogOpen(false)}>
-              {t('cancel')}
-            </Button>
-            <Button onClick={createUser}>
-              {t('createUser')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit User Dialog */}
-      <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('editUser')}</DialogTitle>
-            <DialogDescription>{t('editUserDescription')}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-name">{t('name')}</Label>
-              <Input
-                id="edit-name"
-                value={userFormData.name}
-                onChange={(e) => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder={t('enterName')}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-email">{t('email')}</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                value={userFormData.email}
-                onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
-                placeholder={t('enterEmail')}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-password">{t('password')} ({t('optional')})</Label>
-              <Input
-                id="edit-password"
-                type="password"
-                value={userFormData.password}
-                onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
-                placeholder={t('enterNewPassword')}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-role">{t('role')}</Label>
-              <Select value={userFormData.role} onValueChange={(value) => setUserFormData(prev => ({ ...prev, role: value }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('selectRole')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {roles.map((role) => (
-                    <SelectItem key={role.id} value={role.name}>
-                      {role.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="edit-isActive"
-                checked={userFormData.isActive}
-                onChange={(e) => setUserFormData(prev => ({ ...prev, isActive: e.target.checked }))}
-              />
-              <Label htmlFor="edit-isActive">{t('active')}</Label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>
-              {t('cancel')}
-            </Button>
-            <Button onClick={updateUser}>
-              {t('updateUser')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create Role Dialog */}
-      <Dialog open={isCreateRoleDialogOpen} onOpenChange={setIsCreateRoleDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('createNewRole')}</DialogTitle>
-            <DialogDescription>{t('createNewRoleDescription')}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="role-name">{t('roleName')}</Label>
-              <Input
-                id="role-name"
-                value={roleFormData.name}
-                onChange={(e) => setRoleFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder={t('enterRoleName')}
-              />
-            </div>
-            <div>
-              <Label htmlFor="role-guard">{t('guardName')}</Label>
-              <Input
-                id="role-guard"
-                value={roleFormData.guard_name}
-                onChange={(e) => setRoleFormData(prev => ({ ...prev, guard_name: e.target.value }))}
-                placeholder="web"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateRoleDialogOpen(false)}>
-              {t('cancel')}
-            </Button>
-            <Button onClick={createRole}>
-              {t('createRole')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Role Dialog */}
-      <Dialog open={isEditRoleDialogOpen} onOpenChange={setIsEditRoleDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('editRole')}</DialogTitle>
-            <DialogDescription>{t('editRoleDescription')}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-role-name">{t('roleName')}</Label>
-              <Input
-                id="edit-role-name"
-                value={roleFormData.name}
-                onChange={(e) => setRoleFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder={t('enterRoleName')}
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-role-guard">{t('guardName')}</Label>
-              <Input
-                id="edit-role-guard"
-                value={roleFormData.guard_name}
-                onChange={(e) => setRoleFormData(prev => ({ ...prev, guard_name: e.target.value }))}
-                placeholder="web"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditRoleDialogOpen(false)}>
-              {t('cancel')}
-            </Button>
-            <Button onClick={updateRole}>
-              {t('updateRole')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Permission Management Dialog */}
-      <Dialog open={isPermissionDialogOpen} onOpenChange={setIsPermissionDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {t('managePermissions')} - {selectedRoleForPermissions?.name}
-            </DialogTitle>
-            <DialogDescription>
-              {t('selectPermissionsForRole')}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {loadingPermissions ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-lg">{t('loadingPermissions')}</div>
-            </div>
-          ) : (
+        {/* Create User Dialog */}
+        <Dialog open={isCreateUserDialogOpen} onOpenChange={setIsCreateUserDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('createUser')}</DialogTitle>
+              <DialogDescription>{t('createUserDescription')}</DialogDescription>
+            </DialogHeader>
             <div className="space-y-4">
-              {/* Permission Categories */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {(() => {
-                  // Group permissions by resource
-                  const permissionGroups: { [key: string]: any[] } = {};
-                  permissions.forEach(permission => {
-                    const [action, resource] = permission.name.split('.');
-                    if (!permissionGroups[resource]) {
-                      permissionGroups[resource] = [];
-                    }
-                    permissionGroups[resource].push(permission);
-                  });
-
-                  return Object.entries(permissionGroups).map(([resource, perms]) => (
-                    <div key={resource} className="border rounded-lg p-4">
-                      <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide">
-                        {resource.replace('-', ' ')}
-                      </h4>
-                      <div className="space-y-2">
-                        {perms.map(permission => {
-                          const isSelected = selectedRolePermissions.some(
-                            rp => rp.id === permission.id
-                          );
-                          
-                          return (
-                            <div key={permission.id} className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                id={`permission-${permission.id}`}
-                                checked={isSelected}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedRolePermissions(prev => [...prev, permission]);
-                                  } else {
-                                    setSelectedRolePermissions(prev => 
-                                      prev.filter(p => p.id !== permission.id)
-                                    );
-                                  }
-                                }}
-                                className="rounded"
-                              />
-                              <Label 
-                                htmlFor={`permission-${permission.id}`}
-                                className="text-sm cursor-pointer"
-                              >
-                                {permission.name.split('.')[0]}
-                              </Label>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ));
-                })()}
+              <div>
+                <Label htmlFor="name">{t('name')}</Label>
+                <Input
+                  id="name"
+                  value={userFormData.name}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
+                />
               </div>
-
-              {/* Quick Actions */}
-              <div className="flex gap-2 pt-4 border-t">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedRolePermissions(permissions);
-                  }}
+              <div>
+                <Label htmlFor="email">{t('email')}</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={userFormData.email}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="password">{t('password')}</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={userFormData.password}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="role">{t('role')}</Label>
+                <Select
+                  value={userFormData.roleId}
+                  onValueChange={(value) => setUserFormData(prev => ({ ...prev, roleId: value }))}
                 >
-                  {t('selectAll')}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedRolePermissions([]);
-                  }}
-                >
-                  {t('clearAll')}
-                </Button>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('selectRole')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.id.toString()}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  checked={userFormData.isActive}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                />
+                <Label htmlFor="isActive">{t('isActive')}</Label>
               </div>
             </div>
-          )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreateUserDialogOpen(false)}>
+                {t('cancel')}
+              </Button>
+              <Button onClick={createUser}>{t('create')}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPermissionDialogOpen(false)}>
-              {t('cancel')}
-            </Button>
-            <Button 
-              onClick={() => updateRolePermissions(selectedRolePermissions.map(p => p.id))}
-              disabled={loadingPermissions}
-            >
-              {t('updatePermissions')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        {/* Edit User Dialog */}
+        <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('editUser')}</DialogTitle>
+              <DialogDescription>{t('editUserDescription')}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-name">{t('name')}</Label>
+                <Input
+                  id="edit-name"
+                  value={userFormData.name}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-email">{t('email')}</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={userFormData.email}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-password">{t('password')} ({t('leaveBlankToKeep')})</Label>
+                <Input
+                  id="edit-password"
+                  type="password"
+                  value={userFormData.password}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-role">{t('role')}</Label>
+                <Select
+                  value={userFormData.roleId}
+                  onValueChange={(value) => setUserFormData(prev => ({ ...prev, roleId: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('selectRole')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.id.toString()}>
+                        {role.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="edit-isActive"
+                  checked={userFormData.isActive}
+                  onChange={(e) => setUserFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                />
+                <Label htmlFor="edit-isActive">{t('isActive')}</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>
+                {t('cancel')}
+              </Button>
+              <Button onClick={updateUser}>{t('update')}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Create Role Dialog */}
+        <Dialog open={isCreateRoleDialogOpen} onOpenChange={setIsCreateRoleDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('createRole')}</DialogTitle>
+              <DialogDescription>{t('createRoleDescription')}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="role-name">{t('name')}</Label>
+                <Input
+                  id="role-name"
+                  value={roleFormData.name}
+                  onChange={(e) => setRoleFormData(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="role-guard">{t('guardName')}</Label>
+                <Input
+                  id="role-guard"
+                  value={roleFormData.guardName}
+                  onChange={(e) => setRoleFormData(prev => ({ ...prev, guardName: e.target.value }))}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreateRoleDialogOpen(false)}>
+                {t('cancel')}
+              </Button>
+              <Button onClick={createRole}>{t('create')}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Role Dialog */}
+        <Dialog open={isEditRoleDialogOpen} onOpenChange={setIsEditRoleDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{t('editRole')}</DialogTitle>
+              <DialogDescription>{t('editRoleDescription')}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-role-name">{t('name')}</Label>
+                <Input
+                  id="edit-role-name"
+                  value={roleFormData.name}
+                  onChange={(e) => setRoleFormData(prev => ({ ...prev, name: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-role-guard">{t('guardName')}</Label>
+                <Input
+                  id="edit-role-guard"
+                  value={roleFormData.guardName}
+                  onChange={(e) => setRoleFormData(prev => ({ ...prev, guardName: e.target.value }))}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditRoleDialogOpen(false)}>
+                {t('cancel')}
+              </Button>
+              <Button onClick={updateRole}>{t('update')}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Permission Management Dialog */}
+        <Dialog open={isPermissionDialogOpen} onOpenChange={setIsPermissionDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {t('managePermissions')} - {selectedRoleForPermissions?.name}
+              </DialogTitle>
+              <DialogDescription>
+                {t('selectPermissionsForRole')}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 max-h-96 overflow-y-auto">
+              {permissions.map((permission) => (
+                <div key={permission.id} className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id={`permission-${permission.id}`}
+                    checked={selectedRolePermissions.some(p => p.id === permission.id)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedRolePermissions(prev => [...prev, permission]);
+                      } else {
+                        setSelectedRolePermissions(prev => prev.filter(p => p.id !== permission.id));
+                      }
+                    }}
+                  />
+                  <Label htmlFor={`permission-${permission.id}`}>
+                    {permission.name}
+                  </Label>
+                </div>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsPermissionDialogOpen(false)}>
+                {t('cancel')}
+              </Button>
+              <Button 
+                onClick={() => updateRolePermissions(selectedRolePermissions.map(p => p.id))}
+              >
+                {t('updatePermissions')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </ProtectedRoute>
   );
 }
