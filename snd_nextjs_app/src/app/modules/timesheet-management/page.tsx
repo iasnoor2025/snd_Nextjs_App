@@ -169,6 +169,9 @@ export default function TimesheetManagementPage() {
   const [monthSelectOpen, setMonthSelectOpen] = useState(false);
   const currentMonthRef = useRef<HTMLDivElement>(null);
 
+  // Get user role from RBAC context
+  const userRole = user?.role || 'USER';
+
   // Auto-generate timesheets when page loads
   useEffect(() => {
     const autoGenerateOnLoad = async () => {
@@ -254,6 +257,7 @@ export default function TimesheetManagementPage() {
       const response = await fetch(`/api/timesheets?${params}`, {
         credentials: 'include',
       });
+      
       if (!response.ok) {
         throw new Error('Failed to fetch timesheets');
       }
@@ -350,9 +354,6 @@ export default function TimesheetManagementPage() {
   };
 
   const handleDelete = async (timesheet: Timesheet) => {
-    // Get user role from session or context
-    const userRole = 'USER' as string; // This should come from your auth context/session
-
     // Only admin can delete non-draft timesheets
     if (timesheet.status !== 'draft' && userRole !== 'ADMIN') {
       toast.error(t('only_draft_timesheets_can_be_deleted_by_non_admin_users'));
@@ -395,19 +396,13 @@ export default function TimesheetManagementPage() {
   const handleBulkDelete = () => {
     const selectedTimesheetsData = timesheets?.data.filter(t => selectedTimesheets.has(t.id)) || [];
 
-    // Get user role from session or context
-    const userRole = 'USER' as string; // This should come from your auth context/session
-
-    const draftTimesheets = selectedTimesheetsData.filter(t => t.status === 'draft');
-    const nonDraftTimesheets = selectedTimesheetsData.filter(t => t.status !== 'draft');
-
     // Only admin can delete non-draft timesheets
-    if (nonDraftTimesheets.length > 0 && userRole !== 'ADMIN') {
-      toast.error(t('cannot_delete_timesheets_only_draft_can_be_deleted_by_non_admin_users', { count: nonDraftTimesheets.length }));
+    if (selectedTimesheetsData.filter(t => t.status !== 'draft').length > 0 && userRole !== 'ADMIN') {
+      toast.error(t('cannot_delete_timesheets_only_draft_can_be_deleted_by_non_admin_users', { count: selectedTimesheetsData.filter(t => t.status !== 'draft').length }));
       return;
     }
 
-    if (draftTimesheets.length === 0 && userRole !== 'ADMIN') {
+    if (selectedTimesheetsData.filter(t => t.status === 'draft').length === 0 && userRole !== 'ADMIN') {
       toast.error(t('no_draft_timesheets_selected_for_deletion'));
       return;
     }
@@ -585,9 +580,6 @@ export default function TimesheetManagementPage() {
       return false;
     }
 
-    // Get user role from RBAC context
-    const userRole = user?.role || 'USER';
-
     // For draft timesheets, check submission permissions
     if (timesheet.status === 'draft') {
       const canSubmit = ['ADMIN', 'MANAGER', 'SUPER_ADMIN'].includes(userRole);
@@ -622,15 +614,12 @@ export default function TimesheetManagementPage() {
     const canProcess = ['pending', 'submitted', 'foreman_approved', 'incharge_approved', 'checking_approved'].includes(timesheet.status);
     if (!canProcess) return false;
 
-    // Get user role from RBAC context
-    const userRole = user?.role || 'USER';
-
     // Any role that can approve can also reject
     const approvalWorkflow = {
       pending: ['FOREMAN', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
       submitted: ['FOREMAN', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
       foreman_approved: ['INCHARGE', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
-      incharge_approved: ['CHECKING', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
+      incharge_approved: ['INCHARGE', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
       checking_approved: ['MANAGER', 'ADMIN', 'SUPER_ADMIN']
     };
 
@@ -656,9 +645,6 @@ export default function TimesheetManagementPage() {
   const selectedTimesheetsData = timesheets?.data.filter(t => selectedTimesheets.has(t.id)) || [];
   const canApproveSelected = selectedTimesheetsData.some(t => canApproveTimesheet(t));
   const canRejectSelected = selectedTimesheetsData.some(t => canRejectTimesheet(t));
-
-  // Get user role from RBAC context
-  const userRole = user?.role || 'USER';
 
   // Extract unique assignments for filter
   const assignments = useMemo(() => {
@@ -781,6 +767,35 @@ export default function TimesheetManagementPage() {
               isAutoGenerating={autoGenerating} 
               onAutoGenerateComplete={fetchTimesheets}
             />
+          </PermissionContent>
+
+          <PermissionContent action="create" subject="Timesheet">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/init-cron', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                  });
+
+                  const result = await response.json();
+                  if (result.success) {
+                    toast.success('Cron service initialized successfully!');
+                  } else {
+                    toast.error('Failed to initialize cron service: ' + result.error);
+                  }
+                } catch (error) {
+                  toast.error('Failed to initialize cron service');
+                }
+              }}
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Init Cron
+            </Button>
           </PermissionContent>
 
           <PermissionContent action="create" subject="Timesheet">

@@ -661,6 +661,7 @@ export function withAuth(
   return async (request: NextRequest, params?: any): Promise<NextResponse> => {
     try {
       const session = await getServerSession(authConfig);
+      
       if (!session?.user) {
         return NextResponse.json(
           { error: 'Unauthorized' },
