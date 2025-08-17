@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { media } from '@/lib/drizzle/schema';
+import { eq, desc } from 'drizzle-orm';
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -7,22 +10,20 @@ export async function GET(
   try {
     const { id: projectId } = await params;
 
-    const documents = await prisma.media.findMany({
-      where: { 
-        model_type: 'Project',
-        model_id: parseInt(projectId)
-      },
-      orderBy: { created_at: 'desc' }
-    });
+    const documents = await db
+      .select()
+      .from(media)
+      .where(eq(media.modelId, parseInt(projectId)))
+      .orderBy(desc(media.createdAt));
 
     // Transform the data to match the frontend expectations
     const transformedDocuments = documents.map((doc: any) => ({
       id: doc.id,
-      name: doc.file_name,
-      type: doc.mime_type || 'Unknown',
+      name: doc.fileName,
+      type: doc.mimeType || 'Unknown',
       uploaded_by: 'Unknown', // Media model doesn't have uploader relation
-      uploaded_at: doc.created_at.toISOString(),
-      size: doc.file_size ? `${(doc.file_size / 1024 / 1024).toFixed(1)} MB` : 'Unknown'
+      uploaded_at: doc.createdAt,
+      size: doc.fileSize ? `${(doc.fileSize / 1024 / 1024).toFixed(1)} MB` : 'Unknown'
     }));
 
     return NextResponse.json({ data: transformedDocuments });
@@ -43,19 +44,22 @@ export async function POST(
     const { id: projectId } = await params;
     const body = await request.json();
 
-    const document = await prisma.media.create({
-      data: {
-        file_name: body.name,
-        file_path: body.file_path,
-        file_size: body.file_size,
-        mime_type: body.file_type,
-        model_type: 'Project',
-        model_id: parseInt(projectId),
-        collection: body.category || 'documents'
-      }
-    });
+    const documentRows = await db
+      .insert(media)
+      .values({
+        fileName: body.name,
+        filePath: body.file_path,
+        fileSize: body.file_size,
+        mimeType: body.file_type,
+        modelType: 'Project',
+        modelId: parseInt(projectId),
+        collection: body.category || 'documents',
+        createdAt: new Date().toISOString().split('T')[0],
+        updatedAt: new Date().toISOString().split('T')[0],
+      })
+      .returning();
 
-    return NextResponse.json({ data: document }, { status: 201 });
+    return NextResponse.json({ data: documentRows[0] }, { status: 201 });
   } catch (error) {
     console.error('Error creating project document:', error);
     return NextResponse.json(

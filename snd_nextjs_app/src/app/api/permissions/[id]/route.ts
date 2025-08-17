@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { permissions, roleHasPermissions, modelHasPermissions, roles, users } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 import { hasPermission, createUserFromSession } from '@/lib/rbac/custom-rbac';
+import { sql } from 'drizzle-orm';
 
 // GET /api/permissions/[id] - Get specific permission
 export async function GET(
@@ -31,33 +34,53 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid permission ID' }, { status: 400 });
     }
 
-    const permission = await prisma.permission.findUnique({
-      where: { id: permissionId },
-      include: {
-        role_permissions: {
-          include: {
-            role: true,
-          },
-        },
-        user_permissions: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    // Get permission with role and user assignments using Drizzle
+    const permissionRows = await db
+      .select({
+        id: permissions.id,
+        name: permissions.name,
+        guardName: permissions.guardName,
+        createdAt: permissions.createdAt,
+        updatedAt: permissions.updatedAt,
+      })
+      .from(permissions)
+      .where(eq(permissions.id, permissionId))
+      .limit(1);
 
-    if (!permission) {
+    if (permissionRows.length === 0) {
       return NextResponse.json({ error: 'Permission not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ permission });
+    const permission = permissionRows[0]!;
+
+    // Get role assignments for this permission
+    const roleAssignments = await db
+      .select({
+        roleId: roleHasPermissions.roleId,
+        roleName: roles.name,
+      })
+      .from(roleHasPermissions)
+      .leftJoin(roles, eq(roleHasPermissions.roleId, roles.id))
+      .where(eq(roleHasPermissions.permissionId, permissionId));
+
+    // Get user assignments for this permission
+    const userAssignments = await db
+      .select({
+        userId: modelHasPermissions.modelId,
+        userName: users.name,
+        userEmail: users.email,
+      })
+      .from(modelHasPermissions)
+      .leftJoin(users, eq(modelHasPermissions.modelId, users.id))
+      .where(eq(modelHasPermissions.permissionId, permissionId));
+
+    const permissionWithAssignments = {
+      ...permission,
+      role_permissions: roleAssignments,
+      user_permissions: userAssignments,
+    };
+
+    return NextResponse.json({ permission: permissionWithAssignments });
   } catch (error) {
     console.error('Error fetching permission:', error);
     return NextResponse.json(
@@ -105,21 +128,31 @@ export async function PUT(
     }
 
     // Check if permission exists
-    const existingPermission = await prisma.permission.findUnique({
-      where: { id: permissionId },
-    });
+    const existingPermissionRows = await db
+      .select({
+        id: permissions.id,
+        name: permissions.name,
+        guardName: permissions.guardName,
+      })
+      .from(permissions)
+      .where(eq(permissions.id, permissionId))
+      .limit(1);
 
-    if (!existingPermission) {
+    if (existingPermissionRows.length === 0) {
       return NextResponse.json({ error: 'Permission not found' }, { status: 404 });
     }
 
+    const existingPermission = existingPermissionRows[0]!;
+
     // Check if new name conflicts with existing permission
     if (name !== existingPermission.name) {
-      const nameConflict = await prisma.permission.findUnique({
-        where: { name },
-      });
+      const nameConflictRows = await db
+        .select({ id: permissions.id })
+        .from(permissions)
+        .where(eq(permissions.name, name))
+        .limit(1);
 
-      if (nameConflict) {
+      if (nameConflictRows.length > 0) {
         return NextResponse.json(
           { error: 'Permission name already exists' },
           { status: 409 }
@@ -127,14 +160,18 @@ export async function PUT(
       }
     }
 
-    // Update permission
-    const updatedPermission = await prisma.permission.update({
-      where: { id: permissionId },
-      data: {
+    // Update permission using Drizzle
+    const updatedPermissionRows = await db
+      .update(permissions)
+      .set({
         name,
-        guard_name: guard_name || existingPermission.guard_name,
-      },
-    });
+        guardName: guard_name || existingPermission.guardName,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(permissions.id, permissionId))
+      .returning();
+
+    const updatedPermission = updatedPermissionRows[0]!;
 
     return NextResponse.json({
       message: 'Permission updated successfully',
@@ -176,37 +213,53 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid permission ID' }, { status: 400 });
     }
 
-    // Check if permission exists
-    const existingPermission = await prisma.permission.findUnique({
-      where: { id: permissionId },
-      include: {
-        role_permissions: true,
-        user_permissions: true,
-      },
-    });
+    // Check if permission exists and get assignments
+    const existingPermissionRows = await db
+      .select({
+        id: permissions.id,
+        name: permissions.name,
+      })
+      .from(permissions)
+      .where(eq(permissions.id, permissionId))
+      .limit(1);
 
-    if (!existingPermission) {
+    if (existingPermissionRows.length === 0) {
       return NextResponse.json({ error: 'Permission not found' }, { status: 404 });
     }
 
+    // Check role assignments
+    const roleAssignments = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(roleHasPermissions)
+      .where(eq(roleHasPermissions.permissionId, permissionId));
+
+    // Check user assignments
+    const userAssignments = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(modelHasPermissions)
+      .where(eq(modelHasPermissions.permissionId, permissionId));
+
+    const roleAssignmentCount = Number(roleAssignments[0]?.count || 0);
+    const userAssignmentCount = Number(userAssignments[0]?.count || 0);
+
     // Check if permission is in use
-    if (existingPermission.role_permissions.length > 0 || existingPermission.user_permissions.length > 0) {
+    if (roleAssignmentCount > 0 || userAssignmentCount > 0) {
       return NextResponse.json(
         { 
           error: 'Cannot delete permission that is assigned to roles or users',
           details: {
-            roleAssignments: existingPermission.role_permissions.length,
-            userAssignments: existingPermission.user_permissions.length,
+            roleAssignments: roleAssignmentCount,
+            userAssignments: userAssignmentCount,
           }
         },
         { status: 409 }
       );
     }
 
-    // Delete permission
-    await prisma.permission.delete({
-      where: { id: permissionId },
-    });
+    // Delete permission using Drizzle
+    await db
+      .delete(permissions)
+      .where(eq(permissions.id, permissionId));
 
     return NextResponse.json({
       message: 'Permission deleted successfully',

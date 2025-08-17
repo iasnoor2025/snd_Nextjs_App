@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { equipment } from '@/lib/drizzle/schema';
+import { eq, or } from 'drizzle-orm';
+
 // ERPNext configuration
 const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
 const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY;
@@ -123,36 +126,53 @@ async function syncEquipmentFromERPNext() {
           name: item.item_name || item.item_code,
           description: item.description || '',
           manufacturer: item.manufacturer || '',
-          model_number: item.model || '',
-          serial_number: item.serial_no || '',
-          erpnext_id: item.item_code,
-          daily_rate: item.standard_rate ? parseFloat(item.standard_rate) : null,
+          modelNumber: item.model || '',
+          serialNumber: item.serial_no || '',
+          erpnextId: item.item_code,
+          dailyRate: item.standard_rate ? item.standard_rate.toString() : null,
           status: 'available',
-          is_active: true,
+          isActive: true,
+          createdAt: new Date().toISOString().split('T')[0],
+          updatedAt: new Date().toISOString().split('T')[0],
         };
 
-        // Check if equipment already exists
-        const existingEquipment = await prisma.equipment.findFirst({
-          where: {
-            OR: [
-              { erpnext_id: item.item_code },
-              { serial_number: item.serial_no }
-            ]
-          }
-        });
+        // Check if equipment already exists using Drizzle
+        const existingEquipmentRows = await db
+          .select({
+            id: equipment.id,
+          })
+          .from(equipment)
+          .where(
+            or(
+              eq(equipment.erpnextId, item.item_code),
+              eq(equipment.serialNumber, item.serial_no)
+            )
+          )
+          .limit(1);
 
-        if (existingEquipment) {
-          // Update existing equipment
-          await prisma.equipment.update({
-            where: { id: existingEquipment.id },
-            data: equipmentData
-          });
+        if (existingEquipmentRows.length > 0) {
+          // Update existing equipment using Drizzle
+          await db
+            .update(equipment)
+            .set({
+              name: equipmentData.name,
+              description: equipmentData.description,
+              manufacturer: equipmentData.manufacturer,
+              modelNumber: equipmentData.modelNumber,
+              serialNumber: equipmentData.serialNumber,
+              erpnextId: equipmentData.erpnextId,
+              dailyRate: equipmentData.dailyRate,
+              status: equipmentData.status,
+              isActive: equipmentData.isActive,
+              updatedAt: new Date().toISOString().split('T')[0],
+            })
+            .where(eq(equipment.id, existingEquipmentRows[0]!.id));
           updatedCount++;
         } else {
-          // Create new equipment
-          await prisma.equipment.create({
-            data: equipmentData
-          });
+          // Create new equipment using Drizzle
+          await db
+            .insert(equipment)
+            .values(equipmentData);
           createdCount++;
         }
       } catch (error) {

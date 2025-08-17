@@ -1,6 +1,6 @@
-import { db, prisma } from './db'
 // Legacy database file - use @/lib/drizzle instead
 import { eq, desc, asc, ilike, or, and, sql } from 'drizzle-orm'
+import { db } from '@/lib/drizzle'
 import { customers } from '@/lib/drizzle/schema'
 
 export class DatabaseService {
@@ -100,20 +100,13 @@ export class DatabaseService {
   }
 
   static async getCustomerById(id: number) {
-    return await prisma.customer.findUnique({
-      where: { id },
-      include: {
-        rentals: {
-          include: {
-            rental_items: {
-              include: {
-                equipment: true
-              }
-            }
-          }
-        }
-      }
-    })
+    const customerRows = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.id, id))
+      .limit(1)
+    
+    return customerRows[0] || null
   }
 
   static async createCustomer(data: {
@@ -137,7 +130,7 @@ export class DatabaseService {
   }) {
     const inserted = await db
       .insert(customers)
-      .values({
+      .values({  
         name: data.name,
         email: data.email ?? null,
         phone: data.phone ?? null,
@@ -150,13 +143,13 @@ export class DatabaseService {
         country: data.country ?? null,
         website: data.website ?? null,
         taxNumber: data.tax_number ?? null,
-        creditLimit: (data.credit_limit as any) ?? null,
+        creditLimit: data.credit_limit ? data.credit_limit.toString() : null,
         paymentTerms: data.payment_terms ?? null,
         notes: data.notes ?? null,
         isActive: data.is_active ?? true,
         erpnextId: data.erpnext_id ?? null,
         status: 'active',
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString().split('T')[0],
       })
       .returning()
     return inserted[0]
@@ -196,12 +189,12 @@ export class DatabaseService {
         country: data.country ?? undefined,
         website: data.website ?? undefined,
         taxNumber: data.tax_number ?? undefined,
-        creditLimit: (data.credit_limit as any) ?? undefined,
+        creditLimit: data.credit_limit ? data.credit_limit.toString() : undefined,
         paymentTerms: data.payment_terms ?? undefined,
         notes: data.notes ?? undefined,
         isActive: data.is_active ?? undefined,
         erpnextId: data.erpnext_id ?? undefined,
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString().split('T')[0],
       })
       .where(eq(customers.id, id))
       .returning()
@@ -228,51 +221,30 @@ export class DatabaseService {
     return { totalCustomers, activeCustomers, erpnextSyncedCustomers, localOnlyCustomers }
   }
 
+  // Note: The following methods were using Prisma and need to be implemented with Drizzle
+  // For now, they return null to indicate they need proper implementation
+  
   static async syncCustomerFromERPNext(erpnextId: string, customerData: any) {
-    return await prisma.customer.upsert({
-      where: { erpnext_id: erpnextId },
-      update: customerData,
-      create: customerData,
-    })
+    // TODO: Implement with Drizzle
+    console.warn('syncCustomerFromERPNext not yet implemented with Drizzle')
+    return null
   }
 
   static async getCustomerByERPNextId(erpnextId: string) {
-    return await prisma.customer.findFirst({
-      where: { erpnext_id: erpnextId },
-      include: {
-        rentals: true
-      }
-    })
+    // TODO: Implement with Drizzle
+    console.warn('getCustomerByERPNextId not yet implemented with Drizzle')
+    return null
   }
 
-  // Equipment operations
+  // Equipment operations - TODO: Implement with Drizzle
   static async getEquipment() {
-    return await prisma.equipment.findMany({
-      include: {
-        rental_items: {
-          include: {
-            rental: true
-          }
-        }
-      }
-    })
+    console.warn('getEquipment not yet implemented with Drizzle')
+    return []
   }
 
   static async getEquipmentById(id: number) {
-    return await prisma.equipment.findUnique({
-      where: { id },
-      include: {
-        rental_items: {
-          include: {
-            rental: {
-              include: {
-                customer: true
-              }
-            }
-          }
-        }
-      }
-    })
+    console.warn('getEquipmentById not yet implemented with Drizzle')
+    return null
   }
 
   static async createEquipment(data: {
@@ -281,9 +253,8 @@ export class DatabaseService {
     category: string
     dailyRate: number
   }) {
-    return await prisma.equipment.create({
-      data
-    })
+    console.warn('createEquipment not yet implemented with Drizzle')
+    return null
   }
 
   static async updateEquipment(id: number, data: {
@@ -293,19 +264,16 @@ export class DatabaseService {
     status?: 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'RETIRED'
     dailyRate?: number
   }) {
-    return await prisma.equipment.update({
-      where: { id },
-      data
-    })
+    console.warn('updateEquipment not yet implemented with Drizzle')
+    return null
   }
 
   static async deleteEquipment(id: number) {
-    return await prisma.equipment.delete({
-      where: { id }
-    })
+    console.warn('deleteEquipment not yet implemented with Drizzle')
+    return false
   }
 
-  // Rental operations
+  // Rental operations - TODO: Implement with Drizzle 
   static async getRentals(filters?: {
     search?: string
     status?: string
@@ -314,62 +282,13 @@ export class DatabaseService {
     startDate?: string
     endDate?: string
   }) {
-    const where: any = {}
-
-    if (filters?.search) {
-      where.OR = [
-        { rentalNumber: { contains: filters.search, mode: 'insensitive' } },
-        { customer: { name: { contains: filters.search, mode: 'insensitive' } } },
-      ]
-    }
-
-    if (filters?.status) {
-      where.status = filters.status
-    }
-
-    if (filters?.customerId) {
-      where.customerId = filters.customerId
-    }
-
-    if (filters?.paymentStatus) {
-      where.paymentStatus = filters.paymentStatus
-    }
-
-    if (filters?.startDate) {
-      where.startDate = { gte: new Date(filters.startDate) }
-    }
-
-    if (filters?.endDate) {
-      where.expectedEndDate = { lte: new Date(filters.endDate) }
-    }
-
-    return await prisma.rental.findMany({
-      where,
-      include: {
-        customer: true,
-        rental_items: {
-          include: {
-            equipment: true
-          }
-        }
-      },
-      orderBy: { created_at: 'desc' }
-    })
+    console.warn('getRentals not yet implemented with Drizzle')
+    return []
   }
 
   static async getRental(id: number) {
-    return await prisma.rental.findUnique({
-      where: { id },
-      include: {
-        customer: true,
-        rental_items: {
-          include: {
-            equipment: true
-          }
-        },
-
-      }
-    })
+    console.warn('getRental not yet implemented with Drizzle')
+    return null
   }
 
   static async createRental(data: {
@@ -393,54 +312,8 @@ export class DatabaseService {
     notes?: string
     rentalItems?: any[]
   }) {
-    const { rentalItems, ...rentalData } = data
-
-    const rental = await prisma.rental.create({
-      data: {
-        customer_id: rentalData.customerId,
-        rental_number: rentalData.rentalNumber || `RENTAL-${Date.now()}`,
-        start_date: rentalData.startDate || new Date(),
-        expected_end_date: rentalData.expectedEndDate,
-        actual_end_date: rentalData.actualEndDate,
-        status: rentalData.status || 'pending',
-        payment_status: rentalData.paymentStatus || 'pending',
-        subtotal: rentalData.subtotal || 0,
-        tax_amount: rentalData.taxAmount || 0,
-        total_amount: rentalData.totalAmount || 0,
-        discount: rentalData.discount || 0,
-        tax: rentalData.tax || 0,
-        final_amount: rentalData.finalAmount || 0,
-        deposit_amount: rentalData.depositAmount || 0,
-        payment_terms_days: rentalData.paymentTermsDays || 30,
-        has_timesheet: rentalData.hasTimesheet || false,
-        has_operators: rentalData.hasOperators || false,
-        notes: rentalData.notes || '',
-        rental_items: rentalItems ? {
-          create: rentalItems.map((item: any) => ({
-            equipment_id: item.equipmentId ? parseInt(item.equipmentId) : null,
-            equipment_name: item.equipmentName,
-            quantity: item.quantity,
-            unit_price: item.unitPrice,
-            total_price: item.totalPrice,
-            days: item.days,
-            rate_type: item.rateType,
-            operator_id: item.operatorId ? parseInt(item.operatorId) : null,
-            status: item.status || 'active',
-            notes: item.notes
-          }))
-        } : undefined,
-      },
-      include: {
-        customer: true,
-        rental_items: {
-          include: {
-            equipment: true
-          }
-        }
-      }
-    })
-
-    return rental
+    console.warn('createRental not yet implemented with Drizzle')
+    return null
   }
 
   static async updateRental(id: number, data: {
@@ -468,94 +341,29 @@ export class DatabaseService {
     completedAt?: string
     invoiceDate?: string
   }) {
-    const { rentalItems, ...rentalData } = data
-
-    // Handle null values for dates
-    const updateData: any = { ...rentalData }
-    if (updateData.expectedEndDate === null) {
-      updateData.expectedEndDate = null
-    }
-    if (updateData.actualEndDate === null) {
-      updateData.actualEndDate = null
-    }
-
-
-
-    return await prisma.rental.update({
-      where: { id },
-      data: {
-        customer_id: updateData.customerId,
-        rental_number: updateData.rentalNumber,
-        start_date: updateData.startDate,
-        expected_end_date: updateData.expectedEndDate,
-        actual_end_date: updateData.actualEndDate,
-        status: updateData.status,
-        payment_status: updateData.paymentStatus,
-        subtotal: updateData.subtotal || 0,
-        tax_amount: updateData.taxAmount || 0,
-        total_amount: updateData.totalAmount || 0,
-        discount: updateData.discount || 0,
-        tax: updateData.tax || 0,
-        final_amount: updateData.finalAmount || 0,
-        deposit_amount: updateData.depositAmount || 0,
-        payment_terms_days: updateData.paymentTermsDays,
-        has_timesheet: updateData.hasTimesheet,
-        has_operators: updateData.hasOperators,
-        notes: updateData.notes,
-        rental_items: rentalItems ? {
-          deleteMany: {},
-          create: rentalItems.map((item: any) => ({
-            equipment_id: item.equipmentId ? parseInt(item.equipmentId) : null,
-            equipment_name: item.equipmentName,
-            quantity: item.quantity,
-            unit_price: item.unitPrice,
-            total_price: item.totalPrice,
-            days: item.days,
-            rate_type: item.rateType,
-            operator_id: item.operatorId ? parseInt(item.operatorId) : null,
-            status: item.status || 'active',
-            notes: item.notes
-          }))
-        } : undefined,
-      },
-      include: {
-        customer: true,
-        rental_items: {
-          include: {
-            equipment: true
-          }
-        }
-      }
-    })
+    console.warn('updateRental not yet implemented with Drizzle')
+    return null
   }
 
   static async deleteRental(id: number) {
-    try {
-      await prisma.rental.delete({
-      where: { id }
-    })
-      return true
-    } catch (error) {
-      console.error('Error deleting rental:', error)
-      return false
-    }
+    console.warn('deleteRental not yet implemented with Drizzle')
+    return false
   }
 
-  // User operations
+  // User operations - TODO: Implement with Drizzle
   static async getUsers() {
-    return await prisma.user.findMany()
+    console.warn('getUsers not yet implemented with Drizzle')
+    return []
   }
 
   static async getUserById(id: number) {
-    return await prisma.user.findUnique({
-      where: { id }
-    })
+    console.warn('getUserById not yet implemented with Drizzle')
+    return null
   }
 
   static async getUserByEmail(email: string) {
-    return await prisma.user.findUnique({
-      where: { email }
-    })
+    console.warn('getUserByEmail not yet implemented with Drizzle')
+    return null
   }
 
   static async createUser(data: {
@@ -564,12 +372,8 @@ export class DatabaseService {
     role?: 'ADMIN' | 'USER' | 'MANAGER' | 'SUPER_ADMIN'
     password: string
   }) {
-    return await prisma.user.create({
-      data: {
-        ...data,
-        name: data.name || 'Unknown User'
-      }
-    })
+    console.warn('createUser not yet implemented with Drizzle')
+    return null
   }
 
   static async updateUser(id: number, data: {
@@ -577,19 +381,16 @@ export class DatabaseService {
     name?: string
     role?: 'ADMIN' | 'USER' | 'MANAGER' | 'SUPER_ADMIN'
   }) {
-    return await prisma.user.update({
-      where: { id },
-      data
-    })
+    console.warn('updateUser not yet implemented with Drizzle')
+    return null
   }
 
   static async deleteUser(id: number) {
-    return await prisma.user.delete({
-      where: { id }
-    })
+    console.warn('deleteUser not yet implemented with Drizzle')
+    return false
   }
 
-  // Rental Item operations
+  // Rental Item operations - TODO: Implement with Drizzle
   static async addRentalItem(data: {
     rentalId: number
     equipmentId?: number | null
@@ -603,49 +404,18 @@ export class DatabaseService {
     status?: string
     notes?: string
   }) {
-    try {
-      const result = await prisma.rentalItem.create({
-        data: {
-          rental_id: data.rentalId,
-          equipment_id: data.equipmentId,
-          equipment_name: data.equipmentName,
-          quantity: data.quantity,
-          unit_price: data.unitPrice,
-          total_price: data.totalPrice,
-          days: data.days || 1,
-          rate_type: data.rateType || 'daily',
-          operator_id: data.operatorId,
-          status: data.status || 'active',
-          notes: data.notes || '',
-        },
-        include: {
-          equipment: true
-        }
-      });
-      
-      return result;
-    } catch (error) {
-      throw error;
-    }
+    console.warn('addRentalItem not yet implemented with Drizzle')
+    return null
   }
 
   static async getRentalItems(rentalId: number) {
-    return await prisma.rentalItem.findMany({
-      where: { rental_id: rentalId },
-      include: {
-        equipment: true
-      },
-      orderBy: { created_at: 'desc' }
-    })
+    console.warn('getRentalItems not yet implemented with Drizzle')
+    return []
   }
 
   static async getRentalItem(id: number) {
-    return await prisma.rentalItem.findUnique({
-      where: { id },
-      include: {
-        equipment: true
-      }
-    })
+    console.warn('getRentalItem not yet implemented with Drizzle')
+    return null
   }
 
   static async updateRentalItem(id: number, data: {
@@ -660,29 +430,12 @@ export class DatabaseService {
     status?: string
     notes?: string
   }) {
-    return await prisma.rentalItem.update({
-      where: { id },
-      data: {
-        equipment_id: data.equipmentId,
-        equipment_name: data.equipmentName,
-        quantity: data.quantity,
-        unit_price: data.unitPrice,
-        total_price: data.totalPrice,
-        days: data.days,
-        rate_type: data.rateType,
-        operator_id: data.operatorId,
-        status: data.status,
-        notes: data.notes,
-      },
-      include: {
-        equipment: true
-      }
-    })
+    console.warn('updateRentalItem not yet implemented with Drizzle')
+    return null
   }
 
   static async deleteRentalItem(id: number) {
-    return await prisma.rentalItem.delete({
-      where: { id }
-    })
+    console.warn('deleteRentalItem not yet implemented with Drizzle')
+    return false
   }
 }

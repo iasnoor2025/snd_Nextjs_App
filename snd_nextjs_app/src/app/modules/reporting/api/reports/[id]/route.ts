@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { db } from '@/lib/drizzle';
+import { analyticsReports } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 import { authOptions } from '@/lib/auth-config';
-import { prisma } from '@/lib/db';
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
 
 export async function GET(
@@ -21,15 +23,17 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const report = await prisma.analyticsReport.findUnique({
-      where: { id: parseInt(id) },
-    });
+    const reportRows = await db
+      .select()
+      .from(analyticsReports)
+      .where(eq(analyticsReports.id, parseInt(id)))
+      .limit(1);
 
-    if (!report) {
+    if (reportRows.length === 0) {
       return NextResponse.json({ error: 'Report not found' }, { status: 404 });
     }
 
-    return NextResponse.json(report);
+    return NextResponse.json(reportRows[0]);
   } catch (error) {
     console.error('Error fetching report:', error);
     return NextResponse.json(
@@ -59,20 +63,25 @@ export async function PUT(
     const body = await request.json();
     const { name, type, description, schedule, parameters, status } = body;
 
-    const report = await prisma.analyticsReport.update({
-      where: { id: parseInt(id) },
-      data: {
+    const reportRows = await db
+      .update(analyticsReports)
+      .set({
         name,
         type,
         description,
         schedule,
         parameters: parameters ? JSON.stringify(parameters) : null,
         status,
-        updated_at: new Date(),
-      },
-    });
+        updatedAt: new Date().toISOString().split('T')[0],
+      })
+      .where(eq(analyticsReports.id, parseInt(id)))
+      .returning();
 
-    return NextResponse.json(report);
+    if (reportRows.length === 0) {
+      return NextResponse.json({ error: 'Report not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(reportRows[0]);
   } catch (error) {
     console.error('Error updating report:', error);
     return NextResponse.json(
@@ -99,10 +108,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    await prisma.analyticsReport.update({
-      where: { id: parseInt(id) },
-      data: { is_active: false },
-    });
+    await db
+      .update(analyticsReports)
+      .set({ isActive: false })
+      .where(eq(analyticsReports.id, parseInt(id)));
 
     return NextResponse.json({ message: 'Report deleted successfully' });
   } catch (error) {

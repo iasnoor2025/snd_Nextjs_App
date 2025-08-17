@@ -116,7 +116,15 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const newCustomer = await db.insert(customers).values({
+    // Validate required fields
+    if (!body.name || typeof body.name !== 'string') {
+      return NextResponse.json(
+        { success: false, message: 'Customer name is required and must be a string' },
+        { status: 400 }
+      );
+    }
+    
+    const insertData = {
       name: body.name,
       email: body.email || null,
       phone: body.phone || null,
@@ -125,7 +133,9 @@ export async function POST(request: NextRequest) {
       isActive: body.isActive !== undefined ? body.isActive : true,
       createdAt: new Date().toISOString().split('T')[0],
       updatedAt: new Date().toISOString().split('T')[0],
-    }).returning();
+    };
+
+    const newCustomer = await db.insert(customers).values(insertData).returning();
 
     return NextResponse.json({
       success: true,
@@ -152,6 +162,14 @@ export async function PUT(request: NextRequest) {
     if (!body.id) {
       return NextResponse.json(
         { success: false, message: 'Customer ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate required fields for update
+    if (!body.name || typeof body.name !== 'string') {
+      return NextResponse.json(
+        { success: false, message: 'Customer name is required and must be a string' },
         { status: 400 }
       );
     }

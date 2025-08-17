@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { employees, customers } from '@/lib/drizzle/schema';
+import { sql } from 'drizzle-orm';
+
 export async function GET() {
   try {
-    // Get real counts from database
-    const employeeCount = await prisma.employee.count();
-    const customerCount = await prisma.customer?.count() || 0;
-    // const itemCount = await prisma.item?.count() || 0; // Item model not available
+    // Get real counts from database using Drizzle
+    const [employeeCountResult, customerCountResult] = await Promise.all([
+      db.select({ count: sql<number>`count(*)` }).from(employees),
+      db.select({ count: sql<number>`count(*)` }).from(customers)
+    ]);
+
+    const employeeCount = Number(employeeCountResult[0]?.count || 0);
+    const customerCount = Number(customerCountResult[0]?.count || 0);
 
     // Get last sync times (you might want to store these in a separate table)
     // For now, we'll return null for last sync times
@@ -41,7 +48,5 @@ export async function GET() {
         items: { count: 0, lastSync: null },
       }
     }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 } 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
 import { users, employees, designations, departments } from '@/lib/drizzle/schema';
@@ -353,36 +353,42 @@ export async function POST(_request: NextRequest) {
     const userId = session.user.id;
     console.log('Updating profile for user ID:', userId);
 
-    // Test database connection first
-    try {
-      await prisma.$connect();
-    } catch (dbError) {
-      console.error('Database connection failed:', dbError);
-      return NextResponse.json(
-        { error: 'Database not available. Please set up your database first.' },
-        { status: 503 }
-      );
-    }
+    // Check if user exists using Drizzle
+    const existingUserRows = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        nationalId: users.nationalId,
+        roleId: users.roleId,
+        avatar: users.avatar,
+        lastLoginAt: users.lastLoginAt,
+        isActive: users.isActive,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      })
+      .from(users)
+      .where(eq(users.id, parseInt(userId)))
+      .limit(1);
 
-    // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { id: parseInt(userId) },
-    });
-
-    if (!existingUser) {
+    if (existingUserRows.length === 0) {
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
       );
     }
 
+    const existingUser = existingUserRows[0]!;
+
     // Check if email is being changed and if it's already taken
     if (email && email !== existingUser.email) {
-      const emailExists = await prisma.user.findUnique({
-        where: { email },
-      });
+      const emailExistsRows = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
 
-      if (emailExists) {
+      if (emailExistsRows.length > 0) {
         return NextResponse.json(
           { error: 'Email already exists' },
           { status: 400 }
@@ -390,67 +396,60 @@ export async function POST(_request: NextRequest) {
       }
     }
 
-    // Update user
-    const updatedUser = await prisma.user.update({
-      where: { id: parseInt(userId) },
-      data: {
-        name,
-        email,
-        national_id: nationalId,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        national_id: true,
-        role_id: true,
-        avatar: true,
-        last_login_at: true,
-        isActive: true,
-        created_at: true,
-        updated_at: true,
-      },
-    });
+    // Update user using Drizzle
+    const updatedUserRows = await db
+      .update(users)
+      .set({
+        name: name || existingUser.name,
+        email: email || existingUser.email,
+        nationalId: nationalId || existingUser.nationalId,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(users.id, parseInt(userId)))
+      .returning();
 
-    // Update or create employee record
-    let employee = await prisma.employee.findFirst({
-      where: { user_id: parseInt(userId) },
-      include: {
-        designation: {
-          select: { name: true },
-        },
-        department: {
-          select: { name: true },
-        },
-      },
-    });
+    const updatedUser = updatedUserRows[0]!;
 
-    console.log('Found existing employee:', employee);
+    // Update or create employee record using Drizzle
+    let employee = null;
+    const existingEmployeeRows = await db
+      .select({
+        id: employees.id,
+        firstName: employees.firstName,
+        middleName: employees.middleName,
+        lastName: employees.lastName,
+        phone: employees.phone,
+        address: employees.address,
+        city: employees.city,
+        state: employees.state,
+        country: employees.country,
+        designationId: employees.designationId,
+        departmentId: employees.departmentId,
+      })
+      .from(employees)
+      .where(eq(employees.userId, parseInt(userId)))
+      .limit(1);
 
-    if (employee) {
+    if (existingEmployeeRows.length > 0) {
       // Update existing employee
       console.log('Updating existing employee...');
-      employee = await prisma.employee.update({
-        where: { id: employee.id },
-        data: {
-          first_name: firstName || employee.first_name,
-          middle_name: middleName || employee.middle_name,
-          last_name: lastName || employee.last_name,
-          phone: phone || employee.phone,
-          address: address || employee.address,
-          city: city || employee.city,
-          state: state || employee.state,
-          country: country || employee.country,
-        },
-        include: {
-          designation: {
-            select: { name: true },
-          },
-          department: {
-            select: { name: true },
-          },
-        },
-      });
+      const existingEmployee = existingEmployeeRows[0]!;
+      const updatedEmployeeRows = await db
+        .update(employees)
+        .set({
+          firstName: firstName || existingEmployee.firstName,
+          middleName: middleName || existingEmployee.middleName,
+          lastName: lastName || existingEmployee.lastName,
+          phone: phone || existingEmployee.phone,
+          address: address || existingEmployee.address,
+          city: city || existingEmployee.city,
+          state: state || existingEmployee.state,
+          country: country || existingEmployee.country,
+        })
+        .where(eq(employees.id, existingEmployee.id))
+        .returning();
+      
+      employee = updatedEmployeeRows[0]!;
       console.log('Updated employee:', employee);
     } else {
       // No employee record exists - don't create one
@@ -464,20 +463,20 @@ export async function POST(_request: NextRequest) {
       email: updatedUser.email,
       phone: employee?.phone || '',
       avatar: updatedUser.avatar || '',
-      role: updatedUser.role_id,
-      department: employee?.department?.name || 'General', 
+      role: updatedUser.roleId,
+      department: 'General', // Could be enhanced to get from designation/department 
       location: employee?.city && employee?.state
         ? `${employee.city}, ${employee.state}`
         : employee?.country || '',
       bio: '',
-      joinDate: updatedUser.created_at.toISOString(),
-      lastLogin: updatedUser.last_login_at?.toISOString() || updatedUser.created_at.toISOString(),
+      joinDate: updatedUser.createdAt,
+      lastLogin: updatedUser.lastLoginAt || updatedUser.createdAt,
       status: updatedUser.isActive ? 'active' : 'inactive',
-      nationalId: updatedUser.national_id || '',
-      firstName: employee?.first_name || '',
-      middleName: employee?.middle_name || '',
-      lastName: employee?.last_name || '',
-      designation: employee?.designation?.name || '', 
+      nationalId: updatedUser.nationalId || '',
+      firstName: employee?.firstName || '',
+      middleName: employee?.middleName || '',
+      lastName: employee?.lastName || '',
+      designation: '', // Could be enhanced to get from designation
       address: employee?.address || '',
       city: employee?.city || '',
       state: employee?.state || '',
@@ -491,7 +490,5 @@ export async function POST(_request: NextRequest) {
       { error: 'Failed to update profile: ' + (error instanceof Error ? error.message : 'Unknown error') },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }

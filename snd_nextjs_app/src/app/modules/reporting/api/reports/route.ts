@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { db } from '@/lib/drizzle';
+import { analyticsReports } from '@/lib/drizzle/schema';
+import { eq, like, desc, asc, and, or, sql } from 'drizzle-orm';
 import { authOptions } from '@/lib/auth-config';
-import { prisma } from '@/lib/db';
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
 
 export async function GET(_request: NextRequest) {
@@ -26,48 +28,54 @@ export async function GET(_request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    // Build where clause
-    const where: any = {
-      is_active: true,
-    };
+    // Build where conditions for Drizzle
+    let whereConditions = [eq(analyticsReports.isActive, true)];
 
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
+      whereConditions.push(
+        or(
+          like(analyticsReports.name, `%${search}%`),
+          like(analyticsReports.description, `%${search}%`)
+        )
+      );
     }
 
     if (status && status !== 'all') {
-      where.status = status;
+      whereConditions.push(eq(analyticsReports.status, status));
     }
 
     if (type && type !== 'all') {
-      where.type = type;
+      whereConditions.push(eq(analyticsReports.type, type));
     }
 
-    // Get reports with pagination
-    const [reports, total] = await Promise.all([
-      prisma.analyticsReport.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { created_at: 'desc' },
-        select: {
-          id: true,
-          name: true,
-          type: true,
-          status: true,
-          created_by: true,
-          created_at: true,
-          last_generated: true,
-          schedule: true,
-          description: true,
-        },
-      }),
-      prisma.analyticsReport.count({ where }),
+    const whereExpr = and(...whereConditions);
+
+    // Get reports with pagination using Drizzle
+    const [reports, totalResult] = await Promise.all([
+      db
+        .select({
+          id: analyticsReports.id,
+          name: analyticsReports.name,
+          type: analyticsReports.type,
+          status: analyticsReports.status,
+          createdBy: analyticsReports.createdBy,
+          createdAt: analyticsReports.createdAt,
+          lastGenerated: analyticsReports.lastGenerated,
+          schedule: analyticsReports.schedule,
+          description: analyticsReports.description,
+        })
+        .from(analyticsReports)
+        .where(whereExpr)
+        .orderBy(desc(analyticsReports.createdAt))
+        .offset(skip)
+        .limit(limit),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(analyticsReports)
+        .where(whereExpr)
     ]);
 
+    const total = Number(totalResult[0]?.count || 0);
     const totalPages = Math.ceil(total / limit);
 
     return NextResponse.json({
@@ -111,18 +119,23 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    const report = await prisma.analyticsReport.create({
-      data: {
+    const reportRows = await db
+      .insert(analyticsReports)
+      .values({
         name,
         type,
-        description,
-        schedule,
+        description: description || null,
+        schedule: schedule || null,
         parameters: parameters ? JSON.stringify(parameters) : null,
-        created_by: session.user.email || session.user.name || 'Unknown',
+        createdBy: session.user.email || session.user.name || 'Unknown',
         status: 'active',
-        is_active: true,
-      },
-    });
+        isActive: true,
+        createdAt: new Date().toISOString().split('T')[0],
+        updatedAt: new Date().toISOString().split('T')[0],
+      })
+      .returning();
+
+    const report = reportRows[0];
 
     return NextResponse.json(report, { status: 201 });
   } catch (error) {
