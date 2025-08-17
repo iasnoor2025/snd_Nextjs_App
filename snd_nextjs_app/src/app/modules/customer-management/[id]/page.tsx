@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,179 +16,163 @@ import {
   Package,
   DollarSign,
   FileText,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Customer {
-  id: string;
+  id: number;
   name: string;
-  email: string;
-  phone: string;
-  address: string;
-  city: string;
-  state: string;
-  country: string;
-  company_name: string;
-  contact_person: string;
-  website: string;
-  tax_number: string;
-  credit_limit: number;
-  payment_terms: string;
-  is_active: boolean;
-  erpnext_id?: string;
-  created_at: string;
-  updated_at: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  country: string | null;
+  companyName: string | null;
+  contactPerson: string | null;
+  website: string | null;
+  taxNumber: string | null;
+  creditLimit: number | null;
+  paymentTerms: string | null;
+  isActive: boolean;
+  erpnextId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  status: string;
 }
 
 interface Rental {
-  id: string;
-  rental_number: string;
-  equipment_name: string;
-  start_date: string;
-  end_date: string;
-  total_amount: number;
+  id: number;
+  rentalNumber: string;
+  equipmentName: string | null;
+  startDate: string;
+  expectedEndDate: string | null;
+  actualEndDate: string | null;
+  totalAmount: number;
   status: string;
-  payment_status: string;
+  paymentStatus: string;
+  customerId: number;
+  projectId: number | null;
+  subtotal: number;
+  taxAmount: number;
+  discount: number;
+  finalAmount: number;
+  depositAmount: number;
+  paymentTermsDays: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface Invoice {
-  id: string;
-  invoice_number: string;
-  rental_number: string;
+  id: number;
+  invoiceNumber: string | null;
+  rentalId: number | null;
   amount: number;
-  due_date: string;
+  dueDate: string | null;
   status: string;
-  created_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
-
-// Mock data
-const mockCustomer: Customer = {
-  id: "1",
-  name: "John Smith",
-  email: "john.smith@construction.com",
-  phone: "+1-555-0123",
-  address: "123 Construction Ave",
-  city: "New York",
-  state: "NY",
-  country: "USA",
-  company_name: "Smith Construction Co.",
-  contact_person: "John Smith",
-  website: "www.smithconstruction.com",
-  tax_number: "TAX-123456789",
-  credit_limit: 50000.00,
-  payment_terms: "Net 30",
-  is_active: true,
-  erpnext_id: "CUSTOMER-001",
-  created_at: "2024-01-15T10:00:00Z",
-  updated_at: "2024-01-15T10:00:00Z"
-};
-
-const mockRentals: Rental[] = [
-  {
-    id: "1",
-    rental_number: "RENT-2024-001",
-    equipment_name: "Excavator CAT 320",
-    start_date: "2024-01-15",
-    end_date: "2024-01-25",
-    total_amount: 5000.00,
-    status: "Active",
-    payment_status: "Partially Paid"
-  },
-  {
-    id: "2",
-    rental_number: "RENT-2024-002",
-    equipment_name: "Bulldozer CAT D6",
-    start_date: "2024-01-20",
-    end_date: "2024-01-30",
-    total_amount: 3500.00,
-    status: "Completed",
-    payment_status: "Paid"
-  }
-];
-
-const mockInvoices: Invoice[] = [
-  {
-    id: "1",
-    invoice_number: "INV-2024-001",
-    rental_number: "RENT-2024-001",
-    amount: 5000.00,
-    due_date: "2024-02-15",
-    status: "Partially Paid",
-    created_at: "2024-01-15T10:00:00Z"
-  },
-  {
-    id: "2",
-    invoice_number: "INV-2024-002",
-    rental_number: "RENT-2024-002",
-    amount: 3500.00,
-    due_date: "2024-02-20",
-    status: "Paid",
-    created_at: "2024-01-20T10:00:00Z"
-  }
-];
 
 function CustomerDetailClient({ customerId }: { customerId: string }) {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setCustomer(mockCustomer);
-      setRentals(mockRentals);
-      setInvoices(mockInvoices);
-      setLoading(false);
-    }, 500);
+    const fetchCustomerData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch customer details
+        const customerResponse = await fetch(`/api/customers/${customerId}`);
+        if (!customerResponse.ok) {
+          throw new Error('Failed to fetch customer');
+        }
+        const customerData = await customerResponse.json();
+        
+        if (!customerData.success) {
+          throw new Error(customerData.message || 'Failed to fetch customer');
+        }
+
+        setCustomer(customerData.customer);
+
+        // Fetch customer rentals
+        const rentalsResponse = await fetch(`/api/rentals?customerId=${customerId}`);
+        if (rentalsResponse.ok) {
+          const rentalsData = await rentalsResponse.json();
+          if (rentalsData.rentals) {
+            setRentals(rentalsData.rentals);
+          } else {
+            setRentals([]);
+          }
+        } else {
+          console.warn('Failed to fetch rentals, setting empty array');
+          setRentals([]);
+        }
+
+        // For now, set empty invoices array since we don't have a dedicated invoice API
+        // TODO: Implement invoice API when available
+        setInvoices([]);
+
+      } catch (error) {
+        console.error('Error fetching customer data:', error);
+        setError(error instanceof Error ? error.message : 'Failed to fetch customer data');
+        toast.error('Failed to fetch customer data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (customerId) {
+      fetchCustomerData();
+    }
   }, [customerId]);
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "Active":
-        return <Badge className="bg-green-100 text-green-800">Active</Badge>;
-      case "Completed":
-        return <Badge className="bg-blue-100 text-blue-800">Completed</Badge>;
-      case "Cancelled":
-        return <Badge className="bg-red-100 text-red-800">Cancelled</Badge>;
+    switch (status?.toLowerCase()) {
+      case "active":
+      case "completed":
+        return <Badge className="bg-green-100 text-green-800">{status}</Badge>;
+      case "pending":
+        return <Badge className="bg-yellow-100 text-yellow-800">{status}</Badge>;
+      case "cancelled":
+      case "overdue":
+        return <Badge className="bg-red-100 text-red-800">{status}</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{status || 'Unknown'}</Badge>;
     }
   };
 
   const getPaymentStatusBadge = (status: string) => {
-    switch (status) {
-      case "Paid":
-        return <Badge className="bg-green-100 text-green-800">Paid</Badge>;
-      case "Partially Paid":
-        return <Badge className="bg-yellow-100 text-yellow-800">Partially Paid</Badge>;
-      case "Overdue":
-        return <Badge className="bg-red-100 text-red-800">Overdue</Badge>;
+    switch (status?.toLowerCase()) {
+      case "paid":
+        return <Badge className="bg-green-100 text-green-800">{status}</Badge>;
+      case "partially paid":
+        return <Badge className="bg-yellow-100 text-yellow-800">{status}</Badge>;
+      case "overdue":
+        return <Badge className="bg-red-100 text-red-800">{status}</Badge>;
+      case "pending":
+        return <Badge className="bg-blue-100 text-blue-800">{status}</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{status || 'Unknown'}</Badge>;
     }
   };
 
-  const getInvoiceStatusBadge = (status: string) => {
-    switch (status) {
-      case "Paid":
-        return <Badge className="bg-green-100 text-green-800">Paid</Badge>;
-      case "Partially Paid":
-        return <Badge className="bg-yellow-100 text-yellow-800">Partially Paid</Badge>;
-      case "Overdue":
-        return <Badge className="bg-red-100 text-red-800">Overdue</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
-    }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+  const formatCurrency = (amount: number | null) => {
+    if (amount === null || amount === undefined) return 'SAR 0.00';
+    return new Intl.NumberFormat('ar-SA', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'SAR',
     }).format(amount);
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -197,7 +181,7 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
   };
 
   const calculateTotalRentals = () => {
-    return rentals.reduce((total, rental) => total + rental.total_amount, 0);
+    return rentals.reduce((total, rental) => total + (rental.finalAmount || 0), 0);
   };
 
   const calculateTotalInvoices = () => {
@@ -205,27 +189,46 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
   };
 
   const calculateOutstandingAmount = () => {
-    return calculateTotalInvoices() - calculateTotalRentals();
+    const totalInvoiced = calculateTotalInvoices();
+    const totalPaid = invoices
+      .filter(invoice => invoice.status === 'paid')
+      .reduce((total, invoice) => total + invoice.amount, 0);
+    return totalInvoiced - totalPaid;
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Loading customer details...</div>
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading customer...</p>
+        </div>
       </div>
     );
   }
 
-  if (!customer) {
+  if (error || !customer) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-lg">Customer not found</div>
+        <div className="text-center">
+          <p className="text-muted-foreground">
+            {error || 'Customer not found'}
+          </p>
+          <Button 
+            variant="outline" 
+            className="mt-4"
+            onClick={() => window.history.back()}
+          >
+            Go Back
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Link href="/modules/customer-management">
@@ -235,151 +238,125 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">Customer Details</h1>
-            <p className="text-gray-500">{customer.name}</p>
+            <h1 className="text-3xl font-bold">{customer.name}</h1>
+            <p className="text-muted-foreground">
+              Customer ID: {customer.id} • {customer.status}
+            </p>
           </div>
         </div>
-        <Link href={`/modules/customer-management/${customer.id}/edit`}>
-          <Button>
-            <Edit className="h-4 w-4 mr-2" />
-            Edit Customer
-          </Button>
-        </Link>
+        <div className="flex items-center space-x-2">
+          <Link href={`/modules/customer-management/${customerId}/edit`}>
+            <Button>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Customer
+            </Button>
+          </Link>
+        </div>
       </div>
 
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Rentals</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{rentals.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {formatCurrency(calculateTotalRentals())} total value
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Invoices</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{invoices.length}</div>
+            <p className="text-xs text-muted-foreground">
+              {formatCurrency(calculateTotalInvoices())} total invoiced
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(calculateOutstandingAmount())}</div>
+            <p className="text-xs text-muted-foreground">
+              Amount due
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Status</CardTitle>
+            <User className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{getStatusBadge(customer.status)}</div>
+            <p className="text-xs text-muted-foreground">
+              {customer.isActive ? 'Active' : 'Inactive'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Customer Information */}
+        {/* Tabs Content */}
         <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <User className="h-5 w-5" />
-                <span>Customer Information</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Customer Name</label>
-                  <p className="text-lg font-semibold">{customer.name}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Status</label>
-                  <div className="mt-1">
-                    {customer.is_active ? (
-                      <Badge className="bg-green-100 text-green-800">Active</Badge>
-                    ) : (
-                      <Badge variant="secondary">Inactive</Badge>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Company</label>
-                  <p className="text-lg">{customer.company_name}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Contact Person</label>
-                  <p className="text-lg">{customer.contact_person}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Email</label>
-                  <p className="text-lg">{customer.email}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Phone</label>
-                  <p className="text-lg">{customer.phone}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Website</label>
-                  <p className="text-lg">{customer.website}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Tax Number</label>
-                  <p className="text-lg font-mono">{customer.tax_number}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Credit Limit</label>
-                  <p className="text-lg">{formatCurrency(customer.credit_limit)}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Payment Terms</label>
-                  <p className="text-lg">{customer.payment_terms}</p>
-                </div>
-                {customer.erpnext_id && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">ERPNext ID</label>
-                    <p className="text-lg font-mono text-blue-600">{customer.erpnext_id}</p>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-500">Address</label>
-                <p className="text-lg">{customer.address}</p>
-                <p className="text-sm text-gray-500">{customer.city}, {customer.state} {customer.country}</p>
-              </div>
-            </CardContent>
-          </Card>
-
           <Tabs defaultValue="rentals" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="rentals">Rentals</TabsTrigger>
-              <TabsTrigger value="invoices">Invoices</TabsTrigger>
-              <TabsTrigger value="documents">Documents</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="rentals">Rentals ({rentals.length})</TabsTrigger>
+              <TabsTrigger value="invoices">Invoices ({invoices.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="rentals" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Package className="h-5 w-5" />
-                    <span>Rental History</span>
-                  </CardTitle>
+                  <CardTitle>Rental History</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">Total Rentals</p>
-                      <p className="text-2xl font-bold text-blue-600">{rentals.length}</p>
+                  {rentals.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No rentals found for this customer
                     </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">Total Value</p>
-                      <p className="text-2xl font-bold text-green-600">{formatCurrency(calculateTotalRentals())}</p>
-                    </div>
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">Active Rentals</p>
-                      <p className="text-2xl font-bold text-purple-600">{rentals.filter(r => r.status === "Active").length}</p>
-                    </div>
-                  </div>
-
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Rental #</TableHead>
-                        <TableHead>Equipment</TableHead>
-                        <TableHead>Period</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Payment</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {rentals.map((rental) => (
-                        <TableRow key={rental.id}>
-                          <TableCell className="font-mono">{rental.rental_number}</TableCell>
-                          <TableCell>{rental.equipment_name}</TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              <div>{formatDate(rental.start_date)} - {formatDate(rental.end_date)}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="font-semibold">{formatCurrency(rental.total_amount)}</TableCell>
-                          <TableCell>{getStatusBadge(rental.status)}</TableCell>
-                          <TableCell>{getPaymentStatusBadge(rental.payment_status)}</TableCell>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Rental #</TableHead>
+                          <TableHead>Equipment</TableHead>
+                          <TableHead>Start Date</TableHead>
+                          <TableHead>End Date</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Payment</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {rentals.map((rental) => (
+                          <TableRow key={rental.id}>
+                            <TableCell className="font-mono">{rental.rentalNumber}</TableCell>
+                            <TableCell>{rental.equipmentName || 'N/A'}</TableCell>
+                            <TableCell>{formatDate(rental.startDate)}</TableCell>
+                            <TableCell>{formatDate(rental.actualEndDate || rental.expectedEndDate)}</TableCell>
+                            <TableCell>{formatCurrency(rental.finalAmount)}</TableCell>
+                            <TableCell>{getStatusBadge(rental.status)}</TableCell>
+                            <TableCell>{getPaymentStatusBadge(rental.paymentStatus)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -387,69 +364,37 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
             <TabsContent value="invoices" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <DollarSign className="h-5 w-5" />
-                    <span>Invoice History</span>
-                  </CardTitle>
+                  <CardTitle>Invoice History</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">Total Invoices</p>
-                      <p className="text-2xl font-bold text-green-600">{invoices.length}</p>
+                  {invoices.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      No invoices found for this customer
                     </div>
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">Total Amount</p>
-                      <p className="text-2xl font-bold text-blue-600">{formatCurrency(calculateTotalInvoices())}</p>
-                    </div>
-                    <div className="bg-red-50 p-4 rounded-lg">
-                      <p className="text-sm text-gray-600">Outstanding</p>
-                      <p className="text-2xl font-bold text-red-600">{formatCurrency(calculateOutstandingAmount())}</p>
-                    </div>
-                  </div>
-
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Invoice #</TableHead>
-                        <TableHead>Rental #</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead>Due Date</TableHead>
-                        <TableHead>Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {invoices.map((invoice) => (
-                        <TableRow key={invoice.id}>
-                          <TableCell className="font-mono">{invoice.invoice_number}</TableCell>
-                          <TableCell className="font-mono">{invoice.rental_number}</TableCell>
-                          <TableCell className="font-semibold">{formatCurrency(invoice.amount)}</TableCell>
-                          <TableCell>{formatDate(invoice.due_date)}</TableCell>
-                          <TableCell>{getInvoiceStatusBadge(invoice.status)}</TableCell>
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Invoice #</TableHead>
+                          <TableHead>Amount</TableHead>
+                          <TableHead>Due Date</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Created</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="documents" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <FileText className="h-5 w-5" />
-                    <span>Documents</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8 text-gray-500">
-                    <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p>No documents uploaded yet</p>
-                    <Button variant="outline" className="mt-4">
-                      Upload Document
-                    </Button>
-                  </div>
+                      </TableHeader>
+                      <TableBody>
+                        {invoices.map((invoice) => (
+                          <TableRow key={invoice.id}>
+                            <TableCell className="font-mono">{invoice.invoiceNumber || `INV-${invoice.id}`}</TableCell>
+                            <TableCell>{formatCurrency(invoice.amount)}</TableCell>
+                            <TableCell>{formatDate(invoice.dueDate)}</TableCell>
+                            <TableCell>{getPaymentStatusBadge(invoice.status)}</TableCell>
+                            <TableCell>{formatDate(invoice.createdAt)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -468,23 +413,23 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-500">Company Name</label>
-                <p className="text-lg font-semibold">{customer.company_name}</p>
+                <p className="text-lg font-semibold">{customer.companyName || 'N/A'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Contact Person</label>
-                <p className="text-lg">{customer.contact_person}</p>
+                <p className="text-lg">{customer.contactPerson || 'N/A'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Tax Number</label>
-                <p className="text-sm font-mono">{customer.tax_number}</p>
+                <p className="text-sm font-mono">{customer.taxNumber || 'N/A'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Credit Limit</label>
-                <p className="text-lg font-semibold">{formatCurrency(customer.credit_limit)}</p>
+                <p className="text-lg font-semibold">{formatCurrency(customer.creditLimit)}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Payment Terms</label>
-                <p className="text-lg">{customer.payment_terms}</p>
+                <p className="text-lg">{customer.paymentTerms || 'N/A'}</p>
               </div>
             </CardContent>
           </Card>
@@ -499,20 +444,22 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-500">Email</label>
-                <p className="text-lg">{customer.email}</p>
+                <p className="text-lg">{customer.email || 'N/A'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Phone</label>
-                <p className="text-lg">{customer.phone}</p>
+                <p className="text-lg">{customer.phone || 'N/A'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Website</label>
-                <p className="text-lg">{customer.website}</p>
+                <p className="text-lg">{customer.website || 'N/A'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Address</label>
-                <p className="text-sm">{customer.address}</p>
-                <p className="text-sm text-gray-500">{customer.city}, {customer.state} {customer.country}</p>
+                <p className="text-sm">{customer.address || 'N/A'}</p>
+                <p className="text-sm text-gray-500">
+                  {customer.city || 'N/A'}, {customer.state || 'N/A'} {customer.country || 'N/A'}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -542,12 +489,9 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
   );
 }
 
-export default function CustomerDetailPageWrapper({ params }: { params: Promise<{ id: string }> }) {
-  // This wrapper is a server component
-  const [id, setId] = useState<string | null>(null);
-  useEffect(() => {
-    params.then(({ id }) => setId(id));
-  }, [params]);
-  if (!id) return null;
+export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  // Unwrap params Promise immediately - this must be called unconditionally
+  const { id } = use(params);
+  
   return <CustomerDetailClient customerId={id} />;
 }

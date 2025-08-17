@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,8 +29,11 @@ interface Customer {
   notes?: string | null;
 }
 
-export default function EditCustomerPage({ params }: { params: { id: string } }) {
+export default function EditCustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  // Unwrap params Promise immediately - this must be called unconditionally
+  const { id } = use(params);
+  
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -52,8 +55,10 @@ export default function EditCustomerPage({ params }: { params: { id: string } })
 
   useEffect(() => {
     const fetchCustomer = async () => {
+      if (!id) return;
+      
       try {
-        const response = await fetch(`/api/customers/${params.id}`);
+        const response = await fetch(`/api/customers/${id}`);
         if (response.ok) {
           const data = await response.json();
           if (data.success) {
@@ -90,10 +95,8 @@ export default function EditCustomerPage({ params }: { params: { id: string } })
       }
     };
 
-    if (params.id) {
-      fetchCustomer();
-    }
-  }, [params.id, router]);
+    fetchCustomer();
+  }, [id, router]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
@@ -104,6 +107,8 @@ export default function EditCustomerPage({ params }: { params: { id: string } })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!id) return;
+    
     setSaving(true);
 
     try {
@@ -113,7 +118,7 @@ export default function EditCustomerPage({ params }: { params: { id: string } })
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          id: parseInt(params.id),
+          id: parseInt(id),
           ...formData
         }),
       });
@@ -122,7 +127,7 @@ export default function EditCustomerPage({ params }: { params: { id: string } })
         const result = await response.json();
         if (result.success) {
           toast.success('Customer updated successfully!');
-          router.push(`/modules/customer-management/${params.id}`);
+          router.push(`/modules/customer-management/${id}`);
         } else {
           toast.error(result.message || 'Failed to update customer');
         }
@@ -166,7 +171,7 @@ export default function EditCustomerPage({ params }: { params: { id: string } })
         <Button
           variant="outline"
           size="sm"
-          onClick={() => router.push(`/modules/customer-management/${params.id}`)}
+          onClick={() => router.push(`/modules/customer-management/${id}`)}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Customer
@@ -338,7 +343,7 @@ export default function EditCustomerPage({ params }: { params: { id: string } })
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => router.push(`/modules/customer-management/${params.id}`)}
+                onClick={() => router.push(`/modules/customer-management/${id}`)}
                 disabled={saving}
               >
                 Cancel

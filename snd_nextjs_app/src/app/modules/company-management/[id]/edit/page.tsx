@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,9 @@ interface Company {
 export default function EditCompanyPage() {
   const params = useParams();
   const router = useRouter();
+  // Unwrap params Promise immediately - this must be called unconditionally
+  const { id } = use(params);
+  
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
@@ -37,9 +40,11 @@ export default function EditCompanyPage() {
 
   useEffect(() => {
     const fetchCompany = async () => {
+      if (!id) return;
+      
       try {
         setLoading(true);
-        const response = await fetch(`/api/companies/${params.id}`);
+        const response = await fetch(`/api/companies/${id}`);
         const result = await response.json();
 
         if (result.success) {
@@ -63,10 +68,8 @@ export default function EditCompanyPage() {
       }
     };
 
-    if (params.id) {
-      fetchCompany();
-    }
-  }, [params.id, router]);
+    fetchCompany();
+  }, [id, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,9 +79,11 @@ export default function EditCompanyPage() {
       return;
     }
 
+    if (!id) return;
+
     try {
       setSaving(true);
-      const response = await fetch(`/api/companies/${params.id}`, {
+      const response = await fetch(`/api/companies/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -90,7 +95,7 @@ export default function EditCompanyPage() {
 
       if (result.success) {
         toast.success('Company updated successfully');
-        router.push(`/modules/company-management/${params.id}`);
+        router.push(`/modules/company-management/${id}`);
       } else {
         toast.error(result.message || 'Failed to update company');
       }
@@ -118,81 +123,96 @@ export default function EditCompanyPage() {
   }
 
   return (
-    <div className="w-full space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <Link href={`/modules/company-management/${params.id}`}>
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-          </Link>
-          <Building2 className="h-6 w-6" />
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Link href={`/modules/company-management/${id}`}>
+          <Button variant="outline" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Company
+          </Button>
+        </Link>
+        <div>
           <h1 className="text-2xl font-bold">Edit Company</h1>
+          <p className="text-muted-foreground">Update company information</p>
         </div>
       </div>
 
+      {/* Edit Form */}
       <Card>
         <CardHeader>
-          <CardTitle>Company Information</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            Company Information
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="name">Company Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="Enter company name"
-                  required
-                />
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Company Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="Enter email address"
-                />
-              </div>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  placeholder="Enter phone number"
-                />
+                <div>
+                  <Label htmlFor="address">Address</Label>
+                  <Textarea
+                    id="address"
+                    value={formData.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    rows={3}
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea
-                id="address"
-                value={formData.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
-                placeholder="Enter company address"
-                rows={3}
-              />
-            </div>
-
-            <div className="flex gap-4">
-              <Button type="submit" disabled={saving}>
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? 'Saving...' : 'Save Changes'}
-              </Button>
-              <Link href={`/modules/company-management/${params.id}`}>
-                <Button type="button" variant="outline">
+            {/* Form Actions */}
+            <div className="flex justify-end gap-4 pt-6 border-t">
+              <Link href={`/modules/company-management/${id}`}>
+                <Button type="button" variant="outline" disabled={saving}>
                   Cancel
                 </Button>
               </Link>
+              <Button type="submit" disabled={saving}>
+                {saving ? (
+                  <>
+                    <Save className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
             </div>
           </form>
         </CardContent>
