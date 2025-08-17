@@ -54,6 +54,12 @@ export default function SalaryIncrementsPage() {
   const loadData = async () => {
     try {
       setLoading(true);
+      
+      // Debug: Log user session information
+      console.log('Current user session:', session);
+      console.log('User role:', session?.user?.role);
+      console.log('User ID:', session?.user?.id);
+      
       const [incrementsResponse, statsResponse] = await Promise.all([
         salaryIncrementService.getSalaryIncrements(filters),
         salaryIncrementService.getStatistics(),
@@ -69,6 +75,16 @@ export default function SalaryIncrementsPage() {
       if (error instanceof Error && error.message.includes('401')) {
         toast.error('Please log in to access salary increments');
         router.push('/login');
+        return;
+      }
+      
+      // Check if it's a permission error
+      if (error instanceof Error && error.message.includes('403')) {
+        toast.error('Access denied: You do not have permission to view salary increments');
+        // Set empty data instead of crashing
+        setIncrements([]);
+        setPagination({ page: 1, limit: 15, total: 0, pages: 0 });
+        setStatistics(null);
         return;
       }
       
@@ -223,6 +239,37 @@ export default function SalaryIncrementsPage() {
   // Redirect if not authenticated
   if (!session) {
     return null; // Will redirect to login
+  }
+
+  // Debug: Show current user information
+  const userRole = session?.user?.role?.toLowerCase();
+  const isAdmin = userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin';
+  
+  // Check if user has basic access to salary increments
+  if (!isAdmin && userRole !== 'hr_manager' && userRole !== 'finance_manager') {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold mb-2">Access Restricted</h1>
+          <p className="text-muted-foreground mb-4">
+            You don't have permission to access salary increments. 
+            Please contact your administrator if you believe this is an error.
+          </p>
+          <div className="bg-muted p-4 rounded-lg text-sm">
+            <p><strong>Current Role:</strong> {session?.user?.role || 'Unknown'}</p>
+            <p><strong>User ID:</strong> {session?.user?.id}</p>
+          </div>
+          <Button 
+            onClick={() => router.push('/dashboard')} 
+            className="mt-4"
+            variant="outline"
+          >
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -65,8 +65,8 @@ export class EnhancedPermissionService {
       }
 
       // Check if user has the specific permission by name
-      // Format: resource.action (e.g., "users.read", "posts.create")
-      const permissionName = `${resource}.${action}`;
+      // Format: action.resource (e.g., "read.users", "create.posts")
+      const permissionName = `${action}.${resource}`;
       
       const permissionRows = await db
         .select({
@@ -139,6 +139,7 @@ export class EnhancedPermissionService {
       .values({
         name: permissionName,
         guardName: 'web',
+        createdAt: new Date().toISOString().split('T')[0],
         updatedAt: new Date().toISOString().split('T')[0],
       })
       .onConflictDoUpdate({
@@ -166,8 +167,17 @@ export class EnhancedPermissionService {
 
     const role = roleResult[0];
 
-    // Grant permission to role
-    await this.grant(roleName, resource, action);
+    // Grant permission to role (avoid recursive call)
+    await db
+      .insert(roleHasPermissions)
+      .values({
+        roleId: role.id,
+        permissionId: permission.id,
+      })
+      .onConflictDoUpdate({
+        target: [roleHasPermissions.permissionId, roleHasPermissions.roleId],
+        set: {},
+      });
 
     // Clear cache
     this.clearCache();
