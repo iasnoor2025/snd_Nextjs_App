@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db } from '@/lib/drizzle';
 import { timesheets, employees, users, projects as projectsTable, rentals, employeeAssignments } from '@/lib/drizzle/schema';
-import { and, eq, gte, lte, isNull, asc, sql } from 'drizzle-orm';
+import { eq, and, gte, lte, asc } from 'drizzle-orm';
 import { withAuth } from '@/lib/rbac/api-middleware';
 
 export const GET = withAuth(async (request: NextRequest) => {
@@ -105,10 +105,10 @@ export const GET = withAuth(async (request: NextRequest) => {
         // Handle both '2025-08-01 00:00:00' and '2025-08-01T00:00:00.000Z' formats
         if (dateString.includes(' ')) {
           // Format: '2025-08-01 00:00:00'
-          dateStr = dateString.split(' ')[0];
+          dateStr = dateString.split(' ')[0] || dateString;
         } else if (dateString.includes('T')) {
           // Format: '2025-08-01T00:00:00.000Z'
-          dateStr = dateString.split('T')[0];
+          dateStr = dateString.split('T')[0] || dateString;
         } else {
           // Format: '2025-08-01'
           dateStr = dateString;
@@ -126,10 +126,10 @@ export const GET = withAuth(async (request: NextRequest) => {
           date: dateStr,
           hoursWorked: typeof timesheet.hoursWorked === 'string' ? parseFloat(timesheet.hoursWorked) : Number(timesheet.hoursWorked) || 0,
           overtimeHours: typeof timesheet.overtimeHours === 'string' ? parseFloat(timesheet.overtimeHours) : Number(timesheet.overtimeHours) || 0,
-          status: timesheet.status,
-          projectId: timesheet.projectId?.toString(),
-          rentalId: timesheet.rentalId?.toString(),
-          assignmentId: timesheet.assignmentId?.toString(),
+          status: timesheet.status || 'pending',
+          projectId: timesheet.projectId?.toString() || '',
+          rentalId: timesheet.rentalId?.toString() || '',
+          assignmentId: timesheet.assignmentId?.toString() || '',
           description: timesheet.description || '',
           tasksCompleted: timesheet.tasks || '',
           employee: {

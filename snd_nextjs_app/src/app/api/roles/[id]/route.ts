@@ -97,7 +97,7 @@ const roleDescriptions = {
 
 // GET /api/roles/[id] - Get role by ID
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -134,12 +134,12 @@ export async function GET(
     const userCount = userCountRows.length;
 
     const roleWithUserCount = {
-      id: role.id,
-      name: role.name,
-      description: roleDescriptions[role.name as keyof typeof roleDescriptions] || '',
-      permissions: rolePermissions[role.name as keyof typeof rolePermissions] || [],
+      id: role!.id,
+      name: role!.name,
+      description: roleDescriptions[role!.name as keyof typeof roleDescriptions] || '',
+      permissions: rolePermissions[role!.name as keyof typeof rolePermissions] || [],
       isActive: true,
-      createdAt: role.createdAt,
+      createdAt: role!.createdAt,
       userCount: userCount,
     };
 
@@ -194,7 +194,7 @@ export async function PUT(
     const existingRole = existingRoleRows[0];
 
     // Check if name is being changed and if it conflicts with another role
-    if (body.name !== existingRole.name) {
+    if (body.name !== existingRole!.name) {
       const conflictingRoleRows = await db
         .select()
         .from(roles)
@@ -230,12 +230,12 @@ export async function PUT(
     const userCount = userCountRows.length;
 
     const roleWithUserCount = {
-      id: updatedRole.id,
-      name: updatedRole.name,
-      description: roleDescriptions[updatedRole.name as keyof typeof roleDescriptions] || '',
-      permissions: rolePermissions[updatedRole.name as keyof typeof rolePermissions] || [],
+      id: updatedRole!.id,
+      name: updatedRole!.name,
+      description: roleDescriptions[updatedRole!.name as keyof typeof roleDescriptions] || '',
+      permissions: rolePermissions[updatedRole!.name as keyof typeof rolePermissions] || [],
       isActive: true,
-      createdAt: updatedRole.createdAt,
+      createdAt: updatedRole!.createdAt,
       userCount: userCount,
     };
 

@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
-import { db } from '@/lib/db';
+import { db } from '@/lib/drizzle';
 import { employees as employeesTable, salaryIncrements, users } from '@/lib/drizzle/schema';
 import { eq, desc, inArray } from 'drizzle-orm';
 
@@ -9,18 +7,21 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
+    console.log('Starting GET /api/employees/[id]/salary-increments');
+    
     const { id } = await params;
+    console.log('Employee ID from params:', id);
+    
     const employeeId = parseInt(id);
+    console.log('Parsed employee ID:', employeeId);
+    
     if (isNaN(employeeId)) {
       return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
 
-    // Check if employee exists
+    console.log('About to check if employee exists...');
+    
+    // Check if employee exists using Drizzle
     const employee = await db
       .select({ 
         id: employeesTable.id, 
@@ -32,10 +33,15 @@ export async function GET(
       .where(eq(employeesTable.id, employeeId))
       .limit(1);
 
+    console.log('Employee check result:', employee.length > 0 ? 'Found' : 'Not found');
+
     if (employee.length === 0) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
+    console.log('About to query salary increments with Drizzle...');
+    
+    // Query salary increments using Drizzle
     const salaryIncrementsData = await db
       .select({
         id: salaryIncrements.id,
@@ -67,7 +73,9 @@ export async function GET(
       .from(salaryIncrements)
       .where(eq(salaryIncrements.employeeId, employeeId))
       .orderBy(desc(salaryIncrements.effectiveDate));
-
+    
+    console.log('Drizzle query successful, found:', salaryIncrementsData.length);
+    
     // Fetch user names separately to avoid complex joins
     const userIds = salaryIncrementsData
       .map(inc => [inc.requestedBy, inc.approvedBy, inc.rejectedBy])
@@ -126,6 +134,7 @@ export async function GET(
     }));
 
     return NextResponse.json({ data: transformedIncrements });
+    
   } catch (error) {
     console.error('Error fetching employee salary history:', error);
     return NextResponse.json(

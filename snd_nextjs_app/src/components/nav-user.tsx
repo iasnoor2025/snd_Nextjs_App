@@ -1,56 +1,26 @@
-"use client"
-
-import {
-  CreditCard,
-  MoreVertical,
-  LogOut,
-  Bell,
-  UserCircle,
-} from "lucide-react"
-import { signOut, useSession } from "next-auth/react"
-
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar"
+import React from 'react'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from "@/components/ui/sidebar"
-import Link from "next/link"
+} from '@/components/ui/dropdown-menu'
+import { LogOut } from "lucide-react"
+import { useAuth } from '@/hooks/use-auth'
+import { signOut } from 'next-auth/react'
 
 export function NavUser() {
-  const { data: session, status } = useSession();
-  const { isMobile } = useSidebar();
+  const { session, status } = useAuth();
 
-  // If not authenticated, show loading or nothing
-  if (status === "loading") {
+  if (status === 'loading') {
     return (
-      <SidebarMenu>
-        <SidebarMenuItem>
-          <SidebarMenuButton size="lg" className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-gray-200 animate-pulse"></div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-3 bg-gray-200 rounded animate-pulse mt-1"></div>
-              </div>
-            </div>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      </SidebarMenu>
+      <div className="flex items-center space-x-2">
+        <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
+        <div className="w-20 h-4 bg-gray-200 rounded animate-pulse" />
+      </div>
     );
   }
 
@@ -59,73 +29,42 @@ export function NavUser() {
   }
 
   const user = session.user;
-  const userInitials = user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U';
+
+  const userInitials = user.name ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase() : 'U';
+
+  const handleSignOut = () => {
+    signOut({ callbackUrl: '/auth/signin' });
+  };
 
   return (
-    <SidebarMenu>
-      <SidebarMenuItem>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-            >
-              <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarFallback className="rounded-lg">{userInitials}</AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="text-muted-foreground truncate text-xs">
-                  {user.email}
-                </span>
-              </div>
-              <MoreVertical className="ml-auto size-4" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
-            align="end"
-            sideOffset={4}
-          >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarFallback className="rounded-lg">{userInitials}</AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="text-muted-foreground truncate text-xs">
-                    {user.email}
-                  </span>
-                </div>
-              </div>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
-                <a href="/profile">
-                  <UserCircle />
-                  Profile
-                </a>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/login' })}>
-              <LogOut />
-              Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </SidebarMenuItem>
-    </SidebarMenu>
-  )
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center space-x-2 rounded-full p-1 hover:bg-gray-100 transition-colors">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="bg-blue-500 text-white text-sm font-medium">
+              {userInitials}
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-sm font-medium text-gray-700 hidden md:block">
+            {user.name}
+          </span>
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">{user.name}</p>
+            <p className="text-xs leading-none text-muted-foreground">
+              {user.email}
+            </p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleSignOut}>
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Log out</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }

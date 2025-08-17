@@ -400,7 +400,7 @@ export function withEmployeeListPermission(
       } 
     };
     enhancedRequest.employeeAccess = {
-      ownEmployeeId: accessResult.ownEmployeeId || undefined,
+      ...(accessResult.ownEmployeeId !== undefined && { ownEmployeeId: accessResult.ownEmployeeId }),
       user: accessResult.user,
     };
 

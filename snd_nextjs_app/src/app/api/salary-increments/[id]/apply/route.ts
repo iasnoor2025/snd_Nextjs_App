@@ -7,7 +7,7 @@ import { authOptions } from '@/lib/auth-config';
 import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
 
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -50,7 +50,7 @@ export async function POST(
     const increment = existingIncrement[0];
 
     // Only allow application if status is approved
-    if (increment.status !== 'approved') {
+    if (increment!.status !== 'approved') {
       return NextResponse.json(
         { error: 'Salary increment must be approved before it can be applied' },
         { status: 400 }
@@ -58,7 +58,7 @@ export async function POST(
     }
 
     // Check if effective date has been reached
-    const effectiveDate = new Date(increment.effective_date);
+    const effectiveDate = new Date(increment!.effective_date);
     const today = new Date();
     if (effectiveDate > today) {
       return NextResponse.json(
@@ -83,13 +83,13 @@ export async function POST(
       const [updatedEmployee] = await tx
         .update(employees)
         .set({
-          basicSalary: increment.new_base_salary,
-          foodAllowance: increment.new_food_allowance,
-          housingAllowance: increment.new_housing_allowance,
-          transportAllowance: increment.new_transport_allowance,
+          basicSalary: increment!.new_base_salary,
+          foodAllowance: increment!.new_food_allowance,
+          housingAllowance: increment!.new_housing_allowance,
+          transportAllowance: increment!.new_transport_allowance,
           updatedAt: new Date().toISOString().split('T')[0],
         })
-        .where(eq(employees.id, increment.employee_id))
+        .where(eq(employees.id, increment!.employee_id))
         .returning();
 
       return { appliedIncrement, updatedEmployee };
@@ -98,23 +98,23 @@ export async function POST(
     return NextResponse.json({
       success: true,
       data: {
-        id: result.appliedIncrement.id,
-        employee_id: result.appliedIncrement.employeeId,
-        increment_type: result.appliedIncrement.incrementType,
-        effective_date: result.appliedIncrement.effectiveDate,
-        reason: result.appliedIncrement.reason,
-        status: result.appliedIncrement.status,
-        new_base_salary: result.appliedIncrement.newBaseSalary,
-        new_food_allowance: result.appliedIncrement.newFoodAllowance,
-        new_housing_allowance: result.appliedIncrement.newHousingAllowance,
-        new_transport_allowance: result.appliedIncrement.newTransportAllowance,
-        updated_at: result.appliedIncrement.updatedAt,
+        id: result.appliedIncrement!.id,
+        employee_id: result.appliedIncrement!.employeeId,
+        increment_type: result.appliedIncrement!.incrementType,
+        effective_date: result.appliedIncrement!.effectiveDate,
+        reason: result.appliedIncrement!.reason,
+        status: result.appliedIncrement!.status,
+        new_base_salary: result.appliedIncrement!.newBaseSalary,
+        new_food_allowance: result.appliedIncrement!.newFoodAllowance,
+        new_housing_allowance: result.appliedIncrement!.newHousingAllowance,
+        new_transport_allowance: result.appliedIncrement!.newTransportAllowance,
+        updated_at: result.appliedIncrement!.updatedAt,
         employee: {
-          id: result.updatedEmployee.id,
-          base_salary: result.updatedEmployee.basicSalary,
-          food_allowance: result.updatedEmployee.foodAllowance,
-          housing_allowance: result.updatedEmployee.housingAllowance,
-          transport_allowance: result.updatedEmployee.transportAllowance,
+          id: result.updatedEmployee!.id,
+          base_salary: result.updatedEmployee!.basicSalary,
+          food_allowance: result.updatedEmployee!.foodAllowance,
+          housing_allowance: result.updatedEmployee!.housingAllowance,
+          transport_allowance: result.updatedEmployee!.transportAllowance,
         },
       },
       message: 'Salary increment applied successfully to employee record',

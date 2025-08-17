@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { rentals as rentalsTable, customers, projects as projectsTable } from '@/lib/drizzle/schema';
-import { and, desc, eq, ilike, sql } from 'drizzle-orm';
+import { rentals as rentalsTable } from '@/lib/drizzle/schema';
+import { and, desc, eq, ilike } from 'drizzle-orm';
 import { withReadPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 export const GET = withReadPermission(

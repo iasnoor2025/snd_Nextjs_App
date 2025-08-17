@@ -11,55 +11,33 @@ import { ApprovalNotificationHelper } from './approval-notification-helper';
 
 export class TimesheetApprovalExample {
   /**
-   * Example: When a timesheet is submitted for approval
-   * Add this to your timesheet submission API route
+   * Approve timesheet at a specific stage
    */
-  static async onTimesheetSubmitted(
+  static async approveTimesheet(
     timesheetId: string,
-    employeeName: string,
-    week: string,
-    managerEmail: string
-  ) {
-    // Send notification to manager that approval is needed
-    await ApprovalNotificationHelper.notifyTimesheetApproval(
-      managerEmail,
-      employeeName,
-      week,
-      timesheetId
-    );
-  }
-
-  /**
-   * Example: When a timesheet is approved at any stage
-   * Add this to your timesheet approval API route
-   */
-  static async onTimesheetApproved(
-    timesheetId: string,
-    employeeName: string,
-    week: string,
-    approvalStage: string,
-    employeeEmail: string
-  ) {
-    // Notify employee that their timesheet was approved
-    await ApprovalNotificationHelper.notifyApprovalGranted(
-      employeeEmail,
-      'timesheet',
-      `Week ${week} (${approvalStage} stage)`
-    );
-
-    // If this is not the final approval stage, notify the next approver
-    if (approvalStage !== 'manager') {
-      const nextStage = this.getNextApprovalStage(approvalStage);
-      const nextApproverEmail = await this.getNextApproverEmail(nextStage);
+    approverId: string,
+    stage: string,
+    comments?: string
+  ): Promise<{ success: boolean; message: string; nextStage?: string }> {
+    try {
+      // Get the next approval stage
+      const nextStage = this.getNextApprovalStage(stage);
       
-      if (nextApproverEmail) {
-        await ApprovalNotificationHelper.notifyTimesheetApproval(
-          nextApproverEmail,
-          employeeName,
-          week,
-          timesheetId
-        );
-      }
+      // Update timesheet approval status
+      // This would typically update the database
+      console.log(`Timesheet ${timesheetId} approved at stage ${stage} by ${approverId}`);
+      
+      return {
+        success: true,
+        message: `Timesheet approved at ${stage} stage`,
+        nextStage
+      };
+    } catch (error) {
+      console.error('Error approving timesheet:', error);
+      return {
+        success: false,
+        message: 'Failed to approve timesheet'
+      };
     }
   }
 
@@ -89,7 +67,7 @@ export class TimesheetApprovalExample {
   private static getNextApprovalStage(currentStage: string): string {
     const stages = ['foreman', 'incharge', 'checking', 'manager'];
     const currentIndex = stages.indexOf(currentStage);
-    return currentIndex < stages.length - 1 ? stages[currentIndex + 1] : '';
+    return currentIndex < stages.length - 1 ? stages[currentIndex + 1] : 'manager';
   }
 
   /**

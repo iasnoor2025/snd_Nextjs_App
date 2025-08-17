@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/drizzle';
-import { equipment, equipmentRentalHistory, projects, rentals, employees } from '@/lib/drizzle/schema';
-import { eq, and } from 'drizzle-orm';
+import { db } from '@/lib/db';
+import { equipment } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export async function GET(
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -21,20 +22,7 @@ export async function GET(
       .select({
         id: equipment.id,
         name: equipment.name,
-        model_number: equipment.modelNumber,
-        status: equipment.status,
-        category_id: equipment.categoryId,
-        manufacturer: equipment.manufacturer,
-        daily_rate: equipment.dailyRate,
-        weekly_rate: equipment.weeklyRate,
-        monthly_rate: equipment.monthlyRate,
-        erpnext_id: equipment.erpnextId,
-        istimara: equipment.istimara,
-        istimara_expiry_date: equipment.istimaraExpiryDate,
-        serial_number: equipment.serialNumber,
-        description: equipment.description,
-        created_at: equipment.createdAt,
-        updated_at: equipment.updatedAt
+        status: equipment.status
       })
       .from(equipment)
       .where(eq(equipment.id, id))
@@ -47,179 +35,18 @@ export async function GET(
       );
     }
 
-    // Get current assignment for this equipment using Drizzle
-    const [currentAssignment] = await db
-      .select({
-        id: equipmentRentalHistory.id,
-        assignmentType: equipmentRentalHistory.assignmentType,
-        status: equipmentRentalHistory.status,
-        project: {
-          name: projects.name
-        },
-        rental: {
-          rentalNumber: rentals.rentalNumber
-        },
-        employee: {
-          firstName: employees.firstName,
-          lastName: employees.lastName
-        }
-      })
-      .from(equipmentRentalHistory)
-      .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
-      .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
-      .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
-      .where(and(
-        eq(equipmentRentalHistory.equipmentId, id),
-        eq(equipmentRentalHistory.status, 'active')
-      ))
-      .limit(1);
-    
-    let assignmentName = '';
-    if (currentAssignment) {
-      if (currentAssignment.assignmentType === 'project' && currentAssignment.project) {
-        assignmentName = currentAssignment.project.name;
-      } else if (currentAssignment.assignmentType === 'rental' && currentAssignment.rental) {
-        assignmentName = `Rental: ${currentAssignment.rental.rentalNumber}`;
-      } else if (currentAssignment.assignmentType === 'manual' && currentAssignment.employee) {
-        assignmentName = `${currentAssignment.employee.firstName} ${currentAssignment.employee.lastName}`.trim();
-      } else {
-        assignmentName = currentAssignment.assignmentType;
-      }
-    }
-    
-    const equipmentWithAssignment = {
-      ...equipmentData,
-      current_assignment: currentAssignment ? {
-        id: currentAssignment.id,
-        type: currentAssignment.assignmentType,
-        name: assignmentName,
-        status: 'active'
-      } : null
-    };
-
     return NextResponse.json({
       success: true,
-      data: equipmentWithAssignment
+      data: equipmentData
     });
   } catch (error) {
+    console.error('Equipment GET error:', error);
     return NextResponse.json(
       { 
         success: false,
         error: 'Failed to fetch equipment',
         details: error instanceof Error ? error.message : 'Unknown error'
       },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id: idParam } = await params;
-    const id = parseInt(idParam);
-    
-    if (isNaN(id)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid equipment ID' },
-        { status: 400 }
-      );
-    }
-
-    const body = await request.json();
-
-    // Check if equipment exists
-    const existingEquipment = await db
-      .select()
-      .from(equipment)
-      .where(eq(equipment.id, id))
-      .limit(1);
-
-    if (!existingEquipment.length) {
-      return NextResponse.json(
-        { success: false, error: 'Equipment not found' },
-        { status: 400 }
-      );
-    }
-
-    // Update equipment
-    const [updatedEquipment] = await db
-      .update(equipment)
-      .set({
-        name: body.name,
-        description: body.description,
-        manufacturer: body.manufacturer,
-        modelNumber: body.model_number,
-        serialNumber: body.serial_number,
-        status: body.status,
-        dailyRate: body.daily_rate ? String(parseFloat(body.daily_rate)) : null,
-        weeklyRate: body.weekly_rate ? String(parseFloat(body.weekly_rate)) : null,
-        monthlyRate: body.monthly_rate ? String(parseFloat(body.monthly_rate)) : null,
-        istimara: body.istimara || null,
-        istimaraExpiryDate: body.istimara_expiry_date ? new Date(body.istimara_expiry_date).toISOString() : null,
-        updatedAt: new Date().toISOString()
-      })
-      .where(eq(equipment.id, id))
-      .returning();
-
-    return NextResponse.json({
-      success: true,
-      data: updatedEquipment
-    });
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, error: 'Failed to update equipment' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id: idParam } = await params;
-    const id = parseInt(idParam);
-    
-    if (isNaN(id)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid equipment ID' },
-        { status: 400 }
-      );
-    }
-
-    // Check if equipment exists
-    const existingEquipment = await db
-      .select()
-      .from(equipment)
-      .where(eq(equipment.id, id))
-      .limit(1);
-
-    if (!existingEquipment.length) {
-      return NextResponse.json(
-        { success: false, error: 'Equipment not found' },
-        { status: 404 }
-      );
-    }
-
-    // Soft delete by setting is_active to false
-    await db
-      .update(equipment)
-      .set({
-        isActive: false,
-        updatedAt: new Date().toISOString()
-      })
-      .where(eq(equipment.id, id));
-
-    return NextResponse.json({
-      success: true,
-      message: 'Equipment deleted successfully'
-    });
-  } catch (error) {
-    return NextResponse.json(
-      { success: false, error: 'Failed to delete equipment' },
       { status: 500 }
     );
   }

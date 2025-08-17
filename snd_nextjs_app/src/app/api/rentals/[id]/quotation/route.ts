@@ -6,7 +6,7 @@ import { eq } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -45,16 +45,14 @@ export async function POST(
 
     // Update rental with quotation information
     try {
-      const updatedRentalResult = await db.update(rentals)
+      await db.update(rentals)
         .set({
           quotationId: quotationId, // Use the generated quotationId
           status: 'quotation_generated',
         })
-        .where(eq(rentals.id, parseInt(id)))
-        .returning();
+        .where(eq(rentals.id, parseInt(id)));
       
       console.log('✅ Rental updated successfully');
-      const updatedRental = updatedRentalResult[0];
     } catch (updateError) {
       console.error('❌ Failed to update rental:', updateError);
       return NextResponse.json(
@@ -65,7 +63,7 @@ export async function POST(
 
     // Fetch rental with related data
     try {
-      const rentalWithDetails = await db.select()
+      await db.select()
         .from(rentals)
         .where(eq(rentals.id, parseInt(id)))
         .limit(1);

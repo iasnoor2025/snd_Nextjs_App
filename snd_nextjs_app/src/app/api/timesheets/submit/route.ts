@@ -3,7 +3,8 @@ import { db } from '@/lib/drizzle';
 import { timesheets, employees, users } from '@/lib/drizzle/schema';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
+import { withAuth } from '@/lib/rbac/api-middleware';
 
 export async function POST(_request: NextRequest) {
   try {

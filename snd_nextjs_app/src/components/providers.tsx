@@ -3,7 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { SessionProvider } from "next-auth/react";
-import { useState, useEffect, lazy, Suspense, useMemo } from "react";
+import { useEffect, lazy, Suspense, useMemo } from "react";
 import { RBACProvider } from "@/lib/rbac/rbac-context";
 import SSEProvider from "@/contexts/sse-context";
 import { I18nProvider } from "@/components/i18n-provider";
@@ -119,10 +119,9 @@ export function Providers({ children }: ProvidersProps) {
               {/* Only load devtools in development */}
               {process.env.NODE_ENV === 'development' && (
                 <Suspense fallback={null}>
-                  <ReactQueryDevtools 
+                  <ReactQueryDevtools
                     initialIsOpen={false}
                     position="bottom-right"
-                    buttonPosition="bottom-right"
                   />
                 </Suspense>
               )}

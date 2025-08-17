@@ -25,7 +25,7 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
     let employeeFilter: any = null;
     
     // For employee users, only show their own advances
-    if (user?.role === 'EMPLOYEE') {
+    if (user?.role === 'EMPLOYEE' && user.national_id) {
       // Find employee record that matches user's national_id
       const ownEmployeeRows = await db
         .select({ id: employees.id })
@@ -200,7 +200,6 @@ const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { 
         id: employees.id,
         firstName: employees.firstName,
         lastName: employees.lastName,
-        employeeId: employees.employeeId,
         user: {
           id: users.id,
           name: users.name,
@@ -228,7 +227,6 @@ const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { 
         id: employee.id,
         first_name: employee.firstName,
         last_name: employee.lastName,
-        employee_id: employee.employeeId,
         user: employee.user
       } : null
     };
@@ -286,7 +284,6 @@ export const PUT = withEmployeeListPermission(
           id: employees.id,
           firstName: employees.firstName,
           lastName: employees.lastName,
-          employeeId: employees.employeeId,
           user: {
             id: users.id,
             name: users.name,
@@ -314,7 +311,6 @@ export const PUT = withEmployeeListPermission(
           id: employee.id,
           first_name: employee.firstName,
           last_name: employee.lastName,
-          employee_id: employee.employeeId,
           user: employee.user
         } : null
       };

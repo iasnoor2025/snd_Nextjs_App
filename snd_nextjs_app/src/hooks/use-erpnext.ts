@@ -101,20 +101,18 @@ export function useERPNext(): UseERPNextReturn {
     }
   }, []);
 
-  const createCustomer = useCallback(async (data: Partial<Customer>): Promise<Customer | null> => {
-    setCustomersLoading(true);
-    setError(null);
-
+  const createCustomer = useCallback(async () => {
     try {
-      // Note: createOrUpdateCustomer method doesn't exist in ERPNextClient
-      // You'll need to implement this method in ERPNextClient
-      throw new Error('createOrUpdateCustomer method not implemented');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create customer';
-      setError(message);
-      return null;
-    } finally {
-      setCustomersLoading(false);
+      const response = await fetch('/api/erpnext/customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      throw error;
     }
   }, []);
 
@@ -134,20 +132,18 @@ export function useERPNext(): UseERPNextReturn {
     }
   }, []);
 
-  const createEmployee = useCallback(async (data: Partial<Employee>): Promise<Employee | null> => {
-    setEmployeesLoading(true);
-    setError(null);
-
+  const createEmployee = useCallback(async () => {
     try {
-      // Note: createOrUpdateEmployee method doesn't exist in ERPNextClient
-      // You'll need to implement this method in ERPNextClient
-      throw new Error('createOrUpdateEmployee method not implemented');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create employee';
-      setError(message);
-      return null;
-    } finally {
-      setEmployeesLoading(false);
+      const response = await fetch('/api/erpnext/employees', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating employee:', error);
+      throw error;
     }
   }, []);
 
@@ -168,20 +164,18 @@ export function useERPNext(): UseERPNextReturn {
     }
   }, []);
 
-  const createItem = useCallback(async (data: Partial<Item>): Promise<Item | null> => {
-    setItemsLoading(true);
-    setError(null);
-
+  const createItem = useCallback(async () => {
     try {
-      // Note: createOrUpdateItem method doesn't exist in ERPNextClient
-      // You'll need to implement this method in ERPNextClient
-      throw new Error('createOrUpdateItem method not implemented');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create item';
-      setError(message);
-      return null;
-    } finally {
-      setItemsLoading(false);
+      const response = await fetch('/api/erpnext/items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating item:', error);
+      throw error;
     }
   }, []);
 

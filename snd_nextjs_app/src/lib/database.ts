@@ -1,6 +1,7 @@
 import { db, prisma } from './db'
-import { rentals, rentalItems, equipment as equipmentTable, customers as customersTable } from '@/lib/drizzle/schema'
+// Legacy database file - use @/lib/drizzle instead
 import { eq, desc, asc, ilike, or, and, sql } from 'drizzle-orm'
+import { customers } from '@/lib/drizzle/schema'
 
 export class DatabaseService {
   // Customer operations
@@ -22,16 +23,16 @@ export class DatabaseService {
       const s = `%${options.search}%`
       filters.push(
         or(
-          ilike(customersTable.name, s),
-          ilike(customersTable.companyName, s),
-          ilike(customersTable.contactPerson, s),
-          ilike(customersTable.email, s),
-          ilike(customersTable.phone, s),
+          ilike(customers.name, s),
+          ilike(customers.companyName, s),
+          ilike(customers.contactPerson, s),
+          ilike(customers.email, s),
+          ilike(customers.phone, s),
         )
       )
     }
     if (options?.status) {
-      filters.push(eq(customersTable.status, options.status))
+      filters.push(eq(customers.status, options.status))
     }
     const whereExpr = filters.length ? and(...filters) : undefined
 
@@ -40,46 +41,46 @@ export class DatabaseService {
     const sortOrder = options?.sortOrder || 'desc'
     const orderCol = (() => {
       switch (sortBy) {
-        case 'name': return customersTable.name
-        case 'company_name': return customersTable.companyName
-        case 'email': return customersTable.email
-        case 'status': return customersTable.status
+        case 'name': return customers.name
+        case 'company_name': return customers.companyName
+        case 'email': return customers.email
+        case 'status': return customers.status
         case 'created_at':
-        default: return customersTable.createdAt
+        default: return customers.createdAt
       }
     })()
 
     const totalRow = await db
       .select({ count: sql<number>`count(*)` })
-      .from(customersTable)
+      .from(customers)
       .where(whereExpr as any)
     const totalCount = Number((totalRow as any)[0]?.count ?? 0)
 
     const rows = await db
       .select({
-        id: customersTable.id,
-        name: customersTable.name,
-        contact_person: customersTable.contactPerson,
-        email: customersTable.email,
-        phone: customersTable.phone,
-        address: customersTable.address,
-        city: customersTable.city,
-        state: customersTable.state,
-        postal_code: customersTable.postalCode,
-        country: customersTable.country,
-        website: customersTable.website,
-        tax_number: customersTable.taxNumber,
-        credit_limit: customersTable.creditLimit,
-        payment_terms: customersTable.paymentTerms,
-        notes: customersTable.notes,
-        is_active: customersTable.isActive,
-        company_name: customersTable.companyName,
-        erpnext_id: customersTable.erpnextId,
-        status: customersTable.status,
-        created_at: customersTable.createdAt,
-        updated_at: customersTable.updatedAt,
+        id: customers.id,
+        name: customers.name,
+        contact_person: customers.contactPerson,
+        email: customers.email,
+        phone: customers.phone,
+        address: customers.address,
+        city: customers.city,
+        state: customers.state,
+        postal_code: customers.postalCode,
+        country: customers.country,
+        website: customers.website,
+        tax_number: customers.taxNumber,
+        credit_limit: customers.creditLimit,
+        payment_terms: customers.paymentTerms,
+        notes: customers.notes,
+        is_active: customers.isActive,
+        company_name: customers.companyName,
+        erpnext_id: customers.erpnextId,
+        status: customers.status,
+        created_at: customers.createdAt,
+        updated_at: customers.updatedAt,
       })
-      .from(customersTable)
+      .from(customers)
       .where(whereExpr as any)
       .orderBy((sortOrder === 'asc' ? asc : desc)(orderCol))
       .offset(skip)
@@ -135,7 +136,7 @@ export class DatabaseService {
     erpnext_id?: string
   }) {
     const inserted = await db
-      .insert(customersTable)
+      .insert(customers)
       .values({
         name: data.name,
         email: data.email ?? null,
@@ -181,7 +182,7 @@ export class DatabaseService {
     erpnext_id?: string
   }) {
     const updated = await db
-      .update(customersTable)
+      .update(customers)
       .set({
         name: data.name ?? undefined,
         email: data.email ?? undefined,
@@ -202,22 +203,22 @@ export class DatabaseService {
         erpnextId: data.erpnext_id ?? undefined,
         updatedAt: new Date().toISOString(),
       })
-      .where(eq(customersTable.id, id))
+      .where(eq(customers.id, id))
       .returning()
     return updated[0]
   }
 
   static async deleteCustomer(id: number) {
-    await db.delete(customersTable).where(eq(customersTable.id, id))
+    await db.delete(customers).where(eq(customers.id, id))
     return true
   }
 
   static async getCustomerStatistics() {
     const [totalRow, activeRow, syncedRow, localOnlyRow] = await Promise.all([
-      db.select({ count: sql<number>`count(*)` }).from(customersTable),
-      db.select({ count: sql<number>`count(*)` }).from(customersTable).where(eq(customersTable.isActive, true as any)),
-      db.select({ count: sql<number>`count(*)` }).from(customersTable).where(sql`erpnext_id is not null` as any),
-      db.select({ count: sql<number>`count(*)` }).from(customersTable).where(sql`erpnext_id is null` as any),
+      db.select({ count: sql<number>`count(*)` }).from(customers),
+      db.select({ count: sql<number>`count(*)` }).from(customers).where(eq(customers.isActive, true as any)),
+      db.select({ count: sql<number>`count(*)` }).from(customers).where(sql`erpnext_id is not null` as any),
+      db.select({ count: sql<number>`count(*)` }).from(customers).where(sql`erpnext_id is null` as any),
     ])
     const totalCustomers = Number((totalRow as any)[0]?.count ?? 0)
     const activeCustomers = Number((activeRow as any)[0]?.count ?? 0)

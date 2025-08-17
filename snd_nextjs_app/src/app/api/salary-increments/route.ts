@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { salaryIncrements, employees, users } from '@/lib/drizzle/schema';
-import { eq, and, gte, lte, like, desc, asc, sql, isNull, isNotNull } from 'drizzle-orm';
+import { eq, and, gte, lte, desc, sql, isNull } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
@@ -216,12 +216,12 @@ export async function POST(_request: NextRequest) {
       increment_amount,
       reason,
       effective_date,
-      notes,
+      // notes, // Not used
       new_base_salary,
-      new_food_allowance,
-      new_housing_allowance,
-      new_transport_allowance,
-      apply_to_allowances,
+      // new_food_allowance, // Not used
+      // new_housing_allowance, // Not used
+      // new_transport_allowances, // Not used
+      // apply_to_allowances, // Not used
     } = body;
 
     // Validate required fields
@@ -252,22 +252,28 @@ export async function POST(_request: NextRequest) {
     }
 
     const currentSalary = employee[0];
+    if (!currentSalary) {
+      return NextResponse.json(
+        { error: 'Employee salary information not found' },
+        { status: 404 }
+      );
+    }
 
     // Calculate new salary if not provided
     let calculatedNewBaseSalary = new_base_salary;
-    let calculatedNewFoodAllowance = new_food_allowance;
-    let calculatedNewHousingAllowance = new_housing_allowance;
-    let calculatedNewTransportAllowance = new_transport_allowance;
+    // let calculatedNewFoodAllowance: number | undefined;
+    // let calculatedNewHousingAllowance: number | undefined;
+    // let calculatedNewTransportAllowance: number | undefined;
 
     if (increment_type === 'percentage' && increment_percentage) {
       const percentage = increment_percentage / 100;
       calculatedNewBaseSalary = Number(currentSalary.currentBaseSalary) * (1 + percentage);
       
-      if (apply_to_allowances) {
-        calculatedNewFoodAllowance = Number(currentSalary.currentFoodAllowance) * (1 + percentage);
-        calculatedNewHousingAllowance = Number(currentSalary.currentHousingAllowance) * (1 + percentage);
-        calculatedNewTransportAllowance = Number(currentSalary.currentTransportAllowance) * (1 + percentage);
-      }
+      // if (apply_to_allowances) {
+      //   calculatedNewFoodAllowance = Number(currentSalary.currentFoodAllowance) * (1 + percentage);
+      //   calculatedNewHousingAllowance = Number(currentSalary.currentHousingAllowance) * (1 + percentage);
+      //   calculatedNewTransportAllowance = Number(currentSalary.currentTransportAllowance) * (1 + percentage);
+      // }
     } else if (increment_type === 'amount' && increment_amount) {
       calculatedNewBaseSalary = Number(currentSalary.currentBaseSalary) + increment_amount;
     }

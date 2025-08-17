@@ -4,7 +4,7 @@ import { salaryIncrements } from '@/lib/drizzle/schema';
 import { eq, and, gte, lte, sql } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
-import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
+// import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
 
 export async function GET(_request: NextRequest) {
   try {

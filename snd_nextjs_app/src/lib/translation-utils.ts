@@ -97,7 +97,7 @@ export function formatTranslatableField(
   // Try any available translation
   const availableTranslations = Object.values(field);
   if (availableTranslations.length > 0) {
-    return availableTranslations[0];
+    return availableTranslations[0] || '';
   }
   
   return '';
@@ -196,7 +196,10 @@ export const convertToArabicNumerals = (text: string | null | undefined, isRTL: 
     return text; // Return original text for English mode
   }
   
-  return text.replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[parseInt(d)]);
+  return text.replace(/[0-9]/g, (d) => {
+    const num = parseInt(d);
+    return num >= 0 && num <= 9 ? '٠١٢٣٤٥٦٧٨٩'[num] : d;
+  }) || text;
 };
 
 /**
@@ -270,7 +273,7 @@ export const translateNameToArabic = async (name: string | null | undefined, isR
       const nextChar = cleanPart[i + 1];
       
       // Handle common digraphs
-      if (i < cleanPart.length - 1) {
+      if (i < cleanPart.length - 1 && char && nextChar) {
         const digraph = char + nextChar;
         if (phoneticMapping[digraph]) {
           transliterated += phoneticMapping[digraph];
@@ -280,7 +283,9 @@ export const translateNameToArabic = async (name: string | null | undefined, isR
       }
       
       // Handle single characters
-      transliterated += phoneticMapping[char] || char;
+      if (char) {
+        transliterated += phoneticMapping[char] || char;
+      }
     }
     
     return transliterated;

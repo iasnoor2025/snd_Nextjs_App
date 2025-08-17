@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { timesheets, employees, users } from '@/lib/drizzle/schema';
+import { timesheets } from '@/lib/drizzle/schema';
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { checkUserPermission } from '@/lib/rbac/permission-service';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 
 // Multi-stage approval workflow stages
 const APPROVAL_STAGES = ['foreman', 'incharge', 'checking', 'manager'] as const;

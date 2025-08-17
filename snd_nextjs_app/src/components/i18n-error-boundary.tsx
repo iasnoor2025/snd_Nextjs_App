@@ -23,20 +23,23 @@ export class I18nErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('i18n Error Boundary caught an error:', error, errorInfo);
+    console.error('I18n Error Boundary caught an error:', error, errorInfo);
+    this.setState({ hasError: true, error });
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
-      return this.props.fallback || (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-          <h3 className="text-red-800 font-semibold mb-2">Translation Error</h3>
-          <p className="text-red-700 text-sm">
-            There was an error loading translations. Please refresh the page.
+      return (
+        <div className="p-4 text-center">
+          <h2 className="text-lg font-semibold text-red-600 mb-2">
+            Something went wrong with internationalization
+          </h2>
+          <p className="text-gray-600 mb-4">
+            There was an error loading the language resources. Please refresh the page.
           </p>
           <button
-            onClick={() => this.setState({ hasError: false })}
-            className="mt-2 px-3 py-1 bg-red-600 text-white rounded text-sm"
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
             Try Again
           </button>

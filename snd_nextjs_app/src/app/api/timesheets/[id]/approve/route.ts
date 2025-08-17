@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { timesheets, employees, users } from '@/lib/drizzle/schema';
+import { timesheets } from '@/lib/drizzle/schema';
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { checkUserPermission } from '@/lib/rbac/permission-service';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 
 // Multi-stage approval workflow stages
 const APPROVAL_STAGES = ['foreman', 'incharge', 'checking', 'manager'] as const;
@@ -74,7 +74,7 @@ async function checkStageApprovalPermission(userId: string, stage: ApprovalStage
 
 // POST /api/timesheets/[id]/approve - Approve a single timesheet
 export const POST = withPermission(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (_request: NextRequest, { params }: { params: { id: string } }) => {
     try {
       console.log('🔍 SINGLE APPROVE - Starting request for timesheet:', params.id);
       
@@ -95,6 +95,10 @@ export const POST = withPermission(
       }
 
       const timesheetData = timesheet[0];
+      if (!timesheetData) {
+        return NextResponse.json({ error: 'Timesheet data not found' }, { status: 404 });
+      }
+      
       console.log('🔍 SINGLE APPROVE - Found timesheet:', {
         id: timesheetData.id,
         status: timesheetData.status,
@@ -135,7 +139,7 @@ export const POST = withPermission(
           .update(timesheets)
           .set({
             status: newStatus,
-            approvedBy: userId,
+            approvedBy: parseInt(userId),
             approvedAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
           })
@@ -144,14 +148,19 @@ export const POST = withPermission(
 
         console.log(`🔍 SINGLE APPROVE - Timesheet approved to ${nextStage} stage successfully: ${timesheetId} -> ${newStatus}`);
         
+        const updatedTimesheetData = updatedTimesheet[0];
+        if (!updatedTimesheetData) {
+          return NextResponse.json({ error: 'Failed to update timesheet' }, { status: 500 });
+        }
+        
         return NextResponse.json({
           success: true,
           message: `Timesheet approved to ${nextStage} stage`,
           data: {
-            id: updatedTimesheet[0].id,
-            status: updatedTimesheet[0].status,
-            approvedBy: updatedTimesheet[0].approvedBy,
-            approvedAt: updatedTimesheet[0].approvedAt
+            id: updatedTimesheetData.id,
+            status: updatedTimesheetData.status,
+            approvedBy: updatedTimesheetData.approvedBy,
+            approvedAt: updatedTimesheetData.approvedAt
           }
         });
 

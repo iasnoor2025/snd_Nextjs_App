@@ -40,12 +40,6 @@ export const useNotifications = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const params = new URLSearchParams({
-        page: page.toString(),
-        per_page: perPage.toString(),
-        unread_only: unreadOnly.toString(),
-      });
 
       const response = await ApiService.getNotifications({
         page,
@@ -145,7 +139,7 @@ export const useNotifications = () => {
       type: 'success',
       title,
       message,
-      action_url: actionUrl,
+      action_url: actionUrl || '',
       priority: 'medium',
     });
   }, [showToast]);
@@ -156,7 +150,7 @@ export const useNotifications = () => {
       type: 'error',
       title,
       message,
-      action_url: actionUrl,
+      action_url: actionUrl || '',
       priority: 'high',
     });
   }, [showToast]);
@@ -167,7 +161,7 @@ export const useNotifications = () => {
       type: 'warning',
       title,
       message,
-      action_url: actionUrl,
+      action_url: actionUrl || '',
       priority: 'medium',
     });
   }, [showToast]);
@@ -178,7 +172,7 @@ export const useNotifications = () => {
       type: 'info',
       title,
       message,
-      action_url: actionUrl,
+      action_url: actionUrl || '',
       priority: 'low',
     });
   }, [showToast]);

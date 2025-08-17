@@ -28,8 +28,8 @@ export function SSEStatus({
   showControls = true,
   className = '' 
 }: SSEStatusProps) {
-  const { 
-    isConnected, 
+  const {
+    isConnected,
     connectionStatus,
     reconnect
   } = useSSEContext();
@@ -56,17 +56,15 @@ export function SSEStatus({
   };
 
   const handleReconnect = () => {
-    reconnect();
-    toast.info('Reconnecting to real-time updates...');
+    if (eventSource) {
+      eventSource.close();
+    }
+    connect();
   };
 
   // Note: disconnect and clearEvents methods are not available in the current SSE context
   const handleDisconnect = () => {
     toast.info('Disconnect functionality not implemented');
-  };
-
-  const handleClearEvents = () => {
-    toast.info('Clear events functionality not implemented');
   };
 
   return (

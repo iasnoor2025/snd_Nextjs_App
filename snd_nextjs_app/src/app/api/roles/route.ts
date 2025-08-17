@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { roles as rolesTable, modelHasRoles as modelHasRolesTable } from '@/lib/drizzle/schema';
-import { asc, desc, eq, sql } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 // GET /api/roles - Get all roles with user count
 export async function GET() {
   try {
@@ -86,11 +86,11 @@ export async function POST(_request: NextRequest) {
     const role = inserted[0];
 
     const roleWithUserCount = {
-      id: role.id,
-      name: role.name,
-      guard_name: role.guard_name,
-      createdAt: role.created_at,
-      updatedAt: role.updated_at,
+      id: role!.id,
+      name: role!.name,
+      guard_name: role!.guard_name,
+      createdAt: role!.created_at,
+      updatedAt: role!.updated_at,
       userCount: 0,
     };
 
@@ -172,11 +172,11 @@ export async function PUT(_request: NextRequest) {
     const userCount = Number((countRows as any)[0]?.count ?? 0);
 
     const roleWithUserCount = {
-      id: role.id,
-      name: role.name,
-      guard_name: role.guard_name,
-      createdAt: role.created_at,
-      updatedAt: role.updated_at,
+      id: role!.id,
+      name: role!.name,
+      guard_name: role!.guard_name,
+      createdAt: role!.created_at,
+      updatedAt: role!.updated_at,
       userCount,
     };
 

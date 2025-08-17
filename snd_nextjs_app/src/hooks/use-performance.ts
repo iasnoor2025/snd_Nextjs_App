@@ -70,8 +70,8 @@ export function usePerformance(options: UsePerformanceOptions = {}) {
     const fidObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       const fidEntry = entries[entries.length - 1];
-      if (fidEntry) {
-        updateMetrics({ fid: fidEntry.processingStart - fidEntry.startTime }); 
+      if (fidEntry && 'startTime' in fidEntry && 'duration' in fidEntry) {
+        updateMetrics({ fid: fidEntry.duration });
       }
     });
 

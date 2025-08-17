@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { employees as employeesTable } from '@/lib/drizzle/schema';
+import { employees as employeesTable, designations as designationsTable, departments as departmentsTable } from '@/lib/drizzle/schema';
 import { sql } from 'drizzle-orm';
+
 // Batch size for parallel processing
 const BATCH_SIZE = 10;
 
@@ -129,8 +130,8 @@ export async function POST() {
       const batch = erpnextData.data.slice(i, i + BATCH_SIZE);
       console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(erpnextData.data.length / BATCH_SIZE)}`);
 
-             // Process batch in parallel with limited concurrency
-       const batchPromises = batch.map(async (item: any) => {
+      // Process batch in parallel with limited concurrency
+      const batchPromises = batch.map(async (item: any) => {
         if (!item.name) return null;
 
         try {
@@ -194,9 +195,9 @@ export async function POST() {
 
       const batchPromises = batch.map(async (erpEmployee) => {
         try {
-          // Check if employee already exists
+          // Check if employee already exists - FIXED: using correct column names
           const existingEmployee = await db.select().from(employeesTable).where(
-            sql`file_number = ${erpEmployee.employee_number || erpEmployee.name} OR employee_id = ${erpEmployee.employee_number || erpEmployee.name}`
+            sql`file_number = ${erpEmployee.employee_number || erpEmployee.name} OR erpnext_id = ${erpEmployee.employee_number || erpEmployee.name}`
           );
 
           // Parse employee name using ERPNext fields
@@ -221,9 +222,17 @@ export async function POST() {
           const personalEmail = erpEmployee.personal_email || null;
           const email = companyEmail || personalEmail;
 
-          // Get employee identification
+          // Get employee identification - handle HR-EMP-00003=003 format
           const employeeId = erpEmployee.employee_number || erpEmployee.name;
-          const fileNumber = erpEmployee.employee_number || employeeId;
+          // Extract the numeric part from HR-EMP-00003=003 format
+          let fileNumber = erpEmployee.employee_number || employeeId;
+          if (fileNumber && typeof fileNumber === 'string') {
+            // Handle HR-EMP-00003=003 format - extract the numeric part
+            const match = fileNumber.match(/HR-EMP-(\d+)/);
+            if (match) {
+              fileNumber = match[1]; // Extract just the numeric part (e.g., "00003")
+            }
+          }
 
           // Get additional information
           const departmentName = erpEmployee.department || null;
@@ -240,21 +249,23 @@ export async function POST() {
           let designationId = null;
 
           if (designationName) {
-            let designation: any = await db.select().from(employeesTable).where(
-              sql`designation = ${designationName}`
+            let designation: any = await db.select().from(designationsTable).where(
+              sql`name = ${designationName}`
             );
 
             if (designation.length === 0) {
-              const newDesignation = await db.insert(employeesTable).values({
-                designation: designationName,
+              const newDesignation = await db.insert(designationsTable).values({
+                name: designationName,
                 description: designationName,
-                is_active: true
+                isActive: true,
+                updatedAt: new Date().toISOString().split('T')[0]
               }).returning();
               designation = newDesignation;
             } else {
-              const updatedDesignation = await db.update(employeesTable).set({
+              const updatedDesignation = await db.update(designationsTable).set({
                 description: designationName,
-                is_active: true
+                isActive: true,
+                updatedAt: new Date().toISOString().split('T')[0]
               }).where(sql`id = ${designation[0].id}`).returning();
               designation = updatedDesignation;
             }
@@ -262,153 +273,140 @@ export async function POST() {
           }
 
           if (departmentName) {
-            const department: any[] = await db.select().from(employeesTable).where(
-              sql`department = ${departmentName}`
+            let department: any[] = await db.select().from(departmentsTable).where(
+              sql`name = ${departmentName}`
             );
-            if (department.length > 0) {
-              departmentId = department[0].id;
+            if (department.length === 0) {
+              const newDepartment = await db.insert(departmentsTable).values({
+                name: departmentName,
+                description: departmentName,
+                active: true,
+                updatedAt: new Date().toISOString().split('T')[0]
+              }).returning();
+              department = newDepartment;
+            } else {
+              const updatedDepartment = await db.update(departmentsTable).set({
+                description: departmentName,
+                active: true,
+                updatedAt: new Date().toISOString().split('T')[0]
+              }).where(sql`id = ${department[0].id}`).returning();
+              department = updatedDepartment;
             }
+            departmentId = department[0].id;
           }
 
-                      const employeeData = {
-              first_name: firstName,
-              middle_name: middleName,
-              last_name: lastName,
-              employee_id: employeeId,
-              file_number: fileNumber,
-              basic_salary: parseFloat(basicSalary.toString()) || 0,
-              status: status.toLowerCase(),
-              email: email,
-              phone: cellNumber,
-              hire_date: dateOfJoining ? new Date(dateOfJoining) : null,
-              date_of_birth: dateOfBirth ? new Date(dateOfBirth) : null,
-              erpnext_id: erpEmployee.name,
-              department_id: departmentId,
-              designation_id: designationId,
-              // Additional fields from ERPNext
-              iqama_number: iqama,
-              iqama_expiry: iqamaExpiry ? new Date(iqamaExpiry) : null,
-              // Address information
-              address: erpEmployee.address || null,
-              city: erpEmployee.city || null,
-              state: erpEmployee.state || null,
-              country: erpEmployee.country || null,
-              postal_code: erpEmployee.postal_code || null,
-              nationality: erpEmployee.nationality || null,
-              // Salary and benefits
-              food_allowance: parseFloat(erpEmployee.food_allowance?.toString() || '0'),
-              housing_allowance: parseFloat(erpEmployee.housing_allowance?.toString() || '0'),
-              transport_allowance: parseFloat(erpEmployee.transport_allowance?.toString() || '0'),
-              absent_deduction_rate: parseFloat(erpEmployee.absent_deduction_rate?.toString() || '0'),
-              overtime_rate_multiplier: parseFloat(erpEmployee.overtime_rate_multiplier?.toString() || '1.5'),
-              overtime_fixed_rate: parseFloat(erpEmployee.overtime_fixed_rate?.toString() || '0'),
-              // Banking information
-              bank_name: erpEmployee.bank_name || null,
-              bank_account_number: erpEmployee.bank_account_number || null,
-              bank_iban: erpEmployee.bank_iban || null,
-              // Contract details
-              contract_hours_per_day: parseInt(erpEmployee.contract_hours_per_day?.toString() || '8'),
-              contract_days_per_month: parseInt(erpEmployee.contract_days_per_month?.toString() || '26'),
-              // Emergency contacts
-              emergency_contact_name: erpEmployee.emergency_contact_name || null,
-              emergency_contact_phone: erpEmployee.emergency_contact_phone || null,
-              emergency_contact_relationship: erpEmployee.emergency_contact_relationship || null,
-              // Notes
-              notes: erpEmployee.notes || bio || null,
-              // Legal documents
-              passport_number: erpEmployee.passport_number || null,
-              passport_expiry: erpEmployee.passport_expiry ? new Date(erpEmployee.passport_expiry) : null,
-              // Licenses and certifications
-              driving_license_number: erpEmployee.driving_license_number || null,
-              driving_license_expiry: erpEmployee.driving_license_expiry ? new Date(erpEmployee.driving_license_expiry) : null,
-              driving_license_cost: parseFloat(erpEmployee.driving_license_cost?.toString() || '0'),
-              operator_license_number: erpEmployee.operator_license_number || null,
-              operator_license_expiry: erpEmployee.operator_license_expiry ? new Date(erpEmployee.operator_license_expiry) : null,
-              operator_license_cost: parseFloat(erpEmployee.operator_license_cost?.toString() || '0'),
-              tuv_certification_number: erpEmployee.tuv_certification_number || null,
-              tuv_certification_expiry: erpEmployee.tuv_certification_expiry ? new Date(erpEmployee.tuv_certification_expiry) : null,
-              tuv_certification_cost: parseFloat(erpEmployee.tuv_certification_cost?.toString() || '0'),
-              spsp_license_number: erpEmployee.spsp_license_number || null,
-              spsp_license_expiry: erpEmployee.spsp_license_expiry ? new Date(erpEmployee.spsp_license_expiry) : null,
-              spsp_license_cost: parseFloat(erpEmployee.spsp_license_cost?.toString() || '0'),
-              // File paths
-              driving_license_file: erpEmployee.driving_license_file || null,
-              operator_license_file: erpEmployee.operator_license_file || null,
-              tuv_certification_file: erpEmployee.tuv_certification_file || null,
-              spsp_license_file: erpEmployee.spsp_license_file || null,
-              passport_file: erpEmployee.passport_file || null,
-              iqama_file: erpEmployee.iqama_file || null,
-              // Custom certifications
-              custom_certifications: erpEmployee.custom_certifications || null,
-              // Operator status
-              is_operator: erpEmployee.is_operator || false,
-              // Access control
-              access_restricted_until: erpEmployee.access_restricted_until ? new Date(erpEmployee.access_restricted_until) : null,
-              access_start_date: erpEmployee.access_start_date ? new Date(erpEmployee.access_start_date) : null,
-              access_end_date: erpEmployee.access_end_date ? new Date(erpEmployee.access_end_date) : null,
-              access_restriction_reason: erpEmployee.access_restriction_reason || null,
-              // Current location
-              current_location: erpEmployee.current_location || null,
-              // Advance salary fields
-              advance_salary_eligible: erpEmployee.advance_salary_eligible !== false,
-              advance_salary_approved_this_month: erpEmployee.advance_salary_approved_this_month || false,
-            };
+          // FIXED: Using camelCase field names to match database schema
+          const employeeData = {
+            firstName: firstName,
+            middleName: middleName,
+            lastName: lastName,
+            erpnextId: erpEmployee.name,
+            fileNumber: fileNumber,
+            basicSalary: String(parseFloat(basicSalary.toString()) || 0),
+            status: status.toLowerCase(),
+            email: email,
+            phone: cellNumber,
+            hireDate: dateOfJoining ? new Date(dateOfJoining).toISOString().split('T')[0] : null,
+            dateOfBirth: dateOfBirth ? new Date(dateOfBirth).toISOString().split('T')[0] : null,
+            departmentId: departmentId,
+            designationId: designationId,
+            // Additional fields from ERPNext
+            iqamaNumber: iqama,
+            iqamaExpiry: iqamaExpiry ? new Date(iqamaExpiry).toISOString().split('T')[0] : null,
+            // Address information
+            address: erpEmployee.address || null,
+            city: erpEmployee.city || null,
+            state: erpEmployee.state || null,
+            country: erpEmployee.country || null,
+            postalCode: erpEmployee.postal_code || null,
+            nationality: erpEmployee.nationality || null,
+            // Salary and benefits
+            foodAllowance: String(parseFloat(erpEmployee.food_allowance?.toString() || '0')),
+            housingAllowance: String(parseFloat(erpEmployee.housing_allowance?.toString() || '0')),
+            transportAllowance: String(parseFloat(erpEmployee.transport_allowance?.toString() || '0')),
+            absentDeductionRate: String(parseFloat(erpEmployee.absent_deduction_rate?.toString() || '0')),
+            overtimeRateMultiplier: String(parseFloat(erpEmployee.overtime_rate_multiplier?.toString() || '1.5')),
+            overtimeFixedRate: String(parseFloat(erpEmployee.overtime_fixed_rate?.toString() || '0')),
+            // Banking information
+            bankName: erpEmployee.bank_name || null,
+            bankAccountNumber: erpEmployee.bank_account_number || null,
+            bankIban: erpEmployee.bank_iban || null,
+            // Contract details
+            contractHoursPerDay: parseInt(erpEmployee.contract_hours_per_day?.toString() || '8'),
+            contractDaysPerMonth: parseInt(erpEmployee.contract_days_per_month?.toString() || '26'),
+            // Emergency contacts
+            emergencyContactName: erpEmployee.emergency_contact_name || null,
+            emergencyContactPhone: erpEmployee.emergency_contact_phone || null,
+            emergencyContactRelationship: erpEmployee.emergency_contact_relationship || null,
+            // Notes
+            notes: erpEmployee.notes || bio || null,
+            // Legal documents
+            passportNumber: erpEmployee.passport_number || null,
+            passportExpiry: erpEmployee.passport_expiry ? new Date(erpEmployee.passport_expiry).toISOString().split('T')[0] : null,
+            // Licenses and certifications
+            drivingLicenseNumber: erpEmployee.driving_license_number || null,
+            drivingLicenseExpiry: erpEmployee.driving_license_expiry ? new Date(erpEmployee.driving_license_expiry).toISOString().split('T')[0] : null,
+            drivingLicenseCost: String(parseFloat(erpEmployee.driving_license_cost?.toString() || '0')),
+            operatorLicenseNumber: erpEmployee.operator_license_number || null,
+            operatorLicenseExpiry: erpEmployee.operator_license_expiry ? new Date(erpEmployee.operator_license_expiry).toISOString().split('T')[0] : null,
+            operatorLicenseCost: String(parseFloat(erpEmployee.operator_license_cost?.toString() || '0')),
+            tuvCertificationNumber: erpEmployee.tuv_certification_number || null,
+            tuvCertificationExpiry: erpEmployee.tuv_certification_expiry ? new Date(erpEmployee.tuv_certification_expiry).toISOString().split('T')[0] : null,
+            tuvCertificationCost: String(parseFloat(erpEmployee.tuv_certification_cost?.toString() || '0')),
+            spspLicenseNumber: erpEmployee.spsp_license_number || null,
+            spspLicenseExpiry: erpEmployee.spsp_license_expiry ? new Date(erpEmployee.spsp_license_expiry).toISOString().split('T')[0] : null,
+            spspLicenseCost: String(parseFloat(erpEmployee.spsp_license_cost?.toString() || '0')),
+            // File paths
+            drivingLicenseFile: erpEmployee.driving_license_file || null,
+            operatorLicenseFile: erpEmployee.operator_license_file || null,
+            tuvCertificationFile: erpEmployee.tuv_certification_file || null,
+            spspLicenseFile: erpEmployee.spsp_license_file || null,
+            passportFile: erpEmployee.passport_file || null,
+            iqamaFile: erpEmployee.iqama_file || null,
+            // Custom certifications
+            customCertifications: erpEmployee.custom_certifications || null,
+            // Operator status
+            isOperator: erpEmployee.is_operator || false,
+            // Access control
+            accessRestrictedUntil: erpEmployee.access_restricted_until ? new Date(erpEmployee.access_restricted_until).toISOString().split('T')[0] : null,
+            accessStartDate: erpEmployee.access_start_date ? new Date(erpEmployee.access_start_date).toISOString().split('T')[0] : null,
+            accessEndDate: erpEmployee.access_end_date ? new Date(erpEmployee.access_end_date).toISOString().split('T')[0] : null,
+            accessRestrictionReason: erpEmployee.access_restriction_reason || null,
+            // Current location
+            currentLocation: erpEmployee.current_location || null,
+            // Advance salary fields
+            advanceSalaryEligible: erpEmployee.advance_salary_eligible !== false,
+            advanceSalaryApprovedThisMonth: erpEmployee.advance_salary_approved_this_month || false,
+            updatedAt: new Date().toISOString().split('T')[0]
+          };
 
           if (existingEmployee.length > 0) {
             const existingEmployeeData = existingEmployee[0];
             if (!existingEmployeeData) {
-              console.log('Creating new employee (no existing data):', employeeData.employee_id);
+              console.log('Creating new employee (no existing data):', employeeData.erpnextId);
+              
+              // Use the already transformed data directly
               const newEmployee = await db.insert(employeesTable).values(employeeData).returning();
               return { type: 'created', employee: (newEmployee as any[])[0] };
             }
             
             // Check if data has changed - comprehensive comparison
             const hasChanges =
-              existingEmployeeData.first_name !== firstName ||
-              existingEmployeeData.middle_name !== middleName ||
-              existingEmployeeData.last_name !== lastName ||
-              existingEmployeeData.employee_id !== employeeId ||
-              existingEmployeeData.file_number !== fileNumber ||
-              existingEmployeeData.basic_salary.toString() !== parseFloat(basicSalary.toString()).toString() ||
+              existingEmployeeData.firstName !== firstName ||
+              existingEmployeeData.middleName !== middleName ||
+              existingEmployeeData.lastName !== lastName ||
+              existingEmployeeData.erpnextId !== employeeId ||
+              existingEmployeeData.fileNumber !== fileNumber ||
+              existingEmployeeData.basicSalary?.toString() !== parseFloat(basicSalary.toString()).toString() ||
               existingEmployeeData.status !== status.toLowerCase() ||
               existingEmployeeData.email !== email ||
               existingEmployeeData.phone !== cellNumber ||
-              existingEmployeeData.date_of_birth?.toISOString() !== (dateOfBirth ? new Date(dateOfBirth).toISOString() : null) ||
-              existingEmployeeData.hire_date?.toISOString() !== (dateOfJoining ? new Date(dateOfJoining).toISOString() : null) ||
-              existingEmployeeData.department_id !== departmentId ||
-              existingEmployeeData.designation_id !== designationId ||
-              existingEmployeeData.iqama_number !== iqama ||
-              existingEmployeeData.iqama_expiry?.toISOString() !== (iqamaExpiry ? new Date(iqamaExpiry).toISOString() : null) ||
-              existingEmployeeData.food_allowance.toString() !== parseFloat(erpEmployee.food_allowance?.toString() || '0').toString() ||
-              existingEmployeeData.housing_allowance.toString() !== parseFloat(erpEmployee.housing_allowance?.toString() || '0').toString() ||
-              existingEmployeeData.transport_allowance.toString() !== parseFloat(erpEmployee.transport_allowance?.toString() || '0').toString() ||
-              existingEmployeeData.bank_name !== erpEmployee.bank_name ||
-              existingEmployeeData.bank_account_number !== erpEmployee.bank_account_number ||
-              existingEmployeeData.bank_iban !== erpEmployee.bank_iban ||
-              existingEmployeeData.contract_hours_per_day !== parseInt(erpEmployee.contract_hours_per_day?.toString() || '8') ||
-              existingEmployeeData.contract_days_per_month !== parseInt(erpEmployee.contract_days_per_month?.toString() || '26') ||
-              existingEmployeeData.emergency_contact_name !== erpEmployee.emergency_contact_name ||
-              existingEmployeeData.emergency_contact_phone !== erpEmployee.emergency_contact_phone ||
-              existingEmployeeData.emergency_contact_relationship !== erpEmployee.emergency_contact_relationship ||
-              existingEmployeeData.notes !== (erpEmployee.notes || bio) ||
-              existingEmployeeData.passport_number !== erpEmployee.passport_number ||
-              existingEmployeeData.passport_expiry?.toISOString() !== (erpEmployee.passport_expiry ? new Date(erpEmployee.passport_expiry).toISOString() : null) ||
-              existingEmployeeData.driving_license_number !== erpEmployee.driving_license_number ||
-              existingEmployeeData.driving_license_expiry?.toISOString() !== (erpEmployee.driving_license_expiry ? new Date(erpEmployee.driving_license_expiry).toISOString() : null) ||
-              (existingEmployeeData.driving_license_cost?.toString() || '0') !== parseFloat(erpEmployee.driving_license_cost?.toString() || '0').toString() ||
-              existingEmployeeData.operator_license_number !== erpEmployee.operator_license_number ||
-              existingEmployeeData.operator_license_expiry?.toISOString() !== (erpEmployee.operator_license_expiry ? new Date(erpEmployee.operator_license_expiry).toISOString() : null) ||
-              (existingEmployeeData.operator_license_cost?.toString() || '0') !== parseFloat(erpEmployee.operator_license_cost?.toString() || '0').toString() ||
-              existingEmployeeData.tuv_certification_number !== erpEmployee.tuv_certification_number ||
-              existingEmployeeData.tuv_certification_expiry?.toISOString() !== (erpEmployee.tuv_certification_expiry ? new Date(erpEmployee.tuv_certification_expiry).toISOString() : null) ||
-              (existingEmployeeData.tuv_certification_cost?.toString() || '0') !== parseFloat(erpEmployee.tuv_certification_cost?.toString() || '0').toString() ||
-              existingEmployeeData.spsp_license_number !== erpEmployee.spsp_license_number ||
-              existingEmployeeData.spsp_license_expiry?.toISOString() !== (erpEmployee.spsp_license_expiry ? new Date(erpEmployee.spsp_license_expiry).toISOString() : null) ||
-              (existingEmployeeData.spsp_license_cost?.toString() || '0') !== parseFloat(erpEmployee.spsp_license_cost?.toString() || '0').toString() ||
-              existingEmployeeData.is_operator !== (erpEmployee.is_operator || false) ||
-              existingEmployeeData.current_location !== erpEmployee.current_location ||
-              existingEmployeeData.advance_salary_eligible !== (erpEmployee.advance_salary_eligible !== false) ||
-              existingEmployeeData.advance_salary_approved_this_month !== (erpEmployee.advance_salary_approved_this_month || false);
+              existingEmployeeData.dateOfBirth?.toISOString() !== (dateOfBirth ? new Date(dateOfBirth).toISOString() : null) ||
+              existingEmployeeData.hireDate?.toISOString() !== (dateOfJoining ? new Date(dateOfJoining).toISOString() : null) ||
+              existingEmployeeData.departmentId !== departmentId ||
+              existingEmployeeData.designationId !== designationId ||
+              existingEmployeeData.iqamaNumber !== iqama ||
+              existingEmployeeData.iqamaExpiry?.toISOString() !== (iqamaExpiry ? new Date(iqamaExpiry).toISOString() : null);
 
             if (hasChanges) {
               console.log('Updating existing employee:', existingEmployeeData.id);
@@ -419,9 +417,9 @@ export async function POST() {
               return { type: 'unchanged', employee: existingEmployeeData };
             }
           } else {
-            console.log('Creating new employee:', employeeData.employee_id);
-            const newEmployee = await db.insert(employeesTable).values(employeeData).returning();
-            return { type: 'created', employee: (newEmployee as any[])[0] };
+            console.log('Creating new employee:', employeeData.erpnextId);
+            const newEmployeeResult = await db.insert(employeesTable).values(employeeData).returning();
+            return { type: 'created', employee: (newEmployeeResult as any[])[0] };
           }
         } catch (error) {
           console.error(`Error processing employee ${erpEmployee.name}:`, error);
@@ -452,10 +450,17 @@ export async function POST() {
       });
     }
 
+    // Sort synced employees by file number for better organization
+    const sortedSyncedEmployees = [...syncedEmployees].sort((a, b) => {
+      const fileNumA = parseInt(a.fileNumber || '0') || 0;
+      const fileNumB = parseInt(b.fileNumber || '0') || 0;
+      return fileNumA - fileNumB;
+    });
+
     // Prepare response message based on sync results
     let message = '';
     if (existingEmployeeCount === 0) {
-      message = `Initial sync completed: ${syncedEmployees.length} employees imported from ERPNext`;
+      message = `Initial sync completed: ${sortedSyncedEmployees.length} employees imported from ERPNext`;
     } else if (newEmployees.length > 0 && updatedEmployees.length > 0) {
       message = `Sync completed: ${newEmployees.length} new employees added, ${updatedEmployees.length} employees updated`;
     } else if (newEmployees.length > 0) {
@@ -471,16 +476,18 @@ export async function POST() {
     return NextResponse.json({
       success: true,
       message,
-      syncedCount: syncedEmployees.length,
+      syncedCount: sortedSyncedEmployees.length,
       newCount: newEmployees.length,
       updatedCount: updatedEmployees.length,
       totalErpnextCount: erpEmployees.length,
       existingCount: existingEmployeeCount,
+      // Return sorted employees for better organization
+      syncedEmployees: sortedSyncedEmployees,
       errors: allErrors.length > 0 ? allErrors : undefined,
       performance: {
         totalEmployees: erpnextData.data.length,
         successfulFetches: erpEmployees.length,
-        successfulSyncs: syncedEmployees.length,
+        successfulSyncs: sortedSyncedEmployees.length,
         fetchErrors: errors.length,
         syncErrors: dbErrors.length,
       }

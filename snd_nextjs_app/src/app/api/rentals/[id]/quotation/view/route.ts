@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { RentalService } from '@/lib/services/rental-service';
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

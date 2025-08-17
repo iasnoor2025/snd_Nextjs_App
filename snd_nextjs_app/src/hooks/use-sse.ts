@@ -213,7 +213,17 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
       eventSourceRef.current = eventSource;
 
       // Store event listeners for proper cleanup
-      const openListener = (event: Event) => handleOpen();
+      const openListener = () => {
+        setIsConnected(true);
+        setIsConnecting(false);
+        setError(null);
+        setReconnectAttempts(0);
+        onConnect?.();
+        
+        if (showToasts) {
+          toast.success('Real-time connection established');
+        }
+      };
       const errorListener = (event: Event) => handleError(event);
       const messageListener = (event: MessageEvent) => handleEvent(event);
 
@@ -256,7 +266,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
       setError('Failed to establish connection');
       console.error('SSE connection error:', error);
     }
-  }, [url, isConnected, isConnecting, handleOpen, handleError, handleEvent, cleanup, enabled, reconnectAttempts, maxReconnectAttempts, reconnectInterval]);
+  }, [url, isConnected, isConnecting, handleOpen, handleError, handleEvent, cleanup, enabled, reconnectAttempts, maxReconnectAttempts, reconnectInterval, onConnect, showToasts]);
 
   // Disconnect function
   const disconnect = useCallback(() => {

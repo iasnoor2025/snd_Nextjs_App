@@ -41,6 +41,10 @@ export const PUT = withPermission(
       }
 
       const timesheetData = timesheet[0];
+      if (!timesheetData) {
+        return NextResponse.json({ error: 'Timesheet data not found' }, { status: 404 });
+      }
+      
       console.log('🔍 UPDATE HOURS - Found timesheet:', {
         id: timesheetData.id,
         status: timesheetData.status,
@@ -55,15 +59,15 @@ export const PUT = withPermission(
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
-      const userId = session.user.id;
+      // const userId = session.user.id;
 
       // Update the timesheet hours
       try {
         const updatedTimesheet = await db
           .update(timesheets)
           .set({
-            hoursWorked: hoursWorked,
-            overtimeHours: overtimeHours,
+            hoursWorked: hoursWorked.toString(),
+            overtimeHours: overtimeHours.toString(),
             notes: `Hours updated by foreman/supervisor. Previous: ${timesheetData.hoursWorked}h + ${timesheetData.overtimeHours}h OT. New: ${hoursWorked}h + ${overtimeHours}h OT.`,
             updatedAt: new Date().toISOString()
           })
@@ -72,14 +76,19 @@ export const PUT = withPermission(
 
         console.log(`🔍 UPDATE HOURS - Hours updated successfully: ${timesheetId} - ${hoursWorked}h + ${overtimeHours}h OT`);
         
+        const updatedTimesheetData = updatedTimesheet[0];
+        if (!updatedTimesheetData) {
+          return NextResponse.json({ error: 'Failed to update timesheet' }, { status: 500 });
+        }
+        
         return NextResponse.json({
           success: true,
           message: 'Hours updated successfully',
           data: {
-            id: updatedTimesheet[0].id,
-            hoursWorked: updatedTimesheet[0].hoursWorked,
-            overtimeHours: updatedTimesheet[0].overtimeHours,
-            notes: updatedTimesheet[0].notes
+            id: updatedTimesheetData.id,
+            hoursWorked: updatedTimesheetData.hoursWorked,
+            overtimeHours: updatedTimesheetData.overtimeHours,
+            notes: updatedTimesheetData.notes
           }
         });
 

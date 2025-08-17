@@ -126,7 +126,6 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey,
-  ...props
 }: {
   active?: boolean
   payload?: TooltipPayload[]
@@ -281,7 +280,6 @@ function ChartLegendContent({
   payload,
   verticalAlign = "bottom",
   nameKey,
-  ...props
 }: {
   className?: string
   hideIcon?: boolean

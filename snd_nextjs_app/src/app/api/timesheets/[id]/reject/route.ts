@@ -32,6 +32,10 @@ export const POST = withPermission(
       }
 
       const timesheetData = timesheet[0];
+      if (!timesheetData) {
+        return NextResponse.json({ error: 'Timesheet data not found' }, { status: 404 });
+      }
+      
       console.log('🔍 REJECT TIMESHEET - Found timesheet:', {
         id: timesheetData.id,
         status: timesheetData.status,
@@ -44,7 +48,7 @@ export const POST = withPermission(
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
-      const userId = session.user.id;
+      // const userId = session.user.id;
 
       // Check if timesheet can be rejected
       const canReject = ['submitted', 'foreman_approved', 'incharge_approved', 'checking_approved'].includes(timesheetData.status);
@@ -70,13 +74,18 @@ export const POST = withPermission(
 
         console.log(`🔍 REJECT TIMESHEET - Timesheet rejected successfully: ${timesheetId}`);
         
+        const updatedTimesheetData = updatedTimesheet[0];
+        if (!updatedTimesheetData) {
+          return NextResponse.json({ error: 'Failed to update timesheet' }, { status: 500 });
+        }
+        
         return NextResponse.json({
           success: true,
           message: 'Timesheet rejected successfully',
           data: {
-            id: updatedTimesheet[0].id,
-            status: updatedTimesheet[0].status,
-            rejectionReason: updatedTimesheet[0].rejectionReason
+            id: updatedTimesheetData.id,
+            status: updatedTimesheetData.status,
+            rejectionReason: updatedTimesheetData.rejectionReason
           }
         });
 

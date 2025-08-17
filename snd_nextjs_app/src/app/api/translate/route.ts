@@ -5,25 +5,24 @@ const translationCache = new Map<string, string>();
 
 export async function POST(_request: NextRequest) {
   try {
-    const { text, targetLang = 'ar' } = await _request.json();
-
-    if (!text) {
-      return NextResponse.json({ error: 'Text is required' }, { status: 400 });
+    const { text, targetLanguage } = await _request.json();
+  
+    if (!text || !targetLanguage) {
+      return NextResponse.json({ error: 'Text and target language are required' }, { status: 400 });
     }
 
     // Check cache first
-    const cacheKey = `${text}_${targetLang}`;
+    const cacheKey = `${text}_${targetLanguage}`;
     if (translationCache.has(cacheKey)) {
       return NextResponse.json({ 
         translatedText: translationCache.get(cacheKey),
         originalText: text,
-        targetLang: targetLang,
+        targetLang: targetLanguage,
         cached: true
       });
     }
 
     // Google Translate API endpoint
-    const GOOGLE_TRANSLATE_API_URL = 'https://translation.googleapis.com/language/translate/v2';
     
     // You'll need to set up Google Cloud Translation API and get an API key
     // For now, we'll use a free alternative or you can implement your own translation service
@@ -37,7 +36,7 @@ export async function POST(_request: NextRequest) {
       body: JSON.stringify({
         q: text,
         source: 'en',
-        target: targetLang,
+        target: targetLanguage,
         format: 'text'
       })
     });
@@ -52,14 +51,14 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ 
         translatedText: translatedText,
         originalText: text,
-        targetLang: targetLang
+        targetLang: targetLanguage
       });
     } else {
       // Fallback: return original text if translation fails
       return NextResponse.json({ 
         translatedText: text,
         originalText: text,
-        targetLang: targetLang,
+        targetLang: targetLanguage,
         note: 'Translation service unavailable, using original text'
       });
     }

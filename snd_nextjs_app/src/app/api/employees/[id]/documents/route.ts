@@ -1,151 +1,97 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
+import { employeeDocuments } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-config";
-import { employeeDocuments, employees as employeesTable } from '@/lib/drizzle/schema';
-import { eq } from 'drizzle-orm';
 
 export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     console.log('Starting GET /api/employees/[id]/documents');
-    console.log('Database object:', typeof db);
-    console.log('Schema objects:', { 
-      employeeDocuments: typeof employeeDocuments, 
-      employeesTable: typeof employeesTable 
-    });
     
-    // Temporarily comment out authentication for debugging
-    // const session = await getServerSession(authOptions);
-    // if (!session?.user) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    // }
-
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      console.log('Authentication failed - no session');
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    
+    console.log('Authentication successful for user:', session.user.email);
+    
     const { id } = await params;
-    console.log('Employee ID from params:', id);
-    
     const employeeId = parseInt(id);
-    console.log('Parsed employee ID:', employeeId);
 
-    if (!employeeId) {
-      return NextResponse.json(
-        { error: "Invalid employee ID" },
-        { status: 400 }
-      );
+    if (isNaN(employeeId)) {
+      return NextResponse.json({ error: "Invalid employee ID" }, { status: 400 });
     }
 
-    console.log('About to query database...');
+    console.log('About to query database for employee:', employeeId);
     
-    // Fetch documents from database using Drizzle
+    // Use the same approach as the working test endpoint
     const documentsRows = await db
       .select({
         id: employeeDocuments.id,
         employeeId: employeeDocuments.employeeId,
         documentType: employeeDocuments.documentType,
-        filePath: employeeDocuments.filePath,
         fileName: employeeDocuments.fileName,
+        filePath: employeeDocuments.filePath,
         fileSize: employeeDocuments.fileSize,
         mimeType: employeeDocuments.mimeType,
         description: employeeDocuments.description,
         createdAt: employeeDocuments.createdAt,
         updatedAt: employeeDocuments.updatedAt,
-        employeeFileNumber: employeesTable.fileNumber,
       })
       .from(employeeDocuments)
-      .leftJoin(employeesTable, eq(employeesTable.id, employeeDocuments.employeeId))
-      .where(eq(employeeDocuments.employeeId, employeeId))
-      .orderBy(employeeDocuments.createdAt);
+      .where(eq(employeeDocuments.employeeId, employeeId));
 
-    console.log('Database query successful, documents found:', documentsRows.length);
+    console.log('Query successful, found:', documentsRows.length, 'documents');
 
-    // Format documents to match Laravel response
-    const toTitleCase = (s: string) => s.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
-    const formattedDocuments = documentsRows.map(doc => {
-      const typeLabel = doc.documentType && doc.documentType !== 'general'
-        ? toTitleCase(doc.documentType.replace(/_/g, ' '))
-        : undefined;
-      return {
-        id: doc.id,
-        name: typeLabel || doc.fileName,
-        file_name: doc.fileName,
-        file_type: doc.mimeType?.split('/')[1]?.toUpperCase() || 'UNKNOWN',
-        size: doc.fileSize || 0,
-        url: doc.filePath,
-        mime_type: doc.mimeType,
-        document_type: doc.documentType,
-        description: doc.description,
-        file_number: doc.employeeFileNumber || null,
-        created_at: doc.createdAt,
-        updated_at: doc.updatedAt,
-      };
-    });
+    // Format response to match what DocumentManager expects
+    const formattedDocuments = documentsRows.map(doc => ({
+      id: doc.id,
+      name: doc.fileName || 'Unknown Document',
+      file_name: doc.fileName || 'Unknown Document',
+      file_type: doc.mimeType?.split('/')[1]?.toUpperCase() || 'UNKNOWN',
+      size: doc.fileSize || 0,
+      url: doc.filePath || '',
+      mime_type: doc.mimeType || '',
+      document_type: doc.documentType || '',
+      description: doc.description || '',
+      created_at: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
+      updated_at: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString(),
+      // Also include the original field names for backward compatibility
+      fileName: doc.fileName,
+      filePath: doc.filePath,
+      fileSize: doc.fileSize,
+      mimeType: doc.mimeType,
+      documentType: doc.documentType,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    }));
 
-    console.log('Documents formatted successfully');
     return NextResponse.json(formattedDocuments);
+    
   } catch (error) {
     console.error('Error in GET /api/employees/[id]/documents:', error);
-    console.error('Error stack:', (error as Error).stack);
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to fetch documents: ' + (error as Error).message
-      },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    
+    // More detailed error information
+    let errorMessage = 'Internal server error';
+    let errorDetails = '';
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorDetails = error.stack || '';
     }
-
-    const { id } = await params;
-    const employeeId = parseInt(id);
-    const body = await request.json();
-
-    if (!employeeId) {
-      return NextResponse.json(
-        { error: "Invalid employee ID" },
-        { status: 400 }
-      );
-    }
-
-    // Create document in database using Drizzle
-    const documentRows = await db
-      .insert(employeeDocuments)
-      .values({
-        employeeId: employeeId,
-        documentType: body.document_type || 'general',
-        filePath: body.file_path,
-        fileName: body.file_name,
-        fileSize: body.file_size,
-        mimeType: body.mime_type,
-        description: body.description,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
-      .returning();
-
-    const document = documentRows[0];
-
-    return NextResponse.json({
-      success: true,
-      message: 'Document uploaded successfully',
-      data: document
-    });
-  } catch (error) {
-    console.error('Error in POST /api/employees/[id]/documents:', error);
+    
+    console.error('Error details:', { message: errorMessage, stack: errorDetails });
+    
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to upload document: ' + (error as Error).message
+      { 
+        error: errorMessage,
+        details: errorDetails,
+        timestamp: new Date().toISOString()
       },
       { status: 500 }
     );

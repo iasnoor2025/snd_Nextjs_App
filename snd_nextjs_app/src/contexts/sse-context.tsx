@@ -53,9 +53,6 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
   const [eventSource, setEventSource] = useState<EventSource | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
-  const reconnectAttemptsRef = useRef(0);
-  const [reconnectAttempts, setReconnectAttempts] = useState(0);
-  const [maxReconnectAttempts] = useState(3); // Reduced from 5 to 3
   const isMountedRef = useRef(true);
   const cleanupRef = useRef<(() => void) | null>(null);
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -216,8 +213,8 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         }
         setIsConnected(true);
         setConnectionStatus('connected');
-        setReconnectAttempts(0);
-        reconnectAttemptsRef.current = 0;
+        // setReconnectAttempts(0); // This line was removed
+        // reconnectAttemptsRef.current = 0; // This line was removed
       };
 
       const handleMessage = (event: MessageEvent) => {
@@ -230,21 +227,16 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         }
       };
 
-      const handleError = (error: Event) => {
-        if (!isMountedRef.current) return;
-        setIsConnected(false);
-        setConnectionStatus('error');
+      const handleError = () => {
+        setIsConnected(false)
+        setConnectionStatus('error')
         
-        // Reduced reconnection attempts for faster recovery
-        if (reconnectAttemptsRef.current < maxReconnectAttempts) {
-          setTimeout(() => {
-            if (isMountedRef.current) {
-              connectSSE();
-            }
-          }, Math.pow(1.5, reconnectAttemptsRef.current) * 1000); // Reduced exponential backoff
-          reconnectAttemptsRef.current += 1;
-          setReconnectAttempts(reconnectAttemptsRef.current);
-        }
+        // Attempt to reconnect after a delay
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            connectSSE();
+          }
+        }, 5000)
       };
 
       sse.addEventListener('open', handleOpen);
@@ -265,7 +257,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     } catch (error) {
       setConnectionStatus('error');
     }
-  }, [session?.user?.email, handleSSEMessage, maxReconnectAttempts, cleanup, connectionStatus]);
+  }, [session?.user?.email, handleSSEMessage, cleanup, connectionStatus]);
 
   // Mark notification as read
   const markAsRead = useCallback(async (notificationId: string) => {
@@ -324,8 +316,8 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
   // Reconnect manually
   const reconnect = useCallback(() => {
     if (!isMountedRef.current) return;
-    setReconnectAttempts(0);
-    reconnectAttemptsRef.current = 0;
+    // setReconnectAttempts(0); // This line was removed
+    // reconnectAttemptsRef.current = 0; // This line was removed
     connectSSE();
   }, [connectSSE]);
 

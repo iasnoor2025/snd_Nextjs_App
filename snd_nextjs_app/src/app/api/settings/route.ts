@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 
 export const GET = withPermission(
-  async (request: NextRequest) => {
+  async (_request: NextRequest) => {
   try {
     // TODO: Implement settings when Setting model is added to schema
     // For now, return empty array
@@ -27,7 +27,7 @@ export const GET = withPermission(
 );
 
 export const POST = withPermission(
-  async (request: NextRequest) => {
+  async (_request: NextRequest) => {
   try {
     // TODO: Implement setting creation when Setting model is added to schema
     return NextResponse.json(
@@ -46,7 +46,7 @@ export const POST = withPermission(
 );
 
 export const PUT = withPermission(
-  async (request: NextRequest) => {
+  async (_request: NextRequest) => {
   try {
     // TODO: Implement setting update when Setting model is added to schema
     return NextResponse.json(
@@ -65,7 +65,7 @@ export const PUT = withPermission(
 );
 
 export const DELETE = withPermission(
-  async (request: NextRequest) => {
+  async (_request: NextRequest) => {
   try {
     // TODO: Implement setting deletion when Setting model is added to schema
     return NextResponse.json(

@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useRBAC } from "@/lib/rbac/rbac-context";
 import { useDropzone } from "react-dropzone";
 import DocumentManager, { type DocumentItem } from "@/components/shared/DocumentManager";
+import { useSession } from "next-auth/react";
 
 interface Document {
   id: number;
@@ -35,6 +36,7 @@ interface DocumentsTabProps {
 
 export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
   const { hasPermission } = useRBAC();
+  const { data: session, status: sessionStatus } = useSession();
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +45,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[] | null>(null);
+  const [hasError, setHasError] = useState(false);
 
   // Upload form state
   const [uploadForm, setUploadForm] = useState({
@@ -64,25 +67,99 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     { label: 'General Document', value: 'general' },
   ];
 
+  // Debug session status
+  useEffect(() => {
+    console.log('DocumentsTab session status:', sessionStatus);
+    console.log('DocumentsTab session data:', session);
+    console.log('DocumentsTab employeeId:', employeeId);
+  }, [sessionStatus, session, employeeId]);
+
+  // Show loading while session is loading
+  if (sessionStatus === 'loading') {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading session...</span>
+      </div>
+    );
+  }
+
+  // Show error if not authenticated
+  if (sessionStatus === 'unauthenticated' || !session?.user) {
+    return (
+      <div className="rounded-md border border-red-200 bg-red-50 p-4">
+        <div className="text-center">
+          <div className="font-medium text-red-600">Authentication Required</div>
+          <div className="mt-1 text-sm text-red-600">
+            Please log in to view employee documents
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   useEffect(() => {
     fetchDocuments();
+  }, [employeeId]);
+
+  // Error boundary effect
+  useEffect(() => {
+    if (error && !hasError) {
+      setHasError(true);
+      console.error('DocumentsTab error state:', error);
+    }
+  }, [error, hasError]);
+
+  // Reset error state when employeeId changes
+  useEffect(() => {
+    setError(null);
+    setHasError(false);
   }, [employeeId]);
 
   const fetchDocuments = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/employees/${employeeId}/documents`);
+      console.log('Fetching documents for employee:', employeeId);
+      console.log('Session user:', session?.user?.email);
+      console.log('Session role:', session?.user?.role);
+      
+      const response = await fetch(`/api/employees/${employeeId}/documents`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Add credentials to ensure cookies are sent
+        credentials: 'include',
+      });
+      
+      console.log('Fetch response status:', response.status);
+      console.log('Fetch response headers:', Object.fromEntries(response.headers.entries()));
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Fetch response data:', data);
         setDocuments(Array.isArray(data) ? data : []);
       } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to load documents');
+        const errorText = await response.text();
+        console.error('Error response body:', errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch (e) {
+          errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
+        }
+        
+        const errorMessage = errorData.error || `Failed to load documents (${response.status})`;
+        console.error('Setting error:', errorMessage);
+        setError(errorMessage);
       }
     } catch (error) {
       console.error('Error fetching documents:', error);
-      setError('Failed to load documents');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load documents';
+      console.error('Setting error from catch:', errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -112,6 +189,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
       const response = await fetch(`/api/employees/${employeeId}/documents/upload`, {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -131,57 +209,9 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     }
   };
 
-  // Drag & drop handler (multiple files)
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (!acceptedFiles.length) return;
-    if (!uploadForm.document_name.trim() || !uploadForm.document_type.trim()) {
-      setPendingFiles(acceptedFiles);
-      setShowDetailsDialog(true);
-      return;
-    }
 
-    setUploading(true);
-    try {
-      for (const file of acceptedFiles) {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('document_name', uploadForm.document_name.trim());
-        if (uploadForm.document_type) formData.append('document_type', uploadForm.document_type);
-        formData.append('description', uploadForm.description);
 
-        const response = await fetch(`/api/employees/${employeeId}/documents/upload`, {
-          method: 'POST',
-          body: formData,
-        });
 
-        if (!response.ok) throw new Error('Upload failed');
-      }
-
-      toast.success('Document(s) uploaded successfully');
-      setUploadForm({ document_name: '', document_type: '', file: null, description: '' });
-      fetchDocuments();
-    } catch (error) {
-      console.error('Error uploading documents:', error);
-      toast.error('Failed to upload documents');
-    } finally {
-      setUploading(false);
-    }
-  }, [employeeId, uploadForm]);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    multiple: true,
-    accept: {
-      'application/pdf': ['.pdf'],
-      'application/msword': ['.doc'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-      'application/vnd.ms-excel': ['.xls'],
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-      'image/*': ['.jpg', '.jpeg', '.png', '.gif'],
-      'text/plain': ['.txt'],
-    },
-    maxSize: 10 * 1024 * 1024,
-  });
 
   const handleDelete = async (documentId: number) => {
     if (!confirm('Are you sure you want to delete this document?')) {
@@ -192,6 +222,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     try {
       const response = await fetch(`/api/employees/${employeeId}/documents/${documentId}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
 
       if (response.ok) {
@@ -211,7 +242,9 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
 
   const handleDownload = async (doc: Document) => {
     try {
-      const response = await fetch(`/api/employees/${employeeId}/documents/${doc.id}/download`);
+      const response = await fetch(`/api/employees/${employeeId}/documents/${doc.id}/download`, {
+        credentials: 'include',
+      });
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -310,112 +343,183 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     );
   }
 
-  return (
-    <>
-    <DocumentManager
-      title="Employee Documents"
-      description="Upload and manage employee documents"
-      beforeUpload={(files) => {
-        if (!uploadForm.document_name.trim() || !uploadForm.document_type.trim()) {
-          setPendingFiles(files);
-          setShowDetailsDialog(true);
-          return false;
-        }
-        return true;
-      }}
-      loadDocuments={async () => {
-        const response = await fetch(`/api/employees/${employeeId}/documents`);
-        if (response.ok) {
-          const data = await response.json();
-          const list = Array.isArray(data) ? data : [];
-          return list.map((d: any) => {
-            const fileNum = d.employee?.file_number || d.file_number;
-            const base = (d.name || getDocumentTypeLabel(d.document_type) || 'Document').toString();
-            const displayName = fileNum ? `${base} (File ${fileNum})` : base;
-            return {
-              id: d.id,
-              name: displayName,
-              file_name: d.file_name,
-              file_type: d.mime_type || d.file_type || '',
-              size: d.size ?? 0,
-              url: d.url,
-              created_at: d.created_at,
-              typeLabel: getDocumentTypeLabel(d.document_type),
-              employee_file_number: fileNum,
-              document_type: d.document_type,
-            } as DocumentItem;
-          }) as DocumentItem[];
-        }
-        return [] as DocumentItem[];
-      }}
-      uploadDocument={async (file, extra) => {
-        try {
-          const formData = new FormData();
-          formData.append('file', file);
-          formData.append('document_name', uploadForm.document_name.trim());
-          if (uploadForm.document_type) formData.append('document_type', uploadForm.document_type);
-          formData.append('description', uploadForm.description);
-
-          const response = await fetch(`/api/employees/${employeeId}/documents/upload`, {
-            method: 'POST',
-            body: formData,
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Upload failed');
-          }
-
-          // Refresh documents after successful upload
-          fetchDocuments();
-          return true;
-        } catch (error) {
-          console.error('Error uploading document:', error);
-          toast.error(error instanceof Error ? error.message : 'Failed to upload document');
-          return false;
-        }
-      }}
-      deleteDocument={async (id) => {
-        try {
-          const response = await fetch(`/api/employees/${employeeId}/documents/${id}`, { method: 'DELETE' });
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Failed to delete document');
-          }
-          // Refresh documents after successful deletion
-          fetchDocuments();
-          return true;
-        } catch (error) {
-          console.error('Error deleting document:', error);
-          toast.error(error instanceof Error ? error.message : 'Failed to delete document');
-          return false;
-        }
-      }}
-      // RBAC-controlled actions
-      canUpload={hasPermission('create', 'employee-document')}
-      canDownload={hasPermission('read', 'employee-document')}
-      canPreview={hasPermission('read', 'employee-document')}
-      canDelete={hasPermission('delete', 'employee-document')}
-      downloadPrefix={(doc) => (doc.employee_file_number ? String(doc.employee_file_number) : String(employeeId))}
-      singleLine={false}
-      wrapItems
-      showSize={false}
-      showDate={false}
-      // Extra controls for employee: description only (name/type asked in popup)
-      renderExtraControls={
-        <div className="grid gap-3">
-          <div>
-            <Label htmlFor="description">Description (Optional)</Label>
-            <Input
-              id="description"
-              value={uploadForm.description}
-              onChange={(e) => setUploadForm(prev => ({ ...prev, description: e.target.value }))}
-              placeholder="Enter document description..."
-            />
+  if (hasError) {
+    return (
+      <div className="rounded-md border border-red-200 bg-red-50 p-4">
+        <div className="text-center">
+          <div className="font-medium text-red-600">Critical Error in Documents Tab</div>
+          <div className="mt-1 text-sm text-red-600">
+            {error || 'An unexpected error occurred while loading documents'}
+          </div>
+          <div className="mt-4 flex justify-center space-x-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setError(null);
+                setHasError(false);
+                fetchDocuments();
+              }} 
+              className="bg-white"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" /> Retry
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setError(null);
+                setHasError(false);
+                setLoading(true);
+                // Force a fresh reload
+                setTimeout(() => fetchDocuments(), 100);
+              }} 
+              className="bg-white"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" /> Force Reload
+            </Button>
           </div>
         </div>
-      }
-    />
+      </div>
+    );
+  }
+
+  return (
+    <>
+    <div className="w-full">
+      <DocumentManager
+        title="Employee Documents"
+        description="Upload and manage employee documents"
+        beforeUpload={(files) => {
+          if (!uploadForm.document_name.trim() || !uploadForm.document_type.trim()) {
+            setPendingFiles(files);
+            setShowDetailsDialog(true);
+            return false;
+          }
+          return true;
+        }}
+        loadDocuments={async () => {
+          try {
+            console.log('Loading documents for employee:', employeeId);
+            const response = await fetch(`/api/employees/${employeeId}/documents`, {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              credentials: 'include',
+            });
+            console.log('API response status:', response.status);
+            
+            if (response.ok) {
+              const data = await response.json();
+              console.log('API response data:', data);
+              
+              const list = Array.isArray(data) ? data : [];
+              console.log('Processed list:', list);
+              
+              return list.map((d: any) => {
+                console.log('Processing document:', d);
+                
+                // Map the API response fields to what DocumentManager expects
+                const result = {
+                  id: d.id,
+                  name: d.fileName || d.name || getDocumentTypeLabel(d.documentType) || 'Document',
+                  file_name: d.fileName || d.file_name || 'Unknown Document',
+                  file_type: d.mimeType?.split('/')[1]?.toUpperCase() || d.file_type || 'UNKNOWN',
+                  size: d.fileSize || d.size || 0,
+                  url: d.filePath || d.url || '',
+                  created_at: d.createdAt || d.created_at || new Date().toISOString(),
+                  typeLabel: getDocumentTypeLabel(d.documentType),
+                  employee_file_number: employeeId,
+                  document_type: d.documentType || '',
+                };
+                
+                console.log('Mapped document result:', result);
+                return result as DocumentItem;
+              }) as DocumentItem[];
+            } else {
+              console.error('API response not ok:', response.status, response.statusText);
+              const errorText = await response.text();
+              console.error('Error response body:', errorText);
+              throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+            }
+          } catch (error) {
+            console.error('Error in loadDocuments:', error);
+            // Return empty array instead of throwing to prevent app crash
+            return [] as DocumentItem[];
+          }
+        }}
+        uploadDocument={async (file, extra) => {
+          try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('document_name', uploadForm.document_name.trim());
+            if (uploadForm.document_type) formData.append('document_type', uploadForm.document_type);
+            formData.append('description', uploadForm.description);
+
+            const response = await fetch(`/api/employees/${employeeId}/documents/upload`, {
+              method: 'POST',
+              body: formData,
+              credentials: 'include',
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.message || 'Upload failed');
+            }
+
+            // Refresh documents after successful upload
+            fetchDocuments();
+            return true;
+          } catch (error) {
+            console.error('Error uploading document:', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to upload document');
+            return false;
+          }
+        }}
+        deleteDocument={async (id) => {
+          try {
+            const response = await fetch(`/api/employees/${employeeId}/documents/${id}`, { 
+              method: 'DELETE',
+              credentials: 'include',
+            });
+            if (!response.ok) {
+              const errorData = await response.json();
+              throw new Error(errorData.message || 'Failed to delete document');
+            }
+            // Refresh documents after successful deletion
+            fetchDocuments();
+            return true;
+          } catch (error) {
+            console.error('Error deleting document:', error);
+            toast.error(error instanceof Error ? error.message : 'Failed to delete document');
+            return false;
+          }
+        }}
+        // RBAC-controlled actions
+        canUpload={hasPermission('create', 'employee-document')}
+        canDownload={hasPermission('read', 'employee-document')}
+        canPreview={hasPermission('read', 'employee-document')}
+        canDelete={hasPermission('delete', 'employee-document')}
+        downloadPrefix={(doc) => (doc.employee_file_number ? String(doc.employee_file_number) : String(employeeId))}
+        singleLine={false}
+        wrapItems
+        showSize={false}
+        showDate={false}
+        // Extra controls for employee: description only (name/type asked in popup)
+        renderExtraControls={
+          <div className="grid gap-3">
+            <div>
+              <Label htmlFor="description">Description (Optional)</Label>
+              <Input
+                id="description"
+                value={uploadForm.description}
+                onChange={(e) => setUploadForm(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Enter document description..."
+              />
+            </div>
+          </div>
+        }
+      />
+    </div>
 
     <Dialog open={showDetailsDialog} onOpenChange={(open) => { if(!open) setPendingFiles(null); setShowDetailsDialog(open); }}>
       <DialogContent className="sm:max-w-md">
@@ -461,7 +565,11 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                   formData.append('document_type', uploadForm.document_type.trim());
                   formData.append('description', uploadForm.description);
                   
-                  const resp = await fetch(`/api/employees/${employeeId}/documents/upload`, { method: 'POST', body: formData });
+                  const resp = await fetch(`/api/employees/${employeeId}/documents/upload`, { 
+                    method: 'POST', 
+                    body: formData,
+                    credentials: 'include',
+                  });
                   
                   if (!resp.ok) {
                     const errorData = await resp.json();

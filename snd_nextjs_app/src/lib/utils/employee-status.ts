@@ -13,6 +13,11 @@ export async function updateEmployeeStatusBasedOnLeave(employeeId: number): Prom
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
     
+    if (!todayStr) {
+      console.error('Failed to generate today string');
+      return false;
+    }
+    
     // Find any approved leave that is currently active (start_date <= today <= end_date)
     const activeLeave = await db
       .select()
@@ -72,6 +77,11 @@ export async function isEmployeeCurrentlyOnLeave(employeeId: number): Promise<bo
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
     
+    if (!todayStr) {
+      console.error('Failed to generate today string');
+      return false;
+    }
+    
     const activeLeave = await db
       .select()
       .from(employeeLeaves)
@@ -102,6 +112,17 @@ export async function getEmployeeLeaveStatus(employeeId: number) {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
     
+    if (!todayStr) {
+      console.error('Failed to generate today string');
+      return {
+        isCurrentlyOnLeave: false,
+        currentLeave: null,
+        upcomingLeave: null,
+        pastLeave: null,
+        totalApprovedLeaves: 0
+      };
+    }
+
     // Get all approved leaves for the employee
     const approvedLeaves = await db
       .select()

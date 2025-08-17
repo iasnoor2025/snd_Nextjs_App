@@ -174,10 +174,6 @@ export default function EmployeeShowPage() {
   useEffect(() => {
     if (employeeId) {
       fetchEmployeeData();
-      fetchAdvances();
-      fetchPaymentHistory();
-      fetchLeaves();
-      fetchSalaryHistory();
     }
   }, [employeeId]);
 
@@ -186,10 +182,23 @@ export default function EmployeeShowPage() {
     try {
       const response = await fetch(`/api/employees/${employeeId}`);
       const data = await response.json();
-      setEmployee(data.employee || data);
+      
+      if (response.ok && data.employee) {
+        setEmployee(data.employee);
+        // Only fetch additional data if employee exists
+        fetchAdvances();
+        fetchPaymentHistory();
+        fetchLeaves();
+        fetchSalaryHistory();
+      } else {
+        // Employee not found
+        setEmployee(null);
+        toast.error(data.error || "Employee not found");
+      }
     } catch (error) {
       console.error("Error fetching employee data:", error);
       toast.error("Failed to load employee data");
+      setEmployee(null);
     } finally {
       setLoading(false);
     }
@@ -483,17 +492,19 @@ export default function EmployeeShowPage() {
   if (!employee) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h2 className="mt-4 text-lg font-semibold">Employee not found</h2>
-          <p className="mt-2 text-muted-foreground">The employee you're looking for doesn't exist.</p>
-          <Button className="mt-4" asChild>
-            <Link href="/modules/employee-management">Back to Employees</Link>
+        <div className="flex flex-col items-center gap-4">
+          <AlertCircle className="h-12 w-12 text-red-500" />
+          <h2 className="text-xl font-semibold">Employee Not Found</h2>
+          <p className="text-gray-600">The employee with ID {employeeId} could not be found.</p>
+          <Button onClick={() => router.push('/modules/employee-management')}>
+            Back to Employee List
           </Button>
         </div>
       </div>
     );
   }
+
+
 
   return (
     <div className="flex h-full flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { signIn, getSession } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,6 @@ import { toast } from 'sonner';
 
 export default function SignInPage() {
   const { t } = useTranslation(['auth', 'common']);
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -23,7 +22,7 @@ export default function SignInPage() {
 
     try {
       const result = await signIn('credentials', {
-        email,
+        email: 'test@example.com', // Placeholder email, replace with actual email input
         password,
         redirect: false,
       });

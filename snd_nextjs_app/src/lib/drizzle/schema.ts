@@ -1,4 +1,4 @@
-import { pgTable, serial, text, boolean, date, foreignKey, integer, numeric, timestamp, varchar, uniqueIndex, type AnyPgColumn, jsonb, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, serial, text, boolean, date, foreignKey, integer, numeric, timestamp, varchar, uniqueIndex, jsonb, primaryKey } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 
@@ -788,7 +788,7 @@ export const employees = pgTable("employees", {
 	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
 	updatedAt: date("updated_at").notNull(),
 	deletedAt: date("deleted_at"),
-}, (table) => [
+}, (table): any => [
 	uniqueIndex("employees_file_number_key").using("btree", table.fileNumber.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.designationId],
@@ -847,7 +847,7 @@ export const organizationalUnits = pgTable("organizational_units", {
 	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
 	updatedAt: date("updated_at").notNull(),
 	deletedAt: date("deleted_at"),
-}, (table) => [
+}, (table): any => [
 	uniqueIndex("organizational_units_code_key").using("btree", table.code.asc().nullsLast().op("text_ops")),
 	foreignKey({
 			columns: [table.parentId],

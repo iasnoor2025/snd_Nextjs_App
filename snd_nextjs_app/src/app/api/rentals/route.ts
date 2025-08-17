@@ -67,12 +67,10 @@ export const POST = withReadPermission(
     }
 
     // Set default values
-    const rentalData = {
+    const rentalData: any = {
       customerId: parseInt(body.customerId),
       rentalNumber: body.rentalNumber,
       startDate: new Date(body.startDate),
-      expectedEndDate: body.expectedEndDate ? new Date(body.expectedEndDate) : undefined,
-      actualEndDate: body.actualEndDate ? new Date(body.actualEndDate) : undefined,
       status: body.status || 'pending',
       paymentStatus: (body.paymentStatus || 'pending'),
       subtotal: parseFloat(body.subtotal) || 0,
@@ -87,6 +85,14 @@ export const POST = withReadPermission(
       hasOperators: body.hasOperators || false,
       notes: body.notes || '',
       rentalItems: body.rentalItems || [],
+    }
+
+    // Add optional date fields only if they exist
+    if (body.expectedEndDate) {
+      rentalData.expectedEndDate = new Date(body.expectedEndDate);
+    }
+    if (body.actualEndDate) {
+      rentalData.actualEndDate = new Date(body.actualEndDate);
     }
 
     const rental = await RentalService.createRental(rentalData)

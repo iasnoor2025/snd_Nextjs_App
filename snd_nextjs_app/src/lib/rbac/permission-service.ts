@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { db } from '@/lib/drizzle';
 import { users, modelHasRoles, roles, roleHasPermissions, permissions as permissionsTable, modelHasPermissions } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { User, Action, Subject } from './custom-rbac';
@@ -42,16 +42,18 @@ export async function checkUserPermission(
       .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
       .where(eq(users.id, parseInt(userId)));
 
-    if (userRows.length === 0) {
+    if (userRows.length === 0 || !userRows[0]) {
       return { hasPermission: false, reason: 'User not found' };
     }
 
-    const isActive = userRows[0].isActive;
+    const user = userRows[0];
+    const isActive = user.isActive;
     if (!isActive) {
       return { hasPermission: false, reason: 'User account is inactive' };
     }
 
-    const roleName = userRows[0].roleName || 'USER';
+    const roleName = user.roleName || 'USER';
+    const roleId = user.roleId;
 
     // Direct user permissions
     const directPermRows = await db
@@ -62,7 +64,7 @@ export async function checkUserPermission(
     const directPermissions = directPermRows.map(r => r.name!).filter(Boolean);
 
     // Get user's role
-    if (!roleName) {
+    if (!roleName || !roleId) {
       return { hasPermission: false, reason: 'User has no assigned role' };
     }
 
@@ -91,7 +93,7 @@ export async function checkUserPermission(
       .select({ name: permissionsTable.name })
       .from(roleHasPermissions)
       .leftJoin(permissionsTable, eq(permissionsTable.id, roleHasPermissions.permissionId))
-      .where(eq(roleHasPermissions.roleId, userRows[0].roleId!));
+      .where(eq(roleHasPermissions.roleId, roleId));
     const rolePermissions = rolePermRows.map(r => r.name!).filter(Boolean);
     
     // Check for wildcard permissions in role
@@ -156,12 +158,12 @@ export async function getUserPermissions(userId: string): Promise<UserPermission
       .leftJoin(modelHasRoles, eq(modelHasRoles.userId, users.id))
       .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
       .where(eq(users.id, parseInt(userId)));
-    if (userRows.length === 0) return null;
+    if (userRows.length === 0 || !userRows[0]) return null;
 
     // User rows already validated above
-
-    const roleId = userRows[0].roleId || 0;
-    const roleName = userRows[0]?.roleName || 'No Role';
+    const user = userRows[0];
+    const roleId = user.roleId || 0;
+    const roleName = user?.roleName || 'No Role';
     const directPermRows2 = await db
       .select({ name: permissionsTable.name })
       .from(modelHasPermissions)

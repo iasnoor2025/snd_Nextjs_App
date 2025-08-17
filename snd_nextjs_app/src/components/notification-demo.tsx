@@ -7,7 +7,7 @@ import { notify } from '@/lib/services/notification-service';
 import { useNotificationContext } from '@/contexts/notification-context';
 
 export const NotificationDemo: React.FC = () => {
-  const { showSuccess, showError, showWarning, showInfo } = useNotificationContext();
+  const { showSuccess, showError } = useNotificationContext();
 
   const handleSuccessNotification = () => {
     notify.success('Success!', 'This is a success notification with an action button.', '/modules/employee-management');

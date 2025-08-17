@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 export interface NotificationOptions {
   title: string;
   message: string;
-  actionUrl?: string;
+  actionUrl?: string | undefined;
   duration?: number;
   dismissible?: boolean;
 }

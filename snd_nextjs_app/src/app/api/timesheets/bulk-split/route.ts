@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { timesheets } from '@/lib/drizzle/schema';
 import { and, eq } from 'drizzle-orm';
+
 export async function POST(_request: NextRequest) {
   try {
     const body = await _request.json();
@@ -14,7 +15,7 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    const created: any[] = [];
+    const created: Array<{ employee_id: string; date: string }> = [];
 
     for (const assignment of assignments) {
       const {
@@ -35,6 +36,11 @@ export async function POST(_request: NextRequest) {
 
       // Validate required fields
       if (!employee_id || !date_from || !date_to) {
+        continue;
+      }
+
+      // Ensure date_from and date_to are strings
+      if (typeof date_from !== 'string' || typeof date_to !== 'string') {
         continue;
       }
 
@@ -68,7 +74,7 @@ export async function POST(_request: NextRequest) {
           )
           .limit(1);
 
-        if (existingTimesheet) {
+        if (existingTimesheet.length > 0) {
           continue; // Skip if timesheet already exists
         }
 
@@ -113,8 +119,16 @@ function getDateRange(from: string, to: string): string[] {
   const current = new Date(from);
   const end = new Date(to);
 
+  // Validate dates
+  if (isNaN(current.getTime()) || isNaN(end.getTime())) {
+    return [];
+  }
+
   while (current <= end) {
-    dates.push(current.toISOString().split('T')[0]);
+    const dateString = current.toISOString().split('T')[0];
+    if (dateString) {
+      dates.push(dateString);
+    }
     current.setDate(current.getDate() + 1);
   }
 

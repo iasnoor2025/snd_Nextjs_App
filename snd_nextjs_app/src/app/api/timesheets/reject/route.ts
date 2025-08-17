@@ -1,28 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { timesheets, employees, users } from '@/lib/drizzle/schema';
-import { withPermission } from '@/lib/rbac/api-middleware';
-import { checkUserPermission } from '@/lib/rbac/permission-service';
 import { eq } from 'drizzle-orm';
-
-// Helper function to get the appropriate permission for rejection stage
-function getRejectionPermission(rejectionStage: string): string {
-  switch (rejectionStage) {
-    case 'foreman':
-      return 'reject.timesheet.foreman';
-    case 'incharge':
-      return 'reject.timesheet.incharge';
-    case 'checking':
-      return 'reject.timesheet.checking';
-    case 'manager':
-      return 'reject.timesheet.manager';
-    default:
-      return 'reject.timesheet';
-  }
-}
+import { withAuth } from '@/lib/rbac/api-middleware';
 
 // POST /api/timesheets/reject - Reject timesheet at specific stage
-export const POST = withPermission(
+export const POST = withAuth(
   async (request: NextRequest) => {
     try {
       const { timesheetId, rejectionReason, rejectionStage } = await request.json();
@@ -112,9 +95,5 @@ export const POST = withPermission(
         { status: 500 }
       );
     }
-  },
-  {
-    action: 'reject',
-    subject: 'Timesheet'
   }
 );

@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useSession, signOut } from "next-auth/react"
-import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
@@ -18,13 +17,11 @@ import { User, LogOut, Settings } from "lucide-react"
 import { LanguageSwitcher } from "./language-switcher"
 import { ThemeToggle } from "./theme-toggle"
 import { I18nErrorBoundary } from "./i18n-error-boundary"
-import { I18nWrapper } from "./i18n-wrapper"
 import { useI18n } from "@/hooks/use-i18n"
 import { NotificationBell } from "./notification-bell"
 
 export function SiteHeader() {
   const { data: session, status } = useSession();
-  const router = useRouter();
   const { isRTL } = useI18n();
   
   // Check if user is an employee

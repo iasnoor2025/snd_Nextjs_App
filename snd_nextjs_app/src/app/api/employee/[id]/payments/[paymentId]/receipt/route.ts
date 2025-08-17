@@ -27,7 +27,7 @@ const getEmployeePaymentReceiptHandler = async (
     const user = session?.user;
     
     // For employee users, ensure they can only access their own payment data
-    if (user?.role === 'EMPLOYEE') {
+    if (user?.role === 'EMPLOYEE' && user.national_id) {
       // Find employee record that matches user's national_id
       const ownEmployee = await db
         .select({ id: employees.id })

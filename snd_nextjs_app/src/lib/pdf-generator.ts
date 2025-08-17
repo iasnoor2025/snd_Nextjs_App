@@ -1,5 +1,3 @@
-import { LogoLoader } from './logo-loader';
-
 // Dynamic import for jsPDF to avoid server-side issues
 let jsPDF: any = null;
 
@@ -290,7 +288,7 @@ export class PDFGenerator {
     let xPos = margin + 5;
     tableHeaders.forEach((header, index) => {
       doc.text(header, xPos, yPosition + 10);
-      xPos += colWidths[index];
+      xPos += colWidths[index] || 0;
     });
     
     yPosition += 20;
@@ -300,7 +298,7 @@ export class PDFGenerator {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(0, 0, 0);
     
-    quotationData.rentalItems.forEach((item, index) => {
+    quotationData.rentalItems.forEach((item) => {
       if (yPosition > pageHeight - 100) {
         doc.addPage();
         yPosition = margin;
@@ -315,13 +313,13 @@ export class PDFGenerator {
       // Row content
       xPos = margin + 5;
       doc.text(item.equipmentName, xPos, yPosition + 10);
-      xPos += colWidths[0];
+      xPos += colWidths[0] || 0;
       
       doc.text((item.quantity || 1).toString(), xPos, yPosition + 10);
-      xPos += colWidths[1];
+      xPos += colWidths[1] || 0;
       
       doc.text(`SAR ${item.unitPrice}`, xPos, yPosition + 10);
-      xPos += colWidths[2];
+      xPos += colWidths[2] || 0;
       
       doc.text(`SAR ${item.totalPrice}`, xPos, yPosition + 10);
       
@@ -521,7 +519,7 @@ export class PDFGenerator {
     let xPos = margin + 5;
     tableHeaders.forEach((header, index) => {
       doc.text(header, xPos, yPosition + 10);
-      xPos += colWidths[index];
+      xPos += colWidths[index] || 0;
     });
     
     yPosition += 20;
@@ -531,7 +529,7 @@ export class PDFGenerator {
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(0, 0, 0);
     
-    invoiceData.rentalItems.forEach((item, index) => {
+    invoiceData.rentalItems.forEach((item) => {
       if (yPosition > pageHeight - 100) {
         doc.addPage();
         yPosition = margin;
@@ -546,13 +544,13 @@ export class PDFGenerator {
       // Row content
       xPos = margin + 5;
       doc.text(item.equipmentName, xPos, yPosition + 10);
-      xPos += colWidths[0];
+      xPos += colWidths[0] || 0;
       
       doc.text((item.quantity || 1).toString(), xPos, yPosition + 10);
-      xPos += colWidths[1];
+      xPos += colWidths[1] || 0;
       
       doc.text(`SAR ${item.unitPrice}`, xPos, yPosition + 10);
-      xPos += colWidths[2];
+      xPos += colWidths[2] || 0;
       
       doc.text(`SAR ${item.totalPrice}`, xPos, yPosition + 10);
       

@@ -162,16 +162,16 @@ export function DashboardModals({
                 ? `Add Istimara expiry date for ${selectedEquipment?.equipmentName}`
                 : `Update the Istimara expiry date for ${selectedEquipment?.equipmentName}`
               }
-              {selectedEquipment?.istimara ? (
-                <div className="mt-2 text-sm text-muted-foreground">
-                  ℹ️ Istimara number already exists and cannot be modified
-                </div>
-              ) : (
-                <div className="mt-2 text-sm text-muted-foreground">
-                  ℹ️ You can add an Istimara number if available
-                </div>
-              )}
             </DialogDescription>
+            {selectedEquipment?.istimara ? (
+              <div className="mt-2 text-sm text-muted-foreground">
+                ℹ️ Istimara number already exists and cannot be modified
+              </div>
+            ) : (
+              <div className="mt-2 text-sm text-muted-foreground">
+                ℹ️ You can add an Istimara number if available
+              </div>
+            )}
           </DialogHeader>
           {/* Equipment Summary */}
           <div className="p-3 rounded-lg bg-muted/50 border">

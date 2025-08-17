@@ -18,8 +18,8 @@ export interface ApiResponse<T = any> {
 export interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: any;
-  headers?: Record<string, string>;
-  params?: Record<string, any>;
+  headers?: Record<string, string> | undefined;
+  params?: Record<string, any> | undefined;
   showToast?: boolean;
   toastMessage?: string;
   errorMessage?: string;

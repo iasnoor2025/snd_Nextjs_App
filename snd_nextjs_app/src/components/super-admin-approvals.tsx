@@ -44,7 +44,7 @@ interface SuperAdminApprovalsProps {
 }
 
 export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
-  const { user, hasPermission } = useRBAC();
+  const { user } = useRBAC();
   const [approvalItems, setApprovalItems] = useState<ApprovalItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<ApprovalItem | null>(null);
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);

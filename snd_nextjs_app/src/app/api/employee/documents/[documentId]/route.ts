@@ -69,8 +69,8 @@ export async function DELETE(
     }
     
     // Delete the physical file if it exists
-    if (documentData.employeeDocument?.filePath) {
-      const filePath = path.join(process.cwd(), 'public', documentData.employeeDocument.filePath)
+    if (documentData.employee_documents?.filePath) {
+      const filePath = path.join(process.cwd(), 'public', documentData.employee_documents.filePath)
       try {
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath)

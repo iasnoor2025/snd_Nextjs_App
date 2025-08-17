@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { db, safePrismaOperation } from '@/lib/db';
-import { timesheets, employees, users, projects as projectsTable, rentals, employeeAssignments } from '@/lib/drizzle/schema';
-import { and, desc, eq, ilike, gte, lte, or, sql } from 'drizzle-orm';
+import { db } from '@/lib/drizzle';
+import { timesheets as timesheetsTable, employees } from '@/lib/drizzle/schema';
+import { eq, and, desc, sql, or, ilike } from 'drizzle-orm';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
 
@@ -14,7 +13,6 @@ const getTimesheetsHandler = async (request: NextRequest) => {
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
-    const project = searchParams.get('project') || '';
     const month = searchParams.get('month') || '';
     const employeeId = searchParams.get('employeeId') || '';
     const test = searchParams.get('test') || '';
@@ -24,23 +22,23 @@ const getTimesheetsHandler = async (request: NextRequest) => {
       
       const rows = await db
         .select({
-          id: timesheets.id,
-          employee_id: timesheets.employeeId,
-          date: timesheets.date,
-          hours_worked: timesheets.hoursWorked,
-          overtime_hours: timesheets.overtimeHours,
-          start_time: timesheets.startTime,
-          end_time: timesheets.endTime,
-          status: timesheets.status,
-          project_id: timesheets.projectId,
-          rental_id: timesheets.rentalId,
-          assignment_id: timesheets.assignmentId,
-          description: timesheets.description,
-          tasks: timesheets.tasks,
-          submitted_at: timesheets.submittedAt,
-          approved_at: timesheets.approvedAt,
-          created_at: timesheets.createdAt,
-          updated_at: timesheets.updatedAt,
+          id: timesheetsTable.id,
+          employee_id: timesheetsTable.employeeId,
+          date: timesheetsTable.date,
+          hours_worked: timesheetsTable.hoursWorked,
+          overtime_hours: timesheetsTable.overtimeHours,
+          start_time: timesheetsTable.startTime,
+          end_time: timesheetsTable.endTime,
+          status: timesheetsTable.status,
+          project_id: timesheetsTable.projectId,
+          rental_id: timesheetsTable.rentalId,
+          assignment_id: timesheetsTable.assignmentId,
+          description: timesheetsTable.description,
+          tasks: timesheetsTable.tasks,
+          submitted_at: timesheetsTable.submittedAt,
+          approved_at: timesheetsTable.approvedAt,
+          created_at: timesheetsTable.createdAt,
+          updated_at: timesheetsTable.updatedAt,
           employee: {
             id: employees.id,
             first_name: employees.firstName,
@@ -48,9 +46,9 @@ const getTimesheetsHandler = async (request: NextRequest) => {
             file_number: employees.fileNumber,
           },
         })
-        .from(timesheets)
-        .leftJoin(employees, eq(timesheets.employeeId, employees.id))
-        .orderBy(desc(timesheets.date))
+        .from(timesheetsTable)
+        .leftJoin(employees, eq(timesheetsTable.employeeId, employees.id))
+        .orderBy(desc(timesheetsTable.date))
         .limit(10);
 
       // Transform the response to match frontend interface
@@ -114,7 +112,7 @@ const getTimesheetsHandler = async (request: NextRequest) => {
     }
 
     if (status && status !== 'all') {
-      filters.push(eq(timesheets.status, status));
+      filters.push(eq(timesheetsTable.status, status));
     }
 
     if (month) {
@@ -136,7 +134,7 @@ const getTimesheetsHandler = async (request: NextRequest) => {
     }
 
     if (employeeId) {
-      filters.push(eq(timesheets.employeeId, parseInt(employeeId)));
+      filters.push(eq(timesheetsTable.employeeId, parseInt(employeeId)));
     }
 
     const conditions = filters.length ? and(...filters) : undefined;
@@ -148,39 +146,39 @@ const getTimesheetsHandler = async (request: NextRequest) => {
 
     const listRows = await db
       .select({
-        id: timesheets.id,
-        employee_id: timesheets.employeeId,
-        date: timesheets.date,
-        hours_worked: timesheets.hoursWorked,
-        overtime_hours: timesheets.overtimeHours,
-        start_time: timesheets.startTime,
-        end_time: timesheets.endTime,
-        status: timesheets.status,
-        project_id: timesheets.projectId,
-        rental_id: timesheets.rentalId,
-        assignment_id: timesheets.assignmentId,
-        description: timesheets.description,
-        tasks: timesheets.tasks,
-        submitted_at: timesheets.submittedAt,
-        approved_at: timesheets.approvedAt,
-        created_at: timesheets.createdAt,
-        updated_at: timesheets.updatedAt,
+        id: timesheetsTable.id,
+        employee_id: timesheetsTable.employeeId,
+        date: timesheetsTable.date,
+        hours_worked: timesheetsTable.hoursWorked,
+        overtime_hours: timesheetsTable.overtimeHours,
+        start_time: timesheetsTable.startTime,
+        end_time: timesheetsTable.endTime,
+        status: timesheetsTable.status,
+        project_id: timesheetsTable.projectId,
+        rental_id: timesheetsTable.rentalId,
+        assignment_id: timesheetsTable.assignmentId,
+        description: timesheetsTable.description,
+        tasks: timesheetsTable.tasks,
+        submitted_at: timesheetsTable.submittedAt,
+        approved_at: timesheetsTable.approvedAt,
+        created_at: timesheetsTable.createdAt,
+        updated_at: timesheetsTable.updatedAt,
         emp_id: employees.id,
         emp_first: employees.firstName,
         emp_last: employees.lastName,
         emp_file_number: employees.fileNumber,
       })
-      .from(timesheets)
-      .leftJoin(employees, eq(timesheets.employeeId, employees.id))
+      .from(timesheetsTable)
+      .leftJoin(employees, eq(timesheetsTable.employeeId, employees.id))
       .where(conditions)
-      .orderBy(desc(timesheets.date))
+      .orderBy(desc(timesheetsTable.date))
       .offset(skip)
       .limit(limit);
 
     const totalRow = await db
       .select({ count: sql<number>`count(*)` })
-      .from(timesheets)
-      .leftJoin(employees, eq(timesheets.employeeId, employees.id))
+      .from(timesheetsTable)
+      .leftJoin(employees, eq(timesheetsTable.employeeId, employees.id))
       .where(conditions);
 
     const total = Number(totalRow[0]?.count ?? 0);
@@ -274,7 +272,7 @@ export const POST = withAuth(
       const notes = body.notes;
 
       const inserted = await db
-        .insert(timesheets)
+        .insert(timesheetsTable)
         .values({
           employeeId: parseInt(employeeId),
           date: new Date(date).toISOString(),
@@ -327,7 +325,7 @@ export const PUT = withAuth(
       } = body;
 
       const updated = await db
-        .update(timesheets)
+        .update(timesheetsTable)
         .set({
           employeeId,
           date: new Date(date).toISOString(),
@@ -344,7 +342,7 @@ export const PUT = withAuth(
           notes,
           updatedAt: new Date().toISOString(),
         })
-        .where(eq(timesheets.id, id))
+        .where(eq(timesheetsTable.id, id))
         .returning();
 
       return NextResponse.json(updated[0]);
@@ -365,7 +363,7 @@ export const DELETE = withAuth(
       const body = await request.json();
       const { id } = body;
 
-      await db.delete(timesheets).where(eq(timesheets.id, id));
+      await db.delete(timesheetsTable).where(eq(timesheetsTable.id, id));
 
       return NextResponse.json({ message: 'Timesheet deleted successfully' });
     } catch (error) {

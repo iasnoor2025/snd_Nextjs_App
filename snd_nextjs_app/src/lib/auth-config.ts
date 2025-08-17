@@ -91,7 +91,7 @@ export const authConfig: NextAuthOptions = {
             id: user.id.toString(),
             email: user.email,
             name: user.name,
-            national_id: user.national_id || undefined,
+            national_id: user.national_id || '',
             role: role,
             isActive: user.isActive || true,
           };
@@ -139,7 +139,7 @@ export const authConfig: NextAuthOptions = {
       }
       return baseUrl;
     },
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       // Handle Google OAuth sign in
       if (account?.provider === 'google') {
         try {
@@ -170,10 +170,10 @@ export const authConfig: NextAuthOptions = {
     async jwt({ token, user, account }) {
       if (user) {
         // Set token data from user
-        token.role = user.role;
-        token.isActive = user.isActive;
+        token.role = user.role || 'USER';
+        token.isActive = user.isActive || true;
         token.id = user.id;
-        token.national_id = user.national_id;
+        token.national_id = user.national_id || '';
         // console.log('🔍 JWT - Setting token role:', user.role);
       }
       
@@ -253,14 +253,14 @@ export const authConfig: NextAuthOptions = {
         
         session.user.isActive = token.isActive || true;
         session.user.id = String(token.id || token.sub || 'unknown');
-        session.user.national_id = token.national_id;
+        session.user.national_id = token.national_id || '';
         
         // console.log('🔍 SESSION - Final session role:', session.user.role);
       }
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-key-for-development',
 };
 
 // Alias for backward compatibility

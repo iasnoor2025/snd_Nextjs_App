@@ -103,14 +103,6 @@ export function useNationIdCheck() {
         firstLoginCache.set(cacheKey, true)
       } else {
         const responseText = await response.text()
-        let errorData = { error: 'Unknown error' }
-        if (responseText) {
-          try {
-            errorData = JSON.parse(responseText)
-          } catch (parseError) {
-            // Ignore parse errors
-          }
-        }
         // Don't show modal on error, just log it
         setHasChecked(true)
         firstLoginCache.set(cacheKey, true)

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSession } from 'next-auth/react';
 
 interface I18nWrapperProps {
   children: React.ReactNode;
@@ -9,18 +10,33 @@ interface I18nWrapperProps {
 
 export function I18nWrapper({ children }: I18nWrapperProps) {
   const { i18n } = useTranslation();
+  const { data: session, status } = useSession();
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Simple check for i18n availability
-    if (i18n) {
-      setIsReady(true);
-    } else {
-      // Wait a bit for i18n to be available
-      const timer = setTimeout(() => setIsReady(true), 100);
-      return () => clearTimeout(timer);
+    if (status === 'authenticated' && session?.user?.id) {
+      const loadUserLanguage = async () => {
+        try {
+          const response = await fetch('/api/user/language');
+          if (response.ok) {
+            const data = await response.json();
+            if (data.language) {
+              i18n.changeLanguage(data.language);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load user language preference:', error);
+        }
+      };
+
+      loadUserLanguage();
     }
-  }, [i18n]);
+
+    // Set ready state when translations are loaded
+    if (i18n.isInitialized) {
+      setIsReady(true);
+    }
+  }, [status, session?.user?.id, i18n]);
 
   if (!isReady) {
     return (

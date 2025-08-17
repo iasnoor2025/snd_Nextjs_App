@@ -1,92 +1,76 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authConfig } from '@/lib/auth-config'
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/drizzle';
+import { timesheets } from '@/lib/drizzle/schema';
+import { eq, and, gte, lte, asc } from 'drizzle-orm';
+import { withAuth } from '@/lib/rbac/api-middleware';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ employeeId: string }> }
-) {
+export const GET = withAuth(async (request: NextRequest, { params }: { params: Promise<{ employeeId: string }> }) => {
   try {
-    // Get the current user session
-    const session = await getServerSession(authConfig)
-    
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      )
-    }
-
-    // Check if user has EMPLOYEE role
-    if (session.user.role !== 'EMPLOYEE') {
-      return NextResponse.json(
-        { error: 'Access denied. Employee role required.' },
-        { status: 403 }
-      )
-    }
-
-    const { employeeId } = await params
-    const { searchParams } = new URL(request.url)
-    const month = searchParams.get('month')
+    const { employeeId } = await params;
+    const { searchParams } = new URL(request.url);
+    const month = searchParams.get('month');
 
     if (!month) {
       return NextResponse.json(
         { error: 'Month parameter is required' },
         { status: 400 }
-      )
+      );
     }
 
     // Parse month parameter (format: YYYY-MM)
-    const [year, monthNum] = month.split('-').map(Number)
+    const [year, monthNum] = month.split('-').map(Number);
     if (!year || !monthNum || monthNum < 1 || monthNum > 12) {
       return NextResponse.json(
         { error: 'Invalid month format. Use YYYY-MM' },
         { status: 400 }
-      )
+      );
     }
 
     // Calculate date range for the month
-    const startDate = new Date(year, monthNum - 1, 1)
-    const endDate = new Date(year, monthNum, 0)
+    const startDate = new Date(year, monthNum - 1, 1);
+    const endDate = new Date(year, monthNum, 0);
 
-    // Fetch timesheets for the employee in the specified month
-    const timesheets = await prisma.timesheet.findMany({
-      where: {
-        employee_id: parseInt(employeeId),
-        date: {
-          gte: startDate,
-          lte: endDate
-        }
-      },
-      orderBy: {
-        date: 'asc'
-      },
-      select: {
-        id: true,
-        date: true,
-        hours_worked: true,
-        overtime_hours: true,
-        status: true,
-        start_time: true,
-        end_time: true,
-        description: true
-      }
-    })
+    // Fetch timesheets for the employee in the specified month using Drizzle
+    const timesheetsData = await db
+      .select({
+        id: timesheets.id,
+        date: timesheets.date,
+        hoursWorked: timesheets.hoursWorked,
+        overtimeHours: timesheets.overtimeHours,
+        status: timesheets.status,
+        startTime: timesheets.startTime,
+        endTime: timesheets.endTime,
+        description: timesheets.description,
+      })
+      .from(timesheets)
+      .where(
+        and(
+          eq(timesheets.employeeId, parseInt(employeeId)),
+          gte(timesheets.date, startDate.toISOString().split('T')[0] || ''),
+          lte(timesheets.date, endDate.toISOString().split('T')[0] || '')
+        )
+      )
+      .orderBy(asc(timesheets.date));
 
-    // Calculate summary statistics
-    const totalRegularHours = timesheets.reduce((sum, t) => sum + Number(t.hours_worked), 0)
-    const totalOvertimeHours = timesheets.reduce((sum, t) => sum + Number(t.overtime_hours), 0)
-    const approvedCount = timesheets.filter(t => t.status === 'approved').length
-    const pendingCount = timesheets.filter(t => t.status === 'pending').length
-    const rejectedCount = timesheets.filter(t => t.status === 'rejected').length
+    // Calculate summary - properly handle Decimal types
+    const totalRegularHours = timesheetsData.reduce((sum: number, t: any) => {
+      const hours = typeof t.hoursWorked === 'string' ? parseFloat(t.hoursWorked) : Number(t.hoursWorked) || 0;
+      return sum + hours;
+    }, 0);
+    const totalOvertimeHours = timesheetsData.reduce((sum: number, t: any) => {
+      const hours = typeof t.overtimeHours === 'string' ? parseFloat(t.overtimeHours) : Number(t.overtimeHours) || 0;
+      return sum + hours;
+    }, 0);
+    const approvedCount = timesheetsData.filter((t: any) => t.status === 'approved').length;
+    const pendingCount = timesheetsData.filter((t: any) => t.status === 'pending').length;
+    const rejectedCount = timesheetsData.filter((t: any) => t.status === 'rejected').length;
 
     return NextResponse.json({
-      timesheets: timesheets.map(t => ({
+      timesheets: timesheetsData.map(t => ({
         ...t,
-        date: t.date.toISOString().split('T')[0], // Format as YYYY-MM-DD
-        hours_worked: Number(t.hours_worked).toString(),
-        overtime_hours: Number(t.overtime_hours).toString()
+        date: t.date ? String(t.date).split('T')[0] : '', // Format as YYYY-MM-DD
+        hours_worked: Number(t.hoursWorked).toString(),
+        overtime_hours: Number(t.overtimeHours).toString()
       })),
       summary: {
         totalRegularHours,
@@ -95,7 +79,7 @@ export async function GET(
         approvedCount,
         pendingCount,
         rejectedCount,
-        totalEntries: timesheets.length
+        totalEntries: timesheetsData.length
       },
       month: {
         year,
@@ -103,13 +87,13 @@ export async function GET(
         startDate: startDate.toISOString().split('T')[0],
         endDate: endDate.toISOString().split('T')[0]
       }
-    })
+    });
 
   } catch (error) {
-    console.error('Error fetching employee timesheets:', error)
+    console.error('Error fetching employee timesheets:', error);
     return NextResponse.json(
       { error: 'Failed to fetch timesheet data' },
       { status: 500 }
-    )
+    );
   }
-}
+});

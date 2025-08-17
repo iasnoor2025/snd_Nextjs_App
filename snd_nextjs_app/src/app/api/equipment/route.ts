@@ -103,7 +103,12 @@ export const GET = withReadPermission(
         if (employeeIds.length > 0) {
           try {
             const employeeNames = await db
-              .select({ id: employees.id, name: employees.name, file_number: employees.fileNumber })
+              .select({
+                id: employees.id,
+                firstName: employees.firstName,
+                lastName: employees.lastName,
+                fileNumber: employees.fileNumber,
+              })
               .from(employees)
               .where(inArray(employees.id, employeeIds));
             

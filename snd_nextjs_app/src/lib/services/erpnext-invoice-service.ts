@@ -141,10 +141,8 @@ export class ERPNextInvoiceService {
       const incomeAccount = await this.findSuitableIncomeAccount();
       console.log('✅ Income account selected:', incomeAccount);
 
-      // Get existing tax template data to include in invoice
-      console.log('🏦 Getting existing tax template data...');
-      const taxTemplateData = await this.getTaxTemplateData('ضريبة القيمة المضافة 15 % - SND');
-      console.log('✅ Tax template data fetched');
+      // Get tax template data
+      // const taxTemplateData = await this.getTaxTemplateData('ضريبة القيمة المضافة 15 % - SND');
 
       // Create proper tax table structure for KSA compliance based on existing template
       const ksaTaxTable = [{
@@ -165,8 +163,8 @@ export class ERPNextInvoiceService {
         doctype: 'Sales Invoice',
         customer: rental.customer?.name || rental.customerName || `CUST-${rental.customerId}`,
         customer_name: rental.customer?.name || rental.customerName,
-        posting_date: new Date().toISOString().split('T')[0],
-        due_date: new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        posting_date: new Date().toISOString().split('T')[0] || new Date().toISOString().slice(0, 10),
+        due_date: new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0] || new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
         items: [],
         currency: 'SAR',
         company: 'Samhan Naser Al-Dosri Est',

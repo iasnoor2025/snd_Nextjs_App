@@ -40,7 +40,7 @@ export async function GET(_request: NextRequest) {
     console.log(`GET /api/employee/advances - Fetching advances for employee ${employeeId}`)
 
     // Check if user has permission to view this employee's advances
-    if (session.user.role === 'EMPLOYEE') {
+    if (session.user.role === 'EMPLOYEE' && session.user.national_id) {
       // For employees, they can only view their own advances
       const employeeRows = await db
         .select({ id: employeesTable.id })

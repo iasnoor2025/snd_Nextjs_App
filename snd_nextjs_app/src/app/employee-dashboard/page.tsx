@@ -8,7 +8,18 @@ import { toast } from "sonner"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Clock, User, FileText, Building, MapPin, TrendingUp, CalendarDays, DollarSign, Award, BookOpen, Upload, Trash2 } from "lucide-react"
+import {
+  Calendar,
+  Clock,
+  DollarSign,
+  FileText,
+  User,
+  Building,
+  CalendarDays,
+  Award,
+  Upload,
+  Trash2
+} from "lucide-react"
 import TimesheetCalendar from "@/components/timesheet/TimesheetCalendar"
 import ActionDialogs from "@/components/employee/ActionDialogs"
 

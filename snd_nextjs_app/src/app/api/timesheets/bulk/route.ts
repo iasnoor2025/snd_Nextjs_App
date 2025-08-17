@@ -14,45 +14,25 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    const created: any[] = [];
-    const errors: Array<{ date: any; error: string }> = [];
+    let successCount = 0;
+    let errorCount = 0;
 
-    for (const timesheetData of timesheets) {
+    // Process each timesheet
+    for (const timesheet of timesheets) {
       try {
-        const inserted = await db
-          .insert(timesheetsTable)
-          .values({
-            employeeId: timesheetData.employeeId,
-            date: new Date(timesheetData.date).toISOString(),
-            hoursWorked: String(parseFloat(timesheetData.hoursWorked || '0')),
-            overtimeHours: String(parseFloat(timesheetData.overtimeHours || '0')),
-            startTime: timesheetData.startTime ? new Date(timesheetData.startTime).toISOString() : new Date().toISOString(),
-            endTime: timesheetData.endTime ? new Date(timesheetData.endTime).toISOString() : null,
-            status: 'draft',
-            projectId: timesheetData.projectId || null,
-            rentalId: timesheetData.rentalId || null,
-            assignmentId: timesheetData.assignmentId || null,
-            description: timesheetData.description,
-            tasks: timesheetData.tasksCompleted,
-            updatedAt: new Date().toISOString(),
-          })
-          .returning();
-
-        created.push(inserted[0]);
+        await db.insert(timesheetsTable).values(timesheet);
+        successCount++;
       } catch (error) {
-        console.error('Error creating timesheet:', error);
-        errors.push({
-          date: timesheetData.date,
-          error: 'Failed to create timesheet',
-        });
+        console.error('Error inserting timesheet:', error);
+        errorCount++;
       }
     }
 
     return NextResponse.json({
       success: true,
-      created: created.length,
-      errors,
-      message: `Successfully created ${created.length} timesheets`,
+      created: successCount,
+      errors: errorCount > 0 ? [{ message: `Failed to create ${errorCount} timesheets` }] : [],
+      message: `Successfully created ${successCount} timesheets`,
     });
   } catch (error) {
     console.error('Error creating bulk timesheets:', error);
@@ -97,7 +77,7 @@ export async function DELETE(_request: NextRequest) {
     }
 
     // Delete all timesheets
-    const result = await db.delete(timesheetsTable).where(inArray(timesheetsTable.id, timesheetIds as any));
+    await db.delete(timesheetsTable).where(inArray(timesheetsTable.id, timesheetIds as any));
 
     return NextResponse.json({
       success: true,

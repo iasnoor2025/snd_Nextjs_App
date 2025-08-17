@@ -64,7 +64,6 @@ interface ResourceManagementProps {
 export default function ResourceManagement({
   projectId,
   showAddButton = true,
-  maxDisplay
 }: ResourceManagementProps) {
   const [resources, setResources] = useState<ProjectResource[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
@@ -123,31 +122,18 @@ export default function ResourceManagement({
     }
   };
 
-  const getResourceTypeIcon = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'equipment':
-        return <Building2 className="h-4 w-4" />;
+  const getResourceTypeColor = (type: string) => {
+    switch (type) {
       case 'manpower':
-        return <Users className="h-4 w-4" />;
-      case 'material':
-        return <FileText className="h-4 w-4" />;
-      case 'fuel':
-        return <Clock className="h-4 w-4" />;
-      case 'expense':
-        return <DollarSign className="h-4 w-4" />;
-      default:
-        return <DollarSign className="h-4 w-4" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'approved':
+        return 'bg-blue-100 text-blue-800';
+      case 'equipment':
         return 'bg-green-100 text-green-800';
-      case 'pending':
+      case 'material':
         return 'bg-yellow-100 text-yellow-800';
-      case 'rejected':
+      case 'fuel':
         return 'bg-red-100 text-red-800';
+      case 'expense':
+        return 'bg-purple-100 text-purple-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -435,8 +421,6 @@ export default function ResourceManagement({
     return resources.filter(resource => resource.type === type);
   };
 
-  const displayResources = maxDisplay ? resources.slice(0, maxDisplay) : resources;
-
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -572,7 +556,7 @@ export default function ResourceManagement({
                       <div className="flex items-center space-x-2 mb-2">
                         <h4 className="font-medium">{resource.name}</h4>
                         {resource.status && (
-                          <Badge className={getStatusColor(resource.status)}>
+                          <Badge className={getResourceTypeColor(resource.type)}>
                             {resource.status}
                           </Badge>
                         )}
@@ -626,7 +610,7 @@ export default function ResourceManagement({
                       <div className="flex items-center space-x-2 mb-2">
                         <h4 className="font-medium">{resource.name}</h4>
                         {resource.status && (
-                          <Badge className={getStatusColor(resource.status)}>
+                          <Badge className={getResourceTypeColor(resource.type)}>
                             {resource.status}
                           </Badge>
                         )}
@@ -680,7 +664,7 @@ export default function ResourceManagement({
                       <div className="flex items-center space-x-2 mb-2">
                         <h4 className="font-medium">{resource.name}</h4>
                         {resource.status && (
-                          <Badge className={getStatusColor(resource.status)}>
+                          <Badge className={getResourceTypeColor(resource.type)}>
                             {resource.status}
                           </Badge>
                         )}
@@ -734,7 +718,7 @@ export default function ResourceManagement({
                       <div className="flex items-center space-x-2 mb-2">
                         <h4 className="font-medium">{resource.name}</h4>
                         {resource.status && (
-                          <Badge className={getStatusColor(resource.status)}>
+                          <Badge className={getResourceTypeColor(resource.type)}>
                             {resource.status}
                           </Badge>
                         )}
@@ -787,7 +771,7 @@ export default function ResourceManagement({
                       <div className="flex items-center space-x-2 mb-2">
                         <h4 className="font-medium">{resource.name}</h4>
                         {resource.status && (
-                          <Badge className={getStatusColor(resource.status)}>
+                          <Badge className={getResourceTypeColor(resource.type)}>
                             {resource.status}
                           </Badge>
                         )}

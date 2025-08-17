@@ -1,5 +1,5 @@
 import { db } from '@/lib/drizzle';
-import { users, roles, permissions, modelHasRoles, roleHasPermissions, modelHasPermissions } from '@/lib/drizzle/schema';
+import { users, roles, permissions, roleHasPermissions, modelHasPermissions, modelHasRoles } from '@/lib/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 
 export interface PermissionGrant {
@@ -20,7 +20,6 @@ export interface RoleGrant {
 export class EnhancedPermissionService {
   private static instance: EnhancedPermissionService;
   private permissionCache: Map<string, any> = new Map();
-  private cacheExpiry = 5 * 60 * 1000; // 5 minutes
 
   private constructor() {}
 
@@ -35,22 +34,70 @@ export class EnhancedPermissionService {
    * Check if user can perform action on resource
    * Similar to AccessControl's can() method
    */
-  async can(userId: string, action: string, resource: string, attributes?: string[]): Promise<boolean> {
-    const cacheKey = `${userId}:${action}:${resource}`;
-    const cached = this.permissionCache.get(cacheKey);
-    
-    if (cached && Date.now() - cached.timestamp < this.cacheExpiry) {
-      return cached.result;
+  async can(userId: number, action: string, resource: string): Promise<boolean> {
+    try {
+      // Get user with role and permissions
+      const userRows = await db
+        .select({
+          id: users.id,
+          isActive: users.isActive,
+          roleName: roles.name,
+          roleId: roles.id,
+        })
+        .from(users)
+        .leftJoin(modelHasRoles, eq(users.id, modelHasRoles.userId))
+        .leftJoin(roles, eq(modelHasRoles.roleId, roles.id))
+        .where(eq(users.id, userId))
+        .limit(1);
+
+      if (userRows.length === 0 || !userRows[0]) {
+        return false;
+      }
+
+      const user = userRows[0];
+      
+      if (!user.isActive) {
+        return false;
+      }
+
+      if (!user.roleName || !user.roleId) {
+        return false;
+      }
+
+      // Check if user has the specific permission by name
+      // Format: resource.action (e.g., "users.read", "posts.create")
+      const permissionName = `${resource}.${action}`;
+      
+      const permissionRows = await db
+        .select({
+          id: permissions.id,
+          name: permissions.name,
+        })
+        .from(permissions)
+        .leftJoin(roleHasPermissions, eq(permissions.id, roleHasPermissions.permissionId))
+        .where(
+          and(
+            eq(roleHasPermissions.roleId, user.roleId),
+            eq(permissions.name, permissionName)
+          )
+        )
+        .limit(1);
+
+      if (permissionRows.length === 0 || !permissionRows[0]) {
+        return false;
+      }
+
+      const permission = permissionRows[0];
+      
+      if (!permission || !permission.id) {
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error checking permission:', error);
+      return false;
     }
-
-    const result = await this.checkPermission(userId, action, resource, attributes);
-    
-    this.permissionCache.set(cacheKey, {
-      result,
-      timestamp: Date.now()
-    });
-
-    return result;
   }
 
   /**
@@ -59,7 +106,7 @@ export class EnhancedPermissionService {
    */
   async canAny(userId: string, grants: PermissionGrant[]): Promise<boolean> {
     for (const grant of grants) {
-      if (await this.can(userId, grant.action, grant.resource, grant.attributes)) {
+      if (await this.can(parseInt(userId), grant.action, grant.resource)) {
         return true;
       }
     }
@@ -72,7 +119,7 @@ export class EnhancedPermissionService {
    */
   async canAll(userId: string, grants: PermissionGrant[]): Promise<boolean> {
     for (const grant of grants) {
-      if (!(await this.can(userId, grant.action, grant.resource, grant.attributes))) {
+      if (!(await this.can(parseInt(userId), grant.action, grant.resource))) {
         return false;
       }
     }
@@ -83,11 +130,11 @@ export class EnhancedPermissionService {
    * Grant permission to role
    * Similar to AccessControl's grant() method
    */
-  async grant(roleName: string, resource: string, action: string, attributes?: string[]): Promise<void> {
+  async grant(roleName: string, resource: string, action: string): Promise<void> {
     const permissionName = `${action}.${resource}`;
     
     // Create permission if it doesn't exist
-    const [permission] = await db
+    const permissionResult = await db
       .insert(permissions)
       .values({
         name: permissionName,
@@ -101,6 +148,8 @@ export class EnhancedPermissionService {
         },
       })
       .returning();
+    
+    const permission = permissionResult[0];
 
     // Get role
     const roleResult = await db
@@ -118,13 +167,7 @@ export class EnhancedPermissionService {
     const role = roleResult[0];
 
     // Grant permission to role
-    await db
-      .insert(roleHasPermissions)
-      .values({
-        permissionId: permission.id,
-        roleId: role.id,
-      })
-      .onConflictDoNothing();
+    await this.grant(roleName, resource, action);
 
     // Clear cache
     this.clearCache();
@@ -200,6 +243,10 @@ export class EnhancedPermissionService {
     }
 
     const user = userResult[0];
+    if (!user) {
+      return [];
+    }
+    
     const userPermissionsSet = new Set<string>();
 
     // Add role permissions
@@ -251,6 +298,9 @@ export class EnhancedPermissionService {
     }
 
     const user = userResult[0];
+    if (!user) {
+      return [];
+    }
 
     // Get user's role
     const roleResult = await db
@@ -265,7 +315,11 @@ export class EnhancedPermissionService {
       return [];
     }
 
-    return [roleResult[0].name];
+    const role = roleResult[0];
+    if (!role) {
+      return [];
+    }
+    return [role.name];
   }
 
   /**
@@ -305,7 +359,7 @@ export class EnhancedPermissionService {
   /**
    * Private method to check specific permission
    */
-  private async checkPermission(userId: string, action: string, resource: string, attributes?: string[]): Promise<boolean> {
+  private async checkPermission(userId: string, action: string, resource: string): Promise<boolean> {
     try {
       const userIdInt = parseInt(userId);
       
@@ -395,5 +449,5 @@ export const enhancedPermissionService = EnhancedPermissionService.getInstance()
 
 // Export a public checkPermission function for easy use in API routes
 export async function checkPermission(userId: string, resource: string, action: string, attributes?: string[]): Promise<boolean> {
-  return enhancedPermissionService.can(userId, action, resource, attributes);
+  return enhancedPermissionService.can(parseInt(userId), action, resource);
 } 

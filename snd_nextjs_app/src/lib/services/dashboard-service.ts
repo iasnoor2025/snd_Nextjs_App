@@ -5,16 +5,14 @@ import {
   employeeAssignments, 
   rentals, 
   projects, 
-  companies,
   customers,
   equipment,
   employeeLeaves,
   employeeDocuments,
-  users,
   departments,
   designations
 } from '@/lib/drizzle/schema';
-import { eq, and, gte, lte, isNull, isNotNull, count, sql, desc } from 'drizzle-orm';
+import { eq, and, gte, lte, isNotNull, count, sql, desc } from 'drizzle-orm';
 
 export interface DashboardStats {
   totalEmployees: number;
@@ -151,10 +149,11 @@ export class DashboardService {
       // Get active projects
       let activeProjectsResult = { count: 0 };
       try {
-        [activeProjectsResult] = await db
+        const result = await db
           .select({ count: count() })
           .from(projects)
           .where(eq(projects.status, 'active'));
+        activeProjectsResult = result[0] || { count: 0 };
       } catch (error) {
         console.error('Error fetching active projects:', error);
       }
@@ -162,10 +161,11 @@ export class DashboardService {
       // Get active rentals
       let activeRentalsResult = { count: 0 };
       try {
-        [activeRentalsResult] = await db
+        const result = await db
           .select({ count: count() })
           .from(rentals)
           .where(eq(rentals.status, 'active'));
+        activeRentalsResult = result[0] || { count: 0 };
       } catch (error) {
         console.error('Error fetching active rentals:', error);
       }
@@ -173,15 +173,19 @@ export class DashboardService {
       // Get today's timesheets
       let todayTimesheetsResult = { count: 0 };
       try {
-        [todayTimesheetsResult] = await db
-          .select({ count: count() })
-          .from(timesheets)
-          .where(
-            and(
-              eq(timesheets.date, today.toISOString().split('T')[0]),
-              eq(timesheets.status, 'pending')
-            )
-          );
+        const todayStr = today.toISOString().split('T')[0];
+        if (todayStr) {
+          const result = await db
+            .select({ count: count() })
+            .from(timesheets)
+            .where(
+              and(
+                eq(timesheets.date, todayStr),
+                eq(timesheets.status, 'pending')
+              )
+            );
+          todayTimesheetsResult = result[0] || { count: 0 };
+        }
       } catch (error) {
         console.error('Error fetching today timesheets:', error);
       }
@@ -189,7 +193,7 @@ export class DashboardService {
       // Get expired documents count
       let expiredDocumentsResult = { count: 0 };
       try {
-        [expiredDocumentsResult] = await db
+        const result = await db
           .select({ count: count() })
           .from(employees)
           .where(
@@ -198,6 +202,7 @@ export class DashboardService {
               lte(employees.iqamaExpiry, today.toISOString())
             )
           );
+        expiredDocumentsResult = result[0] || { count: 0 };
       } catch (error) {
         console.error('Error fetching expired documents:', error);
       }
@@ -207,7 +212,7 @@ export class DashboardService {
       try {
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(today.getDate() + 30);
-        [expiringDocumentsResult] = await db
+        const result = await db
           .select({ count: count() })
           .from(employees)
           .where(
@@ -217,6 +222,7 @@ export class DashboardService {
               lte(employees.iqamaExpiry, thirtyDaysFromNow.toISOString())
             )
           );
+        expiringDocumentsResult = result[0] || { count: 0 };
       } catch (error) {
         console.error('Error fetching expiring documents:', error);
       }
@@ -224,10 +230,11 @@ export class DashboardService {
       // Get total customers
       let totalCustomersResult = { count: 0 };
       try {
-        [totalCustomersResult] = await db
+        const result = await db
           .select({ count: count() })
           .from(customers)
           .where(eq(customers.status, 'active'));
+        totalCustomersResult = result[0] || { count: 0 };
       } catch (error) {
         console.error('Error fetching total customers:', error);
       }
@@ -235,10 +242,11 @@ export class DashboardService {
       // Get available equipment
       let availableEquipmentResult = { count: 0 };
       try {
-        [availableEquipmentResult] = await db
+        const result = await db
           .select({ count: count() })
           .from(equipment)
           .where(eq(equipment.status, 'available'));
+        availableEquipmentResult = result[0] || { count: 0 };
       } catch (error) {
         console.error('Error fetching available equipment:', error);
       }
@@ -246,10 +254,11 @@ export class DashboardService {
       // Get pending approvals (timesheets pending approval)
       let pendingApprovalsResult = { count: 0 };
       try {
-        [pendingApprovalsResult] = await db
+        const result = await db
           .select({ count: count() })
           .from(timesheets)
           .where(eq(timesheets.status, 'pending'));
+        pendingApprovalsResult = result[0] || { count: 0 };
       } catch (error) {
         console.error('Error fetching pending approvals:', error);
       }
@@ -399,9 +408,12 @@ export class DashboardService {
         }
 
         return {
-          ...doc,
-          status,
-          daysRemaining,
+          id: doc.id,
+          equipmentName: doc.equipmentName || 'Unknown',
+          equipmentNumber: doc.equipmentNumber || 'N/A',
+          istimaraExpiry: doc.istimaraExpiry,
+          status: doc.status || 'unknown',
+          daysRemaining: daysRemaining,
         };
       });
 

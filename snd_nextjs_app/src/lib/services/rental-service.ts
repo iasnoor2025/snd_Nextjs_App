@@ -204,7 +204,10 @@ export class RentalService {
 
     const rental = result[0];
     
-    // Get customer data using relations
+    if (!rental) {
+      throw new Error('Rental not found');
+    }
+
     const customerData = await db
       .select({
         id: customers.id,
@@ -315,8 +318,8 @@ export class RentalService {
       );
     }
 
-    // If rental status is active, create automatic assignments
-    if (rentalData.status === 'active' || rentalData.status === 'approved') {
+    // Create automatic assignments if needed
+    if (rental.hasOperators) {
       await this.createAutomaticAssignments(rental.id);
     }
 

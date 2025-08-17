@@ -131,21 +131,6 @@ const config = {
     ],
     // JIT mode optimizations
     mode: 'jit',
-    purge: {
-        enabled: process.env.NODE_ENV === 'production',
-        content: [
-            './src/**/*.{js,ts,jsx,tsx}',
-        ],
-        options: {
-            safelist: [
-                'rtl',
-                'dark',
-                'sidebar-layout',
-                'sidebar-content',
-                'sidebar-inset',
-            ],
-        },
-    },
 } satisfies Config;
 
 export default config;

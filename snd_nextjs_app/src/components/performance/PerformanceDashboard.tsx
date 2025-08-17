@@ -1,19 +1,19 @@
 "use client";
 
-import { usePerformance } from '@/hooks/use-performance';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import { 
-  Activity, 
-  Clock, 
-  Zap, 
-  TrendingUp, 
-  AlertTriangle, 
-  CheckCircle,
-  Memory,
-  Gauge
+  Activity,
+  BarChart3,
+  Cpu,
+  HardDrive,
+  Network,
+  Server,
+  Thermometer
 } from 'lucide-react';
+import { usePerformance } from '@/hooks/use-performance';
 
 export function PerformanceDashboard() {
   const { metrics, performanceScore, meetsCoreWebVitals } = usePerformance();
@@ -81,7 +81,7 @@ export function PerformanceDashboard() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-2xl font-bold">{performanceScore.toFixed(0)}/100</span>
-              <Badge 
+              <Badge
                 variant={meetsCoreWebVitals ? 'default' : 'destructive'}
                 className={meetsCoreWebVitals ? 'bg-green-100 text-green-800' : ''}
               >
@@ -114,7 +114,7 @@ export function PerformanceDashboard() {
               </div>
               <div className="text-2xl font-bold">{formatTime(metrics.fcp)}</div>
               <Badge className={getStatusColor(getMetricStatus(metrics.fcp, 1800))}>
-                {getMetricStatus(metrics.fcp, 1800) === 'good' ? 'Good' : 
+                {getMetricStatus(metrics.fcp, 1800) === 'good' ? 'Good' :
                  getMetricStatus(metrics.fcp, 1800) === 'warning' ? 'Needs Improvement' : 'Poor'}
               </Badge>
             </div>
@@ -127,7 +127,7 @@ export function PerformanceDashboard() {
               </div>
               <div className="text-2xl font-bold">{formatTime(metrics.lcp)}</div>
               <Badge className={getStatusColor(getMetricStatus(metrics.lcp, 2500))}>
-                {getMetricStatus(metrics.lcp, 2500) === 'good' ? 'Good' : 
+                {getMetricStatus(metrics.lcp, 2500) === 'good' ? 'Good' :
                  getMetricStatus(metrics.lcp, 2500) === 'warning' ? 'Needs Improvement' : 'Poor'}
               </Badge>
             </div>
@@ -140,7 +140,7 @@ export function PerformanceDashboard() {
               </div>
               <div className="text-2xl font-bold">{formatTime(metrics.fid)}</div>
               <Badge className={getStatusColor(getMetricStatus(metrics.fid, 100))}>
-                {getMetricStatus(metrics.fid, 100) === 'good' ? 'Good' : 
+                {getMetricStatus(metrics.fid, 100) === 'good' ? 'Good' :
                  getMetricStatus(metrics.fid, 100) === 'warning' ? 'Needs Improvement' : 'Poor'}
               </Badge>
             </div>
@@ -153,7 +153,7 @@ export function PerformanceDashboard() {
               </div>
               <div className="text-2xl font-bold">{metrics.cls?.toFixed(3) || 'N/A'}</div>
               <Badge className={getStatusColor(getMetricStatus(metrics.cls, 0.1, 'higher'))}>
-                {getMetricStatus(metrics.cls, 0.1, 'higher') === 'good' ? 'Good' : 
+                {getMetricStatus(metrics.cls, 0.1, 'higher') === 'good' ? 'Good' :
                  getMetricStatus(metrics.cls, 0.1, 'higher') === 'warning' ? 'Needs Improvement' : 'Poor'}
               </Badge>
             </div>
@@ -193,10 +193,10 @@ export function PerformanceDashboard() {
                 <span className="text-sm font-medium">Memory Usage</span>
               </div>
               <div className="text-2xl font-bold">
-                {metrics.memory?.usage ? `${(metrics.memory.usage * 100).toFixed(1)}%` : 'N/A'}
+                {formatMemory(metrics.memory?.used || 0)} / {formatMemory(metrics.memory?.limit || 0)}
               </div>
               <div className="text-xs text-muted-foreground">
-                {formatMemory(metrics.memory?.used)} / {formatMemory(metrics.memory?.limit)}
+                {metrics.memory?.usage ? `${(metrics.memory.usage * 100).toFixed(1)}%` : 'N/A'}
               </div>
             </div>
           </div>

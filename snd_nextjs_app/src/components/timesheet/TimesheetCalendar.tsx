@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -23,7 +23,7 @@ interface CalendarDay {
   isCurrentMonth: boolean
   isToday: boolean
   isFuture: boolean
-  timesheet?: TimesheetData
+  timesheet?: TimesheetData | undefined
   totalHours: number
   overtimeHours: number
 }
@@ -62,31 +62,25 @@ export default function TimesheetCalendar({ employeeId, className = "" }: Timesh
     fetchTimesheetData()
   }, [currentMonth, employeeId])
 
-  // Generate calendar grid
-  const calendarGrid = useMemo(() => {
-    const [year, month] = currentMonth.split('-').map(Number)
+  const today = new Date()
+
+  const generateCalendar = useCallback((year: number, month: number) => {
     const firstDay = new Date(year, month - 1, 1)
     const lastDay = new Date(year, month, 0)
     const daysInMonth = lastDay.getDate()
-    const startDayOfWeek = firstDay.getDay()
-    
-    const today = new Date()
-    const isCurrentMonth = year === today.getFullYear() && month === today.getMonth() + 1
+    const startingDayOfWeek = firstDay.getDay()
 
     const calendar: CalendarDay[] = []
 
-    // Calculate Saturday-start week offset (Saturday = 6, Sunday = 0, Monday = 1, etc.)
-    // We need to adjust the start day to make Saturday the first day (index 0)
-    const saturdayStartOffset = (startDayOfWeek + 1) % 7
-
     // Add empty cells for days before the first day of the month
-    for (let i = 0; i < saturdayStartOffset; i++) {
+    for (let i = 0; i < startingDayOfWeek; i++) {
       calendar.push({
         date: '',
         day: 0,
         isCurrentMonth: false,
         isToday: false,
         isFuture: false,
+        timesheet: undefined,
         totalHours: 0,
         overtimeHours: 0
       })
@@ -98,8 +92,6 @@ export default function TimesheetCalendar({ employeeId, className = "" }: Timesh
       const date = new Date(year, month - 1, day)
       const isToday = date.toDateString() === today.toDateString()
       const isFuture = date > today
-
-      // Find timesheet for this day
       const timesheet = timesheets.find(t => t.date === dateStr)
       const totalHours = timesheet ? parseFloat(timesheet.hours_worked) : 0
       const overtimeHours = timesheet ? parseFloat(timesheet.overtime_hours) : 0
@@ -117,24 +109,33 @@ export default function TimesheetCalendar({ employeeId, className = "" }: Timesh
     }
 
     return calendar
-  }, [currentMonth, timesheets])
+  }, [timesheets, today])
+
+  const calendarGrid = useMemo(() => {
+    const [year, month] = currentMonth.split('-').map(Number)
+    if (!year || !month) return [];
+    
+    return generateCalendar(year, month)
+  }, [currentMonth, generateCalendar])
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     const [year, month] = currentMonth.split('-').map(Number)
+    if (!year || !month) return;
+    
     let newYear = year
     let newMonth = month
 
     if (direction === 'prev') {
       if (month === 1) {
-        newMonth = 12
         newYear = year - 1
+        newMonth = 12
       } else {
         newMonth = month - 1
       }
     } else {
       if (month === 12) {
-        newMonth = 1
         newYear = year + 1
+        newMonth = 1
       } else {
         newMonth = month + 1
       }
@@ -158,11 +159,13 @@ export default function TimesheetCalendar({ employeeId, className = "" }: Timesh
     }
   }
 
-  const formatMonthYear = (monthYear: string) => {
-    const [year, month] = monthYear.split('-').map(Number)
+  const getMonthDisplayName = () => {
+    const [year, month] = currentMonth.split('-').map(Number)
+    if (!year || !month) return '';
+    
     return new Date(year, month - 1).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long'
+      month: 'long',
+      year: 'numeric'
     })
   }
 
@@ -204,7 +207,7 @@ export default function TimesheetCalendar({ employeeId, className = "" }: Timesh
               <ChevronLeft className="h-4 w-4" />
             </Button>
             <span className="text-sm font-medium min-w-[120px] text-center">
-              {formatMonthYear(currentMonth)}
+              {getMonthDisplayName()}
             </span>
             <Button
               variant="outline"
@@ -216,7 +219,7 @@ export default function TimesheetCalendar({ employeeId, className = "" }: Timesh
           </div>
         </div>
         <CardDescription>
-          {t('timesheet_entries', { month: formatMonthYear(currentMonth) })}
+          {t('timesheet_entries', { month: getMonthDisplayName() })}
         </CardDescription>
       </CardHeader>
       <CardContent>

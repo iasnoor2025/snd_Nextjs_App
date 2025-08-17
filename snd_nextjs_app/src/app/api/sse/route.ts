@@ -76,7 +76,7 @@ export async function POST(_request: NextRequest) {
     }
 
     const body = await _request.json();
-    const { type, payload, targetUserId } = body;
+    const { type, payload } = body;
 
     // Validate request
     if (!type || !payload) {

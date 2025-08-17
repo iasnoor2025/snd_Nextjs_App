@@ -28,7 +28,7 @@ export const usePrint = (options: UsePrintOptions = {}) => {
       if (waitForImages && printRef.current) {
         const images = printRef.current.querySelectorAll('img');
         const imagePromises = Array.from(images).map((img) => {
-          return new Promise((resolve, reject) => {
+          return new Promise((resolve) => {
             if (img.complete) {
               resolve(img);
             } else {

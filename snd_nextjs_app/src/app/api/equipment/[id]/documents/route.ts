@@ -8,6 +8,7 @@ import { existsSync } from 'fs';
 
 // GET /api/equipment/[id]/documents
 export async function GET(
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

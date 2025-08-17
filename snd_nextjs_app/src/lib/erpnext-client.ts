@@ -1,4 +1,4 @@
-import { db } from './db';
+// ERPNext client - no database dependency needed
 
 export class ERPNextClient {
   private baseUrl: string;

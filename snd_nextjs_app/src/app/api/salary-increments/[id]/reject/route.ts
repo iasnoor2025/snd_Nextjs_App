@@ -55,7 +55,7 @@ export async function POST(
     const increment = existingIncrement[0];
 
     // Only allow rejection if status is pending
-    if (increment.status !== 'pending') {
+    if (increment!.status !== 'pending') {
       return NextResponse.json(
         { error: 'Salary increment cannot be rejected in its current status' },
         { status: 400 }
@@ -79,17 +79,17 @@ export async function POST(
     return NextResponse.json({
       success: true,
       data: {
-        id: rejectedIncrement.id,
-        employee_id: rejectedIncrement.employeeId,
-        increment_type: rejectedIncrement.incrementType,
-        effective_date: rejectedIncrement.effectiveDate,
-        reason: rejectedIncrement.reason,
-        status: rejectedIncrement.status,
-        rejected_by: rejectedIncrement.rejectedBy,
-        rejected_at: rejectedIncrement.rejectedAt,
-        rejection_reason: rejectedIncrement.rejectionReason,
-        notes: rejectedIncrement.notes,
-        updated_at: rejectedIncrement.updatedAt,
+        id: rejectedIncrement!.id,
+        employee_id: rejectedIncrement!.employeeId,
+        increment_type: rejectedIncrement!.incrementType,
+        effective_date: rejectedIncrement!.effectiveDate,
+        reason: rejectedIncrement!.reason,
+        status: rejectedIncrement!.status,
+        rejected_by: rejectedIncrement!.rejectedBy,
+        rejected_at: rejectedIncrement!.rejectedAt,
+        rejection_reason: rejectedIncrement!.rejectionReason,
+        notes: rejectedIncrement!.notes,
+        updated_at: rejectedIncrement!.updatedAt,
       },
     });
   } catch (error) {

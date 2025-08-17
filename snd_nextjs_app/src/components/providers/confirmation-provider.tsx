@@ -1,7 +1,7 @@
 "use client";
 
-import React, { createContext, useContext } from "react";
-import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import React, { createContext, useContext } from 'react';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { useConfirmation } from "@/hooks/use-confirmation";
 
 interface ConfirmationContextType {
@@ -36,11 +36,11 @@ export function ConfirmationProvider({ children }: { children: React.ReactNode }
           onOpenChange={() => close()}
           title={confirmation.title}
           description={confirmation.description}
-          confirmText={confirmation.confirmText}
-          cancelText={confirmation.cancelText}
-          variant={confirmation.variant}
+          confirmText={confirmation.confirmText || 'Confirm'}
+          cancelText={confirmation.cancelText || 'Cancel'}
+          variant={confirmation.variant || 'default'}
           onConfirm={confirmation.onConfirm}
-          onCancel={confirmation.onCancel}
+          onCancel={confirmation.onCancel || (() => {})}
         />
       )}
     </ConfirmationContext.Provider>

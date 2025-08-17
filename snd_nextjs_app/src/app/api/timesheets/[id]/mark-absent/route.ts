@@ -18,7 +18,7 @@ export const POST = withPermission(
       }
 
       const body = await request.json();
-      const { status, reason } = body;
+      const { reason } = body;
 
       // Get the timesheet
       const timesheet = await db
@@ -32,6 +32,10 @@ export const POST = withPermission(
       }
 
       const timesheetData = timesheet[0];
+      if (!timesheetData) {
+        return NextResponse.json({ error: 'Timesheet data not found' }, { status: 404 });
+      }
+      
       console.log('🔍 MARK ABSENT - Found timesheet:', {
         id: timesheetData.id,
         status: timesheetData.status,
@@ -44,7 +48,7 @@ export const POST = withPermission(
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
-      const userId = session.user.id;
+      // const userId = session.user.id;
 
       // Update the timesheet to mark as absent
       try {
@@ -60,13 +64,18 @@ export const POST = withPermission(
 
         console.log(`🔍 MARK ABSENT - Employee marked as absent successfully: ${timesheetId}`);
         
+        const updatedTimesheetData = updatedTimesheet[0];
+        if (!updatedTimesheetData) {
+          return NextResponse.json({ error: 'Failed to update timesheet' }, { status: 500 });
+        }
+        
         return NextResponse.json({
           success: true,
           message: 'Employee marked as absent successfully',
           data: {
-            id: updatedTimesheet[0].id,
-            status: updatedTimesheet[0].status,
-            notes: updatedTimesheet[0].notes
+            id: updatedTimesheetData.id,
+            status: updatedTimesheetData.status,
+            notes: updatedTimesheetData.notes
           }
         });
 

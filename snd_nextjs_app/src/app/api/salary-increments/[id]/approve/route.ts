@@ -49,7 +49,7 @@ export async function POST(
     const increment = existingIncrement[0];
 
     // Only allow approval if status is pending
-    if (increment.status !== 'pending') {
+    if (increment!.status !== 'pending') {
       return NextResponse.json(
         { error: 'Salary increment cannot be approved in its current status' },
         { status: 400 }
@@ -57,7 +57,7 @@ export async function POST(
     }
 
     // Check if effective date is not in the past
-    const effectiveDate = new Date(increment.effective_date);
+    const effectiveDate = new Date(increment!.effective_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Reset time to start of day for fair comparison
     
@@ -84,16 +84,16 @@ export async function POST(
     return NextResponse.json({
       success: true,
       data: {
-        id: approvedIncrement.id,
-        employee_id: approvedIncrement.employeeId,
-        increment_type: approvedIncrement.incrementType,
-        effective_date: approvedIncrement.effectiveDate,
-        reason: approvedIncrement.reason,
-        status: approvedIncrement.status,
-        approved_by: approvedIncrement.approvedBy,
-        approved_at: approvedIncrement.approvedAt,
-        notes: approvedIncrement.notes,
-        updated_at: approvedIncrement.updatedAt,
+        id: approvedIncrement!.id,
+        employee_id: approvedIncrement!.employeeId,
+        increment_type: approvedIncrement!.incrementType,
+        effective_date: approvedIncrement!.effectiveDate,
+        reason: approvedIncrement!.reason,
+        status: approvedIncrement!.status,
+        approved_by: approvedIncrement!.approvedBy,
+        approved_at: approvedIncrement!.approvedAt,
+        notes: approvedIncrement!.notes,
+        updated_at: approvedIncrement!.updatedAt,
       },
     });
   } catch (error) {

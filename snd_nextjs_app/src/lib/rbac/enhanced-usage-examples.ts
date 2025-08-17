@@ -154,9 +154,9 @@ export class PermissionExamples {
   /**
    * Example 9: Conditional permission check
    */
-  static async checkConditionalPermission(userId: string, resourceId: string, action: string) {
+  static async checkConditionalPermission(userId: number, action: string) {
     // Get user roles to check conditional permissions
-    const roles = await enhancedPermissionService.getUserRoles(userId);
+    const roles = await enhancedPermissionService.getUserRoles(userId.toString());
     
     // Example: Only managers can approve their own team's timesheets
     if (action === 'approve' && roles.includes('MANAGER')) {
@@ -174,7 +174,7 @@ export class PermissionExamples {
   /**
    * Example 10: API route permission wrapper
    */
-  static async apiRoutePermissionCheck(userId: string, action: string, resource: string) {
+  static async apiRoutePermissionCheck(userId: number, action: string, resource: string) {
     try {
       const hasPermission = await enhancedPermissionService.can(userId, action, resource);
       
