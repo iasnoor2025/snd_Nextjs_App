@@ -2,23 +2,22 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { employees, employeeDocuments } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
+import { withAuth } from "@/lib/rbac/api-middleware";
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 
-export async function POST(
+const uploadDocumentsHandler = async (
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+  { params }: { params: { id: string } }
+) => {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!params || !params.id) {
+      console.error('Invalid params received:', params);
+      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
     }
-
-    const { id } = await params;
+    
+    const { id } = params;
     const employeeId = parseInt(id);
 
     if (!employeeId) {
@@ -199,4 +198,6 @@ export async function POST(
       { status: 500 }
     );
   }
-} 
+};
+
+export const POST = withAuth(uploadDocumentsHandler); 

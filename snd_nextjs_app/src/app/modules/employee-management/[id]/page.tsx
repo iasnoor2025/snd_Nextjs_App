@@ -102,7 +102,7 @@ export default function EmployeeShowPage() {
   const { confirm } = useConfirmationDialog();
   const params = useParams();
   const router = useRouter();
-  const employeeId = params.id as string;
+  const employeeId = params?.id as string;
 
   // Helper function to check if Iqama is expired
   const isIqamaExpired = (expiryDate: string | null | undefined): boolean => {
@@ -172,7 +172,7 @@ export default function EmployeeShowPage() {
   );
 
   useEffect(() => {
-    if (employeeId) {
+    if (employeeId && !isNaN(parseInt(employeeId))) {
       fetchEmployeeData();
     }
   }, [employeeId]);
@@ -205,6 +205,10 @@ export default function EmployeeShowPage() {
   };
 
   const fetchAdvances = async () => {
+    if (!employeeId || isNaN(parseInt(employeeId))) {
+      console.warn('Invalid employeeId for fetchAdvances:', employeeId);
+      return;
+    }
     setLoadingAdvances(true);
     try {
       const response = await fetch(`/api/employee/advances?employeeId=${employeeId}`);
@@ -357,6 +361,10 @@ export default function EmployeeShowPage() {
   };
 
   const fetchPaymentHistory = async () => {
+    if (!employeeId || isNaN(parseInt(employeeId))) {
+      console.warn('Invalid employeeId for fetchPaymentHistory:', employeeId);
+      return;
+    }
     setLoadingPayments(true);
     try {
       const response = await fetch(`/api/employee/${employeeId}/payments`);
@@ -373,6 +381,10 @@ export default function EmployeeShowPage() {
   };
 
   const fetchLeaves = async () => {
+    if (!employeeId || isNaN(parseInt(employeeId))) {
+      console.warn('Invalid employeeId for fetchLeaves:', employeeId);
+      return;
+    }
     setLoadingLeaves(true);
     try {
       const response = await fetch(`/api/employees/${employeeId}/leaves`);
@@ -394,6 +406,10 @@ export default function EmployeeShowPage() {
   };
 
   const fetchSalaryHistory = async () => {
+    if (!employeeId || isNaN(parseInt(employeeId))) {
+      console.warn('Invalid employeeId for fetchSalaryHistory:', employeeId);
+      return;
+    }
     setLoadingSalaryHistory(true);
     try {
       const data = await salaryIncrementService.getEmployeeSalaryHistory(parseInt(employeeId));
@@ -981,11 +997,15 @@ export default function EmployeeShowPage() {
 
         {/* Documents Tab */}
         <TabsContent value="documents" className="mt-6 space-y-6">
-          <DocumentsTab employeeId={parseInt(employeeId)} />
+          {employeeId && !isNaN(parseInt(employeeId)) && (
+            <DocumentsTab employeeId={parseInt(employeeId)} />
+          )}
         </TabsContent>
 
                         <TabsContent value="assignments" className="mt-6 space-y-6">
-                          <AssignmentsTab employeeId={parseInt(employeeId)} />
+                          {employeeId && !isNaN(parseInt(employeeId)) && (
+                            <AssignmentsTab employeeId={parseInt(employeeId)} />
+                          )}
                         </TabsContent>
 
         {hasPermission('read', 'Timesheet') && (
@@ -998,7 +1018,9 @@ export default function EmployeeShowPage() {
               <CardContent>
         {/* Timesheet Summary */}
         <div className="mb-4">
-          <TimesheetSummary employeeId={employee?.id} />
+          {employee?.id && (
+            <TimesheetSummary employeeId={employee.id} />
+          )}
                       </div>
 
 

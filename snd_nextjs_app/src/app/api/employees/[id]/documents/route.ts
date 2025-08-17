@@ -2,25 +2,25 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { employeeDocuments } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
+import { withAuth } from "@/lib/rbac/api-middleware";
 
-export async function GET(
-  { params }: { params: Promise<{ id: string }> }
-) {
+const getDocumentsHandler = async (
+  _request: any,
+  { params }: { params: { id: string } }
+) => {
   try {
     console.log('Starting GET /api/employees/[id]/documents');
     
-    // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      console.log('Authentication failed - no session');
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    console.log('Raw params object:', params);
+    console.log('Params type:', typeof params);
+    console.log('Params keys:', params ? Object.keys(params) : 'null/undefined');
+    
+    if (!params || !params.id) {
+      console.error('Invalid params received:', params);
+      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
     }
     
-    console.log('Authentication successful for user:', session.user.email);
-    
-    const { id } = await params;
+    const { id } = params;
     const employeeId = parseInt(id);
 
     if (isNaN(employeeId)) {
@@ -96,4 +96,6 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+};
+
+export const GET = withAuth(getDocumentsHandler);

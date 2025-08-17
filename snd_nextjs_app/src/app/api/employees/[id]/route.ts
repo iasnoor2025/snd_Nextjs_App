@@ -8,10 +8,27 @@ import { eq } from 'drizzle-orm';
 // GET handler with employee data filtering
 const getEmployeeHandler = async (
   request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } },
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> | { id: string } }
 ) => {
   try {
-    const { id } = await params;
+    let resolvedParams;
+    if (params instanceof Promise) {
+      try {
+        resolvedParams = await params;
+      } catch (error) {
+        console.error('Error resolving params Promise:', error);
+        return NextResponse.json({ error: "Failed to resolve route parameters" }, { status: 500 });
+      }
+    } else {
+      resolvedParams = params;
+    }
+    
+    if (!resolvedParams || !resolvedParams.id) {
+      console.error('Invalid params received:', resolvedParams);
+      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
+    }
+    
+    const { id } = resolvedParams;
     const employeeId = parseInt(id);
 
     if (!employeeId) {

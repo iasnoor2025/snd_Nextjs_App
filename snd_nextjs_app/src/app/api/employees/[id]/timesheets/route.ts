@@ -21,7 +21,14 @@ export async function GET(
       );
     }
 
-    const { id } = await params;
+    const resolvedParams = await params;
+    
+    if (!resolvedParams || !resolvedParams.id) {
+      console.error('Invalid params received:', resolvedParams);
+      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
+    }
+    
+    const { id } = resolvedParams;
     const employeeId = parseInt(id);
     if (isNaN(employeeId)) {
       return NextResponse.json(
@@ -116,7 +123,14 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = await params;
+    const resolvedParams = await params;
+    
+    if (!resolvedParams || !resolvedParams.id) {
+      console.error('Invalid params received:', resolvedParams);
+      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
+    }
+    
+    const { id } = resolvedParams;
     const employeeId = parseInt(id);
     const body = await request.json();
 

@@ -121,8 +121,11 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     setError(null);
     try {
       console.log('Fetching documents for employee:', employeeId);
+      console.log('Employee ID type:', typeof employeeId);
+      console.log('Employee ID is valid number:', !isNaN(Number(employeeId)));
       console.log('Session user:', session?.user?.email);
       console.log('Session role:', session?.user?.role);
+      console.log('Full URL:', `/api/employees/${employeeId}/documents`);
       
       const response = await fetch(`/api/employees/${employeeId}/documents`, {
         method: 'GET',

@@ -11,7 +11,14 @@ export const GET = withPermission(
     { params }: { params: Promise<{ id: string }> }
   ) => {
   try {
-    const { id } = await params;
+    const resolvedParams = await params;
+    
+    if (!resolvedParams || !resolvedParams.id) {
+      console.error('Invalid params received:', resolvedParams);
+      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
+    }
+    
+    const { id } = resolvedParams;
     
     if (!id || isNaN(parseInt(id))) {
       return NextResponse.json(
@@ -125,7 +132,14 @@ export const POST = withPermission(
     { params }: { params: Promise<{ id: string }> }
   ) => {
   try {
-    const { id } = await params;
+    const resolvedParams = await params;
+    
+    if (!resolvedParams || !resolvedParams.id) {
+      console.error('Invalid params received:', resolvedParams);
+      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
+    }
+    
+    const { id } = resolvedParams;
     
     if (!id || isNaN(parseInt(id))) {
       return NextResponse.json(
