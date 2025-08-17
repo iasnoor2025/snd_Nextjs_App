@@ -313,6 +313,28 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     return toTitleCase(type.replace(/_/g, ' '));
   };
 
+  const getFileTypeFromFileName = (fileName: string): string => {
+    if (!fileName) return 'UNKNOWN';
+    const ext = fileName.split('.').pop()?.toLowerCase() || '';
+    
+    // Map common file extensions to MIME types
+    const mimeTypeMap: { [key: string]: string } = {
+      'pdf': 'application/pdf',
+      'doc': 'application/msword',
+      'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'xls': 'application/vnd.ms-excel',
+      'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'jpg': 'image/jpeg',
+      'jpeg': 'image/jpeg',
+      'png': 'image/png',
+      'gif': 'image/gif',
+      'txt': 'text/plain',
+      'rtf': 'application/rtf'
+    };
+    
+    return mimeTypeMap[ext] || 'application/octet-stream';
+  };
+
   const getDownloadFileName = (doc: any) => {
     const typeLabel = getDocumentTypeLabel(doc.document_type);
     const safeType = typeLabel.replace(/\s+/g, '_');
@@ -426,9 +448,9 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                   id: d.id,
                   name: d.fileName || d.name || getDocumentTypeLabel(d.documentType) || 'Document',
                   file_name: d.fileName || d.file_name || 'Unknown Document',
-                  file_type: d.mimeType?.split('/')[1]?.toUpperCase() || d.file_type || 'UNKNOWN',
+                  file_type: d.mimeType || d.file_type || getFileTypeFromFileName(d.fileName || d.file_name) || 'UNKNOWN',
                   size: d.fileSize || d.size || 0,
-                  url: d.filePath || d.url || '',
+                  url: d.filePath ? `/api/employees/${employeeId}/documents/${d.id}/download` : (d.url || ''),
                   created_at: d.createdAt || d.created_at || new Date().toISOString(),
                   typeLabel: getDocumentTypeLabel(d.documentType),
                   employee_file_number: employeeId,
@@ -436,6 +458,8 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                 };
                 
                 console.log('Mapped document result:', result);
+                console.log('Document URL for preview:', result.url);
+                console.log('Document file type:', result.file_type);
                 return result as DocumentItem;
               }) as DocumentItem[];
             } else {
@@ -505,8 +529,8 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
         downloadPrefix={(doc) => (doc.employee_file_number ? String(doc.employee_file_number) : String(employeeId))}
         singleLine={false}
         wrapItems
-        showSize={false}
-        showDate={false}
+        showSize={true}
+        showDate={true}
         // Extra controls for employee: description only (name/type asked in popup)
         renderExtraControls={
           <div className="grid gap-3">

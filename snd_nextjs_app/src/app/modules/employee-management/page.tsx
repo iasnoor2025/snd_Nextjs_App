@@ -818,6 +818,15 @@ export default function EmployeeManagementPage() {
                         {getSortIcon('iqama_number')}
                       </div>
                     </TableHead>
+                    <TableHead
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => handleSort('iqama_expiry')}
+                    >
+                      <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
+                        Iqama Expiry
+                        {getSortIcon('iqama_expiry')}
+                      </div>
+                    </TableHead>
                     <TableHead className={isRTL ? 'text-right' : 'text-left'}>
                       <div className={`flex items-center gap-1 ${isRTL ? 'flex-row-reverse' : ''}`}>
                         {t('employee:table.headers.currentAssignment')}
@@ -847,7 +856,7 @@ export default function EmployeeManagementPage() {
                 <TableBody>
                   {currentEmployees.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8">
+                      <TableCell colSpan={10} className="text-center py-8">
                         <div className="text-muted-foreground">
                           {user?.role === 'EMPLOYEE' 
                             ? "No employee record found for your account. Please contact your administrator."
@@ -900,6 +909,18 @@ export default function EmployeeManagementPage() {
                               <div className="font-medium">{convertToArabicNumerals(employee.iqama_number, isRTL)}</div>
                               {employee.iqama_expiry && isIqamaExpired(employee.iqama_expiry) && (
                                 <div className="text-sm text-red-500">({t('employee:iqama.expired')})</div>
+                              )}
+                            </div>
+                          ) : (
+                            t('common.na')
+                          )}
+                        </TableCell>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                          {employee.iqama_expiry ? (
+                            <div className={`${isIqamaExpired(employee.iqama_expiry) ? 'text-red-600 font-medium' : ''}`}>
+                              {formatDate(employee.iqama_expiry)}
+                              {isIqamaExpired(employee.iqama_expiry) && (
+                                <div className="text-xs text-red-500">(Expired)</div>
                               )}
                             </div>
                           ) : (
