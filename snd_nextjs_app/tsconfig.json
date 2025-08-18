@@ -64,11 +64,7 @@
     "out",
     "build",
     "dist",
-    "drizzle/**",
-    "**/*.test.ts",
-    "**/*.test.tsx",
-    "**/*.spec.ts",
-    "**/*.spec.tsx"
+    "drizzle/**"
   ],
   "ts-node": {
     "esm": true,

@@ -32,14 +32,14 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
   isAutoGenerating = true;
 
   try {
-    console.log('Starting timesheet auto-generation...');
+    // Starting timesheet auto-generation...
 
     // Test database connection first
     try {
       await db.execute(sql`SELECT 1`);
-      console.log('Database connection successful');
+      // Database connection successful
     } catch (dbError) {
-      console.error('Database connection failed:', dbError);
+              // Database connection failed
       return {
         success: false,
         created: 0,
@@ -51,11 +51,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
     }
 
     // Check environment variables
-    console.log('Environment check:', {
-      DATABASE_URL: process.env.DATABASE_URL ? 'Set' : 'Not set',
-      NODE_ENV: process.env.NODE_ENV,
-      NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ? 'Set' : 'Not set',
-    });
+    // Environment check completed
 
     // Check existing timesheets count
     try {
@@ -64,17 +60,15 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
         .from(timesheets)
         .where(isNull(timesheets.deletedAt));
 
-      console.log(`Found ${existingTimesheetsCount[0]?.count || 0} existing timesheets`);
+      // Found existing timesheets
     } catch (countError) {
-      console.warn('Could not count existing timesheets:', countError);
+              // Could not count existing timesheets
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    console.log(
-      `Auto-generating timesheets using assignment dates, current date: ${today.toDateString()}`
-    );
+    // Auto-generating timesheets using assignment dates
 
     // Get all employee assignments regardless of status
     let assignments;
@@ -91,7 +85,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
         })
         .from(employeeAssignments);
 
-      console.log(`Found ${assignments.length} assignments to process`);
+      // Found assignments to process
 
       // Check if there are any assignments to process
       if (assignments.length === 0) {
@@ -103,26 +97,8 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
         };
       }
 
-      // Log first few assignments for debugging
-      if (assignments.length > 0) {
-        console.log('Sample assignment data:', assignments.slice(0, 3));
-
-        // Check if assignments have valid data
-        for (const assignment of assignments.slice(0, 3)) {
-          console.log('Assignment validation:', {
-            id: assignment.id,
-            employee_id: assignment.employee_id,
-            start_date: assignment.start_date,
-            end_date: assignment.end_date,
-            hasValidStartDate:
-              assignment.start_date && !isNaN(new Date(assignment.start_date).getTime()),
-            hasValidEndDate:
-              !assignment.end_date || !isNaN(new Date(assignment.end_date).getTime()),
-          });
-        }
-      }
+      // Assignment validation completed
     } catch (queryError) {
-      console.error('Error fetching assignments:', queryError);
       return {
         success: false,
         created: 0,
@@ -140,9 +116,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
 
     for (const assignment of assignments) {
       processedAssignments++;
-      console.log(
-        `Processing assignment ${processedAssignments}/${totalAssignments}: ${assignment.id}`
-      );
+      // Processing assignment
 
       try {
         const employeeId = assignment.employee_id;

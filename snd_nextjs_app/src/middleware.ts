@@ -69,13 +69,10 @@ export async function middleware(request: NextRequest) {
 
     return NextResponse.next();
   } catch (error) {
-    console.error('Middleware error:', error);
-
     // Try to redirect to login, but fallback to next() if that fails
     try {
       return NextResponse.redirect(new URL('/login', request.url));
     } catch (redirectError) {
-      console.error('Redirect failed, falling back to next():', redirectError);
       return NextResponse.next();
     }
   }

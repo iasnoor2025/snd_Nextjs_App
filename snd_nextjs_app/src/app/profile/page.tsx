@@ -265,18 +265,14 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      console.log('🔄 Fetching profile data from API...');
+
       const response = await fetch('/api/profile');
 
-      console.log('📊 Response status:', response.status);
-      console.log('📊 Response headers:', Object.fromEntries(response.headers.entries()));
+      
 
       if (response.ok) {
         const responseText = await response.text();
-        console.log('📄 Raw response text:', responseText);
-
         if (!responseText) {
-          console.error('❌ Empty response from profile API');
           toast.error('Empty response from server');
           return;
         }
@@ -285,33 +281,25 @@ export default function ProfilePage() {
         try {
           data = JSON.parse(responseText);
         } catch (parseError) {
-          console.error('❌ JSON parse error:', parseError);
-          console.error('❌ Response text that failed to parse:', responseText);
           toast.error('Invalid response format from server');
           return;
         }
 
-        console.log('✅ Profile data received:', data);
-        console.log('✅ Matched employee data:', data.matchedEmployee);
         setProfile(data);
       } else {
         const responseText = await response.text();
-        console.log('❌ Error response text:', responseText);
 
         let errorData;
         try {
           errorData = JSON.parse(responseText);
         } catch (parseError) {
-          console.error('❌ Error parsing error response:', parseError);
           errorData = { error: 'Unknown error', details: responseText };
         }
 
-        console.error('❌ Profile fetch error:', errorData);
         toast.error(errorData.error || 'Failed to load profile');
       }
     } catch (error) {
-      console.error('❌ Network error fetching profile:', error);
-      toast.error('Network error - check console for details');
+      toast.error('Network error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -352,7 +340,6 @@ export default function ProfilePage() {
         toast.error(error.error || 'Failed to update profile');
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
       toast.error('Failed to update profile');
     } finally {
       setIsSaving(false);
@@ -380,7 +367,6 @@ export default function ProfilePage() {
         toast.error(error.error || 'Failed to update notification settings');
       }
     } catch (error) {
-      console.error('Error updating notifications:', error);
       toast.error('Failed to update notification settings');
     } finally {
       setIsSaving(false);
@@ -408,7 +394,6 @@ export default function ProfilePage() {
         toast.error(error.error || 'Failed to update appearance settings');
       }
     } catch (error) {
-      console.error('Error updating appearance:', error);
       toast.error('Failed to update appearance settings');
     } finally {
       setIsSaving(false);

@@ -177,41 +177,16 @@ export default function DashboardPage() {
       setStats(data.stats || {});
       setIqamaData(data.iqamaData || []);
 
-      console.log('🔧 Setting equipment data state:', data.equipmentData?.length || 0);
+      
       setEquipmentData(data.equipmentData || []);
 
       setTimesheetData(data.timesheetData || []);
       setProjectData(data.projectData || []);
       setActivities(data.activities || []);
 
-      // Debug logging
-      console.log('📊 Dashboard data received:', {
-        stats: data.stats,
-        iqamaData: data.iqamaData?.length || 0,
-        equipmentData: data.equipmentData?.length || 0,
-        timesheetData: data.timesheetData?.length || 0,
-        projectData: data.projectData?.length || 0,
-        activities: data.activities?.length || 0,
-      });
 
-      console.log('🔧 Raw equipment data:', data.equipmentData);
-
-      if (data.equipmentData) {
-        console.log('🔧 Equipment data details:', {
-          total: data.equipmentData.length,
-          statusBreakdown: {
-            available: data.equipmentData.filter((item: any) => item.status === 'available').length,
-            expired: data.equipmentData.filter((item: any) => item.status === 'expired').length,
-            expiring: data.equipmentData.filter((item: any) => item.status === 'expiring').length,
-            missing: data.equipmentData.filter((item: any) => item.status === 'missing').length,
-          },
-          sample: data.equipmentData.slice(0, 2),
-        });
-      } else {
-        console.log('❌ No equipment data received from API');
-      }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      // Handle error silently for production
     } finally {
       setLoading(false);
     }
@@ -228,7 +203,7 @@ export default function DashboardPage() {
       const data = await response.json();
       setTimesheetData(data.timesheetData || []);
     } catch (error) {
-      console.error('Error fetching timesheet data:', error);
+      // Handle error silently for production
     } finally {
       setRefreshingTimesheets(false);
     }
@@ -245,7 +220,7 @@ export default function DashboardPage() {
       const data = await response.json();
       setIqamaData(data.iqamaData || []);
     } catch (error) {
-      console.error('Error fetching Iqama data:', error);
+      // Handle error silently for production
     } finally {
       setUpdatingIqama(false);
     }
@@ -262,7 +237,7 @@ export default function DashboardPage() {
       const data = await response.json();
       setEquipmentData(data.equipmentData || []);
     } catch (error) {
-      console.error('Error fetching Equipment data:', error);
+      // Handle error silently for production
     } finally {
       setUpdatingEquipment(false);
     }
@@ -375,7 +350,7 @@ export default function DashboardPage() {
           const parsed = JSON.parse(saved);
           setSectionVisibility(parsed);
         } catch (e) {
-          console.warn('Failed to parse saved section visibility:', e);
+          // Handle error silently for production
         }
       }
       setSectionsLoaded(true);
@@ -384,10 +359,7 @@ export default function DashboardPage() {
 
   // Monitor equipment data state changes
   useEffect(() => {
-    console.log('🔧 Equipment data state changed:', equipmentData.length);
-    if (equipmentData.length > 0) {
-      console.log('🔧 Equipment data state sample:', equipmentData.slice(0, 2));
-    }
+    // Equipment data state monitoring removed for production
   }, [equipmentData]);
 
   // Handle refresh
@@ -419,7 +391,7 @@ export default function DashboardPage() {
         throw new Error('Failed to update Iqama');
       }
     } catch (error) {
-      console.error('Error updating Iqama:', error);
+      // Handle error silently for production
     } finally {
       setUpdatingIqama(false);
     }
@@ -457,7 +429,7 @@ export default function DashboardPage() {
         throw new Error('Failed to update equipment');
       }
     } catch (error) {
-      console.error('Error updating equipment:', error);
+      // Handle error silently for production
     } finally {
       setUpdatingEquipment(false);
     }
@@ -482,7 +454,7 @@ export default function DashboardPage() {
         throw new Error('Failed to approve timesheet');
       }
     } catch (error) {
-      console.error('Error approving timesheet:', error);
+      // Handle error silently for production
     } finally {
       setApprovingTimesheet(null);
     }
@@ -507,7 +479,7 @@ export default function DashboardPage() {
         throw new Error('Failed to reject timesheet');
       }
     } catch (error) {
-      console.error('Error rejecting timesheet:', error);
+      // Handle error silently for production
     } finally {
       setRejectingTimesheet(null);
     }
@@ -532,7 +504,7 @@ export default function DashboardPage() {
         throw new Error('Failed to mark absent');
       }
     } catch (error) {
-      console.error('Error marking absent:', error);
+      // Handle error silently for production
     } finally {
       setMarkingAbsent(null);
     }
@@ -577,7 +549,7 @@ export default function DashboardPage() {
         throw new Error('Failed to update hours');
       }
     } catch (error) {
-      console.error('Error updating hours:', error);
+      // Handle error silently for production
     } finally {
       setUpdatingHours(false);
     }

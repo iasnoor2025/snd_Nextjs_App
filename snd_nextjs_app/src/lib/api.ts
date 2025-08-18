@@ -35,7 +35,6 @@ class ApiService {
           }
         } catch (e) {
           // If we can't parse the error response, use the default message
-          console.warn('Could not parse error response:', e);
         }
 
         throw new Error(errorMessage);
