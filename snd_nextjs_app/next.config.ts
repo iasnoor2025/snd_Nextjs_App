@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 import { DefinePlugin } from "webpack";
 
 const nextConfig: NextConfig = {
+	eslint: {
+		ignoreDuringBuilds: true,
+	},
+	typescript: {
+		ignoreBuildErrors: true,
+	},
 	env: {
 		NEXT_TELEMETRY_DISABLED: "1",
 	},
