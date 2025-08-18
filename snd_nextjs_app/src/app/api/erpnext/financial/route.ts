@@ -28,6 +28,10 @@ export async function GET(_request: NextRequest) {
       case 'summary':
         data = await ERPNextFinancialService.getInvoiceSummary();
         break;
+      case 'overview':
+        const month = searchParams.get('month');
+        data = await ERPNextFinancialService.getFinancialOverview(month || undefined);
+        break;
       case 'trends':
         const months = parseInt(searchParams.get('months') || '6');
         data = await ERPNextFinancialService.getMonthlyTrends(months);

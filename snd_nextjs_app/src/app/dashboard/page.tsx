@@ -8,6 +8,7 @@ import { IqamaSection } from "@/components/dashboard/IqamaSection"
 import { EquipmentSection } from "@/components/dashboard/EquipmentSection"
 import { TimesheetsSection } from "@/components/dashboard/TimesheetsSection"
 import { FinancialMetricsSection } from "@/components/dashboard/FinancialMetricsSection"
+import { FinancialOverviewSection } from "@/components/dashboard/FinancialOverviewSection"
 import { QuickActions } from "@/components/dashboard/QuickActions"
 import { RecentActivity } from "@/components/dashboard/RecentActivity"
 import { DashboardModals } from "@/components/dashboard/DashboardModals"
@@ -434,6 +435,9 @@ export default function DashboardPage() {
 
         {/* Financial Metrics Section */}
         <FinancialMetricsSection />
+
+        {/* Financial Overview Section */}
+        <FinancialOverviewSection />
 
         {/* Timesheets Section */}
         <TimesheetsSection
