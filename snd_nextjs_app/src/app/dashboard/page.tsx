@@ -8,6 +8,7 @@ import { IqamaSection } from "@/components/dashboard/IqamaSection"
 import { EquipmentSection } from "@/components/dashboard/EquipmentSection"
 import { TimesheetsSection } from "@/components/dashboard/TimesheetsSection"
 import { FinancialOverviewSection } from "@/components/dashboard/FinancialOverviewSection"
+import { ProjectOverviewSection } from "@/components/dashboard/ProjectOverviewSection"
 import { QuickActions } from "@/components/dashboard/QuickActions"
 import { RecentActivity } from "@/components/dashboard/RecentActivity"
 import { DashboardModals } from "@/components/dashboard/DashboardModals"
@@ -50,6 +51,25 @@ interface TimesheetData {
   overtimeHours: number
 }
 
+interface ProjectData {
+  id: number
+  name: string
+  status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled'
+  progress: number
+  startDate: string
+  endDate: string
+  budget: number
+  spent: number
+  teamSize: number
+  priority: 'low' | 'medium' | 'high' | 'critical'
+  manager: {
+    name: string
+    avatar?: string
+    initials: string
+  }
+  department: string
+}
+
 interface ActivityItem {
   id: number
   type: 'info' | 'success' | 'warning' | 'error'
@@ -69,6 +89,7 @@ export default function DashboardPage() {
   const [iqamaData, setIqamaData] = useState<IqamaData[]>([])
   const [equipmentData, setEquipmentData] = useState<EquipmentData[]>([])
   const [timesheetData, setTimesheetData] = useState<TimesheetData[]>([])
+  const [projectData, setProjectData] = useState<ProjectData[]>([])
   const [activities, setActivities] = useState<ActivityItem[]>([])
 
   // State for loading and refreshing
@@ -79,11 +100,13 @@ export default function DashboardPage() {
   const [isIqamaModalOpen, setIsIqamaModalOpen] = useState(false)
   const [isEquipmentUpdateModalOpen, setIsEquipmentUpdateModalOpen] = useState(false)
   const [isEditHoursModalOpen, setIsEditHoursModalOpen] = useState(false)
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false)
 
   // State for selected items
   const [selectedIqama, setSelectedIqama] = useState<IqamaData | null>(null)
   const [selectedEquipment, setSelectedEquipment] = useState<EquipmentData | null>(null)
   const [selectedTimesheetForEdit, setSelectedTimesheetForEdit] = useState<any | null>(null)
+  const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null)
 
   // State for form inputs
   const [newExpiryDate, setNewExpiryDate] = useState('')
@@ -113,6 +136,7 @@ export default function DashboardPage() {
     equipment: true,
     financial: true,
     timesheets: true,
+    projectOverview: true,
     quickActions: true,
     recentActivity: true
   })
@@ -152,6 +176,7 @@ export default function DashboardPage() {
       setEquipmentData(data.equipmentData || [])
       
       setTimesheetData(data.timesheetData || [])
+      setProjectData(data.projectData || [])
       setActivities(data.activities || [])
       
       // Debug logging
@@ -160,6 +185,7 @@ export default function DashboardPage() {
         iqamaData: data.iqamaData?.length || 0,
         equipmentData: data.equipmentData?.length || 0,
         timesheetData: data.timesheetData?.length || 0,
+        projectData: data.projectData?.length || 0,
         activities: data.activities?.length || 0
       })
       
@@ -236,6 +262,20 @@ export default function DashboardPage() {
       setUpdatingEquipment(false)
     }
   }
+
+  // Fetch only Project data for quick updates
+  const fetchProjectData = async () => {
+    try {
+      const response = await fetch('/api/projects/dashboard')
+      if (!response.ok) {
+        throw new Error('Failed to fetch Project data')
+      }
+      const data = await response.json()
+      setProjectData(data.projectData || [])
+    } catch (error) {
+      console.error('Error fetching Project data:', error)
+    }
+  }
   
   // Initial data fetch
   useEffect(() => {
@@ -243,6 +283,83 @@ export default function DashboardPage() {
       fetchDashboardData()
     }
   }, [session])
+
+  // Add sample project data for testing
+  useEffect(() => {
+    if (projectData.length === 0) {
+      const sampleProjects: ProjectData[] = [
+        {
+          id: 1,
+          name: "Office Building Construction",
+          status: "active",
+          progress: 75,
+          startDate: "2024-01-15",
+          endDate: "2024-12-31",
+          budget: 2500000,
+          spent: 1875000,
+          teamSize: 45,
+          priority: "high",
+          manager: {
+            name: "Ahmed Al-Rashid",
+            initials: "AR"
+          },
+          department: "Construction"
+        },
+        {
+          id: 2,
+          name: "Road Infrastructure Project",
+          status: "planning",
+          progress: 25,
+          startDate: "2024-03-01",
+          endDate: "2025-06-30",
+          budget: 1800000,
+          spent: 450000,
+          teamSize: 32,
+          priority: "critical",
+          manager: {
+            name: "Sarah Johnson",
+            initials: "SJ"
+          },
+          department: "Infrastructure"
+        },
+        {
+          id: 3,
+          name: "Shopping Mall Renovation",
+          status: "on-hold",
+          progress: 60,
+          startDate: "2023-11-01",
+          endDate: "2024-08-31",
+          budget: 800000,
+          spent: 480000,
+          teamSize: 28,
+          priority: "medium",
+          manager: {
+            name: "Mohammed Al-Zahrani",
+            initials: "MZ"
+          },
+          department: "Renovation"
+        },
+        {
+          id: 4,
+          name: "Residential Complex Phase 1",
+          status: "completed",
+          progress: 100,
+          startDate: "2023-06-01",
+          endDate: "2024-02-28",
+          budget: 3200000,
+          spent: 3200000,
+          teamSize: 55,
+          priority: "high",
+          manager: {
+            name: "Fatima Al-Qahtani",
+            initials: "FQ"
+          },
+          department: "Residential"
+        }
+      ]
+      setProjectData(sampleProjects)
+    }
+  }, [projectData.length])
 
   // Load section visibility from localStorage on mount
   useEffect(() => {
@@ -476,6 +593,12 @@ export default function DashboardPage() {
     setIsEquipmentUpdateModalOpen(true)
   }
 
+  // Handle open project modal
+  const handleOpenProjectModal = (project: ProjectData) => {
+    setSelectedProject(project)
+    setIsProjectModalOpen(true)
+  }
+
   // Save section visibility to localStorage
   const saveSectionVisibility = (newVisibility: typeof sectionVisibility) => {
     if (typeof window !== 'undefined') {
@@ -553,6 +676,7 @@ export default function DashboardPage() {
                   equipment: true,
                   financial: true,
                   timesheets: true,
+                  projectOverview: true,
                   quickActions: true,
                   recentActivity: true
                 }
@@ -571,6 +695,7 @@ export default function DashboardPage() {
                   equipment: false,
                   financial: false,
                   timesheets: false,
+                  projectOverview: false,
                   quickActions: false,
                   recentActivity: false
                 }
@@ -589,6 +714,7 @@ export default function DashboardPage() {
                   equipment: true,
                   financial: true,
                   timesheets: true,
+                  projectOverview: true,
                   quickActions: true,
                   recentActivity: true
                 }
@@ -642,6 +768,15 @@ export default function DashboardPage() {
           />
         )}
 
+        {/* Project Overview Section */}
+        {sectionVisibility.projectOverview && (
+          <ProjectOverviewSection
+            projectData={projectData}
+            onUpdateProject={handleOpenProjectModal}
+            onHideSection={() => toggleSection('projectOverview')}
+          />
+        )}
+
         {/* Quick Actions */}
         {sectionVisibility.quickActions && (
           <QuickActions onHideSection={() => toggleSection('quickActions')} />
@@ -669,6 +804,7 @@ export default function DashboardPage() {
                     equipment: true,
                     financial: true,
                     timesheets: true,
+                    projectOverview: true,
                     quickActions: true,
                     recentActivity: true
                   }
@@ -718,6 +854,16 @@ export default function DashboardPage() {
                   className="flex items-center gap-2"
                 >
                   {t('dashboard.showTimesheetsSection')}
+                </Button>
+              )}
+              {!sectionVisibility.projectOverview && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleSection('projectOverview')}
+                  className="flex items-center gap-2"
+                >
+                  {t('dashboard.showProjectOverviewSection')}
                 </Button>
               )}
               {!sectionVisibility.quickActions && (
