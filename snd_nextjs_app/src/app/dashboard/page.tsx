@@ -31,15 +31,15 @@ interface IqamaData {
 interface EquipmentData {
   id: number
   equipmentName: string
-  equipmentNumber: string | null
-  istimara: string | null
-  istimaraExpiry: string | null
+  equipmentNumber?: string
+  istimara?: string
+  istimaraExpiry?: string
   daysRemaining: number | null
-  department: string | null
+  department?: string
   status: 'available' | 'expired' | 'expiring' | 'missing'
-  manufacturer: string | null
-  modelNumber: string | null
-  serialNumber: string | null
+  manufacturer?: string
+  modelNumber?: string
+  serialNumber?: string
 }
 
 interface TimesheetData {
@@ -100,13 +100,13 @@ export default function DashboardPage() {
   const [isIqamaModalOpen, setIsIqamaModalOpen] = useState(false)
   const [isEquipmentUpdateModalOpen, setIsEquipmentUpdateModalOpen] = useState(false)
   const [isEditHoursModalOpen, setIsEditHoursModalOpen] = useState(false)
-  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false)
+
 
   // State for selected items
   const [selectedIqama, setSelectedIqama] = useState<IqamaData | null>(null)
-  const [selectedEquipment, setSelectedEquipment] = useState<EquipmentData | null>(null)
+  const [selectedEquipment, setSelectedEquipment] = useState<any | null>(null)
   const [selectedTimesheetForEdit, setSelectedTimesheetForEdit] = useState<any | null>(null)
-  const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null)
+
 
   // State for form inputs
   const [newExpiryDate, setNewExpiryDate] = useState('')
@@ -264,18 +264,18 @@ export default function DashboardPage() {
   }
 
   // Fetch only Project data for quick updates
-  const fetchProjectData = async () => {
-    try {
-      const response = await fetch('/api/projects/dashboard')
-      if (!response.ok) {
-        throw new Error('Failed to fetch Project data')
-      }
-      const data = await response.json()
-      setProjectData(data.projectData || [])
-    } catch (error) {
-      console.error('Error fetching Project data:', error)
-    }
-  }
+  // const fetchProjectData = async () => {
+  //   try {
+  //     const response = await fetch('/api/projects/dashboard')
+  //     if (!response.ok) {
+  //       throw new Error('Failed to fetch project data')
+  //     }
+  //     const data = await response.json()
+  //     setProjectData(data.projectData || [])
+  //   } catch (error) {
+  //     console.error('Error fetching project data:', error)
+  //   }
+  // }
   
   // Initial data fetch
   useEffect(() => {
@@ -594,9 +594,8 @@ export default function DashboardPage() {
   }
 
   // Handle open project modal
-  const handleOpenProjectModal = (project: ProjectData) => {
-    setSelectedProject(project)
-    setIsProjectModalOpen(true)
+  const handleOpenProjectModal = () => {
+    // TODO: Implement project modal
   }
 
   // Save section visibility to localStorage

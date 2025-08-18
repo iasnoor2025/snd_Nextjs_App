@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, Upload, User, FileText, CreditCard, Shield, MapPin, Plus, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Save, User, FileText, CreditCard, Shield, MapPin, Plus, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useConfirmationDialog } from '@/components/providers/confirmation-provider';
 
@@ -50,8 +50,8 @@ interface EmployeeFormData {
   country?: string;
   
   // Employment Details
-  department_id?: number;
-  designation_id?: number;
+  department_id?: number | null;
+  designation_id?: number | null;
   supervisor?: string;
   status: string;
   
@@ -153,8 +153,8 @@ export default function CreateEmployeePage() {
     state: '',
     postal_code: '',
     country: '',
-    department_id: undefined,
-    designation_id: undefined,
+    department_id: null,
+    designation_id: null,
     supervisor: '',
     status: 'active',
     basic_salary: 0,
@@ -734,7 +734,7 @@ export default function CreateEmployeePage() {
                                   if (result.success) {
                                     toast.success(t('employee:messages.deleteSuccess'));
                                     setDepartments(prev => prev.filter(d => d.id !== selectedDept.id));
-                                    setFormData(prev => ({ ...prev, department_id: undefined }));
+                                    setFormData(prev => ({ ...prev, department_id: null }));
                                   } else {
                                     toast.error(result.message || t('employee:messages.deleteError'));
                                   }
@@ -823,7 +823,7 @@ export default function CreateEmployeePage() {
                                   if (result.success) {
                                     toast.success(t('employee:messages.deleteSuccess'));
                                     setDesignations(prev => prev.filter(d => d.id !== selectedDesig.id));
-                                    setFormData(prev => ({ ...prev, designation_id: undefined }));
+                                    setFormData(prev => ({ ...prev, designation_id: null }));
                                   } else {
                                     toast.error(result.message || t('employee:messages.deleteError'));
                                   }

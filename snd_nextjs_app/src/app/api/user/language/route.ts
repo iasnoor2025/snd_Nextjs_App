@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Get the user session
     const session = await getServerSession(authOptions);

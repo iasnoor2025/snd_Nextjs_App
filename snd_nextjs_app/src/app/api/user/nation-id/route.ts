@@ -70,6 +70,28 @@ export async function POST(_request: NextRequest) {
 
     const user = userRows[0];
 
+    if (!user) {
+      return NextResponse.json(
+        { 
+          error: 'User not found',
+          hasNationId: false,
+          nationId: null,
+          userId: null,
+          userName: null,
+          userEmail: null,
+          matchedEmployee: null,
+        },
+        { 
+          status: 404,
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        }
+      );
+    }
+
     // Only check for matched employee if user has a national ID
     let matchedEmployee: any = null;
     if (user.national_id) {
@@ -215,6 +237,13 @@ export async function PUT(_request: NextRequest) {
       });
 
     const updatedUser = updatedUserRows[0];
+
+    if (!updatedUser) {
+      return NextResponse.json(
+        { error: 'Failed to update user' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,

@@ -132,8 +132,8 @@ async function syncEquipmentFromERPNext() {
           dailyRate: item.standard_rate ? item.standard_rate.toString() : null,
           status: 'available',
           isActive: true,
-          createdAt: new Date().toISOString().split('T')[0],
-          updatedAt: new Date().toISOString().split('T')[0],
+          createdAt: new Date().toISOString().split('T')[0] as string,
+          updatedAt: new Date().toISOString().split('T')[0] as string,
         };
 
         // Check if equipment already exists using Drizzle

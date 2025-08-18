@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { ProtectedRoute } from '@/components/protected-route';
-import { PermissionContent, RoleContent, RoleBased } from '@/lib/rbac/rbac-components';
-import { useRBAC } from '@/lib/rbac/rbac-context';
+import { PermissionContent, RoleBased } from '@/lib/rbac/rbac-components';
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+
 import { Eye, Edit, Trash2, Plus, BarChart3, TrendingUp, PieChart, Activity, Download, Settings, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from 'react-i18next';
@@ -158,7 +158,6 @@ const mockAnalyticsReports: AnalyticsReport[] = [
 ];
 
 export default function AnalyticsPage() {
-  const { user, hasPermission, getAllowedActions } = useRBAC();
   const { t } = useTranslation('analytics');
   const [reports, setReports] = useState<AnalyticsReportResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -168,8 +167,7 @@ export default function AnalyticsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage] = useState(10);
 
-  // Get allowed actions for analytics
-  const allowedActions = getAllowedActions('Report');
+
 
   useEffect(() => {
     const fetchAnalyticsReports = async () => {

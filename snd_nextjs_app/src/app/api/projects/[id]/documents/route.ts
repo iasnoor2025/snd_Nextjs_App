@@ -55,7 +55,7 @@ export async function POST(
         modelId: parseInt(projectId),
         collection: body.category || 'documents',
         createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0],
+        updatedAt: new Date().toISOString().split('T')[0] as string,
       })
       .returning();
 

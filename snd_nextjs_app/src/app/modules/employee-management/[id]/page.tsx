@@ -27,15 +27,11 @@ import {
   Receipt,
   Loader2,
   AlertCircle,
-  Download,
-  IdCard,
-  Car,
-  Truck,
   History,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
-import { useI18n } from "@/hooks/use-i18n";
+
 import { useRBAC } from "@/lib/rbac/rbac-context";
 import { useConfirmationDialog } from "@/components/providers/confirmation-provider";
 import TimesheetSummary from "@/components/employee/timesheets/TimesheetSummary";
@@ -97,7 +93,6 @@ interface Employee {
 }
 
 export default function EmployeeShowPage() {
-  const { t } = useI18n();
   const { hasPermission } = useRBAC();
   const { confirm } = useConfirmationDialog();
   const params = useParams();
@@ -118,23 +113,6 @@ export default function EmployeeShowPage() {
   const [salaryHistory, setSalaryHistory] = useState<SalaryIncrement[]>([]);
   const [loadingSalaryHistory, setLoadingSalaryHistory] = useState(false);
   
-  // Assignment related state
-  const [currentAssignment, setCurrentAssignment] = useState<any>(null);
-  const [strictAssignmentHistory, setStrictAssignmentHistory] = useState<any[]>([]);
-  const [isManualAssignmentDialogOpen, setIsManualAssignmentDialogOpen] = useState(false);
-  const [isSubmittingManual, setIsSubmittingManual] = useState(false);
-  const [manualAssignment, setManualAssignment] = useState({
-    name: '',
-    location: '',
-    start_date: '',
-    end_date: '',
-    notes: '',
-  });
-  const [editAssignment, setEditAssignment] = useState<any>(null);
-  const [isEditAssignmentDialogOpen, setIsEditAssignmentDialogOpen] = useState(false);
-  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
-  const [isDeletingAssignment, setIsDeletingAssignment] = useState(false);
-  const [deleteAssignmentId, setDeleteAssignmentId] = useState<number | null>(null);
 
   // Advances state
   const [currentBalance, setCurrentBalance] = useState(0);
@@ -142,13 +120,10 @@ export default function EmployeeShowPage() {
   const [advanceAmount, setAdvanceAmount] = useState("");
   const [advanceReason, setAdvanceReason] = useState("");
   const [isAdvanceRequestDialogOpen, setIsAdvanceRequestDialogOpen] = useState(false);
-  const [isSubmittingAdvance, setIsSubmittingAdvance] = useState(false);
   const [isRepaymentDialogOpen, setIsRepaymentDialogOpen] = useState(false);
   const [repaymentAmount, setRepaymentAmount] = useState("");
-  const [selectedAdvance, setSelectedAdvance] = useState<number | null>(null);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   const [advances, setAdvances] = useState<any[]>([]);
   const [loadingAdvances, setLoadingAdvances] = useState(false);
@@ -431,7 +406,6 @@ export default function EmployeeShowPage() {
       });
 
       if (response.ok) {
-        const data = await response.json();
         toast.success('Repayment deleted successfully');
         
         // Remove the deleted payment from local state

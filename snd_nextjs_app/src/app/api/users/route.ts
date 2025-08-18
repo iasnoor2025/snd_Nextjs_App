@@ -177,6 +177,13 @@ export const POST = withPermission(
       });
     const user = inserted[0];
 
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Failed to create user' },
+        { status: 500 }
+      );
+    }
+
     // Create user role relationship
     await db.insert(modelHasRolesTable).values({ userId: user.id as number, roleId });
 

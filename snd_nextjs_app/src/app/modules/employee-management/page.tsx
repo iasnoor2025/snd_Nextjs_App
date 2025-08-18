@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ProtectedRoute } from '@/components/protected-route';
-import { PermissionContent, RoleContent, RoleBased } from '@/lib/rbac/rbac-components';
+import { PermissionContent } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { useI18n } from '@/hooks/use-i18n';
 import { Button } from '@/components/ui/button';
@@ -15,17 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Search, Plus, Download, Upload, Eye, Edit, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+
+
+
 import { 
   convertToArabicNumerals, 
   getTranslatedName, 
@@ -78,7 +70,7 @@ interface Employee {
 export default function EmployeeManagementPage() {
   const { t } = useTranslation(['common', 'employee']);
   const { isRTL } = useI18n();
-  const { user, hasPermission, getAllowedActions } = useRBAC();
+  const { user, getAllowedActions } = useRBAC();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -467,12 +459,14 @@ export default function EmployeeManagementPage() {
       const aPart = aParts[i];
       const bPart = bParts[i];
 
-      if (/\d/.test(aPart) && /\d/.test(bPart)) {
-        const diff = parseInt(aPart) - parseInt(bPart);
-        if (diff !== 0) return diff;
-      } else {
-        const diff = aPart.localeCompare(bPart);
-        if (diff !== 0) return diff;
+      if (aPart && bPart) {
+        if (/\d/.test(aPart) && /\d/.test(bPart)) {
+          const diff = parseInt(aPart) - parseInt(bPart);
+          if (diff !== 0) return diff;
+        } else {
+          const diff = aPart.localeCompare(bPart);
+          if (diff !== 0) return diff;
+        }
       }
     }
 

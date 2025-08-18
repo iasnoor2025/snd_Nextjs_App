@@ -127,7 +127,7 @@ export async function POST(_request: NextRequest) {
               .from(designationsTable)
               .where(eq(designationsTable.id, employee.designation_id))
               .limit(1);
-            designationName = designationRows[0]?.name;
+            designationName = designationRows[0]?.name || null;
           }
           
           if (employee.department_id) {
@@ -136,7 +136,7 @@ export async function POST(_request: NextRequest) {
               .from(departmentsTable)
               .where(eq(departmentsTable.id, employee.department_id))
               .limit(1);
-            departmentName = departmentRows[0]?.name;
+            departmentName = departmentRows[0]?.name || null;
           }
 
           matchedEmployee = {
@@ -211,7 +211,7 @@ export async function POST(_request: NextRequest) {
               .from(designationsTable)
               .where(eq(designationsTable.id, employee.designation_id))
               .limit(1);
-            designationName = designationRows[0]?.name;
+            designationName = designationRows[0]?.name || null;
           }
           
           if (employee.department_id) {
@@ -220,7 +220,7 @@ export async function POST(_request: NextRequest) {
               .from(departmentsTable)
               .where(eq(departmentsTable.id, employee.department_id))
               .limit(1);
-            departmentName = departmentRows[0]?.name;
+            departmentName = departmentRows[0]?.name || null;
           }
 
           matchedEmployee = {

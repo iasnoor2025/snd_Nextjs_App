@@ -249,23 +249,24 @@ export async function POST() {
           let designationId = null;
 
           if (designationName && designationName.trim()) {
+            const trimmedDesignationName = designationName.trim();
             let designation: any = await db.select().from(designationsTable).where(
-              sql`name = ${designationName.trim()}`
+              sql`name = ${trimmedDesignationName}`
             );
 
             if (designation.length === 0) {
               const newDesignation = await db.insert(designationsTable).values({
-                name: designationName.trim(),
-                description: designationName.trim(),
+                name: trimmedDesignationName,
+                description: trimmedDesignationName,
                 isActive: true,
-                updatedAt: new Date().toISOString().split('T')[0]
+                updatedAt: new Date().toISOString().split('T')[0] as string
               }).returning();
               designation = newDesignation;
             } else {
               const updatedDesignation = await db.update(designationsTable).set({
-                description: designationName.trim(),
+                description: trimmedDesignationName,
                 isActive: true,
-                updatedAt: new Date().toISOString().split('T')[0]
+                updatedAt: new Date().toISOString().split('T')[0] as string
               }).where(sql`id = ${designation[0].id}`).returning();
               designation = updatedDesignation;
             }
@@ -281,14 +282,14 @@ export async function POST() {
                 name: departmentName.trim(),
                 description: departmentName.trim(),
                 active: true,
-                updatedAt: new Date().toISOString().split('T')[0]
+                updatedAt: new Date().toISOString().split('T')[0] as string
               }).returning();
               department = newDepartment;
             } else {
               const updatedDepartment = await db.update(departmentsTable).set({
                 description: departmentName.trim(),
                 active: true,
-                updatedAt: new Date().toISOString().split('T')[0]
+                updatedAt: new Date().toISOString().split('T')[0] as string
               }).where(sql`id = ${department[0].id}`).returning();
               department = updatedDepartment;
             }
@@ -306,8 +307,8 @@ export async function POST() {
             status: status.toLowerCase(),
             email: email,
             phone: cellNumber,
-            hireDate: dateOfJoining ? (typeof dateOfJoining === 'string' ? new Date(dateOfJoining).toISOString().split('T')[0] : dateOfJoining) : null,
-            dateOfBirth: dateOfBirth ? (typeof dateOfBirth === 'string' ? new Date(dateOfBirth).toISOString().split('T')[0] : dateOfBirth) : null,
+            hireDate: dateOfJoining ? (typeof dateOfJoining === 'string' ? new Date(dateOfJoining).toISOString().split('T')[0] : dateOfJoining.toISOString().split('T')[0]) : null,
+            dateOfBirth: dateOfBirth ? (typeof dateOfBirth === 'string' ? new Date(dateOfBirth).toISOString().split('T')[0] : dateOfBirth.toISOString().split('T')[0]) : null,
             departmentId: departmentId,
             designationId: designationId,
             // Additional fields from ERPNext
@@ -377,7 +378,7 @@ export async function POST() {
             // Advance salary fields
             advanceSalaryEligible: erpEmployee.advance_salary_eligible !== false,
             advanceSalaryApprovedThisMonth: erpEmployee.advance_salary_approved_this_month || false,
-            updatedAt: new Date().toISOString().split('T')[0]
+            updatedAt: new Date().toISOString().split('T')[0] as string
           };
 
           if (existingEmployee.length > 0) {
@@ -401,12 +402,12 @@ export async function POST() {
               existingEmployeeData.status !== status.toLowerCase() ||
               existingEmployeeData.email !== email ||
               existingEmployeeData.phone !== cellNumber ||
-              existingEmployeeData.dateOfBirth?.toISOString() !== (dateOfBirth ? new Date(dateOfBirth).toISOString() : null) ||
-              existingEmployeeData.hireDate?.toISOString() !== (dateOfJoining ? new Date(dateOfJoining).toISOString() : null) ||
+              existingEmployeeData.dateOfBirth !== (dateOfBirth ? new Date(dateOfBirth).toISOString().split('T')[0] : null) ||
+              existingEmployeeData.hireDate !== (dateOfJoining ? new Date(dateOfJoining).toISOString().split('T')[0] : null) ||
               existingEmployeeData.departmentId !== departmentId ||
               existingEmployeeData.designationId !== designationId ||
               existingEmployeeData.iqamaNumber !== iqama ||
-              existingEmployeeData.iqamaExpiry?.toISOString() !== (iqamaExpiry ? new Date(iqamaExpiry).toISOString() : null);
+              existingEmployeeData.iqamaExpiry !== (iqamaExpiry ? new Date(iqamaExpiry).toISOString().split('T')[0] : null);
 
             if (hasChanges) {
               console.log('Updating existing employee:', existingEmployeeData.id);

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+
 import { ArrowLeft, Edit, Trash2, Building2, Mail, Phone, MapPin, FileText, Image } from "lucide-react";
 import { toast } from "sonner";
 

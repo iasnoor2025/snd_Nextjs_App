@@ -45,7 +45,6 @@ async function updateEquipmentStatusOnAssignmentChange(equipmentId: number, assi
 }
 
 export async function GET(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

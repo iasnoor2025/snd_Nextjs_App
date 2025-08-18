@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -11,23 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save, Building2 } from "lucide-react";
 import { toast } from "sonner";
 
-interface Company {
-  id: number;
-  name: string;
-  address: string | null;
-  email: string | null;
-  phone: string | null;
-  logo: string | null;
-  legal_document: string | null;
-  created_at: string | null;
-  updated_at: string | null;
-}
+
 
 export default function EditCompanyPage() {
   const params = useParams();
   const router = useRouter();
-  // Unwrap params Promise immediately - this must be called unconditionally
-  const { id } = use(params);
+  const { id } = params;
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

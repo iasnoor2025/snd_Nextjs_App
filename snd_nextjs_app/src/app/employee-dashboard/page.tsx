@@ -338,17 +338,17 @@ export default function EmployeeDashboard() {
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div className="flex-1">
                       <p className="text-sm font-medium">
-                        {new Date(dashboardData.recentTimesheets[0].date).toLocaleDateString()}
+                        {dashboardData?.recentTimesheets?.[0]?.date ? new Date(dashboardData.recentTimesheets[0].date).toLocaleDateString() : ''}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {dashboardData.recentTimesheets[0].hours_worked} hours + {dashboardData.recentTimesheets[0].overtime_hours} overtime
+                        {dashboardData?.recentTimesheets?.[0]?.hours_worked} hours + {dashboardData?.recentTimesheets?.[0]?.overtime_hours} overtime
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {dashboardData.recentTimesheets[0].start_time?.slice(0, 5)} - {dashboardData.recentTimesheets[0].end_time?.slice(0, 5)}
+                        {dashboardData?.recentTimesheets?.[0]?.start_time?.slice(0, 5)} - {dashboardData?.recentTimesheets?.[0]?.end_time?.slice(0, 5)}
                       </p>
                     </div>
-                    <Badge variant={dashboardData.recentTimesheets[0].status === 'manager_approved' ? 'default' : 'secondary'}>
-                      {dashboardData.recentTimesheets[0].status === 'manager_approved' ? 'approved' : dashboardData.recentTimesheets[0].status}
+                    <Badge variant={dashboardData?.recentTimesheets?.[0]?.status === 'manager_approved' ? 'default' : 'secondary'}>
+                      {dashboardData?.recentTimesheets?.[0]?.status === 'manager_approved' ? 'approved' : dashboardData?.recentTimesheets?.[0]?.status}
                     </Badge>
                   </div>
                 ) : (
@@ -372,18 +372,18 @@ export default function EmployeeDashboard() {
                 {dashboardData?.recentLeaves?.length ? (
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div className="flex-1">
-                      <p className="text-sm font-medium">{dashboardData.recentLeaves[0].leave_type}</p>
+                      <p className="text-sm font-medium">{dashboardData.recentLeaves[0]?.leave_type}</p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(dashboardData.recentLeaves[0].start_date).toLocaleDateString()} - {new Date(dashboardData.recentLeaves[0].end_date).toLocaleDateString()} ({dashboardData.recentLeaves[0].days} days)
+                        {dashboardData.recentLeaves[0]?.start_date ? new Date(dashboardData.recentLeaves[0].start_date).toLocaleDateString() : 'N/A'} - {dashboardData.recentLeaves[0]?.end_date ? new Date(dashboardData.recentLeaves[0].end_date).toLocaleDateString() : 'N/A'} ({dashboardData.recentLeaves[0]?.days || 0} days)
                       </p>
-                      {dashboardData.recentLeaves[0].reason && (
+                      {dashboardData.recentLeaves[0]?.reason && (
                         <p className="text-xs text-muted-foreground">
-                          Reason: {dashboardData.recentLeaves[0].reason}
+                          Reason: {dashboardData.recentLeaves[0]?.reason}
                         </p>
                       )}
                     </div>
-                    <Badge variant={dashboardData.recentLeaves[0].status === 'approved' ? 'default' : dashboardData.recentLeaves[0].status === 'pending' ? 'secondary' : 'destructive'}>
-                      {dashboardData.recentLeaves[0].status}
+                    <Badge variant={dashboardData.recentLeaves[0]?.status === 'approved' ? 'default' : dashboardData.recentLeaves[0]?.status === 'pending' ? 'secondary' : 'destructive'}>
+                      {dashboardData.recentLeaves[0]?.status}
                     </Badge>
                   </div>
                 ) : (
@@ -407,11 +407,11 @@ export default function EmployeeDashboard() {
                 {dashboardData?.currentProjects?.length ? (
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div className="flex-1">
-                      <p className="text-sm font-medium">{dashboardData.currentProjects[0].name}</p>
-                      <p className="text-xs text-muted-foreground">{dashboardData.currentProjects[0].description}</p>
+                      <p className="text-sm font-medium">{dashboardData.currentProjects[0]?.name}</p>
+                      <p className="text-xs text-muted-foreground">{dashboardData.currentProjects[0]?.description}</p>
                     </div>
-                    <Badge variant={dashboardData.currentProjects[0].status === 'active' ? 'default' : 'secondary'}>
-                      {dashboardData.currentProjects[0].status}
+                    <Badge variant={dashboardData.currentProjects[0]?.status === 'active' ? 'default' : 'secondary'}>
+                      {dashboardData.currentProjects[0]?.status}
                     </Badge>
                   </div>
                 ) : (
@@ -435,16 +435,16 @@ export default function EmployeeDashboard() {
                 {dashboardData?.advances?.length ? (
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div className="flex-1">
-                      <p className="text-sm font-medium">${dashboardData.advances[0].amount.toLocaleString()}</p>
-                      {dashboardData.advances[0].reason && (
-                        <p className="text-xs text-muted-foreground">{dashboardData.advances[0].reason}</p>
+                      <p className="text-sm font-medium">${dashboardData.advances[0]?.amount?.toLocaleString() || '0'}</p>
+                      {dashboardData.advances[0]?.reason && (
+                        <p className="text-xs text-muted-foreground">{dashboardData.advances[0]?.reason}</p>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        {new Date(dashboardData.advances[0].created_at).toLocaleDateString()}
+                        {dashboardData.advances[0]?.created_at ? new Date(dashboardData.advances[0].created_at).toLocaleDateString() : 'N/A'}
                       </p>
                     </div>
-                    <Badge variant={dashboardData.advances[0].status === 'approved' ? 'default' : dashboardData.advances[0].status === 'pending' ? 'secondary' : 'destructive'}>
-                      {dashboardData.advances[0].status}
+                    <Badge variant={dashboardData.advances[0]?.status === 'approved' ? 'default' : dashboardData.advances[0]?.status === 'pending' ? 'secondary' : 'destructive'}>
+                      {dashboardData.advances[0]?.status}
                     </Badge>
                   </div>
                 ) : (

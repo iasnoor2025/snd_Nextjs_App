@@ -90,6 +90,13 @@ export async function PUT(
 
     const existingUser = existingUserRows[0];
 
+    if (!existingUser) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
     // Update user
     const updatedUserRows = await db
       .update(users)

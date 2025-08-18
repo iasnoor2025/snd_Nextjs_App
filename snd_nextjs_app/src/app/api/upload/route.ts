@@ -1,21 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { withAuth } from '@/lib/rbac/api-middleware';
+
+
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 
 // Initialize S3 client
-const s3Client = new S3Client({
+const s3Config: any = {
   region: process.env.AWS_REGION || 'us-east-1',
-  endpoint: process.env.S3_ENDPOINT || undefined,
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
   },
   forcePathStyle: true, // Required for MinIO
-});
+};
+
+if (process.env.S3_ENDPOINT) {
+  s3Config.endpoint = process.env.S3_ENDPOINT;
+}
+
+const s3Client = new S3Client(s3Config);
 
 // Helper function to generate unique filename
 function generateUniqueFilename(originalName: string): string {
@@ -42,7 +47,7 @@ export async function POST(_request: NextRequest) {
     console.log('File upload API called');
 
     // Parse multipart form data
-    const formData = await request.formData();
+    const formData = await _request.formData();
     const file = formData.get('file') as File;
     const type = formData.get('type') as string;
 

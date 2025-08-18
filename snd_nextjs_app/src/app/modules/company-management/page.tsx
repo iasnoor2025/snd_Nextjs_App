@@ -3,15 +3,15 @@
 import { useState, useEffect } from "react";
 import { ProtectedRoute } from '@/components/protected-route';
 import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
-import { useRBAC } from '@/lib/rbac/rbac-context';
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
+
 import { Eye, Edit, Trash2, Plus, Building2, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 // i18n refactor: All user-facing strings now use useTranslation('company')
@@ -43,15 +43,13 @@ interface CompanyResponse {
 
 export default function CompanyManagementPage() {
   const { t } = useTranslation('company');
-  const { user, hasPermission, getAllowedActions } = useRBAC();
   const [companies, setCompanies] = useState<CompanyResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [perPage, setPerPage] = useState(10);
+  const [perPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Get allowed actions for company management
-  const allowedActions = getAllowedActions('Company');
+
 
   useEffect(() => {
     const fetchCompanies = async () => {

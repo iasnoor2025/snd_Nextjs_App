@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { media } from '@/lib/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
@@ -8,7 +8,6 @@ import { existsSync } from 'fs';
 
 // DELETE /api/equipment/[id]/documents/[documentId]
 export async function DELETE(
-  request: NextRequest,
   { params }: { params: Promise<{ id: string; documentId: string }> }
 ) {
   try {

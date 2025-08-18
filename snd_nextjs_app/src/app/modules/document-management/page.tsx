@@ -11,14 +11,12 @@ import {
   Search, 
   FileText, 
   Download, 
-  Eye, 
-  FileDown, 
-  Filter,
+    Eye,
+  FileDown,
   RefreshCw,
   User,
   Settings,
-  FileImage,
-  FileArchive
+  FileImage
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -219,7 +217,7 @@ export default function DocumentManagementPage() {
           
           if (contentDisposition) {
             const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-            if (filenameMatch) {
+            if (filenameMatch && filenameMatch[1]) {
               filename = filenameMatch[1];
             }
           }

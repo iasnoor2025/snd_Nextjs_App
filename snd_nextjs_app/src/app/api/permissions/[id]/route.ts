@@ -66,12 +66,12 @@ export async function GET(
     // Get user assignments for this permission
     const userAssignments = await db
       .select({
-        userId: modelHasPermissions.modelId,
+        userId: modelHasPermissions.userId,
         userName: users.name,
         userEmail: users.email,
       })
       .from(modelHasPermissions)
-      .leftJoin(users, eq(modelHasPermissions.modelId, users.id))
+      .leftJoin(users, eq(modelHasPermissions.userId, users.id))
       .where(eq(modelHasPermissions.permissionId, permissionId));
 
     const permissionWithAssignments = {

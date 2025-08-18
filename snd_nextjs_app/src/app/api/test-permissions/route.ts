@@ -19,15 +19,15 @@ export async function GET(_request: NextRequest) {
         userId: users.id,
         userName: users.name,
         userEmail: users.email,
-        userRoleField: users.role,
+
         roleId: roles.id,
         roleName: roles.name,
-        roleDescription: roles.description,
+
       })
       .from(users)
       .leftJoin(modelHasRoles, eq(users.id, modelHasRoles.userId))
       .leftJoin(roles, eq(modelHasRoles.roleId, roles.id))
-      .where(eq(users.id, session.user.id))
+      .where(eq(users.id, parseInt(session.user.id)))
       .limit(1);
 
     const userRole = userRoleInfo[0];
@@ -44,10 +44,10 @@ export async function GET(_request: NextRequest) {
         userId: userRole.userId,
         userName: userRole.userName,
         userEmail: userRole.userEmail,
-        userRoleField: userRole.userRoleField,
+
         roleId: userRole.roleId,
         roleName: userRole.roleName,
-        roleDescription: userRole.roleDescription,
+
       } : null,
       sessionData: {
         user: session.user,
