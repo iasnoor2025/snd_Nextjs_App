@@ -31,6 +31,7 @@ interface TimesheetsSectionProps {
   rejectingTimesheet: number | null
   markingAbsent: number | null
   isRefreshing?: boolean
+  onHideSection: () => void
 }
 
 export function TimesheetsSection({
@@ -45,7 +46,8 @@ export function TimesheetsSection({
   approvingTimesheet,
   rejectingTimesheet,
   markingAbsent,
-  isRefreshing = false
+  isRefreshing = false,
+  onHideSection
 }: TimesheetsSectionProps) {
 
   const { t } = useI18n()
@@ -77,17 +79,27 @@ export function TimesheetsSection({
               </span>
             </CardDescription>
           </div>
-          <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline">
-                <CheckCircle className="h-3 w-3 mr-1" />
-                {t('timesheet.canApprove')}
-              </Badge>
-              <div className="text-xs text-muted-foreground">
-                {t('timesheet.role')}: {session?.user?.role?.replace('_', ' ')}
+          <div className="flex items-center gap-2">
+            <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR']}>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  {t('timesheet.canApprove')}
+                </Badge>
+                <div className="text-xs text-muted-foreground">
+                  {t('timesheet.role')}: {session?.user?.role?.replace('_', ' ')}
+                </div>
               </div>
-            </div>
-          </RoleBased>
+            </RoleBased>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onHideSection}
+              className="flex items-center gap-2"
+            >
+              {t('dashboard.hideSection')}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

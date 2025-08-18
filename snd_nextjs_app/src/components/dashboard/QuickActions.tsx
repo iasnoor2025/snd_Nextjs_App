@@ -2,16 +2,35 @@
 
 import { useRouter } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Users, BarChart3, DollarSign, Settings, Wrench, Truck, FileText, Calendar, Building2, Activity } from "lucide-react"
 import { RoleBased } from "@/components/RoleBased"
 import { useI18n } from "@/hooks/use-i18n"
 
-export function QuickActions() {
+interface QuickActionsProps {
+  onHideSection: () => void
+}
+
+export function QuickActions({ onHideSection }: QuickActionsProps) {
   const router = useRouter()
   const { t } = useI18n()
   
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          {t('dashboard.quickActions') || 'Quick Actions'}
+        </h2>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onHideSection}
+          className="flex items-center gap-2"
+        >
+          {t('dashboard.hideSection')}
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <RoleBased roles={['SUPER_ADMIN', 'ADMIN']}>
         <Card className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-indigo-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer" onClick={() => router.push('/modules/user-management')}>
           <CardContent className="p-6 text-center">
@@ -91,6 +110,7 @@ export function QuickActions() {
           </CardContent>
         </Card>
       </RoleBased>
+      </div>
     </div>
   )
 }

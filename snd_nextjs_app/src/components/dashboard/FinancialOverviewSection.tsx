@@ -64,7 +64,11 @@ interface FinancialOverview {
   };
 }
 
-export function FinancialOverviewSection() {
+interface FinancialOverviewSectionProps {
+  onHideSection: () => void
+}
+
+export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSectionProps) {
   const { t } = useI18n()
   const { data: session, status } = useSession()
   const [financialOverview, setFinancialOverview] = useState<FinancialOverview | null>(null)
@@ -290,6 +294,14 @@ export function FinancialOverviewSection() {
           </p>
         </div>
         <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onHideSection}
+            className="flex items-center gap-2"
+          >
+            {t('dashboard.hideSection')}
+          </Button>
           {/* Month Selector */}
           <div className="flex items-center gap-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">

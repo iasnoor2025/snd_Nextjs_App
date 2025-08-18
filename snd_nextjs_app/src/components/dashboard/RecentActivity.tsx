@@ -19,7 +19,12 @@ interface RecentActivityProps {
   activities: ActivityItem[]
 }
 
-export function RecentActivity({ activities }: RecentActivityProps) {
+interface RecentActivityProps {
+  activities: ActivityItem[]
+  onHideSection: () => void
+}
+
+export function RecentActivity({ activities, onHideSection }: RecentActivityProps) {
   const { t } = useI18n()
   
   const getActivityIcon = (type: string) => {
@@ -61,9 +66,19 @@ export function RecentActivity({ activities }: RecentActivityProps) {
               {t('dashboard.recentActivityDescription')}
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm">
-            {t('dashboard.viewAll')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm">
+              {t('dashboard.viewAll')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onHideSection}
+              className="flex items-center gap-2"
+            >
+              {t('dashboard.hideSection')}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

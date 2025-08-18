@@ -7,36 +7,39 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useRouter } from "next/navigation"
-import { Wrench, Plus, Edit, Eye, AlertTriangle, Calendar, Search } from "lucide-react"
+import { Search, Plus, Wrench, Edit } from "lucide-react"
 import { RoleBased } from "@/components/RoleBased"
 import { useI18n } from "@/hooks/use-i18n"
 
 interface EquipmentData {
   id: number
   equipmentName: string
-  equipmentNumber: string | null
-  istimara: string | null
-  istimaraExpiry: string | null
-  daysRemaining: number | null
-  department: string | null
+  equipmentNumber?: string
+  manufacturer?: string
+  modelNumber?: string
+  department?: string
   status: 'available' | 'expired' | 'expiring' | 'missing'
-  manufacturer: string | null
-  modelNumber: string | null
-  serialNumber: string | null
+  istimaraExpiry?: string
+  daysRemaining: number | null
 }
 
 interface EquipmentSectionProps {
   equipmentData: EquipmentData[]
   onUpdateEquipment: (equipment: EquipmentData) => void
+  onHideSection: () => void
 }
 
-export function EquipmentSection({ equipmentData, onUpdateEquipment }: EquipmentSectionProps) {
+export function EquipmentSection({ equipmentData, onUpdateEquipment, onHideSection }: EquipmentSectionProps) {
   const router = useRouter()
   const { t } = useI18n()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+
+  // Debug: Log the onHideSection prop to ensure it's received
+  console.log('EquipmentSection - onHideSection received:', typeof onHideSection)
+  console.log('EquipmentSection - onHideSection value:', onHideSection)
 
   // Filter and search logic
   const filteredData = equipmentData.filter(item => {
@@ -67,17 +70,27 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
               {t('equipment.istimara.description')}
             </CardDescription>
           </div>
-          <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+          <div className="flex items-center gap-2">
+            <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push('/modules/equipment-management')}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                {t('equipment.actions.manageEquipment')}
+              </Button>
+            </RoleBased>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push('/modules/equipment-management')}
+              onClick={onHideSection}
               className="flex items-center gap-2"
             >
-              <Plus className="h-4 w-4" />
-              {t('equipment.actions.manageEquipment')}
+              {t('dashboard.hideSection')}
             </Button>
-          </RoleBased>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">

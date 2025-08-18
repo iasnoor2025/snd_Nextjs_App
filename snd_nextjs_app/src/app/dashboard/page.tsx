@@ -602,141 +602,57 @@ export default function DashboardPage() {
         </div>
                 {/* Iqama Section */}
         {sectionVisibility.iqama && (
-          <>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {t('employee.iqama.management')}
-              </h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toggleSection('iqama')}
-                className="flex items-center gap-2"
-              >
-                {t('dashboard.hideSection')}
-              </Button>
-            </div>
-            <IqamaSection
-              iqamaData={iqamaData}
-              onUpdateIqama={handleOpenIqamaModal}
-            />
-          </>
+          <IqamaSection
+            iqamaData={iqamaData}
+            onUpdateIqama={handleOpenIqamaModal}
+            onHideSection={() => toggleSection('iqama')}
+          />
         )}
 
         {/* Equipment Section */}
         {sectionVisibility.equipment && (
-          <>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {t('equipment.istimara.title')}
-              </h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toggleSection('equipment')}
-                className="flex items-center gap-2"
-              >
-                {t('dashboard.hideSection')}
-              </Button>
-            </div>
-            <EquipmentSection
-              equipmentData={equipmentData}
-              onUpdateEquipment={handleOpenEquipmentUpdateModal}
-            />
-          </>
+          <EquipmentSection
+            equipmentData={equipmentData}
+            onUpdateEquipment={handleOpenEquipmentUpdateModal}
+            onHideSection={() => toggleSection('equipment')}
+          />
         )}
 
         {/* Financial Overview Section */}
         {sectionVisibility.financial && (
-          <>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {t('financial.comprehensiveOverview') || 'Financial Overview'}
-              </h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toggleSection('financial')}
-                className="flex items-center gap-2"
-              >
-                {t('dashboard.hideSection')}
-              </Button>
-            </div>
-            <FinancialOverviewSection />
-          </>
+          <FinancialOverviewSection onHideSection={() => toggleSection('financial')} />
         )}
 
         {/* Timesheets Section */}
         {sectionVisibility.timesheets && (
-          <>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {t('timesheet.todaysAttendance')}
-              </h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toggleSection('timesheets')}
-                className="flex items-center gap-2"
-              >
-                {t('dashboard.hideSection')}
-              </Button>
-            </div>
-            <TimesheetsSection
-              timesheetData={timesheetData}
-              currentTime={currentTime}
-              session={session}
-              onApproveTimesheet={handleApproveTimesheet}
-              onRejectTimesheet={handleRejectTimesheet}
-              onMarkAbsent={handleMarkAbsent}
-              onEditHours={handleEditHours}
-              approvalSuccess={approvalSuccess}
-              approvingTimesheet={approvingTimesheet}
-              rejectingTimesheet={rejectingTimesheet}
-              markingAbsent={markingAbsent}
-              isRefreshing={refreshingTimesheets}
-            />
-          </>
+          <TimesheetsSection
+            timesheetData={timesheetData}
+            currentTime={currentTime}
+            session={session}
+            onApproveTimesheet={handleApproveTimesheet}
+            onRejectTimesheet={handleRejectTimesheet}
+            onMarkAbsent={handleMarkAbsent}
+            onEditHours={handleEditHours}
+            approvalSuccess={approvalSuccess}
+            approvingTimesheet={approvingTimesheet}
+            rejectingTimesheet={rejectingTimesheet}
+            markingAbsent={markingAbsent}
+            isRefreshing={refreshingTimesheets}
+            onHideSection={() => toggleSection('timesheets')}
+          />
         )}
 
         {/* Quick Actions */}
         {sectionVisibility.quickActions && (
-          <>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {t('dashboard.quickActions') || 'Quick Actions'}
-              </h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toggleSection('quickActions')}
-                className="flex items-center gap-2"
-              >
-                {t('dashboard.hideSection')}
-              </Button>
-            </div>
-            <QuickActions />
-          </>
+          <QuickActions onHideSection={() => toggleSection('quickActions')} />
         )}
 
         {/* Recent Activity */}
         {sectionVisibility.recentActivity && (
-          <>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                {t('dashboard.recentActivity')}
-              </h2>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => toggleSection('recentActivity')}
-                className="flex items-center gap-2"
-              >
-                {t('dashboard.hideSection')}
-              </Button>
-            </div>
-            <RecentActivity activities={activities} />
-          </>
+          <RecentActivity 
+            activities={activities} 
+            onHideSection={() => toggleSection('recentActivity')} 
+          />
         )}
 
         {/* Hidden Sections Summary */}

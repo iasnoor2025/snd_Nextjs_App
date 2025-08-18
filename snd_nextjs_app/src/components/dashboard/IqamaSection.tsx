@@ -27,9 +27,10 @@ interface IqamaData {
 interface IqamaSectionProps {
   iqamaData: IqamaData[]
   onUpdateIqama: (iqama: IqamaData) => void
+  onHideSection: () => void
 }
 
-export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
+export function IqamaSection({ iqamaData, onUpdateIqama, onHideSection }: IqamaSectionProps) {
   const router = useRouter()
   const { t } = useI18n()
   const [search, setSearch] = useState('')
@@ -66,17 +67,27 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
               {t('employee.iqama.description')}
             </CardDescription>
           </div>
-          <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+          <div className="flex items-center gap-2">
+            <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push('/modules/employee-management')}
+                className="flex items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                {t('employee.iqama.manage')}
+              </Button>
+            </RoleBased>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push('/modules/employee-management')}
+              onClick={onHideSection}
               className="flex items-center gap-2"
             >
-              <Edit className="h-4 w-4" />
-              {t('employee.iqama.manage')}
+              {t('dashboard.hideSection')}
             </Button>
-          </RoleBased>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
