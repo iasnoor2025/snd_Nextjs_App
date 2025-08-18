@@ -1,22 +1,39 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useTranslation } from 'react-i18next';
 import { ProtectedRoute } from '@/components/protected-route';
-import { useRBAC } from '@/lib/rbac/rbac-context';
+import { useConfirmationDialog } from '@/components/providers/confirmation-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
-import { ArrowLeft, Save, User, FileText, CreditCard, Shield, MapPin, Plus, Edit, Trash2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { useRBAC } from '@/lib/rbac/rbac-context';
+import {
+  ArrowLeft,
+  CreditCard,
+  Edit,
+  FileText,
+  MapPin,
+  Plus,
+  Save,
+  Shield,
+  Trash2,
+  User,
+} from 'lucide-react';
 import Link from 'next/link';
-import { useConfirmationDialog } from '@/components/providers/confirmation-provider';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 interface Department {
   id: number;
@@ -41,20 +58,20 @@ interface EmployeeFormData {
   date_of_birth?: string;
   hire_date?: string;
   nationality?: string;
-  
+
   // Address
   address?: string;
   city?: string;
   state?: string;
   postal_code?: string;
   country?: string;
-  
+
   // Employment Details
   department_id?: number | null;
   designation_id?: number | null;
   supervisor?: string;
   status: string;
-  
+
   // Salary Information
   basic_salary: number;
   food_allowance: number;
@@ -64,27 +81,27 @@ interface EmployeeFormData {
   absent_deduction_rate: number;
   overtime_rate_multiplier: number;
   overtime_fixed_rate?: number;
-  
+
   // Bank Information
   bank_name?: string;
   bank_account_number?: string;
   bank_iban?: string;
-  
+
   // Contract Details
   contract_hours_per_day: number;
   contract_days_per_month: number;
-  
+
   // Emergency Contact
   emergency_contact_name?: string;
   emergency_contact_phone?: string;
   emergency_contact_relationship?: string;
-  
+
   // Notes
   notes?: string;
-  
+
   // Advance Settings
   advance_salary_eligible: boolean;
-  
+
   // Documents
   iqama_number?: string;
   iqama_expiry?: string;
@@ -103,10 +120,10 @@ interface EmployeeFormData {
   spsp_license_number?: string;
   spsp_license_expiry?: string;
   spsp_license_cost?: number;
-  
+
   // Operator Settings
   is_operator: boolean;
-  
+
   // Access Control
   access_start_date?: string;
   access_end_date?: string;
@@ -126,8 +143,8 @@ export default function CreateEmployeePage() {
   // Add modal states
   const [showAddDepartment, setShowAddDepartment] = useState(false);
   const [showAddDesignation, setShowAddDesignation] = useState(false);
-  const [newDepartment, setNewDepartment] = useState({ name: "", code: "" });
-  const [newDesignation, setNewDesignation] = useState({ name: "", description: "" });
+  const [newDepartment, setNewDepartment] = useState({ name: '', code: '' });
+  const [newDesignation, setNewDesignation] = useState({ name: '', description: '' });
   const [addingDepartment, setAddingDepartment] = useState(false);
   const [addingDesignation, setAddingDesignation] = useState(false);
 
@@ -239,12 +256,8 @@ export default function CreateEmployeePage() {
           <Card>
             <CardContent className="p-6">
               <div className="text-center">
-                <h2 className="text-2xl font-bold text-red-600 mb-4">
-                  {t('common:accessDenied')}
-                </h2>
-                <p className="text-gray-600 mb-4">
-                  {t('employee:messages.noCreatePermission')}
-                </p>
+                <h2 className="text-2xl font-bold text-red-600 mb-4">{t('common:accessDenied')}</h2>
+                <p className="text-gray-600 mb-4">{t('employee:messages.noCreatePermission')}</p>
                 <Link href="/modules/employee-management">
                   <Button variant="outline">
                     <ArrowLeft className="w-4 h-4 mr-2" />
@@ -286,12 +299,12 @@ export default function CreateEmployeePage() {
         toast.success('Department added successfully');
         setDepartments(prev => [...prev, result.data]);
         setFormData(prev => ({ ...prev, department_id: result.data.id }));
-        setNewDepartment({ name: "", code: "" });
+        setNewDepartment({ name: '', code: '' });
         setShowAddDepartment(false);
       } else {
         // If creation fails, try to refresh the departments list
         toast.error(result.message || 'Failed to add department');
-        
+
         // Refresh departments list in case there was a sync issue
         try {
           const refreshResponse = await fetch('/api/departments');
@@ -306,7 +319,7 @@ export default function CreateEmployeePage() {
     } catch (error) {
       console.error('Error adding department:', error);
       toast.error('Failed to add department. Please try again.');
-      
+
       // Refresh departments list in case there was a sync issue
       try {
         const refreshResponse = await fetch('/api/departments');
@@ -349,7 +362,7 @@ export default function CreateEmployeePage() {
         toast.success('Designation added successfully');
         setDesignations(prev => [...prev, result.data]);
         setFormData(prev => ({ ...prev, designation_id: result.data.id }));
-        setNewDesignation({ name: "", description: "" });
+        setNewDesignation({ name: '', description: '' });
         setShowAddDesignation(false);
       } else {
         toast.error(result.message || 'Failed to add designation');
@@ -387,10 +400,8 @@ export default function CreateEmployeePage() {
 
       if (result.success) {
         toast.success('Department updated successfully');
-        setDepartments(prev => 
-          prev.map(dept => 
-            dept.id === editingDepartment.id ? result.data : dept
-          )
+        setDepartments(prev =>
+          prev.map(dept => (dept.id === editingDepartment.id ? result.data : dept))
         );
         setEditingDepartment(null);
         setShowEditDepartment(false);
@@ -430,10 +441,8 @@ export default function CreateEmployeePage() {
 
       if (result.success) {
         toast.success('Designation updated successfully');
-        setDesignations(prev => 
-          prev.map(desig => 
-            desig.id === editingDesignation.id ? result.data : desig
-          )
+        setDesignations(prev =>
+          prev.map(desig => (desig.id === editingDesignation.id ? result.data : desig))
         );
         setEditingDesignation(null);
         setShowEditDesignation(false);
@@ -451,7 +460,7 @@ export default function CreateEmployeePage() {
   const handleInputChange = (field: keyof EmployeeFormData, value: any) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -471,7 +480,7 @@ export default function CreateEmployeePage() {
         if (result.success) {
           setUploadedFiles(prev => ({
             ...prev,
-            [field]: result.url
+            [field]: result.url,
           }));
           toast.success(t('employee:messages.fileUploadSuccess'));
         } else {
@@ -493,7 +502,7 @@ export default function CreateEmployeePage() {
     try {
       const employeeData = {
         ...formData,
-        ...uploadedFiles
+        ...uploadedFiles,
       };
 
       const response = await fetch('/api/employees', {
@@ -581,7 +590,7 @@ export default function CreateEmployeePage() {
                       <Input
                         id="first_name"
                         value={formData.first_name}
-                        onChange={(e) => handleInputChange('first_name', e.target.value)}
+                        onChange={e => handleInputChange('first_name', e.target.value)}
                         required
                       />
                     </div>
@@ -590,7 +599,7 @@ export default function CreateEmployeePage() {
                       <Input
                         id="middle_name"
                         value={formData.middle_name}
-                        onChange={(e) => handleInputChange('middle_name', e.target.value)}
+                        onChange={e => handleInputChange('middle_name', e.target.value)}
                       />
                     </div>
                     <div>
@@ -598,7 +607,7 @@ export default function CreateEmployeePage() {
                       <Input
                         id="last_name"
                         value={formData.last_name}
-                        onChange={(e) => handleInputChange('last_name', e.target.value)}
+                        onChange={e => handleInputChange('last_name', e.target.value)}
                         required
                       />
                     </div>
@@ -611,7 +620,7 @@ export default function CreateEmployeePage() {
                         id="email"
                         type="email"
                         value={formData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        onChange={e => handleInputChange('email', e.target.value)}
                       />
                     </div>
                     <div>
@@ -619,7 +628,7 @@ export default function CreateEmployeePage() {
                       <Input
                         id="phone"
                         value={formData.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        onChange={e => handleInputChange('phone', e.target.value)}
                       />
                     </div>
                   </div>
@@ -631,7 +640,7 @@ export default function CreateEmployeePage() {
                         id="date_of_birth"
                         type="date"
                         value={formData.date_of_birth}
-                        onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
+                        onChange={e => handleInputChange('date_of_birth', e.target.value)}
                       />
                     </div>
                     <div>
@@ -640,7 +649,7 @@ export default function CreateEmployeePage() {
                         id="hire_date"
                         type="date"
                         value={formData.hire_date}
-                        onChange={(e) => handleInputChange('hire_date', e.target.value)}
+                        onChange={e => handleInputChange('hire_date', e.target.value)}
                       />
                     </div>
                     <div>
@@ -648,7 +657,7 @@ export default function CreateEmployeePage() {
                       <Input
                         id="nationality"
                         value={formData.nationality}
-                        onChange={(e) => handleInputChange('nationality', e.target.value)}
+                        onChange={e => handleInputChange('nationality', e.target.value)}
                       />
                     </div>
                   </div>
@@ -669,14 +678,16 @@ export default function CreateEmployeePage() {
                       <Label htmlFor="department_id">{t('employee:fields.department')}</Label>
                       <div className="flex gap-2">
                         <Select
-                          value={formData.department_id?.toString() || ""}
-                          onValueChange={(value) => handleInputChange('department_id', parseInt(value))}
+                          value={formData.department_id?.toString() || ''}
+                          onValueChange={value =>
+                            handleInputChange('department_id', parseInt(value))
+                          }
                         >
                           <SelectTrigger className="flex-1">
                             <SelectValue placeholder={t('employee:fields.selectDepartment')} />
                           </SelectTrigger>
                           <SelectContent>
-                            {departments.map((dept) => (
+                            {departments.map(dept => (
                               <SelectItem key={`dept-${dept.id}`} value={dept.id.toString()}>
                                 {dept.name}
                               </SelectItem>
@@ -697,7 +708,9 @@ export default function CreateEmployeePage() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            const selectedDept = departments.find(d => d.id === formData.department_id);
+                            const selectedDept = departments.find(
+                              d => d.id === formData.department_id
+                            );
                             if (selectedDept) {
                               setEditingDepartment(selectedDept);
                               setShowEditDepartment(true);
@@ -715,28 +728,39 @@ export default function CreateEmployeePage() {
                           variant="outline"
                           size="sm"
                           onClick={async () => {
-                            const selectedDept = departments.find(d => d.id === formData.department_id);
+                            const selectedDept = departments.find(
+                              d => d.id === formData.department_id
+                            );
                             if (selectedDept) {
                               const confirmed = await confirm({
                                 title: t('employee:confirmDelete.department.title'),
-                                description: t('employee:confirmDelete.department.description', { name: selectedDept.name }),
-                                variant: "destructive",
+                                description: t('employee:confirmDelete.department.description', {
+                                  name: selectedDept.name,
+                                }),
+                                variant: 'destructive',
                                 confirmText: t('common:delete'),
                                 cancelText: t('common:cancel'),
                               });
-                              
+
                               if (confirmed) {
                                 try {
-                                  const response = await fetch(`/api/departments/${selectedDept.id}`, {
-                                    method: 'DELETE',
-                                  });
+                                  const response = await fetch(
+                                    `/api/departments/${selectedDept.id}`,
+                                    {
+                                      method: 'DELETE',
+                                    }
+                                  );
                                   const result = await response.json();
                                   if (result.success) {
                                     toast.success(t('employee:messages.deleteSuccess'));
-                                    setDepartments(prev => prev.filter(d => d.id !== selectedDept.id));
+                                    setDepartments(prev =>
+                                      prev.filter(d => d.id !== selectedDept.id)
+                                    );
                                     setFormData(prev => ({ ...prev, department_id: null }));
                                   } else {
-                                    toast.error(result.message || t('employee:messages.deleteError'));
+                                    toast.error(
+                                      result.message || t('employee:messages.deleteError')
+                                    );
                                   }
                                 } catch (error) {
                                   console.error('Error deleting department:', error);
@@ -758,14 +782,16 @@ export default function CreateEmployeePage() {
                       <Label htmlFor="designation_id">{t('employee:fields.designation')}</Label>
                       <div className="flex gap-2">
                         <Select
-                          value={formData.designation_id?.toString() || ""}
-                          onValueChange={(value) => handleInputChange('designation_id', parseInt(value))}
+                          value={formData.designation_id?.toString() || ''}
+                          onValueChange={value =>
+                            handleInputChange('designation_id', parseInt(value))
+                          }
                         >
                           <SelectTrigger className="flex-1">
                             <SelectValue placeholder={t('employee:fields.selectDesignation')} />
                           </SelectTrigger>
                           <SelectContent>
-                            {designations.map((desig) => (
+                            {designations.map(desig => (
                               <SelectItem key={`desig-${desig.id}`} value={desig.id.toString()}>
                                 {desig.name}
                               </SelectItem>
@@ -786,7 +812,9 @@ export default function CreateEmployeePage() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            const selectedDesig = designations.find(d => d.id === formData.designation_id);
+                            const selectedDesig = designations.find(
+                              d => d.id === formData.designation_id
+                            );
                             if (selectedDesig) {
                               setEditingDesignation(selectedDesig);
                               setShowEditDesignation(true);
@@ -804,28 +832,39 @@ export default function CreateEmployeePage() {
                           variant="outline"
                           size="sm"
                           onClick={async () => {
-                            const selectedDesig = designations.find(d => d.id === formData.designation_id);
+                            const selectedDesig = designations.find(
+                              d => d.id === formData.designation_id
+                            );
                             if (selectedDesig) {
                               const confirmed = await confirm({
                                 title: t('employee:confirmDelete.designation.title'),
-                                description: t('employee:confirmDelete.designation.description', { name: selectedDesig.name }),
-                                variant: "destructive",
+                                description: t('employee:confirmDelete.designation.description', {
+                                  name: selectedDesig.name,
+                                }),
+                                variant: 'destructive',
                                 confirmText: t('common:delete'),
                                 cancelText: t('common:cancel'),
                               });
-                              
+
                               if (confirmed) {
                                 try {
-                                  const response = await fetch(`/api/designations/${selectedDesig.id}`, {
-                                    method: 'DELETE',
-                                  });
+                                  const response = await fetch(
+                                    `/api/designations/${selectedDesig.id}`,
+                                    {
+                                      method: 'DELETE',
+                                    }
+                                  );
                                   const result = await response.json();
                                   if (result.success) {
                                     toast.success(t('employee:messages.deleteSuccess'));
-                                    setDesignations(prev => prev.filter(d => d.id !== selectedDesig.id));
+                                    setDesignations(prev =>
+                                      prev.filter(d => d.id !== selectedDesig.id)
+                                    );
                                     setFormData(prev => ({ ...prev, designation_id: null }));
                                   } else {
-                                    toast.error(result.message || t('employee:messages.deleteError'));
+                                    toast.error(
+                                      result.message || t('employee:messages.deleteError')
+                                    );
                                   }
                                 } catch (error) {
                                   console.error('Error deleting designation:', error);
@@ -851,14 +890,14 @@ export default function CreateEmployeePage() {
                       <Input
                         id="supervisor"
                         value={formData.supervisor}
-                        onChange={(e) => handleInputChange('supervisor', e.target.value)}
+                        onChange={e => handleInputChange('supervisor', e.target.value)}
                       />
                     </div>
                     <div>
                       <Label htmlFor="status">{t('employee:fields.status')}</Label>
                       <Select
                         value={formData.status}
-                        onValueChange={(value) => handleInputChange('status', value)}
+                        onValueChange={value => handleInputChange('status', value)}
                       >
                         <SelectTrigger>
                           <SelectValue />
@@ -866,7 +905,9 @@ export default function CreateEmployeePage() {
                         <SelectContent>
                           <SelectItem value="active">{t('employee:status.active')}</SelectItem>
                           <SelectItem value="inactive">{t('employee:status.inactive')}</SelectItem>
-                          <SelectItem value="terminated">{t('employee:status.terminated')}</SelectItem>
+                          <SelectItem value="terminated">
+                            {t('employee:status.terminated')}
+                          </SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -874,21 +915,29 @@ export default function CreateEmployeePage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="contract_hours_per_day">{t('employee:fields.contractHoursPerDay')}</Label>
+                      <Label htmlFor="contract_hours_per_day">
+                        {t('employee:fields.contractHoursPerDay')}
+                      </Label>
                       <Input
                         id="contract_hours_per_day"
                         type="number"
                         value={formData.contract_hours_per_day}
-                        onChange={(e) => handleInputChange('contract_hours_per_day', parseInt(e.target.value))}
+                        onChange={e =>
+                          handleInputChange('contract_hours_per_day', parseInt(e.target.value))
+                        }
                       />
                     </div>
                     <div>
-                      <Label htmlFor="contract_days_per_month">{t('employee:fields.contractDaysPerMonth')}</Label>
+                      <Label htmlFor="contract_days_per_month">
+                        {t('employee:fields.contractDaysPerMonth')}
+                      </Label>
                       <Input
                         id="contract_days_per_month"
                         type="number"
                         value={formData.contract_days_per_month}
-                        onChange={(e) => handleInputChange('contract_days_per_month', parseInt(e.target.value))}
+                        onChange={e =>
+                          handleInputChange('contract_days_per_month', parseInt(e.target.value))
+                        }
                       />
                     </div>
                   </div>
@@ -912,7 +961,9 @@ export default function CreateEmployeePage() {
                         type="number"
                         step="0.01"
                         value={formData.basic_salary}
-                        onChange={(e) => handleInputChange('basic_salary', parseFloat(e.target.value))}
+                        onChange={e =>
+                          handleInputChange('basic_salary', parseFloat(e.target.value))
+                        }
                         required
                       />
                     </div>
@@ -923,7 +974,7 @@ export default function CreateEmployeePage() {
                         type="number"
                         step="0.01"
                         value={formData.hourly_rate}
-                        onChange={(e) => handleInputChange('hourly_rate', parseFloat(e.target.value))}
+                        onChange={e => handleInputChange('hourly_rate', parseFloat(e.target.value))}
                       />
                     </div>
                   </div>
@@ -936,60 +987,82 @@ export default function CreateEmployeePage() {
                         type="number"
                         step="0.01"
                         value={formData.food_allowance}
-                        onChange={(e) => handleInputChange('food_allowance', parseFloat(e.target.value))}
+                        onChange={e =>
+                          handleInputChange('food_allowance', parseFloat(e.target.value))
+                        }
                       />
                     </div>
                     <div>
-                      <Label htmlFor="housing_allowance">{t('employee:fields.housingAllowance')}</Label>
+                      <Label htmlFor="housing_allowance">
+                        {t('employee:fields.housingAllowance')}
+                      </Label>
                       <Input
                         id="housing_allowance"
                         type="number"
                         step="0.01"
                         value={formData.housing_allowance}
-                        onChange={(e) => handleInputChange('housing_allowance', parseFloat(e.target.value))}
+                        onChange={e =>
+                          handleInputChange('housing_allowance', parseFloat(e.target.value))
+                        }
                       />
                     </div>
                     <div>
-                      <Label htmlFor="transport_allowance">{t('employee:fields.transportAllowance')}</Label>
+                      <Label htmlFor="transport_allowance">
+                        {t('employee:fields.transportAllowance')}
+                      </Label>
                       <Input
                         id="transport_allowance"
                         type="number"
                         step="0.01"
                         value={formData.transport_allowance}
-                        onChange={(e) => handleInputChange('transport_allowance', parseFloat(e.target.value))}
+                        onChange={e =>
+                          handleInputChange('transport_allowance', parseFloat(e.target.value))
+                        }
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <Label htmlFor="absent_deduction_rate">{t('employee:fields.absentDeductionRate')}</Label>
+                      <Label htmlFor="absent_deduction_rate">
+                        {t('employee:fields.absentDeductionRate')}
+                      </Label>
                       <Input
                         id="absent_deduction_rate"
                         type="number"
                         step="0.01"
                         value={formData.absent_deduction_rate}
-                        onChange={(e) => handleInputChange('absent_deduction_rate', parseFloat(e.target.value))}
+                        onChange={e =>
+                          handleInputChange('absent_deduction_rate', parseFloat(e.target.value))
+                        }
                       />
                     </div>
                     <div>
-                      <Label htmlFor="overtime_rate_multiplier">{t('employee:fields.overtimeRateMultiplier')}</Label>
+                      <Label htmlFor="overtime_rate_multiplier">
+                        {t('employee:fields.overtimeRateMultiplier')}
+                      </Label>
                       <Input
                         id="overtime_rate_multiplier"
                         type="number"
                         step="0.1"
                         value={formData.overtime_rate_multiplier}
-                        onChange={(e) => handleInputChange('overtime_rate_multiplier', parseFloat(e.target.value))}
+                        onChange={e =>
+                          handleInputChange('overtime_rate_multiplier', parseFloat(e.target.value))
+                        }
                       />
                     </div>
                     <div>
-                      <Label htmlFor="overtime_fixed_rate">{t('employee:fields.overtimeFixedRate')}</Label>
+                      <Label htmlFor="overtime_fixed_rate">
+                        {t('employee:fields.overtimeFixedRate')}
+                      </Label>
                       <Input
                         id="overtime_fixed_rate"
                         type="number"
                         step="0.01"
                         value={formData.overtime_fixed_rate}
-                        onChange={(e) => handleInputChange('overtime_fixed_rate', parseFloat(e.target.value))}
+                        onChange={e =>
+                          handleInputChange('overtime_fixed_rate', parseFloat(e.target.value))
+                        }
                       />
                     </div>
                   </div>
@@ -1000,15 +1073,17 @@ export default function CreateEmployeePage() {
                       <Input
                         id="bank_name"
                         value={formData.bank_name}
-                        onChange={(e) => handleInputChange('bank_name', e.target.value)}
+                        onChange={e => handleInputChange('bank_name', e.target.value)}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="bank_account_number">{t('employee:fields.bankAccountNumber')}</Label>
+                      <Label htmlFor="bank_account_number">
+                        {t('employee:fields.bankAccountNumber')}
+                      </Label>
                       <Input
                         id="bank_account_number"
                         value={formData.bank_account_number}
-                        onChange={(e) => handleInputChange('bank_account_number', e.target.value)}
+                        onChange={e => handleInputChange('bank_account_number', e.target.value)}
                       />
                     </div>
                     <div>
@@ -1016,7 +1091,7 @@ export default function CreateEmployeePage() {
                       <Input
                         id="bank_iban"
                         value={formData.bank_iban}
-                        onChange={(e) => handleInputChange('bank_iban', e.target.value)}
+                        onChange={e => handleInputChange('bank_iban', e.target.value)}
                       />
                     </div>
                   </div>
@@ -1041,7 +1116,7 @@ export default function CreateEmployeePage() {
                         <Input
                           id="iqama_number"
                           value={formData.iqama_number}
-                          onChange={(e) => handleInputChange('iqama_number', e.target.value)}
+                          onChange={e => handleInputChange('iqama_number', e.target.value)}
                         />
                       </div>
                       <div>
@@ -1050,7 +1125,7 @@ export default function CreateEmployeePage() {
                           id="iqama_expiry"
                           type="date"
                           value={formData.iqama_expiry}
-                          onChange={(e) => handleInputChange('iqama_expiry', e.target.value)}
+                          onChange={e => handleInputChange('iqama_expiry', e.target.value)}
                         />
                       </div>
                       <div>
@@ -1060,7 +1135,9 @@ export default function CreateEmployeePage() {
                           type="number"
                           step="0.01"
                           value={formData.iqama_cost}
-                          onChange={(e) => handleInputChange('iqama_cost', parseFloat(e.target.value))}
+                          onChange={e =>
+                            handleInputChange('iqama_cost', parseFloat(e.target.value))
+                          }
                         />
                       </div>
                     </div>
@@ -1070,7 +1147,7 @@ export default function CreateEmployeePage() {
                         id="iqama_file"
                         type="file"
                         accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => {
+                        onChange={e => {
                           const file = e.target.files?.[0];
                           if (file) handleFileUpload('iqama_file', file);
                         }}
@@ -1083,20 +1160,24 @@ export default function CreateEmployeePage() {
                     <h3 className="font-semibold mb-4">{t('employee:documents.passport')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="passport_number">{t('employee:fields.passportNumber')}</Label>
+                        <Label htmlFor="passport_number">
+                          {t('employee:fields.passportNumber')}
+                        </Label>
                         <Input
                           id="passport_number"
                           value={formData.passport_number}
-                          onChange={(e) => handleInputChange('passport_number', e.target.value)}
+                          onChange={e => handleInputChange('passport_number', e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label htmlFor="passport_expiry">{t('employee:fields.passportExpiry')}</Label>
+                        <Label htmlFor="passport_expiry">
+                          {t('employee:fields.passportExpiry')}
+                        </Label>
                         <Input
                           id="passport_expiry"
                           type="date"
                           value={formData.passport_expiry}
-                          onChange={(e) => handleInputChange('passport_expiry', e.target.value)}
+                          onChange={e => handleInputChange('passport_expiry', e.target.value)}
                         />
                       </div>
                     </div>
@@ -1106,7 +1187,7 @@ export default function CreateEmployeePage() {
                         id="passport_file"
                         type="file"
                         accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => {
+                        onChange={e => {
                           const file = e.target.files?.[0];
                           if (file) handleFileUpload('passport_file', file);
                         }}
@@ -1119,40 +1200,54 @@ export default function CreateEmployeePage() {
                     <h3 className="font-semibold mb-4">{t('employee:documents.drivingLicense')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <Label htmlFor="driving_license_number">{t('employee:fields.drivingLicenseNumber')}</Label>
+                        <Label htmlFor="driving_license_number">
+                          {t('employee:fields.drivingLicenseNumber')}
+                        </Label>
                         <Input
                           id="driving_license_number"
                           value={formData.driving_license_number}
-                          onChange={(e) => handleInputChange('driving_license_number', e.target.value)}
+                          onChange={e =>
+                            handleInputChange('driving_license_number', e.target.value)
+                          }
                         />
                       </div>
                       <div>
-                        <Label htmlFor="driving_license_expiry">{t('employee:fields.drivingLicenseExpiry')}</Label>
+                        <Label htmlFor="driving_license_expiry">
+                          {t('employee:fields.drivingLicenseExpiry')}
+                        </Label>
                         <Input
                           id="driving_license_expiry"
                           type="date"
                           value={formData.driving_license_expiry}
-                          onChange={(e) => handleInputChange('driving_license_expiry', e.target.value)}
+                          onChange={e =>
+                            handleInputChange('driving_license_expiry', e.target.value)
+                          }
                         />
                       </div>
                       <div>
-                        <Label htmlFor="driving_license_cost">{t('employee:fields.drivingLicenseCost')}</Label>
+                        <Label htmlFor="driving_license_cost">
+                          {t('employee:fields.drivingLicenseCost')}
+                        </Label>
                         <Input
                           id="driving_license_cost"
                           type="number"
                           step="0.01"
                           value={formData.driving_license_cost}
-                          onChange={(e) => handleInputChange('driving_license_cost', parseFloat(e.target.value))}
+                          onChange={e =>
+                            handleInputChange('driving_license_cost', parseFloat(e.target.value))
+                          }
                         />
                       </div>
                     </div>
                     <div className="mt-4">
-                      <Label htmlFor="driving_license_file">{t('employee:fields.drivingLicenseFile')}</Label>
+                      <Label htmlFor="driving_license_file">
+                        {t('employee:fields.drivingLicenseFile')}
+                      </Label>
                       <Input
                         id="driving_license_file"
                         type="file"
                         accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => {
+                        onChange={e => {
                           const file = e.target.files?.[0];
                           if (file) handleFileUpload('driving_license_file', file);
                         }}
@@ -1162,43 +1257,59 @@ export default function CreateEmployeePage() {
 
                   {/* Operator License Information */}
                   <div className="border rounded-lg p-4">
-                    <h3 className="font-semibold mb-4">{t('employee:documents.operatorLicense')}</h3>
+                    <h3 className="font-semibold mb-4">
+                      {t('employee:documents.operatorLicense')}
+                    </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <Label htmlFor="operator_license_number">{t('employee:fields.operatorLicenseNumber')}</Label>
+                        <Label htmlFor="operator_license_number">
+                          {t('employee:fields.operatorLicenseNumber')}
+                        </Label>
                         <Input
                           id="operator_license_number"
                           value={formData.operator_license_number}
-                          onChange={(e) => handleInputChange('operator_license_number', e.target.value)}
+                          onChange={e =>
+                            handleInputChange('operator_license_number', e.target.value)
+                          }
                         />
                       </div>
                       <div>
-                        <Label htmlFor="operator_license_expiry">{t('employee:fields.operatorLicenseExpiry')}</Label>
+                        <Label htmlFor="operator_license_expiry">
+                          {t('employee:fields.operatorLicenseExpiry')}
+                        </Label>
                         <Input
                           id="operator_license_expiry"
                           type="date"
                           value={formData.operator_license_expiry}
-                          onChange={(e) => handleInputChange('operator_license_expiry', e.target.value)}
+                          onChange={e =>
+                            handleInputChange('operator_license_expiry', e.target.value)
+                          }
                         />
                       </div>
                       <div>
-                        <Label htmlFor="operator_license_cost">{t('employee:fields.operatorLicenseCost')}</Label>
+                        <Label htmlFor="operator_license_cost">
+                          {t('employee:fields.operatorLicenseCost')}
+                        </Label>
                         <Input
                           id="operator_license_cost"
                           type="number"
                           step="0.01"
                           value={formData.operator_license_cost}
-                          onChange={(e) => handleInputChange('operator_license_cost', parseFloat(e.target.value))}
+                          onChange={e =>
+                            handleInputChange('operator_license_cost', parseFloat(e.target.value))
+                          }
                         />
                       </div>
                     </div>
                     <div className="mt-4">
-                      <Label htmlFor="operator_license_file">{t('employee:fields.operatorLicenseFile')}</Label>
+                      <Label htmlFor="operator_license_file">
+                        {t('employee:fields.operatorLicenseFile')}
+                      </Label>
                       <Input
                         id="operator_license_file"
                         type="file"
                         accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => {
+                        onChange={e => {
                           const file = e.target.files?.[0];
                           if (file) handleFileUpload('operator_license_file', file);
                         }}
@@ -1222,7 +1333,7 @@ export default function CreateEmployeePage() {
                     <Textarea
                       id="address"
                       value={formData.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
+                      onChange={e => handleInputChange('address', e.target.value)}
                       rows={3}
                     />
                   </div>
@@ -1233,7 +1344,7 @@ export default function CreateEmployeePage() {
                       <Input
                         id="city"
                         value={formData.city}
-                        onChange={(e) => handleInputChange('city', e.target.value)}
+                        onChange={e => handleInputChange('city', e.target.value)}
                       />
                     </div>
                     <div>
@@ -1241,7 +1352,7 @@ export default function CreateEmployeePage() {
                       <Input
                         id="state"
                         value={formData.state}
-                        onChange={(e) => handleInputChange('state', e.target.value)}
+                        onChange={e => handleInputChange('state', e.target.value)}
                       />
                     </div>
                   </div>
@@ -1252,7 +1363,7 @@ export default function CreateEmployeePage() {
                       <Input
                         id="postal_code"
                         value={formData.postal_code}
-                        onChange={(e) => handleInputChange('postal_code', e.target.value)}
+                        onChange={e => handleInputChange('postal_code', e.target.value)}
                       />
                     </div>
                     <div>
@@ -1260,7 +1371,7 @@ export default function CreateEmployeePage() {
                       <Input
                         id="country"
                         value={formData.country}
-                        onChange={(e) => handleInputChange('country', e.target.value)}
+                        onChange={e => handleInputChange('country', e.target.value)}
                       />
                     </div>
                   </div>
@@ -1269,27 +1380,39 @@ export default function CreateEmployeePage() {
                     <h3 className="font-semibold mb-4">{t('employee:create.emergencyContact')}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <Label htmlFor="emergency_contact_name">{t('employee:fields.emergencyContactName')}</Label>
+                        <Label htmlFor="emergency_contact_name">
+                          {t('employee:fields.emergencyContactName')}
+                        </Label>
                         <Input
                           id="emergency_contact_name"
                           value={formData.emergency_contact_name}
-                          onChange={(e) => handleInputChange('emergency_contact_name', e.target.value)}
+                          onChange={e =>
+                            handleInputChange('emergency_contact_name', e.target.value)
+                          }
                         />
                       </div>
                       <div>
-                        <Label htmlFor="emergency_contact_phone">{t('employee:fields.emergencyContactPhone')}</Label>
+                        <Label htmlFor="emergency_contact_phone">
+                          {t('employee:fields.emergencyContactPhone')}
+                        </Label>
                         <Input
                           id="emergency_contact_phone"
                           value={formData.emergency_contact_phone}
-                          onChange={(e) => handleInputChange('emergency_contact_phone', e.target.value)}
+                          onChange={e =>
+                            handleInputChange('emergency_contact_phone', e.target.value)
+                          }
                         />
                       </div>
                       <div>
-                        <Label htmlFor="emergency_contact_relationship">{t('employee:fields.emergencyContactRelationship')}</Label>
+                        <Label htmlFor="emergency_contact_relationship">
+                          {t('employee:fields.emergencyContactRelationship')}
+                        </Label>
                         <Input
                           id="emergency_contact_relationship"
                           value={formData.emergency_contact_relationship}
-                          onChange={(e) => handleInputChange('emergency_contact_relationship', e.target.value)}
+                          onChange={e =>
+                            handleInputChange('emergency_contact_relationship', e.target.value)
+                          }
                         />
                       </div>
                     </div>
@@ -1311,16 +1434,20 @@ export default function CreateEmployeePage() {
                       <Switch
                         id="advance_salary_eligible"
                         checked={formData.advance_salary_eligible}
-                        onCheckedChange={(checked) => handleInputChange('advance_salary_eligible', checked)}
+                        onCheckedChange={checked =>
+                          handleInputChange('advance_salary_eligible', checked)
+                        }
                       />
-                      <Label htmlFor="advance_salary_eligible">{t('employee:fields.advanceSalaryEligible')}</Label>
+                      <Label htmlFor="advance_salary_eligible">
+                        {t('employee:fields.advanceSalaryEligible')}
+                      </Label>
                     </div>
 
                     <div className="flex items-center space-x-2">
                       <Switch
                         id="is_operator"
                         checked={formData.is_operator}
-                        onCheckedChange={(checked) => handleInputChange('is_operator', checked)}
+                        onCheckedChange={checked => handleInputChange('is_operator', checked)}
                       />
                       <Label htmlFor="is_operator">{t('employee:fields.isOperator')}</Label>
                     </div>
@@ -1328,12 +1455,14 @@ export default function CreateEmployeePage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="access_start_date">{t('employee:fields.accessStartDate')}</Label>
+                      <Label htmlFor="access_start_date">
+                        {t('employee:fields.accessStartDate')}
+                      </Label>
                       <Input
                         id="access_start_date"
                         type="date"
                         value={formData.access_start_date}
-                        onChange={(e) => handleInputChange('access_start_date', e.target.value)}
+                        onChange={e => handleInputChange('access_start_date', e.target.value)}
                       />
                     </div>
                     <div>
@@ -1342,17 +1471,19 @@ export default function CreateEmployeePage() {
                         id="access_end_date"
                         type="date"
                         value={formData.access_end_date}
-                        onChange={(e) => handleInputChange('access_end_date', e.target.value)}
+                        onChange={e => handleInputChange('access_end_date', e.target.value)}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <Label htmlFor="access_restriction_reason">{t('employee:fields.accessRestrictionReason')}</Label>
+                    <Label htmlFor="access_restriction_reason">
+                      {t('employee:fields.accessRestrictionReason')}
+                    </Label>
                     <Textarea
                       id="access_restriction_reason"
                       value={formData.access_restriction_reason}
-                      onChange={(e) => handleInputChange('access_restriction_reason', e.target.value)}
+                      onChange={e => handleInputChange('access_restriction_reason', e.target.value)}
                       rows={3}
                     />
                   </div>
@@ -1362,7 +1493,7 @@ export default function CreateEmployeePage() {
                     <Textarea
                       id="notes"
                       value={formData.notes}
-                      onChange={(e) => handleInputChange('notes', e.target.value)}
+                      onChange={e => handleInputChange('notes', e.target.value)}
                       rows={4}
                     />
                   </div>
@@ -1404,7 +1535,7 @@ export default function CreateEmployeePage() {
                   <Input
                     id="dept_name"
                     value={newDepartment.name}
-                    onChange={(e) => setNewDepartment(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={e => setNewDepartment(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="Enter department name"
                   />
                 </div>
@@ -1413,7 +1544,7 @@ export default function CreateEmployeePage() {
                   <Input
                     id="dept_code"
                     value={newDepartment.code}
-                    onChange={(e) => setNewDepartment(prev => ({ ...prev, code: e.target.value }))}
+                    onChange={e => setNewDepartment(prev => ({ ...prev, code: e.target.value }))}
                     placeholder="Enter department code"
                   />
                 </div>
@@ -1423,16 +1554,12 @@ export default function CreateEmployeePage() {
                     variant="outline"
                     onClick={() => {
                       setShowAddDepartment(false);
-                      setNewDepartment({ name: "", code: "" });
+                      setNewDepartment({ name: '', code: '' });
                     }}
                   >
                     Cancel
                   </Button>
-                  <Button
-                    type="button"
-                    onClick={handleAddDepartment}
-                    disabled={addingDepartment}
-                  >
+                  <Button type="button" onClick={handleAddDepartment} disabled={addingDepartment}>
                     {addingDepartment ? 'Adding...' : 'Add Department'}
                   </Button>
                 </div>
@@ -1452,7 +1579,7 @@ export default function CreateEmployeePage() {
                   <Input
                     id="desig_name"
                     value={newDesignation.name}
-                    onChange={(e) => setNewDesignation(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={e => setNewDesignation(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="Enter designation name"
                   />
                 </div>
@@ -1461,7 +1588,9 @@ export default function CreateEmployeePage() {
                   <Textarea
                     id="desig_description"
                     value={newDesignation.description}
-                    onChange={(e) => setNewDesignation(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={e =>
+                      setNewDesignation(prev => ({ ...prev, description: e.target.value }))
+                    }
                     placeholder="Enter description"
                     rows={3}
                   />
@@ -1472,16 +1601,12 @@ export default function CreateEmployeePage() {
                     variant="outline"
                     onClick={() => {
                       setShowAddDesignation(false);
-                      setNewDesignation({ name: "", description: "" });
+                      setNewDesignation({ name: '', description: '' });
                     }}
                   >
                     Cancel
                   </Button>
-                  <Button
-                    type="button"
-                    onClick={handleAddDesignation}
-                    disabled={addingDesignation}
-                  >
+                  <Button type="button" onClick={handleAddDesignation} disabled={addingDesignation}>
                     {addingDesignation ? 'Adding...' : 'Add Designation'}
                   </Button>
                 </div>
@@ -1501,7 +1626,11 @@ export default function CreateEmployeePage() {
                   <Input
                     id="edit_dept_name"
                     value={editingDepartment.name}
-                    onChange={(e) => setEditingDepartment(prev => prev ? { ...prev, name: e.target.value } : null)}
+                    onChange={e =>
+                      setEditingDepartment(prev =>
+                        prev ? { ...prev, name: e.target.value } : null
+                      )
+                    }
                     placeholder="Enter department name"
                   />
                 </div>
@@ -1510,7 +1639,11 @@ export default function CreateEmployeePage() {
                   <Input
                     id="edit_dept_code"
                     value={editingDepartment.code || ''}
-                    onChange={(e) => setEditingDepartment(prev => prev ? { ...prev, code: e.target.value } : null)}
+                    onChange={e =>
+                      setEditingDepartment(prev =>
+                        prev ? { ...prev, code: e.target.value } : null
+                      )
+                    }
                     placeholder="Enter department code"
                   />
                 </div>
@@ -1549,7 +1682,11 @@ export default function CreateEmployeePage() {
                   <Input
                     id="edit_desig_name"
                     value={editingDesignation.name}
-                    onChange={(e) => setEditingDesignation(prev => prev ? { ...prev, name: e.target.value } : null)}
+                    onChange={e =>
+                      setEditingDesignation(prev =>
+                        prev ? { ...prev, name: e.target.value } : null
+                      )
+                    }
                     placeholder="Enter designation name"
                   />
                 </div>
@@ -1558,7 +1695,11 @@ export default function CreateEmployeePage() {
                   <Textarea
                     id="edit_desig_description"
                     value={editingDesignation.description || ''}
-                    onChange={(e) => setEditingDesignation(prev => prev ? { ...prev, description: e.target.value } : null)}
+                    onChange={e =>
+                      setEditingDesignation(prev =>
+                        prev ? { ...prev, description: e.target.value } : null
+                      )
+                    }
                     placeholder="Enter description"
                     rows={3}
                   />
@@ -1589,4 +1730,4 @@ export default function CreateEmployeePage() {
       </div>
     </ProtectedRoute>
   );
-} 
+}

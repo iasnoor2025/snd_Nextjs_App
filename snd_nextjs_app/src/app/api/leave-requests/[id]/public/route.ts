@@ -1,15 +1,13 @@
-import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { employeeLeaves, employees, departments, designations } from '@/lib/drizzle/schema';
+import { departments, designations, employeeLeaves, employees } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
 
 // GET /api/leave-requests/[id]/public - Get a single leave request (no auth required)
-export async function GET(
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET({ params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    
+
     console.log('🔍 Fetching public leave request with ID:', id);
 
     const leaveRequestData = await db
@@ -51,15 +49,14 @@ export async function GET(
 
     const leaveRequest = leaveRequestData[0];
     if (!leaveRequest) {
-      return NextResponse.json(
-        { error: 'Leave request not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Leave request not found' }, { status: 404 });
     }
 
     const transformedLeaveRequest = {
       id: leaveRequest.id.toString(),
-      employee_name: leaveRequest.employee ? `${leaveRequest.employee.firstName} ${leaveRequest.employee.lastName}` : 'Unknown Employee',
+      employee_name: leaveRequest.employee
+        ? `${leaveRequest.employee.firstName} ${leaveRequest.employee.lastName}`
+        : 'Unknown Employee',
       employee_id: leaveRequest.employee?.fileNumber || 'Unknown',
       leave_type: leaveRequest.leaveType,
       start_date: leaveRequest.startDate.split('T')[0],
@@ -83,18 +80,29 @@ export async function GET(
       attachments: [],
       approval_history: [
         {
-          id: "1",
-          action: leaveRequest.status === 'pending' ? 'Submitted' : 
-                  leaveRequest.status === 'approved' ? 'Approved' : 
-                  leaveRequest.status === 'rejected' ? 'Rejected' : 'Submitted',
-          approver: leaveRequest.employee ? (leaveRequest.employee.firstName + ' ' + leaveRequest.employee.lastName) : 'Unknown Employee',
+          id: '1',
+          action:
+            leaveRequest.status === 'pending'
+              ? 'Submitted'
+              : leaveRequest.status === 'approved'
+                ? 'Approved'
+                : leaveRequest.status === 'rejected'
+                  ? 'Rejected'
+                  : 'Submitted',
+          approver: leaveRequest.employee
+            ? leaveRequest.employee.firstName + ' ' + leaveRequest.employee.lastName
+            : 'Unknown Employee',
           date: leaveRequest.createdAt,
-          comments: leaveRequest.status === 'pending' ? 'Leave request submitted for approval' :
-                   leaveRequest.status === 'approved' ? 'Leave request approved' :
-                   leaveRequest.status === 'rejected' ? `Leave request rejected: ${leaveRequest.rejectionReason || 'No reason provided'}` :
-                   'Leave request submitted for approval'
-        }
-      ]
+          comments:
+            leaveRequest.status === 'pending'
+              ? 'Leave request submitted for approval'
+              : leaveRequest.status === 'approved'
+                ? 'Leave request approved'
+                : leaveRequest.status === 'rejected'
+                  ? `Leave request rejected: ${leaveRequest.rejectionReason || 'No reason provided'}`
+                  : 'Leave request submitted for approval',
+        },
+      ],
     };
 
     console.log('✅ Returning public leave request data');
@@ -102,11 +110,10 @@ export async function GET(
       success: true,
       data: transformedLeaveRequest,
     });
-
   } catch (error) {
     console.error('❌ Error fetching public leave request:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error',
       },

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { payrolls, employees, payrollItems, departments, designations } from '@/lib/drizzle/schema';
-import { eq, and, inArray, desc, asc, sql } from 'drizzle-orm';
+import { departments, designations, employees, payrollItems, payrolls } from '@/lib/drizzle/schema';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -18,25 +18,25 @@ export async function GET(_request: NextRequest) {
 
     // Build where conditions
     const whereConditions: any[] = [];
-    
+
     if (search) {
       whereConditions.push(
         sql`(${employees.firstName} ILIKE ${`%${search}%`} OR ${employees.lastName} ILIKE ${`%${search}%`} OR ${employees.fileNumber} ILIKE ${`%${search}%`})`
       );
     }
-    
+
     if (employeeId) {
       whereConditions.push(eq(payrolls.employeeId, parseInt(employeeId)));
     }
-    
+
     if (month) {
       whereConditions.push(eq(payrolls.month, parseInt(month)));
     }
-    
+
     if (year) {
       whereConditions.push(eq(payrolls.year, parseInt(year)));
     }
-    
+
     if (status && status !== 'all') {
       whereConditions.push(eq(payrolls.status, status));
     }
@@ -47,7 +47,7 @@ export async function GET(_request: NextRequest) {
       .from(payrolls)
       .leftJoin(employees, eq(payrolls.employeeId, employees.id))
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
-    
+
     const total = totalResult[0]?.count || 0;
 
     // Get payrolls with employee, department, and designation data
@@ -88,7 +88,7 @@ export async function GET(_request: NextRequest) {
         designation: {
           id: designations.id,
           name: designations.name,
-        }
+        },
       })
       .from(payrolls)
       .leftJoin(employees, eq(payrolls.employeeId, employees.id))
@@ -162,14 +162,16 @@ export async function GET(_request: NextRequest) {
         id: payroll.employee?.id || 0,
         first_name: payroll.employee?.firstName || '',
         last_name: payroll.employee?.lastName || '',
-        full_name: payroll.employee ? `${payroll.employee.firstName} ${payroll.employee.lastName}` : '',
+        full_name: payroll.employee
+          ? `${payroll.employee.firstName} ${payroll.employee.lastName}`
+          : '',
         file_number: payroll.employee?.fileNumber || '',
         basic_salary: Number(payroll.employee?.basicSalary || 0),
         department: payroll.department?.name || '',
         designation: payroll.designation?.name || '',
-        status: 'active' // Default status
+        status: 'active', // Default status
       },
-      items: payrollItemsMap.get(payroll.id) || []
+      items: payrollItemsMap.get(payroll.id) || [],
     }));
 
     return NextResponse.json({
@@ -186,9 +188,8 @@ export async function GET(_request: NextRequest) {
       first_page_url: '?page=1',
       last_page_url: `?page=${Math.ceil(total / limit)}`,
       path: '/api/payroll',
-      links: []
+      links: [],
     });
-
   } catch (error) {
     console.error('Error fetching payrolls:', error);
     return NextResponse.json(
@@ -201,7 +202,7 @@ export async function GET(_request: NextRequest) {
 export async function POST(_request: NextRequest) {
   try {
     const body = await _request.json();
-    
+
     // Validate required fields
     const requiredFields = ['employeeId', 'month', 'year', 'baseSalary'];
     for (const field of requiredFields) {
@@ -239,18 +240,26 @@ export async function POST(_request: NextRequest) {
     const bonusAmount = Number(body.bonusAmount) || 0;
     const deductionAmount = Number(body.deductionAmount) || 0;
     const advanceDeduction = Number(body.advanceDeduction) || 0;
-    
+
     // If absent days are provided, calculate absent deduction
     let absentDeduction = 0;
     if (body.absentDays && body.month && body.year) {
       const daysInMonth = new Date(body.year, body.month, 0).getDate();
-      
+
       // Use simple formula: (Basic Salary / Total Days in Month) * Absent Days
       absentDeduction = (baseSalary / daysInMonth) * Number(body.absentDays);
-      console.log(`Absent calculation: (${baseSalary} / ${daysInMonth}) * ${body.absentDays} = ${absentDeduction}`);
+      console.log(
+        `Absent calculation: (${baseSalary} / ${daysInMonth}) * ${body.absentDays} = ${absentDeduction}`
+      );
     }
-    
-    const finalAmount = baseSalary + overtimeAmount + bonusAmount - deductionAmount - absentDeduction - advanceDeduction;
+
+    const finalAmount =
+      baseSalary +
+      overtimeAmount +
+      bonusAmount -
+      deductionAmount -
+      absentDeduction -
+      advanceDeduction;
 
     // Create payroll
     const insertedPayrolls = await db
@@ -297,17 +306,14 @@ export async function POST(_request: NextRequest) {
         updatedAt: new Date().toISOString(),
       }));
 
-      await db
-        .insert(payrollItems)
-        .values(payrollItemsData);
+      await db.insert(payrollItems).values(payrollItemsData);
     }
 
     return NextResponse.json({
       success: true,
       message: 'Payroll created successfully',
-      data: payroll
+      data: payroll,
     });
-
   } catch (error) {
     console.error('Error creating payroll:', error);
     return NextResponse.json(

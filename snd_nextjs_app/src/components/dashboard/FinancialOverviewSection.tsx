@@ -1,29 +1,35 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
-  AlertTriangle, 
-  RefreshCw,
-  BarChart3,
-  PieChart,
-  Calendar,
-  ArrowUpRight,
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useI18n } from '@/hooks/use-i18n';
+import {
+  AlertCircle,
+  AlertTriangle,
   ArrowDownRight,
-  FileText,
-  Clock,
+  ArrowUpRight,
+  BarChart3,
+  Calendar,
   CheckCircle,
-  AlertCircle
-} from "lucide-react"
-import { useI18n } from "@/hooks/use-i18n"
+  Clock,
+  DollarSign,
+  FileText,
+  PieChart,
+  RefreshCw,
+  TrendingDown,
+  TrendingUp,
+} from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { useEffect, useState } from 'react';
 
 interface AccountSummary {
   accountName: string;
@@ -65,24 +71,24 @@ interface FinancialOverview {
 }
 
 interface FinancialOverviewSectionProps {
-  onHideSection: () => void
+  onHideSection: () => void;
 }
 
 export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSectionProps) {
-  const { t } = useI18n()
-  const { data: session, status } = useSession()
-  const [financialOverview, setFinancialOverview] = useState<FinancialOverview | null>(null)
-  const [invoiceSummary, setInvoiceSummary] = useState<InvoiceSummary | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState('overview')
-  const [selectedMonth, setSelectedMonth] = useState<string>('')
+  const { t } = useI18n();
+  const { data: session, status } = useSession();
+  const [financialOverview, setFinancialOverview] = useState<FinancialOverview | null>(null);
+  const [invoiceSummary, setInvoiceSummary] = useState<InvoiceSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
 
   // Debug session info
-  console.log('🔐 FinancialOverviewSection - Session status:', status)
-  console.log('🔐 FinancialOverviewSection - Session data:', session)
-  console.log('🔐 FinancialOverviewSection - User role:', session?.user?.role)
+  console.log('🔐 FinancialOverviewSection - Session status:', status);
+  console.log('🔐 FinancialOverviewSection - Session data:', session);
+  console.log('🔐 FinancialOverviewSection - User role:', session?.user?.role);
 
   // Wait for session to be loaded
   if (status === 'loading') {
@@ -100,7 +106,7 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   // Check if user is authenticated
@@ -116,126 +122,125 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
         <CardContent>
           <div className="text-center py-8">
             <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600 mb-4">{t('financial.notAuthenticated') || 'Please sign in to view financial data'}</p>
+            <p className="text-red-600 mb-4">
+              {t('financial.notAuthenticated') || 'Please sign in to view financial data'}
+            </p>
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   // Generate last 12 months for dropdown
   const generateMonthOptions = () => {
-    const months = []
-    const today = new Date()
-    
-    for (let i = 0; i < 12; i++) {
-      const monthDate = new Date(today.getFullYear(), today.getMonth() - i, 1)
-      const monthName = monthDate.toLocaleString('en-US', { month: 'long', year: 'numeric' })
-      const monthValue = monthDate.toISOString().slice(0, 7) // YYYY-MM format
-      months.push({ label: monthName, value: monthValue })
-    }
-    
-    return months
-  }
+    const months = [];
+    const today = new Date();
 
-  const monthOptions = generateMonthOptions()
+    for (let i = 0; i < 12; i++) {
+      const monthDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const monthName = monthDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+      const monthValue = monthDate.toISOString().slice(0, 7); // YYYY-MM format
+      months.push({ label: monthName, value: monthValue });
+    }
+
+    return months;
+  };
+
+  const monthOptions = generateMonthOptions();
 
   const fetchFinancialOverview = async (month?: string) => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
-      const monthParam = month || selectedMonth || monthOptions[0]?.value
-      console.log('🔍 Fetching financial overview for month:', monthParam)
-      
-      const response = await fetch(`/api/erpnext/financial?type=overview&month=${monthParam}`)
-      console.log('📡 Response status:', response.status)
-      console.log('📡 Response ok:', response.ok)
-      
+      const monthParam = month || selectedMonth || monthOptions[0]?.value;
+      console.log('🔍 Fetching financial overview for month:', monthParam);
+
+      const response = await fetch(`/api/erpnext/financial?type=overview&month=${monthParam}`);
+      console.log('📡 Response status:', response.status);
+      console.log('📡 Response ok:', response.ok);
+
       if (response.ok) {
-        const data = await response.json()
-        console.log('📊 Financial overview data received:', data)
-        setFinancialOverview(data.data)
+        const data = await response.json();
+        console.log('📊 Financial overview data received:', data);
+        setFinancialOverview(data.data);
         if (month) {
-          setSelectedMonth(month)
+          setSelectedMonth(month);
         }
       } else {
-        const errorText = await response.text()
-        console.error('❌ API error response:', errorText)
-        throw new Error(`Failed to fetch financial overview: ${response.status}`)
+        const errorText = await response.text();
+        console.error('❌ API error response:', errorText);
+        throw new Error(`Failed to fetch financial overview: ${response.status}`);
       }
     } catch (err) {
-      console.error('❌ Error fetching financial overview:', err)
-      setError(t('financial.failedToFetch') || 'Failed to fetch financial data')
+      console.error('❌ Error fetching financial overview:', err);
+      setError(t('financial.failedToFetch') || 'Failed to fetch financial data');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const fetchInvoiceSummary = async () => {
     try {
       console.log('🔍 Fetching invoice summary...');
       // Fetch all invoices without monthly filtering
-      const response = await fetch('/api/erpnext/financial?type=invoice-summary')
+      const response = await fetch('/api/erpnext/financial?type=invoice-summary');
       console.log('📡 Invoice summary response status:', response.status);
       console.log('📡 Invoice summary response ok:', response.ok);
-      
+
       if (response.ok) {
-        const data = await response.json()
-        console.log('📊 Invoice summary data received:', data)
-        setInvoiceSummary(data.data)
+        const data = await response.json();
+        console.log('📊 Invoice summary data received:', data);
+        setInvoiceSummary(data.data);
       } else {
-        const errorText = await response.text()
-        console.error('❌ Failed to fetch invoice summary:', response.status, errorText)
+        const errorText = await response.text();
+        console.error('❌ Failed to fetch invoice summary:', response.status, errorText);
         // Try to get more details about the error
         if (response.status === 401) {
-          console.error('❌ Authentication failed - user not logged in or session expired')
+          console.error('❌ Authentication failed - user not logged in or session expired');
         } else if (response.status === 403) {
-          console.error('❌ Access denied - user lacks required permissions')
+          console.error('❌ Access denied - user lacks required permissions');
         }
       }
     } catch (err) {
-      console.error('❌ Error fetching invoice summary:', err)
+      console.error('❌ Error fetching invoice summary:', err);
     }
-  }
+  };
 
   const handleMonthChange = (month: string) => {
-    if (!session) return
-    
-    setSelectedMonth(month)
-    fetchFinancialOverview(month)
-  }
+    if (!session) return;
+
+    setSelectedMonth(month);
+    fetchFinancialOverview(month);
+  };
 
   const handleRefresh = async () => {
-    if (!session) return
-    
-    setRefreshing(true)
-    await Promise.all([
-      fetchFinancialOverview(),
-      fetchInvoiceSummary()
-    ])
-    setRefreshing(false)
-  }
+    if (!session) return;
+
+    setRefreshing(true);
+    await Promise.all([fetchFinancialOverview(), fetchInvoiceSummary()]);
+    setRefreshing(false);
+  };
 
   useEffect(() => {
     if (monthOptions.length > 0 && session) {
-      setSelectedMonth(monthOptions[0].value)
-      fetchFinancialOverview(monthOptions[0].value)
-      fetchInvoiceSummary()
+      setSelectedMonth(monthOptions[0].value);
+      fetchFinancialOverview(monthOptions[0].value);
+      fetchInvoiceSummary();
     }
-  }, [session])
+  }, [session]);
 
   const formatCurrency = (amount: number | undefined | null) => {
     if (amount === undefined || amount === null || isNaN(amount)) {
-      return 'SAR 0'
+      return 'SAR 0';
     }
-    return `SAR ${amount.toLocaleString()}`
-  }
+    return `SAR ${amount.toLocaleString()}`;
+  };
 
   const getPercentageChange = (current: number, previous: number) => {
-    if (previous === 0) return current > 0 ? 100 : 0
-    return ((current - previous) / previous) * 100
-  }
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
+  };
 
   if (loading) {
     return (
@@ -252,7 +257,7 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (error) {
@@ -274,11 +279,11 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (!financialOverview) {
-    return null
+    return null;
   }
 
   return (
@@ -290,7 +295,8 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
             {t('financial.comprehensiveOverview') || 'Comprehensive Financial Overview'}
           </h2>
           <p className="text-gray-600 dark:text-gray-400">
-            {t('financial.comprehensiveDescription') || 'Complete financial data from ERPNext including income, expenses, and profit/loss'}
+            {t('financial.comprehensiveDescription') ||
+              'Complete financial data from ERPNext including income, expenses, and profit/loss'}
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -312,7 +318,7 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
                 <SelectValue placeholder="Select month" />
               </SelectTrigger>
               <SelectContent>
-                {monthOptions.map((month) => (
+                {monthOptions.map(month => (
                   <SelectItem key={month.value} value={month.value}>
                     {month.label}
                   </SelectItem>
@@ -320,10 +326,12 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
               </SelectContent>
             </Select>
           </div>
-          
+
           <Button onClick={handleRefresh} disabled={refreshing} variant="outline" size="sm">
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-            {refreshing ? (t('financial.refreshing') || 'Refreshing...') : (t('financial.refresh') || 'Refresh')}
+            {refreshing
+              ? t('financial.refreshing') || 'Refreshing...'
+              : t('financial.refresh') || 'Refresh'}
           </Button>
         </div>
       </div>
@@ -375,17 +383,21 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
         </Card>
 
         {/* Net Profit/Loss */}
-        <Card className={`border-2 ${
-          financialOverview.netProfitLoss >= 0 
-            ? 'border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800' 
-            : 'border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800'
-        }`}>
+        <Card
+          className={`border-2 ${
+            financialOverview.netProfitLoss >= 0
+              ? 'border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800'
+              : 'border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800'
+          }`}
+        >
           <CardHeader className="pb-3">
-            <CardTitle className={`text-sm font-medium ${
-              financialOverview.netProfitLoss >= 0 
-                ? 'text-green-700 dark:text-green-300' 
-                : 'text-red-700 dark:text-red-300'
-            }`}>
+            <CardTitle
+              className={`text-sm font-medium ${
+                financialOverview.netProfitLoss >= 0
+                  ? 'text-green-700 dark:text-green-300'
+                  : 'text-red-700 dark:text-red-300'
+              }`}
+            >
               {t('financial.netProfitLoss') || 'Net Profit/Loss'}
             </CardTitle>
           </CardHeader>
@@ -397,19 +409,25 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
                 <TrendingDown className="h-8 w-8 text-red-600" />
               )}
               <div>
-                <div className={`text-2xl font-bold ${
-                  financialOverview.netProfitLoss >= 0 
-                    ? 'text-green-700 dark:text-green-300' 
-                    : 'text-red-700 dark:text-red-300'
-                }`}>
+                <div
+                  className={`text-2xl font-bold ${
+                    financialOverview.netProfitLoss >= 0
+                      ? 'text-green-700 dark:text-green-300'
+                      : 'text-red-700 dark:text-red-300'
+                  }`}
+                >
                   {formatCurrency(Math.abs(financialOverview.netProfitLoss))}
                 </div>
-                <p className={`text-xs ${
-                  financialOverview.netProfitLoss >= 0 
-                    ? 'text-green-600 dark:text-green-400' 
-                    : 'text-red-600 dark:text-red-400'
-                }`}>
-                  {financialOverview.netProfitLoss >= 0 ? (t('financial.profit') || 'Profit') : (t('financial.loss') || 'Loss')}
+                <p
+                  className={`text-xs ${
+                    financialOverview.netProfitLoss >= 0
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-red-600 dark:text-red-400'
+                  }`}
+                >
+                  {financialOverview.netProfitLoss >= 0
+                    ? t('financial.profit') || 'Profit'
+                    : t('financial.loss') || 'Loss'}
                 </p>
               </div>
             </div>
@@ -447,7 +465,9 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
             {t('financial.detailedBreakdown') || 'Detailed Financial Breakdown'}
           </CardTitle>
           <CardDescription>
-            {t('financial.detailedDescription') || 'Comprehensive breakdown of income, expenses, and account details for'} {monthOptions.find(m => m.value === selectedMonth)?.label || 'Selected Month'}
+            {t('financial.detailedDescription') ||
+              'Comprehensive breakdown of income, expenses, and account details for'}{' '}
+            {monthOptions.find(m => m.value === selectedMonth)?.label || 'Selected Month'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -465,70 +485,104 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Current Month vs Previous Month */}
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">{monthOptions.find(m => m.value === selectedMonth)?.label || 'Selected Month'}</h3>
+                  <h3 className="text-lg font-semibold">
+                    {monthOptions.find(m => m.value === selectedMonth)?.label || 'Selected Month'}
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-950 rounded-lg">
-                      <span className="text-green-700 dark:text-green-300">{t('financial.income') || 'Income'}</span>
+                      <span className="text-green-700 dark:text-green-300">
+                        {t('financial.income') || 'Income'}
+                      </span>
                       <span className="font-semibold text-green-700 dark:text-green-300">
                         {formatCurrency(financialOverview.monthlyComparison.currentMonth.income)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-red-50 dark:bg-red-950 rounded-lg">
-                      <span className="text-red-700 dark:text-red-300">{t('financial.expenses') || 'Expenses'}</span>
+                      <span className="text-red-700 dark:text-red-300">
+                        {t('financial.expenses') || 'Expenses'}
+                      </span>
                       <span className="font-semibold text-red-700 dark:text-red-300">
                         {formatCurrency(financialOverview.monthlyComparison.currentMonth.expenses)}
                       </span>
                     </div>
-                    <div className={`flex justify-between items-center p-3 rounded-lg ${
-                      financialOverview.monthlyComparison.currentMonth.profitLoss >= 0
-                        ? 'bg-green-50 dark:bg-green-950'
-                        : 'bg-red-50 dark:bg-red-950'
-                    }`}>
-                      <span className={financialOverview.monthlyComparison.currentMonth.profitLoss >= 0
-                        ? 'text-green-700 dark:text-green-300'
-                        : 'text-red-700 dark:text-red-300'
-                      }>{t('financial.netResult') || 'Net Result'}</span>
-                      <span className={`font-semibold ${
+                    <div
+                      className={`flex justify-between items-center p-3 rounded-lg ${
                         financialOverview.monthlyComparison.currentMonth.profitLoss >= 0
-                          ? 'text-green-700 dark:text-green-300'
-                          : 'text-red-700 dark:text-red-300'
-                      }`}>
-                        {formatCurrency(Math.abs(financialOverview.monthlyComparison.currentMonth.profitLoss))}
+                          ? 'bg-green-50 dark:bg-green-950'
+                          : 'bg-red-50 dark:bg-red-950'
+                      }`}
+                    >
+                      <span
+                        className={
+                          financialOverview.monthlyComparison.currentMonth.profitLoss >= 0
+                            ? 'text-green-700 dark:text-green-300'
+                            : 'text-red-700 dark:text-red-300'
+                        }
+                      >
+                        {t('financial.netResult') || 'Net Result'}
+                      </span>
+                      <span
+                        className={`font-semibold ${
+                          financialOverview.monthlyComparison.currentMonth.profitLoss >= 0
+                            ? 'text-green-700 dark:text-green-300'
+                            : 'text-red-700 dark:text-red-300'
+                        }`}
+                      >
+                        {formatCurrency(
+                          Math.abs(financialOverview.monthlyComparison.currentMonth.profitLoss)
+                        )}
                       </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">{t('financial.previousMonth') || 'Previous Month'}</h3>
+                  <h3 className="text-lg font-semibold">
+                    {t('financial.previousMonth') || 'Previous Month'}
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-950 rounded-lg">
-                      <span className="text-green-700 dark:text-green-300">{t('financial.income') || 'Income'}</span>
+                      <span className="text-green-700 dark:text-green-300">
+                        {t('financial.income') || 'Income'}
+                      </span>
                       <span className="font-semibold text-green-700 dark:text-green-300">
                         {formatCurrency(financialOverview.monthlyComparison.previousMonth.income)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center p-3 bg-red-50 dark:bg-red-950 rounded-lg">
-                      <span className="text-red-700 dark:text-red-300">{t('financial.expenses') || 'Expenses'}</span>
+                      <span className="text-red-700 dark:text-red-300">
+                        {t('financial.expenses') || 'Expenses'}
+                      </span>
                       <span className="font-semibold text-red-700 dark:text-red-300">
                         {formatCurrency(financialOverview.monthlyComparison.previousMonth.expenses)}
                       </span>
                     </div>
-                    <div className={`flex justify-between items-center p-3 rounded-lg ${
-                      financialOverview.monthlyComparison.previousMonth.profitLoss >= 0
-                        ? 'bg-green-50 dark:bg-green-950'
-                        : 'bg-red-50 dark:bg-red-950'
-                    }`}>
-                      <span className={financialOverview.monthlyComparison.previousMonth.profitLoss >= 0
-                        ? 'text-green-700 dark:text-green-300'
-                        : 'text-red-700 dark:text-red-300'
-                      }>{t('financial.netResult') || 'Net Result'}</span>
-                      <span className={`font-semibold ${
+                    <div
+                      className={`flex justify-between items-center p-3 rounded-lg ${
                         financialOverview.monthlyComparison.previousMonth.profitLoss >= 0
-                          ? 'text-green-700 dark:text-green-300'
-                          : 'text-red-700 dark:text-red-300'
-                      }`}>
-                        {formatCurrency(Math.abs(financialOverview.monthlyComparison.previousMonth.profitLoss))}
+                          ? 'bg-green-50 dark:bg-green-950'
+                          : 'bg-red-50 dark:bg-red-950'
+                      }`}
+                    >
+                      <span
+                        className={
+                          financialOverview.monthlyComparison.previousMonth.profitLoss >= 0
+                            ? 'text-green-700 dark:text-green-300'
+                            : 'text-red-700 dark:text-red-300'
+                        }
+                      >
+                        {t('financial.netResult') || 'Net Result'}
+                      </span>
+                      <span
+                        className={`font-semibold ${
+                          financialOverview.monthlyComparison.previousMonth.profitLoss >= 0
+                            ? 'text-green-700 dark:text-green-300'
+                            : 'text-red-700 dark:text-red-300'
+                        }`}
+                      >
+                        {formatCurrency(
+                          Math.abs(financialOverview.monthlyComparison.previousMonth.profitLoss)
+                        )}
                       </span>
                     </div>
                   </div>
@@ -537,11 +591,15 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
 
               {/* Month-over-Month Changes */}
               <div className="mt-6">
-                <h3 className="text-lg font-semibold mb-4">{t('financial.monthOverMonth') || 'Month-over-Month Changes'}</h3>
+                <h3 className="text-lg font-semibold mb-4">
+                  {t('financial.monthOverMonth') || 'Month-over-Month Changes'}
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{t('financial.income') || 'Income'}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {t('financial.income') || 'Income'}
+                      </span>
                       {getPercentageChange(
                         financialOverview.monthlyComparison.currentMonth.income,
                         financialOverview.monthlyComparison.previousMonth.income
@@ -551,22 +609,29 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
                         <ArrowDownRight className="h-4 w-4 text-red-600" />
                       )}
                     </div>
-                    <div className={`text-lg font-bold ${
-                      getPercentageChange(
-                        financialOverview.monthlyComparison.currentMonth.income,
-                        financialOverview.monthlyComparison.previousMonth.income
-                      ) >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                    <div
+                      className={`text-lg font-bold ${
+                        getPercentageChange(
+                          financialOverview.monthlyComparison.currentMonth.income,
+                          financialOverview.monthlyComparison.previousMonth.income
+                        ) >= 0
+                          ? 'text-green-600'
+                          : 'text-red-600'
+                      }`}
+                    >
                       {getPercentageChange(
                         financialOverview.monthlyComparison.currentMonth.income,
                         financialOverview.monthlyComparison.previousMonth.income
-                      ).toFixed(1)}%
+                      ).toFixed(1)}
+                      %
                     </div>
                   </div>
 
                   <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{t('financial.expenses') || 'Expenses'}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {t('financial.expenses') || 'Expenses'}
+                      </span>
                       {getPercentageChange(
                         financialOverview.monthlyComparison.currentMonth.expenses,
                         financialOverview.monthlyComparison.previousMonth.expenses
@@ -576,22 +641,29 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
                         <ArrowDownRight className="h-4 w-4 text-green-600" />
                       )}
                     </div>
-                    <div className={`text-lg font-bold ${
-                      getPercentageChange(
-                        financialOverview.monthlyComparison.currentMonth.expenses,
-                        financialOverview.monthlyComparison.previousMonth.expenses
-                      ) >= 0 ? 'text-red-600' : 'text-green-600'
-                    }`}>
+                    <div
+                      className={`text-lg font-bold ${
+                        getPercentageChange(
+                          financialOverview.monthlyComparison.currentMonth.expenses,
+                          financialOverview.monthlyComparison.previousMonth.expenses
+                        ) >= 0
+                          ? 'text-red-600'
+                          : 'text-green-600'
+                      }`}
+                    >
                       {getPercentageChange(
                         financialOverview.monthlyComparison.currentMonth.expenses,
                         financialOverview.monthlyComparison.previousMonth.expenses
-                      ).toFixed(1)}%
+                      ).toFixed(1)}
+                      %
                     </div>
                   </div>
 
                   <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{t('financial.profitLoss') || 'Profit/Loss'}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {t('financial.profitLoss') || 'Profit/Loss'}
+                      </span>
                       {getPercentageChange(
                         financialOverview.monthlyComparison.currentMonth.profitLoss,
                         financialOverview.monthlyComparison.previousMonth.profitLoss
@@ -601,16 +673,21 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
                         <ArrowDownRight className="h-4 w-4 text-red-600" />
                       )}
                     </div>
-                    <div className={`text-lg font-bold ${
-                      getPercentageChange(
-                        financialOverview.monthlyComparison.currentMonth.profitLoss,
-                        financialOverview.monthlyComparison.previousMonth.profitLoss
-                      ) >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
+                    <div
+                      className={`text-lg font-bold ${
+                        getPercentageChange(
+                          financialOverview.monthlyComparison.currentMonth.profitLoss,
+                          financialOverview.monthlyComparison.previousMonth.profitLoss
+                        ) >= 0
+                          ? 'text-green-600'
+                          : 'text-red-600'
+                      }`}
+                    >
                       {getPercentageChange(
                         financialOverview.monthlyComparison.currentMonth.profitLoss,
                         financialOverview.monthlyComparison.previousMonth.profitLoss
-                      ).toFixed(1)}%
+                      ).toFixed(1)}
+                      %
                     </div>
                   </div>
                 </div>
@@ -623,8 +700,12 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left p-2">{t('financial.accountName') || 'Account Name'}</th>
-                      <th className="text-left p-2">{t('financial.accountType') || 'Account Type'}</th>
+                      <th className="text-left p-2">
+                        {t('financial.accountName') || 'Account Name'}
+                      </th>
+                      <th className="text-left p-2">
+                        {t('financial.accountType') || 'Account Type'}
+                      </th>
                       <th className="text-right p-2">{t('financial.balance') || 'Balance'}</th>
                     </tr>
                   </thead>
@@ -651,8 +732,12 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left p-2">{t('financial.accountName') || 'Account Name'}</th>
-                      <th className="text-left p-2">{t('financial.accountType') || 'Account Type'}</th>
+                      <th className="text-left p-2">
+                        {t('financial.accountName') || 'Account Name'}
+                      </th>
+                      <th className="text-left p-2">
+                        {t('financial.accountType') || 'Account Type'}
+                      </th>
                       <th className="text-right p-2">{t('financial.balance') || 'Balance'}</th>
                     </tr>
                   </thead>
@@ -679,9 +764,15 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left p-2">{t('financial.accountName') || 'Account Name'}</th>
-                      <th className="text-left p-2">{t('financial.accountType') || 'Account Type'}</th>
-                      <th className="text-left p-2">{t('financial.parentAccount') || 'Parent Account'}</th>
+                      <th className="text-left p-2">
+                        {t('financial.accountName') || 'Account Name'}
+                      </th>
+                      <th className="text-left p-2">
+                        {t('financial.accountType') || 'Account Type'}
+                      </th>
+                      <th className="text-left p-2">
+                        {t('financial.parentAccount') || 'Parent Account'}
+                      </th>
                       <th className="text-right p-2">{t('financial.balance') || 'Balance'}</th>
                     </tr>
                   </thead>
@@ -695,9 +786,11 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
                         <td className="p-2 text-sm text-gray-600 dark:text-gray-400">
                           {account.parentAccount || '-'}
                         </td>
-                        <td className={`p-2 text-right font-semibold ${
-                          account.balance >= 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
+                        <td
+                          className={`p-2 text-right font-semibold ${
+                            account.balance >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}
+                        >
                           {formatCurrency(Math.abs(account.balance))}
                         </td>
                       </tr>
@@ -717,7 +810,7 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
                   {t('financial.allTimeInvoiceData') || 'All-time invoice data from ERPNext'}
                 </p>
               </div>
-              
+
               {invoiceSummary ? (
                 <div className="space-y-6">
                   {/* Invoice Summary Cards */}
@@ -786,60 +879,99 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
                         <tr className="border-b">
                           <th className="text-left p-2">{t('financial.metric') || 'Metric'}</th>
                           <th className="text-left p-2">{t('financial.amount') || 'Amount'}</th>
-                          <th className="text-left p-2">{t('financial.percentage') || 'Percentage'}</th>
+                          <th className="text-left p-2">
+                            {t('financial.percentage') || 'Percentage'}
+                          </th>
                           <th className="text-left p-2">{t('financial.status') || 'Status'}</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
-                          <td className="p-2 font-medium">{t('financial.totalAmount') || 'Total Amount'}</td>
-                          <td className="p-2 font-semibold">{formatCurrency(invoiceSummary.totalAmount)}</td>
+                          <td className="p-2 font-medium">
+                            {t('financial.totalAmount') || 'Total Amount'}
+                          </td>
+                          <td className="p-2 font-semibold">
+                            {formatCurrency(invoiceSummary.totalAmount)}
+                          </td>
                           <td className="p-2">100%</td>
                           <td className="p-2">
-                            <Badge variant="secondary">{t('financial.allInvoices') || 'All Invoices'}</Badge>
+                            <Badge variant="secondary">
+                              {t('financial.allInvoices') || 'All Invoices'}
+                            </Badge>
                           </td>
                         </tr>
                         <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
-                          <td className="p-2 font-medium">{t('financial.paidAmount') || 'Paid Amount'}</td>
-                          <td className="p-2 font-semibold text-green-600">{formatCurrency(invoiceSummary.paidAmount)}</td>
-                          <td className="p-2">
-                            {invoiceSummary.totalAmount && invoiceSummary.totalAmount > 0 
-                              ? ((invoiceSummary.paidAmount || 0) / invoiceSummary.totalAmount * 100).toFixed(1)
-                              : '0.0'
-                            }%
+                          <td className="p-2 font-medium">
+                            {t('financial.paidAmount') || 'Paid Amount'}
+                          </td>
+                          <td className="p-2 font-semibold text-green-600">
+                            {formatCurrency(invoiceSummary.paidAmount)}
                           </td>
                           <td className="p-2">
-                            <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            {invoiceSummary.totalAmount && invoiceSummary.totalAmount > 0
+                              ? (
+                                  ((invoiceSummary.paidAmount || 0) / invoiceSummary.totalAmount) *
+                                  100
+                                ).toFixed(1)
+                              : '0.0'}
+                            %
+                          </td>
+                          <td className="p-2">
+                            <Badge
+                              variant="default"
+                              className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                            >
                               {t('financial.paid') || 'Paid'}
                             </Badge>
                           </td>
                         </tr>
                         <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
-                          <td className="p-2 font-medium">{t('financial.outstandingAmount') || 'Outstanding Amount'}</td>
-                          <td className="p-2 font-semibold text-orange-600">{formatCurrency(invoiceSummary.outstandingAmount)}</td>
-                          <td className="p-2">
-                            {invoiceSummary.totalAmount && invoiceSummary.totalAmount > 0 
-                              ? ((invoiceSummary.outstandingAmount || 0) / invoiceSummary.totalAmount * 100).toFixed(1)
-                              : '0.0'
-                            }%
+                          <td className="p-2 font-medium">
+                            {t('financial.outstandingAmount') || 'Outstanding Amount'}
+                          </td>
+                          <td className="p-2 font-semibold text-orange-600">
+                            {formatCurrency(invoiceSummary.outstandingAmount)}
                           </td>
                           <td className="p-2">
-                            <Badge variant="outline" className="border-orange-200 text-orange-700 dark:border-orange-700 dark:text-orange-300">
+                            {invoiceSummary.totalAmount && invoiceSummary.totalAmount > 0
+                              ? (
+                                  ((invoiceSummary.outstandingAmount || 0) /
+                                    invoiceSummary.totalAmount) *
+                                  100
+                                ).toFixed(1)
+                              : '0.0'}
+                            %
+                          </td>
+                          <td className="p-2">
+                            <Badge
+                              variant="outline"
+                              className="border-orange-200 text-orange-700 dark:border-orange-700 dark:text-orange-300"
+                            >
                               {t('financial.outstanding') || 'Outstanding'}
                             </Badge>
                           </td>
                         </tr>
                         <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
-                          <td className="p-2 font-medium">{t('financial.overdueAmount') || 'Overdue Amount'}</td>
-                          <td className="p-2 font-semibold text-red-600">{formatCurrency(invoiceSummary.overdueAmount)}</td>
-                          <td className="p-2">
-                            {invoiceSummary.totalAmount && invoiceSummary.totalAmount > 0 
-                              ? ((invoiceSummary.overdueAmount || 0) / invoiceSummary.totalAmount * 100).toFixed(1)
-                              : '0.0'
-                            }%
+                          <td className="p-2 font-medium">
+                            {t('financial.overdueAmount') || 'Overdue Amount'}
+                          </td>
+                          <td className="p-2 font-semibold text-red-600">
+                            {formatCurrency(invoiceSummary.overdueAmount)}
                           </td>
                           <td className="p-2">
-                            <Badge variant="destructive">{t('financial.overdue') || 'Overdue'}</Badge>
+                            {invoiceSummary.totalAmount && invoiceSummary.totalAmount > 0
+                              ? (
+                                  ((invoiceSummary.overdueAmount || 0) /
+                                    invoiceSummary.totalAmount) *
+                                  100
+                                ).toFixed(1)
+                              : '0.0'}
+                            %
+                          </td>
+                          <td className="p-2">
+                            <Badge variant="destructive">
+                              {t('financial.overdue') || 'Overdue'}
+                            </Badge>
                           </td>
                         </tr>
                       </tbody>
@@ -859,8 +991,9 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
 
       {/* Last Updated */}
       <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-        {t('financial.lastUpdated') || 'Last Updated'}: {new Date(financialOverview.lastUpdated).toLocaleString()}
+        {t('financial.lastUpdated') || 'Last Updated'}:{' '}
+        {new Date(financialOverview.lastUpdated).toLocaleString()}
       </div>
     </div>
-  )
+  );
 }

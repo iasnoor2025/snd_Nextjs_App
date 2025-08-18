@@ -1,10 +1,10 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle, ArrowLeft, Shield } from 'lucide-react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 export default function AccessDeniedPage() {
   const searchParams = useSearchParams();
@@ -37,7 +37,9 @@ export default function AccessDeniedPage() {
                 {requiredRoles.length > 0 ? (
                   <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
                     {requiredRoles.map((role, index) => (
-                      <li key={index} className="capitalize">{role.toLowerCase().replace('_', ' ')}</li>
+                      <li key={index} className="capitalize">
+                        {role.toLowerCase().replace('_', ' ')}
+                      </li>
                     ))}
                   </ul>
                 ) : (
@@ -65,11 +67,9 @@ export default function AccessDeniedPage() {
                   Back to Dashboard
                 </Link>
               </Button>
-              
+
               <Button asChild className="w-full" variant="default">
-                <Link href="/profile">
-                  View Profile
-                </Link>
+                <Link href="/profile">View Profile</Link>
               </Button>
             </div>
 
@@ -81,4 +81,4 @@ export default function AccessDeniedPage() {
       </div>
     </div>
   );
-} 
+}

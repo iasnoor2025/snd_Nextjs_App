@@ -1,36 +1,36 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { 
-  ArrowLeft, 
-  Edit, 
-  Download, 
-  FileText, 
-  Printer, 
-  Share2, 
-  Loader2, 
-  User, 
-  Calendar, 
-  DollarSign, 
-  Building, 
-  Briefcase,
-  Clock,
-  CheckCircle,
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { usePrint } from '@/hooks/use-print';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import {
   AlertCircle,
+  ArrowLeft,
+  Briefcase,
+  Building,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Copy,
+  DollarSign,
+  Download,
+  Edit,
   Eye,
-  Copy
-} from "lucide-react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { format } from "date-fns";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { Label } from "@/components/ui/label";
-import { usePrint } from "@/hooks/use-print";
+  FileText,
+  Loader2,
+  Printer,
+  Share2,
+  User,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface PayrollItem {
   id: number;
@@ -85,17 +85,17 @@ interface Payroll {
 }
 
 const statusColors = {
-  pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  approved: "bg-blue-100 text-blue-800 border-blue-200",
-  paid: "bg-green-100 text-green-800 border-green-200",
-  cancelled: "bg-red-100 text-red-800 border-red-200"
+  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  approved: 'bg-blue-100 text-blue-800 border-blue-200',
+  paid: 'bg-green-100 text-green-800 border-green-200',
+  cancelled: 'bg-red-100 text-red-800 border-red-200',
 };
 
 const statusIcons = {
   pending: Clock,
   approved: CheckCircle,
   paid: CheckCircle,
-  cancelled: AlertCircle
+  cancelled: AlertCircle,
 };
 
 export default function PayrollDetailsPage() {
@@ -114,11 +114,11 @@ export default function PayrollDetailsPage() {
       if (data.success) {
         setPayroll(data.data);
       } else {
-        toast.error("Failed to fetch payroll details");
+        toast.error('Failed to fetch payroll details');
       }
     } catch (error) {
-      console.error("Error fetching payroll:", error);
-      toast.error("Error fetching payroll details");
+      console.error('Error fetching payroll:', error);
+      toast.error('Error fetching payroll details');
     } finally {
       setLoading(false);
     }
@@ -131,49 +131,49 @@ export default function PayrollDetailsPage() {
   }, [payrollId]);
 
   const getPaymentMethodLabel = (method: string | null) => {
-    if (!method) return "Not specified";
-    
+    if (!method) return 'Not specified';
+
     switch (method) {
-      case "bank_transfer":
-        return "Bank Transfer";
-      case "check":
-        return "Check";
-      case "cash":
-        return "Cash";
+      case 'bank_transfer':
+        return 'Bank Transfer';
+      case 'check':
+        return 'Check';
+      case 'cash':
+        return 'Cash';
       default:
         return method;
     }
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "SAR",
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'SAR',
     }).format(amount);
   };
 
   const handleDownloadPayslip = () => {
-    console.log("Downloading payslip for payroll:", payrollId);
-    toast.success("Payslip download started");
+    console.log('Downloading payslip for payroll:', payrollId);
+    toast.success('Payslip download started');
   };
 
   const { printRef, handlePrint } = usePrint({
     documentTitle: `Payroll-${payrollId}`,
     waitForImages: true,
-    onPrintError: (error) => {
+    onPrintError: error => {
       console.error('Print error details:', error);
       // Continue with print even if there are image errors
-    }
+    },
   });
 
   const handleShare = () => {
-    console.log("Sharing payroll details");
-    toast.success("Payroll details shared");
+    console.log('Sharing payroll details');
+    toast.success('Payroll details shared');
   };
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
-    toast.success("Link copied to clipboard");
+    toast.success('Link copied to clipboard');
   };
 
   if (loading) {
@@ -197,7 +197,9 @@ export default function PayrollDetailsPage() {
           <div className="text-center py-12">
             <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Payroll Not Found</h2>
-            <p className="text-gray-600 mb-6">The requested payroll could not be found or may have been removed.</p>
+            <p className="text-gray-600 mb-6">
+              The requested payroll could not be found or may have been removed.
+            </p>
             <Link href="/modules/payroll-management">
               <Button className="bg-blue-600 hover:bg-blue-700">
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -210,13 +212,13 @@ export default function PayrollDetailsPage() {
     );
   }
 
-  const employeeName = payroll.employee ? 
-    (payroll.employee.full_name || `${payroll.employee.first_name} ${payroll.employee.last_name}`) : 
-    'Unknown Employee';
+  const employeeName = payroll.employee
+    ? payroll.employee.full_name || `${payroll.employee.first_name} ${payroll.employee.last_name}`
+    : 'Unknown Employee';
 
-  const period = new Date(payroll.year, payroll.month - 1).toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
+  const period = new Date(payroll.year, payroll.month - 1).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
   });
 
   const grossPay = payroll.base_salary + payroll.overtime_amount + payroll.bonus_amount;
@@ -237,7 +239,9 @@ export default function PayrollDetailsPage() {
               </Link>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900">Payroll Details</h1>
-                <p className="text-gray-600">Payroll #{payroll.id} • {period}</p>
+                <p className="text-gray-600">
+                  Payroll #{payroll.id} • {period}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -264,7 +268,10 @@ export default function PayrollDetailsPage() {
                 </Button>
               </Link>
               <Link href={`/modules/payroll-management/${payroll.id}/edit`}>
-                <Button size="sm" className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                >
                   <Edit className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
@@ -384,28 +391,37 @@ export default function PayrollDetailsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-4">
                         <div>
-                          <Label className="text-sm font-medium text-gray-500">Payroll Period</Label>
+                          <Label className="text-sm font-medium text-gray-500">
+                            Payroll Period
+                          </Label>
                           <p className="text-lg font-semibold">{period}</p>
                         </div>
                         <div>
                           <Label className="text-sm font-medium text-gray-500">Payment Date</Label>
                           <p className="text-lg">
-                            {payroll.paid_at ? format(new Date(payroll.paid_at), "PPP") : 'Not paid yet'}
+                            {payroll.paid_at
+                              ? format(new Date(payroll.paid_at), 'PPP')
+                              : 'Not paid yet'}
                           </p>
                         </div>
                       </div>
                       <div className="space-y-4">
                         <div>
-                          <Label className="text-sm font-medium text-gray-500">Payment Method</Label>
+                          <Label className="text-sm font-medium text-gray-500">
+                            Payment Method
+                          </Label>
                           <p className="text-lg">{getPaymentMethodLabel(payroll.payment_method)}</p>
                         </div>
                         <div>
                           <Label className="text-sm font-medium text-gray-500">Status</Label>
                           <div className="flex items-center gap-2">
                             <StatusIcon className="h-4 w-4 text-gray-500" />
-                            <Badge 
-                              variant="outline" 
-                              className={cn("text-sm font-medium", statusColors[payroll.status as keyof typeof statusColors])}
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'text-sm font-medium',
+                                statusColors[payroll.status as keyof typeof statusColors]
+                              )}
                             >
                               {payroll.status.charAt(0).toUpperCase() + payroll.status.slice(1)}
                             </Badge>
@@ -438,20 +454,28 @@ export default function PayrollDetailsPage() {
                         <div className="space-y-3">
                           <div className="flex justify-between items-center py-2">
                             <span className="text-gray-700">Basic Salary</span>
-                            <span className="font-semibold">{formatCurrency(payroll.base_salary)}</span>
+                            <span className="font-semibold">
+                              {formatCurrency(payroll.base_salary)}
+                            </span>
                           </div>
                           <div className="flex justify-between items-center py-2">
                             <span className="text-gray-700">Overtime Pay</span>
-                            <span className="font-semibold text-blue-600">{formatCurrency(payroll.overtime_amount)}</span>
+                            <span className="font-semibold text-blue-600">
+                              {formatCurrency(payroll.overtime_amount)}
+                            </span>
                           </div>
                           <div className="flex justify-between items-center py-2">
                             <span className="text-gray-700">Bonus</span>
-                            <span className="font-semibold text-green-600">{formatCurrency(payroll.bonus_amount)}</span>
+                            <span className="font-semibold text-green-600">
+                              {formatCurrency(payroll.bonus_amount)}
+                            </span>
                           </div>
                           <Separator />
                           <div className="flex justify-between items-center py-2">
                             <span className="font-bold text-gray-900">Gross Pay</span>
-                            <span className="font-bold text-xl text-green-600">{formatCurrency(grossPay)}</span>
+                            <span className="font-bold text-xl text-green-600">
+                              {formatCurrency(grossPay)}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -465,26 +489,30 @@ export default function PayrollDetailsPage() {
                         <div className="space-y-3">
                           <div className="flex justify-between items-center py-2">
                             <span className="text-gray-700">Tax & Other Deductions</span>
-                            <span className="font-semibold text-red-600">-{formatCurrency(payroll.deduction_amount)}</span>
+                            <span className="font-semibold text-red-600">
+                              -{formatCurrency(payroll.deduction_amount)}
+                            </span>
                           </div>
                           {payroll.advance_deduction > 0 && (
                             <div className="flex justify-between items-center py-2">
                               <span className="text-gray-700">Advance Deduction</span>
-                              <span className="font-semibold text-red-600">-{formatCurrency(payroll.advance_deduction)}</span>
+                              <span className="font-semibold text-red-600">
+                                -{formatCurrency(payroll.advance_deduction)}
+                              </span>
                             </div>
                           )}
                           <Separator />
                           <div className="flex justify-between items-center py-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg px-4">
                             <span className="font-bold text-gray-900">Net Pay</span>
-                            <span className="font-bold text-2xl text-green-600">{formatCurrency(payroll.final_amount)}</span>
+                            <span className="font-bold text-2xl text-green-600">
+                              {formatCurrency(payroll.final_amount)}
+                            </span>
                           </div>
                         </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-
-                
 
                 {/* Notes */}
                 {payroll.notes && (
@@ -524,11 +552,19 @@ export default function PayrollDetailsPage() {
                         View Payslip
                       </Button>
                     </Link>
-                    <Button variant="outline" className="w-full justify-start" onClick={handleDownloadPayslip}>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={handleDownloadPayslip}
+                    >
                       <Download className="h-4 w-4 mr-2" />
                       Download Payslip
                     </Button>
-                    <Button variant="outline" className="w-full justify-start" onClick={handlePrint}>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={handlePrint}
+                    >
                       <Printer className="h-4 w-4 mr-2" />
                       Print
                     </Button>
@@ -544,22 +580,30 @@ export default function PayrollDetailsPage() {
                     <div className="space-y-3">
                       <div>
                         <Label className="text-sm font-medium text-gray-500">Created</Label>
-                        <p className="text-sm">{format(new Date(payroll.created_at), "PPP 'at' p")}</p>
+                        <p className="text-sm">
+                          {format(new Date(payroll.created_at), "PPP 'at' p")}
+                        </p>
                       </div>
                       <div>
                         <Label className="text-sm font-medium text-gray-500">Last Updated</Label>
-                        <p className="text-sm">{format(new Date(payroll.updated_at), "PPP 'at' p")}</p>
+                        <p className="text-sm">
+                          {format(new Date(payroll.updated_at), "PPP 'at' p")}
+                        </p>
                       </div>
                       {payroll.approved_at && (
                         <div>
                           <Label className="text-sm font-medium text-gray-500">Approved</Label>
-                          <p className="text-sm">{format(new Date(payroll.approved_at), "PPP 'at' p")}</p>
+                          <p className="text-sm">
+                            {format(new Date(payroll.approved_at), "PPP 'at' p")}
+                          </p>
                         </div>
                       )}
                       {payroll.paid_at && (
                         <div>
                           <Label className="text-sm font-medium text-gray-500">Paid</Label>
-                          <p className="text-sm">{format(new Date(payroll.paid_at), "PPP 'at' p")}</p>
+                          <p className="text-sm">
+                            {format(new Date(payroll.paid_at), "PPP 'at' p")}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -575,12 +619,18 @@ export default function PayrollDetailsPage() {
                     <CardContent>
                       <div className="space-y-3">
                         <div>
-                          <Label className="text-sm font-medium text-gray-500">Payment Method</Label>
-                          <p className="text-sm font-semibold">{getPaymentMethodLabel(payroll.payment_method)}</p>
+                          <Label className="text-sm font-medium text-gray-500">
+                            Payment Method
+                          </Label>
+                          <p className="text-sm font-semibold">
+                            {getPaymentMethodLabel(payroll.payment_method)}
+                          </p>
                         </div>
                         <div>
                           <Label className="text-sm font-medium text-gray-500">Reference</Label>
-                          <p className="text-sm font-mono bg-gray-100 p-2 rounded">{payroll.payment_reference}</p>
+                          <p className="text-sm font-mono bg-gray-100 p-2 rounded">
+                            {payroll.payment_reference}
+                          </p>
                         </div>
                       </div>
                     </CardContent>

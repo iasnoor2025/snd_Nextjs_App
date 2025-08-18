@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { sql } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import { sql } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest) {
   try {
     console.log('🔄 Starting database reset...');
-    
+
     // Drop all tables in reverse dependency order to respect foreign key constraints
     const dropQueries = [
       // Drop tables with foreign key dependencies first
@@ -81,16 +81,16 @@ export async function POST(_request: NextRequest) {
     }
 
     console.log('🏗️ Creating new tables from Drizzle schema...');
-    
+
     // Read and execute the generated migration file
     const fs = require('fs');
     const path = require('path');
     const migrationPath = path.join(process.cwd(), 'drizzle', '0000_motionless_dagger.sql');
-    
+
     if (fs.existsSync(migrationPath)) {
       const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
       const statements = migrationSQL.split('--> statement-breakpoint');
-      
+
       for (const statement of statements) {
         const trimmedStatement = statement.trim();
         if (trimmedStatement) {
@@ -108,7 +108,7 @@ export async function POST(_request: NextRequest) {
     }
 
     console.log('👤 Creating admin user...');
-    
+
     // Create admin user
     const hashedPassword = await bcrypt.hash('password', 12);
 
@@ -117,9 +117,9 @@ export async function POST(_request: NextRequest) {
       VALUES ('Admin User', 'admin@ias.com', ${hashedPassword}, '1234567890', 1, 1, true, CURRENT_DATE, CURRENT_DATE)
       RETURNING id, email, role_id, "isActive"
     `);
-    
+
     const adminUser = (adminUserResult as any)[0];
-    
+
     if (!adminUser) {
       throw new Error('Failed to create admin user');
     }
@@ -140,7 +140,6 @@ export async function POST(_request: NextRequest) {
         password: 'password',
       },
     });
-
   } catch (error) {
     console.error('❌ Error during database reset:', error);
     return NextResponse.json(

@@ -1,29 +1,29 @@
-"use client"
+'use client';
 
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { useSession, signOut } from "next-auth/react"
-import { Badge } from "@/components/ui/badge"
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu"
-import { User, LogOut, Settings } from "lucide-react"
-import { LanguageSwitcher } from "./language-switcher"
-import { ThemeToggle } from "./theme-toggle"
-import { I18nErrorBoundary } from "./i18n-error-boundary"
-import { useI18n } from "@/hooks/use-i18n"
-import { NotificationBell } from "./notification-bell"
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Separator } from '@/components/ui/separator';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useI18n } from '@/hooks/use-i18n';
+import { LogOut, Settings, User } from 'lucide-react';
+import { signOut, useSession } from 'next-auth/react';
+import { I18nErrorBoundary } from './i18n-error-boundary';
+import { LanguageSwitcher } from './language-switcher';
+import { NotificationBell } from './notification-bell';
+import { ThemeToggle } from './theme-toggle';
 
 export function SiteHeader() {
   const { data: session, status } = useSession();
   const { isRTL } = useI18n();
-  
+
   // Check if user is an employee
   const isEmployee = session?.user?.role === 'EMPLOYEE';
 
@@ -33,11 +33,8 @@ export function SiteHeader() {
         {/* Only show sidebar trigger for non-employees */}
         {!isEmployee && (
           <>
-            <SidebarTrigger className={isRTL ? "-mr-1" : "-ml-1"} />
-            <Separator
-              orientation="vertical"
-              className="mx-2 data-[orientation=vertical]:h-4"
-            />
+            <SidebarTrigger className={isRTL ? '-mr-1' : '-ml-1'} />
+            <Separator orientation="vertical" className="mx-2 data-[orientation=vertical]:h-4" />
           </>
         )}
         <h1 className="text-base font-medium">SND Rental Management</h1>
@@ -45,21 +42,29 @@ export function SiteHeader() {
           <I18nErrorBoundary>
             <LanguageSwitcher />
           </I18nErrorBoundary>
-          {status === "loading" ? (
+          {status === 'loading' ? (
             <div className="text-sm text-muted-foreground">Loading...</div>
           ) : session ? (
             <div className="flex items-center gap-2">
               <NotificationBell />
-              <Badge variant={
-                session?.user?.role === "SUPER_ADMIN" ? "destructive" :
-                session?.user?.role === "ADMIN" ? "default" :
-                session?.user?.role === "MANAGER" ? "secondary" :
-                session?.user?.role === "SUPERVISOR" ? "outline" :
-                session?.user?.role === "OPERATOR" ? "secondary" :
-                session?.user?.role === "EMPLOYEE" ? "default" :
-                "secondary"
-              }>
-                {session?.user?.role || "USER"}
+              <Badge
+                variant={
+                  session?.user?.role === 'SUPER_ADMIN'
+                    ? 'destructive'
+                    : session?.user?.role === 'ADMIN'
+                      ? 'default'
+                      : session?.user?.role === 'MANAGER'
+                        ? 'secondary'
+                        : session?.user?.role === 'SUPERVISOR'
+                          ? 'outline'
+                          : session?.user?.role === 'OPERATOR'
+                            ? 'secondary'
+                            : session?.user?.role === 'EMPLOYEE'
+                              ? 'default'
+                              : 'secondary'
+                }
+              >
+                {session?.user?.role || 'USER'}
               </Badge>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -68,12 +73,10 @@ export function SiteHeader() {
                     {session?.user?.name || session?.user?.email}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align={isRTL ? "start" : "end"}>
+                <DropdownMenuContent align={isRTL ? 'start' : 'end'}>
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        {session?.user?.name}
-                      </p>
+                      <p className="text-sm font-medium leading-none">{session?.user?.name}</p>
                       <p className="text-xs leading-none text-muted-foreground">
                         {session?.user?.email}
                       </p>
@@ -96,7 +99,6 @@ export function SiteHeader() {
                     <LogOut className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
                     <span>Log out</span>
                   </DropdownMenuItem>
-
                 </DropdownMenuContent>
               </DropdownMenu>
               <ThemeToggle />
@@ -112,5 +114,5 @@ export function SiteHeader() {
         </div>
       </div>
     </header>
-  )
+  );
 }

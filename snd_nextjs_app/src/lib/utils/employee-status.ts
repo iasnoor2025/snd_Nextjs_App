@@ -12,12 +12,12 @@ export async function updateEmployeeStatusBasedOnLeave(employeeId: number): Prom
     // Get current date
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
-    
+
     if (!todayStr) {
       console.error('Failed to generate today string');
       return false;
     }
-    
+
     // Find any approved leave that is currently active (start_date <= today <= end_date)
     const activeLeave = await db
       .select()
@@ -76,12 +76,12 @@ export async function isEmployeeCurrentlyOnLeave(employeeId: number): Promise<bo
   try {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
-    
+
     if (!todayStr) {
       console.error('Failed to generate today string');
       return false;
     }
-    
+
     const activeLeave = await db
       .select()
       .from(employeeLeaves)
@@ -111,7 +111,7 @@ export async function getEmployeeLeaveStatus(employeeId: number) {
   try {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
-    
+
     if (!todayStr) {
       console.error('Failed to generate today string');
       return {
@@ -119,7 +119,7 @@ export async function getEmployeeLeaveStatus(employeeId: number) {
         currentLeave: null,
         upcomingLeave: null,
         pastLeave: null,
-        totalApprovedLeaves: 0
+        totalApprovedLeaves: 0,
       };
     }
 
@@ -129,24 +129,20 @@ export async function getEmployeeLeaveStatus(employeeId: number) {
       .from(employeeLeaves)
       .where(and(eq(employeeLeaves.employeeId, employeeId), eq(employeeLeaves.status, 'approved')));
 
-    const currentLeave = approvedLeaves.find(leave => 
-      leave.startDate <= todayStr && leave.endDate >= todayStr
+    const currentLeave = approvedLeaves.find(
+      leave => leave.startDate <= todayStr && leave.endDate >= todayStr
     );
 
-    const upcomingLeave = approvedLeaves.find(leave => 
-      leave.startDate > todayStr
-    );
+    const upcomingLeave = approvedLeaves.find(leave => leave.startDate > todayStr);
 
-    const pastLeave = approvedLeaves.find(leave => 
-      leave.endDate < todayStr
-    );
+    const pastLeave = approvedLeaves.find(leave => leave.endDate < todayStr);
 
     return {
       isCurrentlyOnLeave: !!currentLeave,
       currentLeave,
       upcomingLeave,
       pastLeave,
-      totalApprovedLeaves: approvedLeaves.length
+      totalApprovedLeaves: approvedLeaves.length,
     };
   } catch (error) {
     console.error('Error getting employee leave status:', error);
@@ -155,7 +151,7 @@ export async function getEmployeeLeaveStatus(employeeId: number) {
       currentLeave: null,
       upcomingLeave: null,
       pastLeave: null,
-      totalApprovedLeaves: 0
+      totalApprovedLeaves: 0,
     };
   }
 }

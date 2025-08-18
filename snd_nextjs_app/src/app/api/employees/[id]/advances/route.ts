@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const resolvedParams = await params;
-    
+
     if (!resolvedParams || !resolvedParams.id) {
       console.error('Invalid params received:', resolvedParams);
-      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
-    
+
     const { id: _id } = resolvedParams;
 
     // Mock advance data
@@ -25,7 +22,7 @@ export async function GET(
         monthly_deduction: 500,
         repaid_amount: 2000,
         remaining_balance: 3000,
-        type: 'advance'
+        type: 'advance',
       },
       {
         id: 2,
@@ -36,7 +33,7 @@ export async function GET(
         monthly_deduction: 300,
         repaid_amount: 3000,
         remaining_balance: 0,
-        type: 'advance'
+        type: 'advance',
       },
       {
         id: 3,
@@ -44,7 +41,7 @@ export async function GET(
         reason: 'Education fees',
         status: 'pending',
         created_at: '2024-03-05',
-        type: 'advance'
+        type: 'advance',
       },
       {
         id: 4,
@@ -55,39 +52,36 @@ export async function GET(
         monthly_deduction: 150,
         repaid_amount: 750,
         remaining_balance: 750,
-        type: 'advance'
-      }
+        type: 'advance',
+      },
     ];
 
     return NextResponse.json({
       success: true,
       data: advances,
-      message: 'Advance payments retrieved successfully'
+      message: 'Advance payments retrieved successfully',
     });
   } catch (error) {
     console.error('Error in GET /api/employees/[id]/advances:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to fetch advance payments: ' + (error as Error).message
+        message: 'Failed to fetch advance payments: ' + (error as Error).message,
       },
       { status: 500 }
     );
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const resolvedParams = await params;
-    
+
     if (!resolvedParams || !resolvedParams.id) {
       console.error('Invalid params received:', resolvedParams);
-      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
-    
+
     const { id } = resolvedParams;
     const body = await request.json();
 
@@ -95,14 +89,14 @@ export async function POST(
     return NextResponse.json({
       success: true,
       message: 'Advance payment request created successfully',
-      data: { id: Math.floor(Math.random() * 1000), employee_id: parseInt(id), ...body }
+      data: { id: Math.floor(Math.random() * 1000), employee_id: parseInt(id), ...body },
     });
   } catch (error) {
     console.error('Error in POST /api/employees/[id]/advances:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to create advance payment request: ' + (error as Error).message
+        message: 'Failed to create advance payment request: ' + (error as Error).message,
       },
       { status: 500 }
     );

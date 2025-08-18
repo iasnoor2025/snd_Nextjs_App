@@ -1,27 +1,19 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { NextResponse } from 'next/server';
 
-export async function POST(
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST({ params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Notification ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Notification ID is required' }, { status: 400 });
     }
 
     // In a real application, you would update the notification in the database
@@ -38,9 +30,6 @@ export async function POST(
     });
   } catch (error) {
     console.error('Error marking notification as read:', error);
-    return NextResponse.json(
-      { error: 'Failed to mark notification as read' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to mark notification as read' }, { status: 500 });
   }
-} 
+}

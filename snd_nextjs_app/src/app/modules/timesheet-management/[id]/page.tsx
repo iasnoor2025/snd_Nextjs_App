@@ -1,16 +1,16 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Edit, Calendar, Clock, User, Building } from "lucide-react";
-import Link from "next/link";
-import { toast } from "sonner";
-import ApprovalWorkflow from "@/components/timesheet/ApprovalWorkflow";
-import SubmitTimesheet from "@/components/timesheet/SubmitTimesheet";
-import { ProtectedRoute } from "@/components/protected-route";
+import { ProtectedRoute } from '@/components/protected-route';
+import ApprovalWorkflow from '@/components/timesheet/ApprovalWorkflow';
+import SubmitTimesheet from '@/components/timesheet/SubmitTimesheet';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft, Building, Calendar, Clock, Edit, User } from 'lucide-react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Timesheet {
   id: string;
@@ -183,7 +183,9 @@ function TimesheetDetailContent() {
       <div className="p-6">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Timesheet Not Found</h2>
-          <p className="text-gray-600 mb-4">The timesheet you&apos;re looking for doesn&apos;t exist.</p>
+          <p className="text-gray-600 mb-4">
+            The timesheet you&apos;re looking for doesn&apos;t exist.
+          </p>
           <Link href="/modules/timesheet-management">
             <Button>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -210,7 +212,8 @@ function TimesheetDetailContent() {
           <div>
             <h1 className="text-2xl font-bold">Timesheet Details</h1>
             <p className="text-gray-600">
-              {timesheet.employee.firstName} {timesheet.employee.lastName} - {new Date(timesheet.date).toLocaleDateString()}
+              {timesheet.employee.firstName} {timesheet.employee.lastName} -{' '}
+              {new Date(timesheet.date).toLocaleDateString()}
             </p>
           </div>
         </div>
@@ -238,7 +241,9 @@ function TimesheetDetailContent() {
                   <User className="h-4 w-4 text-gray-500" />
                   <div>
                     <div className="text-sm font-medium text-gray-500">Employee</div>
-                    <div>{timesheet.employee.firstName} {timesheet.employee.lastName}</div>
+                    <div>
+                      {timesheet.employee.firstName} {timesheet.employee.lastName}
+                    </div>
                   </div>
                 </div>
 
@@ -319,10 +324,7 @@ function TimesheetDetailContent() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Submit Timesheet */}
-          <SubmitTimesheet
-            timesheet={timesheet}
-            onStatusChange={handleStatusChange}
-          />
+          <SubmitTimesheet timesheet={timesheet} onStatusChange={handleStatusChange} />
 
           {/* Approval History */}
           <Card>
@@ -348,14 +350,18 @@ function TimesheetDetailContent() {
                 {timesheet.timesheetInchargeApprovalAt && (
                   <div className="flex items-center justify-between text-sm">
                     <span>Incharge Approved</span>
-                    <span>{new Date(timesheet.timesheetInchargeApprovalAt).toLocaleDateString()}</span>
+                    <span>
+                      {new Date(timesheet.timesheetInchargeApprovalAt).toLocaleDateString()}
+                    </span>
                   </div>
                 )}
 
                 {timesheet.timesheetCheckingApprovalAt && (
                   <div className="flex items-center justify-between text-sm">
                     <span>Checking Approved</span>
-                    <span>{new Date(timesheet.timesheetCheckingApprovalAt).toLocaleDateString()}</span>
+                    <span>
+                      {new Date(timesheet.timesheetCheckingApprovalAt).toLocaleDateString()}
+                    </span>
                   </div>
                 )}
 

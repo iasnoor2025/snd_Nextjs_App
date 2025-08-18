@@ -5,7 +5,7 @@ export async function GET() {
     // For now, return empty data since we're not connected to Laravel backend
     // In the future, this would fetch from Laravel API
     const leaveRequests = {
-      data: []
+      data: [],
     };
 
     return NextResponse.json(leaveRequests);
@@ -14,7 +14,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to fetch leave requests'
+        message: 'Failed to fetch leave requests',
       },
       { status: 500 }
     );

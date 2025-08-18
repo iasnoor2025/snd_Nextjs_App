@@ -1,10 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/db';
-import { hasPermission, createUserFromSession } from '@/lib/rbac/custom-rbac';
-import { permissions as permissionsTable, roles as rolesTable, roleHasPermissions as roleHasPermissionsTable } from '@/lib/drizzle/schema';
+import {
+  permissions as permissionsTable,
+  roleHasPermissions as roleHasPermissionsTable,
+  roles as rolesTable,
+} from '@/lib/drizzle/schema';
+import { createUserFromSession, hasPermission } from '@/lib/rbac/custom-rbac';
 import { and, asc, eq, ilike, or, sql } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/permissions - List all permissions
 export async function GET(_request: NextRequest) {
@@ -37,10 +41,7 @@ export async function GET(_request: NextRequest) {
     if (search) {
       const s = `%${search}%`;
       filters.push(
-        or(
-          ilike(permissionsTable.name, s),
-          ilike(permissionsTable.guardName, s as any),
-        )
+        or(ilike(permissionsTable.name, s), ilike(permissionsTable.guardName, s as any))
       );
     }
 
@@ -69,7 +70,7 @@ export async function GET(_request: NextRequest) {
       .limit(limit);
 
     // join roles per permission
-    const permIds = perms.map((p) => p.id as number);
+    const permIds = perms.map(p => p.id as number);
     let roleMap: Record<number, { role: { id: number; name: string } }[]> = {};
     if (permIds.length > 0) {
       const roleRows = await db
@@ -80,24 +81,27 @@ export async function GET(_request: NextRequest) {
         })
         .from(roleHasPermissionsTable)
         .leftJoin(rolesTable, eq(rolesTable.id, roleHasPermissionsTable.roleId))
-        .where(or(...permIds.map((id) => eq(roleHasPermissionsTable.permissionId, id))));
+        .where(or(...permIds.map(id => eq(roleHasPermissionsTable.permissionId, id))));
 
-      roleMap = roleRows.reduce((acc, r) => {
-        const pid = r.permission_id as unknown as number;
-        if (!acc[pid]) acc[pid] = [];
-        if (r.role_id != null)
-          acc[pid].push({ role: { id: r.role_id as number, name: r.role_name as string } });
-        return acc;
-      }, {} as Record<number, { role: { id: number; name: string } }[]>);
+      roleMap = roleRows.reduce(
+        (acc, r) => {
+          const pid = r.permission_id as unknown as number;
+          if (!acc[pid]) acc[pid] = [];
+          if (r.role_id != null)
+            acc[pid].push({ role: { id: r.role_id as number, name: r.role_name as string } });
+          return acc;
+        },
+        {} as Record<number, { role: { id: number; name: string } }[]>
+      );
     }
 
-    let results = perms.map((p) => ({
+    let results = perms.map(p => ({
       ...p,
       role_permissions: roleMap[p.id as number] || [],
     }));
 
     if (role) {
-      results = results.filter((p) => p.role_permissions.some((rp) => rp.role.name === role));
+      results = results.filter(p => p.role_permissions.some(rp => rp.role.name === role));
     }
 
     return NextResponse.json({
@@ -111,10 +115,7 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching permissions:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -140,10 +141,7 @@ export async function POST(_request: NextRequest) {
     const { name, guard_name = 'web' } = body;
 
     if (!name) {
-      return NextResponse.json(
-        { error: 'Permission name is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Permission name is required' }, { status: 400 });
     }
 
     // Check if permission already exists
@@ -154,10 +152,7 @@ export async function POST(_request: NextRequest) {
       .limit(1);
 
     if (existing[0]) {
-      return NextResponse.json(
-        { error: 'Permission already exists' },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: 'Permission already exists' }, { status: 409 });
     }
 
     // Create new permission
@@ -173,15 +168,15 @@ export async function POST(_request: NextRequest) {
       });
     const permission = inserted[0];
 
-    return NextResponse.json({
-      message: 'Permission created successfully',
-      permission,
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        message: 'Permission created successfully',
+        permission,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error creating permission:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

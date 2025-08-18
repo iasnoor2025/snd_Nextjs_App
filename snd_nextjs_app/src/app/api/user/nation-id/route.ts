@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { users, employees, designations, departments } from '@/lib/drizzle/schema';
-import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
-import { eq, and, ne } from 'drizzle-orm';
+import { db } from '@/lib/db';
+import { departments, designations, employees, users } from '@/lib/drizzle/schema';
+import { and, eq, ne } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/user/nation-id - Check if user has nation ID
 export async function POST(_request: NextRequest) {
@@ -12,28 +12,28 @@ export async function POST(_request: NextRequest) {
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { 
+        {
           error: 'Not authenticated',
           hasNationId: false,
           nationId: null,
           userId: null,
           userName: null,
           userEmail: null,
-          matchedEmployee: null
+          matchedEmployee: null,
         },
-        { 
+        {
           status: 401,
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
         }
       );
     }
 
     const userId = parseInt(session.user.id);
-    
+
     // Optimized query to get user data using Drizzle
     const userRows = await db
       .select({
@@ -48,31 +48,7 @@ export async function POST(_request: NextRequest) {
 
     if (userRows.length === 0) {
       return NextResponse.json(
-        { 
-          error: 'User not found',
-          hasNationId: false,
-          nationId: null,
-          userId: null,
-          userName: null,
-          userEmail: null,
-          matchedEmployee: null
-        },
-        { 
-          status: 404,
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
-        }
-      );
-    }
-
-    const user = userRows[0];
-
-    if (!user) {
-      return NextResponse.json(
-        { 
+        {
           error: 'User not found',
           hasNationId: false,
           nationId: null,
@@ -81,13 +57,37 @@ export async function POST(_request: NextRequest) {
           userEmail: null,
           matchedEmployee: null,
         },
-        { 
+        {
           status: 404,
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
+        }
+      );
+    }
+
+    const user = userRows[0];
+
+    if (!user) {
+      return NextResponse.json(
+        {
+          error: 'User not found',
+          hasNationId: false,
+          nationId: null,
+          userId: null,
+          userName: null,
+          userEmail: null,
+          matchedEmployee: null,
+        },
+        {
+          status: 404,
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
         }
       );
     }
@@ -121,11 +121,11 @@ export async function POST(_request: NextRequest) {
             operator_license_number: employees.operatorLicenseNumber,
             operator_license_expiry: employees.operatorLicenseExpiry,
             designation: {
-              name: designations.name
+              name: designations.name,
             },
             department: {
-              name: departments.name
-            }
+              name: departments.name,
+            },
           })
           .from(employees)
           .leftJoin(designations, eq(employees.designationId, designations.id))
@@ -154,25 +154,24 @@ export async function POST(_request: NextRequest) {
     // Add cache headers for successful responses
     const cacheHeaders = {
       'Cache-Control': 'public, max-age=300, s-maxage=300', // 5 minutes cache
-      'ETag': `"nation-id-${userId}-${user.national_id || 'none'}"`,
+      ETag: `"nation-id-${userId}-${user.national_id || 'none'}"`,
     };
 
     return NextResponse.json(result, { headers: cacheHeaders });
-    
   } catch (error) {
     console.error('❌ Error checking nation ID:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to check nation ID',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { 
+      {
         status: 500,
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
       }
     );
   }
@@ -183,10 +182,7 @@ export async function PUT(_request: NextRequest) {
   const session = await getServerSession(authConfig);
 
   if (!session?.user?.id) {
-    return NextResponse.json(
-      { error: 'Not authenticated' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
   try {
@@ -194,24 +190,16 @@ export async function PUT(_request: NextRequest) {
     const { nationId } = body;
 
     if (!nationId || typeof nationId !== 'string' || nationId.trim() === '') {
-      return NextResponse.json(
-        { error: 'Nation ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Nation ID is required' }, { status: 400 });
     }
 
     const userId = parseInt(session.user.id);
-    
+
     // Check if nation ID is already taken by another user using Drizzle
     const existingUserRows = await db
       .select({ id: users.id })
       .from(users)
-      .where(
-        and(
-          eq(users.nationalId, nationId.trim()),
-          ne(users.id, userId)
-        )
-      )
+      .where(and(eq(users.nationalId, nationId.trim()), ne(users.id, userId)))
       .limit(1);
 
     if (existingUserRows.length > 0) {
@@ -239,10 +227,7 @@ export async function PUT(_request: NextRequest) {
     const updatedUser = updatedUserRows[0];
 
     if (!updatedUser) {
-      return NextResponse.json(
-        { error: 'Failed to update user' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -253,9 +238,6 @@ export async function PUT(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Error updating nation ID:', error);
-    return NextResponse.json(
-      { error: 'Failed to update nation ID' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update nation ID' }, { status: 500 });
   }
-} 
+}

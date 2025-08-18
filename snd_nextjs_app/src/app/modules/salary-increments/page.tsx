@@ -1,20 +1,44 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { toast } from 'sonner';
-import { salaryIncrementService, type SalaryIncrement, type SalaryIncrementFilters, type SalaryIncrementStatistics } from '@/lib/services/salary-increment-service';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  salaryIncrementService,
+  type SalaryIncrement,
+  type SalaryIncrementFilters,
+  type SalaryIncrementStatistics,
+} from '@/lib/services/salary-increment-service';
 import { format } from 'date-fns';
-import { Plus, Filter, BarChart3, Eye, Edit, Trash2, Check, X, Play } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { BarChart3, Check, Edit, Eye, Filter, Play, Plus, Trash2, X } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export default function SalaryIncrementsPage() {
   const [increments, setIncrements] = useState<SalaryIncrement[]>([]);
@@ -42,42 +66,42 @@ export default function SalaryIncrementsPage() {
 
   useEffect(() => {
     if (status === 'loading') return;
-    
+
     if (!session) {
       router.push('/login');
       return;
     }
-    
+
     loadData();
   }, [filters, session, status, router]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      
+
       // Debug: Log user session information
       console.log('Current user session:', session);
       console.log('User role:', session?.user?.role);
       console.log('User ID:', session?.user?.id);
-      
+
       const [incrementsResponse, statsResponse] = await Promise.all([
         salaryIncrementService.getSalaryIncrements(filters),
         salaryIncrementService.getStatistics(),
       ]);
-      
+
       setIncrements(incrementsResponse?.data || []);
       setPagination(incrementsResponse?.pagination || { page: 1, limit: 15, total: 0, pages: 0 });
       setStatistics(statsResponse);
     } catch (error) {
       console.error('Error loading salary increments:', error);
-      
+
       // Check if it's an authentication error
       if (error instanceof Error && error.message.includes('401')) {
         toast.error('Please log in to access salary increments');
         router.push('/login');
         return;
       }
-      
+
       // Check if it's a permission error
       if (error instanceof Error && error.message.includes('403')) {
         toast.error('Access denied: You do not have permission to view salary increments');
@@ -87,7 +111,7 @@ export default function SalaryIncrementsPage() {
         setStatistics(null);
         return;
       }
-      
+
       toast.error('Failed to load salary increments');
       // Set default values on error
       setIncrements([]);
@@ -153,17 +177,17 @@ export default function SalaryIncrementsPage() {
 
   const handleDelete = async (increment: SalaryIncrement) => {
     const isApplied = increment.status === 'applied';
-    const confirmMessage = isApplied 
-      ? 'Are you sure you want to delete this applied salary increment? This will also revert the employee\'s salary to the original amount.'
+    const confirmMessage = isApplied
+      ? "Are you sure you want to delete this applied salary increment? This will also revert the employee's salary to the original amount."
       : 'Are you sure you want to delete this salary increment?';
-    
+
     if (!confirm(confirmMessage)) {
       return;
     }
 
     try {
       await salaryIncrementService.deleteSalaryIncrement(increment.id);
-      const successMessage = isApplied 
+      const successMessage = isApplied
         ? 'Applied salary increment deleted and employee salary reverted successfully'
         : 'Salary increment deleted successfully';
       toast.success(successMessage);
@@ -244,7 +268,7 @@ export default function SalaryIncrementsPage() {
   // Debug: Show current user information
   const userRole = session?.user?.role?.toLowerCase();
   const isAdmin = userRole === 'super_admin' || userRole === 'admin' || userRole === 'superadmin';
-  
+
   // Check if user has basic access to salary increments
   if (!isAdmin && userRole !== 'hr_manager' && userRole !== 'finance_manager') {
     return (
@@ -253,18 +277,18 @@ export default function SalaryIncrementsPage() {
           <div className="text-6xl mb-4">🔒</div>
           <h1 className="text-2xl font-bold mb-2">Access Restricted</h1>
           <p className="text-muted-foreground mb-4">
-            You don't have permission to access salary increments. 
-            Please contact your administrator if you believe this is an error.
+            You don't have permission to access salary increments. Please contact your administrator
+            if you believe this is an error.
           </p>
           <div className="bg-muted p-4 rounded-lg text-sm">
-            <p><strong>Current Role:</strong> {session?.user?.role || 'Unknown'}</p>
-            <p><strong>User ID:</strong> {session?.user?.id}</p>
+            <p>
+              <strong>Current Role:</strong> {session?.user?.role || 'Unknown'}
+            </p>
+            <p>
+              <strong>User ID:</strong> {session?.user?.id}
+            </p>
           </div>
-          <Button 
-            onClick={() => router.push('/dashboard')} 
-            className="mt-4"
-            variant="outline"
-          >
+          <Button onClick={() => router.push('/dashboard')} className="mt-4" variant="outline">
             Back to Dashboard
           </Button>
         </div>
@@ -300,7 +324,9 @@ export default function SalaryIncrementsPage() {
               <Badge variant="secondary">{statistics.pending_increments}</Badge>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{statistics.pending_increments}</div>
+              <div className="text-2xl font-bold text-yellow-600">
+                {statistics.pending_increments}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -309,7 +335,9 @@ export default function SalaryIncrementsPage() {
               <Badge variant="secondary">{statistics.applied_increments}</Badge>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{statistics.applied_increments}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {statistics.applied_increments}
+              </div>
             </CardContent>
           </Card>
           <Card>
@@ -331,11 +359,7 @@ export default function SalaryIncrementsPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Filters</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-            >
+            <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
               <Filter className="w-4 h-4 mr-2" />
               {showFilters ? 'Hide' : 'Show'} Filters
             </Button>
@@ -348,7 +372,7 @@ export default function SalaryIncrementsPage() {
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={filters.status || ''}
-                  onValueChange={(value) => handleFilterChange('status', value || undefined)}
+                  onValueChange={value => handleFilterChange('status', value || undefined)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="All Statuses" />
@@ -366,7 +390,7 @@ export default function SalaryIncrementsPage() {
                 <Label htmlFor="increment_type">Type</Label>
                 <Select
                   value={filters.increment_type || ''}
-                  onValueChange={(value) => handleFilterChange('increment_type', value || undefined)}
+                  onValueChange={value => handleFilterChange('increment_type', value || undefined)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="All Types" />
@@ -387,7 +411,9 @@ export default function SalaryIncrementsPage() {
                 <Input
                   type="date"
                   value={filters.effective_date_from || ''}
-                  onChange={(e) => handleFilterChange('effective_date_from', e.target.value || undefined)}
+                  onChange={e =>
+                    handleFilterChange('effective_date_from', e.target.value || undefined)
+                  }
                 />
               </div>
             </div>
@@ -423,7 +449,7 @@ export default function SalaryIncrementsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {increments?.map((increment) => (
+                  {increments?.map(increment => (
                     <TableRow key={increment.id}>
                       <TableCell>
                         {increment.employee?.first_name} {increment.employee?.last_name}
@@ -435,21 +461,28 @@ export default function SalaryIncrementsPage() {
                         {salaryIncrementService.getIncrementTypeLabel(increment.increment_type)}
                       </TableCell>
                       <TableCell>
-                        SAR {salaryIncrementService.getCurrentTotalSalary(increment).toLocaleString()}
+                        SAR{' '}
+                        {salaryIncrementService.getCurrentTotalSalary(increment).toLocaleString()}
                       </TableCell>
                       <TableCell>
                         SAR {salaryIncrementService.getNewTotalSalary(increment).toLocaleString()}
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          {increment.increment_type === 'percentage' && increment.increment_percentage && (
-                            <div>{parseFloat(String(increment.increment_percentage))}%</div>
-                          )}
+                          {increment.increment_type === 'percentage' &&
+                            increment.increment_percentage && (
+                              <div>{parseFloat(String(increment.increment_percentage))}%</div>
+                            )}
                           {increment.increment_type === 'amount' && increment.increment_amount && (
-                            <div>SAR {parseFloat(String(increment.increment_amount)).toLocaleString()}</div>
+                            <div>
+                              SAR {parseFloat(String(increment.increment_amount)).toLocaleString()}
+                            </div>
                           )}
                           <div className="text-xs text-muted-foreground">
-                            +SAR {salaryIncrementService.getTotalIncrementAmount(increment).toLocaleString()}
+                            +SAR{' '}
+                            {salaryIncrementService
+                              .getTotalIncrementAmount(increment)
+                              .toLocaleString()}
                           </div>
                         </div>
                       </TableCell>
@@ -457,7 +490,9 @@ export default function SalaryIncrementsPage() {
                         {format(new Date(increment.effective_date), 'MMM dd, yyyy')}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={salaryIncrementService.getStatusColor(increment.status) as any}>
+                        <Badge
+                          variant={salaryIncrementService.getStatusColor(increment.status) as any}
+                        >
                           {salaryIncrementService.getStatusLabel(increment.status)}
                         </Badge>
                       </TableCell>
@@ -477,7 +512,9 @@ export default function SalaryIncrementsPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => router.push(`/modules/salary-increments/edit/${increment.id}`)}
+                              onClick={() =>
+                                router.push(`/modules/salary-increments/edit/${increment.id}`)
+                              }
                             >
                               <Edit className="w-4 h-4 text-blue-600" />
                             </Button>
@@ -532,7 +569,7 @@ export default function SalaryIncrementsPage() {
               {pagination.pages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+                    Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
                     {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
                     {pagination.total} results
                   </div>
@@ -584,19 +621,34 @@ export default function SalaryIncrementsPage() {
                 </div>
                 <div>
                   <Label className="font-semibold">Type</Label>
-                  <div>{salaryIncrementService.getIncrementTypeLabel(selectedIncrement.increment_type)}</div>
+                  <div>
+                    {salaryIncrementService.getIncrementTypeLabel(selectedIncrement.increment_type)}
+                  </div>
                 </div>
                 <div>
                   <Label className="font-semibold">Current Salary</Label>
-                  <div>SAR {salaryIncrementService.getCurrentTotalSalary(selectedIncrement).toLocaleString()}</div>
+                  <div>
+                    SAR{' '}
+                    {salaryIncrementService
+                      .getCurrentTotalSalary(selectedIncrement)
+                      .toLocaleString()}
+                  </div>
                 </div>
                 <div>
                   <Label className="font-semibold">New Salary</Label>
-                  <div>SAR {salaryIncrementService.getNewTotalSalary(selectedIncrement).toLocaleString()}</div>
+                  <div>
+                    SAR{' '}
+                    {salaryIncrementService.getNewTotalSalary(selectedIncrement).toLocaleString()}
+                  </div>
                 </div>
                 <div>
                   <Label className="font-semibold">Increment Amount</Label>
-                  <div>SAR {salaryIncrementService.getTotalIncrementAmount(selectedIncrement).toLocaleString()}</div>
+                  <div>
+                    SAR{' '}
+                    {salaryIncrementService
+                      .getTotalIncrementAmount(selectedIncrement)
+                      .toLocaleString()}
+                  </div>
                 </div>
                 <div>
                   <Label className="font-semibold">Effective Date</Label>
@@ -662,7 +714,7 @@ export default function SalaryIncrementsPage() {
               <Input
                 id="rejection_reason"
                 value={rejectionReason}
-                onChange={(e) => setRejectionReason(e.target.value)}
+                onChange={e => setRejectionReason(e.target.value)}
                 placeholder="Enter rejection reason"
               />
             </div>

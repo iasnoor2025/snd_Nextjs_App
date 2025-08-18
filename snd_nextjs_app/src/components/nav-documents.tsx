@@ -1,26 +1,26 @@
-"use client"
+'use client';
 
-import { PlusCircle, Mail, type LucideIcon } from "lucide-react"
-import { usePathname } from "next/navigation"
-import Link from "next/link"
+import { Mail, PlusCircle, type LucideIcon } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
-import { Button } from "@/components/ui/button"
+import { Button } from '@/components/ui/button';
 import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar"
+} from '@/components/ui/sidebar';
 
 export function NavMain({
   items,
 }: {
   items: {
-    title: string
-    url: string
-    icon?: LucideIcon
-  }[]
+    title: string;
+    url: string;
+    icon?: LucideIcon;
+  }[];
 }) {
   return (
     <SidebarGroup>
@@ -45,7 +45,7 @@ export function NavMain({
           </SidebarMenuItem>
         </SidebarMenu>
         <SidebarMenu>
-          {items.map((item) => (
+          {items.map(item => (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton tooltip={item.title}>
                 {item.icon && <item.icon />}
@@ -56,33 +56,32 @@ export function NavMain({
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }
-
 
 export function NavDocuments({
   items,
 }: {
   items: {
-    name: string
-    url: string
-    icon?: LucideIcon
-  }[]
+    name: string;
+    url: string;
+    icon?: LucideIcon;
+  }[];
 }) {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
-          {items.map((item) => {
-            const isActive = pathname === item.url || pathname.startsWith(item.url + '/')
+          {items.map(item => {
+            const isActive = pathname === item.url || pathname.startsWith(item.url + '/');
             return (
               <SidebarMenuItem key={item.name}>
                 <SidebarMenuButton
                   asChild
                   tooltip={item.name}
-                  className={isActive ? "bg-primary text-primary-foreground" : ""}
+                  className={isActive ? 'bg-primary text-primary-foreground' : ''}
                 >
                   <Link href={item.url}>
                     {item.icon && <item.icon />}
@@ -90,10 +89,10 @@ export function NavDocuments({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-            )
+            );
           })}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }

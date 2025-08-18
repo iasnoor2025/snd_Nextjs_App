@@ -1,13 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { db } from '@/lib/db';
-import { withEmployeeListPermission } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
+import { db } from '@/lib/db';
 import { advancePayments, employees, users } from '@/lib/drizzle/schema';
-import { eq, and, or, like, isNull, desc } from 'drizzle-orm';
+import { withEmployeeListPermission } from '@/lib/rbac/api-middleware';
+import { and, desc, eq, isNull, like, or } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/advances - List employee advances with employee data filtering
-const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+const getAdvancesHandler = async (
+  request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }
+) => {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -21,9 +23,9 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
     // Get session to check user role
     const session = await getServerSession(authConfig);
     const user = session?.user;
-    
+
     let employeeFilter: any = null;
-    
+
     // For employee users, only show their own advances
     if (user?.role === 'EMPLOYEE' && user.national_id) {
       // Find employee record that matches user's national_id
@@ -32,7 +34,7 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
         .from(employees)
         .where(eq(employees.iqamaNumber, user.national_id))
         .limit(1);
-      
+
       if (ownEmployeeRows.length > 0 && ownEmployeeRows[0]?.id) {
         employeeFilter = eq(advancePayments.employeeId, ownEmployeeRows[0].id);
       }
@@ -91,8 +93,8 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
             id: users.id,
             name: users.name,
             email: users.email,
-          }
-        } as any
+          },
+        } as any,
       })
       .from(advancePayments)
       .leftJoin(employees, eq(advancePayments.employeeId, employees.id))
@@ -123,13 +125,15 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
       notes: row.notes,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
-      employee: row.employee ? {
-        id: row.employee.id,
-        first_name: row.employee.firstName,
-        last_name: row.employee.lastName,
-        file_number: row.employee.fileNumber,
-        user: row.employee.user
-      } : null
+      employee: row.employee
+        ? {
+            id: row.employee.id,
+            first_name: row.employee.firstName,
+            last_name: row.employee.lastName,
+            file_number: row.employee.fileNumber,
+            user: row.employee.user,
+          }
+        : null,
     }));
 
     return NextResponse.json({
@@ -144,23 +148,22 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
   } catch (error) {
     console.error('Error fetching advances:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch advances', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Failed to fetch advances',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }
 };
 
 // POST /api/advances - Create employee advance with employee data filtering
-const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
+const createAdvanceHandler = async (
+  request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }
+) => {
   try {
-    const body = await request.json();  
-    const {
-      employeeId,
-      amount,
-      reason,
-      status = 'pending',
-      notes,
-    } = body;
+    const body = await request.json();
+    const { employeeId, amount, reason, status = 'pending', notes } = body;
 
     // For employee users, ensure they can only create advances for themselves
     if (request.employeeAccess?.ownEmployeeId) {
@@ -189,7 +192,7 @@ const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { 
       .returning();
 
     const advance = advanceRows[0];
-    
+
     if (!advance) {
       return NextResponse.json({ error: 'Failed to create advance' }, { status: 500 });
     }
@@ -204,7 +207,7 @@ const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { 
           id: users.id,
           name: users.name,
           email: users.email,
-        }
+        },
       })
       .from(employees)
       .leftJoin(users, eq(employees.userId, users.id))
@@ -221,24 +224,32 @@ const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { 
       reason: advance.reason,
       status: advance.status,
       notes: advance.notes,
-              createdAt: advance.createdAt,
-        updatedAt: advance.updatedAt,
-      employee: employee ? {
-        id: employee.id,
-        first_name: employee.firstName,
-        last_name: employee.lastName,
-        user: employee.user
-      } : null
+      createdAt: advance.createdAt,
+      updatedAt: advance.updatedAt,
+      employee: employee
+        ? {
+            id: employee.id,
+            first_name: employee.firstName,
+            last_name: employee.lastName,
+            user: employee.user,
+          }
+        : null,
     };
 
-    return NextResponse.json({
-      message: 'Advance created successfully',
-      data: advanceWithEmployee,
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        message: 'Advance created successfully',
+        data: advanceWithEmployee,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error creating advance:', error);
     return NextResponse.json(
-      { error: 'Failed to create advance', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Failed to create advance',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }
@@ -249,14 +260,7 @@ export const PUT = withEmployeeListPermission(
   async (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }) => {
     try {
       const body = await request.json();
-      const {
-        id,
-        employeeId,
-        amount,
-        reason,
-        status,
-        notes,
-      } = body;
+      const { id, employeeId, amount, reason, status, notes } = body;
 
       const advanceRows = await db
         .update(advancePayments)
@@ -273,7 +277,7 @@ export const PUT = withEmployeeListPermission(
         .returning();
 
       const advance = advanceRows[0];
-      
+
       if (!advance) {
         return NextResponse.json({ error: 'Failed to update advance' }, { status: 500 });
       }
@@ -288,7 +292,7 @@ export const PUT = withEmployeeListPermission(
             id: users.id,
             name: users.name,
             email: users.email,
-          }
+          },
         })
         .from(employees)
         .leftJoin(users, eq(employees.userId, users.id))
@@ -307,23 +311,28 @@ export const PUT = withEmployeeListPermission(
         notes: advance.notes,
         createdAt: advance.createdAt,
         updatedAt: advance.updatedAt,
-        employee: employee ? {
-          id: employee.id,
-          first_name: employee.firstName,
-          last_name: employee.lastName,
-          user: employee.user
-        } : null
+        employee: employee
+          ? {
+              id: employee.id,
+              first_name: employee.firstName,
+              last_name: employee.lastName,
+              user: employee.user,
+            }
+          : null,
       };
 
       return NextResponse.json(advanceWithEmployee);
     } catch (error) {
       console.error('Error updating advance:', error);
       return NextResponse.json(
-        { error: 'Failed to update advance', details: error instanceof Error ? error.message : 'Unknown error' },
+        {
+          error: 'Failed to update advance',
+          details: error instanceof Error ? error.message : 'Unknown error',
+        },
         { status: 500 }
       );
     }
-  },
+  }
   // No specific permission config for PUT, as it's for own data
 );
 
@@ -334,22 +343,23 @@ export const DELETE = withEmployeeListPermission(
       const body = await request.json();
       const { id } = body;
 
-      await db
-        .delete(advancePayments)
-        .where(eq(advancePayments.id, id));
+      await db.delete(advancePayments).where(eq(advancePayments.id, id));
 
       return NextResponse.json({ message: 'Advance deleted successfully' });
     } catch (error) {
       console.error('Error deleting advance:', error);
       return NextResponse.json(
-        { error: 'Failed to delete advance', details: error instanceof Error ? error.message : 'Unknown error' },
+        {
+          error: 'Failed to delete advance',
+          details: error instanceof Error ? error.message : 'Unknown error',
+        },
         { status: 500 }
       );
     }
-  },
+  }
   // No specific permission config for DELETE, as it's for own data
 );
 
 // Export the wrapped handlers
 export const GET = withEmployeeListPermission(getAdvancesHandler);
-export const POST = withEmployeeListPermission(createAdvanceHandler); 
+export const POST = withEmployeeListPermission(createAdvanceHandler);

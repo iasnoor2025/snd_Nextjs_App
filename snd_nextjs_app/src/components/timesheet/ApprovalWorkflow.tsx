@@ -1,13 +1,21 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { CheckCircle, XCircle, Clock, Circle } from "lucide-react";
-import { toast } from "sonner";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { CheckCircle, Circle, Clock, XCircle } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface ApprovalWorkflowProps {
   timesheet: {
@@ -41,13 +49,29 @@ interface ApprovalWorkflowProps {
 
 const approvalStages = [
   { key: 'submitted', label: 'Submitted', description: 'Awaiting foreman approval' },
-  { key: 'foreman_approved', label: 'Foreman Approved', description: 'Awaiting timesheet incharge approval' },
-  { key: 'incharge_approved', label: 'Incharge Approved', description: 'Awaiting timesheet checking approval' },
-  { key: 'checking_approved', label: 'Checking Approved', description: 'Awaiting manager approval' },
+  {
+    key: 'foreman_approved',
+    label: 'Foreman Approved',
+    description: 'Awaiting timesheet incharge approval',
+  },
+  {
+    key: 'incharge_approved',
+    label: 'Incharge Approved',
+    description: 'Awaiting timesheet checking approval',
+  },
+  {
+    key: 'checking_approved',
+    label: 'Checking Approved',
+    description: 'Awaiting manager approval',
+  },
   { key: 'manager_approved', label: 'Manager Approved', description: 'Fully approved' },
 ];
 
-export default function ApprovalWorkflow({ timesheet, userRole, onStatusChange }: ApprovalWorkflowProps) {
+export default function ApprovalWorkflow({
+  timesheet,
+  userRole,
+  onStatusChange,
+}: ApprovalWorkflowProps) {
   const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
   const [isRejectionDialogOpen, setIsRejectionDialogOpen] = useState(false);
   const [approvalStage, setApprovalStage] = useState('');
@@ -106,7 +130,7 @@ export default function ApprovalWorkflow({ timesheet, userRole, onStatusChange }
         body: JSON.stringify({
           timesheetId: timesheet.id,
           approvalStage,
-          notes
+          notes,
         }),
       });
 
@@ -142,7 +166,7 @@ export default function ApprovalWorkflow({ timesheet, userRole, onStatusChange }
         body: JSON.stringify({
           timesheetId: timesheet.id,
           rejectionReason: rejectionReason.trim(),
-          rejectionStage: approvalStage
+          rejectionStage: approvalStage,
         }),
       });
 
@@ -224,11 +248,15 @@ export default function ApprovalWorkflow({ timesheet, userRole, onStatusChange }
                 const isCurrent = stage.key === timesheet.status;
                 const stageKey = stage.key.split('_')[0];
                 if (stageKey) {
-                  const canApprove = canApproveAtStage(stage.key) && hasPermissionForStage(stageKey);
+                  const canApprove =
+                    canApproveAtStage(stage.key) && hasPermissionForStage(stageKey);
                   const canReject = canRejectAtStage() && hasPermissionForStage(stageKey);
 
                   return (
-                    <div key={stage.key} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div
+                      key={stage.key}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
                       <div className="flex items-center gap-3">
                         {getStatusIcon(isCompleted, isCurrent)}
                         <div>
@@ -239,7 +267,10 @@ export default function ApprovalWorkflow({ timesheet, userRole, onStatusChange }
 
                       <div className="flex gap-2">
                         {canApprove && (
-                          <Dialog open={isApprovalDialogOpen} onOpenChange={setIsApprovalDialogOpen}>
+                          <Dialog
+                            open={isApprovalDialogOpen}
+                            onOpenChange={setIsApprovalDialogOpen}
+                          >
                             <DialogTrigger asChild>
                               <Button
                                 size="sm"
@@ -263,14 +294,17 @@ export default function ApprovalWorkflow({ timesheet, userRole, onStatusChange }
                                   <label className="text-sm font-medium">Notes (Optional)</label>
                                   <Textarea
                                     value={notes}
-                                    onChange={(e) => setNotes(e.target.value)}
+                                    onChange={e => setNotes(e.target.value)}
                                     placeholder="Add approval notes..."
                                     className="mt-1"
                                   />
                                 </div>
                               </div>
                               <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsApprovalDialogOpen(false)}>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setIsApprovalDialogOpen(false)}
+                                >
                                   Cancel
                                 </Button>
                                 <Button onClick={handleApprove} disabled={loading}>
@@ -282,7 +316,10 @@ export default function ApprovalWorkflow({ timesheet, userRole, onStatusChange }
                         )}
 
                         {canReject && (
-                          <Dialog open={isRejectionDialogOpen} onOpenChange={setIsRejectionDialogOpen}>
+                          <Dialog
+                            open={isRejectionDialogOpen}
+                            onOpenChange={setIsRejectionDialogOpen}
+                          >
                             <DialogTrigger asChild>
                               <Button
                                 size="sm"
@@ -307,7 +344,7 @@ export default function ApprovalWorkflow({ timesheet, userRole, onStatusChange }
                                   <label className="text-sm font-medium">Rejection Reason *</label>
                                   <Textarea
                                     value={rejectionReason}
-                                    onChange={(e) => setRejectionReason(e.target.value)}
+                                    onChange={e => setRejectionReason(e.target.value)}
                                     placeholder="Provide a reason for rejection..."
                                     className="mt-1"
                                     required
@@ -315,7 +352,10 @@ export default function ApprovalWorkflow({ timesheet, userRole, onStatusChange }
                                 </div>
                               </div>
                               <DialogFooter>
-                                <Button variant="outline" onClick={() => setIsRejectionDialogOpen(false)}>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setIsRejectionDialogOpen(false)}
+                                >
                                   Cancel
                                 </Button>
                                 <Button
@@ -345,9 +385,18 @@ export default function ApprovalWorkflow({ timesheet, userRole, onStatusChange }
                   <span className="font-medium">Rejected</span>
                 </div>
                 <div className="mt-2 text-sm text-red-700">
-                  <p><strong>Stage:</strong> {timesheet.rejectionStage}</p>
-                  <p><strong>Reason:</strong> {timesheet.rejectionReason}</p>
-                  <p><strong>Date:</strong> {timesheet.rejectedAt ? new Date(timesheet.rejectedAt).toLocaleDateString() : 'N/A'}</p>
+                  <p>
+                    <strong>Stage:</strong> {timesheet.rejectionStage}
+                  </p>
+                  <p>
+                    <strong>Reason:</strong> {timesheet.rejectionReason}
+                  </p>
+                  <p>
+                    <strong>Date:</strong>{' '}
+                    {timesheet.rejectedAt
+                      ? new Date(timesheet.rejectedAt).toLocaleDateString()
+                      : 'N/A'}
+                  </p>
                 </div>
               </div>
             )}

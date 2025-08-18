@@ -1,11 +1,11 @@
-import { useState, useCallback } from "react";
+import { useCallback, useState } from 'react';
 
 interface ConfirmationOptions {
   title: string;
   description: string;
   confirmText?: string;
   cancelText?: string;
-  variant?: "default" | "destructive";
+  variant?: 'default' | 'destructive';
 }
 
 interface ConfirmationState extends ConfirmationOptions {
@@ -17,25 +17,22 @@ interface ConfirmationState extends ConfirmationOptions {
 export function useConfirmation() {
   const [state, setState] = useState<ConfirmationState | null>(null);
 
-  const confirm = useCallback(
-    (options: ConfirmationOptions): Promise<boolean> => {
-      return new Promise((resolve) => {
-        setState({
-          ...options,
-          open: true,
-          onConfirm: () => {
-            setState(null);
-            resolve(true);
-          },
-          onCancel: () => {
-            setState(null);
-            resolve(false);
-          },
-        });
+  const confirm = useCallback((options: ConfirmationOptions): Promise<boolean> => {
+    return new Promise(resolve => {
+      setState({
+        ...options,
+        open: true,
+        onConfirm: () => {
+          setState(null);
+          resolve(true);
+        },
+        onCancel: () => {
+          setState(null);
+          resolve(false);
+        },
       });
-    },
-    []
-  );
+    });
+  }, []);
 
   const close = useCallback(() => {
     setState(null);
@@ -46,4 +43,4 @@ export function useConfirmation() {
     confirm,
     close,
   };
-} 
+}

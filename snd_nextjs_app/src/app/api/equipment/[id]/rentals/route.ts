@@ -1,17 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { equipment, equipmentRentalHistory, rentals, customers, projects, employees, employeeAssignments } from '@/lib/drizzle/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import {
+  customers,
+  employeeAssignments,
+  employees,
+  equipment,
+  equipmentRentalHistory,
+  projects,
+  rentals,
+} from '@/lib/drizzle/schema';
+import { and, desc, eq } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Function to update equipment status when assignment status changes
-async function updateEquipmentStatusOnAssignmentChange(equipmentId: number, assignmentStatus: string) {
+async function updateEquipmentStatusOnAssignmentChange(
+  equipmentId: number,
+  assignmentStatus: string
+) {
   try {
     if (assignmentStatus === 'active') {
       await db
         .update(equipment)
-        .set({ 
+        .set({
           status: 'assigned',
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(equipment.id, equipmentId));
       console.log(`Equipment ${equipmentId} status updated to assigned`);
@@ -20,23 +31,27 @@ async function updateEquipmentStatusOnAssignmentChange(equipmentId: number, assi
       const otherActiveAssignments = await db
         .select({ id: equipmentRentalHistory.id })
         .from(equipmentRentalHistory)
-        .where(and(
-          eq(equipmentRentalHistory.equipmentId, equipmentId),
-          eq(equipmentRentalHistory.status, 'active')
-        ))
+        .where(
+          and(
+            eq(equipmentRentalHistory.equipmentId, equipmentId),
+            eq(equipmentRentalHistory.status, 'active')
+          )
+        )
         .limit(1);
-      
+
       if (otherActiveAssignments.length === 0) {
         await db
           .update(equipment)
-          .set({ 
+          .set({
             status: 'available',
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
           })
           .where(eq(equipment.id, equipmentId));
         console.log(`Equipment ${equipmentId} status updated to available`);
       } else {
-        console.log(`Equipment ${equipmentId} still has other active assignments, keeping status as assigned`);
+        console.log(
+          `Equipment ${equipmentId} still has other active assignments, keeping status as assigned`
+        );
       }
     }
   } catch (error) {
@@ -44,22 +59,17 @@ async function updateEquipmentStatusOnAssignmentChange(equipmentId: number, assi
   }
 }
 
-export async function GET(
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET({ params }: { params: Promise<{ id: string }> }) {
   try {
     console.log('GET /api/equipment/[id]/rentals - Starting request');
-    
+
     const { id: idParam } = await params;
     const id = parseInt(idParam);
-    
+
     console.log('Equipment ID:', id);
-    
+
     if (isNaN(id)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid equipment ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Invalid equipment ID' }, { status: 400 });
     }
 
     // Check if equipment exists
@@ -68,10 +78,7 @@ export async function GET(
 
     if (!equipmentData.length) {
       console.log('Equipment not found');
-      return NextResponse.json(
-        { success: false, error: 'Equipment not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'Equipment not found' }, { status: 404 });
     }
 
     const equipmentItem = equipmentData[0];
@@ -108,18 +115,18 @@ export async function GET(
           id: projects.id,
           name: projects.name,
           description: projects.description,
-          status: projects.status
+          status: projects.status,
         },
         rental: {
           id: rentals.id,
-          rentalNumber: rentals.rentalNumber
+          rentalNumber: rentals.rentalNumber,
         },
         employee: {
           id: employees.id,
           firstName: employees.firstName,
           lastName: employees.lastName,
-          fileNumber: employees.fileNumber
-        }
+          fileNumber: employees.fileNumber,
+        },
       })
       .from(equipmentRentalHistory)
       .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
@@ -143,7 +150,9 @@ export async function GET(
       project_description: item.project?.description || null,
       project_status: item.project?.status || null,
       employee_id: item.employeeId,
-      employee_name: item.employee ? `${item.employee.firstName} ${item.employee.lastName}`.trim() : null,
+      employee_name: item.employee
+        ? `${item.employee.firstName} ${item.employee.lastName}`.trim()
+        : null,
       employee_id_number: item.employee?.fileNumber || null,
       employee_email: null,
       employee_phone: null,
@@ -160,7 +169,7 @@ export async function GET(
       rental_actual_end_date: item.endDate,
       rental_status: item.status,
       created_at: item.createdAt,
-      updated_at: item.updatedAt
+      updated_at: item.updatedAt,
     }));
 
     console.log('History transformed, count:', history.length);
@@ -170,8 +179,8 @@ export async function GET(
     const rentalItemsHistory: any[] = [];
 
     // Combine histories
-    const combinedHistory = [...history, ...rentalItemsHistory].sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    const combinedHistory = [...history, ...rentalItemsHistory].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
     console.log('Combined history count:', combinedHistory.length);
@@ -180,31 +189,29 @@ export async function GET(
       success: true,
       data: combinedHistory,
       count: combinedHistory.length,
-      message: 'Basic rental history loaded successfully'
+      message: 'Basic rental history loaded successfully',
     });
   } catch (error) {
     console.error('Error fetching equipment rental history:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch rental history', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        success: false,
+        error: 'Failed to fetch rental history',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }
-} 
+}
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: idParam } = await params;
     const id = parseInt(idParam);
-    
+
     if (isNaN(id)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid equipment ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Invalid equipment ID' }, { status: 400 });
     }
 
     const body = await request.json();
@@ -217,7 +224,7 @@ export async function POST(
       daily_rate,
       total_amount,
       notes,
-      status = 'active'
+      status = 'active',
     } = body;
 
     // Validate required fields
@@ -256,10 +263,7 @@ export async function POST(
     const equipmentData = await db.select().from(equipment).where(eq(equipment.id, id)).limit(1);
 
     if (!equipmentData.length) {
-      return NextResponse.json(
-        { success: false, error: 'Equipment not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'Equipment not found' }, { status: 404 });
     }
 
     const equipmentItem = equipmentData[0];
@@ -270,93 +274,99 @@ export async function POST(
       );
     }
 
-         // Create the rental history entry
-     const [createdRentalHistory] = await db.insert(equipmentRentalHistory).values({
-       equipmentId: id,
-       rentalId: assignment_type === 'rental' ? body.rental_id : null,
-       projectId: assignment_type === 'project' ? project_id : null,
-       employeeId: assignment_type === 'manual' ? employee_id : null,
-       assignmentType: assignment_type,
-       startDate: new Date(start_date).toISOString(),
-       endDate: end_date ? new Date(end_date).toISOString() : null,
-       status,
-       notes: notes || '',
-       dailyRate: daily_rate ? parseFloat(daily_rate) : null,
-       totalAmount: total_amount ? parseFloat(total_amount) : null,
-       createdAt: new Date().toISOString(),
-       updatedAt: new Date().toISOString()
-     } as any).returning();
+    // Create the rental history entry
+    const [createdRentalHistory] = await db
+      .insert(equipmentRentalHistory)
+      .values({
+        equipmentId: id,
+        rentalId: assignment_type === 'rental' ? body.rental_id : null,
+        projectId: assignment_type === 'project' ? project_id : null,
+        employeeId: assignment_type === 'manual' ? employee_id : null,
+        assignmentType: assignment_type,
+        startDate: new Date(start_date).toISOString(),
+        endDate: end_date ? new Date(end_date).toISOString() : null,
+        status,
+        notes: notes || '',
+        dailyRate: daily_rate ? parseFloat(daily_rate) : null,
+        totalAmount: total_amount ? parseFloat(total_amount) : null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      } as any)
+      .returning();
 
-     // Automatically update equipment status based on assignment
-     await updateEquipmentStatusOnAssignmentChange(id, status);
+    // Automatically update equipment status based on assignment
+    await updateEquipmentStatusOnAssignmentChange(id, status);
 
-     // Fetch the created rental history with related data
-     const rentalHistory = await db
-       .select({
-         id: equipmentRentalHistory.id,
-         equipmentId: equipmentRentalHistory.equipmentId,
-         rentalId: equipmentRentalHistory.rentalId,
-         projectId: equipmentRentalHistory.projectId,
-         employeeId: equipmentRentalHistory.employeeId,
-         assignmentType: equipmentRentalHistory.assignmentType,
-         startDate: equipmentRentalHistory.startDate,
-         endDate: equipmentRentalHistory.endDate,
-         status: equipmentRentalHistory.status,
-         notes: equipmentRentalHistory.notes,
-         dailyRate: equipmentRentalHistory.dailyRate,
-         totalAmount: equipmentRentalHistory.totalAmount,
-         createdAt: equipmentRentalHistory.createdAt,
-         updatedAt: equipmentRentalHistory.updatedAt,
-         rental: {
-           id: rentals.id,
-           rentalNumber: rentals.rentalNumber,
-           customer: {
-             id: customers.id,
-             name: customers.name,
-             email: customers.email,
-             phone: customers.phone
-           }
-         } as any,
-         project: {
-           id: projects.id,
-           name: projects.name,
-           description: projects.description,
-           status: projects.status
-         },
-         employee: {
-           id: employees.id,
-           firstName: employees.firstName,
-           lastName: employees.lastName,
-           fileNumber: employees.fileNumber,
-           email: employees.email,
-           phone: employees.phone
-         }
-       })
-       .from(equipmentRentalHistory)
-       .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
-       .leftJoin(customers, eq(rentals.customerId, customers.id))
-       .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
-       .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
-               .where(eq(equipmentRentalHistory.id, createdRentalHistory?.id || 0))
-       .limit(1);
+    // Fetch the created rental history with related data
+    const rentalHistory = await db
+      .select({
+        id: equipmentRentalHistory.id,
+        equipmentId: equipmentRentalHistory.equipmentId,
+        rentalId: equipmentRentalHistory.rentalId,
+        projectId: equipmentRentalHistory.projectId,
+        employeeId: equipmentRentalHistory.employeeId,
+        assignmentType: equipmentRentalHistory.assignmentType,
+        startDate: equipmentRentalHistory.startDate,
+        endDate: equipmentRentalHistory.endDate,
+        status: equipmentRentalHistory.status,
+        notes: equipmentRentalHistory.notes,
+        dailyRate: equipmentRentalHistory.dailyRate,
+        totalAmount: equipmentRentalHistory.totalAmount,
+        createdAt: equipmentRentalHistory.createdAt,
+        updatedAt: equipmentRentalHistory.updatedAt,
+        rental: {
+          id: rentals.id,
+          rentalNumber: rentals.rentalNumber,
+          customer: {
+            id: customers.id,
+            name: customers.name,
+            email: customers.email,
+            phone: customers.phone,
+          },
+        } as any,
+        project: {
+          id: projects.id,
+          name: projects.name,
+          description: projects.description,
+          status: projects.status,
+        },
+        employee: {
+          id: employees.id,
+          firstName: employees.firstName,
+          lastName: employees.lastName,
+          fileNumber: employees.fileNumber,
+          email: employees.email,
+          phone: employees.phone,
+        },
+      })
+      .from(equipmentRentalHistory)
+      .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
+      .leftJoin(customers, eq(rentals.customerId, customers.id))
+      .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
+      .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
+      .where(eq(equipmentRentalHistory.id, createdRentalHistory?.id || 0))
+      .limit(1);
 
     // If this is a manual assignment with an employee, also create an employee assignment
     let employeeAssignment: any = null;
     if (assignment_type === 'manual' && employee_id) {
       try {
-        employeeAssignment = await db.insert(employeeAssignments).values({
-          employeeId: parseInt(employee_id),
-          name: `Equipment Assignment - ${equipmentItem.name}`,
-          type: 'manual',
-          location: body.location || null,
-          startDate: new Date(start_date).toISOString(),
-          endDate: end_date ? new Date(end_date).toISOString() : null,
-          status: 'active',
-          notes: `Manual equipment assignment: ${notes || 'No additional notes'}`,
-          projectId: null,
-          rentalId: null,
-          updatedAt: new Date().toISOString()
-        }).returning();
+        employeeAssignment = await db
+          .insert(employeeAssignments)
+          .values({
+            employeeId: parseInt(employee_id),
+            name: `Equipment Assignment - ${equipmentItem.name}`,
+            type: 'manual',
+            location: body.location || null,
+            startDate: new Date(start_date).toISOString(),
+            endDate: end_date ? new Date(end_date).toISOString() : null,
+            status: 'active',
+            notes: `Manual equipment assignment: ${notes || 'No additional notes'}`,
+            projectId: null,
+            rentalId: null,
+            updatedAt: new Date().toISOString(),
+          })
+          .returning();
 
         console.log('Employee assignment created automatically:', employeeAssignment);
       } catch (assignmentError) {
@@ -365,14 +375,19 @@ export async function POST(
       }
     }
 
-         return NextResponse.json({
-       success: true,
-       data: {
-         rentalHistory: rentalHistory[0],
-         employeeAssignment: employeeAssignment?.[0] || null
-       },
-       message: 'Equipment assignment created successfully' + (employeeAssignment ? ' and employee assignment created automatically' : '')
-     }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          rentalHistory: rentalHistory[0],
+          employeeAssignment: employeeAssignment?.[0] || null,
+        },
+        message:
+          'Equipment assignment created successfully' +
+          (employeeAssignment ? ' and employee assignment created automatically' : ''),
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error creating equipment assignment:', error);
     return NextResponse.json(
@@ -380,4 +395,4 @@ export async function POST(
       { status: 500 }
     );
   }
-} 
+}

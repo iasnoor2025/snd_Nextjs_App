@@ -9,54 +9,55 @@ const getMockQuotationData = (id: string) => {
       customer_id: 1,
       customer: {
         id: 1,
-        name: "ABC Construction Ltd",
-        company_name: "ABC Construction Ltd",
-        contact_person: "John Smith",
-        email: "john@abcconstruction.com",
-        phone: "+1-555-0123"
+        name: 'ABC Construction Ltd',
+        company_name: 'ABC Construction Ltd',
+        contact_person: 'John Smith',
+        email: 'john@abcconstruction.com',
+        phone: '+1-555-0123',
       },
-      issue_date: "2024-01-15",
-      valid_until: "2024-02-15",
-      status: "sent",
-      subtotal: 15000.00,
+      issue_date: '2024-01-15',
+      valid_until: '2024-02-15',
+      status: 'sent',
+      subtotal: 15000.0,
       discount_percentage: 5.0,
-      discount_amount: 750.00,
+      discount_amount: 750.0,
       tax_percentage: 8.5,
-      tax_amount: 1275.00,
-      total_amount: 15525.00,
-      notes: "Equipment quotation for downtown construction project. Includes operator and delivery.",
-      terms_and_conditions: "Standard terms and conditions apply. Payment terms: 30 days net.",
+      tax_amount: 1275.0,
+      total_amount: 15525.0,
+      notes:
+        'Equipment quotation for downtown construction project. Includes operator and delivery.',
+      terms_and_conditions: 'Standard terms and conditions apply. Payment terms: 30 days net.',
       created_by: 1,
       is_separate: true,
-      created_at: "2024-01-15T10:00:00Z",
-      updated_at: "2024-01-15T10:00:00Z",
+      created_at: '2024-01-15T10:00:00Z',
+      updated_at: '2024-01-15T10:00:00Z',
       quotationItems: [
         {
           id: 1,
           equipment_id: 1,
           equipment: {
             id: 1,
-            name: "Excavator CAT 320",
-            model: "CAT 320",
-            manufacturer: "Caterpillar",
-            serial_number: "CAT320-2024-001",
-            status: "active"
+            name: 'Excavator CAT 320',
+            model: 'CAT 320',
+            manufacturer: 'Caterpillar',
+            serial_number: 'CAT320-2024-001',
+            status: 'active',
           },
           operator_id: 1,
           operator: {
             id: 1,
-            name: "Mike Johnson",
-            employee_id: "EMP001",
-            first_name: "Mike",
-            last_name: "Johnson"
+            name: 'Mike Johnson',
+            employee_id: 'EMP001',
+            first_name: 'Mike',
+            last_name: 'Johnson',
           },
-          description: "Excavator with operator for excavation work",
+          description: 'Excavator with operator for excavation work',
           quantity: 1,
-          rate: 500.00,
-          rate_type: "daily",
-          total_amount: 15000.00
-        }
-      ]
+          rate: 500.0,
+          rate_type: 'daily',
+          total_amount: 15000.0,
+        },
+      ],
     },
     quotationItems: {
       data: [
@@ -65,40 +66,37 @@ const getMockQuotationData = (id: string) => {
           equipment_id: 1,
           equipment: {
             id: 1,
-            name: "Excavator CAT 320",
-            model: "CAT 320",
-            manufacturer: "Caterpillar",
-            serial_number: "CAT320-2024-001",
-            status: "active"
+            name: 'Excavator CAT 320',
+            model: 'CAT 320',
+            manufacturer: 'Caterpillar',
+            serial_number: 'CAT320-2024-001',
+            status: 'active',
           },
           operator_id: 1,
           operator: {
             id: 1,
-            name: "Mike Johnson",
-            employee_id: "EMP001",
-            first_name: "Mike",
-            last_name: "Johnson"
+            name: 'Mike Johnson',
+            employee_id: 'EMP001',
+            first_name: 'Mike',
+            last_name: 'Johnson',
           },
-          description: "Excavator with operator for excavation work",
+          description: 'Excavator with operator for excavation work',
           quantity: 1,
-          rate: 500.00,
-          rate_type: "daily",
-          total_amount: 15000.00
-        }
+          rate: 500.0,
+          rate_type: 'daily',
+          total_amount: 15000.0,
+        },
       ],
-      total: 1
+      total: 1,
     },
     canApprove: true,
     canReject: true,
     canEdit: true,
-    canDelete: true
+    canDelete: true,
   };
 };
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     // In a real implementation, this would call the Laravel API
@@ -114,16 +112,11 @@ export async function GET(
 
     return NextResponse.json(data);
   } catch {
-    return NextResponse.json(
-      { error: 'Failed to fetch quotation data' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch quotation data' }, { status: 500 });
   }
 }
 
-export async function PUT(
-  _request: NextRequest
-) {
+export async function PUT(_request: NextRequest) {
   try {
     const body = await _request.json();
 
@@ -141,19 +134,14 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       message: 'Quotation updated successfully',
-      data: body
+      data: body,
     });
   } catch {
-    return NextResponse.json(
-      { error: 'Failed to update quotation' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update quotation' }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  _request: NextRequest
-) {
+export async function DELETE(_request: NextRequest) {
   try {
     // In a real implementation, this would call the Laravel API
     // const response = await fetch(`${process.env.LARAVEL_API_URL}/api/quotations/${id}`, {
@@ -167,12 +155,9 @@ export async function DELETE(
     // For now, return success response
     return NextResponse.json({
       success: true,
-      message: 'Quotation deleted successfully'
+      message: 'Quotation deleted successfully',
     });
   } catch {
-    return NextResponse.json(
-      { error: 'Failed to delete quotation' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete quotation' }, { status: 500 });
   }
 }

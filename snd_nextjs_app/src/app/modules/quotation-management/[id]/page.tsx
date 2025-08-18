@@ -1,31 +1,38 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ArrowLeft,
-  Edit,
   Calendar,
-  User,
-  Package,
-  DollarSign,
-  FileText,
-  Clock,
   CheckCircle,
-  XCircle,
-  Send,
+  Clock,
+  DollarSign,
   Download,
-  Printer,
+  Edit,
   Eye,
+  FileText,
+  Package,
   Plus,
-  Trash2
-} from "lucide-react";
-import { toast } from "sonner";
+  Printer,
+  Send,
+  Trash2,
+  User,
+  XCircle,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 // Types based on Laravel data structure
 interface Customer {
@@ -152,54 +159,55 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
         customer_id: 1,
         customer: {
           id: 1,
-          name: "ABC Construction Ltd",
-          company_name: "ABC Construction Ltd",
-          contact_person: "John Smith",
-          email: "john@abcconstruction.com",
-          phone: "+1-555-0123"
+          name: 'ABC Construction Ltd',
+          company_name: 'ABC Construction Ltd',
+          contact_person: 'John Smith',
+          email: 'john@abcconstruction.com',
+          phone: '+1-555-0123',
         },
-        issue_date: "2024-01-15",
-        valid_until: "2024-02-15",
-        status: "sent",
-        subtotal: 15000.00,
+        issue_date: '2024-01-15',
+        valid_until: '2024-02-15',
+        status: 'sent',
+        subtotal: 15000.0,
         discount_percentage: 5.0,
-        discount_amount: 750.00,
+        discount_amount: 750.0,
         tax_percentage: 8.5,
-        tax_amount: 1275.00,
-        total_amount: 15525.00,
-        notes: "Equipment quotation for downtown construction project. Includes operator and delivery.",
-        terms_and_conditions: "Standard terms and conditions apply. Payment terms: 30 days net.",
+        tax_amount: 1275.0,
+        total_amount: 15525.0,
+        notes:
+          'Equipment quotation for downtown construction project. Includes operator and delivery.',
+        terms_and_conditions: 'Standard terms and conditions apply. Payment terms: 30 days net.',
         created_by: 1,
         is_separate: true,
-        created_at: "2024-01-15T10:00:00Z",
-        updated_at: "2024-01-15T10:00:00Z",
+        created_at: '2024-01-15T10:00:00Z',
+        updated_at: '2024-01-15T10:00:00Z',
         quotationItems: [
           {
             id: 1,
             equipment_id: 1,
             equipment: {
               id: 1,
-              name: "Excavator CAT 320",
-              model: "CAT 320",
-              manufacturer: "Caterpillar",
-              serial_number: "CAT320-2024-001",
-              status: "active"
+              name: 'Excavator CAT 320',
+              model: 'CAT 320',
+              manufacturer: 'Caterpillar',
+              serial_number: 'CAT320-2024-001',
+              status: 'active',
             },
             operator_id: 1,
             operator: {
               id: 1,
-              name: "Mike Johnson",
-              employee_id: "EMP001",
-              first_name: "Mike",
-              last_name: "Johnson"
+              name: 'Mike Johnson',
+              employee_id: 'EMP001',
+              first_name: 'Mike',
+              last_name: 'Johnson',
             },
-            description: "Excavator with operator for excavation work",
+            description: 'Excavator with operator for excavation work',
             quantity: 1,
-            rate: 500.00,
-            rate_type: "daily",
-            total_amount: 15000.00
-          }
-        ]
+            rate: 500.0,
+            rate_type: 'daily',
+            total_amount: 15000.0,
+          },
+        ],
       },
       quotationItems: {
         data: [
@@ -208,51 +216,57 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
             equipment_id: 1,
             equipment: {
               id: 1,
-              name: "Excavator CAT 320",
-              model: "CAT 320",
-              manufacturer: "Caterpillar",
-              serial_number: "CAT320-2024-001",
-              status: "active"
+              name: 'Excavator CAT 320',
+              model: 'CAT 320',
+              manufacturer: 'Caterpillar',
+              serial_number: 'CAT320-2024-001',
+              status: 'active',
             },
             operator_id: 1,
             operator: {
               id: 1,
-              name: "Mike Johnson",
-              employee_id: "EMP001",
-              first_name: "Mike",
-              last_name: "Johnson"
+              name: 'Mike Johnson',
+              employee_id: 'EMP001',
+              first_name: 'Mike',
+              last_name: 'Johnson',
             },
-            description: "Excavator with operator for excavation work",
+            description: 'Excavator with operator for excavation work',
             quantity: 1,
-            rate: 500.00,
-            rate_type: "daily",
-            total_amount: 15000.00
-          }
+            rate: 500.0,
+            rate_type: 'daily',
+            total_amount: 15000.0,
+          },
         ],
-        total: 1
+        total: 1,
       },
       canApprove: true,
       canReject: true,
       canEdit: true,
-      canDelete: true
+      canDelete: true,
     };
   };
 
   const getStatusBadge = (status: string) => {
     const statusColors = {
-      draft: "bg-gray-100 text-gray-800",
-      sent: "bg-blue-100 text-blue-800",
-      approved: "bg-green-100 text-green-800",
-      rejected: "bg-red-100 text-red-800",
-      expired: "bg-orange-100 text-orange-800"
+      draft: 'bg-gray-100 text-gray-800',
+      sent: 'bg-blue-100 text-blue-800',
+      approved: 'bg-green-100 text-green-800',
+      rejected: 'bg-red-100 text-red-800',
+      expired: 'bg-orange-100 text-orange-800',
     };
-    return <Badge className={statusColors[status as keyof typeof statusColors] || "bg-gray-100 text-gray-800"}>{status}</Badge>;
+    return (
+      <Badge
+        className={statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800'}
+      >
+        {status}
+      </Badge>
+    );
   };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'USD',
     }).format(amount);
   };
 
@@ -277,7 +291,7 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
 
   const handleApprove = async () => {
     try {
-      toast.loading("Approving quotation...");
+      toast.loading('Approving quotation...');
       const response = await fetch(`/api/quotations/${quotationId}/approve`, {
         method: 'POST',
         headers: {
@@ -289,16 +303,16 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
         throw new Error('Failed to approve quotation');
       }
 
-      toast.success("Quotation approved successfully");
+      toast.success('Quotation approved successfully');
       window.location.reload();
     } catch (error) {
-      toast.error("Failed to approve quotation");
+      toast.error('Failed to approve quotation');
     }
   };
 
   const handleReject = async () => {
     try {
-      toast.loading("Rejecting quotation...");
+      toast.loading('Rejecting quotation...');
       const response = await fetch(`/api/quotations/${quotationId}/reject`, {
         method: 'POST',
         headers: {
@@ -310,16 +324,16 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
         throw new Error('Failed to reject quotation');
       }
 
-      toast.success("Quotation rejected successfully");
+      toast.success('Quotation rejected successfully');
       window.location.reload();
     } catch (error) {
-      toast.error("Failed to reject quotation");
+      toast.error('Failed to reject quotation');
     }
   };
 
   const handleSendEmail = async () => {
     try {
-      toast.loading("Sending quotation...");
+      toast.loading('Sending quotation...');
       const response = await fetch(`/api/quotations/${quotationId}/email`, {
         method: 'POST',
         headers: {
@@ -331,9 +345,9 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
         throw new Error('Failed to send quotation');
       }
 
-      toast.success("Quotation sent successfully");
+      toast.success('Quotation sent successfully');
     } catch (error) {
-      toast.error("Failed to send quotation");
+      toast.error('Failed to send quotation');
     }
   };
 
@@ -426,15 +440,21 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Discount</label>
-                  <p className="text-lg">{quotation.discount_percentage}% ({formatCurrency(quotation.discount_amount)})</p>
+                  <p className="text-lg">
+                    {quotation.discount_percentage}% ({formatCurrency(quotation.discount_amount)})
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Tax</label>
-                  <p className="text-lg">{quotation.tax_percentage}% ({formatCurrency(quotation.tax_amount)})</p>
+                  <p className="text-lg">
+                    {quotation.tax_percentage}% ({formatCurrency(quotation.tax_amount)})
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Total Amount</label>
-                  <p className="text-lg font-semibold text-green-600">{formatCurrency(quotation.total_amount)}</p>
+                  <p className="text-lg font-semibold text-green-600">
+                    {formatCurrency(quotation.total_amount)}
+                  </p>
                 </div>
               </div>
               {quotation.notes && (
@@ -473,7 +493,7 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {quotationItems.data.map((item) => (
+                      {quotationItems.data.map(item => (
                         <TableRow key={item.id}>
                           <TableCell>
                             <div>
@@ -485,7 +505,9 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
                             {item.operator ? (
                               <div>
                                 <div className="font-medium">{item.operator.name}</div>
-                                <div className="text-sm text-gray-500">{item.operator.employee_id}</div>
+                                <div className="text-sm text-gray-500">
+                                  {item.operator.employee_id}
+                                </div>
                               </div>
                             ) : (
                               <span className="text-gray-400">No operator</span>
@@ -496,7 +518,9 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
                           <TableCell>
                             <Badge variant="outline">{item.rate_type}</Badge>
                           </TableCell>
-                          <TableCell className="font-semibold">{formatCurrency(item.total_amount)}</TableCell>
+                          <TableCell className="font-semibold">
+                            {formatCurrency(item.total_amount)}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -582,11 +606,7 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
                   Reject Quotation
                 </Button>
               )}
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={handleSendEmail}
-              >
+              <Button variant="outline" className="w-full justify-start" onClick={handleSendEmail}>
                 <Send className="h-4 w-4 mr-2" />
                 Send by Email
               </Button>
@@ -615,19 +635,27 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
               <div className="grid grid-cols-1 gap-4">
                 <div className="bg-green-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-600">Subtotal</p>
-                  <p className="text-2xl font-bold text-green-600">{formatCurrency(quotation.subtotal)}</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    {formatCurrency(quotation.subtotal)}
+                  </p>
                 </div>
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-600">Discount</p>
-                  <p className="text-2xl font-bold text-blue-600">{formatCurrency(quotation.discount_amount)}</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {formatCurrency(quotation.discount_amount)}
+                  </p>
                 </div>
                 <div className="bg-yellow-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-600">Tax</p>
-                  <p className="text-2xl font-bold text-yellow-600">{formatCurrency(quotation.tax_amount)}</p>
+                  <p className="text-2xl font-bold text-yellow-600">
+                    {formatCurrency(quotation.tax_amount)}
+                  </p>
                 </div>
                 <div className="bg-purple-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-600">Total</p>
-                  <p className="text-2xl font-bold text-purple-600">{formatCurrency(quotation.total_amount)}</p>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {formatCurrency(quotation.total_amount)}
+                  </p>
                 </div>
               </div>
             </CardContent>
@@ -638,7 +666,11 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
   );
 }
 
-export default function QuotationDetailPageWrapper({ params }: { params: Promise<{ id: string }> }) {
+export default function QuotationDetailPageWrapper({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const [id, setId] = useState<string | null>(null);
 
   useEffect(() => {

@@ -1,8 +1,12 @@
-import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { employees as employeesTable, departments, designations, organizationalUnits } from '@/lib/drizzle/schema';
-import { asc } from 'drizzle-orm';
-import { eq } from 'drizzle-orm';
+import {
+  departments,
+  designations,
+  employees as employeesTable,
+  organizationalUnits,
+} from '@/lib/drizzle/schema';
+import { asc, eq } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
@@ -122,7 +126,7 @@ export async function GET() {
       'SPSP License Expiry',
       'SPSP License Cost',
       'Is Operator',
-      'Notes'
+      'Notes',
     ];
 
     const csvRows = employees.map(employee => [
@@ -139,8 +143,12 @@ export async function GET() {
       employee.state || '',
       employee.country || '',
       employee.nationality || '',
-      employee.dateOfBirth ? new Date(employee.dateOfBirth as unknown as string).toISOString().split('T')[0] : '',
-      employee.hireDate ? new Date(employee.hireDate as unknown as string).toISOString().split('T')[0] : '',
+      employee.dateOfBirth
+        ? new Date(employee.dateOfBirth as unknown as string).toISOString().split('T')[0]
+        : '',
+      employee.hireDate
+        ? new Date(employee.hireDate as unknown as string).toISOString().split('T')[0]
+        : '',
       employee.departmentName || '',
       employee.designationName || '',
       employee.unitName || '',
@@ -161,24 +169,36 @@ export async function GET() {
       employee.emergencyContactPhone || '',
       employee.emergencyContactRelationship || '',
       employee.iqamaNumber || '',
-      employee.iqamaExpiry ? new Date(employee.iqamaExpiry as unknown as string).toISOString().split('T')[0] : '',
+      employee.iqamaExpiry
+        ? new Date(employee.iqamaExpiry as unknown as string).toISOString().split('T')[0]
+        : '',
       employee.iqamaCost?.toString() || '0',
       employee.passportNumber || '',
-      employee.passportExpiry ? new Date(employee.passportExpiry as unknown as string).toISOString().split('T')[0] : '',
+      employee.passportExpiry
+        ? new Date(employee.passportExpiry as unknown as string).toISOString().split('T')[0]
+        : '',
       employee.drivingLicenseNumber || '',
-      employee.drivingLicenseExpiry ? new Date(employee.drivingLicenseExpiry as unknown as string).toISOString().split('T')[0] : '',
+      employee.drivingLicenseExpiry
+        ? new Date(employee.drivingLicenseExpiry as unknown as string).toISOString().split('T')[0]
+        : '',
       employee.drivingLicenseCost?.toString() || '0',
       employee.operatorLicenseNumber || '',
-      employee.operatorLicenseExpiry ? new Date(employee.operatorLicenseExpiry as unknown as string).toISOString().split('T')[0] : '',
+      employee.operatorLicenseExpiry
+        ? new Date(employee.operatorLicenseExpiry as unknown as string).toISOString().split('T')[0]
+        : '',
       employee.operatorLicenseCost?.toString() || '0',
       employee.tuvCertificationNumber || '',
-      employee.tuvCertificationExpiry ? new Date(employee.tuvCertificationExpiry as unknown as string).toISOString().split('T')[0] : '',
+      employee.tuvCertificationExpiry
+        ? new Date(employee.tuvCertificationExpiry as unknown as string).toISOString().split('T')[0]
+        : '',
       employee.tuvCertificationCost?.toString() || '0',
       employee.spspLicenseNumber || '',
-      employee.spspLicenseExpiry ? new Date(employee.spspLicenseExpiry as unknown as string).toISOString().split('T')[0] : '',
+      employee.spspLicenseExpiry
+        ? new Date(employee.spspLicenseExpiry as unknown as string).toISOString().split('T')[0]
+        : '',
       employee.spspLicenseCost?.toString() || '0',
       employee.isOperator ? 'Yes' : 'No',
-      employee.notes || ''
+      employee.notes || '',
     ]);
 
     // Create CSV content
@@ -194,9 +214,6 @@ export async function GET() {
     return response;
   } catch (error) {
     console.error('Error exporting employees:', error);
-    return NextResponse.json(
-      { error: 'Failed to export employees' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to export employees' }, { status: 500 });
   }
 }

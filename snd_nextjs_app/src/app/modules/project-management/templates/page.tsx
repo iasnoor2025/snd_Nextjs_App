@@ -1,20 +1,51 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Copy, Edit, Trash2, FileText, Building2, Users, Calendar, DollarSign, Search } from 'lucide-react';
-import { toast } from 'sonner';
-import Link from 'next/link';
+import { Textarea } from '@/components/ui/textarea';
 import apiService from '@/lib/api';
+import {
+  Building2,
+  Calendar,
+  Copy,
+  DollarSign,
+  Edit,
+  FileText,
+  Plus,
+  Search,
+  Trash2,
+  Users,
+} from 'lucide-react';
+import Link from 'next/link';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface ProjectTemplate {
   id: string;
@@ -209,7 +240,8 @@ export default function ProjectTemplatesPage() {
   };
 
   const filteredTemplates = templates.filter(template => {
-    const matchesSearch = !search ||
+    const matchesSearch =
+      !search ||
       template.name.toLowerCase().includes(search.toLowerCase()) ||
       template.description.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = category === 'all' || template.category === category;
@@ -241,7 +273,9 @@ export default function ProjectTemplatesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Project Templates</h1>
-          <p className="text-muted-foreground">Create and manage project templates for quick setup</p>
+          <p className="text-muted-foreground">
+            Create and manage project templates for quick setup
+          </p>
         </div>
         <div className="flex space-x-2">
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -265,14 +299,17 @@ export default function ProjectTemplatesPage() {
                     <Input
                       id="name"
                       value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="Enter template name"
                       required
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="category">Category *</Label>
-                    <Select value={formData.category} onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}>
+                    <Select
+                      value={formData.category}
+                      onValueChange={value => setFormData(prev => ({ ...prev, category: value }))}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
@@ -291,7 +328,7 @@ export default function ProjectTemplatesPage() {
                   <Textarea
                     id="description"
                     value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={e => setFormData(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Describe the template"
                     rows={3}
                   />
@@ -304,7 +341,9 @@ export default function ProjectTemplatesPage() {
                       id="estimated_duration"
                       type="number"
                       value={formData.estimated_duration}
-                      onChange={(e) => setFormData(prev => ({ ...prev, estimated_duration: e.target.value }))}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, estimated_duration: e.target.value }))
+                      }
                       placeholder="30"
                     />
                   </div>
@@ -314,7 +353,9 @@ export default function ProjectTemplatesPage() {
                       id="estimated_budget"
                       type="number"
                       value={formData.estimated_budget}
-                      onChange={(e) => setFormData(prev => ({ ...prev, estimated_budget: e.target.value }))}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, estimated_budget: e.target.value }))
+                      }
                       placeholder="100000"
                       step="0.01"
                     />
@@ -324,7 +365,10 @@ export default function ProjectTemplatesPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="complexity">Complexity</Label>
-                    <Select value={formData.complexity} onValueChange={(value) => setFormData(prev => ({ ...prev, complexity: value }))}>
+                    <Select
+                      value={formData.complexity}
+                      onValueChange={value => setFormData(prev => ({ ...prev, complexity: value }))}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select complexity" />
                       </SelectTrigger>
@@ -341,7 +385,7 @@ export default function ProjectTemplatesPage() {
                       id="team_size"
                       type="number"
                       value={formData.team_size}
-                      onChange={(e) => setFormData(prev => ({ ...prev, team_size: e.target.value }))}
+                      onChange={e => setFormData(prev => ({ ...prev, team_size: e.target.value }))}
                       placeholder="5"
                     />
                   </div>
@@ -370,7 +414,7 @@ export default function ProjectTemplatesPage() {
               <Input
                 placeholder="Search templates..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={e => setSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -382,7 +426,9 @@ export default function ProjectTemplatesPage() {
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
               {categories.map(cat => (
-                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                <SelectItem key={cat} value={cat}>
+                  {cat}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -393,7 +439,9 @@ export default function ProjectTemplatesPage() {
             <SelectContent>
               <SelectItem value="all">All Complexities</SelectItem>
               {complexities.map(comp => (
-                <SelectItem key={comp} value={comp}>{comp}</SelectItem>
+                <SelectItem key={comp} value={comp}>
+                  {comp}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -402,7 +450,7 @@ export default function ProjectTemplatesPage() {
 
       {/* Templates Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredTemplates.map((template) => (
+        {filteredTemplates.map(template => (
           <Card key={template.id} className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -430,9 +478,7 @@ export default function ProjectTemplatesPage() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 mt-2">
-                <Badge className={getCategoryColor(template.category)}>
-                  {template.category}
-                </Badge>
+                <Badge className={getCategoryColor(template.category)}>{template.category}</Badge>
                 <Badge className={getComplexityColor(template.complexity)}>
                   {template.complexity}
                 </Badge>
@@ -485,10 +531,7 @@ export default function ProjectTemplatesPage() {
               </div>
 
               <div className="mt-4 pt-4 border-t">
-                <Button
-                  className="w-full"
-                  onClick={() => handleUseTemplate(template)}
-                >
+                <Button className="w-full" onClick={() => handleUseTemplate(template)}>
                   Use Template
                 </Button>
               </div>

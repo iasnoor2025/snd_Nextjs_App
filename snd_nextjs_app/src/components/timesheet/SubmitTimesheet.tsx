@@ -1,12 +1,20 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Send, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { AlertCircle, Send } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface SubmitTimesheetProps {
   timesheet: {
@@ -47,7 +55,7 @@ export default function SubmitTimesheet({ timesheet, onStatusChange }: SubmitTim
         credentials: 'include',
         body: JSON.stringify({
           timesheetId: timesheet.id,
-          notes
+          notes,
         }),
       });
 
@@ -79,9 +87,7 @@ export default function SubmitTimesheet({ timesheet, onStatusChange }: SubmitTim
           <Send className="h-5 w-5" />
           Submit for Approval
         </CardTitle>
-        <CardDescription>
-          Submit this timesheet for approval workflow
-        </CardDescription>
+        <CardDescription>Submit this timesheet for approval workflow</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -123,7 +129,8 @@ export default function SubmitTimesheet({ timesheet, onStatusChange }: SubmitTim
               <DialogHeader>
                 <DialogTitle>Submit Timesheet for Approval</DialogTitle>
                 <DialogDescription>
-                  Submit timesheet for {timesheet.employee.firstName} {timesheet.employee.lastName} on {new Date(timesheet.date).toLocaleDateString()}
+                  Submit timesheet for {timesheet.employee.firstName} {timesheet.employee.lastName}{' '}
+                  on {new Date(timesheet.date).toLocaleDateString()}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -131,7 +138,7 @@ export default function SubmitTimesheet({ timesheet, onStatusChange }: SubmitTim
                   <label className="text-sm font-medium">Notes (Optional)</label>
                   <Textarea
                     value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
+                    onChange={e => setNotes(e.target.value)}
                     placeholder="Add any notes about this timesheet..."
                     className="mt-1"
                   />
@@ -140,7 +147,9 @@ export default function SubmitTimesheet({ timesheet, onStatusChange }: SubmitTim
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <div className="text-sm font-medium mb-2">Submission Summary</div>
                   <div className="text-sm text-gray-600 space-y-1">
-                    <div>Employee: {timesheet.employee.firstName} {timesheet.employee.lastName}</div>
+                    <div>
+                      Employee: {timesheet.employee.firstName} {timesheet.employee.lastName}
+                    </div>
                     <div>Date: {new Date(timesheet.date).toLocaleDateString()}</div>
                     <div>Regular Hours: {timesheet.hoursWorked}</div>
                     <div>Overtime Hours: {timesheet.overtimeHours}</div>

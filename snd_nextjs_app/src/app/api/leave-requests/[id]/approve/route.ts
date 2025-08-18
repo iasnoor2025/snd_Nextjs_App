@@ -1,22 +1,17 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { employeeLeaves, employees } from '@/lib/drizzle/schema';
-import { authConfig } from '@/lib/auth-config';
 import { eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextResponse } from 'next/server';
 
-export async function PUT(
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT({ params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const session = await getServerSession(authConfig);
-    
+
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     // Check if user has permission to approve leave requests
@@ -39,8 +34,8 @@ export async function PUT(
         employeeId: employeeLeaves.employeeId,
         employee: {
           id: employees.id,
-          status: employees.status
-        }
+          status: employees.status,
+        },
       })
       .from(employeeLeaves)
       .leftJoin(employees, eq(employeeLeaves.employeeId, employees.id))
@@ -49,10 +44,7 @@ export async function PUT(
 
     const leaveRequest = leaveRequestData[0];
     if (!leaveRequest) {
-      return NextResponse.json(
-        { error: 'Leave request not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Leave request not found' }, { status: 404 });
     }
 
     // Only allow approval of pending requests
@@ -69,16 +61,19 @@ export async function PUT(
       .set({
         status: 'approved',
         approvedAt: new Date().toISOString(),
-        approvedBy: parseInt(session.user.id)
+        approvedBy: parseInt(session.user.id),
       })
       .where(eq(employeeLeaves.id, parseInt(id)));
 
     // Update employee status to 'on_leave' if the leave is currently active
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0]!; // YYYY-MM-DD format - non-null assertion
-    const isLeaveCurrentlyActive = leaveRequest.startDate && leaveRequest.endDate && 
-      leaveRequest.startDate <= todayStr && leaveRequest.endDate >= todayStr;
-    
+    const isLeaveCurrentlyActive =
+      leaveRequest.startDate &&
+      leaveRequest.endDate &&
+      leaveRequest.startDate <= todayStr &&
+      leaveRequest.endDate >= todayStr;
+
     if (isLeaveCurrentlyActive) {
       await db
         .update(employees)
@@ -88,14 +83,10 @@ export async function PUT(
 
     return NextResponse.json({
       success: true,
-      message: 'Leave request approved successfully'
+      message: 'Leave request approved successfully',
     });
-
   } catch (error) {
     console.error('Error approving leave request:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

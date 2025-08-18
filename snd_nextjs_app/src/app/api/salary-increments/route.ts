@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/drizzle';
-import { salaryIncrements, employees, users } from '@/lib/drizzle/schema';
-import { eq, and, gte, lte, desc, sql, isNull } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
+import { db } from '@/lib/drizzle';
+import { employees, salaryIncrements, users } from '@/lib/drizzle/schema';
 import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
+import { and, desc, eq, gte, isNull, lte, sql } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -115,7 +115,7 @@ export async function GET(_request: NextRequest) {
       .offset(offset);
 
     // Transform the data to match the expected interface
-    const transformedData = salaryIncrementsData.map((item) => ({
+    const transformedData = salaryIncrementsData.map(item => ({
       id: item.id,
       employee_id: item.employeeId,
       increment_type: item.incrementType,
@@ -143,17 +143,21 @@ export async function GET(_request: NextRequest) {
       rejection_reason: item.rejectionReason,
       requested_at: item.requestedAt,
       requested_by: item.requestedBy,
-      employee: item.employeeId_inner ? {
-        id: item.employeeId_inner,
-        first_name: item.employeeFirstName,
-        last_name: item.employeeLastName,
-        employee_id: item.employeeFileNumber,
-      } : undefined,
-      requested_by_user: item.requestedByUserName ? {
-        id: item.requestedBy,
-        name: item.requestedByUserName,
-        email: item.requestedByUserEmail,
-      } : undefined,
+      employee: item.employeeId_inner
+        ? {
+            id: item.employeeId_inner,
+            first_name: item.employeeFirstName,
+            last_name: item.employeeLastName,
+            employee_id: item.employeeFileNumber,
+          }
+        : undefined,
+      requested_by_user: item.requestedByUserName
+        ? {
+            id: item.requestedBy,
+            name: item.requestedByUserName,
+            email: item.requestedByUserEmail,
+          }
+        : undefined,
       approved_by_user: undefined, // Will be populated in a separate query if needed
       rejected_by_user: undefined, // Will be populated in a separate query if needed
     }));
@@ -172,11 +176,15 @@ export async function GET(_request: NextRequest) {
     console.error('Error details:', {
       name: error instanceof Error ? error.name : 'Unknown',
       message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : 'No stack trace'
+      stack: error instanceof Error ? error.stack : 'No stack trace',
     });
-    
+
     // If table doesn't exist yet, return empty result
-    if (error instanceof Error && error.message.includes('relation') && error.message.includes('does not exist')) {
+    if (
+      error instanceof Error &&
+      error.message.includes('relation') &&
+      error.message.includes('does not exist')
+    ) {
       return NextResponse.json({
         data: [],
         pagination: {
@@ -187,9 +195,12 @@ export async function GET(_request: NextRequest) {
         },
       });
     }
-    
+
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }
@@ -226,10 +237,7 @@ export async function POST(_request: NextRequest) {
 
     // Validate required fields
     if (!employee_id || !increment_type || !reason || !effective_date) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Get current employee salary information
@@ -245,18 +253,12 @@ export async function POST(_request: NextRequest) {
       .limit(1);
 
     if (employee.length === 0) {
-      return NextResponse.json(
-        { error: 'Employee not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
     const currentSalary = employee[0];
     if (!currentSalary) {
-      return NextResponse.json(
-        { error: 'Employee salary information not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Employee salary information not found' }, { status: 404 });
     }
 
     // Calculate new salary if not provided
@@ -268,7 +270,7 @@ export async function POST(_request: NextRequest) {
     if (increment_type === 'percentage' && increment_percentage) {
       const percentage = increment_percentage / 100;
       calculatedNewBaseSalary = Number(currentSalary.currentBaseSalary) * (1 + percentage);
-      
+
       // if (apply_to_allowances) {
       //   calculatedNewFoodAllowance = Number(currentSalary.currentFoodAllowance) * (1 + percentage);
       //   calculatedNewHousingAllowance = Number(currentSalary.currentHousingAllowance) * (1 + percentage);
@@ -346,9 +348,6 @@ export async function POST(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Error creating salary increment:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

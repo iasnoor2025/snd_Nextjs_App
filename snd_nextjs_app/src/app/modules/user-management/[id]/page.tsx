@@ -1,13 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import {
+  ArrowLeft,
+  Calendar,
+  CheckCircle,
+  Clock,
+  Edit,
+  Mail,
+  Shield,
+  User,
+  XCircle,
+} from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowLeft, Edit, Calendar, Mail, Shield, CheckCircle, XCircle, User, Clock } from 'lucide-react';
 
 interface User {
   id: string;
@@ -134,7 +144,15 @@ export default function UserDetailPage() {
                 <label className="text-sm font-medium text-muted-foreground">Role</label>
                 <div className="flex items-center gap-2 mt-1">
                   <Shield className="h-4 w-4" />
-                  <Badge variant={user.role === 'ADMIN' ? 'destructive' : user.role === 'MANAGER' ? 'default' : 'secondary'}>
+                  <Badge
+                    variant={
+                      user.role === 'ADMIN'
+                        ? 'destructive'
+                        : user.role === 'MANAGER'
+                          ? 'default'
+                          : 'secondary'
+                    }
+                  >
                     {user.role}
                   </Badge>
                 </div>
@@ -224,7 +242,8 @@ export default function UserDetailPage() {
               <h4 className="font-semibold mb-2">Role: {user.role}</h4>
               <p className="text-muted-foreground">
                 {user.role === 'ADMIN' && 'Full system administrator with all permissions'}
-                {user.role === 'MANAGER' && 'Department manager with limited administrative permissions'}
+                {user.role === 'MANAGER' &&
+                  'Department manager with limited administrative permissions'}
                 {user.role === 'USER' && 'Standard user with basic read permissions'}
               </p>
             </div>

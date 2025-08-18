@@ -1,19 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useTranslation } from 'react-i18next';
 import { ProtectedRoute } from '@/components/protected-route';
-import { PermissionContent } from '@/lib/rbac/rbac-components';
-import { useRBAC } from '@/lib/rbac/rbac-context';
-import { useI18n } from '@/hooks/use-i18n';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Edit, MapPin, Calendar, Building } from 'lucide-react';
-import { toast } from 'sonner';
+import { useI18n } from '@/hooks/use-i18n';
+import { PermissionContent } from '@/lib/rbac/rbac-components';
+import { useRBAC } from '@/lib/rbac/rbac-context';
+import { ArrowLeft, Building, Calendar, Edit, MapPin } from 'lucide-react';
 import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 interface Location {
   id: number;
@@ -50,7 +50,7 @@ export default function LocationDetailPage() {
     try {
       const response = await fetch(`/api/locations/${params.id}`);
       if (response.ok) {
-        const result = await response.json() as { success: boolean; data?: Location };
+        const result = (await response.json()) as { success: boolean; data?: Location };
         if (result.success && result.data) {
           setLocation(result.data);
         } else {
@@ -134,9 +134,7 @@ export default function LocationDetailPage() {
                   <MapPin className="h-5 w-5" />
                   {t('location:locationDetails')}
                 </CardTitle>
-                <CardDescription>
-                  {t('location:completeLocationInfo')}
-                </CardDescription>
+                <CardDescription>{t('location:completeLocationInfo')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -147,7 +145,7 @@ export default function LocationDetailPage() {
                   <div>
                     <Label className="text-sm font-medium">{t('location:status')}</Label>
                     <div className="mt-1">
-                      <Badge variant={location.is_active ? "default" : "secondary"}>
+                      <Badge variant={location.is_active ? 'default' : 'secondary'}>
                         {location.is_active ? t('location:active') : t('location:inactive')}
                       </Badge>
                     </div>
@@ -172,33 +170,41 @@ export default function LocationDetailPage() {
                     <Label className="text-sm font-medium">{t('location:address')}</Label>
                     <p className="text-sm text-gray-600 mt-1">{location.address || 'N/A'}</p>
                   </div>
-                                     <div>
-                     <Label className="text-sm font-medium">{t('location:latitude')}</Label>
-                     <p className="text-sm text-gray-600 mt-1">
-                       {location.latitude ? (typeof location.latitude === 'number' ? location.latitude.toFixed(6) : parseFloat(location.latitude as string).toFixed(6)) : 'N/A'}
-                     </p>
-                   </div>
-                   <div>
-                     <Label className="text-sm font-medium">{t('location:longitude')}</Label>
-                     <p className="text-sm text-gray-600 mt-1">
-                       {location.longitude ? (typeof location.longitude === 'number' ? location.longitude.toFixed(6) : parseFloat(location.longitude as string).toFixed(6)) : 'N/A'}
-                     </p>
-                   </div>
-                   {location.latitude && location.longitude && (
-                     <div className="md:col-span-2">
-                       <Label className="text-sm font-medium">{t('location:mapLink')}</Label>
-                       <p className="text-sm mt-1">
-                         <a
-                           href={`https://www.google.com/maps?q=${typeof location.latitude === 'number' ? location.latitude.toFixed(6) : parseFloat(location.latitude as string).toFixed(6)},${typeof location.longitude === 'number' ? location.longitude.toFixed(6) : parseFloat(location.longitude as string).toFixed(6)}`}
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-                         >
-                           {t('location:openInGoogleMaps')}
-                         </a>
-                       </p>
-                     </div>
-                   )}
+                  <div>
+                    <Label className="text-sm font-medium">{t('location:latitude')}</Label>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {location.latitude
+                        ? typeof location.latitude === 'number'
+                          ? location.latitude.toFixed(6)
+                          : parseFloat(location.latitude as string).toFixed(6)
+                        : 'N/A'}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">{t('location:longitude')}</Label>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {location.longitude
+                        ? typeof location.longitude === 'number'
+                          ? location.longitude.toFixed(6)
+                          : parseFloat(location.longitude as string).toFixed(6)
+                        : 'N/A'}
+                    </p>
+                  </div>
+                  {location.latitude && location.longitude && (
+                    <div className="md:col-span-2">
+                      <Label className="text-sm font-medium">{t('location:mapLink')}</Label>
+                      <p className="text-sm mt-1">
+                        <a
+                          href={`https://www.google.com/maps?q=${typeof location.latitude === 'number' ? location.latitude.toFixed(6) : parseFloat(location.latitude as string).toFixed(6)},${typeof location.longitude === 'number' ? location.longitude.toFixed(6) : parseFloat(location.longitude as string).toFixed(6)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                        >
+                          {t('location:openInGoogleMaps')}
+                        </a>
+                      </p>
+                    </div>
+                  )}
                   <div className="md:col-span-2">
                     <Label className="text-sm font-medium">{t('location:description')}</Label>
                     <p className="text-sm text-gray-600 mt-1">{location.description || 'N/A'}</p>
@@ -246,14 +252,14 @@ export default function LocationDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                                     <PermissionContent action="update" subject="Location">
-                     <Link href={`/modules/location-management/${location.id}/edit`}>
-                       <Button variant="outline" className="w-full justify-start">
-                         <Edit className="h-4 w-4 mr-2" />
-                         {t('location:editLocation')}
-                       </Button>
-                     </Link>
-                   </PermissionContent>
+                  <PermissionContent action="update" subject="Location">
+                    <Link href={`/modules/location-management/${location.id}/edit`}>
+                      <Button variant="outline" className="w-full justify-start">
+                        <Edit className="h-4 w-4 mr-2" />
+                        {t('location:editLocation')}
+                      </Button>
+                    </Link>
+                  </PermissionContent>
                   <Link href="/modules/location-management">
                     <Button variant="outline" className="w-full justify-start">
                       <ArrowLeft className="h-4 w-4 mr-2" />
@@ -268,4 +274,4 @@ export default function LocationDetailPage() {
       </div>
     </ProtectedRoute>
   );
-} 
+}

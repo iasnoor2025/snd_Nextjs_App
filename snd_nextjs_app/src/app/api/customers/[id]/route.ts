@@ -1,15 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { customers } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    
+
     const customer = await db
       .select()
       .from(customers)
@@ -18,9 +15,9 @@ export async function GET(
 
     if (customer.length === 0) {
       return NextResponse.json(
-        { 
+        {
           success: false,
-          message: 'Customer not found' 
+          message: 'Customer not found',
         },
         { status: 404 }
       );
@@ -28,29 +25,26 @@ export async function GET(
 
     return NextResponse.json({
       success: true,
-      customer: customer[0]
+      customer: customer[0],
     });
   } catch (error) {
     console.error('Error fetching customer:', error);
     return NextResponse.json(
-      { 
+      {
         success: false,
         message: 'Failed to fetch customer',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await request.json();
-    
+
     const updatedCustomer = await db
       .update(customers)
       .set({
@@ -74,9 +68,9 @@ export async function PUT(
 
     if (updatedCustomer.length === 0) {
       return NextResponse.json(
-        { 
+        {
           success: false,
-          message: 'Customer not found' 
+          message: 'Customer not found',
         },
         { status: 404 }
       );
@@ -85,15 +79,15 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       customer: updatedCustomer[0],
-      message: 'Customer updated successfully'
+      message: 'Customer updated successfully',
     });
   } catch (error) {
     console.error('Error updating customer:', error);
     return NextResponse.json(
-      { 
+      {
         success: false,
         message: 'Failed to update customer',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -106,7 +100,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    
+
     const deletedCustomer = await db
       .delete(customers)
       .where(eq(customers.id, parseInt(id)))
@@ -114,9 +108,9 @@ export async function DELETE(
 
     if (deletedCustomer.length === 0) {
       return NextResponse.json(
-        { 
+        {
           success: false,
-          message: 'Customer not found' 
+          message: 'Customer not found',
         },
         { status: 404 }
       );
@@ -124,15 +118,15 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'Customer deleted successfully'
+      message: 'Customer deleted successfully',
     });
   } catch (error) {
     console.error('Error deleting customer:', error);
     return NextResponse.json(
-      { 
+      {
         success: false,
         message: 'Failed to delete customer',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

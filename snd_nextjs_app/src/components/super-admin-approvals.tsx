@@ -1,31 +1,45 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRBAC } from '@/lib/rbac/rbac-context';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
-import { 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  AlertTriangle, 
-  Shield, 
-  Users, 
-  Building, 
-  Wrench, 
-  Truck, 
-  FileText, 
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { useRBAC } from '@/lib/rbac/rbac-context';
+import {
+  AlertTriangle,
+  BarChart3,
+  Building,
   Calendar,
+  CheckCircle,
+  Clock,
   DollarSign,
-  BarChart3
+  FileText,
+  Shield,
+  Truck,
+  Users,
+  Wrench,
+  XCircle,
 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface ApprovalItem {
   id: string;
@@ -67,7 +81,7 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
         submittedBy: 'John Doe',
         submittedAt: '2025-01-15T10:30:00Z',
         priority: 'high',
-        module: 'rental'
+        module: 'rental',
       },
       {
         id: '2',
@@ -78,7 +92,7 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
         submittedBy: 'Sarah Smith',
         submittedAt: '2025-01-14T16:45:00Z',
         priority: 'medium',
-        module: 'timesheet'
+        module: 'timesheet',
       },
       {
         id: '3',
@@ -89,7 +103,7 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
         submittedBy: 'HR Manager',
         submittedAt: '2025-01-15T09:15:00Z',
         priority: 'urgent',
-        module: 'payroll'
+        module: 'payroll',
       },
       {
         id: '4',
@@ -100,7 +114,7 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
         submittedBy: 'Mike Johnson',
         submittedAt: '2025-01-13T14:20:00Z',
         priority: 'low',
-        module: 'leave'
+        module: 'leave',
       },
       {
         id: '5',
@@ -111,8 +125,8 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
         submittedBy: 'Maintenance Team',
         submittedAt: '2025-01-15T11:00:00Z',
         priority: 'high',
-        module: 'equipment'
-      }
+        module: 'equipment',
+      },
     ];
     setApprovalItems(mockApprovalItems);
   }, []);
@@ -130,13 +144,15 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
     try {
       // Mock API call - replace with actual implementation
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Update the item status
-      setApprovalItems(prev => prev.map(item => 
-        item.id === selectedItem.id 
-          ? { ...item, status: approvalAction === 'approve' ? 'approved' : 'rejected' }
-          : item
-      ));
+      setApprovalItems(prev =>
+        prev.map(item =>
+          item.id === selectedItem.id
+            ? { ...item, status: approvalAction === 'approve' ? 'approved' : 'rejected' }
+            : item
+        )
+      );
 
       toast.success(
         `${selectedItem.type} ${approvalAction === 'approve' ? 'approved' : 'rejected'} successfully!`
@@ -154,34 +170,52 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
 
   const getModuleIcon = (module: string) => {
     switch (module) {
-      case 'rental': return <Truck className="h-4 w-4" />;
-      case 'timesheet': return <FileText className="h-4 w-4" />;
-      case 'payroll': return <DollarSign className="h-4 w-4" />;
-      case 'leave': return <Calendar className="h-4 w-4" />;
-      case 'equipment': return <Wrench className="h-4 w-4" />;
-      case 'employee': return <Users className="h-4 w-4" />;
-      case 'customer': return <Building className="h-4 w-4" />;
-      case 'report': return <BarChart3 className="h-4 w-4" />;
-      default: return <Shield className="h-4 w-4" />;
+      case 'rental':
+        return <Truck className="h-4 w-4" />;
+      case 'timesheet':
+        return <FileText className="h-4 w-4" />;
+      case 'payroll':
+        return <DollarSign className="h-4 w-4" />;
+      case 'leave':
+        return <Calendar className="h-4 w-4" />;
+      case 'equipment':
+        return <Wrench className="h-4 w-4" />;
+      case 'employee':
+        return <Users className="h-4 w-4" />;
+      case 'customer':
+        return <Building className="h-4 w-4" />;
+      case 'report':
+        return <BarChart3 className="h-4 w-4" />;
+      default:
+        return <Shield className="h-4 w-4" />;
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'urgent': return 'destructive';
-      case 'high': return 'default';
-      case 'medium': return 'secondary';
-      case 'low': return 'outline';
-      default: return 'outline';
+      case 'urgent':
+        return 'destructive';
+      case 'high':
+        return 'default';
+      case 'medium':
+        return 'secondary';
+      case 'low':
+        return 'outline';
+      default:
+        return 'outline';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'approved': return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'rejected': return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'pending': return <Clock className="h-4 w-4 text-yellow-500" />;
-      default: return <AlertTriangle className="h-4 w-4 text-gray-500" />;
+      case 'approved':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'rejected':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'pending':
+        return <Clock className="h-4 w-4 text-yellow-500" />;
+      default:
+        return <AlertTriangle className="h-4 w-4 text-gray-500" />;
     }
   };
 
@@ -193,9 +227,7 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
             <Shield className="h-5 w-5" />
             Super Admin Approvals
           </CardTitle>
-          <CardDescription>
-            This feature is only available to SUPER_ADMIN users.
-          </CardDescription>
+          <CardDescription>This feature is only available to SUPER_ADMIN users.</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
@@ -245,7 +277,7 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
 
             <TabsContent value="pending" className="space-y-4">
               <div className="space-y-4">
-                {pendingItems.map((item) => (
+                {pendingItems.map(item => (
                   <Card key={item.id} className="border-l-4 border-l-yellow-500">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
@@ -257,13 +289,13 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
                               {item.priority.toUpperCase()}
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {item.description}
-                          </p>
+                          <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span>By: {item.submittedBy}</span>
                             <span>Type: {item.type}</span>
-                            <span>Submitted: {new Date(item.submittedAt).toLocaleDateString()}</span>
+                            <span>
+                              Submitted: {new Date(item.submittedAt).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -299,7 +331,7 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
 
             <TabsContent value="approved" className="space-y-4">
               <div className="space-y-4">
-                {approvedItems.map((item) => (
+                {approvedItems.map(item => (
                   <Card key={item.id} className="border-l-4 border-l-green-500">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
@@ -311,13 +343,13 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
                               APPROVED
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {item.description}
-                          </p>
+                          <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span>By: {item.submittedBy}</span>
                             <span>Type: {item.type}</span>
-                            <span>Submitted: {new Date(item.submittedAt).toLocaleDateString()}</span>
+                            <span>
+                              Submitted: {new Date(item.submittedAt).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -334,7 +366,7 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
 
             <TabsContent value="rejected" className="space-y-4">
               <div className="space-y-4">
-                {rejectedItems.map((item) => (
+                {rejectedItems.map(item => (
                   <Card key={item.id} className="border-l-4 border-l-red-500">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between">
@@ -346,13 +378,13 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
                               REJECTED
                             </Badge>
                           </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {item.description}
-                          </p>
+                          <p className="text-sm text-muted-foreground mb-2">{item.description}</p>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span>By: {item.submittedBy}</span>
                             <span>Type: {item.type}</span>
-                            <span>Submitted: {new Date(item.submittedAt).toLocaleDateString()}</span>
+                            <span>
+                              Submitted: {new Date(item.submittedAt).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -381,7 +413,7 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {approvalItems.map((item) => (
+                  {approvalItems.map(item => (
                     <TableRow key={item.id}>
                       <TableCell className="flex items-center gap-2">
                         {getModuleIcon(item.module)}
@@ -434,12 +466,8 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
       <Dialog open={isApprovalDialogOpen} onOpenChange={setIsApprovalDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {approvalAction === 'approve' ? 'Approve' : 'Reject'} Request
-            </DialogTitle>
-            <DialogDescription>
-              {selectedItem?.title}
-            </DialogDescription>
+            <DialogTitle>{approvalAction === 'approve' ? 'Approve' : 'Reject'} Request</DialogTitle>
+            <DialogDescription>{selectedItem?.title}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -448,7 +476,7 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
                 id="comment"
                 placeholder={`Add a comment for ${approvalAction === 'approve' ? 'approval' : 'rejection'}...`}
                 value={approvalComment}
-                onChange={(e) => setApprovalComment(e.target.value)}
+                onChange={e => setApprovalComment(e.target.value)}
               />
             </div>
           </div>
@@ -468,4 +496,4 @@ export function SuperAdminApprovals({ className }: SuperAdminApprovalsProps) {
       </Dialog>
     </div>
   );
-} 
+}

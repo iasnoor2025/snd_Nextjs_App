@@ -1,10 +1,9 @@
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { NextRequest, NextResponse } from 'next/server';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-
+import { existsSync, mkdirSync } from 'fs';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
 
 // Initialize S3 client
 const s3Config: any = {
@@ -106,10 +105,10 @@ export async function POST(_request: NextRequest) {
       await s3Client.send(uploadCommand);
 
       // Generate URL
-      const baseUrl = process.env.S3_ENDPOINT 
+      const baseUrl = process.env.S3_ENDPOINT
         ? process.env.S3_ENDPOINT.replace('https://', '').replace('http://', '')
         : `${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com`;
-      
+
       const fileUrl = `https://${baseUrl}/${key}`;
 
       console.log(`File uploaded successfully: ${fileUrl}`);
@@ -125,11 +124,11 @@ export async function POST(_request: NextRequest) {
       });
     } catch (s3Error) {
       console.error('S3 upload error:', s3Error);
-      
+
       // Fallback to local storage if S3 fails
       try {
         const uploadDir = join(process.cwd(), 'public', 'uploads', folder);
-        
+
         // Create directory if it doesn't exist
         if (!existsSync(uploadDir)) {
           mkdirSync(uploadDir, { recursive: true });
@@ -167,7 +166,8 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to upload file: ' + (error instanceof Error ? error.message : 'Unknown error'),
+        message:
+          'Failed to upload file: ' + (error instanceof Error ? error.message : 'Unknown error'),
       },
       { status: 500 }
     );
@@ -179,4 +179,4 @@ export const config = {
   api: {
     bodyParser: false,
   },
-}; 
+};

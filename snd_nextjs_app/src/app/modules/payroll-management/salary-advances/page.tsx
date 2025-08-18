@@ -1,35 +1,48 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Eye,
-  Download,
-  RefreshCw,
-  FileText,
-  CheckCircle,
-  XCircle,
-  ChevronLeft,
-  ChevronRight
-} from "lucide-react";
-import { toast } from "sonner";
-import Link from "next/link";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import {
   Pagination,
   PaginationItem,
   PaginationLink,
   PaginationNext,
-  PaginationPrevious
-} from "@/components/ui/pagination";
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Edit,
+  Eye,
+  FileText,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+  XCircle,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 
 interface SalaryAdvance {
   id: string;
@@ -57,58 +70,62 @@ interface PaginatedResponse {
 export default function SalaryAdvancesPage() {
   const [advances, setAdvances] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
 
-  const mockAdvances = useMemo(() => [
-    {
-      id: "1",
-      employee_name: "John Doe",
-      employee_id: "EMP001",
-      amount: 2000,
-      reason: "Medical emergency",
-      request_date: "2024-01-15",
-      approval_date: "2024-01-16",
-      status: "approved",
-      approved_by: "HR Manager",
-      repayment_schedule: "3 months"
-    },
-    {
-      id: "2",
-      employee_name: "Jane Smith",
-      employee_id: "EMP002",
-      amount: 1500,
-      reason: "Home repair",
-      request_date: "2024-01-20",
-      status: "pending",
-      repayment_schedule: "2 months"
-    },
-    {
-      id: "3",
-      employee_name: "Bob Johnson",
-      employee_id: "EMP003",
-      amount: 3000,
-      reason: "Education expenses",
-      request_date: "2024-01-10",
-      approval_date: "2024-01-12",
-      status: "rejected",
-      approved_by: "HR Manager"
-    }
-  ], []);
+  const mockAdvances = useMemo(
+    () => [
+      {
+        id: '1',
+        employee_name: 'John Doe',
+        employee_id: 'EMP001',
+        amount: 2000,
+        reason: 'Medical emergency',
+        request_date: '2024-01-15',
+        approval_date: '2024-01-16',
+        status: 'approved',
+        approved_by: 'HR Manager',
+        repayment_schedule: '3 months',
+      },
+      {
+        id: '2',
+        employee_name: 'Jane Smith',
+        employee_id: 'EMP002',
+        amount: 1500,
+        reason: 'Home repair',
+        request_date: '2024-01-20',
+        status: 'pending',
+        repayment_schedule: '2 months',
+      },
+      {
+        id: '3',
+        employee_name: 'Bob Johnson',
+        employee_id: 'EMP003',
+        amount: 3000,
+        reason: 'Education expenses',
+        request_date: '2024-01-10',
+        approval_date: '2024-01-12',
+        status: 'rejected',
+        approved_by: 'HR Manager',
+      },
+    ],
+    []
+  );
 
   useEffect(() => {
     // Simulate API call
     setTimeout(() => {
       const filteredData = mockAdvances.filter(advance => {
-        const matchesSearch = advance.employee_name.toLowerCase().includes(search.toLowerCase()) ||
-                            advance.reason.toLowerCase().includes(search.toLowerCase());
-        const matchesStatus = status === "all" || advance.status === status;
+        const matchesSearch =
+          advance.employee_name.toLowerCase().includes(search.toLowerCase()) ||
+          advance.reason.toLowerCase().includes(search.toLowerCase());
+        const matchesStatus = status === 'all' || advance.status === status;
         return matchesSearch && matchesStatus;
       });
 
       const total = filteredData.length;
-          const lastPage: number = Math.ceil(total / 10);
+      const lastPage: number = Math.ceil(total / 10);
       const startIndex = (currentPage - 1) * 10;
       const endIndex = startIndex + 10;
       const paginatedData = filteredData.slice(startIndex, endIndex);
@@ -120,7 +137,7 @@ export default function SalaryAdvancesPage() {
         per_page: 10,
         total,
         next_page_url: currentPage < lastPage ? `/advances?page=${currentPage + 1}` : null,
-        prev_page_url: currentPage > 1 ? `/advances?page=${currentPage - 1}` : null
+        prev_page_url: currentPage > 1 ? `/advances?page=${currentPage - 1}` : null,
       });
       setLoading(false);
     }, 500);
@@ -128,44 +145,44 @@ export default function SalaryAdvancesPage() {
 
   const handleApprove = async (advanceId: string) => {
     try {
-      toast.loading("Approving advance...");
+      toast.loading('Approving advance...');
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success("Advance approved successfully");
+      toast.success('Advance approved successfully');
     } catch {
-      toast.error("Failed to approve advance");
+      toast.error('Failed to approve advance');
     }
   };
 
   const handleReject = async (advanceId: string) => {
     try {
-      toast.loading("Rejecting advance...");
+      toast.loading('Rejecting advance...');
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success("Advance rejected successfully");
+      toast.success('Advance rejected successfully');
     } catch {
-      toast.error("Failed to reject advance");
+      toast.error('Failed to reject advance');
     }
   };
 
   const handleDelete = async (advanceId: string) => {
     try {
-      toast.loading("Deleting advance...");
+      toast.loading('Deleting advance...');
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success("Advance deleted successfully");
+      toast.success('Advance deleted successfully');
     } catch {
-      toast.error("Failed to delete advance");
+      toast.error('Failed to delete advance');
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "approved":
+      case 'approved':
         return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
-      case "pending":
+      case 'pending':
         return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      case "rejected":
+      case 'rejected':
         return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
@@ -180,7 +197,7 @@ export default function SalaryAdvancesPage() {
           <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
         </div>
         <div className="space-y-4">
-      {[...Array(5)].map((_, i: number) => (
+          {[...Array(5)].map((_, i: number) => (
             <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
           ))}
         </div>
@@ -214,7 +231,7 @@ export default function SalaryAdvancesPage() {
               <Input
                 placeholder="Search advances..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={e => setSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -238,14 +255,10 @@ export default function SalaryAdvancesPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Salary Advances</CardTitle>
-              <CardDescription>
-                Manage employee salary advance requests
-              </CardDescription>
+              <CardDescription>Manage employee salary advance requests</CardDescription>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-500">
-                {advances?.total || 0} advance requests
-              </span>
+              <span className="text-sm text-gray-500">{advances?.total || 0} advance requests</span>
             </div>
           </div>
         </CardHeader>
@@ -263,7 +276,7 @@ export default function SalaryAdvancesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {advances?.data.map((advance) => (
+              {advances?.data.map(advance => (
                 <TableRow key={advance.id}>
                   <TableCell>
                     <div>
@@ -279,7 +292,7 @@ export default function SalaryAdvancesPage() {
                   </TableCell>
                   <TableCell>{new Date(advance.request_date).toLocaleDateString()}</TableCell>
                   <TableCell>{getStatusBadge(advance.status)}</TableCell>
-                  <TableCell>{advance.repayment_schedule || "N/A"}</TableCell>
+                  <TableCell>{advance.repayment_schedule || 'N/A'}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end space-x-2">
                       <Link href={`/modules/payroll-management/salary-advances/${advance.id}`}>
@@ -287,7 +300,7 @@ export default function SalaryAdvancesPage() {
                           <Eye className="h-4 w-4" />
                         </Button>
                       </Link>
-                      {advance.status === "pending" && (
+                      {advance.status === 'pending' && (
                         <>
                           <Button
                             variant="ghost"
@@ -327,8 +340,8 @@ export default function SalaryAdvancesPage() {
         <div className="mt-6">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-500">
-              Showing {((advances.current_page - 1) * advances.per_page) + 1} to{" "}
-              {Math.min(advances.current_page * advances.per_page, advances.total)} of{" "}
+              Showing {(advances.current_page - 1) * advances.per_page + 1} to{' '}
+              {Math.min(advances.current_page * advances.per_page, advances.total)} of{' '}
               {advances.total} results
             </div>
             <div className="flex items-center gap-2">
@@ -362,7 +375,7 @@ export default function SalaryAdvancesPage() {
 
                 {/* Current page and surrounding pages */}
                 {(() => {
-            const pages: number[] = [];
+                  const pages: number[] = [];
                   const startPage = Math.max(1, advances.current_page - 1);
                   const endPage = Math.min(advances.last_page, advances.current_page + 1);
 
@@ -370,10 +383,10 @@ export default function SalaryAdvancesPage() {
                     pages.push(page);
                   }
 
-                  return pages.map((page) => (
+                  return pages.map(page => (
                     <Button
                       key={page}
-                      variant={advances.current_page === page ? "default" : "outline"}
+                      variant={advances.current_page === page ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setCurrentPage(page)}
                       className="w-8 h-8 p-0"
@@ -404,7 +417,9 @@ export default function SalaryAdvancesPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(Math.min(advances.last_page, advances.current_page + 1))}
+                onClick={() =>
+                  setCurrentPage(Math.min(advances.last_page, advances.current_page + 1))
+                }
                 disabled={advances.current_page === advances.last_page}
               >
                 Next

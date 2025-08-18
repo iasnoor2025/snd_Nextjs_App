@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -53,7 +53,7 @@ export async function GET(_request: NextRequest) {
         headers: {
           'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
+          Connection: 'keep-alive',
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Allow-Headers': 'Cache-Control',
         },
@@ -98,4 +98,4 @@ export async function POST(_request: NextRequest) {
     console.error('SSE POST error:', error);
     return new NextResponse('Internal Server Error', { status: 500 });
   }
-} 
+}

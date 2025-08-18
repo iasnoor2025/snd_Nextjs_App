@@ -1,10 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from 'next-auth';
-import { db } from '@/lib/db';
-import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
-import { employees as employeesTable, advancePayments, advancePaymentHistories } from '@/lib/drizzle/schema';
+import { db } from '@/lib/db';
+import {
+  advancePaymentHistories,
+  advancePayments,
+  employees as employeesTable,
+} from '@/lib/drizzle/schema';
+import { withAuth } from '@/lib/rbac/api-middleware';
 import { and, eq, or } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Explicit route configuration for Next.js 15
 export const dynamic = 'force-dynamic';
@@ -20,23 +24,17 @@ const getEmployeePaymentsHandler = async (
     const employeeId = parseInt(resolvedParams.id);
 
     if (!employeeId) {
-      return NextResponse.json(
-        { error: "Employee ID is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Employee ID is required' }, { status: 400 });
     }
 
     // Get session to check user role
     const session = await getServerSession(authConfig);
     const user = session?.user;
-    
+
     // For employee users, ensure they can only access their own payment data
     if (user?.role === 'EMPLOYEE') {
       if (!user.national_id) {
-        return NextResponse.json(
-          { error: "Missing national ID on user account" },
-          { status: 403 }
-        );
+        return NextResponse.json({ error: 'Missing national ID on user account' }, { status: 403 });
       }
       // Find employee record that matches user's national_id
       const ownEmployeeRows = await db
@@ -44,12 +42,12 @@ const getEmployeePaymentsHandler = async (
         .from(employeesTable)
         .where(eq(employeesTable.iqamaNumber, user.national_id))
         .limit(1);
-      
+
       const ownEmployee = ownEmployeeRows[0];
-      
+
       if (ownEmployee && employeeId !== ownEmployee.id) {
         return NextResponse.json(
-          { error: "You can only access your own payment data" },
+          { error: 'You can only access your own payment data' },
           { status: 403 }
         );
       }
@@ -67,7 +65,7 @@ const getEmployeePaymentsHandler = async (
       .limit(1);
 
     if (employeeRows.length === 0) {
-      return NextResponse.json({ error: "Employee not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
     const employee = employeeRows[0];
@@ -86,47 +84,58 @@ const getEmployeePaymentsHandler = async (
       .orderBy(advancePaymentHistories.paymentDate);
 
     // Group payments by month
-    const monthlyHistory = paymentHistoryRows.reduce((acc: Record<string, {
-      month: string;
-      total_amount: number;
-      payments: Array<{
-        id: number;
-        amount: number;
-        payment_date: string;
-        notes: string | null;
-        recorded_by: string;
-        advance_payment_id: number;
-      }>;
-    }>, payment) => {
-      const monthKey = new Date(payment.payment_date).toISOString().slice(0, 7); // YYYY-MM
-      const monthName = new Date(payment.payment_date).toLocaleDateString('en-US', { 
-        month: 'long', 
-        year: 'numeric' 
-      });
+    const monthlyHistory = paymentHistoryRows.reduce(
+      (
+        acc: Record<
+          string,
+          {
+            month: string;
+            total_amount: number;
+            payments: Array<{
+              id: number;
+              amount: number;
+              payment_date: string;
+              notes: string | null;
+              recorded_by: string;
+              advance_payment_id: number;
+            }>;
+          }
+        >,
+        payment
+      ) => {
+        const monthKey = new Date(payment.payment_date).toISOString().slice(0, 7); // YYYY-MM
+        const monthName = new Date(payment.payment_date).toLocaleDateString('en-US', {
+          month: 'long',
+          year: 'numeric',
+        });
 
-      if (!acc[monthKey]) {
-        acc[monthKey] = {
-          month: monthName,
-          total_amount: 0,
-          payments: []
-        };
-      }
+        if (!acc[monthKey]) {
+          acc[monthKey] = {
+            month: monthName,
+            total_amount: 0,
+            payments: [],
+          };
+        }
 
-      acc[monthKey].total_amount += Number(payment.amount);
-      acc[monthKey].payments.push({
-        id: payment.id,
-        amount: Number(payment.amount),
-        payment_date: payment.payment_date.slice(0, 10), // YYYY-MM-DD
-        notes: payment.notes,
-        recorded_by: 'System', // TODO: Add user lookup
-        advance_payment_id: payment.advance_payment_id,
-      });
+        acc[monthKey].total_amount += Number(payment.amount);
+        acc[monthKey].payments.push({
+          id: payment.id,
+          amount: Number(payment.amount),
+          payment_date: payment.payment_date.slice(0, 10), // YYYY-MM-DD
+          notes: payment.notes,
+          recorded_by: 'System', // TODO: Add user lookup
+          advance_payment_id: payment.advance_payment_id,
+        });
 
-      return acc;
-    }, {});
+        return acc;
+      },
+      {}
+    );
 
     // Flatten all payments from all months
-    const payments = (Object.values(monthlyHistory) as Array<{ payments: { amount: number }[] }>).flatMap(month => month.payments);
+    const payments = (
+      Object.values(monthlyHistory) as Array<{ payments: { amount: number }[] }>
+    ).flatMap(month => month.payments);
 
     // Get active advances using Drizzle
     const activeAdvancesRows = await db
@@ -140,16 +149,16 @@ const getEmployeePaymentsHandler = async (
       .where(
         and(
           eq(advancePayments.employeeId, employeeId),
-          or(
-            eq(advancePayments.status, 'approved'),
-            eq(advancePayments.status, 'partially_repaid')
-          )
+          or(eq(advancePayments.status, 'approved'), eq(advancePayments.status, 'partially_repaid'))
         )
       )
       .orderBy(advancePayments.createdAt);
 
     // Calculate summary statistics
-    const totalAdvanceAmount = activeAdvancesRows.reduce((sum, advance) => sum + Number(advance.amount), 0);
+    const totalAdvanceAmount = activeAdvancesRows.reduce(
+      (sum, advance) => sum + Number(advance.amount),
+      0
+    );
     const totalPaidAmount = payments.reduce((sum, payment) => sum + payment.amount, 0);
     const remainingBalance = totalAdvanceAmount - totalPaidAmount;
 
@@ -176,12 +185,9 @@ const getEmployeePaymentsHandler = async (
     return NextResponse.json(response);
   } catch (error) {
     console.error('Error fetching employee payments:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch employee payments' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch employee payments' }, { status: 500 });
   }
 };
 
 // Export the wrapped handler
-export const GET = withAuth(getEmployeePaymentsHandler); 
+export const GET = withAuth(getEmployeePaymentsHandler);

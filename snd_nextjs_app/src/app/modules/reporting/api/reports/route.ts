@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { analyticsReports } from '@/lib/drizzle/schema';
-import { eq, like, desc, asc, and, or, sql } from 'drizzle-orm';
-import { authOptions } from '@/lib/auth-config';
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
+import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -72,7 +72,7 @@ export async function GET(_request: NextRequest) {
       db
         .select({ count: sql<number>`count(*)` })
         .from(analyticsReports)
-        .where(whereExpr)
+        .where(whereExpr),
     ]);
 
     const total = Number(totalResult[0]?.count || 0);
@@ -89,10 +89,7 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching reports:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -113,10 +110,7 @@ export async function POST(_request: NextRequest) {
     const { name, type, description, schedule, parameters } = body;
 
     if (!name || !type) {
-      return NextResponse.json(
-        { error: 'Name and type are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Name and type are required' }, { status: 400 });
     }
 
     const reportRows = await db
@@ -140,9 +134,6 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json(report, { status: 201 });
   } catch (error) {
     console.error('Error creating report:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

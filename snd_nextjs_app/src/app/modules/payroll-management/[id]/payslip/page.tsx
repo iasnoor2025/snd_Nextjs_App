@@ -1,16 +1,41 @@
-"use client";
+'use client';
 
-import { useState, useEffect, use } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Download, Printer, FileText, User, Building, DollarSign, Clock, MapPin, Calendar } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { Separator } from "@/components/ui/separator";
-import { usePrint } from "@/hooks/use-print";
-import { loadJsPDF } from "@/lib/client-libraries";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { usePrint } from '@/hooks/use-print';
+import { loadJsPDF } from '@/lib/client-libraries';
+import {
+  ArrowLeft,
+  Building,
+  Calendar,
+  Clock,
+  DollarSign,
+  Download,
+  FileText,
+  MapPin,
+  Printer,
+  User,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { use, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 // Professional print styles to match the exact payslip layout
 const printStyles = `
@@ -602,10 +627,10 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   const { printRef: payslipRef, handlePrint } = usePrint({
     documentTitle: `Payslip-${id}`,
     waitForImages: true,
-    onPrintError: (error) => {
+    onPrintError: error => {
       console.error('Print error details:', error);
       // Continue with print even if there are image errors
-    }
+    },
   });
 
   useEffect(() => {
@@ -615,16 +640,16 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
         setLoading(true);
         const response = await fetch(`/api/payroll/${id}/payslip`);
         console.log('🔍 PAYSLIP FRONTEND - Response status:', response.status);
-        
+
         if (!response.ok) {
           const errorText = await response.text();
           console.error('🔍 PAYSLIP FRONTEND - Response not ok:', errorText);
           throw new Error(`Failed to fetch payslip data: ${response.status} ${errorText}`);
         }
-        
+
         const data = await response.json();
         console.log('🔍 PAYSLIP FRONTEND - Response data:', data);
-        
+
         if (data.success) {
           console.log('🔍 PAYSLIP FRONTEND - Payslip data received:', data.data);
           setPayslipData(data.data);
@@ -659,8 +684,6 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     };
   }, []);
 
-
-
   const handleDownload = async () => {
     setIsLoading(true);
     try {
@@ -669,7 +692,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
         method: 'GET',
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         const text = await response.text();
         toast.error('Failed to download PDF', { description: text });
@@ -711,47 +734,72 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   const handleDownloadPDF = async () => {
     try {
       const jsPDF = await loadJsPDF();
-      
+
       // Create PDF using jsPDF only (without html2canvas)
       const pdf = new jsPDF('landscape', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 20;
-      
+
       // Set font
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(24);
-      
+
       // Company header
       pdf.text('C.A.T. INTERNATIONAL L.L.L.C.', pageWidth / 2, margin, { align: 'center' });
-      
+
       pdf.setFontSize(14);
       pdf.setFont('helvetica', 'normal');
-      pdf.text('Equipment Rental & Construction Services', pageWidth / 2, margin + 15, { align: 'center' });
-      
+      pdf.text('Equipment Rental & Construction Services', pageWidth / 2, margin + 15, {
+        align: 'center',
+      });
+
       // Payslip title
       pdf.setFontSize(20);
       pdf.setFont('helvetica', 'bold');
       pdf.text('PAYSLIP', pageWidth / 2, margin + 40, { align: 'center' });
-      
+
       // Employee information
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'normal');
       const employeeName = payslipData?.employee?.full_name || 'Unknown Employee';
       const employeeId = payslipData?.employee?.file_number || payslipData?.employee?.id;
-      const monthName = new Date(payslipData?.payroll.year || 0, (payslipData?.payroll.month || 1) - 1).toLocaleDateString("en-US", { month: "long" });
-      
+      const monthName = new Date(
+        payslipData?.payroll.year || 0,
+        (payslipData?.payroll.month || 1) - 1
+      ).toLocaleDateString('en-US', { month: 'long' });
+
       pdf.text(`Employee: ${employeeName}`, margin, margin + 70);
       pdf.text(`Employee ID: ${employeeId}`, margin, margin + 85);
       pdf.text(`Month: ${monthName} ${payslipData?.payroll.year}`, margin, margin + 100);
-      
+
       // Salary details
-      pdf.text(`Basic Salary: ${formatCurrency(Number(payslipData?.payroll.base_salary || 0))}`, margin, margin + 125);
-      pdf.text(`Overtime: ${formatCurrency(Number(payslipData?.payroll.overtime_amount || 0))}`, margin, margin + 140);
-      pdf.text(`Bonus: ${formatCurrency(Number(payslipData?.payroll.bonus_amount || 0))}`, margin, margin + 155);
-      pdf.text(`Deductions: ${formatCurrency(Number(payslipData?.payroll.deduction_amount || 0))}`, margin, margin + 170);
-      pdf.text(`Final Amount: ${formatCurrency(Number(payslipData?.payroll.final_amount || 0))}`, margin, margin + 185);
-      
+      pdf.text(
+        `Basic Salary: ${formatCurrency(Number(payslipData?.payroll.base_salary || 0))}`,
+        margin,
+        margin + 125
+      );
+      pdf.text(
+        `Overtime: ${formatCurrency(Number(payslipData?.payroll.overtime_amount || 0))}`,
+        margin,
+        margin + 140
+      );
+      pdf.text(
+        `Bonus: ${formatCurrency(Number(payslipData?.payroll.bonus_amount || 0))}`,
+        margin,
+        margin + 155
+      );
+      pdf.text(
+        `Deductions: ${formatCurrency(Number(payslipData?.payroll.deduction_amount || 0))}`,
+        margin,
+        margin + 170
+      );
+      pdf.text(
+        `Final Amount: ${formatCurrency(Number(payslipData?.payroll.final_amount || 0))}`,
+        margin,
+        margin + 185
+      );
+
       // Save PDF
       pdf.save(`payslip_${employeeId}_${monthName}_${payslipData?.payroll.year}.pdf`);
       toast.success('Payslip PDF generated successfully');
@@ -762,9 +810,9 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "SAR",
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'SAR',
     }).format(amount);
   };
 
@@ -790,11 +838,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
           <h2 className="text-xl font-semibold">Payslip not found</h2>
           <p className="text-gray-600">The requested payslip could not be found.</p>
           <p className="text-sm text-gray-500 mt-2">Payroll ID: {id}</p>
-          <Button 
-            variant="outline" 
-            onClick={() => window.location.reload()} 
-            className="mt-4"
-          >
+          <Button variant="outline" onClick={() => window.location.reload()} className="mt-4">
             Retry
           </Button>
         </div>
@@ -805,10 +849,12 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   const { payroll, employee, attendanceData, company } = payslipData;
 
   // Add safety checks for employee data
-  const employeeName = employee ? 
-    (employee.full_name || `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || 'Unknown Employee') : 
-    'Unknown Employee';
-    
+  const employeeName = employee
+    ? employee.full_name ||
+      `${employee.first_name || ''} ${employee.last_name || ''}`.trim() ||
+      'Unknown Employee'
+    : 'Unknown Employee';
+
   // Debug the data
   console.log('🔍 PAYSLIP DEBUG - Raw payslipData:', payslipData);
   console.log('🔍 PAYSLIP DEBUG - Destructured attendanceData:', attendanceData);
@@ -832,13 +878,13 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
         <div className="text-center">
           <h2 className="text-xl font-semibold text-red-600">No Attendance Data</h2>
           <p className="text-gray-600">No attendance data available for this payroll period.</p>
-          <p className="text-sm text-gray-500 mt-2">Payroll ID: {payroll.id}, Month: {payroll.month}/{payroll.year}</p>
+          <p className="text-sm text-gray-500 mt-2">
+            Payroll ID: {payroll.id}, Month: {payroll.month}/{payroll.year}
+          </p>
         </div>
       </div>
     );
   }
-
-
 
   // Calculate total worked hours from attendance data - Convert Decimal to numbers
   const totalWorkedHoursFromAttendance = attendanceData.reduce((total, day) => {
@@ -853,11 +899,13 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   // Calculate days worked from attendance data (including Fridays with hours) - Convert Decimal to numbers
   const daysWorkedFromAttendance = attendanceData.reduce((count, day) => {
     // Count as worked if there are hours or overtime, regardless of day
-    return count + ((Number(day.hours) > 0 || Number(day.overtime) > 0) ? 1 : 0);
+    return count + (Number(day.hours) > 0 || Number(day.overtime) > 0 ? 1 : 0);
   }, 0);
 
   // Format dates
-  const monthName = new Date(payroll.year, payroll.month - 1).toLocaleDateString("en-US", { month: "long" });
+  const monthName = new Date(payroll.year, payroll.month - 1).toLocaleDateString('en-US', {
+    month: 'long',
+  });
   const startDate = new Date(payroll.year, payroll.month - 1, 1);
   const endDate = new Date(payroll.year, payroll.month, 0);
   const formattedStartDate = startDate.toLocaleDateString();
@@ -868,10 +916,10 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
 
   // Create calendar data for the month
   const calendarDays = attendanceData || [];
-  
+
   // Create a map of attendance data by date for easier lookup
   const attendanceMap = new Map();
-  
+
   if (attendanceData && Array.isArray(attendanceData)) {
     attendanceData.forEach(day => {
       // Extract just the date part (YYYY-MM-DD) from the API response
@@ -890,14 +938,14 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
           dateKey = dateString;
         }
       }
-      
+
       if (dateKey) {
         attendanceMap.set(dateKey, day);
         console.log(`🔍 PAYSLIP DEBUG - Added to attendanceMap: ${dateKey} ->`, day);
       }
     });
   }
-  
+
   console.log('🔍 PAYSLIP DEBUG - Final attendanceMap size:', attendanceMap.size);
   console.log('🔍 PAYSLIP DEBUG - AttendanceMap keys:', Array.from(attendanceMap.keys()));
 
@@ -905,20 +953,20 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   const absentDays = (() => {
     let absentCount = 0;
     const absentDates: string[] = [];
-    
+
     // Loop through all days in the month
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(payroll.year, payroll.month - 1, day);
       const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
       const isFriday = dayName === 'Fri';
-      
+
       // Create date string to check against attendance data
       const dateString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       const dayData = attendanceMap.get(dateString);
-      
+
       // Check if this day has hours worked
       const hasHoursWorked = dayData && (Number(dayData.hours) > 0 || Number(dayData.overtime) > 0);
-      
+
       if (isFriday) {
         // Special logic for Fridays
         if (hasHoursWorked) {
@@ -928,17 +976,21 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
           // Friday has no hours - check if it should be counted as absent
           const thursdayDate = new Date(payroll.year, payroll.month - 1, day - 1);
           const saturdayDate = new Date(payroll.year, payroll.month - 1, day + 1);
-          
+
           // Check if Thursday and Saturday are also absent (within month bounds)
           const thursdayString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(thursdayDate.getDate()).padStart(2, '0')}`;
           const saturdayString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(saturdayDate.getDate()).padStart(2, '0')}`;
-          
+
           const thursdayData = attendanceMap.get(thursdayString);
           const saturdayData = attendanceMap.get(saturdayString);
-          
-          const thursdayAbsent = !thursdayData || (Number(thursdayData.hours) === 0 && Number(thursdayData.overtime) === 0);
-          const saturdayAbsent = !saturdayData || (Number(saturdayData.hours) === 0 && Number(saturdayData.overtime) === 0);
-          
+
+          const thursdayAbsent =
+            !thursdayData ||
+            (Number(thursdayData.hours) === 0 && Number(thursdayData.overtime) === 0);
+          const saturdayAbsent =
+            !saturdayData ||
+            (Number(saturdayData.hours) === 0 && Number(saturdayData.overtime) === 0);
+
           // Count Friday as absent only if Thursday and Saturday are also absent
           if (thursdayAbsent && saturdayAbsent) {
             absentCount++;
@@ -953,36 +1005,45 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
         }
       }
     }
-    
+
     // Debug absent days calculation
     console.log('🔍 PAYSLIP DEBUG - Absent Days Calculation:', {
       totalDaysInMonth: daysInMonth,
       absentCount,
       absentDates,
       attendanceMapSize: attendanceMap.size,
-      sampleAttendanceData: Array.from(attendanceMap.entries()).slice(0, 3)
+      sampleAttendanceData: Array.from(attendanceMap.entries()).slice(0, 3),
     });
-    
+
     return absentCount;
   })();
 
   // Calculate totals for salary details - Convert Decimal to numbers
-  const totalAllowances = (Number(employee.food_allowance) || 0) + (Number(employee.housing_allowance) || 0) + (Number(employee.transport_allowance) || 0);
-  
+  const totalAllowances =
+    (Number(employee.food_allowance) || 0) +
+    (Number(employee.housing_allowance) || 0) +
+    (Number(employee.transport_allowance) || 0);
+
   // Calculate absent deduction: (Basic Salary / Total Days in Month) * Absent Days
   // Use total days in month (31) instead of working days
   const absentDeduction = absentDays > 0 ? (basicSalary / daysInMonth) * absentDays : 0;
-  
+
   // Debug absent calculation
   console.log('🔍 PAYSLIP DEBUG - Absent Calculation:', {
     totalDaysInMonth: daysInMonth,
     absentDays,
     basicSalary,
     absentDeduction,
-    calculation: `(${basicSalary} / ${daysInMonth}) * ${absentDays} = ${absentDeduction}`
+    calculation: `(${basicSalary} / ${daysInMonth}) * ${absentDays} = ${absentDeduction}`,
   });
-  
-  const netSalary = basicSalary + totalAllowances + overtimeAmount + bonusAmount - absentDeduction - advanceDeduction;
+
+  const netSalary =
+    basicSalary +
+    totalAllowances +
+    overtimeAmount +
+    bonusAmount -
+    absentDeduction -
+    advanceDeduction;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1002,7 +1063,8 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Payslip</h1>
               <p className="text-sm text-gray-600">
-                Employee: {loading ? 'Loading...' : (payslipData?.employee?.file_number|| 'Unknown Employee')}
+                Employee:{' '}
+                {loading ? 'Loading...' : payslipData?.employee?.file_number || 'Unknown Employee'}
               </p>
             </div>
           </div>
@@ -1047,16 +1109,17 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="bg-white p-2 rounded-lg shadow-md">
-                  <img 
-                    src="/snd-logo.png" 
-                    alt="SND Logo" 
+                  <img
+                    src="/snd-logo.png"
+                    alt="SND Logo"
                     className="w-12 h-12 object-contain"
-                    onError={(e) => {
+                    onError={e => {
                       console.warn('Logo failed to load, hiding image');
                       e.currentTarget.style.display = 'none';
                       // Add fallback text
                       const fallback = document.createElement('div');
-                      fallback.className = 'w-12 h-12 flex items-center justify-center text-xs font-bold text-gray-600 bg-gray-100 rounded';
+                      fallback.className =
+                        'w-12 h-12 flex items-center justify-center text-xs font-bold text-gray-600 bg-gray-100 rounded';
                       fallback.textContent = 'SND';
                       e.currentTarget.parentNode?.appendChild(fallback);
                     }}
@@ -1069,7 +1132,9 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
               </div>
               <div className="text-right">
                 <h2 className="text-lg font-semibold">Employee Pay Slip</h2>
-                <p className="text-sm opacity-90">{monthName} {payroll.year}</p>
+                <p className="text-sm opacity-90">
+                  {monthName} {payroll.year}
+                </p>
               </div>
             </div>
           </div>
@@ -1079,19 +1144,27 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
               {/* Employee Details */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">Employee Details</h3>
+                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">
+                  Employee Details
+                </h3>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center py-1 border-b border-gray-100">
                     <span className="text-xs text-gray-600 font-medium">File Number</span>
-                    <span className="text-xs font-semibold text-gray-900">{employee?.file_number || '-'}</span>
+                    <span className="text-xs font-semibold text-gray-900">
+                      {employee?.file_number || '-'}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center py-1 border-b border-gray-100">
                     <span className="text-xs text-gray-600 font-medium">Employee Name</span>
-                    <span className="text-xs font-semibold text-gray-900">{employeeName.toUpperCase()}</span>
+                    <span className="text-xs font-semibold text-gray-900">
+                      {employeeName.toUpperCase()}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center py-1 border-b border-gray-100">
                     <span className="text-xs text-gray-600 font-medium">Designation</span>
-                    <span className="text-xs font-semibold text-gray-900">{employee?.designation || '-'}</span>
+                    <span className="text-xs font-semibold text-gray-900">
+                      {employee?.designation || '-'}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center py-1">
                     <span className="text-xs text-gray-600 font-medium">Employee ID</span>
@@ -1102,19 +1175,27 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
 
               {/* Work Details */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">Work Details</h3>
+                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">
+                  Work Details
+                </h3>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center py-1 border-b border-gray-100">
                     <span className="text-xs text-gray-600 font-medium">Pay Period</span>
-                    <span className="text-xs font-semibold text-gray-900">{monthName} {payroll.year}</span>
+                    <span className="text-xs font-semibold text-gray-900">
+                      {monthName} {payroll.year}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center py-1 border-b border-gray-100">
                     <span className="text-xs text-gray-600 font-medium">Date Range</span>
-                    <span className="text-xs font-semibold text-gray-900">{formattedStartDate} - {formattedEndDate}</span>
+                    <span className="text-xs font-semibold text-gray-900">
+                      {formattedStartDate} - {formattedEndDate}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center py-1 border-b border-gray-100">
                     <span className="text-xs text-gray-600 font-medium">Status</span>
-                    <span className="text-xs font-semibold text-gray-900 capitalize">{payroll.status}</span>
+                    <span className="text-xs font-semibold text-gray-900 capitalize">
+                      {payroll.status}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center py-1">
                     <span className="text-xs text-gray-600 font-medium">Payroll ID</span>
@@ -1125,11 +1206,15 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
 
               {/* Salary Summary */}
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">Salary Summary</h3>
+                <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">
+                  Salary Summary
+                </h3>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center py-1 border-b border-gray-100">
                     <span className="text-xs text-gray-600 font-medium">Basic Salary</span>
-                    <span className="text-xs font-semibold text-green-700">{formatCurrency(basicSalary)}</span>
+                    <span className="text-xs font-semibold text-green-700">
+                      {formatCurrency(basicSalary)}
+                    </span>
                   </div>
                   {/* {employee?.food_allowance && employee.food_allowance > 0 && (
                     <div className="flex justify-between items-center py-1 border-b border-gray-200">
@@ -1151,11 +1236,15 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                   )} */}
                   <div className="flex justify-between items-center py-1 border-b border-gray-200">
                     <span className="text-xs text-gray-600 font-medium">Overtime Pay</span>
-                    <span className="text-xs font-semibold text-green-700">{formatCurrency(overtimeAmount)}</span>
+                    <span className="text-xs font-semibold text-green-700">
+                      {formatCurrency(overtimeAmount)}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center py-1">
                     <span className="text-xs text-gray-600 font-medium">Net Salary</span>
-                    <span className="text-xs font-semibold text-green-700">{formatCurrency(netSalary)}</span>
+                    <span className="text-xs font-semibold text-green-700">
+                      {formatCurrency(netSalary)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1163,23 +1252,33 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
 
             {/* Compact Attendance Record */}
             <div className="mb-4">
-              <h3 className="text-sm font-semibold text-gray-900 mb-2 pb-1 border-b border-gray-200">Attendance Record</h3>
+              <h3 className="text-sm font-semibold text-gray-900 mb-2 pb-1 border-b border-gray-200">
+                Attendance Record
+              </h3>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse rounded-lg overflow-hidden shadow-md">
                   <thead>
                     <tr>
                       {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day, idx) => (
-                        <th key={day} className="bg-gray-900 text-white font-semibold p-1 text-center text-xs">
+                        <th
+                          key={day}
+                          className="bg-gray-900 text-white font-semibold p-1 text-center text-xs"
+                        >
                           {day.toString().padStart(2, '0')}
                         </th>
                       ))}
                     </tr>
                     <tr>
-                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
-                        const date = new Date(`${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`);
+                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
+                        const date = new Date(
+                          `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`
+                        );
                         const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
                         return (
-                          <th key={`day-${day}`} className="bg-gray-900 text-gray-300 font-medium p-1 text-center text-xs">
+                          <th
+                            key={`day-${day}`}
+                            className="bg-gray-900 text-gray-300 font-medium p-1 text-center text-xs"
+                          >
                             {dayName.substring(0, 1).toUpperCase()}
                           </th>
                         );
@@ -1188,22 +1287,31 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                   </thead>
                   <tbody>
                     <tr>
-                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
                         // Create date string in YYYY-MM-DD format without timezone conversion
                         const dateString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                         const dayData = attendanceMap.get(dateString);
-                        const dayName = new Date(payroll.year, payroll.month - 1, day).toLocaleDateString('en-US', { weekday: 'short' });
+                        const dayName = new Date(
+                          payroll.year,
+                          payroll.month - 1,
+                          day
+                        ).toLocaleDateString('en-US', { weekday: 'short' });
                         const isFriday = dayName === 'Fri';
-                        
+
                         // Determine if absent - check if no timesheet entry exists or if hours are 0
-                        const isAbsent = !dayData || (Number(dayData.hours) === 0 && Number(dayData.overtime) === 0);
-                        
+                        const isAbsent =
+                          !dayData ||
+                          (Number(dayData.hours) === 0 && Number(dayData.overtime) === 0);
+
                         // Get the display value
                         let displayValue = '-';
                         let cellClass = 'bg-white';
-                        
+
                         // Priority: Regular hours > Friday logic > Absent
-                        if (dayData && (Number(dayData.hours) > 0 || Number(dayData.overtime) > 0)) {
+                        if (
+                          dayData &&
+                          (Number(dayData.hours) > 0 || Number(dayData.overtime) > 0)
+                        ) {
                           // Has hours worked
                           displayValue = `${Number(dayData.hours) || 0}`;
                           cellClass = 'bg-green-100 text-green-600';
@@ -1211,17 +1319,23 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                           // Friday with no hours - check if it should be marked as absent
                           const thursdayDate = new Date(payroll.year, payroll.month - 1, day - 1);
                           const saturdayDate = new Date(payroll.year, payroll.month - 1, day + 1);
-                          
+
                           // Check if Thursday and Saturday are also absent (within month bounds)
                           const thursdayString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(thursdayDate.getDate()).padStart(2, '0')}`;
                           const saturdayString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(saturdayDate.getDate()).padStart(2, '0')}`;
-                          
+
                           const thursdayData = attendanceMap.get(thursdayString);
                           const saturdayData = attendanceMap.get(saturdayString);
-                          
-                          const thursdayAbsent = !thursdayData || (Number(thursdayData.hours) === 0 && Number(thursdayData.overtime) === 0);
-                          const saturdayAbsent = !saturdayData || (Number(saturdayData.hours) === 0 && Number(saturdayData.overtime) === 0);
-                          
+
+                          const thursdayAbsent =
+                            !thursdayData ||
+                            (Number(thursdayData.hours) === 0 &&
+                              Number(thursdayData.overtime) === 0);
+                          const saturdayAbsent =
+                            !saturdayData ||
+                            (Number(saturdayData.hours) === 0 &&
+                              Number(saturdayData.overtime) === 0);
+
                           if (thursdayAbsent && saturdayAbsent) {
                             // Friday is absent (Thursday and Saturday are also absent)
                             displayValue = 'A';
@@ -1236,31 +1350,37 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                           displayValue = 'A';
                           cellClass = 'bg-red-100 text-red-600';
                         }
-                        
+
                         return (
-                          <td key={`attendance-${day}`} className={`border p-1 text-xs text-center ${cellClass}`}>
+                          <td
+                            key={`attendance-${day}`}
+                            className={`border p-1 text-xs text-center ${cellClass}`}
+                          >
                             {displayValue}
                           </td>
                         );
                       })}
                     </tr>
                     <tr>
-                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
+                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
                         // Create date string in YYYY-MM-DD format without timezone conversion
                         const dateString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                         const dayData = attendanceMap.get(dateString);
-                        
+
                         // Show overtime hours or dash
                         let displayValue = '-';
                         let cellClass = 'bg-white';
-                        
+
                         if (dayData && Number(dayData.overtime) > 0) {
                           displayValue = `${Number(dayData.overtime)}`;
                           cellClass = 'bg-orange-100 text-orange-600';
                         }
-                        
+
                         return (
-                          <td key={`overtime-${day}`} className={`border p-1 text-xs text-center ${cellClass}`}>
+                          <td
+                            key={`overtime-${day}`}
+                            className={`border p-1 text-xs text-center ${cellClass}`}
+                          >
                             {displayValue}
                           </td>
                         );
@@ -1270,7 +1390,11 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                 </table>
               </div>
               <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">
-                <span className="text-green-700 font-semibold">8</span> = regular hours, <span className="text-blue-700 font-semibold">More than 8</span> = overtime hours, <span className="text-red-700 font-semibold">A</span> = absent, <span className="font-semibold">F</span> = Friday (present if working days before/after)
+                <span className="text-green-700 font-semibold">8</span> = regular hours,{' '}
+                <span className="text-blue-700 font-semibold">More than 8</span> = overtime hours,{' '}
+                <span className="text-red-700 font-semibold">A</span> = absent,{' '}
+                <span className="font-semibold">F</span> = Friday (present if working days
+                before/after)
               </div>
             </div>
 
@@ -1282,34 +1406,50 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                 <div className="space-y-2">
                   {/* Hours Breakdown */}
                   <div className="mb-3">
-                    <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Hours Breakdown</h4>
+                    <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                      Hours Breakdown
+                    </h4>
                     <div className="space-y-1">
                       <div className="flex justify-between items-center py-1">
-                        <span className="text-xs text-gray-600 font-medium">Total Hours Worked</span>
-                        <span className="text-xs font-semibold text-gray-900">{totalWorkedHoursFromAttendance} hrs</span>
+                        <span className="text-xs text-gray-600 font-medium">
+                          Total Hours Worked
+                        </span>
+                        <span className="text-xs font-semibold text-gray-900">
+                          {totalWorkedHoursFromAttendance} hrs
+                        </span>
                       </div>
                       <div className="flex justify-between items-center py-1">
                         <span className="text-xs text-gray-600 font-medium">Regular Hours</span>
-                        <span className="text-xs font-semibold text-gray-900">{totalWorkedHoursFromAttendance - overtimeHoursFromAttendance} hrs</span>
+                        <span className="text-xs font-semibold text-gray-900">
+                          {totalWorkedHoursFromAttendance - overtimeHoursFromAttendance} hrs
+                        </span>
                       </div>
                       <div className="flex justify-between items-center py-1">
                         <span className="text-xs text-gray-600 font-medium">Overtime Hours</span>
-                        <span className="text-xs font-semibold text-green-700">{overtimeHoursFromAttendance} hrs</span>
+                        <span className="text-xs font-semibold text-green-700">
+                          {overtimeHoursFromAttendance} hrs
+                        </span>
                       </div>
                     </div>
                   </div>
 
                   {/* Attendance Summary */}
                   <div className="mb-3">
-                    <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Attendance Summary</h4>
+                    <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                      Attendance Summary
+                    </h4>
                     <div className="space-y-1">
                       <div className="flex justify-between items-center py-1">
                         <span className="text-xs text-gray-600 font-medium">Days Worked</span>
-                        <span className="text-xs font-semibold text-gray-900">{daysWorkedFromAttendance} days</span>
+                        <span className="text-xs font-semibold text-gray-900">
+                          {daysWorkedFromAttendance} days
+                        </span>
                       </div>
                       <div className="flex justify-between items-center py-1">
                         <span className="text-xs text-gray-600 font-medium">Absent Days</span>
-                        <span className="text-xs font-semibold text-red-700">{absentDays} days</span>
+                        <span className="text-xs font-semibold text-red-700">
+                          {absentDays} days
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1318,7 +1458,9 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                   <div className="border-t border-gray-200 pt-2">
                     <div className="flex justify-between items-center py-1">
                       <span className="text-xs text-gray-600 font-medium">Absent Deduction</span>
-                      <span className="text-xs font-semibold text-red-700">-{formatCurrency(absentDeduction)}</span>
+                      <span className="text-xs font-semibold text-red-700">
+                        -{formatCurrency(absentDeduction)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1330,33 +1472,49 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                 <div className="space-y-2">
                   {/* Earnings Section */}
                   <div className="mb-3">
-                    <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Earnings</h4>
+                    <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                      Earnings
+                    </h4>
                     <div className="space-y-1">
                       <div className="flex justify-between items-center py-1">
                         <span className="text-xs text-gray-600 font-medium">Basic Salary</span>
-                        <span className="text-xs font-semibold text-green-700">{formatCurrency(basicSalary)}</span>
+                        <span className="text-xs font-semibold text-green-700">
+                          {formatCurrency(basicSalary)}
+                        </span>
                       </div>
                       {Number(employee?.food_allowance) > 0 && (
                         <div className="flex justify-between items-center py-1">
                           <span className="text-xs text-gray-600 font-medium">Food Allowance</span>
-                          <span className="text-xs font-semibold text-gray-900">{formatCurrency(Number(employee.food_allowance))}</span>
+                          <span className="text-xs font-semibold text-gray-900">
+                            {formatCurrency(Number(employee.food_allowance))}
+                          </span>
                         </div>
                       )}
                       {Number(employee?.housing_allowance) > 0 && (
                         <div className="flex justify-between items-center py-1">
-                          <span className="text-xs text-gray-600 font-medium">Housing Allowance</span>
-                          <span className="text-xs font-semibold text-gray-900">{formatCurrency(Number(employee.housing_allowance))}</span>
+                          <span className="text-xs text-gray-600 font-medium">
+                            Housing Allowance
+                          </span>
+                          <span className="text-xs font-semibold text-gray-900">
+                            {formatCurrency(Number(employee.housing_allowance))}
+                          </span>
                         </div>
                       )}
                       {Number(employee?.transport_allowance) > 0 && (
                         <div className="flex justify-between items-center py-1">
-                          <span className="text-xs text-gray-600 font-medium">Transport Allowance</span>
-                          <span className="text-xs font-semibold text-gray-900">{formatCurrency(Number(employee.transport_allowance))}</span>
+                          <span className="text-xs text-gray-600 font-medium">
+                            Transport Allowance
+                          </span>
+                          <span className="text-xs font-semibold text-gray-900">
+                            {formatCurrency(Number(employee.transport_allowance))}
+                          </span>
                         </div>
                       )}
                       <div className="flex justify-between items-center py-1">
                         <span className="text-xs text-gray-600 font-medium">Overtime Pay</span>
-                        <span className="text-xs font-semibold text-green-700">{formatCurrency(overtimeAmount)}</span>
+                        <span className="text-xs font-semibold text-green-700">
+                          {formatCurrency(overtimeAmount)}
+                        </span>
                       </div>
                       {overtimeHoursFromAttendance > 0 && (
                         <div className="ml-4 space-y-1 text-xs text-gray-500">
@@ -1367,32 +1525,41 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                           <div className="flex justify-between items-center">
                             <span>Overtime Rate:</span>
                             <span>
-                              {employee?.overtime_fixed_rate && employee.overtime_fixed_rate > 0 
+                              {employee?.overtime_fixed_rate && employee.overtime_fixed_rate > 0
                                 ? `${formatCurrency(Number(employee.overtime_fixed_rate))}/hr (Fixed)`
-                                : `${employee?.overtime_rate_multiplier || 1.5}x (Basic/30/8)`
-                              }
+                                : `${employee?.overtime_rate_multiplier || 1.5}x (Basic/30/8)`}
                             </span>
                           </div>
                         </div>
                       )}
                       <div className="flex justify-between items-center py-1">
                         <span className="text-xs text-gray-600 font-medium">Bonus Amount</span>
-                        <span className="text-xs font-semibold text-green-700">{formatCurrency(bonusAmount)}</span>
+                        <span className="text-xs font-semibold text-green-700">
+                          {formatCurrency(bonusAmount)}
+                        </span>
                       </div>
                     </div>
                   </div>
 
                   {/* Deductions Section */}
                   <div className="mb-3">
-                    <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Deductions</h4>
+                    <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">
+                      Deductions
+                    </h4>
                     <div className="space-y-1">
                       <div className="flex justify-between items-center py-1">
-                        <span className="text-xs text-gray-600 font-medium">Absent Days Deduction</span>
-                        <span className="text-xs font-semibold text-red-700">-{formatCurrency(absentDeduction)}</span>
+                        <span className="text-xs text-gray-600 font-medium">
+                          Absent Days Deduction
+                        </span>
+                        <span className="text-xs font-semibold text-red-700">
+                          -{formatCurrency(absentDeduction)}
+                        </span>
                       </div>
                       <div className="flex justify-between items-center py-1">
                         <span className="text-xs text-gray-600 font-medium">Advance Deduction</span>
-                        <span className="text-xs font-semibold text-red-700">-{formatCurrency(advanceDeduction)}</span>
+                        <span className="text-xs font-semibold text-red-700">
+                          -{formatCurrency(advanceDeduction)}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1401,7 +1568,9 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                   <div className="border-t-2 border-gray-300 pt-2">
                     <div className="flex justify-between items-center py-2">
                       <span className="text-sm font-bold text-gray-900">Net Salary</span>
-                      <span className="text-sm font-bold text-green-700">{formatCurrency(netSalary)}</span>
+                      <span className="text-sm font-bold text-green-700">
+                        {formatCurrency(netSalary)}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1411,17 +1580,25 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
             {/* Compact Signatures Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
               <div className="text-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Chief Accountant</h4>
+                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+                  Chief Accountant
+                </h4>
                 <div className="text-sm font-semibold text-gray-900 mb-4">Samir Taima</div>
                 <div className="border-t border-gray-300 pt-1 text-xs text-gray-500">Signature</div>
               </div>
               <div className="text-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Verified By</h4>
-                <div className="text-sm font-semibold text-gray-900 mb-4">Salem Samhan Al-Dosri</div>
+                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+                  Verified By
+                </h4>
+                <div className="text-sm font-semibold text-gray-900 mb-4">
+                  Salem Samhan Al-Dosri
+                </div>
                 <div className="border-t border-gray-300 pt-1 text-xs text-gray-500">Signature</div>
               </div>
               <div className="text-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Employee</h4>
+                <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+                  Employee
+                </h4>
                 <div className="text-sm font-semibold text-gray-900 mb-4">{employeeName}</div>
                 <div className="border-t border-gray-300 pt-1 text-xs text-gray-500">Signature</div>
               </div>

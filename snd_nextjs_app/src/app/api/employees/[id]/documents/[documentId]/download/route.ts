@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { employeeDocuments } from '@/lib/drizzle/schema';
-import { eq, and } from 'drizzle-orm';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
-import { readFile } from 'fs/promises';
-import { join } from 'path';
+import { and, eq } from 'drizzle-orm';
 import { existsSync } from 'fs';
+import { readFile } from 'fs/promises';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { join } from 'path';
 
 export async function GET(
   _request: NextRequest,
@@ -15,7 +15,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const resolvedParams = await params;
@@ -23,10 +23,7 @@ export async function GET(
     const documentId = parseInt(resolvedParams.documentId);
 
     if (!employeeId || !documentId) {
-      return NextResponse.json(
-        { error: "Invalid employee ID or document ID" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid employee ID or document ID' }, { status: 400 });
     }
 
     // Get document from database
@@ -34,20 +31,14 @@ export async function GET(
       .select()
       .from(employeeDocuments)
       .where(
-        and(
-          eq(employeeDocuments.id, documentId),
-          eq(employeeDocuments.employeeId, employeeId)
-        )
+        and(eq(employeeDocuments.id, documentId), eq(employeeDocuments.employeeId, employeeId))
       )
       .limit(1);
-    
+
     const documentRecord = document[0];
 
     if (!documentRecord) {
-      return NextResponse.json(
-        { error: "Document not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
 
     // Construct file path
@@ -55,10 +46,7 @@ export async function GET(
 
     // Check if file exists
     if (!existsSync(filePath)) {
-      return NextResponse.json(
-        { error: "File not found on server" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'File not found on server' }, { status: 404 });
     }
 
     // Read file
@@ -77,9 +65,9 @@ export async function GET(
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to download document: ' + (error as Error).message
+        message: 'Failed to download document: ' + (error as Error).message,
       },
       { status: 500 }
     );
   }
-} 
+}

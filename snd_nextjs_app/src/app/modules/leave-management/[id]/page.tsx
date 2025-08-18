@@ -1,48 +1,47 @@
-"use client";
+'use client';
 
-import React from "react";
-import { useState, useEffect, useCallback, Suspense } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { 
-  ArrowLeft, 
-  Edit, 
-  Trash2, 
-  Calendar, 
-  User, 
-  FileText, 
-  Clock, 
-  CheckCircle, 
-  XCircle,
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Progress } from '@/components/ui/progress';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useI18n } from '@/hooks/use-i18n';
+import { useRBAC } from '@/lib/rbac/rbac-context';
+import {
   AlertTriangle,
-  Download,
-  Share2,
-  MoreHorizontal,
-  Eye,
-  History,
+  ArrowLeft,
+  Calendar,
   CalendarDays,
+  CheckCircle,
+  Clock,
+  Download,
+  Edit,
+  Eye,
+  FileText,
+  History,
+  MessageSquare,
+  MoreHorizontal,
+  Share2,
+  Trash2,
+  User,
   UserCheck,
-  MessageSquare
-} from "lucide-react";
-import { toast } from "sonner";
-import { useI18n } from "@/hooks/use-i18n";
-import { useRBAC } from "@/lib/rbac/rbac-context";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
-import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+  XCircle,
+} from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface LeaveRequest {
   id: string;
@@ -85,10 +84,7 @@ interface ErrorBoundaryState {
   error?: Error;
 }
 
-class ErrorBoundary extends React.Component<
-  React.PropsWithChildren<object>,
-  ErrorBoundaryState
-> {
+class ErrorBoundary extends React.Component<React.PropsWithChildren<object>, ErrorBoundaryState> {
   constructor(props: React.PropsWithChildren<object>) {
     super(props);
     this.state = { hasError: false };
@@ -112,9 +108,7 @@ class ErrorBoundary extends React.Component<
             <p className="text-muted-foreground">
               We encountered an error while loading the leave request details.
             </p>
-            <Button onClick={() => window.location.reload()}>
-              Try Again
-            </Button>
+            <Button onClick={() => window.location.reload()}>Try Again</Button>
           </div>
         </div>
       );
@@ -140,7 +134,7 @@ function LoadingSkeleton() {
           <Skeleton className="h-10 w-20" />
         </div>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
@@ -173,13 +167,13 @@ function LeaveRequestDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState('overview');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const fetchLeaveRequest = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch(`/api/leave-requests/${leaveId}`, {
         method: 'GET',
@@ -199,7 +193,7 @@ function LeaveRequestDetailPage() {
       }
 
       const data = await response.json();
-      
+
       if (!data.success) {
         throw new Error(data.error || 'Failed to load leave request');
       }
@@ -226,7 +220,7 @@ function LeaveRequestDetailPage() {
 
   const handleDelete = useCallback(async () => {
     if (!leaveRequest) return;
-    
+
     setDeleting(true);
     try {
       const response = await fetch(`/api/leave-requests/${leaveId}`, {
@@ -254,7 +248,7 @@ function LeaveRequestDetailPage() {
 
   const handleApprove = useCallback(async () => {
     if (!leaveRequest) return;
-    
+
     try {
       const response = await fetch(`/api/leave-requests/${leaveId}/approve`, {
         method: 'PUT',
@@ -279,10 +273,10 @@ function LeaveRequestDetailPage() {
 
   const handleReject = useCallback(async () => {
     if (!leaveRequest) return;
-    
+
     const reason = prompt('Please provide a reason for rejection:');
     if (!reason) return;
-    
+
     try {
       const response = await fetch(`/api/leave-requests/${leaveId}/reject`, {
         method: 'PUT',
@@ -311,14 +305,27 @@ function LeaveRequestDetailPage() {
   const getStatusBadge = useCallback((status: string) => {
     // Normalize status to handle both uppercase and lowercase
     const normalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
-    
+
     const statusConfig = {
-      'Pending': { variant: 'secondary' as const, icon: Clock, color: 'bg-yellow-100 text-yellow-800' },
-      'Approved': { variant: 'default' as const, icon: CheckCircle, color: 'bg-green-100 text-green-800' },
-      'Rejected': { variant: 'destructive' as const, icon: XCircle, color: 'bg-red-100 text-red-800' }
+      Pending: {
+        variant: 'secondary' as const,
+        icon: Clock,
+        color: 'bg-yellow-100 text-yellow-800',
+      },
+      Approved: {
+        variant: 'default' as const,
+        icon: CheckCircle,
+        color: 'bg-green-100 text-green-800',
+      },
+      Rejected: {
+        variant: 'destructive' as const,
+        icon: XCircle,
+        color: 'bg-red-100 text-red-800',
+      },
     };
 
-    const config = statusConfig[normalizedStatus as keyof typeof statusConfig] || statusConfig.Pending;
+    const config =
+      statusConfig[normalizedStatus as keyof typeof statusConfig] || statusConfig.Pending;
     const Icon = config.icon;
 
     return (
@@ -333,7 +340,7 @@ function LeaveRequestDetailPage() {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
   }, []);
 
@@ -343,7 +350,7 @@ function LeaveRequestDetailPage() {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   }, []);
 
@@ -457,26 +464,39 @@ function LeaveRequestDetailPage() {
 
         {/* Status Banner */}
         {(() => {
-          const normalizedStatus = leaveRequest.status.charAt(0).toUpperCase() + leaveRequest.status.slice(1).toLowerCase();
+          const normalizedStatus =
+            leaveRequest.status.charAt(0).toUpperCase() +
+            leaveRequest.status.slice(1).toLowerCase();
           return (
-            <Alert className={`border-l-4 ${
-              normalizedStatus === 'Approved' ? 'border-green-500 bg-green-50' :
-              normalizedStatus === 'Rejected' ? 'border-red-500 bg-red-50' :
-              'border-yellow-500 bg-yellow-50'
-            }`}>
+            <Alert
+              className={`border-l-4 ${
+                normalizedStatus === 'Approved'
+                  ? 'border-green-500 bg-green-50'
+                  : normalizedStatus === 'Rejected'
+                    ? 'border-red-500 bg-red-50'
+                    : 'border-yellow-500 bg-yellow-50'
+              }`}
+            >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  {normalizedStatus === 'Approved' ? <CheckCircle className="h-4 w-4 text-green-600" /> :
-                   normalizedStatus === 'Rejected' ? <XCircle className="h-4 w-4 text-red-600" /> :
-                   <Clock className="h-4 w-4 text-yellow-600" />}
+                  {normalizedStatus === 'Approved' ? (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  ) : normalizedStatus === 'Rejected' ? (
+                    <XCircle className="h-4 w-4 text-red-600" />
+                  ) : (
+                    <Clock className="h-4 w-4 text-yellow-600" />
+                  )}
                   <span className="font-medium">
-                    {normalizedStatus === 'Approved' ? 'Leave Request Approved' :
-                     normalizedStatus === 'Rejected' ? 'Leave Request Rejected' :
-                     normalizedStatus === 'Pending' ? 'Leave Request Pending Approval' :
-                     `Leave Request ${normalizedStatus}`}
+                    {normalizedStatus === 'Approved'
+                      ? 'Leave Request Approved'
+                      : normalizedStatus === 'Rejected'
+                        ? 'Leave Request Rejected'
+                        : normalizedStatus === 'Pending'
+                          ? 'Leave Request Pending Approval'
+                          : `Leave Request ${normalizedStatus}`}
                   </span>
                 </div>
-                {(normalizedStatus === 'Pending') && hasPermission('approve', 'Leave') && (
+                {normalizedStatus === 'Pending' && hasPermission('approve', 'Leave') && (
                   <div className="flex gap-2">
                     <Button size="sm" onClick={handleApprove}>
                       <CheckCircle className="h-4 w-4 mr-2" />
@@ -516,7 +536,12 @@ function LeaveRequestDetailPage() {
                   <div className="flex items-center gap-3">
                     <Avatar className="h-12 w-12">
                       <AvatarImage src={leaveRequest.employee_avatar} />
-                      <AvatarFallback>{leaveRequest.employee_name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                      <AvatarFallback>
+                        {leaveRequest.employee_name
+                          .split(' ')
+                          .map(n => n[0])
+                          .join('')}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
                       <p className="font-medium">{leaveRequest.employee_name}</p>
@@ -557,15 +582,21 @@ function LeaveRequestDetailPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Days Requested</span>
-                      <span className="text-sm font-medium">{leaveRequest.days_requested} days</span>
+                      <span className="text-sm font-medium">
+                        {leaveRequest.days_requested} days
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Start Date</span>
-                      <span className="text-sm font-medium">{formatDate(leaveRequest.start_date)}</span>
+                      <span className="text-sm font-medium">
+                        {formatDate(leaveRequest.start_date)}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">End Date</span>
-                      <span className="text-sm font-medium">{formatDate(leaveRequest.end_date)}</span>
+                      <span className="text-sm font-medium">
+                        {formatDate(leaveRequest.end_date)}
+                      </span>
                     </div>
                   </div>
                 </CardContent>
@@ -583,16 +614,25 @@ function LeaveRequestDetailPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Total Balance</span>
-                      <span className="text-sm font-medium">{leaveRequest.total_leave_balance || 0} days</span>
+                      <span className="text-sm font-medium">
+                        {leaveRequest.total_leave_balance || 0} days
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Used This Year</span>
-                      <span className="text-sm font-medium">{leaveRequest.leave_taken_this_year || 0} days</span>
+                      <span className="text-sm font-medium">
+                        {leaveRequest.leave_taken_this_year || 0} days
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Remaining</span>
                       <span className="text-sm font-medium">
-                        {Math.max(0, (leaveRequest.total_leave_balance || 0) - (leaveRequest.leave_taken_this_year || 0))} days
+                        {Math.max(
+                          0,
+                          (leaveRequest.total_leave_balance || 0) -
+                            (leaveRequest.leave_taken_this_year || 0)
+                        )}{' '}
+                        days
                       </span>
                     </div>
                     <div className="space-y-2">
@@ -635,7 +675,9 @@ function LeaveRequestDetailPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Submitted Date</span>
-                      <span className="text-sm font-medium">{formatDateTime(leaveRequest.submitted_date)}</span>
+                      <span className="text-sm font-medium">
+                        {formatDateTime(leaveRequest.submitted_date)}
+                      </span>
                     </div>
                     {leaveRequest.approved_by && (
                       <div className="flex justify-between">
@@ -646,7 +688,9 @@ function LeaveRequestDetailPage() {
                     {leaveRequest.approved_date && (
                       <div className="flex justify-between">
                         <span className="text-sm text-muted-foreground">Approved Date</span>
-                        <span className="text-sm font-medium">{formatDateTime(leaveRequest.approved_date)}</span>
+                        <span className="text-sm font-medium">
+                          {formatDateTime(leaveRequest.approved_date)}
+                        </span>
                       </div>
                     )}
                     {leaveRequest.comments && (
@@ -676,11 +720,15 @@ function LeaveRequestDetailPage() {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Created</span>
-                      <span className="text-sm font-medium">{formatDateTime(leaveRequest.created_at)}</span>
+                      <span className="text-sm font-medium">
+                        {formatDateTime(leaveRequest.created_at)}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Last Updated</span>
-                      <span className="text-sm font-medium">{formatDateTime(leaveRequest.updated_at)}</span>
+                      <span className="text-sm font-medium">
+                        {formatDateTime(leaveRequest.updated_at)}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-sm text-muted-foreground">Request ID</span>
@@ -700,8 +748,11 @@ function LeaveRequestDetailPage() {
               <CardContent>
                 {leaveRequest.attachments && leaveRequest.attachments.length > 0 ? (
                   <div className="space-y-3">
-                    {leaveRequest.attachments.map((attachment) => (
-                      <div key={attachment.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    {leaveRequest.attachments.map(attachment => (
+                      <div
+                        key={attachment.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
                         <div className="flex items-center gap-3">
                           <FileText className="h-5 w-5 text-muted-foreground" />
                           <div>
@@ -734,18 +785,21 @@ function LeaveRequestDetailPage() {
               <CardContent>
                 {leaveRequest.approval_history && leaveRequest.approval_history.length > 0 ? (
                   <div className="space-y-4">
-                    {leaveRequest.approval_history.map((history) => (
-                      <div key={history.id} className="flex items-start gap-3 p-3 border rounded-lg">
+                    {leaveRequest.approval_history.map(history => (
+                      <div
+                        key={history.id}
+                        className="flex items-start gap-3 p-3 border rounded-lg"
+                      >
                         <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-1">
                             <p className="font-medium">{history.action}</p>
-                            <span className="text-sm text-muted-foreground">{formatDateTime(history.date)}</span>
+                            <span className="text-sm text-muted-foreground">
+                              {formatDateTime(history.date)}
+                            </span>
                           </div>
                           <p className="text-sm text-muted-foreground">by {history.approver}</p>
-                          {history.comments && (
-                            <p className="text-sm mt-2">{history.comments}</p>
-                          )}
+                          {history.comments && <p className="text-sm mt-2">{history.comments}</p>}
                         </div>
                       </div>
                     ))}
@@ -758,25 +812,25 @@ function LeaveRequestDetailPage() {
                 )}
               </CardContent>
             </Card>
-                     </TabsContent>
-         </Tabs>
-       </div>
+          </TabsContent>
+        </Tabs>
+      </div>
 
-       {/* Confirmation Dialog */}
-       <ConfirmationDialog
-         open={showDeleteDialog}
-         onOpenChange={setShowDeleteDialog}
-         title="Delete Leave Request"
-         description="Are you sure you want to delete this leave request? This action cannot be undone."
-         confirmText="Delete"
-         cancelText="Cancel"
-         variant="destructive"
-         onConfirm={handleDelete}
-         loading={deleting}
-       />
-     </ErrorBoundary>
-   );
- }
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        title="Delete Leave Request"
+        description="Are you sure you want to delete this leave request? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="destructive"
+        onConfirm={handleDelete}
+        loading={deleting}
+      />
+    </ErrorBoundary>
+  );
+}
 
 export default function LeaveRequestDetailPageWrapper() {
   return (
@@ -784,4 +838,4 @@ export default function LeaveRequestDetailPageWrapper() {
       <LeaveRequestDetailPage />
     </Suspense>
   );
-} 
+}

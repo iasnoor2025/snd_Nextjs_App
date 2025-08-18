@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
-import { checkUserPermission } from './permission-service';
-import { Action, Subject } from './custom-rbac';
 import { db } from '@/lib/db';
-import { users, modelHasRoles, roles, employees } from '@/lib/drizzle/schema';
+import { employees, modelHasRoles, roles, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { Action, Subject } from './custom-rbac';
+import { checkUserPermission } from './permission-service';
 
 export interface PermissionConfig {
   action: Action;
@@ -34,11 +34,7 @@ export async function checkApiPermission(
     }
 
     // Check primary permission
-    const permissionCheck = await checkUserPermission(
-      userId,
-      config.action,
-      config.subject
-    );
+    const permissionCheck = await checkUserPermission(userId, config.action, config.subject);
 
     if (permissionCheck.hasPermission) {
       return { authorized: true, user: session.user };
@@ -98,13 +94,16 @@ export async function checkEmployeeAccess(
       .leftJoin(modelHasRoles, eq(modelHasRoles.userId, users.id))
       .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
       .where(eq(users.id, parseInt(userId)));
-    const user = userRows.length > 0
-      ? {
-          id: userRows[0]?.id,
-          national_id: userRows[0]?.national_id,
-          user_roles: userRows.filter(r => r.roleName).map(r => ({ role: { name: r.roleName! } })),
-        }
-      : null;
+    const user =
+      userRows.length > 0
+        ? {
+            id: userRows[0]?.id,
+            national_id: userRows[0]?.national_id,
+            user_roles: userRows
+              .filter(r => r.roleName)
+              .map(r => ({ role: { name: r.roleName! } })),
+          }
+        : null;
 
     if (!user) {
       return { authorized: false, error: 'User not found' };
@@ -117,10 +116,10 @@ export async function checkEmployeeAccess(
     }
 
     console.log('🔍 User role:', userRole.name);
-    console.log('🔍 User role comparison:', { 
+    console.log('🔍 User role comparison:', {
       isEmployee: userRole.name === 'employee',
       isEmployeeLower: userRole.name === 'employee'.toLowerCase(),
-      roleName: userRole.name 
+      roleName: userRole.name,
     });
 
     // If user is admin or has manage permissions, allow access
@@ -156,10 +155,10 @@ export async function checkEmployeeAccess(
       if (user.national_id && employee.iqama_number && user.national_id === employee.iqama_number) {
         return { authorized: true, user: session.user };
       } else {
-        return { 
-          authorized: false, 
+        return {
+          authorized: false,
           error: 'Access denied: Your national ID does not match this employee record',
-          user: session.user 
+          user: session.user,
         };
       }
     }
@@ -216,13 +215,16 @@ export async function checkEmployeeOwnDataAccess(
       .leftJoin(modelHasRoles, eq(modelHasRoles.userId, users.id))
       .leftJoin(roles, eq(roles.id, modelHasRoles.roleId))
       .where(eq(users.id, parseInt(userId)));
-    const user = userRows.length > 0
-      ? {
-          id: userRows[0]?.id,
-          national_id: userRows[0]?.national_id,
-          user_roles: userRows.filter(r => r.roleName).map(r => ({ role: { name: r.roleName! } })),
-        }
-      : null;
+    const user =
+      userRows.length > 0
+        ? {
+            id: userRows[0]?.id,
+            national_id: userRows[0]?.national_id,
+            user_roles: userRows
+              .filter(r => r.roleName)
+              .map(r => ({ role: { name: r.roleName! } })),
+          }
+        : null;
 
     if (!user) {
       return { authorized: false, error: 'User not found' };
@@ -260,29 +262,29 @@ export async function checkEmployeeOwnDataAccess(
       const ownEmployee = ownRows[0];
 
       if (!ownEmployee) {
-        return { 
-          authorized: false, 
+        return {
+          authorized: false,
           error: 'No employee record found for your national ID',
-          user: session.user 
+          user: session.user,
         };
       }
 
       // If a specific employee ID is provided, check if it matches the user's own employee record
       if (employeeId) {
         if (employeeId !== ownEmployee.id) {
-          return { 
-            authorized: false, 
+          return {
+            authorized: false,
             error: 'Access denied: You can only access your own employee data',
-            user: session.user 
+            user: session.user,
           };
         }
       }
 
       // Return the user's own employee ID for filtering purposes
-      return { 
-        authorized: true, 
-        user: session.user, 
-        ownEmployeeId: ownEmployee.id 
+      return {
+        authorized: true,
+        user: session.user,
+        ownEmployeeId: ownEmployee.id,
       };
     }
 
@@ -307,18 +309,18 @@ export async function checkEmployeeOwnDataAccess(
       const ownEmployee = ownRows2[0];
 
       if (!ownEmployee) {
-        return { 
-          authorized: false, 
+        return {
+          authorized: false,
           error: 'No employee record found for your national ID',
-          user: session.user 
+          user: session.user,
         };
       }
 
       // Return the user's own employee ID for filtering purposes
-      return { 
-        authorized: true, 
-        user: session.user, 
-        ownEmployeeId: ownEmployee.id 
+      return {
+        authorized: true,
+        user: session.user,
+        ownEmployeeId: ownEmployee.id,
       };
     }
 
@@ -342,7 +344,7 @@ export function withPermission(
 ) {
   return async (request: NextRequest, params?: any): Promise<NextResponse> => {
     const permissionResult = await checkApiPermission(request, config);
-    
+
     if (!permissionResult.authorized) {
       return NextResponse.json(
         { error: permissionResult.error || 'Insufficient permissions' },
@@ -364,7 +366,7 @@ export function withEmployeePermission(
   return async (request: NextRequest, params?: any): Promise<NextResponse> => {
     const employeeId = employeeIdExtractor(params);
     const permissionResult = await checkEmployeeAccess(request, employeeId);
-    
+
     if (!permissionResult.authorized) {
       return NextResponse.json(
         { error: permissionResult.error || 'Insufficient permissions' },
@@ -380,11 +382,14 @@ export function withEmployeePermission(
  * Higher-order function for employee list routes that filters data for employee users
  */
 export function withEmployeeListPermission(
-  handler: (request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } }, params?: any) => Promise<NextResponse>
+  handler: (
+    request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } },
+    params?: any
+  ) => Promise<NextResponse>
 ) {
   return async (request: NextRequest, params?: any): Promise<NextResponse> => {
     const accessResult = await checkEmployeeOwnDataAccess(request);
-    
+
     if (!accessResult.authorized) {
       return NextResponse.json(
         { error: accessResult.error || 'Insufficient permissions' },
@@ -393,14 +398,16 @@ export function withEmployeeListPermission(
     }
 
     // Add the ownEmployeeId to the request context for the handler to use
-    const enhancedRequest = request as NextRequest & { 
-      employeeAccess: { 
-        ownEmployeeId?: number; 
-        user: any 
-      } 
+    const enhancedRequest = request as NextRequest & {
+      employeeAccess: {
+        ownEmployeeId?: number;
+        user: any;
+      };
     };
     enhancedRequest.employeeAccess = {
-      ...(accessResult.ownEmployeeId !== undefined && { ownEmployeeId: accessResult.ownEmployeeId }),
+      ...(accessResult.ownEmployeeId !== undefined && {
+        ownEmployeeId: accessResult.ownEmployeeId,
+      }),
       user: accessResult.user,
     };
 
@@ -422,20 +429,14 @@ export function withReadPermission(
     try {
       const session = await getServerSession(authConfig);
       if (!session?.user) {
-        return NextResponse.json(
-          { error: 'Unauthorized' },
-          { status: 401 }
-        );
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
-      
+
       // Allow access for now - we can add permission checks back later
       return handler(request, params);
     } catch (error) {
       console.error('Error in withReadPermission:', error);
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
   };
 }
@@ -629,10 +630,10 @@ export const PermissionConfigs = {
 
 /**
  * Example usage of the permission middleware:
- * 
+ *
  * // In your API route file:
  * import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
- * 
+ *
  * export const GET = withPermission(
  *   async (request: NextRequest) => {
  *     // Your API logic here
@@ -640,7 +641,7 @@ export const PermissionConfigs = {
  *   },
  *   PermissionConfigs.employee.read
  * );
- * 
+ *
  * export const POST = withPermission(
  *   async (request: NextRequest) => {
  *     // Your API logic here
@@ -648,34 +649,26 @@ export const PermissionConfigs = {
  *   },
  *   PermissionConfigs.employee.create
  * );
- */ 
+ */
 
 /**
  * Simple middleware function for employee users to access their own data
  * This bypasses permission checks for employee role users
  */
 // Simple authentication middleware - replaces withEmployeeOwnDataAccess
-export function withAuth(
-  handler: (request: NextRequest, params?: any) => Promise<NextResponse>
-) {
+export function withAuth(handler: (request: NextRequest, params?: any) => Promise<NextResponse>) {
   return async (request: NextRequest, params?: any): Promise<NextResponse> => {
     try {
       const session = await getServerSession(authConfig);
-      
+
       if (!session?.user) {
-        return NextResponse.json(
-          { error: 'Unauthorized' },
-          { status: 401 }
-        );
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
       return handler(request, params);
     } catch (error) {
       console.error('❌ Error in withAuth:', error);
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
   };
-} 
+}

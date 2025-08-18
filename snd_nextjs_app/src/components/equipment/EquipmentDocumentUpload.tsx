@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useCallback } from "react";
-import ApiService from "@/lib/api-service";
-import DocumentManager, { type DocumentItem } from "@/components/shared/DocumentManager";
+import DocumentManager, { type DocumentItem } from '@/components/shared/DocumentManager';
+import ApiService from '@/lib/api-service';
+import { useCallback } from 'react';
 
 interface EquipmentDocument {
   id: number;
@@ -19,9 +19,9 @@ interface EquipmentDocumentUploadProps {
   onDocumentsUpdated?: () => void;
 }
 
-export default function EquipmentDocumentUpload({ 
-  equipmentId, 
-  onDocumentsUpdated 
+export default function EquipmentDocumentUpload({
+  equipmentId,
+  onDocumentsUpdated,
 }: EquipmentDocumentUploadProps) {
   const loadDocuments = useCallback(async () => {
     const response = await ApiService.getEquipmentDocuments(equipmentId);
@@ -32,19 +32,25 @@ export default function EquipmentDocumentUpload({
     return [];
   }, [equipmentId]);
 
-  const uploadDocument = useCallback(async (file: File, extra?: Record<string, any>) => {
-    await ApiService.uploadEquipmentDocument(
-      equipmentId,
-      file,
-      (extra?.document_name as string) || file.name
-    );
-    onDocumentsUpdated?.();
-  }, [equipmentId, onDocumentsUpdated]);
+  const uploadDocument = useCallback(
+    async (file: File, extra?: Record<string, any>) => {
+      await ApiService.uploadEquipmentDocument(
+        equipmentId,
+        file,
+        (extra?.document_name as string) || file.name
+      );
+      onDocumentsUpdated?.();
+    },
+    [equipmentId, onDocumentsUpdated]
+  );
 
-  const deleteDocument = useCallback(async (id: number) => {
-    await ApiService.deleteEquipmentDocument(equipmentId, id);
-    onDocumentsUpdated?.();
-  }, [equipmentId, onDocumentsUpdated]);
+  const deleteDocument = useCallback(
+    async (id: number) => {
+      await ApiService.deleteEquipmentDocument(equipmentId, id);
+      onDocumentsUpdated?.();
+    },
+    [equipmentId, onDocumentsUpdated]
+  );
 
   return (
     <DocumentManager

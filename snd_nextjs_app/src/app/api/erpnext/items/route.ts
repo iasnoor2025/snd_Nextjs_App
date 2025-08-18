@@ -13,9 +13,9 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   const url = `${ERPNEXT_URL}${endpoint}`;
 
   const defaultHeaders = {
-    'Authorization': `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
+    Authorization: `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
   };
 
   const response = await fetch(url, {
@@ -48,14 +48,14 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: data.data || [],
-      count: data.data?.length || 0
+      count: data.data?.length || 0,
     });
   } catch (error) {
     console.error('Error fetching ERPNext items:', error);
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to fetch items'
+        message: error instanceof Error ? error.message : 'Failed to fetch items',
       },
       { status: 500 }
     );
@@ -72,23 +72,26 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: 'item_code is required for ERPNext item creation'
+          message: 'item_code is required for ERPNext item creation',
         },
         { status: 400 }
       );
     }
 
-    const filters = encodeURIComponent(JSON.stringify([["item_code", "=", itemCode]]));
+    const filters = encodeURIComponent(JSON.stringify([['item_code', '=', itemCode]]));
     const existingResponse = await makeERPNextRequest(`/api/resource/Item?filters=${filters}`);
 
     let response;
     if (existingResponse.data && existingResponse.data.length > 0) {
       // Update existing item
       const existingItem = existingResponse.data[0];
-      response = await makeERPNextRequest(`/api/resource/Item/${encodeURIComponent(existingItem.name)}`, {
-        method: 'PUT',
-        body: JSON.stringify(itemData),
-      });
+      response = await makeERPNextRequest(
+        `/api/resource/Item/${encodeURIComponent(existingItem.name)}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(itemData),
+        }
+      );
     } else {
       // Create new item
       response = await makeERPNextRequest('/api/resource/Item', {
@@ -100,14 +103,14 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: response.data || response,
-      message: 'Item created/updated successfully'
+      message: 'Item created/updated successfully',
     });
   } catch (error) {
     console.error('Error creating/updating ERPNext item:', error);
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to create/update item'
+        message: error instanceof Error ? error.message : 'Failed to create/update item',
       },
       { status: 500 }
     );

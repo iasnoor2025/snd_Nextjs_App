@@ -1,18 +1,30 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Package } from 'lucide-react';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import apiService from '@/lib/api';
+import { format } from 'date-fns';
+import { CalendarIcon, Package } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface MaterialResource {
   id?: string;
@@ -44,7 +56,7 @@ const MATERIALS = [
   { id: '5', name: 'Gravel' },
   { id: '6', name: 'Wood' },
   { id: '7', name: 'Paint' },
-  { id: '8', name: 'Other' }
+  { id: '8', name: 'Other' },
 ];
 
 const UNITS = [
@@ -55,7 +67,7 @@ const UNITS = [
   { value: 'm3', label: 'Cubic Meters' },
   { value: 'l', label: 'Liters' },
   { value: 'box', label: 'Box' },
-  { value: 'set', label: 'Set' }
+  { value: 'set', label: 'Set' },
 ];
 
 export default function MaterialDialog({
@@ -63,7 +75,7 @@ export default function MaterialDialog({
   onOpenChange,
   projectId,
   initialData,
-  onSuccess
+  onSuccess,
 }: MaterialDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<MaterialResource>({
@@ -75,7 +87,7 @@ export default function MaterialDialog({
     total_cost: 0,
     date_used: '',
     notes: '',
-    status: 'pending'
+    status: 'pending',
   });
 
   // Initialize form data when editing
@@ -83,7 +95,9 @@ export default function MaterialDialog({
     if (initialData) {
       setFormData({
         ...initialData,
-        date_used: initialData.date_used ? new Date(initialData.date_used).toISOString().split('T')[0] : '',
+        date_used: initialData.date_used
+          ? new Date(initialData.date_used).toISOString().split('T')[0]
+          : '',
       });
     } else {
       setFormData({
@@ -95,7 +109,7 @@ export default function MaterialDialog({
         total_cost: 0,
         date_used: '',
         notes: '',
-        status: 'pending'
+        status: 'pending',
       });
     }
   }, [initialData]);
@@ -105,7 +119,7 @@ export default function MaterialDialog({
     const totalCost = (formData.quantity || 0) * (formData.unit_price || 0);
     setFormData(prev => ({
       ...prev,
-      total_cost: totalCost
+      total_cost: totalCost,
     }));
   }, [formData.quantity, formData.unit_price]);
 
@@ -161,8 +175,13 @@ export default function MaterialDialog({
       const submitData = {
         ...formData,
         type: 'material',
-        name: formData.name || formData.material_name || (formData.material_id ? MATERIALS.find(mat => mat.id === formData.material_id)?.name : ''),
-        total_cost: (formData.quantity || 0) * (formData.unit_price || 0)
+        name:
+          formData.name ||
+          formData.material_name ||
+          (formData.material_id
+            ? MATERIALS.find(mat => mat.id === formData.material_id)?.name
+            : ''),
+        total_cost: (formData.quantity || 0) * (formData.unit_price || 0),
       };
 
       // TODO: Project resource endpoints don't exist yet
@@ -194,7 +213,9 @@ export default function MaterialDialog({
             <span>{initialData ? 'Edit Material Resource' : 'Add Material Resource'}</span>
           </DialogTitle>
           <DialogDescription>
-            {initialData ? 'Update the details for this material resource.' : 'Add a new material resource to this project.'}
+            {initialData
+              ? 'Update the details for this material resource.'
+              : 'Add a new material resource to this project.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -205,13 +226,13 @@ export default function MaterialDialog({
               <Label htmlFor="material_id">Material</Label>
               <Select
                 value={formData.material_id || ''}
-                onValueChange={(value) => handleInputChange('material_id', value)}
+                onValueChange={value => handleInputChange('material_id', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select material" />
                 </SelectTrigger>
                 <SelectContent>
-                  {MATERIALS.map((material) => (
+                  {MATERIALS.map(material => (
                     <SelectItem key={material.id} value={material.id}>
                       {material.name}
                     </SelectItem>
@@ -224,13 +245,13 @@ export default function MaterialDialog({
               <Label htmlFor="unit">Unit</Label>
               <Select
                 value={formData.unit || ''}
-                onValueChange={(value) => handleInputChange('unit', value)}
+                onValueChange={value => handleInputChange('unit', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select unit" />
                 </SelectTrigger>
                 <SelectContent>
-                  {UNITS.map((unit) => (
+                  {UNITS.map(unit => (
                     <SelectItem key={unit.value} value={unit.value}>
                       {unit.label}
                     </SelectItem>
@@ -248,7 +269,7 @@ export default function MaterialDialog({
                 id="quantity"
                 type="number"
                 value={formData.quantity || ''}
-                onChange={(e) => handleInputChange('quantity', parseFloat(e.target.value))}
+                onChange={e => handleInputChange('quantity', parseFloat(e.target.value))}
                 placeholder="0"
                 min="0"
                 step="0.01"
@@ -261,7 +282,7 @@ export default function MaterialDialog({
                 id="unit_price"
                 type="number"
                 value={formData.unit_price || ''}
-                onChange={(e) => handleInputChange('unit_price', parseFloat(e.target.value))}
+                onChange={e => handleInputChange('unit_price', parseFloat(e.target.value))}
                 placeholder="0.00"
                 min="0"
                 step="0.01"
@@ -274,10 +295,7 @@ export default function MaterialDialog({
             <Label htmlFor="date_used">Date Used</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal"
-                >
+                <Button variant="outline" className="w-full justify-start text-left font-normal">
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {formData.date_used ? format(new Date(formData.date_used), 'PPP') : 'Pick a date'}
                 </Button>
@@ -286,7 +304,9 @@ export default function MaterialDialog({
                 <Calendar
                   mode="single"
                   selected={formData.date_used ? new Date(formData.date_used) : undefined}
-                  onSelect={(date) => handleInputChange('date_used', date?.toISOString().split('T')[0] || '')}
+                  onSelect={date =>
+                    handleInputChange('date_used', date?.toISOString().split('T')[0] || '')
+                  }
                   initialFocus
                 />
               </PopoverContent>
@@ -311,7 +331,7 @@ export default function MaterialDialog({
             <Textarea
               id="notes"
               value={formData.notes || ''}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
+              onChange={e => handleInputChange('notes', e.target.value)}
               placeholder="Enter any additional notes"
               rows={3}
             />

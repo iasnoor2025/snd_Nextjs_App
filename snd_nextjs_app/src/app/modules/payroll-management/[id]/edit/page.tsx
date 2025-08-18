@@ -1,20 +1,35 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Save, Loader2, User, Calendar, DollarSign, FileText, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
-import Link from "next/link";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
-import { useParams, useRouter } from "next/navigation";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import {
+  AlertCircle,
+  ArrowLeft,
+  Calendar,
+  DollarSign,
+  FileText,
+  Loader2,
+  Save,
+  User,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface PayrollItem {
   id: number;
@@ -69,10 +84,10 @@ interface Payroll {
 }
 
 const statusColors = {
-  pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-  approved: "bg-blue-100 text-blue-800 border-blue-200",
-  paid: "bg-green-100 text-green-800 border-green-200",
-  cancelled: "bg-red-100 text-red-800 border-red-200"
+  pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  approved: 'bg-blue-100 text-blue-800 border-blue-200',
+  paid: 'bg-green-100 text-green-800 border-green-200',
+  cancelled: 'bg-red-100 text-red-800 border-red-200',
 };
 
 export default function EditPayrollPage() {
@@ -83,13 +98,13 @@ export default function EditPayrollPage() {
   const [payroll, setPayroll] = useState<Payroll | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [formData, setFormData] = useState({
-    base_salary: "",
-    overtime_amount: "",
-    bonus_amount: "",
-    deduction_amount: "",
-    advance_deduction: "",
-    notes: "",
-    status: ""
+    base_salary: '',
+    overtime_amount: '',
+    bonus_amount: '',
+    deduction_amount: '',
+    advance_deduction: '',
+    notes: '',
+    status: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -111,15 +126,15 @@ export default function EditPayrollPage() {
             bonus_amount: data.data.bonus_amount.toString(),
             deduction_amount: data.data.deduction_amount.toString(),
             advance_deduction: data.data.advance_deduction.toString(),
-            notes: data.data.notes || "",
-            status: data.data.status
+            notes: data.data.notes || '',
+            status: data.data.status,
           });
         } else {
-          toast.error("Failed to fetch payroll details");
+          toast.error('Failed to fetch payroll details');
         }
       } catch (error) {
-        console.error("Error fetching payroll:", error);
-        toast.error("Error fetching payroll details");
+        console.error('Error fetching payroll:', error);
+        toast.error('Error fetching payroll details');
       } finally {
         setInitialLoading(false);
       }
@@ -132,13 +147,13 @@ export default function EditPayrollPage() {
 
   const fetchEmployees = async () => {
     try {
-      const response = await fetch("/api/employees");
+      const response = await fetch('/api/employees');
       const data = await response.json();
       if (data.success) {
         setEmployees(data.data);
       }
     } catch (error) {
-      console.error("Error fetching employees:", error);
+      console.error('Error fetching employees:', error);
     }
   };
 
@@ -160,9 +175,9 @@ export default function EditPayrollPage() {
 
     try {
       const response = await fetch(`/api/payroll/${payrollId}`, {
-        method: "PUT",
+        method: 'PUT',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           base_salary: safeParseFloat(formData.base_salary),
@@ -171,21 +186,21 @@ export default function EditPayrollPage() {
           deduction_amount: safeParseFloat(formData.deduction_amount),
           advance_deduction: safeParseFloat(formData.advance_deduction),
           notes: formData.notes,
-          status: formData.status
+          status: formData.status,
         }),
       });
 
       const data = await response.json();
 
       if (data.success) {
-        toast.success("Payroll updated successfully");
+        toast.success('Payroll updated successfully');
         router.push(`/modules/payroll-management/${payrollId}`);
       } else {
-        toast.error(data.message || "Failed to update payroll");
+        toast.error(data.message || 'Failed to update payroll');
       }
     } catch (error) {
-      console.error("Error updating payroll:", error);
-      toast.error("Error updating payroll");
+      console.error('Error updating payroll:', error);
+      toast.error('Error updating payroll');
     } finally {
       setLoading(false);
     }
@@ -194,7 +209,7 @@ export default function EditPayrollPage() {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -209,9 +224,9 @@ export default function EditPayrollPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "SAR",
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'SAR',
     }).format(amount);
   };
 
@@ -236,7 +251,9 @@ export default function EditPayrollPage() {
           <div className="text-center py-12">
             <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Payroll Not Found</h2>
-            <p className="text-gray-600 mb-6">The requested payroll could not be found or may have been removed.</p>
+            <p className="text-gray-600 mb-6">
+              The requested payroll could not be found or may have been removed.
+            </p>
             <Link href="/modules/payroll-management">
               <Button className="bg-blue-600 hover:bg-blue-700">
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -249,13 +266,13 @@ export default function EditPayrollPage() {
     );
   }
 
-  const employeeName = payroll.employee ? 
-    (payroll.employee.full_name || `${payroll.employee.first_name} ${payroll.employee.last_name}`) : 
-    'Unknown Employee';
+  const employeeName = payroll.employee
+    ? payroll.employee.full_name || `${payroll.employee.first_name} ${payroll.employee.last_name}`
+    : 'Unknown Employee';
 
-  const period = new Date(payroll.year, payroll.month - 1).toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
+  const period = new Date(payroll.year, payroll.month - 1).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
   });
 
   const netPay = calculateNetPay();
@@ -278,9 +295,12 @@ export default function EditPayrollPage() {
                 <p className="text-gray-600">Modify payroll record for {employeeName}</p>
               </div>
             </div>
-            <Badge 
-              variant="outline" 
-              className={cn("text-sm font-medium", statusColors[formData.status as keyof typeof statusColors])}
+            <Badge
+              variant="outline"
+              className={cn(
+                'text-sm font-medium',
+                statusColors[formData.status as keyof typeof statusColors]
+              )}
             >
               {formData.status.charAt(0).toUpperCase() + formData.status.slice(1)}
             </Badge>
@@ -354,8 +374,13 @@ export default function EditPayrollPage() {
                     <CardContent>
                       <div className="space-y-4">
                         <div>
-                          <Label htmlFor="status" className="text-sm font-medium">Status</Label>
-                          <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
+                          <Label htmlFor="status" className="text-sm font-medium">
+                            Status
+                          </Label>
+                          <Select
+                            value={formData.status}
+                            onValueChange={value => handleInputChange('status', value)}
+                          >
                             <SelectTrigger className="mt-1">
                               <SelectValue placeholder="Select status" />
                             </SelectTrigger>
@@ -385,61 +410,71 @@ export default function EditPayrollPage() {
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <Label htmlFor="base_salary" className="text-sm font-medium">Base Salary</Label>
+                          <Label htmlFor="base_salary" className="text-sm font-medium">
+                            Base Salary
+                          </Label>
                           <Input
                             id="base_salary"
                             type="number"
                             step="0.01"
                             value={formData.base_salary}
-                            onChange={(e) => handleInputChange("base_salary", e.target.value)}
+                            onChange={e => handleInputChange('base_salary', e.target.value)}
                             placeholder="0.00"
                             className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="overtime_amount" className="text-sm font-medium">Overtime Amount</Label>
+                          <Label htmlFor="overtime_amount" className="text-sm font-medium">
+                            Overtime Amount
+                          </Label>
                           <Input
                             id="overtime_amount"
                             type="number"
                             step="0.01"
                             value={formData.overtime_amount}
-                            onChange={(e) => handleInputChange("overtime_amount", e.target.value)}
+                            onChange={e => handleInputChange('overtime_amount', e.target.value)}
                             placeholder="0.00"
                             className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="bonus_amount" className="text-sm font-medium">Bonus Amount</Label>
+                          <Label htmlFor="bonus_amount" className="text-sm font-medium">
+                            Bonus Amount
+                          </Label>
                           <Input
                             id="bonus_amount"
                             type="number"
                             step="0.01"
                             value={formData.bonus_amount}
-                            onChange={(e) => handleInputChange("bonus_amount", e.target.value)}
+                            onChange={e => handleInputChange('bonus_amount', e.target.value)}
                             placeholder="0.00"
                             className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="deduction_amount" className="text-sm font-medium">Deduction Amount</Label>
+                          <Label htmlFor="deduction_amount" className="text-sm font-medium">
+                            Deduction Amount
+                          </Label>
                           <Input
                             id="deduction_amount"
                             type="number"
                             step="0.01"
                             value={formData.deduction_amount}
-                            onChange={(e) => handleInputChange("deduction_amount", e.target.value)}
+                            onChange={e => handleInputChange('deduction_amount', e.target.value)}
                             placeholder="0.00"
                             className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="advance_deduction" className="text-sm font-medium">Advance Deduction</Label>
+                          <Label htmlFor="advance_deduction" className="text-sm font-medium">
+                            Advance Deduction
+                          </Label>
                           <Input
                             id="advance_deduction"
                             type="number"
                             step="0.01"
                             value={formData.advance_deduction}
-                            onChange={(e) => handleInputChange("advance_deduction", e.target.value)}
+                            onChange={e => handleInputChange('advance_deduction', e.target.value)}
                             placeholder="0.00"
                             className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                           />
@@ -462,7 +497,7 @@ export default function EditPayrollPage() {
                     <CardContent>
                       <Textarea
                         value={formData.notes}
-                        onChange={(e) => handleInputChange("notes", e.target.value)}
+                        onChange={e => handleInputChange('notes', e.target.value)}
                         placeholder="Add any notes about this payroll..."
                         rows={4}
                         className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
@@ -487,31 +522,43 @@ export default function EditPayrollPage() {
                       <div className="space-y-4">
                         <div className="flex justify-between items-center py-2">
                           <span className="text-gray-600">Base Salary:</span>
-                          <span className="font-semibold">{formatCurrency(parseFloat(formData.base_salary) || 0)}</span>
+                          <span className="font-semibold">
+                            {formatCurrency(parseFloat(formData.base_salary) || 0)}
+                          </span>
                         </div>
                         <div className="flex justify-between items-center py-2">
                           <span className="text-gray-600">Overtime:</span>
-                          <span className="font-semibold text-blue-600">{formatCurrency(parseFloat(formData.overtime_amount) || 0)}</span>
+                          <span className="font-semibold text-blue-600">
+                            {formatCurrency(parseFloat(formData.overtime_amount) || 0)}
+                          </span>
                         </div>
                         <div className="flex justify-between items-center py-2">
                           <span className="text-gray-600">Bonus:</span>
-                          <span className="font-semibold text-green-600">{formatCurrency(parseFloat(formData.bonus_amount) || 0)}</span>
+                          <span className="font-semibold text-green-600">
+                            {formatCurrency(parseFloat(formData.bonus_amount) || 0)}
+                          </span>
                         </div>
                         <Separator />
                         <div className="flex justify-between items-center py-2">
                           <span className="text-gray-600">Deductions:</span>
-                          <span className="font-semibold text-red-600">-{formatCurrency(parseFloat(formData.deduction_amount) || 0)}</span>
+                          <span className="font-semibold text-red-600">
+                            -{formatCurrency(parseFloat(formData.deduction_amount) || 0)}
+                          </span>
                         </div>
                         {parseFloat(formData.advance_deduction) > 0 && (
                           <div className="flex justify-between items-center py-2">
                             <span className="text-gray-600">Advance Deduction:</span>
-                            <span className="font-semibold text-red-600">-{formatCurrency(parseFloat(formData.advance_deduction) || 0)}</span>
+                            <span className="font-semibold text-red-600">
+                              -{formatCurrency(parseFloat(formData.advance_deduction) || 0)}
+                            </span>
                           </div>
                         )}
                         <Separator />
                         <div className="flex justify-between items-center py-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg px-3">
                           <span className="font-bold text-gray-900">Net Pay:</span>
-                          <span className="font-bold text-2xl text-green-600">{formatCurrency(netPay)}</span>
+                          <span className="font-bold text-2xl text-green-600">
+                            {formatCurrency(netPay)}
+                          </span>
                         </div>
                       </div>
                     </CardContent>
@@ -547,8 +594,8 @@ export default function EditPayrollPage() {
                     Cancel
                   </Button>
                 </Link>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={loading}
                   className="px-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                 >

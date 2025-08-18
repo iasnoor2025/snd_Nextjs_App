@@ -1,6 +1,6 @@
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import Link from 'next/link';
 
 export default function NotFound() {
   return (
@@ -18,14 +18,10 @@ export default function NotFound() {
           </p>
           <div className="space-x-4">
             <Button asChild>
-              <Link href="/">
-                Go Home
-              </Link>
+              <Link href="/">Go Home</Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link href="/dashboard">
-                Dashboard
-              </Link>
+              <Link href="/dashboard">Dashboard</Link>
             </Button>
           </div>
         </CardContent>

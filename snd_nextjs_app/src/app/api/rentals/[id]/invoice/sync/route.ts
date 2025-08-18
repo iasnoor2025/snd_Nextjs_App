@@ -1,17 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { ERPNextInvoiceService } from '@/lib/services/erpnext-invoice-service';
 import { db } from '@/lib/db';
 import { rentals } from '@/lib/drizzle/schema';
+import { ERPNextInvoiceService } from '@/lib/services/erpnext-invoice-service';
 import { eq } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     console.log('🔄 Starting invoice sync for rental (GET):', id);
-    
+
     // Get rental to check current invoice status
     const rental = await db
       .select()
@@ -27,12 +24,12 @@ export async function GET(
     if (!currentRental) {
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
     }
-    
+
     if (!currentRental.invoiceId) {
       return NextResponse.json({
         success: true,
         message: 'No invoice to sync - rental has no invoice ID',
-        data: { status: 'no_invoice' }
+        data: { status: 'no_invoice' },
       });
     }
 
@@ -53,10 +50,9 @@ export async function GET(
         data: {
           invoiceId: currentRental.invoiceId,
           status: 'synced',
-          erpnextStatus: erpnextInvoice?.status
-        }
+          erpnextStatus: erpnextInvoice?.status,
+        },
       });
-
     } catch (erpnextError) {
       console.log('❌ ERPNext invoice not found or deleted:', erpnextError);
 
@@ -65,7 +61,7 @@ export async function GET(
         invoiceId: null,
         invoiceDate: null,
         paymentDueDate: null,
-        paymentStatus: 'pending'
+        paymentStatus: 'pending',
       };
 
       await db
@@ -81,31 +77,27 @@ export async function GET(
         data: {
           status: 'reset',
           previousInvoiceId: currentRental.invoiceId,
-          message: 'You can now create a new invoice for this rental'
-        }
+          message: 'You can now create a new invoice for this rental',
+        },
       });
     }
-
   } catch (error) {
     console.error('❌ Error syncing invoice:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to sync invoice',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
 }
 
-export async function POST(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     console.log('🔄 Starting invoice sync for rental (POST):', id);
-    
+
     // Get rental to check current invoice status
     const rental = await db
       .select()
@@ -121,12 +113,12 @@ export async function POST(
     if (!currentRental) {
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
     }
-    
+
     if (!currentRental.invoiceId) {
       return NextResponse.json({
         success: true,
         message: 'No invoice to sync - rental has no invoice ID',
-        data: { status: 'no_invoice' }
+        data: { status: 'no_invoice' },
       });
     }
 
@@ -147,10 +139,9 @@ export async function POST(
         data: {
           invoiceId: currentRental.invoiceId,
           status: 'synced',
-          erpnextStatus: erpnextInvoice?.status
-        }
+          erpnextStatus: erpnextInvoice?.status,
+        },
       });
-
     } catch (erpnextError) {
       console.log('❌ ERPNext invoice not found or deleted:', erpnextError);
 
@@ -162,7 +153,7 @@ export async function POST(
         paymentStatus: 'pending',
         erpnextInvoiceStatus: null,
         outstandingAmount: '0.00',
-        lastErpNextSync: new Date().toISOString()
+        lastErpNextSync: new Date().toISOString(),
       };
 
       await db
@@ -178,17 +169,16 @@ export async function POST(
         data: {
           status: 'reset',
           previousInvoiceId: currentRental.invoiceId,
-          message: 'You can now create a new invoice for this rental'
-        }
+          message: 'You can now create a new invoice for this rental',
+        },
       });
     }
-
   } catch (error) {
     console.error('❌ Error syncing invoice:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to sync invoice',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

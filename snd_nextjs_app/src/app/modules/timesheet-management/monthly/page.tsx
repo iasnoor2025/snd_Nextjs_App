@@ -1,38 +1,10 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
 import { ProtectedRoute } from '@/components/protected-route';
-import { PermissionContent } from '@/lib/rbac/rbac-components';
-import { useRBAC } from '@/lib/rbac/rbac-context';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { EmployeeDropdown } from "@/components/ui/employee-dropdown";
-import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Edit,
-  Save,
-  X,
-  Clock,
-  User,
-  Building,
-  FileText,
-  Download,
-  RefreshCw,
-  ArrowLeft,
-  Plus,
-  CalendarDays
-} from "lucide-react";
-import { toast } from "sonner";
-import { useTranslation } from 'react-i18next';
-import { useI18n } from '@/hooks/use-i18n';
-import { convertToArabicNumerals } from '@/lib/translation-utils';
-import Link from 'next/link';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -40,8 +12,36 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+} from '@/components/ui/dialog';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { useI18n } from '@/hooks/use-i18n';
+import { PermissionContent } from '@/lib/rbac/rbac-components';
+import { useRBAC } from '@/lib/rbac/rbac-context';
+import { convertToArabicNumerals } from '@/lib/translation-utils';
+import {
+  ArrowLeft,
+  Building,
+  Calendar,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Download,
+  Edit,
+  FileText,
+  Plus,
+  RefreshCw,
+  Save,
+  User,
+  X,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 interface Timesheet {
   id: string;
@@ -131,7 +131,7 @@ export default function MonthlyTimesheetPage() {
       setLoading(true);
       const params = new URLSearchParams({
         month: currentMonth,
-        ...(selectedEmployee && selectedEmployee !== "all" && { employeeId: selectedEmployee }),
+        ...(selectedEmployee && selectedEmployee !== 'all' && { employeeId: selectedEmployee }),
       });
 
       const response = await fetch(`/api/timesheets/monthly?${params}`);
@@ -142,7 +142,10 @@ export default function MonthlyTimesheetPage() {
       const data = await response.json();
       console.log('Frontend received monthly data:', data);
       console.log('Calendar keys:', Object.keys(data.calendar || {}));
-      console.log('Sample calendar day:', data.calendar ? Object.values(data.calendar)[0] : 'No calendar data');
+      console.log(
+        'Sample calendar day:',
+        data.calendar ? Object.values(data.calendar)[0] : 'No calendar data'
+      );
       setMonthlyData(data);
     } catch (error) {
       console.error('Error fetching monthly data:', error);
@@ -212,7 +215,7 @@ export default function MonthlyTimesheetPage() {
         method,
         editingTimesheetId: editingTimesheet.id,
         editingTimesheetIdType: typeof editingTimesheet.id,
-        requestBody
+        requestBody,
       });
 
       const response = await fetch(url, {
@@ -224,7 +227,10 @@ export default function MonthlyTimesheetPage() {
       });
 
       console.log('Frontend - handleSaveEdit - Response status:', response.status);
-      console.log('Frontend - handleSaveEdit - Response headers:', Object.fromEntries(response.headers.entries()));
+      console.log(
+        'Frontend - handleSaveEdit - Response headers:',
+        Object.fromEntries(response.headers.entries())
+      );
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -233,15 +239,20 @@ export default function MonthlyTimesheetPage() {
           status: response.status,
           statusText: response.statusText,
           errorData,
-          requestBody
+          requestBody,
         });
-        throw new Error(errorData.error || (isNewTimesheet ? 'Failed to create timesheet' : 'Failed to update timesheet'));
+        throw new Error(
+          errorData.error ||
+            (isNewTimesheet ? 'Failed to create timesheet' : 'Failed to update timesheet')
+        );
       }
 
       const responseData = await response.json().catch(() => ({}));
       console.log('Frontend - handleSaveEdit - Success response:', responseData);
 
-      toast.success(isNewTimesheet ? t('timesheet_created_successfully') : t('timesheet_updated_successfully'));
+      toast.success(
+        isNewTimesheet ? t('timesheet_created_successfully') : t('timesheet_updated_successfully')
+      );
       setEditDialog(false);
       setEditingTimesheet(null);
       fetchMonthlyData();
@@ -262,8 +273,6 @@ export default function MonthlyTimesheetPage() {
     const currentMonthNum = today.getMonth() + 1;
     const currentDay = today.getDate();
 
-
-
     return Array.from({ length: daysInMonth }, (_, i) => {
       const day = i + 1;
       const dateStr = `${year}-${month.padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
@@ -271,9 +280,10 @@ export default function MonthlyTimesheetPage() {
       const dayOfWeek = currentDate.getDay();
       const saturdayStartDayOfWeek = (dayOfWeek + 1) % 7;
 
-      const isFutureDate = parseInt(year) > currentYear || 
-                          (parseInt(year) === currentYear && parseInt(month) > currentMonthNum) ||
-                          (parseInt(year) === currentYear && parseInt(month) === currentMonthNum && day > currentDay);
+      const isFutureDate =
+        parseInt(year) > currentYear ||
+        (parseInt(year) === currentYear && parseInt(month) > currentMonthNum) ||
+        (parseInt(year) === currentYear && parseInt(month) === currentMonthNum && day > currentDay);
 
       const dayData = monthlyData.calendar[dateStr] || {
         date: dateStr,
@@ -283,8 +293,6 @@ export default function MonthlyTimesheetPage() {
         overtime_hours: 0,
         timesheets: [],
       };
-
-
 
       return {
         ...dayData,
@@ -343,11 +351,7 @@ export default function MonthlyTimesheetPage() {
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
             {/* Month Navigation */}
             <div className="flex items-center space-x-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleMonthChange('prev')}
-              >
+              <Button variant="outline" size="sm" onClick={() => handleMonthChange('prev')}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="text-center min-w-[140px]">
@@ -355,11 +359,7 @@ export default function MonthlyTimesheetPage() {
                   {monthlyData?.summary.month || currentMonth}
                 </div>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleMonthChange('next')}
-              >
+              <Button variant="outline" size="sm" onClick={() => handleMonthChange('next')}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -369,16 +369,12 @@ export default function MonthlyTimesheetPage() {
               <div className="w-64">
                 <EmployeeDropdown
                   value={selectedEmployee}
-                  onValueChange={(value) => setSelectedEmployee(value)}
+                  onValueChange={value => setSelectedEmployee(value)}
                   placeholder={t('filter_by_employee')}
                   showSearch={true}
                 />
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedEmployee('all')}
-              >
+              <Button variant="outline" size="sm" onClick={() => setSelectedEmployee('all')}>
                 Clear
               </Button>
             </div>
@@ -396,7 +392,10 @@ export default function MonthlyTimesheetPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{t('regular_hours')}</p>
                   <p className="text-2xl font-bold text-blue-600">
-                    {convertToArabicNumerals((Number(monthlyData?.summary?.regularHours || 0)).toFixed(1), isRTL)}
+                    {convertToArabicNumerals(
+                      Number(monthlyData?.summary?.regularHours || 0).toFixed(1),
+                      isRTL
+                    )}
                   </p>
                 </div>
               </div>
@@ -410,7 +409,10 @@ export default function MonthlyTimesheetPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{t('overtime_hours')}</p>
                   <p className="text-2xl font-bold text-orange-600">
-                    {convertToArabicNumerals((Number(monthlyData?.summary?.overtimeHours || 0)).toFixed(1), isRTL)}
+                    {convertToArabicNumerals(
+                      Number(monthlyData?.summary?.overtimeHours || 0).toFixed(1),
+                      isRTL
+                    )}
                   </p>
                 </div>
               </div>
@@ -424,7 +426,10 @@ export default function MonthlyTimesheetPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{t('total_hours')}</p>
                   <p className="text-2xl font-bold text-green-600">
-                    {convertToArabicNumerals((Number(monthlyData?.summary?.totalHours || 0)).toFixed(1), isRTL)}
+                    {convertToArabicNumerals(
+                      Number(monthlyData?.summary?.totalHours || 0).toFixed(1),
+                      isRTL
+                    )}
                   </p>
                 </div>
               </div>
@@ -438,7 +443,10 @@ export default function MonthlyTimesheetPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{t('days_worked')}</p>
                   <p className="text-2xl font-bold text-purple-600">
-                    {convertToArabicNumerals((Number(monthlyData?.summary?.totalDays || 0)).toString(), isRTL)}
+                    {convertToArabicNumerals(
+                      Number(monthlyData?.summary?.totalDays || 0).toString(),
+                      isRTL
+                    )}
                   </p>
                 </div>
               </div>
@@ -463,33 +471,42 @@ export default function MonthlyTimesheetPage() {
           <CardContent>
             <div className="grid grid-cols-7 gap-1">
               {/* Day headers */}
-              {['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((day) => (
-                <div key={day} className={`p-2 text-center text-xs font-medium rounded ${
-                  day === 'Fri' ? 'bg-blue-50 text-blue-700' : 'bg-muted'
-                }`}>
+              {['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(day => (
+                <div
+                  key={day}
+                  className={`p-2 text-center text-xs font-medium rounded ${
+                    day === 'Fri' ? 'bg-blue-50 text-blue-700' : 'bg-muted'
+                  }`}
+                >
                   {day}
                 </div>
               ))}
 
               {/* Empty cells */}
               {Array.from({ length: (calendarGrid[0]?.day_of_week + 1) % 7 || 0 }, (_, i) => (
-                <div key={`empty-${i}`} className="p-1 border rounded min-h-[80px] bg-muted/30"></div>
+                <div
+                  key={`empty-${i}`}
+                  className="p-1 border rounded min-h-[80px] bg-muted/30"
+                ></div>
               ))}
 
               {/* Calendar days */}
-              {calendarGrid.map((day) => {
+              {calendarGrid.map(day => {
                 const isFriday = day.day_of_week === 5;
-                
+
                 if (day.isFutureDate) {
                   return (
-                    <div key={day.date} className="p-1 border rounded min-h-[80px] bg-muted/50 opacity-50">
+                    <div
+                      key={day.date}
+                      className="p-1 border rounded min-h-[80px] bg-muted/50 opacity-50"
+                    >
                       <div className="text-xs font-medium text-muted-foreground">
                         {new Date(day.date).getDate()}
                       </div>
                     </div>
                   );
                 }
-                
+
                 return (
                   <div
                     key={day.date}
@@ -497,25 +514,29 @@ export default function MonthlyTimesheetPage() {
                       isFriday ? 'bg-blue-50 border-blue-200' : 'bg-background'
                     } ${day.isToday ? 'ring-2 ring-blue-500' : ''}`}
                   >
-                    <div className={`text-xs font-medium mb-1 ${
-                      isFriday ? 'text-blue-700' : 'text-foreground'
-                    }`}>
+                    <div
+                      className={`text-xs font-medium mb-1 ${
+                        isFriday ? 'text-blue-700' : 'text-foreground'
+                      }`}
+                    >
                       {new Date(day.date).getDate()}
                       {isFriday && <span className="text-xs text-blue-600 ml-1">(H)</span>}
                     </div>
 
                     {day.timesheets.length > 0 ? (
                       <div className="space-y-1">
+                        {day.timesheets.map(timesheet => {
+                          const hasZeroHours =
+                            (Number(timesheet.hoursWorked) || 0) === 0 &&
+                            (Number(timesheet.overtimeHours) || 0) === 0;
 
-                        {day.timesheets.map((timesheet) => {
-                          const hasZeroHours = (Number(timesheet.hoursWorked) || 0) === 0 && 
-                                             (Number(timesheet.overtimeHours) || 0) === 0;
-                          
                           return (
                             <div
                               key={timesheet.id}
                               className={`text-xs p-1 rounded cursor-pointer hover:bg-accent transition-colors ${
-                                hasZeroHours && !isFriday ? 'bg-red-50 border border-red-200' : 'bg-blue-50 border border-blue-200'
+                                hasZeroHours && !isFriday
+                                  ? 'bg-red-50 border border-red-200'
+                                  : 'bg-blue-50 border border-blue-200'
                               }`}
                               onClick={() => handleEditOvertime(timesheet)}
                               title={t('click_to_edit_overtime')}
@@ -528,10 +549,21 @@ export default function MonthlyTimesheetPage() {
                                   <span className="text-red-600 font-bold">A</span>
                                 ) : (
                                   <>
-                                    <span className="font-medium">{convertToArabicNumerals((Number(timesheet.hoursWorked) || 0).toString(), isRTL)}h</span>
+                                    <span className="font-medium">
+                                      {convertToArabicNumerals(
+                                        (Number(timesheet.hoursWorked) || 0).toString(),
+                                        isRTL
+                                      )}
+                                      h
+                                    </span>
                                     {(Number(timesheet.overtimeHours) || 0) > 0 && (
                                       <span className="text-orange-600 ml-1">
-                                        +{convertToArabicNumerals((Number(timesheet.overtimeHours) || 0).toString(), isRTL)}h
+                                        +
+                                        {convertToArabicNumerals(
+                                          (Number(timesheet.overtimeHours) || 0).toString(),
+                                          isRTL
+                                        )}
+                                        h
                                       </span>
                                     )}
                                   </>
@@ -542,7 +574,7 @@ export default function MonthlyTimesheetPage() {
                         })}
                       </div>
                     ) : (
-                      <div 
+                      <div
                         className={`text-xs text-center mt-2 cursor-pointer hover:bg-accent rounded p-1 ${
                           isFriday ? 'text-blue-500' : 'text-red-500'
                         }`}
@@ -558,8 +590,8 @@ export default function MonthlyTimesheetPage() {
                               id: selectedEmployee || '',
                               firstName: 'Employee',
                               lastName: '',
-                              fileNumber: ''
-                            }
+                              fileNumber: '',
+                            },
                           };
                           handleEditOvertime(newTimesheet);
                         }}
@@ -583,9 +615,7 @@ export default function MonthlyTimesheetPage() {
                 <Edit className="h-4 w-4" />
                 {t('edit_timesheet')}
               </DialogTitle>
-              <DialogDescription>
-                {t('edit_timesheet_hours_and_overtime')}
-              </DialogDescription>
+              <DialogDescription>{t('edit_timesheet_hours_and_overtime')}</DialogDescription>
             </DialogHeader>
             {editingTimesheet && (
               <div className="space-y-4">
@@ -593,7 +623,8 @@ export default function MonthlyTimesheetPage() {
                   <div className="flex items-center space-x-3">
                     <Avatar className="h-8 w-8">
                       <AvatarFallback>
-                        {editingTimesheet.employee.firstName.charAt(0)}{editingTimesheet.employee.lastName.charAt(0)}
+                        {editingTimesheet.employee.firstName.charAt(0)}
+                        {editingTimesheet.employee.lastName.charAt(0)}
                       </AvatarFallback>
                     </Avatar>
                     <div>
@@ -616,7 +647,12 @@ export default function MonthlyTimesheetPage() {
                       step="0.5"
                       min="0"
                       value={editForm.hoursWorked}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, hoursWorked: parseFloat(e.target.value) || 0 }))}
+                      onChange={e =>
+                        setEditForm(prev => ({
+                          ...prev,
+                          hoursWorked: parseFloat(e.target.value) || 0,
+                        }))
+                      }
                     />
                   </div>
                   <div className="space-y-2">
@@ -627,7 +663,12 @@ export default function MonthlyTimesheetPage() {
                       step="0.5"
                       min="0"
                       value={editForm.overtimeHours}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, overtimeHours: parseFloat(e.target.value) || 0 }))}
+                      onChange={e =>
+                        setEditForm(prev => ({
+                          ...prev,
+                          overtimeHours: parseFloat(e.target.value) || 0,
+                        }))
+                      }
                     />
                   </div>
                 </div>
@@ -654,4 +695,4 @@ export default function MonthlyTimesheetPage() {
       </div>
     </ProtectedRoute>
   );
-} 
+}

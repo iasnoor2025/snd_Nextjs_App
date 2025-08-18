@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { sql } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
     console.log('🔍 Validating database schema...');
-    
+
     // Get all tables from the database
     const dbTablesResult = await db.execute(sql`
       SELECT table_name 
@@ -13,9 +13,9 @@ export async function GET() {
       WHERE table_schema = 'public' 
       ORDER BY table_name
     `);
-    
+
     const dbTables = (dbTablesResult as any).map((row: any) => row.table_name);
-    
+
     // Get expected tables from Drizzle schema
     const expectedTables = [
       'analytics_reports',
@@ -75,17 +75,18 @@ export async function GET() {
       'advance_payments',
       'model_has_roles',
       'role_has_permissions',
-      'model_has_permissions'
+      'model_has_permissions',
     ];
-    
+
     // Find missing and extra tables
     const missingTables = expectedTables.filter(table => !dbTables.includes(table));
     const extraTables = dbTables.filter((table: string) => !expectedTables.includes(table));
-    
+
     // Check table structures for key tables
     const tableStructureChecks: any[] = [];
-    
-    for (const tableName of expectedTables.slice(0, 10)) { // Check first 10 tables
+
+    for (const tableName of expectedTables.slice(0, 10)) {
+      // Check first 10 tables
       try {
         const columnsResult = await db.execute(sql`
           SELECT column_name, data_type, is_nullable, column_default
@@ -93,24 +94,24 @@ export async function GET() {
           WHERE table_schema = 'public' AND table_name = ${tableName}
           ORDER BY ordinal_position
         `);
-        
+
         tableStructureChecks.push({
           table: tableName,
           columns: (columnsResult as any).map((col: any) => ({
             name: col.column_name,
             type: col.data_type,
             nullable: col.is_nullable === 'YES',
-            default: col.column_default
-          }))
+            default: col.column_default,
+          })),
         });
       } catch (error) {
         tableStructureChecks.push({
           table: tableName,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
-    
+
     // Check foreign key constraints
     const foreignKeyChecks = await db.execute(sql`
       SELECT 
@@ -130,7 +131,7 @@ export async function GET() {
         AND tc.table_schema = 'public'
       ORDER BY tc.table_name, kcu.column_name
     `);
-    
+
     const validationResult = {
       success: true,
       message: 'Schema validation completed',
@@ -138,7 +139,7 @@ export async function GET() {
         totalExpectedTables: expectedTables.length,
         totalDbTables: dbTables.length,
         missingTables: missingTables.length,
-        extraTables: extraTables.length
+        extraTables: extraTables.length,
       },
       details: {
         missingTables,
@@ -147,23 +148,22 @@ export async function GET() {
         foreignKeys: (foreignKeyChecks as any).map((fk: any) => ({
           table: fk.table_name,
           column: fk.column_name,
-          references: `${fk.foreign_table_name}.${fk.foreign_column_name}`
-        }))
-      }
+          references: `${fk.foreign_table_name}.${fk.foreign_column_name}`,
+        })),
+      },
     };
-    
+
     // Check if there are critical issues
     const hasCriticalIssues = missingTables.length > 0 || extraTables.length > 0;
-    
+
     if (hasCriticalIssues) {
       validationResult.message = 'Schema validation completed with issues found';
       console.log('⚠️ Schema validation found issues:', validationResult);
     } else {
       console.log('✅ Schema validation completed successfully');
     }
-    
+
     return NextResponse.json(validationResult);
-    
   } catch (error) {
     console.error('❌ Schema validation failed:', error);
     return NextResponse.json(

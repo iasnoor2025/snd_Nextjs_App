@@ -1,17 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
-import { permissions, roleHasPermissions, modelHasPermissions, roles, users } from '@/lib/drizzle/schema';
-import { eq } from 'drizzle-orm';
-import { hasPermission, createUserFromSession } from '@/lib/rbac/custom-rbac';
-import { sql } from 'drizzle-orm';
+import {
+  modelHasPermissions,
+  permissions,
+  roleHasPermissions,
+  roles,
+  users,
+} from '@/lib/drizzle/schema';
+import { createUserFromSession, hasPermission } from '@/lib/rbac/custom-rbac';
+import { eq, sql } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/permissions/[id] - Get specific permission
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -83,18 +85,12 @@ export async function GET(
     return NextResponse.json({ permission: permissionWithAssignments });
   } catch (error) {
     console.error('Error fetching permission:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
 // PUT /api/permissions/[id] - Update permission
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -121,10 +117,7 @@ export async function PUT(
     const { name, guard_name } = body;
 
     if (!name) {
-      return NextResponse.json(
-        { error: 'Permission name is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Permission name is required' }, { status: 400 });
     }
 
     // Check if permission exists
@@ -153,10 +146,7 @@ export async function PUT(
         .limit(1);
 
       if (nameConflictRows.length > 0) {
-        return NextResponse.json(
-          { error: 'Permission name already exists' },
-          { status: 409 }
-        );
+        return NextResponse.json({ error: 'Permission name already exists' }, { status: 409 });
       }
     }
 
@@ -179,10 +169,7 @@ export async function PUT(
     });
   } catch (error) {
     console.error('Error updating permission:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -245,30 +232,25 @@ export async function DELETE(
     // Check if permission is in use
     if (roleAssignmentCount > 0 || userAssignmentCount > 0) {
       return NextResponse.json(
-        { 
+        {
           error: 'Cannot delete permission that is assigned to roles or users',
           details: {
             roleAssignments: roleAssignmentCount,
             userAssignments: userAssignmentCount,
-          }
+          },
         },
         { status: 409 }
       );
     }
 
     // Delete permission using Drizzle
-    await db
-      .delete(permissions)
-      .where(eq(permissions.id, permissionId));
+    await db.delete(permissions).where(eq(permissions.id, permissionId));
 
     return NextResponse.json({
       message: 'Permission deleted successfully',
     });
   } catch (error) {
     console.error('Error deleting permission:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

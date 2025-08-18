@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { timesheets } from '@/lib/drizzle/schema';
 import { and, eq } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest) {
   try {
@@ -9,10 +9,7 @@ export async function POST(_request: NextRequest) {
     const { assignments } = body;
 
     if (!Array.isArray(assignments) || assignments.length === 0) {
-      return NextResponse.json(
-        { error: 'No assignments provided' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No assignments provided' }, { status: 400 });
     }
 
     const created: Array<{ employee_id: string; date: string }> = [];
@@ -31,7 +28,7 @@ export async function POST(_request: NextRequest) {
         tasks,
         start_time,
         end_time,
-        daily_hours
+        daily_hours,
       } = assignment;
 
       // Validate required fields
@@ -106,10 +103,7 @@ export async function POST(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Error creating bulk timesheets:', error);
-    return NextResponse.json(
-      { error: 'Failed to create bulk timesheets' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create bulk timesheets' }, { status: 500 });
   }
 }
 

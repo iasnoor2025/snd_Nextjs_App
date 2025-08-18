@@ -1,27 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
-import { timesheets, employees, users, projects, rentals, employeeAssignments } from '@/lib/drizzle/schema';
+import {
+  employeeAssignments,
+  employees,
+  projects,
+  rentals,
+  timesheets,
+  users,
+} from '@/lib/drizzle/schema';
 import { eq, sql } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     console.log('PUT /api/timesheets/[id] - Updating timesheet:', { id });
-    
+
     // Validate ID parameter
     const timesheetId = parseInt(id);
     if (isNaN(timesheetId)) {
-      return NextResponse.json(
-        { error: 'Invalid timesheet ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid timesheet ID' }, { status: 400 });
     }
-    
+
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -29,7 +30,7 @@ export async function PUT(
 
     const body = await request.json();
     console.log('PUT /api/timesheets/[id] - Request body:', body);
-    
+
     const {
       hoursWorked,
       overtimeHours,
@@ -59,12 +60,9 @@ export async function PUT(
       .from(timesheets)
       .where(eq(timesheets.id, timesheetId))
       .limit(1);
-        
+
     if (!existingTimesheet) {
-      return NextResponse.json(
-        { error: 'Timesheet not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Timesheet not found' }, { status: 404 });
     }
 
     console.log('PUT /api/timesheets/[id] - Found existing timesheet:', existingTimesheet);
@@ -81,7 +79,7 @@ export async function PUT(
     if (description !== undefined) updateData.description = description;
     if (tasksCompleted !== undefined) updateData.tasks = tasksCompleted;
     if (notes !== undefined) updateData.notes = notes;
-    
+
     // Handle date fields with proper validation
     if (date) {
       try {
@@ -131,16 +129,16 @@ export async function PUT(
     if (!updateData.startTime && !existingTimesheet.startTime) {
       updateData.startTime = new Date().toISOString();
     }
-    
+
     console.log('PUT /api/timesheets/[id] - Updating with data:', updateData);
-    
+
     // Update the timesheet
     const [updatedTimesheet] = await db
       .update(timesheets)
       .set(updateData)
       .where(eq(timesheets.id, timesheetId))
       .returning();
-        
+
     if (!updatedTimesheet) {
       throw new Error('No timesheet was updated');
     }
@@ -202,7 +200,7 @@ export async function PUT(
       .leftJoin(employeeAssignments, eq(timesheets.assignmentId, employeeAssignments.id))
       .where(eq(timesheets.id, timesheetId))
       .limit(1);
-        
+
     if (!timesheetWithDetails) {
       throw new Error('Failed to fetch updated timesheet details');
     }
@@ -233,55 +231,60 @@ export async function PUT(
         firstName: timesheetWithDetails.employee?.firstName || '',
         lastName: timesheetWithDetails.employee?.lastName || '',
         employeeId: timesheetWithDetails.employee?.fileNumber || '',
-        user: timesheetWithDetails.user ? {
-          name: timesheetWithDetails.user.name,
-          email: timesheetWithDetails.user.email,
-        } : undefined,
+        user: timesheetWithDetails.user
+          ? {
+              name: timesheetWithDetails.user.name,
+              email: timesheetWithDetails.user.email,
+            }
+          : undefined,
       },
-      project: timesheetWithDetails.project ? {
-        id: timesheetWithDetails.project.id.toString(),
-        name: timesheetWithDetails.project.name,
-      } : undefined,
-      rental: timesheetWithDetails.rental ? {
-        id: timesheetWithDetails.rental.id.toString(),
-        rentalNumber: timesheetWithDetails.rental.rentalNumber,
-      } : undefined,
-      assignment: timesheetWithDetails.assignment ? {
-        id: timesheetWithDetails.assignment.id.toString(),
-        name: timesheetWithDetails.assignment.assignmentType || '',
-        type: timesheetWithDetails.assignment.assignmentType,
-      } : undefined,
+      project: timesheetWithDetails.project
+        ? {
+            id: timesheetWithDetails.project.id.toString(),
+            name: timesheetWithDetails.project.name,
+          }
+        : undefined,
+      rental: timesheetWithDetails.rental
+        ? {
+            id: timesheetWithDetails.rental.id.toString(),
+            rentalNumber: timesheetWithDetails.rental.rentalNumber,
+          }
+        : undefined,
+      assignment: timesheetWithDetails.assignment
+        ? {
+            id: timesheetWithDetails.assignment.id.toString(),
+            name: timesheetWithDetails.assignment.assignmentType || '',
+            type: timesheetWithDetails.assignment.assignmentType,
+          }
+        : undefined,
     };
 
     return NextResponse.json({ timesheet: transformedTimesheet });
   } catch (error) {
     console.error('PUT /api/timesheets/[id] - Error updating timesheet:', error);
-    
+
     return NextResponse.json(
-      { error: 'Failed to update timesheet', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Failed to update timesheet',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }
 }
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     console.log('GET /api/timesheets/[id] - Fetching timesheet:', { id });
-    
+
     // Validate ID parameter
     const timesheetId = parseInt(id);
     if (isNaN(timesheetId)) {
       console.error('GET /api/timesheets/[id] - Invalid ID parameter:', id);
-      return NextResponse.json(
-        { error: 'Invalid timesheet ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid timesheet ID' }, { status: 400 });
     }
-    
+
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       console.error('GET /api/timesheets/[id] - Unauthorized access attempt');
@@ -289,16 +292,13 @@ export async function GET(
     }
 
     console.log('GET /api/timesheets/[id] - Fetching timesheet with ID:', timesheetId);
-    
+
     // Check database connection
     if (!db) {
       console.error('GET /api/timesheets/[id] - Database connection not available');
-      return NextResponse.json(
-        { error: 'Database connection not available' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Database connection not available' }, { status: 500 });
     }
-    
+
     // Test database connection
     try {
       await db.execute(sql`SELECT 1`);
@@ -306,11 +306,14 @@ export async function GET(
     } catch (dbTestError) {
       console.error('GET /api/timesheets/[id] - Database connection test failed:', dbTestError);
       return NextResponse.json(
-        { error: 'Database connection failed', details: dbTestError instanceof Error ? dbTestError.message : 'Unknown database error' },
+        {
+          error: 'Database connection failed',
+          details: dbTestError instanceof Error ? dbTestError.message : 'Unknown database error',
+        },
         { status: 500 }
       );
     }
-    
+
     // First, check if the timesheet exists with a simple query
     console.log('GET /api/timesheets/[id] - Testing basic timesheet query...');
     const [timesheetExists] = await db
@@ -318,14 +321,14 @@ export async function GET(
       .from(timesheets)
       .where(eq(timesheets.id, timesheetId))
       .limit(1);
-        
+
     if (!timesheetExists) {
       console.log('GET /api/timesheets/[id] - Timesheet not found in database');
       return NextResponse.json({ error: 'Timesheet not found' }, { status: 404 });
     }
 
     console.log('GET /api/timesheets/[id] - Timesheet exists, fetching basic details...');
-    
+
     // Fetch basic timesheet data first (without joins)
     let basicTimesheet;
     try {
@@ -357,25 +360,31 @@ export async function GET(
     } catch (basicQueryError) {
       console.error('GET /api/timesheets/[id] - Basic timesheet query failed:', basicQueryError);
       return NextResponse.json(
-        { error: 'Basic timesheet query failed', details: basicQueryError instanceof Error ? basicQueryError.message : 'Unknown query error' },
+        {
+          error: 'Basic timesheet query failed',
+          details:
+            basicQueryError instanceof Error ? basicQueryError.message : 'Unknown query error',
+        },
         { status: 500 }
       );
     }
-        
+
     if (!basicTimesheet) {
       console.error('GET /api/timesheets/[id] - Basic timesheet query returned no results');
       return NextResponse.json({ error: 'Timesheet not found' }, { status: 404 });
     }
 
-    console.log('GET /api/timesheets/[id] - Basic timesheet query successful, fetching related data...');
-    
+    console.log(
+      'GET /api/timesheets/[id] - Basic timesheet query successful, fetching related data...'
+    );
+
     // Now try to fetch related data one by one to identify which join is failing
     let employeeData: any = null;
     let userData: any = null;
     let projectData: any = null;
     let rentalData: any = null;
     let assignmentData: any = null;
-    
+
     try {
       // Try to fetch employee data
       if (basicTimesheet.employeeId) {
@@ -396,7 +405,7 @@ export async function GET(
     } catch (employeeError) {
       console.warn('GET /api/timesheets/[id] - Failed to fetch employee data:', employeeError);
     }
-    
+
     try {
       // Try to fetch user data
       if (employeeData?.userId) {
@@ -415,7 +424,7 @@ export async function GET(
     } catch (userError) {
       console.warn('GET /api/timesheets/[id] - Failed to fetch user data:', userError);
     }
-    
+
     try {
       // Try to fetch project data
       if (basicTimesheet.projectId) {
@@ -433,7 +442,7 @@ export async function GET(
     } catch (projectError) {
       console.warn('GET /api/timesheets/[id] - Failed to fetch project data:', projectError);
     }
-    
+
     try {
       // Try to fetch rental data
       if (basicTimesheet.rentalId) {
@@ -451,7 +460,7 @@ export async function GET(
     } catch (rentalError) {
       console.warn('GET /api/timesheets/[id] - Failed to fetch rental data:', rentalError);
     }
-    
+
     try {
       // Try to fetch assignment data
       if (basicTimesheet.assignmentId) {
@@ -476,7 +485,9 @@ export async function GET(
     const transformedTimesheet = {
       id: basicTimesheet.id.toString(),
       employeeId: basicTimesheet.employeeId.toString(),
-      date: basicTimesheet.date ? String(basicTimesheet.date).split('T')[0] : new Date().toISOString().split('T')[0],
+      date: basicTimesheet.date
+        ? String(basicTimesheet.date).split('T')[0]
+        : new Date().toISOString().split('T')[0],
       hoursWorked: basicTimesheet.hoursWorked || '0',
       overtimeHours: basicTimesheet.overtimeHours || '0',
       startTime: basicTimesheet.startTime ? String(basicTimesheet.startTime) : '',
@@ -493,35 +504,45 @@ export async function GET(
       approvedAt: basicTimesheet.approvedAt ? String(basicTimesheet.approvedAt) : '',
       createdAt: String(basicTimesheet.createdAt),
       updatedAt: String(basicTimesheet.updatedAt),
-      employee: employeeData ? {
-        id: employeeData.id.toString(), 
-        firstName: employeeData.firstName || '',
-        lastName: employeeData.lastName || '',
-        employeeId: employeeData.fileNumber || '',
-        user: userData ? {
-          name: userData.name,
-          email: userData.email,
-        } : undefined,
-      } : {
-        id: '',
-        firstName: '',
-        lastName: '',
-        employeeId: '',
-        user: undefined,
-      },
-      project: projectData ? {
-        id: projectData.id.toString(),
-        name: projectData.name,
-      } : undefined,
-      rental: rentalData ? {
-        id: rentalData.id.toString(),
-        rentalNumber: rentalData.rentalNumber,
-      } : undefined,
-      assignment: assignmentData ? {
-        id: assignmentData.id.toString(),
-        name: assignmentData.assignmentType || '',
-        type: assignmentData.assignmentType,
-      } : undefined,
+      employee: employeeData
+        ? {
+            id: employeeData.id.toString(),
+            firstName: employeeData.firstName || '',
+            lastName: employeeData.lastName || '',
+            employeeId: employeeData.fileNumber || '',
+            user: userData
+              ? {
+                  name: userData.name,
+                  email: userData.email,
+                }
+              : undefined,
+          }
+        : {
+            id: '',
+            firstName: '',
+            lastName: '',
+            employeeId: '',
+            user: undefined,
+          },
+      project: projectData
+        ? {
+            id: projectData.id.toString(),
+            name: projectData.name,
+          }
+        : undefined,
+      rental: rentalData
+        ? {
+            id: rentalData.id.toString(),
+            rentalNumber: rentalData.rentalNumber,
+          }
+        : undefined,
+      assignment: assignmentData
+        ? {
+            id: assignmentData.id.toString(),
+            name: assignmentData.assignmentType || '',
+            type: assignmentData.assignmentType,
+          }
+        : undefined,
     };
 
     console.log('GET /api/timesheets/[id] - Returning transformed timesheet');
@@ -529,7 +550,10 @@ export async function GET(
   } catch (error) {
     console.error('GET /api/timesheets/[id] - Unexpected error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch timesheet', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Failed to fetch timesheet',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }
@@ -554,10 +578,7 @@ export async function DELETE(
       .limit(1);
 
     if (!existingTimesheet) {
-      return NextResponse.json(
-        { error: 'Timesheet not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Timesheet not found' }, { status: 404 });
     }
 
     // Check user role from session
@@ -572,19 +593,11 @@ export async function DELETE(
     }
 
     // Delete the timesheet
-    await db
-      .delete(timesheets)
-      .where(eq(timesheets.id, parseInt(id)));
+    await db.delete(timesheets).where(eq(timesheets.id, parseInt(id)));
 
-    return NextResponse.json(
-      { message: 'Timesheet deleted successfully' },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: 'Timesheet deleted successfully' }, { status: 200 });
   } catch (error) {
     console.error('DELETE /api/timesheets/[id] - Error deleting timesheet:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

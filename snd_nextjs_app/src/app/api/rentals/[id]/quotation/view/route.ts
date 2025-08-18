@@ -1,14 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { RentalService } from '@/lib/services/rental-service';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     console.log('🔍 Fetching rental with ID:', id);
-    
+
     const rental = await RentalService.getRental(parseInt(id));
     console.log('📦 Rental data received:', rental);
 
@@ -23,7 +20,10 @@ export async function GET(
     // Ensure customer data exists
     if (!rental.customer) {
       console.log('❌ Customer data missing from rental:', rental);
-      return NextResponse.json({ error: 'Customer data not found for this rental' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Customer data not found for this rental' },
+        { status: 404 }
+      );
     }
 
     console.log('👤 Customer data found:', rental.customer);
@@ -39,7 +39,7 @@ export async function GET(
         address: rental.customer.address || '',
         vat: rental.customer.vat || '',
         email: rental.customer.email || '',
-        phone: rental.customer.phone || ''
+        phone: rental.customer.phone || '',
       },
       rentalItems: rental.rental_items || [],
       subtotal: rental.subtotal || 0,
@@ -50,10 +50,16 @@ export async function GET(
       finalAmount: rental.finalAmount || 0,
       depositAmount: rental.depositAmount || 0,
       paymentTermsDays: rental.paymentTermsDays || 30,
-      startDate: rental.startDate ? new Date(rental.startDate).toISOString() : new Date().toISOString(),
-      expectedEndDate: rental.expectedEndDate ? new Date(rental.expectedEndDate).toISOString() : undefined,
+      startDate: rental.startDate
+        ? new Date(rental.startDate).toISOString()
+        : new Date().toISOString(),
+      expectedEndDate: rental.expectedEndDate
+        ? new Date(rental.expectedEndDate).toISOString()
+        : undefined,
       notes: rental.notes || '',
-      createdAt: rental.createdAt ? new Date(rental.createdAt).toISOString() : new Date().toISOString(),
+      createdAt: rental.createdAt
+        ? new Date(rental.createdAt).toISOString()
+        : new Date().toISOString(),
       status: 'draft',
       // Note: Some fields like validity, customerReference, deliveryAddress, etc. don't exist in rentals schema
       // These are set to empty strings as they are not available
@@ -68,7 +74,7 @@ export async function GET(
       rentalTerms: rental.rentalTerms || '',
       paymentTerms: rental.paymentTerms || '',
       additionalTerms: rental.additionalTerms || '',
-      mdTerms: rental.mdTerms || ''
+      mdTerms: rental.mdTerms || '',
     };
 
     console.log('📄 Generated quotation data:', quotation);
@@ -77,9 +83,6 @@ export async function GET(
     return NextResponse.json(quotation);
   } catch (error) {
     console.error('❌ Error fetching quotation:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch quotation' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch quotation' }, { status: 500 });
   }
 }

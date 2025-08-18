@@ -1,28 +1,41 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Eye,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { usePrint } from '@/hooks/use-print';
+import {
   Calendar,
-  RefreshCw,
   Download,
+  Edit,
+  Eye,
+  FileText,
+  Plus,
   Printer,
+  RefreshCw,
+  Search,
   Send,
-  FileText
-} from "lucide-react";
-import { toast } from "sonner";
-import Link from "next/link";
-import { usePrint } from "@/hooks/use-print";
+  Trash2,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 // i18n refactor: All user-facing strings now use useTranslation('quotation')
 import { useTranslation } from 'react-i18next';
 
@@ -87,18 +100,18 @@ export default function QuotationManagementPage() {
   const { t } = useTranslation('quotation');
   const [quotations, setQuotations] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const { printRef, handlePrint } = usePrint({
-    documentTitle: "Quotation-List",
+    documentTitle: 'Quotation-List',
     waitForImages: true,
-    onPrintError: (error) => {
+    onPrintError: error => {
       console.error('Print error details:', error);
       // Continue with print even if there are image errors
-    }
+    },
   });
 
   useEffect(() => {
@@ -132,7 +145,7 @@ export default function QuotationManagementPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      toast.loading("Deleting quotation...");
+      toast.loading('Deleting quotation...');
       const response = await fetch(`/api/quotations/${id}`, {
         method: 'DELETE',
       });
@@ -141,25 +154,25 @@ export default function QuotationManagementPage() {
         throw new Error('Failed to delete quotation');
       }
 
-      toast.success("Quotation deleted successfully");
+      toast.success('Quotation deleted successfully');
       // Refresh the list
       window.location.reload();
     } catch (error) {
-      toast.error("Failed to delete quotation");
+      toast.error('Failed to delete quotation');
     }
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "draft":
+      case 'draft':
         return <Badge className="bg-gray-100 text-gray-800">{t('status.draft')}</Badge>;
-      case "sent":
+      case 'sent':
         return <Badge className="bg-blue-100 text-blue-800">{t('status.sent')}</Badge>;
-      case "approved":
+      case 'approved':
         return <Badge className="bg-green-100 text-green-800">{t('status.approved')}</Badge>;
-      case "rejected":
+      case 'rejected':
         return <Badge className="bg-red-100 text-red-800">{t('status.rejected')}</Badge>;
-      case "expired":
+      case 'expired':
         return <Badge className="bg-orange-100 text-orange-800">{t('status.expired')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
@@ -169,7 +182,7 @@ export default function QuotationManagementPage() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'USD',
     }).format(amount);
   };
 
@@ -182,10 +195,8 @@ export default function QuotationManagementPage() {
   };
 
   const handleExport = () => {
-    toast.info("Export functionality coming soon");
+    toast.info('Export functionality coming soon');
   };
-
-
 
   if (loading) {
     return (
@@ -237,7 +248,7 @@ export default function QuotationManagementPage() {
               <Input
                 placeholder={t('quotation_management.search_placeholder')}
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={e => setSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -259,14 +270,14 @@ export default function QuotationManagementPage() {
             type="date"
             placeholder={t('quotation_management.from_date_placeholder')}
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={e => setStartDate(e.target.value)}
             className="w-full sm:w-40"
           />
           <Input
             type="date"
             placeholder={t('quotation_management.to_date_placeholder')}
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={e => setEndDate(e.target.value)}
             className="w-full sm:w-40"
           />
         </div>
@@ -286,7 +297,7 @@ export default function QuotationManagementPage() {
                 {t('quotation_management.showing_quotations', {
                   from: quotations?.from || 0,
                   to: quotations?.to || 0,
-                  total: quotations?.total || 0
+                  total: quotations?.total || 0,
                 })}
               </span>
             </div>
@@ -307,7 +318,7 @@ export default function QuotationManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {quotations?.data.map((quotation) => (
+              {quotations?.data.map(quotation => (
                 <TableRow key={quotation.id}>
                   <TableCell className="font-mono font-medium">
                     {quotation.quotation_number}
@@ -315,7 +326,9 @@ export default function QuotationManagementPage() {
                   <TableCell>
                     <div>
                       <div className="font-medium">{quotation.customer.company_name}</div>
-                      <div className="text-sm text-gray-500">{quotation.customer.contact_person}</div>
+                      <div className="text-sm text-gray-500">
+                        {quotation.customer.contact_person}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>{getStatusBadge(quotation.status)}</TableCell>
@@ -331,9 +344,13 @@ export default function QuotationManagementPage() {
                       <span>{formatDate(quotation.valid_until)}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="font-semibold">{formatCurrency(quotation.total_amount)}</TableCell>
+                  <TableCell className="font-semibold">
+                    {formatCurrency(quotation.total_amount)}
+                  </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{quotation.quotationItems.length} {t('quotation_management.items_count')}</Badge>
+                    <Badge variant="outline">
+                      {quotation.quotationItems.length} {t('quotation_management.items_count')}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end space-x-2">
@@ -379,7 +396,7 @@ export default function QuotationManagementPage() {
                 {t('quotation_management.showing_results', {
                   from: quotations.from,
                   to: quotations.to,
-                  total: quotations.total
+                  total: quotations.total,
                 })}
               </div>
               <div className="flex items-center space-x-2">
@@ -394,7 +411,7 @@ export default function QuotationManagementPage() {
                 <span className="text-sm">
                   {t('quotation_management.page_of', {
                     current: quotations.current_page,
-                    total: quotations.last_page
+                    total: quotations.last_page,
                   })}
                 </span>
                 <Button

@@ -1,36 +1,33 @@
-import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { employees as employeesTable, salaryIncrements } from '@/lib/drizzle/schema';
-import { eq, desc } from 'drizzle-orm';
-import { users } from '@/lib/drizzle/schema';
+import { employees as employeesTable, salaryIncrements, users } from '@/lib/drizzle/schema';
+import { desc, eq } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
 
-export async function GET(
-  { params }: { params: { id: string } }
-) {
+export async function GET({ params }: { params: { id: string } }) {
   try {
     console.log('Starting GET /api/employees/[id]/salary-increments');
-    
+
     const { id } = params;
     console.log('Employee ID from params:', id);
-    
+
     const employeeId = parseInt(id);
     console.log('Parsed employee ID:', employeeId);
-    
+
     if (isNaN(employeeId)) {
       return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
 
     console.log('About to check if employee exists...');
-    
+
     // Check if employee exists using Drizzle
     let employee;
     try {
       employee = await db
-        .select({ 
-          id: employeesTable.id, 
-          firstName: employeesTable.firstName, 
-          lastName: employeesTable.lastName, 
-          fileNumber: employeesTable.fileNumber 
+        .select({
+          id: employeesTable.id,
+          firstName: employeesTable.firstName,
+          lastName: employeesTable.lastName,
+          fileNumber: employeesTable.fileNumber,
         })
         .from(employeesTable)
         .where(eq(employeesTable.id, employeeId))
@@ -47,7 +44,7 @@ export async function GET(
     }
 
     console.log('About to query salary increments with Drizzle...');
-    
+
     // Query salary increments using Drizzle - full fields
     let salaryIncrementsData;
     try {
@@ -82,13 +79,13 @@ export async function GET(
         .from(salaryIncrements)
         .where(eq(salaryIncrements.employeeId, employeeId))
         .orderBy(desc(salaryIncrements.effectiveDate));
-      
+
       console.log('Drizzle query successful, found:', salaryIncrementsData.length);
     } catch (queryError) {
       console.error('Error in salary increments query:', queryError);
       throw queryError;
     }
-    
+
     // Fetch user names separately to avoid complex joins
     const userIds = salaryIncrementsData
       .map(inc => [inc.requestedBy, inc.approvedBy, inc.rejectedBy])
@@ -97,7 +94,7 @@ export async function GET(
 
     const uniqueUserIds = [...new Set(userIds)];
     let usersData: { id: number; name: string }[] = [];
-    
+
     try {
       if (uniqueUserIds.length > 0) {
         console.log('Fetching user data for IDs:', uniqueUserIds);
@@ -109,7 +106,7 @@ export async function GET(
               .from(users)
               .where(eq(users.id, userId))
               .limit(1);
-            
+
             if (userResult.length > 0 && userResult[0]) {
               usersData.push(userResult[0]);
             }
@@ -128,9 +125,9 @@ export async function GET(
 
     // Create a map for quick user lookup
     const userMap = new Map(usersData.map(user => [user.id, user.name]));
-    
+
     console.log('Transforming data...');
-    
+
     // Transform the data to match the expected format - full version
     const transformedIncrements = salaryIncrementsData.map(increment => ({
       id: increment.id,
@@ -152,18 +149,24 @@ export async function GET(
       requested_at: increment.requestedAt,
       approved_at: increment.approvedAt,
       rejected_at: increment.rejectedAt,
-      requested_by_user: increment.requestedBy ? {
-        id: increment.requestedBy,
-        name: userMap.get(increment.requestedBy) || 'Unknown',
-      } : null,
-      approved_by_user: increment.approvedBy ? {
-        id: increment.approvedBy,
-        name: userMap.get(increment.approvedBy) || 'Unknown',
-      } : null,
-      rejected_by_user: increment.rejectedBy ? {
-        id: increment.rejectedBy,
-        name: userMap.get(increment.rejectedBy) || 'Unknown',
-      } : null,
+      requested_by_user: increment.requestedBy
+        ? {
+            id: increment.requestedBy,
+            name: userMap.get(increment.requestedBy) || 'Unknown',
+          }
+        : null,
+      approved_by_user: increment.approvedBy
+        ? {
+            id: increment.approvedBy,
+            name: userMap.get(increment.approvedBy) || 'Unknown',
+          }
+        : null,
+      rejected_by_user: increment.rejectedBy
+        ? {
+            id: increment.rejectedBy,
+            name: userMap.get(increment.rejectedBy) || 'Unknown',
+          }
+        : null,
       notes: increment.notes,
       created_at: increment.createdAt,
       updated_at: increment.updatedAt,
@@ -171,21 +174,20 @@ export async function GET(
 
     console.log('Transformation complete, returning data...');
     return NextResponse.json({ data: transformedIncrements });
-    
   } catch (error) {
     console.error('Error in salary increments endpoint:', error);
-    
+
     // Log more detailed error information
     if (error instanceof Error) {
       console.error('Error name:', error.name);
       console.error('Error message:', error.message);
       console.error('Error stack:', error.stack);
     }
-    
+
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

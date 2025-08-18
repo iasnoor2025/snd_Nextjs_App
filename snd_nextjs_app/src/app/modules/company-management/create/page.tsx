@@ -1,29 +1,29 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, Building2 } from "lucide-react";
-import { toast } from "sonner";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, Building2, Save } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function CreateCompanyPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    address: "",
-    email: "",
-    phone: "",
+    name: '',
+    address: '',
+    email: '',
+    phone: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       toast.error('Company name is required');
       return;
@@ -58,7 +58,7 @@ export default function CreateCompanyPage() {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -89,7 +89,7 @@ export default function CreateCompanyPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  onChange={e => handleInputChange('name', e.target.value)}
                   placeholder="Enter company name"
                   required
                 />
@@ -101,7 +101,7 @@ export default function CreateCompanyPage() {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onChange={e => handleInputChange('email', e.target.value)}
                   placeholder="Enter email address"
                 />
               </div>
@@ -111,7 +111,7 @@ export default function CreateCompanyPage() {
                 <Input
                   id="phone"
                   value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  onChange={e => handleInputChange('phone', e.target.value)}
                   placeholder="Enter phone number"
                 />
               </div>
@@ -122,7 +122,7 @@ export default function CreateCompanyPage() {
               <Textarea
                 id="address"
                 value={formData.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
+                onChange={e => handleInputChange('address', e.target.value)}
                 placeholder="Enter company address"
                 rows={3}
               />
@@ -144,4 +144,4 @@ export default function CreateCompanyPage() {
       </Card>
     </div>
   );
-} 
+}

@@ -1,33 +1,33 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { AssignmentDialog } from "./components/AssignmentDialog";
-import { 
-  ArrowLeft,
-  Plus,
-  Edit,
-  Trash2,
-  Calendar,
-  User,
-  MapPin,
-  FileText,
-  Loader2,
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import ApiService from '@/lib/api-service';
+import {
   AlertCircle,
+  ArrowLeft,
+  Calendar,
   CheckCircle,
-  Clock,
-  Package
-} from "lucide-react";
-import { toast } from "sonner";
-import ApiService from "@/lib/api-service";
+  Edit,
+  Loader2,
+  Package,
+  Plus,
+  Trash2,
+} from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { AssignmentDialog } from './components/AssignmentDialog';
 
 interface Equipment {
   id: number;
@@ -96,41 +96,13 @@ interface Assignment {
   updated_at: string;
 }
 
-interface Employee {
-  id: number;
-  file_number: string;
-  first_name: string;
-  last_name: string;
-  full_name: string;
-}
-
-interface Project {
-  id: number;
-  name: string;
-  location: string | null;
-}
-
 export default function EquipmentAssignmentPage() {
   const params = useParams();
   const router = useRouter();
   const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
-  const [formData, setFormData] = useState({
-    assignment_type: 'project',
-    project_id: '',
-    employee_id: '',
-    start_date: '',
-    end_date: '',
-    daily_rate: '',
-    total_amount: '',
-    notes: ''
-  });
 
   const equipmentId = params.id as string;
 
@@ -154,18 +126,6 @@ export default function EquipmentAssignmentPage() {
       if (historyResponse.success) {
         setAssignments(historyResponse.data);
       }
-
-      // Fetch employees for assignment
-      const employeesResponse = await ApiService.getEmployees();
-      if (employeesResponse.success) {
-        setEmployees(employeesResponse.data);
-      }
-
-      // Fetch projects for assignment
-      const projectsResponse = await ApiService.getProjects();
-      if (projectsResponse.success) {
-        setProjects(projectsResponse.data);
-      }
     } catch (error) {
       toast.error('Failed to load assignment data');
     } finally {
@@ -175,50 +135,50 @@ export default function EquipmentAssignmentPage() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      active: { 
-        className: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200", 
-        label: 'Active' 
+      active: {
+        className: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200',
+        label: 'Active',
       },
-      completed: { 
-        className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200", 
-        label: 'Completed' 
+      completed: {
+        className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200',
+        label: 'Completed',
       },
-      pending: { 
-        className: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200", 
-        label: 'Pending' 
+      pending: {
+        className: 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200',
+        label: 'Pending',
       },
-      cancelled: { 
-        className: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200", 
-        label: 'Cancelled' 
+      cancelled: {
+        className: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200',
+        label: 'Cancelled',
       },
     };
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || { 
-      className: "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200", 
-      label: status 
+
+    const config = statusConfig[status as keyof typeof statusConfig] || {
+      className: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200',
+      label: status,
     };
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 
   const getAssignmentTypeBadge = (type: string) => {
     const typeConfig = {
-      project: { 
-        className: "bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-200", 
-        label: 'Project' 
+      project: {
+        className: 'bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-200',
+        label: 'Project',
       },
-      rental: { 
-        className: "bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200", 
-        label: 'Rental' 
+      rental: {
+        className: 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200',
+        label: 'Rental',
       },
-      manual: { 
-        className: "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200", 
-        label: 'Manual' 
+      manual: {
+        className: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200',
+        label: 'Manual',
       },
     };
-    
-    const config = typeConfig[type as keyof typeof typeConfig] || { 
-      className: "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200", 
-      label: type 
+
+    const config = typeConfig[type as keyof typeof typeConfig] || {
+      className: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200',
+      label: type,
     };
     return <Badge className={config.className}>{config.label}</Badge>;
   };
@@ -259,9 +219,7 @@ export default function EquipmentAssignmentPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Equipment Assignments</h1>
-            <p className="text-muted-foreground">
-              Manage assignments for {equipment.name}
-            </p>
+            <p className="text-muted-foreground">Manage assignments for {equipment.name}</p>
           </div>
         </div>
         <Button onClick={() => setShowCreateDialog(true)}>
@@ -281,9 +239,8 @@ export default function EquipmentAssignmentPage() {
         }}
       />
 
-
-      {/* Current Assignment */}  
-      {equipment?.current_assignment && ( 
+      {/* Current Assignment */}
+      {equipment?.current_assignment && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -295,7 +252,9 @@ export default function EquipmentAssignmentPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Assignment Type</Label>
-                <div className="mt-1">{getAssignmentTypeBadge(equipment.current_assignment.type)}</div>
+                <div className="mt-1">
+                  {getAssignmentTypeBadge(equipment.current_assignment.type)}
+                </div>
               </div>
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Status</Label>
@@ -307,8 +266,13 @@ export default function EquipmentAssignmentPage() {
               </div>
               {equipment.current_assignment.employee && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Assigned Employee</Label>
-                  <p className="text-sm">👤 {equipment.current_assignment.employee.name} ({equipment.current_assignment.employee.file_number})</p>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Assigned Employee
+                  </Label>
+                  <p className="text-sm">
+                    👤 {equipment.current_assignment.employee.name} (
+                    {equipment.current_assignment.employee.file_number})
+                  </p>
                 </div>
               )}
               {equipment.current_assignment.location && (
@@ -319,7 +283,11 @@ export default function EquipmentAssignmentPage() {
               )}
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Start Date</Label>
-                <p className="text-sm">{equipment.current_assignment.start_date ? new Date(equipment.current_assignment.start_date).toLocaleDateString() : 'Not set'}</p>
+                <p className="text-sm">
+                  {equipment.current_assignment.start_date
+                    ? new Date(equipment.current_assignment.start_date).toLocaleDateString()
+                    : 'Not set'}
+                </p>
               </div>
               {equipment.current_assignment.notes && (
                 <div className="md:col-span-2">
@@ -339,9 +307,7 @@ export default function EquipmentAssignmentPage() {
             <Calendar className="h-5 w-5" />
             <span>Assignment History</span>
           </CardTitle>
-          <CardDescription>
-            All assignments for this equipment
-          </CardDescription>
+          <CardDescription>All assignments for this equipment</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
@@ -365,19 +331,19 @@ export default function EquipmentAssignmentPage() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  assignments.map((assignment) => (
+                  assignments.map(assignment => (
                     <TableRow key={assignment.id}>
                       <TableCell>{getAssignmentTypeBadge(assignment.assignment_type)}</TableCell>
                       <TableCell>
                         <div>
                           <div className="font-medium">
-                            {assignment.assignment_type === 'project' && assignment.project 
-                              ? assignment.project.name 
+                            {assignment.assignment_type === 'project' && assignment.project
+                              ? assignment.project.name
                               : assignment.assignment_type === 'rental' && assignment.rental
-                              ? `${assignment.rental.project?.name || 'Unknown Project'} - ${assignment.rental.rental_number}`
-                              : assignment.assignment_type === 'manual'
-                              ? `Manual Assignment${assignment.employee ? ` - ${assignment.employee.name}` : ''}`
-                              : assignment.assignment_type}
+                                ? `${assignment.rental.project?.name || 'Unknown Project'} - ${assignment.rental.rental_number}`
+                                : assignment.assignment_type === 'manual'
+                                  ? `Manual Assignment${assignment.employee ? ` - ${assignment.employee.name}` : ''}`
+                                  : assignment.assignment_type}
                           </div>
                           {assignment.location && (
                             <div className="text-xs text-muted-foreground">
@@ -390,7 +356,9 @@ export default function EquipmentAssignmentPage() {
                         {assignment.employee ? (
                           <div>
                             <div className="font-medium">{assignment.employee.name}</div>
-                            <div className="text-xs text-muted-foreground">{assignment.employee.file_number}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {assignment.employee.file_number}
+                            </div>
                           </div>
                         ) : (
                           <span className="text-muted-foreground text-sm">No employee</span>
@@ -399,14 +367,18 @@ export default function EquipmentAssignmentPage() {
                       <TableCell>{getStatusBadge(assignment.status)}</TableCell>
                       <TableCell>{new Date(assignment.start_date).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        {assignment.end_date ? new Date(assignment.end_date).toLocaleDateString() : '-'}
+                        {assignment.end_date
+                          ? new Date(assignment.end_date).toLocaleDateString()
+                          : '-'}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {/* TODO: Implement edit */}}
+                            onClick={() => {
+                              /* TODO: Implement edit */
+                            }}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -414,7 +386,9 @@ export default function EquipmentAssignmentPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => {/* TODO: Implement complete */}}
+                              onClick={() => {
+                                /* TODO: Implement complete */
+                              }}
                             >
                               <CheckCircle className="h-4 w-4" />
                             </Button>
@@ -422,7 +396,9 @@ export default function EquipmentAssignmentPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {/* TODO: Implement delete */}}
+                            onClick={() => {
+                              /* TODO: Implement delete */
+                            }}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

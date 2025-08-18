@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { employeeDocuments } from '@/lib/drizzle/schema';
-import { eq, and } from 'drizzle-orm';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
-import { unlink } from 'fs/promises';
-import { join } from 'path';
+import { and, eq } from 'drizzle-orm';
 import { existsSync } from 'fs';
+import { unlink } from 'fs/promises';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { join } from 'path';
 
 export async function DELETE(
   _request: NextRequest,
@@ -15,7 +15,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const resolvedParams = await params;
@@ -23,10 +23,7 @@ export async function DELETE(
     const documentId = parseInt(resolvedParams.documentId);
 
     if (!employeeId || !documentId) {
-      return NextResponse.json(
-        { error: "Invalid employee ID or document ID" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid employee ID or document ID' }, { status: 400 });
     }
 
     // Get document from database
@@ -34,20 +31,14 @@ export async function DELETE(
       .select()
       .from(employeeDocuments)
       .where(
-        and(
-          eq(employeeDocuments.id, documentId),
-          eq(employeeDocuments.employeeId, employeeId)
-        )
+        and(eq(employeeDocuments.id, documentId), eq(employeeDocuments.employeeId, employeeId))
       )
       .limit(1);
-    
+
     const documentRecord = document[0];
 
     if (!documentRecord) {
-      return NextResponse.json(
-        { error: "Document not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
 
     // Delete file from filesystem
@@ -62,22 +53,20 @@ export async function DELETE(
     }
 
     // Delete document from database
-    await db
-      .delete(employeeDocuments)
-      .where(eq(employeeDocuments.id, documentId));
+    await db.delete(employeeDocuments).where(eq(employeeDocuments.id, documentId));
 
     return NextResponse.json({
       success: true,
-      message: 'Document deleted successfully'
+      message: 'Document deleted successfully',
     });
   } catch (error) {
     console.error('Error in DELETE /api/employees/[id]/documents/[documentId]:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to delete document: ' + (error as Error).message
+        message: 'Failed to delete document: ' + (error as Error).message,
       },
       { status: 500 }
     );
   }
-} 
+}

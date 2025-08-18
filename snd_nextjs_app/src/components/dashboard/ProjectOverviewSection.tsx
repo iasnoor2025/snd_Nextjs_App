@@ -1,93 +1,124 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { useRouter } from "next/navigation"
-import { Calendar, Users, Target, TrendingUp, Eye, Plus, Clock, CheckCircle, X } from "lucide-react"
-import { RoleBased } from "@/components/RoleBased"
-import { useI18n } from "@/hooks/use-i18n"
+import { RoleBased } from '@/components/RoleBased';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { useI18n } from '@/hooks/use-i18n';
+import {
+  Calendar,
+  CheckCircle,
+  Clock,
+  Eye,
+  Plus,
+  Target,
+  TrendingUp,
+  Users,
+  X,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 interface ProjectData {
-  id: number
-  name: string
-  status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled'
-  progress: number
-  startDate: string
-  endDate: string
-  budget: number
-  spent: number
-  teamSize: number
-  priority: 'low' | 'medium' | 'high' | 'critical'
+  id: number;
+  name: string;
+  status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
+  progress: number;
+  startDate: string;
+  endDate: string;
+  budget: number;
+  spent: number;
+  teamSize: number;
+  priority: 'low' | 'medium' | 'high' | 'critical';
   manager: {
-    name: string
-    avatar?: string
-    initials: string
-  }
-  department: string
+    name: string;
+    avatar?: string;
+    initials: string;
+  };
+  department: string;
 }
 
 interface ProjectOverviewSectionProps {
-  projectData: ProjectData[]
-  onUpdateProject: (project: ProjectData) => void
-  onHideSection: () => void
+  projectData: ProjectData[];
+  onUpdateProject: (project: ProjectData) => void;
+  onHideSection: () => void;
 }
 
-export function ProjectOverviewSection({ projectData, onUpdateProject, onHideSection }: ProjectOverviewSectionProps) {
-  const router = useRouter()
-  const { t } = useI18n()
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [priorityFilter, setPriorityFilter] = useState('all')
+export function ProjectOverviewSection({
+  projectData,
+  onUpdateProject,
+  onHideSection,
+}: ProjectOverviewSectionProps) {
+  const router = useRouter();
+  const { t } = useI18n();
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
 
   // Filter projects based on status and priority
   const filteredProjects = projectData.filter(project => {
-    const matchesStatus = statusFilter === 'all' || project.status === statusFilter
-    const matchesPriority = priorityFilter === 'all' || project.priority === priorityFilter
-    return matchesStatus && matchesPriority
-  })
+    const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || project.priority === priorityFilter;
+    return matchesStatus && matchesPriority;
+  });
 
   // Calculate summary statistics
-  const totalProjects = projectData.length
-  const activeProjects = projectData.filter(p => p.status === 'active').length
-  const completedProjects = projectData.filter(p => p.status === 'completed').length
-  const totalBudget = projectData.reduce((sum, p) => sum + p.budget, 0)
-  const totalSpent = projectData.reduce((sum, p) => sum + p.spent, 0)
-  const averageProgress = projectData.reduce((sum, p) => sum + p.progress, 0) / totalProjects
+  const totalProjects = projectData.length;
+  const activeProjects = projectData.filter(p => p.status === 'active').length;
+  const completedProjects = projectData.filter(p => p.status === 'completed').length;
+  const totalBudget = projectData.reduce((sum, p) => sum + p.budget, 0);
+  const totalSpent = projectData.reduce((sum, p) => sum + p.spent, 0);
+  const averageProgress = projectData.reduce((sum, p) => sum + p.progress, 0) / totalProjects;
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'planning': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800'
-      case 'active': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
-      case 'on-hold': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800'
-      case 'completed': return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800'
-      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800'
+      case 'planning':
+        return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800';
+      case 'active':
+        return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800';
+      case 'on-hold':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800';
+      case 'completed':
+        return 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800';
     }
-  }
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'critical': return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
-      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800'
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800'
-      case 'low': return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800'
-      default: return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800'
+      case 'critical':
+        return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800';
+      case 'high':
+        return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800';
+      case 'low':
+        return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800';
     }
-  }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'planning': return <Clock className="h-4 w-4" />
-      case 'active': return <TrendingUp className="h-4 w-4" />
-      case 'on-hold': return <Target className="h-4 w-4" />
-      case 'completed': return <CheckCircle className="h-4 w-4" />
-      case 'cancelled': return <X className="h-4 w-4" />
-      default: return <Clock className="h-4 w-4" />
+      case 'planning':
+        return <Clock className="h-4 w-4" />;
+      case 'active':
+        return <TrendingUp className="h-4 w-4" />;
+      case 'on-hold':
+        return <Target className="h-4 w-4" />;
+      case 'completed':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'cancelled':
+        return <X className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
     }
-  }
+  };
 
   return (
     <Card className="border-2 border-dashed border-blue-200 dark:border-blue-800">
@@ -101,7 +132,8 @@ export function ProjectOverviewSection({ projectData, onUpdateProject, onHideSec
               {t('dashboard.projectOverview.title') || 'Project Overview'}
             </CardTitle>
             <CardDescription className="text-lg mt-2">
-              {t('dashboard.projectOverview.description') || 'Monitor project progress, budgets, and team performance'}
+              {t('dashboard.projectOverview.description') ||
+                'Monitor project progress, budgets, and team performance'}
             </CardDescription>
           </div>
           <div className="flex items-center gap-3">
@@ -135,8 +167,12 @@ export function ProjectOverviewSection({ projectData, onUpdateProject, onHideSec
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Projects</p>
-                  <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{totalProjects}</p>
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                    Total Projects
+                  </p>
+                  <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">
+                    {totalProjects}
+                  </p>
                 </div>
                 <div className="p-3 bg-blue-200 dark:bg-blue-800 rounded-full">
                   <Target className="h-6 w-6 text-blue-700 dark:text-blue-300" />
@@ -149,8 +185,12 @@ export function ProjectOverviewSection({ projectData, onUpdateProject, onHideSec
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-green-600 dark:text-green-400">Active Projects</p>
-                  <p className="text-3xl font-bold text-green-900 dark:text-green-100">{activeProjects}</p>
+                  <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                    Active Projects
+                  </p>
+                  <p className="text-3xl font-bold text-green-900 dark:text-green-100">
+                    {activeProjects}
+                  </p>
                 </div>
                 <div className="p-3 bg-green-200 dark:bg-green-800 rounded-full">
                   <TrendingUp className="h-6 w-6 text-green-700 dark:text-green-300" />
@@ -163,8 +203,12 @@ export function ProjectOverviewSection({ projectData, onUpdateProject, onHideSec
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Completion Rate</p>
-                  <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">{Math.round(averageProgress)}%</p>
+                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400">
+                    Completion Rate
+                  </p>
+                  <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">
+                    {Math.round(averageProgress)}%
+                  </p>
                 </div>
                 <div className="p-3 bg-purple-200 dark:bg-purple-800 rounded-full">
                   <CheckCircle className="h-6 w-6 text-purple-700 dark:text-purple-300" />
@@ -177,7 +221,9 @@ export function ProjectOverviewSection({ projectData, onUpdateProject, onHideSec
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Budget Used</p>
+                  <p className="text-sm font-medium text-orange-600 dark:text-orange-400">
+                    Budget Used
+                  </p>
                   <p className="text-3xl font-bold text-orange-900 dark:text-orange-100">
                     {totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0}%
                   </p>
@@ -196,7 +242,7 @@ export function ProjectOverviewSection({ projectData, onUpdateProject, onHideSec
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
             <select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              onChange={e => setStatusFilter(e.target.value)}
               className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white dark:bg-gray-800 dark:border-gray-600"
             >
               <option value="all">All Statuses</option>
@@ -207,12 +253,12 @@ export function ProjectOverviewSection({ projectData, onUpdateProject, onHideSec
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
-          
+
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Priority:</span>
             <select
               value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value)}
+              onChange={e => setPriorityFilter(e.target.value)}
               className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white dark:bg-gray-800 dark:border-gray-600"
             >
               <option value="all">All Priorities</option>
@@ -226,8 +272,11 @@ export function ProjectOverviewSection({ projectData, onUpdateProject, onHideSec
 
         {/* Projects Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredProjects.map((project) => (
-            <Card key={project.id} className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-blue-300 dark:hover:border-blue-700">
+          {filteredProjects.map(project => (
+            <Card
+              key={project.id}
+              className="hover:shadow-lg transition-shadow duration-200 border-2 hover:border-blue-300 dark:hover:border-blue-700"
+            >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
@@ -258,7 +307,7 @@ export function ProjectOverviewSection({ projectData, onUpdateProject, onHideSec
                   </div>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="space-y-4">
                 {/* Progress Bar */}
                 <div className="space-y-2">
@@ -337,10 +386,9 @@ export function ProjectOverviewSection({ projectData, onUpdateProject, onHideSec
               No projects found
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {statusFilter !== 'all' || priorityFilter !== 'all' 
+              {statusFilter !== 'all' || priorityFilter !== 'all'
                 ? 'Try adjusting your filters to see more projects.'
-                : 'Get started by creating your first project.'
-              }
+                : 'Get started by creating your first project.'}
             </p>
             <Button
               onClick={() => router.push('/modules/project-management')}
@@ -353,5 +401,5 @@ export function ProjectOverviewSection({ projectData, onUpdateProject, onHideSec
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -28,12 +28,12 @@ export function isDateExpiringSoon(dateString: string | Date): boolean {
   const today = new Date();
   const thirtyDaysFromNow = new Date();
   thirtyDaysFromNow.setDate(today.getDate() + 30);
-  
+
   // Reset time to compare only dates
   today.setHours(0, 0, 0, 0);
   date.setHours(0, 0, 0, 0);
   thirtyDaysFromNow.setHours(0, 0, 0, 0);
-  
+
   return date >= today && date <= thirtyDaysFromNow;
 }
 
@@ -46,11 +46,11 @@ export function getDaysUntilExpiry(dateString: string | Date): number {
   if (!dateString) return 0;
   const date = new Date(dateString);
   const today = new Date();
-  
+
   // Reset time to compare only dates
   today.setHours(0, 0, 0, 0);
   date.setHours(0, 0, 0, 0);
-  
+
   const diffTime = date.getTime() - today.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   return diffDays;
@@ -63,11 +63,11 @@ export function getDaysUntilExpiry(dateString: string | Date): number {
  */
 export function formatDateWithExpiryStatus(dateString: string | Date): string {
   if (!dateString) return 'Not specified';
-  
+
   const date = new Date(dateString);
   const isExpired = isDateExpired(dateString);
   const isExpiringSoon = isDateExpiringSoon(dateString);
-  
+
   let prefix = '';
   if (isExpired) {
     prefix = 'EXPIRED: ';
@@ -77,6 +77,6 @@ export function formatDateWithExpiryStatus(dateString: string | Date): string {
   } else {
     prefix = 'Expires: ';
   }
-  
+
   return prefix + date.toLocaleDateString();
 }

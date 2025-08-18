@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
-import { users, modelHasRoles, roles } from '@/lib/drizzle/schema';
+import { modelHasRoles, roles, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { hasPermission, User, Action, Subject } from './custom-rbac';
+import { Action, hasPermission, Subject, User } from './custom-rbac';
 
 export async function getRBACPermissions(userId: string) {
   try {
@@ -47,18 +47,18 @@ export async function getRBACPermissions(userId: string) {
     // Determine role from user_roles or role_id
     if (user.user_roles && user.user_roles.length > 0) {
       const roleHierarchy = {
-        'SUPER_ADMIN': 1,
-        'ADMIN': 2,
-        'MANAGER': 3,
-        'SUPERVISOR': 4,
-        'OPERATOR': 5,
-        'EMPLOYEE': 6,
-        'USER': 7
+        SUPER_ADMIN: 1,
+        ADMIN: 2,
+        MANAGER: 3,
+        SUPERVISOR: 4,
+        OPERATOR: 5,
+        EMPLOYEE: 6,
+        USER: 7,
       };
-      
+
       let highestRole = 'USER';
       let highestPriority = 7;
-      
+
       user.user_roles.forEach(userRole => {
         const roleName = userRole.role.name.toUpperCase();
         const priority = roleHierarchy[roleName as keyof typeof roleHierarchy] || 7;
@@ -67,7 +67,7 @@ export async function getRBACPermissions(userId: string) {
           highestRole = roleName;
         }
       });
-      
+
       userForRBAC.role = highestRole as any;
     } else {
       // Fallback to role_id mapping

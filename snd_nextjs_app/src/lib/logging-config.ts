@@ -9,7 +9,8 @@ export const LOG_LEVELS = {
 export type LogLevel = keyof typeof LOG_LEVELS;
 
 // Set this to control logging verbosity
-export const CURRENT_LOG_LEVEL: LogLevel = process.env.NODE_ENV === 'development' ? 'INFO' : 'ERROR';
+export const CURRENT_LOG_LEVEL: LogLevel =
+  process.env.NODE_ENV === 'development' ? 'INFO' : 'ERROR';
 
 export function shouldLog(level: LogLevel): boolean {
   return LOG_LEVELS[level] <= LOG_LEVELS[CURRENT_LOG_LEVEL];

@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { payrolls } from '@/lib/drizzle/schema';
-import { eq, inArray } from 'drizzle-orm';
-import { and } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest) {
   try {
@@ -25,7 +24,7 @@ export async function POST(_request: NextRequest) {
 
     // Validate that all IDs are numbers
     const validIds = ids.filter(id => !isNaN(Number(id)));
-    
+
     if (validIds.length !== ids.length) {
       return NextResponse.json(
         { success: false, message: 'Some payroll IDs are invalid' },
@@ -37,19 +36,14 @@ export async function POST(_request: NextRequest) {
     const paidPayrolls = await db
       .select({ id: payrolls.id, status: payrolls.status })
       .from(payrolls)
-      .where(
-        and(
-          inArray(payrolls.id, validIds),
-          eq(payrolls.status, 'paid')
-        )
-      );
+      .where(and(inArray(payrolls.id, validIds), eq(payrolls.status, 'paid')));
 
     if (paidPayrolls.length > 0) {
       const paidIds = paidPayrolls.map(p => p.id);
       return NextResponse.json(
-        { 
-          success: false, 
-          message: `Cannot update paid payrolls. Paid payroll IDs: ${paidIds.join(', ')}` 
+        {
+          success: false,
+          message: `Cannot update paid payrolls. Paid payroll IDs: ${paidIds.join(', ')}`,
         },
         { status: 400 }
       );
@@ -64,33 +58,49 @@ export async function POST(_request: NextRequest) {
     if (updates.status !== undefined) updateData.status = updates.status;
     if (updates.notes !== undefined) updateData.notes = updates.notes;
     if (updates.baseSalary !== undefined) updateData.baseSalary = updates.baseSalary.toString();
-    if (updates.overtimeAmount !== undefined) updateData.overtimeAmount = updates.overtimeAmount.toString();
+    if (updates.overtimeAmount !== undefined)
+      updateData.overtimeAmount = updates.overtimeAmount.toString();
     if (updates.bonusAmount !== undefined) updateData.bonusAmount = updates.bonusAmount.toString();
-    if (updates.deductionAmount !== undefined) updateData.deductionAmount = updates.deductionAmount.toString();
-    if (updates.advanceDeduction !== undefined) updateData.advanceDeduction = updates.advanceDeduction.toString();
+    if (updates.deductionAmount !== undefined)
+      updateData.deductionAmount = updates.deductionAmount.toString();
+    if (updates.advanceDeduction !== undefined)
+      updateData.advanceDeduction = updates.advanceDeduction.toString();
 
     // Recalculate final amount if any amount fields are updated
-    if (updates.baseSalary !== undefined || updates.overtimeAmount !== undefined || 
-        updates.bonusAmount !== undefined || updates.deductionAmount !== undefined || 
-        updates.advanceDeduction !== undefined || updates.absentDays !== undefined) {
-      
+    if (
+      updates.baseSalary !== undefined ||
+      updates.overtimeAmount !== undefined ||
+      updates.bonusAmount !== undefined ||
+      updates.deductionAmount !== undefined ||
+      updates.advanceDeduction !== undefined ||
+      updates.absentDays !== undefined
+    ) {
       const baseSalary = Number(updates.baseSalary) || 0;
       const overtimeAmount = Number(updates.overtimeAmount) || 0;
       const bonusAmount = Number(updates.bonusAmount) || 0;
       const deductionAmount = Number(updates.deductionAmount) || 0;
       const advanceDeduction = Number(updates.advanceDeduction) || 0;
-      
+
       // Calculate absent deduction if absent days are provided
       let absentDeduction = 0;
       if (updates.absentDays !== undefined && updates.month && updates.year) {
         const daysInMonth = new Date(updates.year, updates.month, 0).getDate();
-        
+
         // Use simple formula: (Basic Salary / Total Days in Month) * Absent Days
         absentDeduction = (baseSalary / daysInMonth) * Number(updates.absentDays);
-        console.log(`Bulk update absent calculation: (${baseSalary} / ${daysInMonth}) * ${updates.absentDays} = ${absentDeduction}`);
+        console.log(
+          `Bulk update absent calculation: (${baseSalary} / ${daysInMonth}) * ${updates.absentDays} = ${absentDeduction}`
+        );
       }
-      
-      updateData.finalAmount = (baseSalary + overtimeAmount + bonusAmount - deductionAmount - absentDeduction - advanceDeduction).toString();
+
+      updateData.finalAmount = (
+        baseSalary +
+        overtimeAmount +
+        bonusAmount -
+        deductionAmount -
+        absentDeduction -
+        advanceDeduction
+      ).toString();
     }
 
     // Update payrolls
@@ -105,10 +115,9 @@ export async function POST(_request: NextRequest) {
       message: `Successfully updated ${updatedPayrolls.length} payroll(s)`,
       data: {
         updatedCount: updatedPayrolls.length,
-        updatedIds: updatedPayrolls.map(p => p.id)
-      }
+        updatedIds: updatedPayrolls.map(p => p.id),
+      },
     });
-
   } catch (error) {
     console.error('Error in bulk update:', error);
     return NextResponse.json(

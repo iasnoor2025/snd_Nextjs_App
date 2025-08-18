@@ -49,7 +49,13 @@ export interface SalaryIncrement {
 
 export interface CreateSalaryIncrementData {
   employee_id: number;
-  increment_type: 'percentage' | 'amount' | 'promotion' | 'annual_review' | 'performance' | 'market_adjustment';
+  increment_type:
+    | 'percentage'
+    | 'amount'
+    | 'promotion'
+    | 'annual_review'
+    | 'performance'
+    | 'market_adjustment';
   increment_percentage?: number;
   increment_amount?: number;
   reason: string;
@@ -96,9 +102,11 @@ export interface SalaryIncrementStatistics {
 }
 
 class SalaryIncrementService {
-  async getSalaryIncrements(filters: SalaryIncrementFilters = {}): Promise<SalaryIncrementResponse> {
+  async getSalaryIncrements(
+    filters: SalaryIncrementFilters = {}
+  ): Promise<SalaryIncrementResponse> {
     const params = new URLSearchParams();
-    
+
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         params.append(key, value.toString());
@@ -106,20 +114,22 @@ class SalaryIncrementService {
     });
 
     const response = await ApiService.get(`/salary-increments?${params.toString()}`);
-    
+
     // The API returns { data: [...], pagination: {...} } directly
     // but ApiService.get returns ApiResponse<T> which expects { success: boolean, data: T }
     // So we need to handle the actual response structure
     const apiResponse = response as any; // Cast to any to handle the actual response structure
-    
+
     return {
       data: apiResponse.data || [],
-      pagination: apiResponse.pagination ? {
-        page: apiResponse.pagination.page || 1,
-        limit: apiResponse.pagination.limit || 15,
-        total: apiResponse.pagination.total || 0,
-        pages: apiResponse.pagination.pages || 0
-      } : { page: 1, limit: 15, total: 0, pages: 0 }
+      pagination: apiResponse.pagination
+        ? {
+            page: apiResponse.pagination.page || 1,
+            limit: apiResponse.pagination.limit || 15,
+            total: apiResponse.pagination.total || 0,
+            pages: apiResponse.pagination.pages || 0,
+          }
+        : { page: 1, limit: 15, total: 0, pages: 0 },
     };
   }
 
@@ -133,7 +143,10 @@ class SalaryIncrementService {
     return response.data;
   }
 
-  async updateSalaryIncrement(id: number, data: UpdateSalaryIncrementData): Promise<SalaryIncrement> {
+  async updateSalaryIncrement(
+    id: number,
+    data: UpdateSalaryIncrementData
+  ): Promise<SalaryIncrement> {
     const response = await ApiService.put(`/salary-increments/${id}`, data);
     return response.data;
   }
@@ -147,8 +160,15 @@ class SalaryIncrementService {
     return response.data;
   }
 
-  async rejectSalaryIncrement(id: number, rejection_reason: string, notes?: string): Promise<SalaryIncrement> {
-    const response = await ApiService.post(`/salary-increments/${id}/reject`, { notes, rejection_reason });
+  async rejectSalaryIncrement(
+    id: number,
+    rejection_reason: string,
+    notes?: string
+  ): Promise<SalaryIncrement> {
+    const response = await ApiService.post(`/salary-increments/${id}/reject`, {
+      notes,
+      rejection_reason,
+    });
     return response.data;
   }
 
@@ -157,9 +177,11 @@ class SalaryIncrementService {
     return response.data;
   }
 
-  async getStatistics(filters: { from_date?: string; to_date?: string } = {}): Promise<SalaryIncrementStatistics> {
+  async getStatistics(
+    filters: { from_date?: string; to_date?: string } = {}
+  ): Promise<SalaryIncrementStatistics> {
     const params = new URLSearchParams();
-    
+
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         params.append(key, value);
@@ -177,17 +199,21 @@ class SalaryIncrementService {
 
   // Helper methods for calculated values
   getCurrentTotalSalary(increment: SalaryIncrement): number {
-    return parseFloat(String(increment.current_base_salary || 0)) + 
-           parseFloat(String(increment.current_food_allowance || 0)) + 
-           parseFloat(String(increment.current_housing_allowance || 0)) + 
-           parseFloat(String(increment.current_transport_allowance || 0));
+    return (
+      parseFloat(String(increment.current_base_salary || 0)) +
+      parseFloat(String(increment.current_food_allowance || 0)) +
+      parseFloat(String(increment.current_housing_allowance || 0)) +
+      parseFloat(String(increment.current_transport_allowance || 0))
+    );
   }
 
   getNewTotalSalary(increment: SalaryIncrement): number {
-    return parseFloat(String(increment.new_base_salary || 0)) + 
-           parseFloat(String(increment.new_food_allowance || 0)) + 
-           parseFloat(String(increment.new_housing_allowance || 0)) + 
-           parseFloat(String(increment.new_transport_allowance || 0));
+    return (
+      parseFloat(String(increment.new_base_salary || 0)) +
+      parseFloat(String(increment.new_food_allowance || 0)) +
+      parseFloat(String(increment.new_housing_allowance || 0)) +
+      parseFloat(String(increment.new_transport_allowance || 0))
+    );
   }
 
   getTotalIncrementAmount(increment: SalaryIncrement): number {
@@ -197,7 +223,7 @@ class SalaryIncrementService {
   getActualIncrementPercentage(increment: SalaryIncrement): number {
     const currentTotal = this.getCurrentTotalSalary(increment);
     if (currentTotal === 0) return 0;
-    
+
     return ((this.getNewTotalSalary(increment) - currentTotal) / currentTotal) * 100;
   }
 

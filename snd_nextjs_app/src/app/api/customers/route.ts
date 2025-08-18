@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { customers } from '@/lib/drizzle/schema';
-import { eq, like, desc } from 'drizzle-orm';
+import { desc, eq, like } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -35,7 +35,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Get customers with pagination
-    let customersResult: { id: number; name: string; email: string | null; phone: string | null; companyName: string | null; status: string; createdAt: string; isActive: boolean; }[];
+    let customersResult: {
+      id: number;
+      name: string;
+      email: string | null;
+      phone: string | null;
+      companyName: string | null;
+      status: string;
+      createdAt: string;
+      isActive: boolean;
+    }[];
     try {
       if (whereCondition) {
         customersResult = await db
@@ -83,7 +92,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      customers: customersResult, 
+      customers: customersResult,
       pagination: {
         page,
         limit,
@@ -102,10 +111,10 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching customers:', error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: 'Failed to fetch customers',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -115,7 +124,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     // Validate required fields
     if (!body.name || typeof body.name !== 'string') {
       return NextResponse.json(
@@ -123,7 +132,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     const insertData = {
       name: body.name,
       email: body.email || null,
@@ -140,15 +149,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       customer: newCustomer[0],
-      message: 'Customer created successfully'
+      message: 'Customer created successfully',
     });
   } catch (error) {
     console.error('Error creating customer:', error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: 'Failed to create customer',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -158,7 +167,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     if (!body.id) {
       return NextResponse.json(
         { success: false, message: 'Customer ID is required' },
@@ -189,24 +198,21 @@ export async function PUT(request: NextRequest) {
       .returning();
 
     if (updatedCustomer.length === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Customer not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: 'Customer not found' }, { status: 404 });
     }
 
     return NextResponse.json({
       success: true,
       customer: updatedCustomer[0],
-      message: 'Customer updated successfully'
+      message: 'Customer updated successfully',
     });
   } catch (error) {
     console.error('Error updating customer:', error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: 'Failed to update customer',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -216,7 +222,7 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     if (!body.id) {
       return NextResponse.json(
         { success: false, message: 'Customer ID is required' },
@@ -224,29 +230,23 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const deletedCustomer = await db
-      .delete(customers)
-      .where(eq(customers.id, body.id))
-      .returning();
+    const deletedCustomer = await db.delete(customers).where(eq(customers.id, body.id)).returning();
 
     if (deletedCustomer.length === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Customer not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: 'Customer not found' }, { status: 404 });
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Customer deleted successfully'
+      message: 'Customer deleted successfully',
     });
   } catch (error) {
     console.error('Error deleting customer:', error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         message: 'Failed to delete customer',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

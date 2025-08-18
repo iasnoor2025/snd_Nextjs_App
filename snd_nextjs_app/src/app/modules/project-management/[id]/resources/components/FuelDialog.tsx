@@ -1,18 +1,30 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Fuel } from 'lucide-react';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import apiService from '@/lib/api';
+import { format } from 'date-fns';
+import { CalendarIcon, Fuel } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Equipment {
   id: string;
@@ -47,7 +59,7 @@ const FUEL_TYPES = [
   { value: 'diesel', label: 'Diesel' },
   { value: 'petrol', label: 'Petrol' },
   { value: 'gasoline', label: 'Gasoline' },
-  { value: 'lpg', label: 'LPG' }
+  { value: 'lpg', label: 'LPG' },
 ];
 
 export default function FuelDialog({
@@ -55,7 +67,7 @@ export default function FuelDialog({
   onOpenChange,
   projectId,
   initialData,
-  onSuccess
+  onSuccess,
 }: FuelDialogProps) {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(false);
@@ -68,7 +80,7 @@ export default function FuelDialog({
     total_cost: 0,
     date: '',
     notes: '',
-    status: 'pending'
+    status: 'pending',
   });
 
   // Load equipment when dialog opens
@@ -95,7 +107,7 @@ export default function FuelDialog({
         total_cost: 0,
         date: '',
         notes: '',
-        status: 'pending'
+        status: 'pending',
       });
     }
   }, [initialData]);
@@ -110,7 +122,7 @@ export default function FuelDialog({
       setEquipment([
         { id: '1', name: 'Excavator', model_number: 'CAT-320', status: 'available' },
         { id: '2', name: 'Bulldozer', model_number: 'CAT-D6', status: 'available' },
-        { id: '3', name: 'Crane', model_number: 'LTM-1100', status: 'available' }
+        { id: '3', name: 'Crane', model_number: 'LTM-1100', status: 'available' },
       ]);
     }
   };
@@ -120,7 +132,7 @@ export default function FuelDialog({
     const totalCost = (formData.liters || 0) * (formData.price_per_liter || 0);
     setFormData(prev => ({
       ...prev,
-      total_cost: totalCost
+      total_cost: totalCost,
     }));
   }, [formData.liters, formData.price_per_liter]);
 
@@ -177,7 +189,7 @@ export default function FuelDialog({
         ...formData,
         type: 'fuel',
         name: formData.name || `${formData.fuel_type} Fuel`,
-        total_cost: (formData.liters || 0) * (formData.price_per_liter || 0)
+        total_cost: (formData.liters || 0) * (formData.price_per_liter || 0),
       };
 
       // TODO: Project resource endpoints don't exist yet
@@ -209,7 +221,9 @@ export default function FuelDialog({
             <span>{initialData ? 'Edit Fuel Resource' : 'Add Fuel Resource'}</span>
           </DialogTitle>
           <DialogDescription>
-            {initialData ? 'Update the details for this fuel resource.' : 'Add a new fuel resource to this project.'}
+            {initialData
+              ? 'Update the details for this fuel resource.'
+              : 'Add a new fuel resource to this project.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -220,13 +234,13 @@ export default function FuelDialog({
               <Label htmlFor="equipment_id">Equipment</Label>
               <Select
                 value={formData.equipment_id || ''}
-                onValueChange={(value) => handleInputChange('equipment_id', value)}
+                onValueChange={value => handleInputChange('equipment_id', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select equipment" />
                 </SelectTrigger>
                 <SelectContent>
-                  {equipment.map((eq) => (
+                  {equipment.map(eq => (
                     <SelectItem key={eq.id} value={eq.id}>
                       {eq.name} {eq.model_number && `(${eq.model_number})`}
                     </SelectItem>
@@ -239,13 +253,13 @@ export default function FuelDialog({
               <Label htmlFor="fuel_type">Fuel Type</Label>
               <Select
                 value={formData.fuel_type || ''}
-                onValueChange={(value) => handleInputChange('fuel_type', value)}
+                onValueChange={value => handleInputChange('fuel_type', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select fuel type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {FUEL_TYPES.map((fuel) => (
+                  {FUEL_TYPES.map(fuel => (
                     <SelectItem key={fuel.value} value={fuel.value}>
                       {fuel.label}
                     </SelectItem>
@@ -263,7 +277,7 @@ export default function FuelDialog({
                 id="liters"
                 type="number"
                 value={formData.liters || ''}
-                onChange={(e) => handleInputChange('liters', parseFloat(e.target.value))}
+                onChange={e => handleInputChange('liters', parseFloat(e.target.value))}
                 placeholder="0"
                 min="0"
                 step="0.01"
@@ -276,7 +290,7 @@ export default function FuelDialog({
                 id="price_per_liter"
                 type="number"
                 value={formData.price_per_liter || ''}
-                onChange={(e) => handleInputChange('price_per_liter', parseFloat(e.target.value))}
+                onChange={e => handleInputChange('price_per_liter', parseFloat(e.target.value))}
                 placeholder="0.00"
                 min="0"
                 step="0.01"
@@ -289,10 +303,7 @@ export default function FuelDialog({
             <Label htmlFor="date">Date</Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal"
-                >
+                <Button variant="outline" className="w-full justify-start text-left font-normal">
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {formData.date ? format(new Date(formData.date), 'PPP') : 'Pick a date'}
                 </Button>
@@ -301,7 +312,9 @@ export default function FuelDialog({
                 <Calendar
                   mode="single"
                   selected={formData.date ? new Date(formData.date) : undefined}
-                  onSelect={(date) => handleInputChange('date', date?.toISOString().split('T')[0] || '')}
+                  onSelect={date =>
+                    handleInputChange('date', date?.toISOString().split('T')[0] || '')
+                  }
                   initialFocus
                 />
               </PopoverContent>
@@ -326,7 +339,7 @@ export default function FuelDialog({
             <Textarea
               id="notes"
               value={formData.notes || ''}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
+              onChange={e => handleInputChange('notes', e.target.value)}
               placeholder="Enter any additional notes"
               rows={3}
             />

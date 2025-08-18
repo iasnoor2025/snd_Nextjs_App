@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { RentalService } from '@/lib/services/rental-service';
 import { db } from '@/lib/db';
 import { employeeAssignments } from '@/lib/drizzle/schema';
-import { eq, and } from 'drizzle-orm';
+import { RentalService } from '@/lib/services/rental-service';
+import { and, eq } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function PUT(
   request: NextRequest,
@@ -25,9 +25,9 @@ export async function PUT(
 
     if (missingFields.length > 0) {
       return NextResponse.json(
-        { 
+        {
           error: `Missing required fields: ${missingFields.join(', ')}`,
-          receivedData: body 
+          receivedData: body,
         },
         { status: 400 }
       );
@@ -80,9 +80,9 @@ export async function PUT(
   } catch (error) {
     console.error('Error updating rental item:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to update rental item',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -113,17 +113,20 @@ export async function DELETE(
     // If the item had an operator, end their assignment
     if (operatorId) {
       try {
-        await db.update(employeeAssignments)
+        await db
+          .update(employeeAssignments)
           .set({
             status: 'inactive',
             endDate: new Date().toISOString().split('T')[0],
           })
-          .where(and(
-            eq(employeeAssignments.employeeId, operatorId),
-            eq(employeeAssignments.rentalId, parseInt(rentalId)),
-            eq(employeeAssignments.type, 'rental_item'),
-            eq(employeeAssignments.status, 'active')
-          ));
+          .where(
+            and(
+              eq(employeeAssignments.employeeId, operatorId),
+              eq(employeeAssignments.rentalId, parseInt(rentalId)),
+              eq(employeeAssignments.type, 'rental_item'),
+              eq(employeeAssignments.status, 'active')
+            )
+          );
 
         console.log(`Employee assignment ended for operator ${operatorId} on rental ${rentalId}`);
       } catch (assignmentError) {
@@ -137,11 +140,11 @@ export async function DELETE(
   } catch (error) {
     console.error('Error deleting rental item:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to delete rental item',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
-} 
+}

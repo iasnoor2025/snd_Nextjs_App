@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { autoGenerateTimesheets } from '@/lib/timesheet-auto-generator';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -8,10 +8,7 @@ export async function GET(_request: NextRequest) {
     const cronSecret = process.env.CRON_SECRET;
 
     if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const result = await autoGenerateTimesheets();
@@ -26,9 +23,6 @@ export async function GET(_request: NextRequest) {
     }
   } catch (error) {
     console.error('Error auto-generating timesheets:', error);
-    return NextResponse.json(
-      { error: 'Failed to auto-generate timesheets' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to auto-generate timesheets' }, { status: 500 });
   }
 }

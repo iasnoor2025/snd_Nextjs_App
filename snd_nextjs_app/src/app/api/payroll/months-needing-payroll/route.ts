@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { employees, timesheets, payrolls } from '@/lib/drizzle/schema';
-import { eq, and, gte, lt } from 'drizzle-orm';
+import { employees, payrolls, timesheets } from '@/lib/drizzle/schema';
+import { and, eq, gte, lt } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Employee ID is required'
+          message: 'Employee ID is required',
         },
         { status: 400 }
       );
@@ -37,7 +37,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Employee not found'
+          message: 'Employee not found',
         },
         { status: 404 }
       );
@@ -47,8 +47,12 @@ export async function GET(_request: NextRequest) {
 
     // Determine date range
     const now = new Date();
-    const startDate = start_month ? new Date(start_month + '-01') : new Date(now.getFullYear(), now.getMonth() - 11, 1);
-    const endDate = end_month ? new Date(end_month + '-01') : new Date(now.getFullYear(), now.getMonth(), 1);
+    const startDate = start_month
+      ? new Date(start_month + '-01')
+      : new Date(now.getFullYear(), now.getMonth() - 11, 1);
+    const endDate = end_month
+      ? new Date(end_month + '-01')
+      : new Date(now.getFullYear(), now.getMonth(), 1);
 
     // Generate months to check
     const months: { month: number; year: number; employeeCount: number }[] = [];
@@ -86,11 +90,11 @@ export async function GET(_request: NextRequest) {
       const monthData = {
         year: year,
         month: month,
-        name: current.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+        name: current.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
         has_approved_timesheets: timesheetsData.length > 0,
         has_existing_payroll: !!existingPayrollData[0],
         needs_payroll: timesheetsData.length > 0 && !existingPayrollData[0],
-        employeeCount: 1 // Since we're checking for a specific employee
+        employeeCount: 1, // Since we're checking for a specific employee
       };
 
       months.push(monthData);
@@ -103,14 +107,14 @@ export async function GET(_request: NextRequest) {
       employee: {
         id: employee.id,
         name: `${employee.firstName} ${employee.middleName || ''} ${employee.lastName}`.trim(),
-        employee_id: employee.fileNumber
-      }
+        employee_id: employee.fileNumber,
+      },
     });
   } catch (error) {
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to get months needing payroll: ' + (error as Error).message
+        message: 'Failed to get months needing payroll: ' + (error as Error).message,
       },
       { status: 500 }
     );

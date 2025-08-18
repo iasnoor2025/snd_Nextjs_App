@@ -1,52 +1,34 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { RentalService } from '@/lib/services/rental-service'
+import { RentalService } from '@/lib/services/rental-service';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const rental = await RentalService.getRental(parseInt(id))
+    const rental = await RentalService.getRental(parseInt(id));
 
     if (!rental) {
-      return NextResponse.json(
-        { error: 'Rental not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
     }
 
-    return NextResponse.json(rental)
+    return NextResponse.json(rental);
   } catch (error) {
-    console.error('Error fetching rental:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch rental' },
-      { status: 500 }
-    )
+    console.error('Error fetching rental:', error);
+    return NextResponse.json({ error: 'Failed to fetch rental' }, { status: 500 });
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const body = await request.json()
+    const body = await request.json();
 
     // Validate required fields
     if (!body.customerId) {
-      return NextResponse.json(
-        { error: 'Customer is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Customer is required' }, { status: 400 });
     }
 
     if (!body.startDate) {
-      return NextResponse.json(
-        { error: 'Start date is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Start date is required' }, { status: 400 });
     }
 
     // Set update data
@@ -70,24 +52,18 @@ export async function PUT(
       hasOperators: body.hasOperators || false,
       notes: body.notes || '',
       rentalItems: body.rentalItems || [],
-    }
+    };
 
-    const rental = await RentalService.updateRental(parseInt(id), updateData)
+    const rental = await RentalService.updateRental(parseInt(id), updateData);
 
     if (!rental) {
-      return NextResponse.json(
-        { error: 'Rental not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
     }
 
-    return NextResponse.json(rental)
+    return NextResponse.json(rental);
   } catch (error) {
-    console.error('Error updating rental:', error)
-    return NextResponse.json(
-      { error: 'Failed to update rental' },
-      { status: 500 }
-    )
+    console.error('Error updating rental:', error);
+    return NextResponse.json({ error: 'Failed to update rental' }, { status: 500 });
   }
 }
 
@@ -97,21 +73,15 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const success = await RentalService.deleteRental(parseInt(id))
+    const success = await RentalService.deleteRental(parseInt(id));
 
     if (!success) {
-      return NextResponse.json(
-        { error: 'Rental not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ message: 'Rental deleted successfully' })
+    return NextResponse.json({ message: 'Rental deleted successfully' });
   } catch (error) {
-    console.error('Error deleting rental:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete rental' },
-      { status: 500 }
-    )
+    console.error('Error deleting rental:', error);
+    return NextResponse.json({ error: 'Failed to delete rental' }, { status: 500 });
   }
 }

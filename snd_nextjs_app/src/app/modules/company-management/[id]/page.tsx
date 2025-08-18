@@ -1,13 +1,23 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-import { ArrowLeft, Edit, Trash2, Building2, Mail, Phone, MapPin, FileText, Image } from "lucide-react";
-import { toast } from "sonner";
+import {
+  ArrowLeft,
+  Building2,
+  Edit,
+  FileText,
+  Image,
+  Mail,
+  MapPin,
+  Phone,
+  Trash2,
+} from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Company {
   id: number;
@@ -57,7 +67,7 @@ export default function CompanyDetailPage() {
   const handleDelete = async () => {
     if (!company) return;
 
-    if (confirm("Are you sure you want to delete this company?")) {
+    if (confirm('Are you sure you want to delete this company?')) {
       try {
         const response = await fetch(`/api/companies/${company.id}`, {
           method: 'DELETE',
@@ -65,7 +75,7 @@ export default function CompanyDetailPage() {
         const result = await response.json();
 
         if (result.success) {
-          toast.success("Company deleted successfully");
+          toast.success('Company deleted successfully');
           router.push('/modules/company-management');
         } else {
           toast.error(result.message || 'Failed to delete company');
@@ -176,9 +186,7 @@ export default function CompanyDetailPage() {
                 <Image className="h-4 w-4 text-gray-500" />
                 <div>
                   <label className="text-sm font-medium text-gray-500">Logo</label>
-                  <p className="text-sm text-blue-600 hover:underline cursor-pointer">
-                    View Logo
-                  </p>
+                  <p className="text-sm text-blue-600 hover:underline cursor-pointer">View Logo</p>
                 </div>
               </div>
             )}
@@ -224,4 +232,4 @@ export default function CompanyDetailPage() {
       </div>
     </div>
   );
-} 
+}

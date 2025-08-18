@@ -1,23 +1,57 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { ProtectedRoute } from '@/components/protected-route';
-import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
-import { useRBAC } from '@/lib/rbac/rbac-context';
-import { useRouter } from 'next/navigation';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Eye, User, Shield, Mail, Calendar, CheckCircle, XCircle, Settings, RefreshCw } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
+import { useRBAC } from '@/lib/rbac/rbac-context';
+import {
+  Calendar,
+  CheckCircle,
+  Edit,
+  Eye,
+  Mail,
+  Plus,
+  RefreshCw,
+  Settings,
+  Shield,
+  Trash2,
+  User,
+  XCircle,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 // Drizzle schema types
 interface User {
@@ -71,7 +105,7 @@ export default function UserManagementPage() {
     email: '',
     password: '',
     roleId: '',
-    isActive: true
+    isActive: true,
   });
 
   // Role management states
@@ -80,7 +114,7 @@ export default function UserManagementPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [roleFormData, setRoleFormData] = useState({
     name: '',
-    guardName: 'web'
+    guardName: 'web',
   });
 
   // Permissions state
@@ -159,7 +193,7 @@ export default function UserManagementPage() {
     try {
       console.log('🔍 Fetching permissions for all roles...');
       const permissionsMap: Record<number, Permission[]> = {};
-      
+
       for (const role of roles) {
         try {
           console.log(`📋 Fetching permissions for role: ${role.name} (ID: ${role.id})`);
@@ -169,7 +203,11 @@ export default function UserManagementPage() {
             console.log(`✅ Role ${role.name} permissions:`, data);
             permissionsMap[role.id] = data.data || [];
           } else {
-            console.error(`❌ Failed to fetch permissions for role ${role.name}:`, response.status, response.statusText);
+            console.error(
+              `❌ Failed to fetch permissions for role ${role.name}:`,
+              response.status,
+              response.statusText
+            );
             permissionsMap[role.id] = [];
           }
         } catch (error) {
@@ -177,7 +215,7 @@ export default function UserManagementPage() {
           permissionsMap[role.id] = [];
         }
       }
-      
+
       console.log('📊 Final permissions map:', permissionsMap);
       setRolePermissions(permissionsMap);
     } catch (error) {
@@ -225,7 +263,7 @@ export default function UserManagementPage() {
       // Convert roleId to role name for API
       const selectedRole = roles.find(r => r.id.toString() === userFormData.roleId);
       const roleName = selectedRole?.name || 'EMPLOYEE';
-      
+
       const response = await fetch('/api/users', {
         method: 'POST',
         headers: {
@@ -233,7 +271,7 @@ export default function UserManagementPage() {
         },
         body: JSON.stringify({
           ...userFormData,
-          role: roleName
+          role: roleName,
         }),
       });
 
@@ -260,7 +298,7 @@ export default function UserManagementPage() {
       // Convert roleId to role name for API
       const selectedRole = roles.find(r => r.id.toString() === userFormData.roleId);
       const roleName = selectedRole?.name || 'EMPLOYEE';
-      
+
       const response = await fetch('/api/users', {
         method: 'PUT',
         headers: {
@@ -269,7 +307,7 @@ export default function UserManagementPage() {
         body: JSON.stringify({
           id: selectedUser.id,
           ...userFormData,
-          role: roleName
+          role: roleName,
         }),
       });
 
@@ -402,17 +440,17 @@ export default function UserManagementPage() {
   // Open edit user dialog
   const openEditUserDialog = (user: User) => {
     setSelectedUser(user);
-    
+
     // Find the role ID by matching the role name
     const matchingRole = roles.find(r => r.name === user.role);
     const roleId = matchingRole?.id?.toString() || user.role_id?.toString() || '';
-    
+
     setUserFormData({
       name: user.name,
       email: user.email,
       password: '',
       roleId: roleId,
-      isActive: user.isActive
+      isActive: user.isActive,
     });
     setIsEditUserDialogOpen(true);
   };
@@ -422,7 +460,7 @@ export default function UserManagementPage() {
     setSelectedRole(role);
     setRoleFormData({
       name: role.name,
-      guardName: role.guardName
+      guardName: role.guardName,
     });
     setIsEditRoleDialogOpen(true);
   };
@@ -432,9 +470,8 @@ export default function UserManagementPage() {
       try {
         setLoading(true);
         setError(null);
-    
+
         await Promise.all([fetchUsers(), fetchRoles(), fetchPermissions()]);
-        
       } catch (err) {
         console.error('Error in fetchData:', err);
         setError(err instanceof Error ? err.message : t('loadDataFailed'));
@@ -457,7 +494,7 @@ export default function UserManagementPage() {
     if (roles.length > 0 && !userFormData.roleId) {
       setUserFormData(prev => ({
         ...prev,
-        roleId: roles[0]?.id.toString() || ''
+        roleId: roles[0]?.id.toString() || '',
       }));
     }
   }, [roles, userFormData.roleId]);
@@ -476,7 +513,9 @@ export default function UserManagementPage() {
     return (
       <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'User' }}>
         <div className="flex items-center justify-center h-64">
-          <div className="text-red-500">{t('error')}: {error}</div>
+          <div className="text-red-500">
+            {t('error')}: {error}
+          </div>
         </div>
       </ProtectedRoute>
     );
@@ -550,22 +589,22 @@ export default function UserManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.map((user) => (
+                    {users.map(user => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">{user.name}</TableCell>
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
-                          <Badge variant="secondary">
-                            {user.role || 'Unknown'}
-                          </Badge>
+                          <Badge variant="secondary">{user.role || 'Unknown'}</Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={user.isActive ? "default" : "secondary"}>
+                          <Badge variant={user.isActive ? 'default' : 'secondary'}>
                             {user.isActive ? t('active') : t('inactive')}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : t('never')}
+                          {user.lastLoginAt
+                            ? new Date(user.lastLoginAt).toLocaleDateString()
+                            : t('never')}
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
@@ -575,8 +614,8 @@ export default function UserManagementPage() {
                               </Button>
                             )}
                             {allowedActions.includes('update') && (
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={() => openEditUserDialog(user)}
                               >
@@ -584,8 +623,8 @@ export default function UserManagementPage() {
                               </Button>
                             )}
                             {allowedActions.includes('delete') && (
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={() => deleteUser(user.id)}
                               >
@@ -613,17 +652,17 @@ export default function UserManagementPage() {
                       <Shield className="h-5 w-5" />
                       Roles Overview
                     </CardTitle>
-                    <CardDescription>
-                      Summary of roles and their permissions
-                    </CardDescription>
+                    <CardDescription>Summary of roles and their permissions</CardDescription>
                   </div>
-                  <Button 
+                  <Button
                     onClick={fetchAllRolePermissions}
                     disabled={loadingPermissions}
                     variant="outline"
                     size="sm"
                   >
-                    <RefreshCw className={`h-4 w-4 mr-2 ${loadingPermissions ? 'animate-spin' : ''}`} />
+                    <RefreshCw
+                      className={`h-4 w-4 mr-2 ${loadingPermissions ? 'animate-spin' : ''}`}
+                    />
                     Refresh Permissions
                   </Button>
                 </div>
@@ -636,20 +675,21 @@ export default function UserManagementPage() {
                   </div>
                   <div className="text-center p-4 border rounded-lg">
                     <div className="text-2xl font-bold text-green-600">
-                      {Object.values(rolePermissions).reduce((total, perms) => total + (perms?.length || 0), 0)}
+                      {Object.values(rolePermissions).reduce(
+                        (total, perms) => total + (perms?.length || 0),
+                        0
+                      )}
                     </div>
                     <div className="text-sm text-muted-foreground">Total Permissions Assigned</div>
                   </div>
                   <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {permissions.length}
-                    </div>
+                    <div className="text-2xl font-bold text-blue-600">{permissions.length}</div>
                     <div className="text-sm text-muted-foreground">System Permissions</div>
                   </div>
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
@@ -658,13 +698,15 @@ export default function UserManagementPage() {
                     <CardDescription>{t('manageRolesDescription')}</CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={fetchAllRolePermissions}
                       disabled={loadingPermissions}
                     >
-                      <RefreshCw className={`h-4 w-4 mr-2 ${loadingPermissions ? 'animate-spin' : ''}`} />
+                      <RefreshCw
+                        className={`h-4 w-4 mr-2 ${loadingPermissions ? 'animate-spin' : ''}`}
+                      />
                       {t('refreshPermissions') || 'Refresh'}
                     </Button>
                     {allowedActions.includes('create') && (
@@ -689,7 +731,7 @@ export default function UserManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {roles.map((role) => (
+                    {roles.map(role => (
                       <TableRow key={role.id}>
                         <TableCell className="font-medium">{role.name}</TableCell>
                         <TableCell>{role.guardName}</TableCell>
@@ -698,8 +740,12 @@ export default function UserManagementPage() {
                             {rolePermissions[role.id] ? (
                               <div className="space-y-2">
                                 <div className="flex flex-wrap gap-1">
-                                  {rolePermissions[role.id]?.slice(0, 3).map((permission) => (
-                                    <Badge key={permission.id} variant="outline" className="text-xs">
+                                  {rolePermissions[role.id]?.slice(0, 3).map(permission => (
+                                    <Badge
+                                      key={permission.id}
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
                                       {permission.name}
                                     </Badge>
                                   ))}
@@ -726,16 +772,16 @@ export default function UserManagementPage() {
                         <TableCell>{new Date(role.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => openPermissionDialog(role)}
                             >
                               <Shield className="h-4 w-4" />
                             </Button>
                             {allowedActions.includes('update') && (
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={() => openEditRoleDialog(role)}
                               >
@@ -743,8 +789,8 @@ export default function UserManagementPage() {
                               </Button>
                             )}
                             {allowedActions.includes('delete') && (
-                              <Button 
-                                variant="outline" 
+                              <Button
+                                variant="outline"
                                 size="sm"
                                 onClick={() => deleteRole(role.id)}
                               >
@@ -778,11 +824,15 @@ export default function UserManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {permissions.map((permission) => (
+                    {permissions.map(permission => (
                       <TableRow key={permission.id}>
                         <TableCell className="font-medium">{permission.name}</TableCell>
                         <TableCell>{permission.guardName}</TableCell>
-                        <TableCell>{permission.createdAt ? new Date(permission.createdAt).toLocaleDateString() : 'N/A'}</TableCell>
+                        <TableCell>
+                          {permission.createdAt
+                            ? new Date(permission.createdAt).toLocaleDateString()
+                            : 'N/A'}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -805,7 +855,7 @@ export default function UserManagementPage() {
                 <Input
                   id="name"
                   value={userFormData.name}
-                  onChange={(e) => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={e => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
                 />
               </div>
               <div>
@@ -814,7 +864,7 @@ export default function UserManagementPage() {
                   id="email"
                   type="email"
                   value={userFormData.email}
-                  onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
+                  onChange={e => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
                 />
               </div>
               <div>
@@ -823,20 +873,20 @@ export default function UserManagementPage() {
                   id="password"
                   type="password"
                   value={userFormData.password}
-                  onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                  onChange={e => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
                 />
               </div>
               <div>
                 <Label htmlFor="role">{t('role')}</Label>
                 <Select
                   value={userFormData.roleId}
-                  onValueChange={(value) => setUserFormData(prev => ({ ...prev, roleId: value }))}
+                  onValueChange={value => setUserFormData(prev => ({ ...prev, roleId: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={t('selectRole')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {roles.map((role) => (
+                    {roles.map(role => (
                       <SelectItem key={role.id} value={role.id.toString()}>
                         {role.name}
                       </SelectItem>
@@ -849,7 +899,7 @@ export default function UserManagementPage() {
                   type="checkbox"
                   id="isActive"
                   checked={userFormData.isActive}
-                  onChange={(e) => setUserFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                  onChange={e => setUserFormData(prev => ({ ...prev, isActive: e.target.checked }))}
                 />
                 <Label htmlFor="isActive">{t('isActive')}</Label>
               </div>
@@ -876,7 +926,7 @@ export default function UserManagementPage() {
                 <Input
                   id="edit-name"
                   value={userFormData.name}
-                  onChange={(e) => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={e => setUserFormData(prev => ({ ...prev, name: e.target.value }))}
                 />
               </div>
               <div>
@@ -885,29 +935,31 @@ export default function UserManagementPage() {
                   id="edit-email"
                   type="email"
                   value={userFormData.email}
-                  onChange={(e) => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
+                  onChange={e => setUserFormData(prev => ({ ...prev, email: e.target.value }))}
                 />
               </div>
               <div>
-                <Label htmlFor="edit-password">{t('password')} ({t('leaveBlankToKeep')})</Label>
+                <Label htmlFor="edit-password">
+                  {t('password')} ({t('leaveBlankToKeep')})
+                </Label>
                 <Input
                   id="edit-password"
                   type="password"
                   value={userFormData.password}
-                  onChange={(e) => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
+                  onChange={e => setUserFormData(prev => ({ ...prev, password: e.target.value }))}
                 />
               </div>
               <div>
                 <Label htmlFor="edit-role">{t('role')}</Label>
                 <Select
                   value={userFormData.roleId}
-                  onValueChange={(value) => setUserFormData(prev => ({ ...prev, roleId: value }))}
+                  onValueChange={value => setUserFormData(prev => ({ ...prev, roleId: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={t('selectRole')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {roles.map((role) => (
+                    {roles.map(role => (
                       <SelectItem key={role.id} value={role.id.toString()}>
                         {role.name}
                       </SelectItem>
@@ -920,7 +972,7 @@ export default function UserManagementPage() {
                   type="checkbox"
                   id="edit-isActive"
                   checked={userFormData.isActive}
-                  onChange={(e) => setUserFormData(prev => ({ ...prev, isActive: e.target.checked }))}
+                  onChange={e => setUserFormData(prev => ({ ...prev, isActive: e.target.checked }))}
                 />
                 <Label htmlFor="edit-isActive">{t('isActive')}</Label>
               </div>
@@ -947,7 +999,7 @@ export default function UserManagementPage() {
                 <Input
                   id="role-name"
                   value={roleFormData.name}
-                  onChange={(e) => setRoleFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={e => setRoleFormData(prev => ({ ...prev, name: e.target.value }))}
                 />
               </div>
               <div>
@@ -955,7 +1007,7 @@ export default function UserManagementPage() {
                 <Input
                   id="role-guard"
                   value={roleFormData.guardName}
-                  onChange={(e) => setRoleFormData(prev => ({ ...prev, guardName: e.target.value }))}
+                  onChange={e => setRoleFormData(prev => ({ ...prev, guardName: e.target.value }))}
                 />
               </div>
             </div>
@@ -981,7 +1033,7 @@ export default function UserManagementPage() {
                 <Input
                   id="edit-role-name"
                   value={roleFormData.name}
-                  onChange={(e) => setRoleFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={e => setRoleFormData(prev => ({ ...prev, name: e.target.value }))}
                 />
               </div>
               <div>
@@ -989,7 +1041,7 @@ export default function UserManagementPage() {
                 <Input
                   id="edit-role-guard"
                   value={roleFormData.guardName}
-                  onChange={(e) => setRoleFormData(prev => ({ ...prev, guardName: e.target.value }))}
+                  onChange={e => setRoleFormData(prev => ({ ...prev, guardName: e.target.value }))}
                 />
               </div>
             </div>
@@ -1009,28 +1061,26 @@ export default function UserManagementPage() {
               <DialogTitle>
                 {t('managePermissions')} - {selectedRoleForPermissions?.name}
               </DialogTitle>
-              <DialogDescription>
-                {t('selectPermissionsForRole')}
-              </DialogDescription>
+              <DialogDescription>{t('selectPermissionsForRole')}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 max-h-96 overflow-y-auto">
-              {permissions.map((permission) => (
+              {permissions.map(permission => (
                 <div key={permission.id} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
                     id={`permission-${permission.id}`}
                     checked={selectedRolePermissions.some(p => p.id === permission.id)}
-                    onChange={(e) => {
+                    onChange={e => {
                       if (e.target.checked) {
                         setSelectedRolePermissions(prev => [...prev, permission]);
                       } else {
-                        setSelectedRolePermissions(prev => prev.filter(p => p.id !== permission.id));
+                        setSelectedRolePermissions(prev =>
+                          prev.filter(p => p.id !== permission.id)
+                        );
                       }
                     }}
                   />
-                  <Label htmlFor={`permission-${permission.id}`}>
-                    {permission.name}
-                  </Label>
+                  <Label htmlFor={`permission-${permission.id}`}>{permission.name}</Label>
                 </div>
               ))}
             </div>
@@ -1038,9 +1088,7 @@ export default function UserManagementPage() {
               <Button variant="outline" onClick={() => setIsPermissionDialogOpen(false)}>
                 {t('cancel')}
               </Button>
-              <Button 
-                onClick={() => updateRolePermissions(selectedRolePermissions.map(p => p.id))}
-              >
+              <Button onClick={() => updateRolePermissions(selectedRolePermissions.map(p => p.id))}>
                 {t('updatePermissions')}
               </Button>
             </DialogFooter>

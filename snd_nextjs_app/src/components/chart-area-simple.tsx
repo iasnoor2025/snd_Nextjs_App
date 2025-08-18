@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import { Area, AreaChart, CartesianGrid, XAxis, Tooltip } from "recharts"
+import * as React from 'react';
+import { Area, AreaChart, CartesianGrid, Tooltip, XAxis } from 'recharts';
 
 import {
   Card,
@@ -10,34 +10,34 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from '@/components/ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from '@/components/ui/select';
 
-export const description = "An interactive area chart for rental analytics"
+export const description = 'An interactive area chart for rental analytics';
 
 const chartData = [
-  { date: "Jan", revenue: 12500, rentals: 45 },
-  { date: "Feb", revenue: 13800, rentals: 52 },
-  { date: "Mar", revenue: 14200, rentals: 58 },
-  { date: "Apr", revenue: 15600, rentals: 64 },
-  { date: "May", revenue: 16800, rentals: 71 },
-  { date: "Jun", revenue: 18200, rentals: 78 },
-  { date: "Jul", revenue: 19500, rentals: 85 },
-  { date: "Aug", revenue: 20800, rentals: 92 },
-  { date: "Sep", revenue: 22100, rentals: 98 },
-  { date: "Oct", revenue: 23400, rentals: 105 },
-  { date: "Nov", revenue: 24700, rentals: 112 },
-  { date: "Dec", revenue: 26000, rentals: 120 },
-]
+  { date: 'Jan', revenue: 12500, rentals: 45 },
+  { date: 'Feb', revenue: 13800, rentals: 52 },
+  { date: 'Mar', revenue: 14200, rentals: 58 },
+  { date: 'Apr', revenue: 15600, rentals: 64 },
+  { date: 'May', revenue: 16800, rentals: 71 },
+  { date: 'Jun', revenue: 18200, rentals: 78 },
+  { date: 'Jul', revenue: 19500, rentals: 85 },
+  { date: 'Aug', revenue: 20800, rentals: 92 },
+  { date: 'Sep', revenue: 22100, rentals: 98 },
+  { date: 'Oct', revenue: 23400, rentals: 105 },
+  { date: 'Nov', revenue: 24700, rentals: 112 },
+  { date: 'Dec', revenue: 26000, rentals: 120 },
+];
 
 export function ChartAreaSimple() {
-  const [period, setPeriod] = React.useState("12M")
+  const [period, setPeriod] = React.useState('12M');
 
   return (
     <Card className="bg-card border shadow-sm">
@@ -45,9 +45,7 @@ export function ChartAreaSimple() {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Rental Analytics</CardTitle>
-            <CardDescription>
-              Track your rental performance and revenue trends
-            </CardDescription>
+            <CardDescription>Track your rental performance and revenue trends</CardDescription>
           </div>
           <CardAction>
             <Select value={period} onValueChange={setPeriod}>
@@ -117,9 +115,9 @@ export function ChartAreaSimple() {
                         </div>
                       </div>
                     </div>
-                  )
+                  );
                 }
-                return null
+                return null;
               }}
             />
             <Area
@@ -140,5 +138,5 @@ export function ChartAreaSimple() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

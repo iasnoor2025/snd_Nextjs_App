@@ -1,5 +1,5 @@
-import { useRef, useCallback } from "react";
-import { toast } from "sonner";
+import { useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 
 interface UsePrintOptions {
   documentTitle?: string;
@@ -13,22 +13,22 @@ export const usePrint = (options: UsePrintOptions = {}) => {
   const printRef = useRef<HTMLDivElement>(null);
 
   const {
-    documentTitle = "Document",
+    documentTitle = 'Document',
     onBeforePrint,
     onAfterPrint,
     onPrintError,
-    waitForImages = true
+    waitForImages = true,
   } = options;
 
   const handlePrint = useCallback(async () => {
     try {
       onBeforePrint?.();
-      
+
       // Preload images if waitForImages is true
       if (waitForImages && printRef.current) {
         const images = printRef.current.querySelectorAll('img');
-        const imagePromises = Array.from(images).map((img) => {
-          return new Promise((resolve) => {
+        const imagePromises = Array.from(images).map(img => {
+          return new Promise(resolve => {
             if (img.complete) {
               resolve(img);
             } else {
@@ -40,16 +40,15 @@ export const usePrint = (options: UsePrintOptions = {}) => {
             }
           });
         });
-        
+
         await Promise.all(imagePromises);
       }
-      
+
       // Use browser's built-in print functionality
       window.print();
-      
+
       onAfterPrint?.();
-      toast.success("Print completed successfully");
-      
+      toast.success('Print completed successfully');
     } catch (error) {
       console.error('Print failed:', error);
       onPrintError?.(error);
@@ -59,6 +58,6 @@ export const usePrint = (options: UsePrintOptions = {}) => {
 
   return {
     printRef,
-    handlePrint
+    handlePrint,
   };
-}; 
+};

@@ -1,16 +1,13 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { NextResponse } from 'next/server';
 
 export async function POST() {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // In a real application, you would update all notifications for this user in the database
@@ -32,4 +29,4 @@ export async function POST() {
       { status: 500 }
     );
   }
-} 
+}

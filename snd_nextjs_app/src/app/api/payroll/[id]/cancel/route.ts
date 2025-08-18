@@ -13,7 +13,7 @@ const mockPayrolls = [
       file_number: 'EMP001',
       basic_salary: 5000,
       department: 'Engineering',
-      designation: 'Software Engineer'
+      designation: 'Software Engineer',
     },
     month: 1,
     year: 2024,
@@ -47,7 +47,7 @@ const mockPayrolls = [
         amount: 5000,
         is_taxable: true,
         tax_rate: 15,
-        order: 1
+        order: 1,
       },
       {
         id: 2,
@@ -57,7 +57,7 @@ const mockPayrolls = [
         amount: 250,
         is_taxable: true,
         tax_rate: 15,
-        order: 2
+        order: 2,
       },
       {
         id: 3,
@@ -67,7 +67,7 @@ const mockPayrolls = [
         amount: 500,
         is_taxable: true,
         tax_rate: 15,
-        order: 3
+        order: 3,
       },
       {
         id: 4,
@@ -77,7 +77,7 @@ const mockPayrolls = [
         amount: 862.5,
         is_taxable: false,
         tax_rate: 0,
-        order: 4
+        order: 4,
       },
       {
         id: 5,
@@ -87,7 +87,7 @@ const mockPayrolls = [
         amount: 150,
         is_taxable: false,
         tax_rate: 0,
-        order: 5
+        order: 5,
       },
       {
         id: 6,
@@ -97,9 +97,9 @@ const mockPayrolls = [
         amount: 187.5,
         is_taxable: false,
         tax_rate: 0,
-        order: 6
-      }
-    ]
+        order: 6,
+      },
+    ],
   },
   {
     id: 2,
@@ -112,7 +112,7 @@ const mockPayrolls = [
       file_number: 'EMP002',
       basic_salary: 4500,
       department: 'Marketing',
-      designation: 'Marketing Manager'
+      designation: 'Marketing Manager',
     },
     month: 1,
     year: 2024,
@@ -146,7 +146,7 @@ const mockPayrolls = [
         amount: 4500,
         is_taxable: true,
         tax_rate: 15,
-        order: 1
+        order: 1,
       },
       {
         id: 8,
@@ -156,7 +156,7 @@ const mockPayrolls = [
         amount: 300,
         is_taxable: true,
         tax_rate: 15,
-        order: 2
+        order: 2,
       },
       {
         id: 9,
@@ -166,7 +166,7 @@ const mockPayrolls = [
         amount: 720,
         is_taxable: false,
         tax_rate: 0,
-        order: 3
+        order: 3,
       },
       {
         id: 10,
@@ -176,7 +176,7 @@ const mockPayrolls = [
         amount: 135,
         is_taxable: false,
         tax_rate: 0,
-        order: 4
+        order: 4,
       },
       {
         id: 11,
@@ -186,15 +186,13 @@ const mockPayrolls = [
         amount: 45,
         is_taxable: false,
         tax_rate: 0,
-        order: 5
-      }
-    ]
-  }
+        order: 5,
+      },
+    ],
+  },
 ];
 
-export async function POST(
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST({ params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: payrollId } = await params;
     const id = parseInt(payrollId);
@@ -204,19 +202,19 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          message: 'Payroll not found'
+          message: 'Payroll not found',
         },
         { status: 404 }
       );
     }
 
     const payroll = mockPayrolls[payrollIndex];
-    
+
     if (!payroll) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Payroll not found'
+          message: 'Payroll not found',
         },
         { status: 404 }
       );
@@ -227,7 +225,7 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          message: 'Cannot cancel a paid payroll'
+          message: 'Cannot cancel a paid payroll',
         },
         { status: 400 }
       );
@@ -240,13 +238,13 @@ export async function POST(
     return NextResponse.json({
       success: true,
       data: payroll,
-      message: 'Payroll cancelled successfully'
+      message: 'Payroll cancelled successfully',
     });
   } catch (error) {
     return NextResponse.json(
       {
         success: false,
-        message: 'Error cancelling payroll: ' + (error as Error).message
+        message: 'Error cancelling payroll: ' + (error as Error).message,
       },
       { status: 500 }
     );

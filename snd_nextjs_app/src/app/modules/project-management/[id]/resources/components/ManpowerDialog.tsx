@@ -1,19 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { EmployeeDropdown, type Employee } from '@/components/ui/employee-dropdown';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Users, User } from 'lucide-react';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
-import { EmployeeDropdown, type Employee } from '@/components/ui/employee-dropdown';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import apiService from '@/lib/api';
+import { format } from 'date-fns';
+import { CalendarIcon, User, Users } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface ManpowerResource {
   id?: string;
@@ -45,7 +51,7 @@ export default function ManpowerDialog({
   onOpenChange,
   projectId,
   initialData,
-  onSuccess
+  onSuccess,
 }: ManpowerDialogProps) {
   const [loading, setLoading] = useState(false);
   const [useEmployee, setUseEmployee] = useState(initialData?.employee_id ? true : false);
@@ -62,7 +68,7 @@ export default function ManpowerDialog({
     total_days: 0,
     total_cost: 0,
     notes: '',
-    status: 'pending'
+    status: 'pending',
   });
 
   // No need to load employees here - handled by EmployeeDropdown component
@@ -72,14 +78,19 @@ export default function ManpowerDialog({
     if (initialData) {
       setFormData({
         ...initialData,
-        start_date: initialData.start_date ? new Date(initialData.start_date).toISOString().split('T')[0] : '',
-        end_date: initialData.end_date ? new Date(initialData.end_date).toISOString().split('T')[0] : '',
+        start_date: initialData.start_date
+          ? new Date(initialData.start_date).toISOString().split('T')[0]
+          : '',
+        end_date: initialData.end_date
+          ? new Date(initialData.end_date).toISOString().split('T')[0]
+          : '',
       });
-      
+
       // Auto-detect if this is an employee or worker based on available data
-      const hasEmployeeData = initialData.employee_id || initialData.employee_name || initialData.employee_file_number;
+      const hasEmployeeData =
+        initialData.employee_id || initialData.employee_name || initialData.employee_file_number;
       const hasWorkerData = initialData.worker_name;
-      
+
       if (hasEmployeeData) {
         setUseEmployee(true);
       } else if (hasWorkerData) {
@@ -102,7 +113,7 @@ export default function ManpowerDialog({
         total_days: 0,
         total_cost: 0,
         notes: '',
-        status: 'pending'
+        status: 'pending',
       });
       setUseEmployee(false);
     }
@@ -121,7 +132,7 @@ export default function ManpowerDialog({
       setFormData(prev => ({
         ...prev,
         total_days: totalDays,
-        total_cost: (prev.daily_rate || 0) * totalDays
+        total_cost: (prev.daily_rate || 0) * totalDays,
       }));
     }
   }, [formData.start_date, formData.end_date, formData.daily_rate]);
@@ -166,13 +177,13 @@ export default function ManpowerDialog({
         const data = await response.json();
         const employeeData = data.data || data || [];
         const selectedEmployee = employeeData.find((emp: any) => emp.id === employeeId);
-        
+
         if (selectedEmployee) {
           setFormData(prev => ({
             ...prev,
             employee_name: `${selectedEmployee.first_name} ${selectedEmployee.last_name}`,
             employee_file_number: selectedEmployee.file_number || '',
-            name: `${selectedEmployee.first_name} ${selectedEmployee.last_name}`
+            name: `${selectedEmployee.first_name} ${selectedEmployee.last_name}`,
           }));
         }
       }
@@ -187,7 +198,12 @@ export default function ManpowerDialog({
 
     try {
       // Validation
-      if (useEmployee && !formData.employee_id && !formData.employee_name && !formData.employee_file_number) {
+      if (
+        useEmployee &&
+        !formData.employee_id &&
+        !formData.employee_name &&
+        !formData.employee_file_number
+      ) {
         toast.error('Please select an employee or provide employee details');
         return;
       }
@@ -207,9 +223,14 @@ export default function ManpowerDialog({
         toast.error('Daily rate must be positive');
         return;
       }
-      
+
       // Ensure we have a valid name for the resource
-      if (!formData.worker_name && !formData.employee_id && !formData.employee_name && !formData.employee_file_number) {
+      if (
+        !formData.worker_name &&
+        !formData.employee_id &&
+        !formData.employee_name &&
+        !formData.employee_file_number
+      ) {
         toast.error('Either worker name or employee details must be provided');
         return;
       }
@@ -218,7 +239,7 @@ export default function ManpowerDialog({
         ...formData,
         type: 'manpower',
         name: formData.worker_name || formData.employee_name || formData.name || 'Unnamed Resource',
-        total_cost: (formData.daily_rate || 0) * (formData.total_days || 0)
+        total_cost: (formData.daily_rate || 0) * (formData.total_days || 0),
       };
 
       console.log('Submitting manpower data:', submitData);
@@ -246,7 +267,8 @@ export default function ManpowerDialog({
       onOpenChange(false);
     } catch (error) {
       console.error('Error saving manpower resource:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save manpower resource';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to save manpower resource';
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -255,7 +277,7 @@ export default function ManpowerDialog({
 
   const handleUseEmployeeChange = (checked: boolean) => {
     setUseEmployee(checked);
-    
+
     // Only clear form data if this is a new resource (not editing)
     if (!initialData) {
       if (checked) {
@@ -269,7 +291,7 @@ export default function ManpowerDialog({
           job_title: '',
           daily_rate: 0,
           total_days: 0,
-          total_cost: 0
+          total_cost: 0,
         }));
       } else {
         setFormData(prev => ({
@@ -282,7 +304,7 @@ export default function ManpowerDialog({
           job_title: '',
           daily_rate: 0,
           total_days: 0,
-          total_cost: 0
+          total_cost: 0,
         }));
       }
     }
@@ -298,7 +320,9 @@ export default function ManpowerDialog({
             <span>{initialData ? 'Edit Manpower Resource' : 'Add Manpower Resource'}</span>
           </DialogTitle>
           <DialogDescription>
-            {initialData ? 'Update the details for this manpower resource.' : 'Add a new manpower resource to this project.'}
+            {initialData
+              ? 'Update the details for this manpower resource.'
+              : 'Add a new manpower resource to this project.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -308,38 +332,63 @@ export default function ManpowerDialog({
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-medium">Link to Employee</h4>
-                <p className="text-sm text-muted-foreground">Do you want to connect this resource to an employee?</p>
+                <p className="text-sm text-muted-foreground">
+                  Do you want to connect this resource to an employee?
+                </p>
               </div>
-              <Switch 
+              <Switch
                 checked={useEmployee}
                 onCheckedChange={handleUseEmployeeChange}
-                disabled={!!(initialData?.employee_id || initialData?.employee_name || initialData?.employee_file_number)}
+                disabled={
+                  !!(
+                    initialData?.employee_id ||
+                    initialData?.employee_name ||
+                    initialData?.employee_file_number
+                  )
+                }
               />
             </div>
           </div>
 
           {useEmployee ? (
             <div className="space-y-4">
-              {initialData && (initialData.employee_id || initialData.employee_name || initialData.employee_file_number) ? (
+              {initialData &&
+              (initialData.employee_id ||
+                initialData.employee_name ||
+                initialData.employee_file_number) ? (
                 <div className="space-y-4">
                   <div className="rounded bg-gray-100 p-3">
-                    <div className="text-sm font-medium text-gray-700">Employee Information (Read-only)</div>
-                    {initialData.employee_id && <div className="text-sm text-gray-600 mt-1">ID: {initialData.employee_id}</div>}
-                    {initialData.employee_name && <div className="text-sm text-gray-600 mt-1">Name: {initialData.employee_name}</div>}
-                    {initialData.employee_file_number && <div className="text-sm text-gray-600 mt-1">File #: {initialData.employee_file_number}</div>}
+                    <div className="text-sm font-medium text-gray-700">
+                      Employee Information (Read-only)
+                    </div>
+                    {initialData.employee_id && (
+                      <div className="text-sm text-gray-600 mt-1">
+                        ID: {initialData.employee_id}
+                      </div>
+                    )}
+                    {initialData.employee_name && (
+                      <div className="text-sm text-gray-600 mt-1">
+                        Name: {initialData.employee_name}
+                      </div>
+                    )}
+                    {initialData.employee_file_number && (
+                      <div className="text-sm text-gray-600 mt-1">
+                        File #: {initialData.employee_file_number}
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
                 <EmployeeDropdown
                   value={formData.employee_id || ''}
-                  onValueChange={(value) => handleInputChange('employee_id', value)}
+                  onValueChange={value => handleInputChange('employee_id', value)}
                   label="Select Employee"
                   placeholder="Select an employee"
                   required={true}
                   showSearch={true}
                 />
               )}
-              
+
               {/* Employee Name and File Number - Show as read-only when employee is selected */}
               {formData.employee_id ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -370,7 +419,7 @@ export default function ManpowerDialog({
                     <Input
                       id="employee_name"
                       value={formData.employee_name || ''}
-                      onChange={(e) => handleInputChange('employee_name', e.target.value)}
+                      onChange={e => handleInputChange('employee_name', e.target.value)}
                       placeholder="Enter employee name"
                     />
                   </div>
@@ -379,7 +428,7 @@ export default function ManpowerDialog({
                     <Input
                       id="employee_file_number"
                       value={formData.employee_file_number || ''}
-                      onChange={(e) => handleInputChange('employee_file_number', e.target.value)}
+                      onChange={e => handleInputChange('employee_file_number', e.target.value)}
                       placeholder="Enter file number"
                     />
                   </div>
@@ -392,7 +441,7 @@ export default function ManpowerDialog({
               <Input
                 id="worker_name"
                 value={formData.worker_name || ''}
-                onChange={(e) => handleInputChange('worker_name', e.target.value)}
+                onChange={e => handleInputChange('worker_name', e.target.value)}
                 placeholder="Enter worker name"
               />
             </div>
@@ -404,7 +453,7 @@ export default function ManpowerDialog({
             <Input
               id="job_title"
               value={formData.job_title || ''}
-              onChange={(e) => handleInputChange('job_title', e.target.value)}
+              onChange={e => handleInputChange('job_title', e.target.value)}
               placeholder="Enter job title"
             />
           </div>
@@ -417,7 +466,7 @@ export default function ManpowerDialog({
                 id="start_date"
                 type="date"
                 value={formData.start_date || ''}
-                onChange={(e) => handleInputChange('start_date', e.target.value)}
+                onChange={e => handleInputChange('start_date', e.target.value)}
                 required
               />
             </div>
@@ -427,7 +476,7 @@ export default function ManpowerDialog({
                 id="end_date"
                 type="date"
                 value={formData.end_date || ''}
-                onChange={(e) => handleInputChange('end_date', e.target.value)}
+                onChange={e => handleInputChange('end_date', e.target.value)}
                 min={formData.start_date}
               />
             </div>
@@ -441,7 +490,7 @@ export default function ManpowerDialog({
                 id="daily_rate"
                 type="number"
                 value={formData.daily_rate || ''}
-                onChange={(e) => handleInputChange('daily_rate', parseFloat(e.target.value))}
+                onChange={e => handleInputChange('daily_rate', parseFloat(e.target.value))}
                 placeholder="0.00"
                 step="0.01"
                 min="0"
@@ -477,7 +526,7 @@ export default function ManpowerDialog({
             <Textarea
               id="notes"
               value={formData.notes || ''}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
+              onChange={e => handleInputChange('notes', e.target.value)}
               placeholder="Enter any additional notes"
               rows={3}
             />

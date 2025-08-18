@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import React, { useState } from 'react';
 
 interface AddManpowerResourceModalProps {
   isOpen: boolean;
@@ -12,7 +18,11 @@ interface AddManpowerResourceModalProps {
   projectId: string;
 }
 
-export function AddManpowerResourceModal({ isOpen, onClose, projectId }: AddManpowerResourceModalProps) {
+export function AddManpowerResourceModal({
+  isOpen,
+  onClose,
+  projectId,
+}: AddManpowerResourceModalProps) {
   const [linkToEmployee, setLinkToEmployee] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [dailyRate, setDailyRate] = useState('');
@@ -24,7 +34,7 @@ export function AddManpowerResourceModal({ isOpen, onClose, projectId }: AddManp
       projectId,
       linkToEmployee,
       selectedEmployee,
-      dailyRate
+      dailyRate,
     });
     onClose();
   };
@@ -35,7 +45,7 @@ export function AddManpowerResourceModal({ isOpen, onClose, projectId }: AddManp
         <DialogHeader>
           <DialogTitle>Add a new manpower resource to this project</DialogTitle>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Link to Employee Section */}
           <Card>
@@ -53,7 +63,7 @@ export function AddManpowerResourceModal({ isOpen, onClose, projectId }: AddManp
                   onCheckedChange={setLinkToEmployee}
                 />
               </div>
-              
+
               {linkToEmployee && (
                 <div className="space-y-4 pt-4 border-t">
                   <div className="space-y-2">
@@ -69,14 +79,14 @@ export function AddManpowerResourceModal({ isOpen, onClose, projectId }: AddManp
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="daily-rate">Daily Rate ($)</Label>
                     <input
                       id="daily-rate"
                       type="number"
                       value={dailyRate}
-                      onChange={(e) => setDailyRate(e.target.value)}
+                      onChange={e => setDailyRate(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter daily rate"
                     />
@@ -88,18 +98,10 @@ export function AddManpowerResourceModal({ isOpen, onClose, projectId }: AddManp
 
           {/* Action Buttons */}
           <div className="flex justify-end space-x-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              className="px-4 py-2"
-            >
+            <Button type="button" variant="outline" onClick={onClose} className="px-4 py-2">
               Cancel
             </Button>
-            <Button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white"
-            >
+            <Button type="submit" className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white">
               Add Resource
             </Button>
           </div>
@@ -107,4 +109,4 @@ export function AddManpowerResourceModal({ isOpen, onClose, projectId }: AddManp
       </DialogContent>
     </Dialog>
   );
-} 
+}

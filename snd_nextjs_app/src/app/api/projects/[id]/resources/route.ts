@@ -1,24 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { projectResources, employeeAssignments, equipment } from '@/lib/drizzle/schema';
-import { eq, desc } from 'drizzle-orm';
+import { employeeAssignments, equipment, projectResources } from '@/lib/drizzle/schema';
+import { desc, eq } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: projectId } = await params;
-    
+
     console.log('Fetching resources for project ID:', projectId);
-    
+
     // Validate projectId
     if (!projectId || isNaN(parseInt(projectId))) {
       console.log('Invalid project ID:', projectId);
-      return NextResponse.json(
-        { error: 'Invalid project ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 
     const projectIdNum = parseInt(projectId);
@@ -38,7 +32,7 @@ export async function GET(
         date: projectResources.date,
         status: projectResources.status,
         notes: projectResources.notes,
-        
+
         // Manpower specific fields
         employeeId: projectResources.employeeId,
         employeeName: projectResources.employeeName,
@@ -50,7 +44,7 @@ export async function GET(
         startDate: projectResources.startDate,
         endDate: projectResources.endDate,
         totalDays: projectResources.totalDays,
-        
+
         // Equipment specific fields
         equipmentId: projectResources.equipmentId,
         equipmentName: projectResources.equipmentName,
@@ -59,30 +53,30 @@ export async function GET(
         // hoursWorked field removed - not in schema
         usageHours: projectResources.usageHours,
         maintenanceCost: projectResources.maintenanceCost,
-        
+
         // Material specific fields
         materialName: projectResources.materialName,
         unit: projectResources.unit,
         unitPrice: projectResources.unitPrice,
         materialId: projectResources.materialId,
-        
+
         // Fuel specific fields
         fuelType: projectResources.fuelType,
         liters: projectResources.liters,
         pricePerLiter: projectResources.pricePerLiter,
-        
+
         // Expense specific fields
         category: projectResources.category,
         expenseDescription: projectResources.expenseDescription,
         amount: projectResources.amount,
-        
+
         // Task specific fields
         title: projectResources.title,
         priority: projectResources.priority,
         dueDate: projectResources.dueDate,
         completionPercentage: projectResources.completionPercentage,
         assignedToId: projectResources.assignedToId,
-        
+
         // Timestamps
         createdAt: projectResources.createdAt,
         updatedAt: projectResources.updatedAt,
@@ -93,36 +87,33 @@ export async function GET(
 
     console.log('Resources found:', resources.length);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      data: resources 
+      data: resources,
     });
   } catch (error) {
     console.error('Error fetching project resources:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { error: 'Failed to fetch project resources', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Failed to fetch project resources',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: projectId } = await params;
     const body = await request.json();
 
     // Validate required fields
     if (!body.type) {
-      return NextResponse.json(
-        { error: 'Type is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Type is required' }, { status: 400 });
     }
-    
+
     // For manpower resources, either name, worker_name, or employee_id must be provided
     if (body.type === 'manpower' && !body.name && !body.worker_name && !body.employee_id) {
       return NextResponse.json(
@@ -130,13 +121,10 @@ export async function POST(
         { status: 400 }
       );
     }
-    
+
     // For other resource types, name is required
     if (body.type !== 'manpower' && !body.name) {
-      return NextResponse.json(
-        { error: 'Name is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
     // Prepare the data for insertion
@@ -193,17 +181,16 @@ export async function POST(
       title: body.title,
       priority: body.priority,
       dueDate: body.due_date ? new Date(body.due_date).toISOString() : null,
-      completionPercentage: body.completion_percentage ? parseInt(body.completion_percentage) : null,
+      completionPercentage: body.completion_percentage
+        ? parseInt(body.completion_percentage)
+        : null,
       assignedToId: body.assigned_to_id ? parseInt(body.assigned_to_id) : null,
 
       // Required timestamp fields
       updatedAt: new Date().toISOString(),
     };
 
-    const insertedResource = await db
-      .insert(projectResources)
-      .values(resourceData) 
-      .returning();
+    const insertedResource = await db.insert(projectResources).values(resourceData).returning();
 
     const resource = insertedResource[0];
 
@@ -211,19 +198,19 @@ export async function POST(
     if (body.type === 'manpower' && body.employee_id) {
       try {
         console.log('Creating employee assignment for employee:', body.employee_id);
-        await db
-          .insert(employeeAssignments)
-          .values({
-            employeeId: parseInt(body.employee_id), 
-            projectId: parseInt(projectId),
-            name: `${body.name} Assignment`,
-            startDate: body.start_date ? new Date(body.start_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-            endDate: body.end_date ? new Date(body.end_date).toISOString().split('T')[0] : null,
-            notes: body.notes,
-            status: 'active',
-            type: 'project',
-            updatedAt: new Date().toISOString().split('T')[0]
-          } as any);
+        await db.insert(employeeAssignments).values({
+          employeeId: parseInt(body.employee_id),
+          projectId: parseInt(projectId),
+          name: `${body.name} Assignment`,
+          startDate: body.start_date
+            ? new Date(body.start_date).toISOString().split('T')[0]
+            : new Date().toISOString().split('T')[0],
+          endDate: body.end_date ? new Date(body.end_date).toISOString().split('T')[0] : null,
+          notes: body.notes,
+          status: 'active',
+          type: 'project',
+          updatedAt: new Date().toISOString().split('T')[0],
+        } as any);
         console.log('Employee assignment created successfully');
       } catch (assignmentError) {
         console.error('Error creating employee assignment:', assignmentError);
@@ -239,17 +226,17 @@ export async function POST(
           .update(equipment)
           .set({
             status: 'assigned',
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
           })
           .where(eq(equipment.id, parseInt(body.equipment_id)));
         console.log('Equipment assignment created successfully');
-        
+
         // Automatically update equipment status to 'assigned'
         await db
           .update(equipment)
-          .set({ 
+          .set({
             status: 'assigned',
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
           })
           .where(eq(equipment.id, parseInt(body.equipment_id)));
         console.log('Equipment status updated to assigned');
@@ -259,18 +246,18 @@ export async function POST(
       }
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      data: resource 
+      data: resource,
     });
   } catch (error) {
     console.error('Error creating project resource:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { 
-        error: 'Failed to create project resource', 
+      {
+        error: 'Failed to create project resource',
         details: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : 'No stack trace'
+        stack: error instanceof Error ? error.stack : 'No stack trace',
       },
       { status: 500 }
     );

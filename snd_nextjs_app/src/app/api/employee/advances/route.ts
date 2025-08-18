@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authConfig } from '@/lib/auth-config'
-import { employees as employeesTable, advancePayments } from '@/lib/drizzle/schema'
-import { eq, isNull } from 'drizzle-orm'
+import { authConfig } from '@/lib/auth-config';
+import { db } from '@/lib/db';
+import { advancePayments, employees as employeesTable } from '@/lib/drizzle/schema';
+import { eq, isNull } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Explicit route configuration for Next.js 15
 export const dynamic = 'force-dynamic';
@@ -16,28 +16,22 @@ export const preferredRegion = 'auto';
 export async function GET(_request: NextRequest) {
   try {
     // Get the current user session
-    const session = await getServerSession(authConfig)
-    
+    const session = await getServerSession(authConfig);
+
     if (!session?.user?.id) {
-      console.log('GET /api/employee/advances - Not authenticated')
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      )
+      console.log('GET /api/employee/advances - Not authenticated');
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(_request.url)
-    const employeeId = searchParams.get('employeeId')
+    const { searchParams } = new URL(_request.url);
+    const employeeId = searchParams.get('employeeId');
 
     if (!employeeId) {
-      console.log('GET /api/employee/advances - Employee ID is required')
-      return NextResponse.json(
-        { error: 'Employee ID is required' },
-        { status: 400 }
-      )
+      console.log('GET /api/employee/advances - Employee ID is required');
+      return NextResponse.json({ error: 'Employee ID is required' }, { status: 400 });
     }
 
-    console.log(`GET /api/employee/advances - Fetching advances for employee ${employeeId}`)
+    console.log(`GET /api/employee/advances - Fetching advances for employee ${employeeId}`);
 
     // Check if user has permission to view this employee's advances
     if (session.user.role === 'EMPLOYEE' && session.user.national_id) {
@@ -47,15 +41,15 @@ export async function GET(_request: NextRequest) {
         .from(employeesTable)
         .where(eq(employeesTable.iqamaNumber, session.user.national_id))
         .limit(1);
-      
+
       const employee = employeeRows[0];
-      
+
       if (!employee || employee.id !== parseInt(employeeId)) {
-        console.log(`GET /api/employee/advances - Access denied for employee ${employeeId}`)
+        console.log(`GET /api/employee/advances - Access denied for employee ${employeeId}`);
         return NextResponse.json(
           { error: 'Access denied. You can only view your own advances.' },
           { status: 403 }
-        )
+        );
       }
     }
 
@@ -74,12 +68,13 @@ export async function GET(_request: NextRequest) {
       })
       .from(advancePayments)
       .where(
-        eq(advancePayments.employeeId, parseInt(employeeId)) && 
-        isNull(advancePayments.deletedAt)
+        eq(advancePayments.employeeId, parseInt(employeeId)) && isNull(advancePayments.deletedAt)
       )
       .orderBy(advancePayments.createdAt);
 
-    console.log(`GET /api/employee/advances - Found ${advancesRows.length} advances for employee ${employeeId}`)
+    console.log(
+      `GET /api/employee/advances - Found ${advancesRows.length} advances for employee ${employeeId}`
+    );
 
     const responseData = {
       success: true,
@@ -92,32 +87,31 @@ export async function GET(_request: NextRequest) {
         monthly_deduction: advance.monthly_deduction ? Number(advance.monthly_deduction) : null,
         repaid_amount: Number(advance.repaid_amount),
         remaining_balance: Number(advance.amount) - Number(advance.repaid_amount),
-        type: 'advance'
-      }))
-    }
+        type: 'advance',
+      })),
+    };
 
-    console.log('GET /api/employee/advances - Returning response:', responseData)
-    return NextResponse.json(responseData)
-
+    console.log('GET /api/employee/advances - Returning response:', responseData);
+    return NextResponse.json(responseData);
   } catch (error) {
-    console.error('Error fetching advances:', error)
+    console.error('Error fetching advances:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function POST(_request: NextRequest) {
   try {
     // Get the current user session
-    const session = await getServerSession(authConfig)
-    
+    const session = await getServerSession(authConfig);
+
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     // Check if user has appropriate role to create advance requests
@@ -127,44 +121,38 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json(
         { error: `Access denied. Role ${session.user.role} cannot create advance requests.` },
         { status: 403 }
-      )
+      );
     }
 
-    const body = await _request.json()
+    const body = await _request.json();
     // Support both field names for compatibility
-    const employee_id = body.employee_id || body.employeeId
-    const amount = body.amount
-    const reason = body.reason
-    const monthly_deduction = body.monthly_deduction
+    const employee_id = body.employee_id || body.employeeId;
+    const amount = body.amount;
+    const reason = body.reason;
+    const monthly_deduction = body.monthly_deduction;
 
     // Validate required fields
     if (!employee_id || !amount) {
       return NextResponse.json(
         { error: 'Missing required fields: employee_id/employeeId and amount are required' },
         { status: 400 }
-      )
+      );
     }
 
     // Validate amount
-    const amountValue = parseFloat(amount)
+    const amountValue = parseFloat(amount);
     if (isNaN(amountValue) || amountValue <= 0) {
-      return NextResponse.json(
-        { error: 'Invalid amount' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid amount' }, { status: 400 });
     }
 
     // Validate monthly deduction if provided
-    let monthlyDeductionValue: string | null = null
+    let monthlyDeductionValue: string | null = null;
     if (monthly_deduction) {
-      const parsed = parseFloat(monthly_deduction)
+      const parsed = parseFloat(monthly_deduction);
       if (isNaN(parsed) || parsed < 0) {
-        return NextResponse.json(
-          { error: 'Invalid monthly deduction amount' },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: 'Invalid monthly deduction amount' }, { status: 400 });
       }
-      monthlyDeductionValue = parsed.toString()
+      monthlyDeductionValue = parsed.toString();
     }
 
     // Create advance request using Drizzle
@@ -186,14 +174,10 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json({
       message: 'Advance request submitted successfully',
-      advance
-    })
-
+      advance,
+    });
   } catch (error) {
-    console.error('Error creating advance request:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('Error creating advance request:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-} 
+}

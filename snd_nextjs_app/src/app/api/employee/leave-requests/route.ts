@@ -1,19 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authConfig } from '@/lib/auth-config'
-import { employeeLeaves } from '@/lib/drizzle/schema'
+import { authConfig } from '@/lib/auth-config';
+import { db } from '@/lib/db';
+import { employeeLeaves } from '@/lib/drizzle/schema';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest) {
   try {
     // Get the current user session
-    const session = await getServerSession(authConfig)
-    
+    const session = await getServerSession(authConfig);
+
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     // Check if user has EMPLOYEE role
@@ -21,26 +18,29 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json(
         { error: 'Access denied. Employee role required.' },
         { status: 403 }
-      )
+      );
     }
 
-    const body = await _request.json()
+    const body = await _request.json();
     // Support both field names for compatibility
-    const employee_id = body.employee_id || body.employeeId
-    const { leave_type, start_date, end_date, reason } = body
+    const employee_id = body.employee_id || body.employeeId;
+    const { leave_type, start_date, end_date, reason } = body;
 
     // Validate required fields
     if (!employee_id || !leave_type || !start_date || !end_date) {
       return NextResponse.json(
-        { error: 'Missing required fields: employee_id/employeeId, leave_type, start_date, and end_date are required' },
+        {
+          error:
+            'Missing required fields: employee_id/employeeId, leave_type, start_date, and end_date are required',
+        },
         { status: 400 }
-      )
+      );
     }
 
     // Calculate number of days
-    const start = new Date(start_date)
-    const end = new Date(end_date)
-    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1
+    const start = new Date(start_date);
+    const end = new Date(end_date);
+    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
     // Create leave request using Drizzle
     const leaveRequestRows = await db
@@ -62,14 +62,10 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json({
       message: 'Leave request submitted successfully',
-      leaveRequest
-    })
-
+      leaveRequest,
+    });
   } catch (error) {
-    console.error('Error creating leave request:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('Error creating leave request:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

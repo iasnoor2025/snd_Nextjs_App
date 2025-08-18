@@ -1,45 +1,51 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Save, Settings, DollarSign, Calendar, Shield, FileText } from "lucide-react";
-import { toast } from "sonner";
-import Link from "next/link";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, Calendar, DollarSign, FileText, Save, Settings, Shield } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function PayrollSettingsPage() {
   const [generalSettings, setGeneralSettings] = useState({
-    company_name: "SND Rental Management",
-    currency: "USD",
-    pay_frequency: "monthly",
-    pay_day: "25",
-    overtime_rate: "1.5",
-    tax_year_start: "01-01",
+    company_name: 'SND Rental Management',
+    currency: 'USD',
+    pay_frequency: 'monthly',
+    pay_day: '25',
+    overtime_rate: '1.5',
+    tax_year_start: '01-01',
     auto_generate_payroll: false,
     require_approval: true,
-    send_notifications: true
+    send_notifications: true,
   });
 
   const [taxSettings, setTaxSettings] = useState({
-    tax_calculation_method: "progressive",
-    social_security_rate: "6.2",
-    medicare_rate: "1.45",
-    state_tax_rate: "5.0",
-    local_tax_rate: "2.0",
-    exempt_employees: false
+    tax_calculation_method: 'progressive',
+    social_security_rate: '6.2',
+    medicare_rate: '1.45',
+    state_tax_rate: '5.0',
+    local_tax_rate: '2.0',
+    exempt_employees: false,
   });
 
   const [deductionSettings, setDeductionSettings] = useState({
-    health_insurance_rate: "3.0",
-    retirement_rate: "5.0",
-    other_deductions: "",
-    max_deduction_percentage: "25.0"
+    health_insurance_rate: '3.0',
+    retirement_rate: '5.0',
+    other_deductions: '',
+    max_deduction_percentage: '25.0',
   });
 
   const [loading, setLoading] = useState(false);
@@ -51,7 +57,7 @@ export default function PayrollSettingsPage() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       toast.success(`${section} settings saved successfully`);
     } catch (error) {
-      toast.error("Failed to save settings");
+      toast.error('Failed to save settings');
     } finally {
       setLoading(false);
     }
@@ -59,13 +65,13 @@ export default function PayrollSettingsPage() {
 
   const handleInputChange = (section: string, field: string, value: string | boolean) => {
     switch (section) {
-      case "general":
+      case 'general':
         setGeneralSettings(prev => ({ ...prev, [field]: value }));
         break;
-      case "tax":
+      case 'tax':
         setTaxSettings(prev => ({ ...prev, [field]: value }));
         break;
-      case "deduction":
+      case 'deduction':
         setDeductionSettings(prev => ({ ...prev, [field]: value }));
         break;
     }
@@ -115,12 +121,15 @@ export default function PayrollSettingsPage() {
                   <Input
                     id="company_name"
                     value={generalSettings.company_name}
-                    onChange={(e) => handleInputChange("general", "company_name", e.target.value)}
+                    onChange={e => handleInputChange('general', 'company_name', e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="currency">Currency</Label>
-                  <Select value={generalSettings.currency} onValueChange={(value) => handleInputChange("general", "currency", value)}>
+                  <Select
+                    value={generalSettings.currency}
+                    onValueChange={value => handleInputChange('general', 'currency', value)}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -134,7 +143,10 @@ export default function PayrollSettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pay_frequency">Pay Frequency</Label>
-                  <Select value={generalSettings.pay_frequency} onValueChange={(value) => handleInputChange("general", "pay_frequency", value)}>
+                  <Select
+                    value={generalSettings.pay_frequency}
+                    onValueChange={value => handleInputChange('general', 'pay_frequency', value)}
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -154,7 +166,7 @@ export default function PayrollSettingsPage() {
                     min="1"
                     max="31"
                     value={generalSettings.pay_day}
-                    onChange={(e) => handleInputChange("general", "pay_day", e.target.value)}
+                    onChange={e => handleInputChange('general', 'pay_day', e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -164,7 +176,7 @@ export default function PayrollSettingsPage() {
                     type="number"
                     step="0.1"
                     value={generalSettings.overtime_rate}
-                    onChange={(e) => handleInputChange("general", "overtime_rate", e.target.value)}
+                    onChange={e => handleInputChange('general', 'overtime_rate', e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -173,7 +185,7 @@ export default function PayrollSettingsPage() {
                     id="tax_year_start"
                     placeholder="MM-DD"
                     value={generalSettings.tax_year_start}
-                    onChange={(e) => handleInputChange("general", "tax_year_start", e.target.value)}
+                    onChange={e => handleInputChange('general', 'tax_year_start', e.target.value)}
                   />
                 </div>
               </div>
@@ -182,11 +194,15 @@ export default function PayrollSettingsPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Auto-generate Payroll</Label>
-                    <p className="text-sm text-gray-500">Automatically generate payroll on pay day</p>
+                    <p className="text-sm text-gray-500">
+                      Automatically generate payroll on pay day
+                    </p>
                   </div>
                   <Switch
                     checked={generalSettings.auto_generate_payroll}
-                    onCheckedChange={(checked) => handleInputChange("general", "auto_generate_payroll", checked)}
+                    onCheckedChange={checked =>
+                      handleInputChange('general', 'auto_generate_payroll', checked)
+                    }
                   />
                 </div>
                 <div className="flex items-center justify-between">
@@ -196,23 +212,29 @@ export default function PayrollSettingsPage() {
                   </div>
                   <Switch
                     checked={generalSettings.require_approval}
-                    onCheckedChange={(checked) => handleInputChange("general", "require_approval", checked)}
+                    onCheckedChange={checked =>
+                      handleInputChange('general', 'require_approval', checked)
+                    }
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Send Notifications</Label>
-                    <p className="text-sm text-gray-500">Send email notifications for payroll events</p>
+                    <p className="text-sm text-gray-500">
+                      Send email notifications for payroll events
+                    </p>
                   </div>
                   <Switch
                     checked={generalSettings.send_notifications}
-                    onCheckedChange={(checked) => handleInputChange("general", "send_notifications", checked)}
+                    onCheckedChange={checked =>
+                      handleInputChange('general', 'send_notifications', checked)
+                    }
                   />
                 </div>
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={() => handleSave("General")} disabled={loading}>
+                <Button onClick={() => handleSave('General')} disabled={loading}>
                   {loading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -240,7 +262,12 @@ export default function PayrollSettingsPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label htmlFor="tax_calculation_method">Tax Calculation Method</Label>
-                  <Select value={taxSettings.tax_calculation_method} onValueChange={(value) => handleInputChange("tax", "tax_calculation_method", value)}>
+                  <Select
+                    value={taxSettings.tax_calculation_method}
+                    onValueChange={value =>
+                      handleInputChange('tax', 'tax_calculation_method', value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -258,7 +285,7 @@ export default function PayrollSettingsPage() {
                     type="number"
                     step="0.1"
                     value={taxSettings.social_security_rate}
-                    onChange={(e) => handleInputChange("tax", "social_security_rate", e.target.value)}
+                    onChange={e => handleInputChange('tax', 'social_security_rate', e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -268,7 +295,7 @@ export default function PayrollSettingsPage() {
                     type="number"
                     step="0.1"
                     value={taxSettings.medicare_rate}
-                    onChange={(e) => handleInputChange("tax", "medicare_rate", e.target.value)}
+                    onChange={e => handleInputChange('tax', 'medicare_rate', e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -278,7 +305,7 @@ export default function PayrollSettingsPage() {
                     type="number"
                     step="0.1"
                     value={taxSettings.state_tax_rate}
-                    onChange={(e) => handleInputChange("tax", "state_tax_rate", e.target.value)}
+                    onChange={e => handleInputChange('tax', 'state_tax_rate', e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -288,7 +315,7 @@ export default function PayrollSettingsPage() {
                     type="number"
                     step="0.1"
                     value={taxSettings.local_tax_rate}
-                    onChange={(e) => handleInputChange("tax", "local_tax_rate", e.target.value)}
+                    onChange={e => handleInputChange('tax', 'local_tax_rate', e.target.value)}
                   />
                 </div>
               </div>
@@ -296,16 +323,18 @@ export default function PayrollSettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label>Exempt Employees</Label>
-                  <p className="text-sm text-gray-500">Allow tax exemptions for certain employees</p>
+                  <p className="text-sm text-gray-500">
+                    Allow tax exemptions for certain employees
+                  </p>
                 </div>
                 <Switch
                   checked={taxSettings.exempt_employees}
-                  onCheckedChange={(checked) => handleInputChange("tax", "exempt_employees", checked)}
+                  onCheckedChange={checked => handleInputChange('tax', 'exempt_employees', checked)}
                 />
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={() => handleSave("Tax")} disabled={loading}>
+                <Button onClick={() => handleSave('Tax')} disabled={loading}>
                   {loading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -338,7 +367,9 @@ export default function PayrollSettingsPage() {
                     type="number"
                     step="0.1"
                     value={deductionSettings.health_insurance_rate}
-                    onChange={(e) => handleInputChange("deduction", "health_insurance_rate", e.target.value)}
+                    onChange={e =>
+                      handleInputChange('deduction', 'health_insurance_rate', e.target.value)
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -348,7 +379,9 @@ export default function PayrollSettingsPage() {
                     type="number"
                     step="0.1"
                     value={deductionSettings.retirement_rate}
-                    onChange={(e) => handleInputChange("deduction", "retirement_rate", e.target.value)}
+                    onChange={e =>
+                      handleInputChange('deduction', 'retirement_rate', e.target.value)
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -358,7 +391,9 @@ export default function PayrollSettingsPage() {
                     type="number"
                     step="0.1"
                     value={deductionSettings.max_deduction_percentage}
-                    onChange={(e) => handleInputChange("deduction", "max_deduction_percentage", e.target.value)}
+                    onChange={e =>
+                      handleInputChange('deduction', 'max_deduction_percentage', e.target.value)
+                    }
                   />
                 </div>
               </div>
@@ -369,13 +404,13 @@ export default function PayrollSettingsPage() {
                   id="other_deductions"
                   placeholder="Enter additional deduction rules..."
                   value={deductionSettings.other_deductions}
-                  onChange={(e) => handleInputChange("deduction", "other_deductions", e.target.value)}
+                  onChange={e => handleInputChange('deduction', 'other_deductions', e.target.value)}
                   rows={4}
                 />
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={() => handleSave("Deduction")} disabled={loading}>
+                <Button onClick={() => handleSave('Deduction')} disabled={loading}>
                   {loading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>

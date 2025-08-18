@@ -11,15 +11,7 @@ interface RTLPageLayoutProps {
 export function RTLPageLayout({ children, className }: RTLPageLayoutProps) {
   const { isRTL } = useI18n();
 
-  return (
-    <div className={cn(
-      'space-y-6',
-      isRTL && 'rtl',
-      className
-    )}>
-      {children}
-    </div>
-  );
+  return <div className={cn('space-y-6', isRTL && 'rtl', className)}>{children}</div>;
 }
 
 interface RTLHeaderProps {
@@ -31,11 +23,13 @@ export function RTLHeader({ children, className }: RTLHeaderProps) {
   const { isRTL } = useI18n();
 
   return (
-    <div className={cn(
-      'flex items-center justify-between',
-      isRTL ? 'flex-row-reverse' : '',
-      className
-    )}>
+    <div
+      className={cn(
+        'flex items-center justify-between',
+        isRTL ? 'flex-row-reverse' : '',
+        className
+      )}
+    >
       {children}
     </div>
   );
@@ -49,14 +43,7 @@ interface RTLContentProps {
 export function RTLContent({ children, className }: RTLContentProps) {
   const { isRTL } = useI18n();
 
-  return (
-    <div className={cn(
-      isRTL ? 'text-right' : 'text-left',
-      className
-    )}>
-      {children}
-    </div>
-  );
+  return <div className={cn(isRTL ? 'text-right' : 'text-left', className)}>{children}</div>;
 }
 
 interface RTLFlexProps {
@@ -69,13 +56,8 @@ export function RTLFlex({ children, className, gap = 'gap-2' }: RTLFlexProps) {
   const { isRTL } = useI18n();
 
   return (
-    <div className={cn(
-      'flex items-center',
-      gap,
-      isRTL ? 'flex-row-reverse' : '',
-      className
-    )}>
+    <div className={cn('flex items-center', gap, isRTL ? 'flex-row-reverse' : '', className)}>
       {children}
     </div>
   );
-} 
+}

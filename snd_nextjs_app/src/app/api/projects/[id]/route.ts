@@ -1,24 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { projects, customers, rentals } from '@/lib/drizzle/schema';
+import { customers, projects, rentals } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: projectId } = await params;
-    
+
     console.log('Fetching project with ID:', projectId);
-    
+
     // Validate projectId
     if (!projectId || isNaN(parseInt(projectId))) {
       console.log('Invalid project ID:', projectId);
-      return NextResponse.json(
-        { error: 'Invalid project ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 
     const projectIdNum = parseInt(projectId);
@@ -45,18 +39,12 @@ export async function GET(
     console.log('Project data found:', projectData.length > 0);
 
     if (!projectData.length) {
-      return NextResponse.json(
-        { error: 'Project not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
     const project = projectData[0];
     if (!project) {
-      return NextResponse.json(
-        { error: 'Project not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
     console.log('Project:', project);
 
@@ -70,12 +58,12 @@ export async function GET(
             id: customers.id,
             name: customers.name,
             email: customers.email,
-            phone: customers.phone
+            phone: customers.phone,
           })
           .from(customers)
           .where(eq(customers.id, project.customerId))
           .limit(1);
-        
+
         customer = customerData[0] || null;
         console.log('Customer data:', customer);
       } catch (customerError) {
@@ -120,33 +108,35 @@ export async function GET(
       manager: {
         id: '1',
         name: 'John Smith',
-        email: 'john.smith@company.com'
+        email: 'john.smith@company.com',
       },
       location: 'Downtown Business District',
-      notes: project.notes || 'Project is progressing well with foundation work completed and structural framework 65% complete.',
-      rental: rental
+      notes:
+        project.notes ||
+        'Project is progressing well with foundation work completed and structural framework 65% complete.',
+      rental: rental,
     };
 
     console.log('Transformed project:', transformedProject);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      data: transformedProject 
+      data: transformedProject,
     });
   } catch (error) {
     console.error('Error fetching project:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { error: 'Failed to fetch project', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Failed to fetch project',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: projectId } = await params;
     const body = await request.json();
@@ -161,7 +151,33 @@ export async function PUT(
         startDate: body.start_date ? body.start_date : null,
         endDate: body.end_date ? body.end_date : null,
         budget: body.budget ? String(parseFloat(body.budget)) : null,
-        notes: body.notes || body.objectives || body.scope || body.deliverables || body.constraints || body.assumptions || body.risks || body.quality_standards || body.communication_plan || body.stakeholder_management || body.change_management || body.procurement_plan || body.resource_plan || body.schedule_plan || body.cost_plan || body.quality_plan || body.risk_plan || body.communication_plan_detailed || body.stakeholder_plan || body.change_plan || body.procurement_plan_detailed || body.resource_plan_detailed || body.schedule_plan_detailed || body.cost_plan_detailed || body.quality_plan_detailed || body.risk_plan_detailed,
+        notes:
+          body.notes ||
+          body.objectives ||
+          body.scope ||
+          body.deliverables ||
+          body.constraints ||
+          body.assumptions ||
+          body.risks ||
+          body.quality_standards ||
+          body.communication_plan ||
+          body.stakeholder_management ||
+          body.change_management ||
+          body.procurement_plan ||
+          body.resource_plan ||
+          body.schedule_plan ||
+          body.cost_plan ||
+          body.quality_plan ||
+          body.risk_plan ||
+          body.communication_plan_detailed ||
+          body.stakeholder_plan ||
+          body.change_plan ||
+          body.procurement_plan_detailed ||
+          body.resource_plan_detailed ||
+          body.schedule_plan_detailed ||
+          body.cost_plan_detailed ||
+          body.quality_plan_detailed ||
+          body.risk_plan_detailed,
       })
       .where(eq(projects.id, parseInt(projectId)));
 
@@ -181,25 +197,22 @@ export async function PUT(
           id: customers.id,
           name: customers.name,
           email: customers.email,
-          phone: customers.phone
-        }
+          phone: customers.phone,
+        },
       })
       .from(projects)
       .leftJoin(customers, eq(projects.customerId, customers.id))
       .where(eq(projects.id, parseInt(projectId)))
       .limit(1);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       data: projectWithCustomer[0],
-      message: 'Project updated successfully'
+      message: 'Project updated successfully',
     });
   } catch (error) {
     console.error('Error updating project:', error);
-    return NextResponse.json(
-      { error: 'Failed to update project' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update project' }, { status: 500 });
   }
 }
 
@@ -210,16 +223,11 @@ export async function DELETE(
   try {
     const { id: projectId } = await params;
 
-    await db
-      .delete(projects)
-      .where(eq(projects.id, parseInt(projectId)));
+    await db.delete(projects).where(eq(projects.id, parseInt(projectId)));
 
     return NextResponse.json({ message: 'Project deleted successfully' });
   } catch (error) {
     console.error('Error deleting project:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete project' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete project' }, { status: 500 });
   }
 }

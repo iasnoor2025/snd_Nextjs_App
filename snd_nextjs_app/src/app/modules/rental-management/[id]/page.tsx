@@ -1,45 +1,66 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import {
-  ArrowLeft,
-  Edit,
-  Trash2,
-  Eye,
-  Download,
-  FileText,
-  DollarSign,
-  User,
-  Package,
-  Calendar,
-  Clock,
-  CheckCircle,
-  XCircle,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { format } from 'date-fns';
+import {
   AlertCircle,
+  ArrowLeft,
+  Calendar,
+  CalendarCheck,
+  CheckCircle,
+  CircleDashed,
+  Clock,
+  DollarSign,
+  Download,
+  Edit,
+  ExternalLink,
+  Eye,
+  FileText,
+  MoreHorizontal,
+  Package,
   Plus,
   Printer,
-  Share2,
-  MoreHorizontal,
-  CircleDashed,
   Receipt,
+  Share2,
+  Trash2,
   Truck,
-  CalendarCheck,
-  ExternalLink
+  User,
+  XCircle,
 } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { useRouter, useParams } from 'next/navigation';
 
 interface RentalItem {
   id: string;
@@ -181,8 +202,17 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
         date: safeFormatDate(rental.quotationId ? rental.createdAt : null),
         icon: FileText,
         color: 'bg-blue-100 text-blue-700 border-blue-200',
-        active: !!(rental.quotationId || rental.status === 'quotation_generated' || rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated')),
-        status: (rental.quotationId || rental.status === 'quotation_generated' || rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated')) ? 'completed' : 'upcoming',
+        active: !!(
+          rental.quotationId ||
+          rental.status === 'quotation_generated' ||
+          rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated')
+        ),
+        status:
+          rental.quotationId ||
+          rental.status === 'quotation_generated' ||
+          rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated')
+            ? 'completed'
+            : 'upcoming',
       },
       {
         id: 'quotation_approved',
@@ -191,8 +221,13 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
         date: safeFormatDate(rental.approvedAt),
         icon: CheckCircle,
         color: 'bg-green-100 text-green-700 border-green-200',
-        active: !!(rental.approvedAt || rental.statusLogs?.some((log: any) => log.newStatus === 'approved')),
-        status: (rental.approvedAt || rental.statusLogs?.some((log: any) => log.newStatus === 'approved')) ? 'completed' : 'upcoming',
+        active: !!(
+          rental.approvedAt || rental.statusLogs?.some((log: any) => log.newStatus === 'approved')
+        ),
+        status:
+          rental.approvedAt || rental.statusLogs?.some((log: any) => log.newStatus === 'approved')
+            ? 'completed'
+            : 'upcoming',
       },
       {
         id: 'mobilization',
@@ -201,8 +236,17 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
         date: safeFormatDate(rental.mobilizationDate),
         icon: Truck,
         color: 'bg-orange-100 text-orange-700 border-orange-200',
-        active: !!(rental.mobilizationDate || rental.status === 'mobilization' || rental.statusLogs?.some((log: any) => log.newStatus === 'mobilization')),
-        status: (rental.mobilizationDate || rental.status === 'mobilization' || rental.statusLogs?.some((log: any) => log.newStatus === 'mobilization')) ? 'completed' : 'upcoming',
+        active: !!(
+          rental.mobilizationDate ||
+          rental.status === 'mobilization' ||
+          rental.statusLogs?.some((log: any) => log.newStatus === 'mobilization')
+        ),
+        status:
+          rental.mobilizationDate ||
+          rental.status === 'mobilization' ||
+          rental.statusLogs?.some((log: any) => log.newStatus === 'mobilization')
+            ? 'completed'
+            : 'upcoming',
       },
       {
         id: 'active',
@@ -212,7 +256,12 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
         icon: Clock,
         color: 'bg-yellow-100 text-yellow-700 border-yellow-200',
         active: rental.status === 'active' || false,
-        status: rental.status === 'active' ? 'current' : rental.status === 'completed' ? 'completed' : 'upcoming',
+        status:
+          rental.status === 'active'
+            ? 'current'
+            : rental.status === 'completed'
+              ? 'completed'
+              : 'upcoming',
       },
       {
         id: 'completed',
@@ -222,7 +271,7 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
         icon: CalendarCheck,
         color: 'bg-green-100 text-green-700 border-green-200',
         active: !!(rental.actualEndDate || rental.completedAt),
-        status: (rental.actualEndDate || rental.completedAt) ? 'completed' : 'upcoming',
+        status: rental.actualEndDate || rental.completedAt ? 'completed' : 'upcoming',
       },
       {
         id: 'invoice',
@@ -232,7 +281,10 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
         icon: Receipt,
         color: 'bg-purple-100 text-purple-700 border-purple-200',
         active: !!(rental.invoiceDate || (rental.invoices && rental.invoices.length > 0)),
-        status: (rental.invoiceDate || (rental.invoices && rental.invoices.length > 0)) ? 'completed' : 'upcoming',
+        status:
+          rental.invoiceDate || (rental.invoices && rental.invoices.length > 0)
+            ? 'completed'
+            : 'upcoming',
       },
       {
         id: 'overdue',
@@ -250,17 +302,18 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
   };
 
   const timelineEvents = generateTimelineEvents();
-  const activeEvents = timelineEvents.filter((event) => event.active);
+  const activeEvents = timelineEvents.filter(event => event.active);
 
   // Map status logs to workflow events
-  const auditEvents = rental.statusLogs?.map((log: any) => ({
-    id: log.id,
-    action: log.newStatus,
-    description: log.reason,
-    performedBy: log.changedBy,
-    performedAt: log.changedAt,
-    status: log.newStatus
-  })) || [];
+  const auditEvents =
+    rental.statusLogs?.map((log: any) => ({
+      id: log.id,
+      action: log.newStatus,
+      description: log.reason,
+      performedBy: log.changedBy,
+      performedAt: log.changedAt,
+      status: log.newStatus,
+    })) || [];
 
   // Action handlers
   const handleGenerateQuotation = async () => {
@@ -283,7 +336,7 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
     try {
       const response = await fetch(`/api/rentals/${rental.id}/approve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -300,7 +353,7 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
     try {
       const response = await fetch(`/api/rentals/${rental.id}/mobilize`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -317,7 +370,7 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
     try {
       const response = await fetch(`/api/rentals/${rental.id}/activate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -334,7 +387,7 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
     try {
       const response = await fetch(`/api/rentals/${rental.id}/complete`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -367,7 +420,11 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
   const getActionButton = (event: TimelineEvent) => {
     switch (event.id) {
       case 'quotation':
-        if (!rental.quotationId && rental.status !== 'quotation_generated' && !rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated')) {
+        if (
+          !rental.quotationId &&
+          rental.status !== 'quotation_generated' &&
+          !rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated')
+        ) {
           return (
             <Button size="sm" onClick={handleGenerateQuotation} className="mt-2">
               <FileText className="w-3 h-3 mr-1" />
@@ -377,7 +434,11 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
         }
         break;
       case 'quotation_approved':
-        if ((rental.quotationId || rental.status === 'quotation_generated') && !rental.approvedAt && !rental.statusLogs?.some((log: any) => log.newStatus === 'approved')) {
+        if (
+          (rental.quotationId || rental.status === 'quotation_generated') &&
+          !rental.approvedAt &&
+          !rental.statusLogs?.some((log: any) => log.newStatus === 'approved')
+        ) {
           return (
             <Button size="sm" onClick={handleApproveQuotation} className="mt-2">
               <CheckCircle className="w-3 h-3 mr-1" />
@@ -387,7 +448,12 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
         }
         break;
       case 'mobilization':
-        if ((rental.approvedAt || rental.status === 'approved') && !rental.mobilizationDate && rental.status !== 'mobilization' && !rental.statusLogs?.some((log: any) => log.newStatus === 'mobilization')) {
+        if (
+          (rental.approvedAt || rental.status === 'approved') &&
+          !rental.mobilizationDate &&
+          rental.status !== 'mobilization' &&
+          !rental.statusLogs?.some((log: any) => log.newStatus === 'mobilization')
+        ) {
           return (
             <Button size="sm" onClick={handleStartMobilization} className="mt-2">
               <Truck className="w-3 h-3 mr-1" />
@@ -397,7 +463,11 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
         }
         break;
       case 'active':
-        if (rental.mobilizationDate && rental.status !== 'active' && rental.status !== 'completed') {
+        if (
+          rental.mobilizationDate &&
+          rental.status !== 'active' &&
+          rental.status !== 'completed'
+        ) {
           return (
             <Button size="sm" onClick={handleActivateRental} className="mt-2">
               <Clock className="w-3 h-3 mr-1" />
@@ -427,11 +497,24 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
         } else if (rental.invoiceDate && rental.invoices && rental.invoices.length > 0) {
           return (
             <div className="flex gap-2 mt-2">
-              <Button size="sm" variant="outline" onClick={() => window.open(`/api/rentals/${rental.id}/invoice/download`, '_blank')}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => window.open(`/api/rentals/${rental.id}/invoice/download`, '_blank')}
+              >
                 <Download className="w-3 h-3 mr-1" />
                 Download PDF
               </Button>
-              <Button size="sm" variant="outline" onClick={() => window.open(`${process.env.NEXT_PUBLIC_ERPNEXT_URL}/app/sales-invoice/${rental.invoices?.[0]?.id || ''}`, '_blank')}>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  window.open(
+                    `${process.env.NEXT_PUBLIC_ERPNEXT_URL}/app/sales-invoice/${rental.invoices?.[0]?.id || ''}`,
+                    '_blank'
+                  )
+                }
+              >
                 <ExternalLink className="w-3 h-3 mr-1" />
                 View in ERPNext
               </Button>
@@ -457,7 +540,9 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
             <ol className="relative border-l border-muted">
               {timelineEvents.map((event, index) => (
                 <li key={event.id} className="mb-6 ml-6">
-                  <span className={`absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full ${event.color}`}>
+                  <span
+                    className={`absolute -left-3 flex h-6 w-6 items-center justify-center rounded-full ${event.color}`}
+                  >
                     <event.icon className="h-3 w-3" />
                   </span>
                   <div className="flex items-start justify-between">
@@ -470,7 +555,13 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
                       )}
                       <p className="text-xs text-muted-foreground">{event.description}</p>
                       <Badge
-                        variant={event.status === 'completed' ? 'default' : event.status === 'current' ? 'secondary' : 'outline'}
+                        variant={
+                          event.status === 'completed'
+                            ? 'default'
+                            : event.status === 'current'
+                              ? 'secondary'
+                              : 'outline'
+                        }
                         className="mt-1"
                       >
                         {event.status}
@@ -502,7 +593,9 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
                       <AlertCircle className="h-3 w-3" />
                     </span>
                     <div>
-                      <h3 className="mb-1 flex items-center text-sm font-semibold">{event.action || event.status}</h3>
+                      <h3 className="mb-1 flex items-center text-sm font-semibold">
+                        {event.action || event.status}
+                      </h3>
                       {event.performedAt && (
                         <time className="mb-1 block text-xs font-normal text-muted-foreground">
                           {format(new Date(event.performedAt), 'MMM dd, yyyy HH:mm')}
@@ -528,7 +621,9 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
                 <div>
                   <p className="text-sm font-medium">Rental Created</p>
                   <p className="text-xs text-muted-foreground">
-                    {rental.createdAt && !isNaN(new Date(rental.createdAt).getTime()) ? format(new Date(rental.createdAt), 'MMM dd, yyyy HH:mm') : 'N/A'}
+                    {rental.createdAt && !isNaN(new Date(rental.createdAt).getTime())
+                      ? format(new Date(rental.createdAt), 'MMM dd, yyyy HH:mm')
+                      : 'N/A'}
                   </p>
                 </div>
               </div>
@@ -538,7 +633,9 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
                   <div>
                     <p className="text-sm font-medium">Quotation Generated</p>
                     <p className="text-xs text-muted-foreground">
-                      {rental.createdAt && !isNaN(new Date(rental.createdAt).getTime()) ? format(new Date(rental.createdAt), 'MMM dd, yyyy') : 'N/A'}
+                      {rental.createdAt && !isNaN(new Date(rental.createdAt).getTime())
+                        ? format(new Date(rental.createdAt), 'MMM dd, yyyy')
+                        : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -549,7 +646,9 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
                   <div>
                     <p className="text-sm font-medium">Quotation Approved</p>
                     <p className="text-xs text-muted-foreground">
-                      {rental.approvedAt && !isNaN(new Date(rental.approvedAt).getTime()) ? format(new Date(rental.approvedAt), 'MMM dd, yyyy') : 'N/A'}
+                      {rental.approvedAt && !isNaN(new Date(rental.approvedAt).getTime())
+                        ? format(new Date(rental.approvedAt), 'MMM dd, yyyy')
+                        : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -560,7 +659,10 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
                   <div>
                     <p className="text-sm font-medium">Mobilization Started</p>
                     <p className="text-xs text-muted-foreground">
-                      {rental.mobilizationDate && !isNaN(new Date(rental.mobilizationDate).getTime()) ? format(new Date(rental.mobilizationDate), 'MMM dd, yyyy') : 'N/A'}
+                      {rental.mobilizationDate &&
+                      !isNaN(new Date(rental.mobilizationDate).getTime())
+                        ? format(new Date(rental.mobilizationDate), 'MMM dd, yyyy')
+                        : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -571,7 +673,9 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
                   <div>
                     <p className="text-sm font-medium">Rental Started</p>
                     <p className="text-xs text-muted-foreground">
-                      {rental.startDate && !isNaN(new Date(rental.startDate).getTime()) ? format(new Date(rental.startDate), 'MMM dd, yyyy') : 'N/A'}
+                      {rental.startDate && !isNaN(new Date(rental.startDate).getTime())
+                        ? format(new Date(rental.startDate), 'MMM dd, yyyy')
+                        : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -584,8 +688,7 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
                     <p className="text-xs text-muted-foreground">
                       {rental.actualEndDate && !isNaN(new Date(rental.actualEndDate).getTime())
                         ? format(new Date(rental.actualEndDate), 'MMM dd, yyyy')
-                        : 'N/A'
-                      }
+                        : 'N/A'}
                     </p>
                   </div>
                 </div>
@@ -652,7 +755,7 @@ export default function RentalDetailPage() {
     if (!status) {
       return <Badge variant="outline">Unknown</Badge>;
     }
-    
+
     switch (status.toLowerCase()) {
       case 'pending':
         return <Badge variant="secondary">Pending</Badge>;
@@ -672,7 +775,7 @@ export default function RentalDetailPage() {
     if (!status) {
       return <Badge variant="outline">Unknown</Badge>;
     }
-    
+
     switch (status.toLowerCase()) {
       case 'pending':
         return <Badge variant="secondary">Pending</Badge>;
@@ -689,8 +792,8 @@ export default function RentalDetailPage() {
 
   // Fetch rental details
   const fetchRental = async () => {
-      try {
-        setLoading(true);
+    try {
+      setLoading(true);
       const response = await fetch(`/api/rentals/${rentalId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch rental');
@@ -702,10 +805,10 @@ export default function RentalDetailPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       toast.error('Failed to fetch rental details');
-      } finally {
-        setLoading(false);
-      }
-    };
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Fetch equipment
   const fetchEquipment = async () => {
@@ -748,7 +851,9 @@ export default function RentalDetailPage() {
           depositAmount: parseFloat(formData.depositAmount) || 0,
           paymentTermsDays: parseInt(formData.paymentTermsDays),
           startDate: new Date(formData.startDate).toISOString(),
-          expectedEndDate: formData.expectedEndDate ? new Date(formData.expectedEndDate).toISOString() : null,
+          expectedEndDate: formData.expectedEndDate
+            ? new Date(formData.expectedEndDate).toISOString()
+            : null,
         }),
       });
 
@@ -834,7 +939,7 @@ export default function RentalDetailPage() {
     try {
       const response = await fetch(`/api/rentals/${rental.id}/approve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {
@@ -856,7 +961,7 @@ export default function RentalDetailPage() {
     try {
       const response = await fetch(`/api/rentals/${rental.id}/mobilize`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {
@@ -878,7 +983,7 @@ export default function RentalDetailPage() {
     try {
       const response = await fetch(`/api/rentals/${rental.id}/activate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {
@@ -900,7 +1005,7 @@ export default function RentalDetailPage() {
     try {
       const response = await fetch(`/api/rentals/${rental.id}/complete`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       });
 
       if (!response.ok) {
@@ -971,7 +1076,7 @@ export default function RentalDetailPage() {
 
       toast.success('Rental item added successfully');
       setIsAddItemDialogOpen(false);
-      
+
       // Reset form
       setItemFormData({
         id: '',
@@ -985,7 +1090,7 @@ export default function RentalDetailPage() {
         notes: '',
         actionType: 'update',
       });
-      
+
       // Refresh rental data
       fetchRental();
     } catch (err) {
@@ -1043,7 +1148,7 @@ export default function RentalDetailPage() {
 
       toast.success('Rental item updated successfully');
       setIsEditItemDialogOpen(false);
-      
+
       // Reset form
       setItemFormData({
         id: '',
@@ -1057,7 +1162,7 @@ export default function RentalDetailPage() {
         notes: '',
         actionType: 'update',
       });
-      
+
       // Refresh rental data
       fetchRental();
     } catch (err) {
@@ -1067,11 +1172,13 @@ export default function RentalDetailPage() {
 
   const handleOperatorAction = (actionType: string) => {
     setItemFormData(prev => ({ ...prev, actionType }));
-    
+
     // Show appropriate message based on action type
     switch (actionType) {
       case 'handover':
-        toast.info('Operator Handover Mode: Previous operator will be ended, new operator will be assigned');
+        toast.info(
+          'Operator Handover Mode: Previous operator will be ended, new operator will be assigned'
+        );
         break;
       case 'remove':
         toast.info('Remove Operator Mode: Current operator assignment will be deleted');
@@ -1145,11 +1252,14 @@ export default function RentalDetailPage() {
           <Button variant="outline" onClick={() => router.push('/modules/rental-management')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
-            </Button>
+          </Button>
           <div>
             <h1 className="text-3xl font-bold">Rental #{rental.rentalNumber}</h1>
             <p className="text-muted-foreground">
-              {rental.customer?.name} • {rental.startDate && !isNaN(new Date(rental.startDate).getTime()) ? format(new Date(rental.startDate), 'MMM dd, yyyy') : 'N/A'}
+              {rental.customer?.name} •{' '}
+              {rental.startDate && !isNaN(new Date(rental.startDate).getTime())
+                ? format(new Date(rental.startDate), 'MMM dd, yyyy')
+                : 'N/A'}
             </p>
           </div>
         </div>
@@ -1167,33 +1277,33 @@ export default function RentalDetailPage() {
 
       {/* Status Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Status</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
+          </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{getStatusBadge(rental.status)}</div>
           </CardContent>
-          </Card>
-                <Card>
+        </Card>
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Payment Status</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
+          </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{getPaymentStatusBadge(rental.paymentStatus)}</div>
-                  </CardContent>
-                </Card>
-                <Card>
+          </CardContent>
+        </Card>
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Amount</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
+          </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${formatAmount(rental.totalAmount)}</div>
-                  </CardContent>
-                </Card>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Items</CardTitle>
@@ -1220,56 +1330,65 @@ export default function RentalDetailPage() {
 
             <TabsContent value="details" className="space-y-6">
               {/* Rental Information */}
-                <Card>
-                  <CardHeader>
+              <Card>
+                <CardHeader>
                   <CardTitle>Rental Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
                       <Label className="text-sm font-medium">Rental Number</Label>
                       <p className="text-sm text-muted-foreground">{rental.rentalNumber}</p>
-                      </div>
-                      <div>
+                    </div>
+                    <div>
                       <Label className="text-sm font-medium">Customer</Label>
-                      <p className="text-sm text-muted-foreground">{rental.customer?.name || 'N/A'}</p>
-                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {rental.customer?.name || 'N/A'}
+                      </p>
+                    </div>
                     <div>
                       <Label className="text-sm font-medium">Start Date</Label>
                       <p className="text-sm text-muted-foreground">
-                        {rental.startDate && !isNaN(new Date(rental.startDate).getTime()) ? format(new Date(rental.startDate), 'MMM dd, yyyy') : 'N/A'}
+                        {rental.startDate && !isNaN(new Date(rental.startDate).getTime())
+                          ? format(new Date(rental.startDate), 'MMM dd, yyyy')
+                          : 'N/A'}
                       </p>
                     </div>
-                      <div>
+                    <div>
                       <Label className="text-sm font-medium">Expected End Date</Label>
                       <p className="text-sm text-muted-foreground">
-                        {rental.expectedEndDate && !isNaN(new Date(rental.expectedEndDate).getTime())
+                        {rental.expectedEndDate &&
+                        !isNaN(new Date(rental.expectedEndDate).getTime())
                           ? format(new Date(rental.expectedEndDate), 'MMM dd, yyyy')
-                          : 'N/A'
-                        }
+                          : 'N/A'}
                       </p>
-                      </div>
-                      <div>
+                    </div>
+                    <div>
                       <Label className="text-sm font-medium">Actual End Date</Label>
                       <p className="text-sm text-muted-foreground">
                         {rental.actualEndDate && !isNaN(new Date(rental.actualEndDate).getTime())
                           ? format(new Date(rental.actualEndDate), 'MMM dd, yyyy')
-                          : 'N/A'
-                        }
+                          : 'N/A'}
                       </p>
-                      </div>
+                    </div>
                     <div>
                       <Label className="text-sm font-medium">Payment Terms</Label>
-                      <p className="text-sm text-muted-foreground">{rental.paymentTermsDays} days</p>
+                      <p className="text-sm text-muted-foreground">
+                        {rental.paymentTermsDays} days
+                      </p>
                     </div>
                     <div>
                       <Label className="text-sm font-medium">Deposit Amount</Label>
-                      <p className="text-sm text-muted-foreground">${formatAmount(rental.depositAmount)}</p>
+                      <p className="text-sm text-muted-foreground">
+                        ${formatAmount(rental.depositAmount)}
+                      </p>
                     </div>
                     <div>
                       <Label className="text-sm font-medium">Created</Label>
                       <p className="text-sm text-muted-foreground">
-                        {rental.createdAt && !isNaN(new Date(rental.createdAt).getTime()) ? format(new Date(rental.createdAt), 'MMM dd, yyyy HH:mm') : 'N/A'}
+                        {rental.createdAt && !isNaN(new Date(rental.createdAt).getTime())
+                          ? format(new Date(rental.createdAt), 'MMM dd, yyyy HH:mm')
+                          : 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -1280,15 +1399,15 @@ export default function RentalDetailPage() {
                       <p className="text-sm text-muted-foreground mt-1">{rental.notes}</p>
                     </div>
                   )}
-                  </CardContent>
-                </Card>
+                </CardContent>
+              </Card>
 
               {/* Financial Summary */}
-                <Card>
-                  <CardHeader>
+              <Card>
+                <CardHeader>
                   <CardTitle>Financial Summary</CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                </CardHeader>
+                <CardContent>
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
@@ -1307,9 +1426,9 @@ export default function RentalDetailPage() {
                       <span>Total Amount:</span>
                       <span>${formatAmount(rental.totalAmount)}</span>
                     </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="workflow" className="space-y-6">
@@ -1342,12 +1461,16 @@ export default function RentalDetailPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {rental.rentalItems?.map((item) => {
+                      {rental.rentalItems?.map(item => {
                         // Find operator name from employees list
                         const operatorId = item.operatorId;
-                        const operator = employees.find(emp => emp.id.toString() === operatorId?.toString());
-                        const operatorName = operator ? `${operator.first_name} ${operator.last_name}` : 'N/A';
-                        
+                        const operator = employees.find(
+                          emp => emp.id.toString() === operatorId?.toString()
+                        );
+                        const operatorName = operator
+                          ? `${operator.first_name} ${operator.last_name}`
+                          : 'N/A';
+
                         return (
                           <TableRow key={item.id}>
                             <TableCell>{item.equipmentName}</TableCell>
@@ -1362,15 +1485,15 @@ export default function RentalDetailPage() {
                             </TableCell>
                             <TableCell>
                               <div className="flex gap-2">
-                                <Button 
-                                  variant="outline" 
+                                <Button
+                                  variant="outline"
                                   size="sm"
                                   onClick={() => openEditItemDialog(item)}
                                 >
                                   <Edit className="w-4 h-4" />
                                 </Button>
-                                <Button 
-                                  variant="outline" 
+                                <Button
+                                  variant="outline"
                                   size="sm"
                                   onClick={() => deleteRentalItem(item.id)}
                                 >
@@ -1396,7 +1519,7 @@ export default function RentalDetailPage() {
               <Card>
                 <CardHeader>
                   <div className="flex justify-between items-center">
-                  <CardTitle>Payments</CardTitle>
+                    <CardTitle>Payments</CardTitle>
                     <Button size="sm" onClick={() => setIsAddPaymentDialogOpen(true)}>
                       <Plus className="w-4 h-4 mr-2" />
                       Add Payment
@@ -1416,9 +1539,11 @@ export default function RentalDetailPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {rental.payments?.map((payment) => (
+                      {rental.payments?.map(payment => (
                         <TableRow key={payment.id}>
-                          <TableCell>{format(new Date(payment.paymentDate), 'MMM dd, yyyy')}</TableCell>
+                          <TableCell>
+                            {format(new Date(payment.paymentDate), 'MMM dd, yyyy')}
+                          </TableCell>
                           <TableCell>${formatAmount(payment.amount)}</TableCell>
                           <TableCell>{payment.paymentMethod}</TableCell>
                           <TableCell>{payment.reference}</TableCell>
@@ -1433,9 +1558,7 @@ export default function RentalDetailPage() {
                     </TableBody>
                   </Table>
                   {(!rental.payments || rental.payments.length === 0) && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No payments found
-                    </div>
+                    <div className="text-center py-8 text-muted-foreground">No payments found</div>
                   )}
                 </CardContent>
               </Card>
@@ -1464,7 +1587,7 @@ export default function RentalDetailPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {rental.invoices?.map((invoice) => (
+                      {rental.invoices?.map(invoice => (
                         <TableRow key={invoice.id}>
                           <TableCell>{invoice.invoiceNumber}</TableCell>
                           <TableCell>${formatAmount(invoice.amount)}</TableCell>
@@ -1485,9 +1608,7 @@ export default function RentalDetailPage() {
                     </TableBody>
                   </Table>
                   {(!rental.invoices || rental.invoices.length === 0) && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      No invoices found
-                    </div>
+                    <div className="text-center py-8 text-muted-foreground">No invoices found</div>
                   )}
                 </CardContent>
               </Card>
@@ -1503,48 +1624,65 @@ export default function RentalDetailPage() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {(!rental.quotationId && rental.status !== 'quotation_generated' && !rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated')) && (
-                <Button className="w-full" onClick={generateQuotation}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Generate Quotation
-                </Button>
-              )}
-              {(rental.quotationId || rental.status === 'quotation_generated' || rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated')) && (
-                <Button className="w-full" variant="outline" onClick={() => router.push(`/modules/rental-management/${rental.id}/quotation`)}>
+              {!rental.quotationId &&
+                rental.status !== 'quotation_generated' &&
+                !rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated') && (
+                  <Button className="w-full" onClick={generateQuotation}>
+                    <FileText className="w-4 h-4 mr-2" />
+                    Generate Quotation
+                  </Button>
+                )}
+              {(rental.quotationId ||
+                rental.status === 'quotation_generated' ||
+                rental.statusLogs?.some((log: any) => log.newStatus === 'quotation_generated')) && (
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => router.push(`/modules/rental-management/${rental.id}/quotation`)}
+                >
                   <FileText className="w-4 h-4 mr-2" />
                   View Quotation
                 </Button>
               )}
-              {((rental.quotationId || rental.status === 'quotation_generated') && !rental.approvedAt && !rental.statusLogs?.some((log: any) => log.newStatus === 'approved')) && (
-                <Button className="w-full" variant="outline" onClick={handleApproveQuotation}>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Approve Quotation
-                </Button>
-              )}
-              {((rental.approvedAt || rental.status === 'approved') && !rental.mobilizationDate && rental.status !== 'mobilization' && !rental.statusLogs?.some((log: any) => log.newStatus === 'mobilization')) && (
-                <Button className="w-full" variant="outline" onClick={handleStartMobilization}>
-                  <Truck className="w-4 h-4 mr-2" />
-                  Start Mobilization
-                </Button>
-              )}
-              {(rental.mobilizationDate || rental.status === 'mobilization') && rental.status !== 'active' && rental.status !== 'completed' && (
-                <Button className="w-full" variant="outline" onClick={handleActivateRental}>
-                  <Clock className="w-4 h-4 mr-2" />
-                  Activate Rental
-                </Button>
-              )}
+              {(rental.quotationId || rental.status === 'quotation_generated') &&
+                !rental.approvedAt &&
+                !rental.statusLogs?.some((log: any) => log.newStatus === 'approved') && (
+                  <Button className="w-full" variant="outline" onClick={handleApproveQuotation}>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Approve Quotation
+                  </Button>
+                )}
+              {(rental.approvedAt || rental.status === 'approved') &&
+                !rental.mobilizationDate &&
+                rental.status !== 'mobilization' &&
+                !rental.statusLogs?.some((log: any) => log.newStatus === 'mobilization') && (
+                  <Button className="w-full" variant="outline" onClick={handleStartMobilization}>
+                    <Truck className="w-4 h-4 mr-2" />
+                    Start Mobilization
+                  </Button>
+                )}
+              {(rental.mobilizationDate || rental.status === 'mobilization') &&
+                rental.status !== 'active' &&
+                rental.status !== 'completed' && (
+                  <Button className="w-full" variant="outline" onClick={handleActivateRental}>
+                    <Clock className="w-4 h-4 mr-2" />
+                    Activate Rental
+                  </Button>
+                )}
               {rental.status === 'active' && !rental.actualEndDate && (
                 <Button className="w-full" variant="outline" onClick={handleCompleteRental}>
                   <CalendarCheck className="w-4 h-4 mr-2" />
                   Complete Rental
                 </Button>
               )}
-              {((rental.status === 'completed' || rental.actualEndDate) && !rental.invoiceDate && !rental.invoices?.length) && (
-                <Button className="w-full" variant="outline" onClick={generateInvoice}>
-                  <Receipt className="w-4 h-4 mr-2" />
-                  Generate Invoice
-                </Button>
-              )}
+              {(rental.status === 'completed' || rental.actualEndDate) &&
+                !rental.invoiceDate &&
+                !rental.invoices?.length && (
+                  <Button className="w-full" variant="outline" onClick={generateInvoice}>
+                    <Receipt className="w-4 h-4 mr-2" />
+                    Generate Invoice
+                  </Button>
+                )}
               <Button className="w-full" variant="outline">
                 <Printer className="w-4 h-4 mr-2" />
                 Print Rental
@@ -1571,13 +1709,13 @@ export default function RentalDetailPage() {
                   <div>
                     <Label className="text-sm font-medium">Email</Label>
                     <p className="text-sm text-muted-foreground">{rental.customer.email}</p>
-        </div>
-      )}
+                  </div>
+                )}
                 {rental.customer.phone && (
                   <div>
                     <Label className="text-sm font-medium">Phone</Label>
                     <p className="text-sm text-muted-foreground">{rental.customer.phone}</p>
-    </div>
+                  </div>
                 )}
                 {rental.customer.address && (
                   <div>
@@ -1588,8 +1726,6 @@ export default function RentalDetailPage() {
               </CardContent>
             </Card>
           )}
-
-
         </div>
       </div>
 
@@ -1598,9 +1734,7 @@ export default function RentalDetailPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Rental</DialogTitle>
-            <DialogDescription>
-              Update rental contract details
-            </DialogDescription>
+            <DialogDescription>Update rental contract details</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -1608,7 +1742,7 @@ export default function RentalDetailPage() {
               <Input
                 id="editRentalNumber"
                 value={formData.rentalNumber}
-                onChange={(e) => setFormData(prev => ({ ...prev, rentalNumber: e.target.value }))}
+                onChange={e => setFormData(prev => ({ ...prev, rentalNumber: e.target.value }))}
               />
             </div>
             <div>
@@ -1617,7 +1751,7 @@ export default function RentalDetailPage() {
                 id="editStartDate"
                 type="date"
                 value={formData.startDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                onChange={e => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
               />
             </div>
             <div>
@@ -1626,7 +1760,7 @@ export default function RentalDetailPage() {
                 id="editExpectedEndDate"
                 type="date"
                 value={formData.expectedEndDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, expectedEndDate: e.target.value }))}
+                onChange={e => setFormData(prev => ({ ...prev, expectedEndDate: e.target.value }))}
               />
             </div>
             <div>
@@ -1636,7 +1770,7 @@ export default function RentalDetailPage() {
                 type="number"
                 step="0.01"
                 value={formData.depositAmount}
-                onChange={(e) => setFormData(prev => ({ ...prev, depositAmount: e.target.value }))}
+                onChange={e => setFormData(prev => ({ ...prev, depositAmount: e.target.value }))}
               />
             </div>
             <div>
@@ -1645,14 +1779,14 @@ export default function RentalDetailPage() {
                 id="editPaymentTermsDays"
                 type="number"
                 value={formData.paymentTermsDays}
-                onChange={(e) => setFormData(prev => ({ ...prev, paymentTermsDays: e.target.value }))}
+                onChange={e => setFormData(prev => ({ ...prev, paymentTermsDays: e.target.value }))}
               />
             </div>
             <div>
               <Label htmlFor="editStatus">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                onValueChange={value => setFormData(prev => ({ ...prev, status: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -1669,7 +1803,7 @@ export default function RentalDetailPage() {
               <Label htmlFor="editPaymentStatus">Payment Status</Label>
               <Select
                 value={formData.paymentStatus}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, paymentStatus: value }))}
+                onValueChange={value => setFormData(prev => ({ ...prev, paymentStatus: value }))}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -1689,7 +1823,7 @@ export default function RentalDetailPage() {
                 type="checkbox"
                 id="editHasTimesheet"
                 checked={formData.hasTimesheet}
-                onChange={(e) => setFormData(prev => ({ ...prev, hasTimesheet: e.target.checked }))}
+                onChange={e => setFormData(prev => ({ ...prev, hasTimesheet: e.target.checked }))}
               />
               <Label htmlFor="editHasTimesheet">Has Timesheet</Label>
             </div>
@@ -1698,7 +1832,7 @@ export default function RentalDetailPage() {
                 type="checkbox"
                 id="editHasOperators"
                 checked={formData.hasOperators}
-                onChange={(e) => setFormData(prev => ({ ...prev, hasOperators: e.target.checked }))}
+                onChange={e => setFormData(prev => ({ ...prev, hasOperators: e.target.checked }))}
               />
               <Label htmlFor="editHasOperators">Has Operators</Label>
             </div>
@@ -1708,7 +1842,7 @@ export default function RentalDetailPage() {
             <Textarea
               id="editNotes"
               value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
               rows={3}
             />
           </div>
@@ -1726,32 +1860,30 @@ export default function RentalDetailPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Add Rental Item</DialogTitle>
-            <DialogDescription>
-              Add a new item to this rental
-            </DialogDescription>
+            <DialogDescription>Add a new item to this rental</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="equipment">Equipment</Label>
               <Select
                 value={itemFormData.equipmentId}
-                onValueChange={(value) => {
+                onValueChange={value => {
                   const selectedEquipment = equipment.find(eq => eq.id.toString() === value);
                   console.log('Selected equipment:', selectedEquipment);
                   console.log('Equipment list:', equipment);
-                  setItemFormData(prev => ({ 
-                    ...prev, 
+                  setItemFormData(prev => ({
+                    ...prev,
                     equipmentId: value,
                     equipmentName: selectedEquipment?.name || '',
-                    unitPrice: selectedEquipment?.daily_rate || 0
-                  }))
+                    unitPrice: selectedEquipment?.daily_rate || 0,
+                  }));
                 }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select equipment" />
                 </SelectTrigger>
                 <SelectContent>
-                  {equipment.map((eq) => (
+                  {equipment.map(eq => (
                     <SelectItem key={eq.id} value={eq.id.toString()}>
                       {eq.name} - ${eq.daily_rate}/day
                     </SelectItem>
@@ -1763,13 +1895,13 @@ export default function RentalDetailPage() {
               <Label htmlFor="operator">Operator</Label>
               <Select
                 value={itemFormData.operatorId}
-                onValueChange={(value) => setItemFormData(prev => ({ ...prev, operatorId: value }))}
+                onValueChange={value => setItemFormData(prev => ({ ...prev, operatorId: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select operator (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {employees.map((emp) => (
+                  {employees.map(emp => (
                     <SelectItem key={emp.id} value={emp.id.toString()}>
                       {emp.first_name} {emp.last_name} - {emp.employee_id}
                     </SelectItem>
@@ -1784,7 +1916,9 @@ export default function RentalDetailPage() {
                 type="number"
                 step="0.01"
                 value={itemFormData.unitPrice}
-                onChange={(e) => setItemFormData(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
+                onChange={e =>
+                  setItemFormData(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))
+                }
                 placeholder="0.00"
               />
             </div>
@@ -1792,7 +1926,7 @@ export default function RentalDetailPage() {
               <Label htmlFor="rateType">Rate Type</Label>
               <Select
                 value={itemFormData.rateType}
-                onValueChange={(value) => setItemFormData(prev => ({ ...prev, rateType: value }))}
+                onValueChange={value => setItemFormData(prev => ({ ...prev, rateType: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select rate type" />
@@ -1810,7 +1944,7 @@ export default function RentalDetailPage() {
               <Label htmlFor="status">Status</Label>
               <Select
                 value={itemFormData.status}
-                onValueChange={(value) => setItemFormData(prev => ({ ...prev, status: value }))}
+                onValueChange={value => setItemFormData(prev => ({ ...prev, status: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
@@ -1828,7 +1962,7 @@ export default function RentalDetailPage() {
             <Textarea
               id="notes"
               value={itemFormData.notes}
-              onChange={(e) => setItemFormData(prev => ({ ...prev, notes: e.target.value }))}
+              onChange={e => setItemFormData(prev => ({ ...prev, notes: e.target.value }))}
               rows={3}
               placeholder="Enter any additional notes"
             />
@@ -1859,7 +1993,8 @@ export default function RentalDetailPage() {
             </div>
             <div className="text-xs text-muted-foreground">
               {itemFormData.actionType === 'add' && 'New operator will be assigned'}
-              {itemFormData.actionType === 'update' && 'Operator will be updated based on rental status'}
+              {itemFormData.actionType === 'update' &&
+                'Operator will be updated based on rental status'}
             </div>
           </div>
 
@@ -1877,30 +2012,28 @@ export default function RentalDetailPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Rental Item</DialogTitle>
-            <DialogDescription>
-              Update the rental item details
-            </DialogDescription>
+            <DialogDescription>Update the rental item details</DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="editEquipment">Equipment</Label>
               <Select
                 value={itemFormData.equipmentId}
-                onValueChange={(value) => {
+                onValueChange={value => {
                   const selectedEquipment = equipment.find(eq => eq.id.toString() === value);
-                  setItemFormData(prev => ({ 
-                    ...prev, 
+                  setItemFormData(prev => ({
+                    ...prev,
                     equipmentId: value,
                     equipmentName: selectedEquipment?.name || '',
-                    unitPrice: selectedEquipment?.daily_rate || 0
-                  }))
+                    unitPrice: selectedEquipment?.daily_rate || 0,
+                  }));
                 }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select equipment" />
                 </SelectTrigger>
                 <SelectContent>
-                  {equipment.map((eq) => (
+                  {equipment.map(eq => (
                     <SelectItem key={eq.id} value={eq.id.toString()}>
                       {eq.name} - ${eq.daily_rate}/day
                     </SelectItem>
@@ -1912,13 +2045,13 @@ export default function RentalDetailPage() {
               <Label htmlFor="editOperator">Operator</Label>
               <Select
                 value={itemFormData.operatorId}
-                onValueChange={(value) => setItemFormData(prev => ({ ...prev, operatorId: value }))}
+                onValueChange={value => setItemFormData(prev => ({ ...prev, operatorId: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select operator (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  {employees.map((emp) => (
+                  {employees.map(emp => (
                     <SelectItem key={emp.id} value={emp.id.toString()}>
                       {emp.first_name} {emp.last_name} - {emp.employee_id}
                     </SelectItem>
@@ -1933,7 +2066,9 @@ export default function RentalDetailPage() {
                 type="number"
                 step="0.01"
                 value={itemFormData.unitPrice}
-                onChange={(e) => setItemFormData(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
+                onChange={e =>
+                  setItemFormData(prev => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))
+                }
                 placeholder="0.00"
               />
             </div>
@@ -1941,7 +2076,7 @@ export default function RentalDetailPage() {
               <Label htmlFor="editRateType">Rate Type</Label>
               <Select
                 value={itemFormData.rateType}
-                onValueChange={(value) => setItemFormData(prev => ({ ...prev, rateType: value }))}
+                onValueChange={value => setItemFormData(prev => ({ ...prev, rateType: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select rate type" />
@@ -1958,7 +2093,7 @@ export default function RentalDetailPage() {
               <Label htmlFor="editStatus">Status</Label>
               <Select
                 value={itemFormData.status}
-                onValueChange={(value) => setItemFormData(prev => ({ ...prev, status: value }))}
+                onValueChange={value => setItemFormData(prev => ({ ...prev, status: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
@@ -1976,7 +2111,7 @@ export default function RentalDetailPage() {
             <Textarea
               id="editNotes"
               value={itemFormData.notes}
-              onChange={(e) => setItemFormData(prev => ({ ...prev, notes: e.target.value }))}
+              onChange={e => setItemFormData(prev => ({ ...prev, notes: e.target.value }))}
               rows={3}
               placeholder="Enter any additional notes"
             />
@@ -2024,10 +2159,13 @@ export default function RentalDetailPage() {
               </Button>
             </div>
             <div className="text-xs text-muted-foreground">
-              {itemFormData.actionType === 'handover' && 'Previous operator will be ended, new operator will be assigned'}
-              {itemFormData.actionType === 'remove' && 'Current operator assignment will be deleted'}
+              {itemFormData.actionType === 'handover' &&
+                'Previous operator will be ended, new operator will be assigned'}
+              {itemFormData.actionType === 'remove' &&
+                'Current operator assignment will be deleted'}
               {itemFormData.actionType === 'add' && 'New operator will be assigned'}
-              {itemFormData.actionType === 'update' && 'Operator will be updated based on rental status'}
+              {itemFormData.actionType === 'update' &&
+                'Operator will be updated based on rental status'}
             </div>
           </div>
 

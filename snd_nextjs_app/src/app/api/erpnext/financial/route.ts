@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { ERPNextFinancialService } from '@/lib/services/erpnext-financial-service';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -47,16 +47,15 @@ export async function GET(_request: NextRequest) {
       success: true,
       data,
       type,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
     console.error('Error fetching ERPNext financial data:', error);
     return NextResponse.json(
       {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to fetch financial data',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );

@@ -1,21 +1,36 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
-import { toast } from 'sonner';
-import { ArrowLeft, Building2, CalendarIcon, DollarSign, FileText, Users, Target, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { format } from 'date-fns';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import apiService from '@/lib/api';
+import { format } from 'date-fns';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Building2,
+  CalendarIcon,
+  DollarSign,
+  FileText,
+  Target,
+  Users,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Customer {
   id: string;
@@ -87,7 +102,7 @@ export default function EditProjectPage() {
   const router = useRouter();
   const params = useParams();
   const projectId = params.id as string;
-  
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -145,11 +160,11 @@ export default function EditProjectPage() {
       setLoading(true);
 
       // Fetch project details
-      const projectResponse = await apiService.getProject(projectId) as any;
+      const projectResponse = (await apiService.getProject(projectId)) as any;
       if (projectResponse.success) {
         const projectData = projectResponse.data;
         setProject(projectData);
-        
+
         // Update form data with project data
         const initialFormData = {
           name: projectData.name || '',
@@ -190,7 +205,7 @@ export default function EditProjectPage() {
           quality_plan_detailed: projectData.quality_plan_detailed || '',
           risk_plan_detailed: projectData.risk_plan_detailed || '',
         };
-        
+
         setFormData(initialFormData);
       } else {
         toast.error('Failed to load project details');
@@ -199,7 +214,7 @@ export default function EditProjectPage() {
 
       // Fetch customers
       try {
-        const customersResponse = await apiService.get('/customers?limit=1000') as any; 
+        const customersResponse = (await apiService.get('/customers?limit=1000')) as any;
         if (customersResponse.customers) {
           setCustomers(customersResponse.customers || []);
         } else {
@@ -213,7 +228,7 @@ export default function EditProjectPage() {
 
       // Fetch locations
       try {
-        const locationsResponse = await apiService.get('/locations?limit=1000') as any;
+        const locationsResponse = (await apiService.get('/locations?limit=1000')) as any;
         if (locationsResponse.success && locationsResponse.data) {
           setLocations(locationsResponse.data || []);
         } else {
@@ -227,15 +242,15 @@ export default function EditProjectPage() {
 
       // Fetch employees
       try {
-        const employeesResponse = await apiService.getEmployees({ per_page: 1000 }) as any;
+        const employeesResponse = (await apiService.getEmployees({ per_page: 1000 })) as any;
         if (employeesResponse.success) {
           const allEmployees = employeesResponse.data || [];
           setEmployees(allEmployees);
-          
+
           // For now, show all employees since current data doesn't have proper role designations
           // This allows super admins and other users to access the project management features
           setProjectManagers(allEmployees);
-          
+
           // TODO: Uncomment this when proper role designations are added to the database
           /*
           // Filter project managers: designation = "Project Manager" or role = "Project Manager"
@@ -286,7 +301,7 @@ export default function EditProjectPage() {
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -309,7 +324,7 @@ export default function EditProjectPage() {
         initial_budget: parseFloat(formData.initial_budget) || 0,
       };
 
-      const response = await apiService.updateProject(projectId, submitData) as any;
+      const response = (await apiService.updateProject(projectId, submitData)) as any;
 
       toast.success('Project updated successfully!');
       router.push(`/modules/project-management/${projectId}`);
@@ -399,27 +414,32 @@ export default function EditProjectPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  onChange={e => handleInputChange('name', e.target.value)}
                   placeholder="Enter project name"
                   required
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="customer_id">Client *</Label>
-                                 <Select value={formData.customer_id} onValueChange={(value) => handleInputChange('customer_id', value)}>
-                   <SelectTrigger>
-                     <SelectValue placeholder="Select a client">
-                       {formData.customer_id && customers.find(c => c.id.toString() === formData.customer_id.toString())?.company_name}
-                     </SelectValue>
-                   </SelectTrigger>
-                   <SelectContent className="max-h-60 overflow-y-auto">
-                     {customers.map((customer) => (
-                       <SelectItem key={customer.id} value={customer.id.toString()}>
-                         {customer.company_name}
-                       </SelectItem>
-                     ))}
-                   </SelectContent>
-                 </Select>
+                <Select
+                  value={formData.customer_id}
+                  onValueChange={value => handleInputChange('customer_id', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a client">
+                      {formData.customer_id &&
+                        customers.find(c => c.id.toString() === formData.customer_id.toString())
+                          ?.company_name}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60 overflow-y-auto">
+                    {customers.map(customer => (
+                      <SelectItem key={customer.id} value={customer.id.toString()}>
+                        {customer.company_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -428,7 +448,7 @@ export default function EditProjectPage() {
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
+                onChange={e => handleInputChange('description', e.target.value)}
                 placeholder="Describe the project scope and objectives"
                 rows={3}
               />
@@ -437,41 +457,49 @@ export default function EditProjectPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="location_id">Project Location</Label>
-                                 <Select value={formData.location_id} onValueChange={(value) => handleInputChange('location_id', value)}>
-                   <SelectTrigger>
-                     <SelectValue placeholder="Select a location">
-                       {formData.location_id && locations.find(l => l.id.toString() === formData.location_id.toString()) && 
-                         `${locations.find(l => l.id.toString() === formData.location_id.toString())?.name}, ${locations.find(l => l.id.toString() === formData.location_id.toString())?.city}, ${locations.find(l => l.id.toString() === formData.location_id.toString())?.state}`
-                       }
-                     </SelectValue>
-                   </SelectTrigger>
-                   <SelectContent className="max-h-60 overflow-y-auto">
-                     {locations.map((location) => (
-                       <SelectItem key={location.id} value={location.id.toString()}>
-                         {location.name}, {location.city}, {location.state}
-                       </SelectItem>
-                     ))}
-                   </SelectContent>
-                 </Select>
+                <Select
+                  value={formData.location_id}
+                  onValueChange={value => handleInputChange('location_id', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a location">
+                      {formData.location_id &&
+                        locations.find(l => l.id.toString() === formData.location_id.toString()) &&
+                        `${locations.find(l => l.id.toString() === formData.location_id.toString())?.name}, ${locations.find(l => l.id.toString() === formData.location_id.toString())?.city}, ${locations.find(l => l.id.toString() === formData.location_id.toString())?.state}`}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60 overflow-y-auto">
+                    {locations.map(location => (
+                      <SelectItem key={location.id} value={location.id.toString()}>
+                        {location.name}, {location.city}, {location.state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="manager_id">Project Manager</Label>
-                                 <Select value={formData.manager_id} onValueChange={(value) => handleInputChange('manager_id', value)}>
-                   <SelectTrigger>
-                     <SelectValue placeholder="Select a manager">
-                                             {formData.manager_id && projectManagers.find(e => e.id.toString() === formData.manager_id.toString()) && 
-                        `${projectManagers.find(e => e.id.toString() === formData.manager_id.toString())?.first_name} ${projectManagers.find(e => e.id.toString() === formData.manager_id.toString())?.last_name}`
-                      }
-                     </SelectValue>
-                   </SelectTrigger>
-                                     <SelectContent className="max-h-60 overflow-y-auto">
-                    {projectManagers.map((employee) => (
+                <Select
+                  value={formData.manager_id}
+                  onValueChange={value => handleInputChange('manager_id', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a manager">
+                      {formData.manager_id &&
+                        projectManagers.find(
+                          e => e.id.toString() === formData.manager_id.toString()
+                        ) &&
+                        `${projectManagers.find(e => e.id.toString() === formData.manager_id.toString())?.first_name} ${projectManagers.find(e => e.id.toString() === formData.manager_id.toString())?.last_name}`}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60 overflow-y-auto">
+                    {projectManagers.map(employee => (
                       <SelectItem key={employee.id} value={employee.id.toString()}>
                         {employee.first_name} {employee.last_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
-                 </Select>
+                </Select>
               </div>
             </div>
           </CardContent>
@@ -504,7 +532,7 @@ export default function EditProjectPage() {
                     <Calendar
                       mode="single"
                       selected={formData.start_date}
-                      onSelect={(date) => handleInputChange('start_date', date)}
+                      onSelect={date => handleInputChange('start_date', date)}
                       initialFocus
                     />
                   </PopoverContent>
@@ -526,7 +554,7 @@ export default function EditProjectPage() {
                     <Calendar
                       mode="single"
                       selected={formData.end_date}
-                      onSelect={(date) => handleInputChange('end_date', date)}
+                      onSelect={date => handleInputChange('end_date', date)}
                       initialFocus
                     />
                   </PopoverContent>
@@ -537,12 +565,15 @@ export default function EditProjectPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
+                <Select
+                  value={formData.status}
+                  onValueChange={value => handleInputChange('status', value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
-                    {statusOptions.map((option) => (
+                    {statusOptions.map(option => (
                       <SelectItem key={option.value} value={option.value}>
                         <div className="flex items-center space-x-2">
                           <Badge className={option.color}>{option.label}</Badge>
@@ -554,12 +585,15 @@ export default function EditProjectPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="priority">Priority</Label>
-                <Select value={formData.priority} onValueChange={(value) => handleInputChange('priority', value)}>
+                <Select
+                  value={formData.priority}
+                  onValueChange={value => handleInputChange('priority', value)}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
-                    {priorityOptions.map((option) => (
+                    {priorityOptions.map(option => (
                       <SelectItem key={option.value} value={option.value}>
                         <div className="flex items-center space-x-2">
                           <Badge className={option.color}>{option.label}</Badge>
@@ -590,7 +624,7 @@ export default function EditProjectPage() {
                   id="budget"
                   type="number"
                   value={formData.budget}
-                  onChange={(e) => handleInputChange('budget', e.target.value)}
+                  onChange={e => handleInputChange('budget', e.target.value)}
                   placeholder="0.00"
                   step="0.01"
                 />
@@ -601,7 +635,7 @@ export default function EditProjectPage() {
                   id="initial_budget"
                   type="number"
                   value={formData.initial_budget}
-                  onChange={(e) => handleInputChange('initial_budget', e.target.value)}
+                  onChange={e => handleInputChange('initial_budget', e.target.value)}
                   placeholder="0.00"
                   step="0.01"
                 />
@@ -626,7 +660,7 @@ export default function EditProjectPage() {
                 <Textarea
                   id="objectives"
                   value={formData.objectives}
-                  onChange={(e) => handleInputChange('objectives', e.target.value)}
+                  onChange={e => handleInputChange('objectives', e.target.value)}
                   placeholder="Define project objectives"
                   rows={3}
                 />
@@ -636,7 +670,7 @@ export default function EditProjectPage() {
                 <Textarea
                   id="scope"
                   value={formData.scope}
-                  onChange={(e) => handleInputChange('scope', e.target.value)}
+                  onChange={e => handleInputChange('scope', e.target.value)}
                   placeholder="Define project scope"
                   rows={3}
                 />
@@ -648,7 +682,7 @@ export default function EditProjectPage() {
               <Textarea
                 id="deliverables"
                 value={formData.deliverables}
-                onChange={(e) => handleInputChange('deliverables', e.target.value)}
+                onChange={e => handleInputChange('deliverables', e.target.value)}
                 placeholder="List project deliverables"
                 rows={3}
               />
@@ -660,7 +694,7 @@ export default function EditProjectPage() {
                 <Textarea
                   id="constraints"
                   value={formData.constraints}
-                  onChange={(e) => handleInputChange('constraints', e.target.value)}
+                  onChange={e => handleInputChange('constraints', e.target.value)}
                   placeholder="Project constraints"
                   rows={3}
                 />
@@ -670,7 +704,7 @@ export default function EditProjectPage() {
                 <Textarea
                   id="assumptions"
                   value={formData.assumptions}
-                  onChange={(e) => handleInputChange('assumptions', e.target.value)}
+                  onChange={e => handleInputChange('assumptions', e.target.value)}
                   placeholder="Project assumptions"
                   rows={3}
                 />
@@ -682,7 +716,7 @@ export default function EditProjectPage() {
               <Textarea
                 id="risks"
                 value={formData.risks}
-                onChange={(e) => handleInputChange('risks', e.target.value)}
+                onChange={e => handleInputChange('risks', e.target.value)}
                 placeholder="Identify project risks"
                 rows={3}
               />
@@ -704,4 +738,4 @@ export default function EditProjectPage() {
       </form>
     </div>
   );
-} 
+}

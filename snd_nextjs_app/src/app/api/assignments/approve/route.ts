@@ -1,11 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withPermission } from '@/lib/rbac/api-middleware';
+import { NextRequest, NextResponse } from 'next/server';
 
-import { employeeAssignments, employees, users, projects } from '@/lib/drizzle/schema';
+import { employeeAssignments, employees, projects, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-
-
 
 // POST /api/assignments/approve - Approve assignment at specific stage
 export const POST = withPermission(
@@ -35,13 +33,13 @@ export const POST = withPermission(
               id: users.id,
               name: users.name,
               email: users.email,
-            } as any
+            } as any,
           },
           project: {
             id: projects.id,
             name: projects.name,
             description: projects.description,
-          }
+          },
         })
         .from(employeeAssignments)
         .leftJoin(employees, eq(employeeAssignments.employeeId, employees.id))
@@ -55,7 +53,7 @@ export const POST = withPermission(
       }
 
       const assignment = assignmentRows[0];
-      
+
       if (!assignment) {
         return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
       }
@@ -65,8 +63,6 @@ export const POST = withPermission(
       if (!validStages.includes(approvalStage)) {
         return NextResponse.json({ error: 'Invalid approval stage' }, { status: 400 });
       }
-
-
 
       // Get updated employee and project data for response
       const updatedAssignmentWithJoins = await db
@@ -90,13 +86,13 @@ export const POST = withPermission(
               id: users.id,
               name: users.name,
               email: users.email,
-            } as any
+            } as any,
           },
           project: {
             id: projects.id,
             name: projects.name,
             description: projects.description,
-          }
+          },
         })
         .from(employeeAssignments)
         .leftJoin(employees, eq(employeeAssignments.employeeId, employees.id))
@@ -109,19 +105,15 @@ export const POST = withPermission(
 
       return NextResponse.json({
         message: `Assignment approved at ${approvalStage} stage`,
-        assignment: finalAssignment
+        assignment: finalAssignment,
       });
-
     } catch (error) {
       console.error('Error approving assignment:', error);
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
   },
   {
     action: 'approve',
-    subject: 'Assignment'
+    subject: 'Assignment',
   }
-); 
+);

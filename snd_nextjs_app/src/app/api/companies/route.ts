@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
 import { companies as companiesTable } from '@/lib/drizzle/schema';
+import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 import { and, asc, eq, ilike, or, sql } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Helper function to format company data for frontend
 function formatCompanyForFrontend(company: Record<string, any>) {
@@ -14,13 +14,12 @@ function formatCompanyForFrontend(company: Record<string, any>) {
     phone: company.phone,
     logo: company.logo,
     legal_document: company.legalDocument,
-            createdAt: company.createdAt?.toISOString().split('T')[0] || null,
-        updatedAt: company.updatedAt?.toISOString().split('T')[0] || null,
+    createdAt: company.createdAt?.toISOString().split('T')[0] || null,
+    updatedAt: company.updatedAt?.toISOString().split('T')[0] || null,
   };
 }
 
-export const GET = withPermission(
-  async (request: NextRequest) => {
+export const GET = withPermission(async (request: NextRequest) => {
   try {
     console.log('Companies API called');
 
@@ -36,14 +35,14 @@ export const GET = withPermission(
 
     // Build where clause for filtering
     const filters: any[] = [];
-    
+
     if (search) {
       const s = `%${search}%`;
       filters.push(
         or(
           ilike(companiesTable.name, s),
           ilike(companiesTable.email, s),
-          ilike(companiesTable.address, s as any),
+          ilike(companiesTable.address, s as any)
         )
       );
     }
@@ -85,16 +84,16 @@ export const GET = withPermission(
         page,
         limit,
         total: totalCount,
-        totalPages: Math.ceil(totalCount / limit)
+        totalPages: Math.ceil(totalCount / limit),
       },
-      message: 'Companies retrieved successfully'
+      message: 'Companies retrieved successfully',
     });
   } catch (error) {
     console.error('Error in GET /api/companies:', error);
     console.error('Error details:', {
       name: error instanceof Error ? error.name : 'Unknown',
       message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : 'No stack trace'
+      stack: error instanceof Error ? error.stack : 'No stack trace',
     });
 
     return NextResponse.json(
@@ -104,18 +103,15 @@ export const GET = withPermission(
         error: {
           name: error instanceof Error ? error.name : 'Unknown',
           message: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : 'No stack trace'
-        }
+          stack: error instanceof Error ? error.stack : 'No stack trace',
+        },
       },
       { status: 500 }
     );
   }
-  },
-  PermissionConfigs.company.read
-);
+}, PermissionConfigs.company.read);
 
-export const POST = withPermission(
-  async (request: NextRequest) => {
+export const POST = withPermission(async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -124,7 +120,7 @@ export const POST = withPermission(
       return NextResponse.json(
         {
           success: false,
-          message: 'Company name is required'
+          message: 'Company name is required',
         },
         { status: 400 }
       );
@@ -141,7 +137,7 @@ export const POST = withPermission(
       return NextResponse.json(
         {
           success: false,
-          message: 'Company with this name already exists'
+          message: 'Company with this name already exists',
         },
         { status: 400 }
       );
@@ -173,12 +169,12 @@ export const POST = withPermission(
       });
 
     const newCompany = newCompanyRows[0];
-    
+
     if (!newCompany) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Failed to create company'
+          message: 'Failed to create company',
         },
         { status: 500 }
       );
@@ -187,17 +183,15 @@ export const POST = withPermission(
     return NextResponse.json({
       success: true,
       message: 'Company created successfully',
-      data: formatCompanyForFrontend(newCompany)
+      data: formatCompanyForFrontend(newCompany),
     });
   } catch (error) {
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to create company: ' + (error as Error).message
+        message: 'Failed to create company: ' + (error as Error).message,
       },
       { status: 500 }
     );
   }
-  },
-  PermissionConfigs.company.create
-); 
+}, PermissionConfigs.company.create);

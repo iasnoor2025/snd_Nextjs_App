@@ -1,19 +1,25 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { ProtectedRoute } from '@/components/protected-route';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { PermissionContent } from '@/lib/rbac/rbac-components';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Save } from "lucide-react";
-import { toast } from "sonner";
-import Link from "next/link";
+import { ArrowLeft, Save } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 interface ReportFormData {
   name: string;
@@ -28,16 +34,16 @@ export default function CreateReportPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<ReportFormData>({
-    name: "",
-    type: "",
-    description: "",
-    schedule: "",
+    name: '',
+    type: '',
+    description: '',
+    schedule: '',
     parameters: {},
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.type) {
       toast.error(t('please_fill_required_fields'));
       return;
@@ -45,7 +51,7 @@ export default function CreateReportPage() {
 
     try {
       setLoading(true);
-      
+
       const response = await fetch('/modules/reporting/api/reports', {
         method: 'POST',
         headers: {
@@ -93,9 +99,7 @@ export default function CreateReportPage() {
         <Card>
           <CardHeader>
             <CardTitle>{t('create_new_report')}</CardTitle>
-            <CardDescription>
-              {t('create_new_report_description')}
-            </CardDescription>
+            <CardDescription>{t('create_new_report_description')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -105,7 +109,7 @@ export default function CreateReportPage() {
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    onChange={e => handleInputChange('name', e.target.value)}
                     placeholder={t('enter_report_name')}
                     required
                   />
@@ -113,14 +117,19 @@ export default function CreateReportPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="type">{t('report_type')} *</Label>
-                  <Select value={formData.type} onValueChange={(value) => handleInputChange('type', value)}>
+                  <Select
+                    value={formData.type}
+                    onValueChange={value => handleInputChange('type', value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder={t('select_report_type')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="employee_summary">{t('employee_summary')}</SelectItem>
                       <SelectItem value="payroll_summary">{t('payroll_summary')}</SelectItem>
-                      <SelectItem value="equipment_utilization">{t('equipment_utilization')}</SelectItem>
+                      <SelectItem value="equipment_utilization">
+                        {t('equipment_utilization')}
+                      </SelectItem>
                       <SelectItem value="project_progress">{t('project_progress')}</SelectItem>
                       <SelectItem value="rental_summary">{t('rental_summary')}</SelectItem>
                       <SelectItem value="timesheet_summary">{t('timesheet_summary')}</SelectItem>
@@ -130,7 +139,10 @@ export default function CreateReportPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="schedule">{t('schedule')}</Label>
-                  <Select value={formData.schedule} onValueChange={(value) => handleInputChange('schedule', value)}>
+                  <Select
+                    value={formData.schedule}
+                    onValueChange={value => handleInputChange('schedule', value)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder={t('select_schedule')} />
                     </SelectTrigger>
@@ -162,7 +174,7 @@ export default function CreateReportPage() {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  onChange={e => handleInputChange('description', e.target.value)}
                   placeholder={t('enter_report_description')}
                   rows={4}
                 />

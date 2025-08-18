@@ -1,24 +1,31 @@
-"use client";
+'use client';
 
-import { useState, useEffect, use } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   ArrowLeft,
-  Edit,
-  Mail,
   Building,
-  User,
-  Package,
   DollarSign,
+  Edit,
   FileText,
   Loader2,
-} from "lucide-react";
-import { toast } from "sonner";
+  Mail,
+  Package,
+  User,
+} from 'lucide-react';
+import Link from 'next/link';
+import { use, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Customer {
   id: number;
@@ -94,7 +101,7 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
           throw new Error('Failed to fetch customer');
         }
         const customerData = await customerResponse.json();
-        
+
         if (!customerData.success) {
           throw new Error(customerData.message || 'Failed to fetch customer');
         }
@@ -118,7 +125,6 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
         // For now, set empty invoices array since we don't have a dedicated invoice API
         // TODO: Implement invoice API when available
         setInvoices([]);
-
       } catch (error) {
         console.error('Error fetching customer data:', error);
         setError(error instanceof Error ? error.message : 'Failed to fetch customer data');
@@ -135,13 +141,13 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
 
   const getStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {
-      case "active":
-      case "completed":
+      case 'active':
+      case 'completed':
         return <Badge className="bg-green-100 text-green-800">{status}</Badge>;
-      case "pending":
+      case 'pending':
         return <Badge className="bg-yellow-100 text-yellow-800">{status}</Badge>;
-      case "cancelled":
-      case "overdue":
+      case 'cancelled':
+      case 'overdue':
         return <Badge className="bg-red-100 text-red-800">{status}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status || 'Unknown'}</Badge>;
@@ -150,13 +156,13 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
 
   const getPaymentStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {
-      case "paid":
+      case 'paid':
         return <Badge className="bg-green-100 text-green-800">{status}</Badge>;
-      case "partially paid":
+      case 'partially paid':
         return <Badge className="bg-yellow-100 text-yellow-800">{status}</Badge>;
-      case "overdue":
+      case 'overdue':
         return <Badge className="bg-red-100 text-red-800">{status}</Badge>;
-      case "pending":
+      case 'pending':
         return <Badge className="bg-blue-100 text-blue-800">{status}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status || 'Unknown'}</Badge>;
@@ -211,14 +217,8 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <p className="text-muted-foreground">
-            {error || 'Customer not found'}
-          </p>
-          <Button 
-            variant="outline" 
-            className="mt-4"
-            onClick={() => window.history.back()}
-          >
+          <p className="text-muted-foreground">{error || 'Customer not found'}</p>
+          <Button variant="outline" className="mt-4" onClick={() => window.history.back()}>
             Go Back
           </Button>
         </div>
@@ -289,9 +289,7 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(calculateOutstandingAmount())}</div>
-            <p className="text-xs text-muted-foreground">
-              Amount due
-            </p>
+            <p className="text-xs text-muted-foreground">Amount due</p>
           </CardContent>
         </Card>
 
@@ -343,12 +341,14 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {rentals.map((rental) => (
+                        {rentals.map(rental => (
                           <TableRow key={rental.id}>
                             <TableCell className="font-mono">{rental.rentalNumber}</TableCell>
                             <TableCell>{rental.equipmentName || 'N/A'}</TableCell>
                             <TableCell>{formatDate(rental.startDate)}</TableCell>
-                            <TableCell>{formatDate(rental.actualEndDate || rental.expectedEndDate)}</TableCell>
+                            <TableCell>
+                              {formatDate(rental.actualEndDate || rental.expectedEndDate)}
+                            </TableCell>
                             <TableCell>{formatCurrency(rental.finalAmount)}</TableCell>
                             <TableCell>{getStatusBadge(rental.status)}</TableCell>
                             <TableCell>{getPaymentStatusBadge(rental.paymentStatus)}</TableCell>
@@ -383,9 +383,11 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {invoices.map((invoice) => (
+                        {invoices.map(invoice => (
                           <TableRow key={invoice.id}>
-                            <TableCell className="font-mono">{invoice.invoiceNumber || `INV-${invoice.id}`}</TableCell>
+                            <TableCell className="font-mono">
+                              {invoice.invoiceNumber || `INV-${invoice.id}`}
+                            </TableCell>
                             <TableCell>{formatCurrency(invoice.amount)}</TableCell>
                             <TableCell>{formatDate(invoice.dueDate)}</TableCell>
                             <TableCell>{getPaymentStatusBadge(invoice.status)}</TableCell>
@@ -492,6 +494,6 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
 export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   // Unwrap params Promise immediately - this must be called unconditionally
   const { id } = use(params);
-  
+
   return <CustomerDetailClient customerId={id} />;
 }

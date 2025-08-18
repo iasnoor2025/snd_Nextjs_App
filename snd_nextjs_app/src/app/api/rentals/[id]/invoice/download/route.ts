@@ -1,15 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { RentalService } from '@/lib/services/rental-service';
 import { PDFGenerator } from '@/lib/pdf-generator';
+import { RentalService } from '@/lib/services/rental-service';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     console.log('Downloading invoice PDF for rental:', id);
-    
+
     // Get rental data with all necessary information
     const rental = await RentalService.getRental(parseInt(id));
     console.log('✅ Rental fetched:', rental ? 'success' : 'not found');
@@ -29,7 +26,10 @@ export async function GET(
     const invoiceData = {
       invoiceNumber: rental.invoiceId,
       invoiceDate: (rental.invoiceDate || new Date().toISOString().split('T')[0])!,
-      dueDate: (rental.paymentDueDate || new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000).toISOString().split('T')[0])!,
+      dueDate: (rental.paymentDueDate ||
+        new Date(Date.now() + (rental.paymentTermsDays || 30) * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split('T')[0])!,
       customer: {
         name: rental.customer?.name || 'Unknown Customer',
         email: rental.customer?.email || '',
@@ -72,7 +72,7 @@ export async function GET(
 
     // Generate PDF
     const pdfBlob = await PDFGenerator.generateRentalInvoicePDF(invoiceData);
-    
+
     // Convert blob to buffer
     const arrayBuffer = await pdfBlob.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
@@ -86,13 +86,12 @@ export async function GET(
         'Content-Length': buffer.length.toString(),
       },
     });
-
   } catch (error) {
     console.error('Error downloading invoice PDF:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to download invoice PDF',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

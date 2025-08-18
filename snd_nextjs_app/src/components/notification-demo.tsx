@@ -1,16 +1,20 @@
 'use client';
 
-import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { notify } from '@/lib/services/notification-service';
 import { useNotificationContext } from '@/contexts/notification-context';
+import { notify } from '@/lib/services/notification-service';
+import React from 'react';
 
 export const NotificationDemo: React.FC = () => {
   const { showSuccess, showError } = useNotificationContext();
 
   const handleSuccessNotification = () => {
-    notify.success('Success!', 'This is a success notification with an action button.', '/modules/employee-management');
+    notify.success(
+      'Success!',
+      'This is a success notification with an action button.',
+      '/modules/employee-management'
+    );
   };
 
   const handleErrorNotification = () => {

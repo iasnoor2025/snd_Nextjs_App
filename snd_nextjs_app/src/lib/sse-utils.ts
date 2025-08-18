@@ -4,7 +4,7 @@ import { ReadableStreamDefaultController } from 'stream/web';
 export const connections = new Set<ReadableStreamDefaultController>();
 
 // Event types for the rental management system
-export type SSEEventType = 
+export type SSEEventType =
   | 'rental_status_updated'
   | 'payment_received'
   | 'maintenance_required'
@@ -25,7 +25,8 @@ export interface SSEEvent {
 
 // Helper function to send event to all connected clients
 export function broadcastEvent(event: SSEEvent) {
-  const eventString = `id: ${event.id || Date.now()}\n` +
+  const eventString =
+    `id: ${event.id || Date.now()}\n` +
     `event: ${event.type}\n` +
     `data: ${JSON.stringify(event)}\n` +
     `retry: 3000\n\n`;
@@ -41,7 +42,8 @@ export function broadcastEvent(event: SSEEvent) {
 
 // Helper function to send event to specific client
 export function sendEventToClient(controller: ReadableStreamDefaultController, event: SSEEvent) {
-  const eventString = `id: ${event.id || Date.now()}\n` +
+  const eventString =
+    `id: ${event.id || Date.now()}\n` +
     `event: ${event.type}\n` +
     `data: ${JSON.stringify(event)}\n` +
     `retry: 3000\n\n`;
@@ -51,4 +53,4 @@ export function sendEventToClient(controller: ReadableStreamDefaultController, e
   } catch (error) {
     console.error('Error sending SSE event to client:', error);
   }
-} 
+}

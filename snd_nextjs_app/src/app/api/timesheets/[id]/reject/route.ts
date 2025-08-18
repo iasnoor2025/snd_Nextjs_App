@@ -1,17 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/db';
 import { timesheets } from '@/lib/drizzle/schema';
 import { withPermission } from '@/lib/rbac/api-middleware';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth-config';
 import { eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // POST /api/timesheets/[id]/reject - Reject a timesheet
 export const POST = withPermission(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
     try {
       console.log('🔍 REJECT TIMESHEET - Starting request for timesheet:', params.id);
-      
+
       const timesheetId = parseInt(params.id);
       if (isNaN(timesheetId)) {
         return NextResponse.json({ error: 'Invalid timesheet ID' }, { status: 400 });
@@ -35,11 +35,11 @@ export const POST = withPermission(
       if (!timesheetData) {
         return NextResponse.json({ error: 'Timesheet data not found' }, { status: 404 });
       }
-      
+
       console.log('🔍 REJECT TIMESHEET - Found timesheet:', {
         id: timesheetData.id,
         status: timesheetData.status,
-        employeeId: timesheetData.employeeId
+        employeeId: timesheetData.employeeId,
       });
 
       // Get session to check user permissions
@@ -51,13 +51,23 @@ export const POST = withPermission(
       // const userId = session.user.id;
 
       // Check if timesheet can be rejected
-      const canReject = ['submitted', 'foreman_approved', 'incharge_approved', 'checking_approved'].includes(timesheetData.status);
+      const canReject = [
+        'submitted',
+        'foreman_approved',
+        'incharge_approved',
+        'checking_approved',
+      ].includes(timesheetData.status);
 
       if (!canReject) {
-        console.log(`🔍 REJECT TIMESHEET - Timesheet ${timesheetData.id} cannot be rejected. Current status: ${timesheetData.status}`);
-        return NextResponse.json({ 
-          error: `Timesheet cannot be rejected. Current status: ${timesheetData.status}` 
-        }, { status: 400 });
+        console.log(
+          `🔍 REJECT TIMESHEET - Timesheet ${timesheetData.id} cannot be rejected. Current status: ${timesheetData.status}`
+        );
+        return NextResponse.json(
+          {
+            error: `Timesheet cannot be rejected. Current status: ${timesheetData.status}`,
+          },
+          { status: 400 }
+        );
       }
 
       // Reject the timesheet
@@ -67,40 +77,44 @@ export const POST = withPermission(
           .set({
             status: 'rejected',
             rejectionReason: reason || 'Rejected by foreman/supervisor',
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
           })
           .where(eq(timesheets.id, timesheetId))
           .returning();
 
         console.log(`🔍 REJECT TIMESHEET - Timesheet rejected successfully: ${timesheetId}`);
-        
+
         const updatedTimesheetData = updatedTimesheet[0];
         if (!updatedTimesheetData) {
           return NextResponse.json({ error: 'Failed to update timesheet' }, { status: 500 });
         }
-        
+
         return NextResponse.json({
           success: true,
           message: 'Timesheet rejected successfully',
           data: {
             id: updatedTimesheetData.id,
             status: updatedTimesheetData.status,
-            rejectionReason: updatedTimesheetData.rejectionReason
-          }
+            rejectionReason: updatedTimesheetData.rejectionReason,
+          },
         });
-
       } catch (error) {
         console.error(`🔍 REJECT TIMESHEET - Error rejecting timesheet ${timesheetId}:`, error);
-        return NextResponse.json({ 
-          error: `Failed to reject timesheet: ${error instanceof Error ? error.message : 'Unknown error'}` 
-        }, { status: 500 });
+        return NextResponse.json(
+          {
+            error: `Failed to reject timesheet: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          },
+          { status: 500 }
+        );
       }
-
     } catch (error) {
       console.error('🔍 REJECT TIMESHEET - Unexpected error:', error);
-      return NextResponse.json({ 
-        error: 'Internal server error' 
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: 'Internal server error',
+        },
+        { status: 500 }
+      );
     }
   },
   { action: 'reject', subject: 'Timesheet' }

@@ -1,12 +1,18 @@
-"use client";
-import { useEffect, useMemo, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+'use client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import ApiService from '@/lib/api-service';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 export default function MaintenanceEditModal({
@@ -26,7 +32,7 @@ export default function MaintenanceEditModal({
 
   useEffect(() => {
     if (!open || !id) return;
-    ApiService.getMaintenanceItem(id).then((res) => setRecord(res.data));
+    ApiService.getMaintenanceItem(id).then(res => setRecord(res.data));
   }, [open, id]);
 
   async function save() {
@@ -59,7 +65,10 @@ export default function MaintenanceEditModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm">{t('form.status')}</label>
-              <Select value={record.status} onValueChange={(v) => setRecord({ ...record, status: v })}>
+              <Select
+                value={record.status}
+                onValueChange={v => setRecord({ ...record, status: v })}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -72,7 +81,7 @@ export default function MaintenanceEditModal({
             </div>
             <div>
               <label className="text-sm">{t('form.type')}</label>
-              <Select value={record.type} onValueChange={(v) => setRecord({ ...record, type: v })}>
+              <Select value={record.type} onValueChange={v => setRecord({ ...record, type: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -86,11 +95,17 @@ export default function MaintenanceEditModal({
 
           <div>
             <label className="text-sm">{t('form.title')}</label>
-            <Input value={record.title || ''} onChange={(e) => setRecord({ ...record, title: e.target.value })} />
+            <Input
+              value={record.title || ''}
+              onChange={e => setRecord({ ...record, title: e.target.value })}
+            />
           </div>
           <div>
             <label className="text-sm">{t('form.description')}</label>
-            <Textarea value={record.description || ''} onChange={(e) => setRecord({ ...record, description: e.target.value })} />
+            <Textarea
+              value={record.description || ''}
+              onChange={e => setRecord({ ...record, description: e.target.value })}
+            />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -98,26 +113,28 @@ export default function MaintenanceEditModal({
               <label className="text-sm">{t('form.date')}</label>
               <DatePicker
                 date={record.scheduled_date ? new Date(record.scheduled_date) : undefined}
-                setDate={(d) => setRecord({ ...record, scheduled_date: d ? d.toISOString() : null })}
+                setDate={d => setRecord({ ...record, scheduled_date: d ? d.toISOString() : null })}
               />
             </div>
             <div>
               <label className="text-sm">{t('form.dueDate')}</label>
               <DatePicker
                 date={record.due_date ? new Date(record.due_date) : undefined}
-                setDate={(d) => setRecord({ ...record, due_date: d ? d.toISOString() : null })}
+                setDate={d => setRecord({ ...record, due_date: d ? d.toISOString() : null })}
               />
             </div>
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>{t('actions.cancel')}</Button>
-            <Button onClick={save} disabled={loading}>{loading ? t('actions.saving') : t('actions.save')}</Button>
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+              {t('actions.cancel')}
+            </Button>
+            <Button onClick={save} disabled={loading}>
+              {loading ? t('actions.saving') : t('actions.save')}
+            </Button>
           </div>
         </div>
       </DialogContent>
     </Dialog>
   );
 }
-
-

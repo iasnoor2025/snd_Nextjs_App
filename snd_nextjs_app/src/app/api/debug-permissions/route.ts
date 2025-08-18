@@ -1,24 +1,21 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
-import { getUserPermissions } from '@/lib/rbac/permission-service';
 import { db } from '@/lib/drizzle';
-import { users, roles, permissions, roleHasPermissions } from '@/lib/drizzle/schema';
+import { permissions, roleHasPermissions, roles, users } from '@/lib/drizzle/schema';
+import { getUserPermissions } from '@/lib/rbac/permission-service';
 import { eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
     const session = await getServerSession(authConfig);
-    
+
     if (!session?.user) {
-      return NextResponse.json(
-        { error: 'No session found' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'No session found' }, { status: 401 });
     }
 
     const userId = session.user.id;
-    
+
     // Get user info
     const userInfo = await db
       .select({
@@ -33,19 +30,13 @@ export async function GET() {
       .limit(1);
 
     if (userInfo.length === 0) {
-      return NextResponse.json(
-        { error: 'User not found in database' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
     }
 
     const user = userInfo[0];
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found in database' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
     }
 
     // Get user's role
@@ -98,11 +89,13 @@ export async function GET() {
       userPermissions: userPermissions,
       hasUserReadPermission: userPermissions?.permissions.includes('read.User') || false,
     });
-
   } catch (error) {
     console.error('Error in debug-permissions:', error);
     return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) },
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

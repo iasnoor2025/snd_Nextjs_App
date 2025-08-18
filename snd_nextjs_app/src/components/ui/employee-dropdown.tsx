@@ -1,8 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import React, { useEffect, useState } from 'react';
 
 export interface Employee {
   id: string;
@@ -35,15 +41,15 @@ interface EmployeeDropdownProps {
 export function EmployeeDropdown({
   value,
   onValueChange,
-  placeholder = "Select an employee",
+  placeholder = 'Select an employee',
   disabled = false,
   label,
   required = false,
   showSearch = true,
-  className = "",
+  className = '',
   error,
   loading: externalLoading,
-  onLoadingChange
+  onLoadingChange,
 }: EmployeeDropdownProps) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
@@ -60,7 +66,7 @@ export function EmployeeDropdown({
 
     try {
       console.log('Loading employees...');
-      
+
       // Use the public API endpoint that doesn't require authentication
       const response = await fetch('/api/employees/public?all=true&limit=1000', {
         method: 'GET',
@@ -68,29 +74,30 @@ export function EmployeeDropdown({
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       console.log('Employees API response:', data);
-      
+
       const employeeData = data.data || data || [];
       console.log(`Loaded ${employeeData.length} employees`);
-      
+
       if (employeeData.length === 0) {
         setErrorMessage('No employees found in the database.');
       }
-      
+
       setEmployees(employeeData);
     } catch (error) {
       console.error('Error loading employees:', error);
-      
+
       let errorMsg = 'Failed to load employees. Please try again.';
       if (error instanceof Error) {
         if (error.message.includes('Network error')) {
-          errorMsg = 'Network error: Unable to connect to the server. Please check your connection.';
+          errorMsg =
+            'Network error: Unable to connect to the server. Please check your connection.';
         } else if (error.message.includes('500')) {
           errorMsg = 'Server error: Database connection issue. Please contact support.';
         } else if (error.message.includes('404')) {
@@ -99,7 +106,7 @@ export function EmployeeDropdown({
           errorMsg = `Error: ${error.message}`;
         }
       }
-      
+
       setErrorMessage(errorMsg);
       setEmployees([]);
     } finally {
@@ -115,16 +122,17 @@ export function EmployeeDropdown({
   }, []);
 
   // Filter employees based on search term
-  const filteredEmployees = employees.filter(employee => 
-    !searchTerm || 
-    employee.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.employee_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.file_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.id.toString().includes(searchTerm)
+  const filteredEmployees = employees.filter(
+    employee =>
+      !searchTerm ||
+      employee.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.employee_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.file_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.department?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.id.toString().includes(searchTerm)
   );
 
   // Get selected employee for display
@@ -133,20 +141,21 @@ export function EmployeeDropdown({
   return (
     <div className={`space-y-2 ${className}`}>
       {label && (
-        <Label htmlFor="employee-select" className={required ? "after:content-['*'] after:ml-0.5 after:text-red-500" : ""}>
+        <Label
+          htmlFor="employee-select"
+          className={required ? "after:content-['*'] after:ml-0.5 after:text-red-500" : ''}
+        >
           {label}
         </Label>
       )}
-      
-      <Select
-        value={value || ''}
-        onValueChange={onValueChange}
-        disabled={disabled || isLoading}
-      >
-        <SelectTrigger className={`w-full border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}>
-          <SelectValue placeholder={isLoading ? "Loading employees..." : placeholder} />
+
+      <Select value={value || ''} onValueChange={onValueChange} disabled={disabled || isLoading}>
+        <SelectTrigger
+          className={`w-full border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
+        >
+          <SelectValue placeholder={isLoading ? 'Loading employees...' : placeholder} />
         </SelectTrigger>
-        
+
         <SelectContent className="max-h-96 overflow-y-auto">
           {/* Search Input */}
           {showSearch && (
@@ -155,12 +164,12 @@ export function EmployeeDropdown({
                 type="text"
                 placeholder="Search employees..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
           )}
-          
+
           {isLoading ? (
             <SelectItem value="loading" disabled>
               Loading employees...
@@ -173,8 +182,12 @@ export function EmployeeDropdown({
             <>
               {filteredEmployees
                 .slice(0, searchTerm ? undefined : 100) // Show first 100 if no search, all if searching
-                .map((employee) => (
-                  <SelectItem key={employee.id} value={employee.id} className="cursor-pointer hover:bg-gray-100">
+                .map(employee => (
+                  <SelectItem
+                    key={employee.id}
+                    value={employee.id}
+                    className="cursor-pointer hover:bg-gray-100"
+                  >
                     <span className="font-medium">
                       {employee.first_name} {employee.last_name}
                       {employee.file_number && ` (File: ${employee.file_number})`}
@@ -199,11 +212,9 @@ export function EmployeeDropdown({
           )}
         </SelectContent>
       </Select>
-      
-      {error && (
-        <p className="text-sm text-red-500">{error}</p>
-      )}
-      
+
+      {error && <p className="text-sm text-red-500">{error}</p>}
+
       {selectedEmployee && (
         <div className="text-xs text-gray-500">
           Selected: {selectedEmployee.first_name} {selectedEmployee.last_name}
@@ -231,22 +242,22 @@ export function useEmployees() {
           'Content-Type': 'application/json',
         },
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       const employeeData = data.data || data || [];
       setEmployees(employeeData);
     } catch (err) {
       console.error('Error loading employees:', err);
-      
+
       let errorMsg = 'Failed to load employees';
       if (err instanceof Error) {
         errorMsg = err.message;
       }
-      
+
       setError(errorMsg);
       setEmployees([]);
     } finally {
@@ -259,4 +270,4 @@ export function useEmployees() {
   }, []);
 
   return { employees, loading, error, refetch: loadEmployees };
-} 
+}

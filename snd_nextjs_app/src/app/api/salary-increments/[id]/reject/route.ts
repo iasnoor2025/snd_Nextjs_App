@@ -1,15 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { salaryIncrements } from '@/lib/drizzle/schema';
+import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
-import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -32,16 +29,13 @@ export async function POST(
 
     // Validate required fields
     if (!rejection_reason) {
-      return NextResponse.json(
-        { error: 'Rejection reason is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Rejection reason is required' }, { status: 400 });
     }
 
     // Check if salary increment exists and can be rejected
     const existingIncrement = await db
-      .select({ 
-        id: salaryIncrements.id, 
+      .select({
+        id: salaryIncrements.id,
         status: salaryIncrements.status,
       })
       .from(salaryIncrements)
@@ -94,9 +88,6 @@ export async function POST(
     });
   } catch (error) {
     console.error('Error rejecting salary increment:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,20 +1,20 @@
 'use client';
 
-import React from 'react';
-import { useSSEContext } from '@/contexts/sse-context';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  Wifi, 
-  WifiOff, 
-  RefreshCw, 
-  X, 
-  CheckCircle, 
-  AlertCircle, 
+import { useSSEContext } from '@/contexts/sse-context';
+import {
+  Activity,
+  AlertCircle,
+  CheckCircle,
   Clock,
-  Activity
+  RefreshCw,
+  Wifi,
+  WifiOff,
+  X,
 } from 'lucide-react';
+import React from 'react';
 import { toast } from 'sonner';
 
 interface SSEStatusProps {
@@ -23,16 +23,12 @@ interface SSEStatusProps {
   className?: string;
 }
 
-export function SSEStatus({ 
-  showDetails = false, 
+export function SSEStatus({
+  showDetails = false,
   showControls = true,
-  className = '' 
+  className = '',
 }: SSEStatusProps) {
-  const {
-    isConnected,
-    connectionStatus,
-    reconnect
-  } = useSSEContext();
+  const { isConnected, connectionStatus, reconnect } = useSSEContext();
 
   const isConnecting = connectionStatus === 'connecting';
   const error = connectionStatus === 'error';
@@ -83,13 +79,13 @@ export function SSEStatus({
           </Badge>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {showControls && (
           <div className="flex gap-2">
             {!isConnected && !isConnecting && (
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 onClick={() => toast.info('Connect functionality not implemented')}
                 className="flex items-center gap-1"
               >
@@ -97,10 +93,10 @@ export function SSEStatus({
                 Connect
               </Button>
             )}
-            
+
             {isConnected && (
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 variant="outline"
                 onClick={handleDisconnect}
                 className="flex items-center gap-1"
@@ -109,10 +105,10 @@ export function SSEStatus({
                 Disconnect
               </Button>
             )}
-            
+
             {!isConnecting && (
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 variant="outline"
                 onClick={handleReconnect}
                 className="flex items-center gap-1"
@@ -137,7 +133,7 @@ export function SSEStatus({
               <span className="text-muted-foreground">Connection status:</span>
               <Badge variant="secondary">{connectionStatus}</Badge>
             </div>
-            
+
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm">
                 <Clock className="h-4 w-4 text-muted-foreground" />
@@ -145,9 +141,7 @@ export function SSEStatus({
               </div>
               <div className="p-2 bg-muted rounded-md text-xs">
                 <div className="font-medium">Real-time updates</div>
-                <div className="text-muted-foreground">
-                  {isConnected ? 'Active' : 'Inactive'}
-                </div>
+                <div className="text-muted-foreground">{isConnected ? 'Active' : 'Inactive'}</div>
               </div>
             </div>
           </div>
@@ -176,4 +170,4 @@ export function SSEStatusCompact() {
       </span>
     </div>
   );
-} 
+}

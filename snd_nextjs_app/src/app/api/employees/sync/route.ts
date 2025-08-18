@@ -1,7 +1,11 @@
-import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { employees as employeesTable, designations as designationsTable, departments as departmentsTable } from '@/lib/drizzle/schema';
+import {
+  departments as departmentsTable,
+  designations as designationsTable,
+  employees as employeesTable,
+} from '@/lib/drizzle/schema';
 import { sql } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
 
 // Batch size for parallel processing
 const BATCH_SIZE = 10;
@@ -19,14 +23,14 @@ export async function POST() {
       hasSecret: !!ERPNEXT_API_SECRET,
       url: ERPNEXT_URL,
       keyLength: ERPNEXT_API_KEY?.length || 0,
-      secretLength: ERPNEXT_API_SECRET?.length || 0
+      secretLength: ERPNEXT_API_SECRET?.length || 0,
     });
 
     if (!ERPNEXT_URL || !ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {
       console.log('ERPNext configuration missing:', {
         hasUrl: !!ERPNEXT_URL,
         hasKey: !!ERPNEXT_API_KEY,
-        hasSecret: !!ERPNEXT_API_SECRET
+        hasSecret: !!ERPNEXT_API_SECRET,
       });
 
       return NextResponse.json(
@@ -48,28 +52,35 @@ export async function POST() {
       return NextResponse.json(
         {
           success: false,
-          message: 'Database connection failed: ' + (dbError instanceof Error ? dbError.message : 'Unknown error'),
+          message:
+            'Database connection failed: ' +
+            (dbError instanceof Error ? dbError.message : 'Unknown error'),
         },
         { status: 500 }
       );
     }
 
     // Check if database has existing employees
-    const existingEmployeeCountResult = await db.select({ count: sql<number>`count(*)` }).from(employeesTable);
+    const existingEmployeeCountResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(employeesTable);
     const existingEmployeeCount = Number(existingEmployeeCountResult[0]?.count ?? 0);
     console.log(`Database has ${existingEmployeeCount} existing employees`);
 
     // Fetch employees list from ERPnext
     console.log('Fetching employee list from ERPNext...');
     console.log('ERPNext URL:', `${ERPNEXT_URL}/api/resource/Employee?limit_page_length=1000`);
-    
-    const erpnextResponse = await fetch(`${ERPNEXT_URL}/api/resource/Employee?limit_page_length=1000`, {
-      headers: {
-        'Authorization': `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    });
+
+    const erpnextResponse = await fetch(
+      `${ERPNEXT_URL}/api/resource/Employee?limit_page_length=1000`,
+      {
+        headers: {
+          Authorization: `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      }
+    );
 
     console.log('ERPNext Response Status:', erpnextResponse.status);
     console.log('ERPNext Response Headers:', Object.fromEntries(erpnextResponse.headers.entries()));
@@ -77,7 +88,9 @@ export async function POST() {
     if (!erpnextResponse.ok) {
       const errorText = await erpnextResponse.text();
       console.error('ERPNext API Error Response:', errorText);
-      throw new Error(`ERPNext API error: ${erpnextResponse.status} ${erpnextResponse.statusText} - ${errorText}`);
+      throw new Error(
+        `ERPNext API error: ${erpnextResponse.status} ${erpnextResponse.statusText} - ${errorText}`
+      );
     }
 
     const erpnextData = await erpnextResponse.json();
@@ -91,13 +104,13 @@ export async function POST() {
         dataType: typeof erpnextData.data,
         dataLength: erpnextData.data?.length || 0,
         hasData: !!erpnextData.data,
-        responseKeys: Object.keys(erpnextData)
+        responseKeys: Object.keys(erpnextData),
       });
-      
+
       // Check if there are any other keys that might contain employee data
       const possibleDataKeys = ['results', 'employees', 'data', 'items'];
       let alternativeData: any[] | null = null;
-      
+
       for (const key of possibleDataKeys) {
         if (erpnextData[key] && Array.isArray(erpnextData[key]) && erpnextData[key].length > 0) {
           console.log(`Found alternative data in key: ${key}`, erpnextData[key].length);
@@ -105,43 +118,49 @@ export async function POST() {
           break;
         }
       }
-      
+
       if (!alternativeData) {
         return NextResponse.json(
           {
             success: false,
-            message: 'No employee data found in ERPNext response. Please check the API endpoint and response format.',
+            message:
+              'No employee data found in ERPNext response. Please check the API endpoint and response format.',
             responseStructure: Object.keys(erpnextData),
-            responseData: erpnextData
+            responseData: erpnextData,
           },
           { status: 400 }
         );
       }
-      
+
       erpnextData.data = alternativeData;
     }
 
     // Process employees in batches for better performance
     const erpEmployees: any[] = [];
-    const errors: Array<{employee: string, error: string}> = [];
+    const errors: Array<{ employee: string; error: string }> = [];
 
     // Process employees in batches
     for (let i = 0; i < erpnextData.data.length; i += BATCH_SIZE) {
       const batch = erpnextData.data.slice(i, i + BATCH_SIZE);
-      console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(erpnextData.data.length / BATCH_SIZE)}`);
+      console.log(
+        `Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(erpnextData.data.length / BATCH_SIZE)}`
+      );
 
       // Process batch in parallel with limited concurrency
       const batchPromises = batch.map(async (item: any) => {
         if (!item.name) return null;
 
         try {
-          const detailResponse = await fetch(`${ERPNEXT_URL}/api/resource/Employee/${encodeURIComponent(item.name)}`, {
-            headers: {
-              'Authorization': `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-            },
-          });
+          const detailResponse = await fetch(
+            `${ERPNEXT_URL}/api/resource/Employee/${encodeURIComponent(item.name)}`,
+            {
+              headers: {
+                Authorization: `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+              },
+            }
+          );
 
           if (detailResponse.ok) {
             const detailData = await detailResponse.json();
@@ -152,14 +171,14 @@ export async function POST() {
             console.error(`Failed to fetch employee ${item.name}: ${detailResponse.status}`);
             errors.push({
               employee: item.name,
-              error: `HTTP ${detailResponse.status}: ${detailResponse.statusText}`
+              error: `HTTP ${detailResponse.status}: ${detailResponse.statusText}`,
             });
           }
         } catch (error) {
           console.error(`Error fetching employee ${item.name}:`, error);
           errors.push({
             employee: item.name,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
         return null;
@@ -186,19 +205,24 @@ export async function POST() {
     const syncedEmployees: any[] = [];
     const updatedEmployees: any[] = [];
     const newEmployees: any[] = [];
-    const dbErrors: Array<{employee: string, error: string}> = [];
+    const dbErrors: Array<{ employee: string; error: string }> = [];
 
     // Process database operations in batches
     for (let i = 0; i < erpEmployees.length; i += BATCH_SIZE) {
       const batch = erpEmployees.slice(i, i + BATCH_SIZE);
-      console.log(`Processing database batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(erpEmployees.length / BATCH_SIZE)}`);
+      console.log(
+        `Processing database batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(erpEmployees.length / BATCH_SIZE)}`
+      );
 
-      const batchPromises = batch.map(async (erpEmployee) => {
+      const batchPromises = batch.map(async erpEmployee => {
         try {
           // Check if employee already exists - FIXED: using correct column names
-          const existingEmployee = await db.select().from(employeesTable).where(
-            sql`file_number = ${erpEmployee.employee_number || erpEmployee.name} OR erpnext_id = ${erpEmployee.employee_number || erpEmployee.name}`
-          );
+          const existingEmployee = await db
+            .select()
+            .from(employeesTable)
+            .where(
+              sql`file_number = ${erpEmployee.employee_number || erpEmployee.name} OR erpnext_id = ${erpEmployee.employee_number || erpEmployee.name}`
+            );
 
           // Parse employee name using ERPNext fields
           let firstName = (erpEmployee.first_name || '').trim();
@@ -250,47 +274,63 @@ export async function POST() {
 
           if (designationName && designationName.trim()) {
             const trimmedDesignationName = designationName.trim();
-            let designation: any = await db.select().from(designationsTable).where(
-              sql`name = ${trimmedDesignationName}`
-            );
+            let designation: any = await db
+              .select()
+              .from(designationsTable)
+              .where(sql`name = ${trimmedDesignationName}`);
 
             if (designation.length === 0) {
-              const newDesignation = await db.insert(designationsTable).values({
-                name: trimmedDesignationName,
-                description: trimmedDesignationName,
-                isActive: true,
-                updatedAt: new Date().toISOString().split('T')[0] as string
-              }).returning();
+              const newDesignation = await db
+                .insert(designationsTable)
+                .values({
+                  name: trimmedDesignationName,
+                  description: trimmedDesignationName,
+                  isActive: true,
+                  updatedAt: new Date().toISOString().split('T')[0] as string,
+                })
+                .returning();
               designation = newDesignation;
             } else {
-              const updatedDesignation = await db.update(designationsTable).set({
-                description: trimmedDesignationName,
-                isActive: true,
-                updatedAt: new Date().toISOString().split('T')[0] as string
-              }).where(sql`id = ${designation[0].id}`).returning();
+              const updatedDesignation = await db
+                .update(designationsTable)
+                .set({
+                  description: trimmedDesignationName,
+                  isActive: true,
+                  updatedAt: new Date().toISOString().split('T')[0] as string,
+                })
+                .where(sql`id = ${designation[0].id}`)
+                .returning();
               designation = updatedDesignation;
             }
             designationId = designation[0].id;
           }
 
           if (departmentName && departmentName.trim()) {
-            let department: any[] = await db.select().from(departmentsTable).where(
-              sql`name = ${departmentName.trim()}`
-            );
+            let department: any[] = await db
+              .select()
+              .from(departmentsTable)
+              .where(sql`name = ${departmentName.trim()}`);
             if (department.length === 0) {
-              const newDepartment = await db.insert(departmentsTable).values({
-                name: departmentName.trim(),
-                description: departmentName.trim(),
-                active: true,
-                updatedAt: new Date().toISOString().split('T')[0] as string
-              }).returning();
+              const newDepartment = await db
+                .insert(departmentsTable)
+                .values({
+                  name: departmentName.trim(),
+                  description: departmentName.trim(),
+                  active: true,
+                  updatedAt: new Date().toISOString().split('T')[0] as string,
+                })
+                .returning();
               department = newDepartment;
             } else {
-              const updatedDepartment = await db.update(departmentsTable).set({
-                description: departmentName.trim(),
-                active: true,
-                updatedAt: new Date().toISOString().split('T')[0] as string
-              }).where(sql`id = ${department[0].id}`).returning();
+              const updatedDepartment = await db
+                .update(departmentsTable)
+                .set({
+                  description: departmentName.trim(),
+                  active: true,
+                  updatedAt: new Date().toISOString().split('T')[0] as string,
+                })
+                .where(sql`id = ${department[0].id}`)
+                .returning();
               department = updatedDepartment;
             }
             departmentId = department[0].id;
@@ -307,8 +347,16 @@ export async function POST() {
             status: status.toLowerCase(),
             email: email,
             phone: cellNumber,
-            hireDate: dateOfJoining ? (typeof dateOfJoining === 'string' ? new Date(dateOfJoining).toISOString().split('T')[0] : dateOfJoining.toISOString().split('T')[0]) : null,
-            dateOfBirth: dateOfBirth ? (typeof dateOfBirth === 'string' ? new Date(dateOfBirth).toISOString().split('T')[0] : dateOfBirth.toISOString().split('T')[0]) : null,
+            hireDate: dateOfJoining
+              ? typeof dateOfJoining === 'string'
+                ? new Date(dateOfJoining).toISOString().split('T')[0]
+                : dateOfJoining.toISOString().split('T')[0]
+              : null,
+            dateOfBirth: dateOfBirth
+              ? typeof dateOfBirth === 'string'
+                ? new Date(dateOfBirth).toISOString().split('T')[0]
+                : dateOfBirth.toISOString().split('T')[0]
+              : null,
             departmentId: departmentId,
             designationId: designationId,
             // Additional fields from ERPNext
@@ -324,10 +372,18 @@ export async function POST() {
             // Salary and benefits
             foodAllowance: String(parseFloat(erpEmployee.food_allowance?.toString() || '0')),
             housingAllowance: String(parseFloat(erpEmployee.housing_allowance?.toString() || '0')),
-            transportAllowance: String(parseFloat(erpEmployee.transport_allowance?.toString() || '0')),
-            absentDeductionRate: String(parseFloat(erpEmployee.absent_deduction_rate?.toString() || '0')),
-            overtimeRateMultiplier: String(parseFloat(erpEmployee.overtime_rate_multiplier?.toString() || '1.5')),
-            overtimeFixedRate: String(parseFloat(erpEmployee.overtime_fixed_rate?.toString() || '0')),
+            transportAllowance: String(
+              parseFloat(erpEmployee.transport_allowance?.toString() || '0')
+            ),
+            absentDeductionRate: String(
+              parseFloat(erpEmployee.absent_deduction_rate?.toString() || '0')
+            ),
+            overtimeRateMultiplier: String(
+              parseFloat(erpEmployee.overtime_rate_multiplier?.toString() || '1.5')
+            ),
+            overtimeFixedRate: String(
+              parseFloat(erpEmployee.overtime_fixed_rate?.toString() || '0')
+            ),
             // Banking information
             bankName: erpEmployee.bank_name || null,
             bankAccountNumber: erpEmployee.bank_account_number || null,
@@ -343,19 +399,35 @@ export async function POST() {
             notes: erpEmployee.notes || bio || null,
             // Legal documents
             passportNumber: erpEmployee.passport_number || null,
-            passportExpiry: erpEmployee.passport_expiry ? new Date(erpEmployee.passport_expiry).toISOString().split('T')[0] : null,
+            passportExpiry: erpEmployee.passport_expiry
+              ? new Date(erpEmployee.passport_expiry).toISOString().split('T')[0]
+              : null,
             // Licenses and certifications
             drivingLicenseNumber: erpEmployee.driving_license_number || null,
-            drivingLicenseExpiry: erpEmployee.driving_license_expiry ? new Date(erpEmployee.driving_license_expiry).toISOString().split('T')[0] : null,
-            drivingLicenseCost: String(parseFloat(erpEmployee.driving_license_cost?.toString() || '0')),
+            drivingLicenseExpiry: erpEmployee.driving_license_expiry
+              ? new Date(erpEmployee.driving_license_expiry).toISOString().split('T')[0]
+              : null,
+            drivingLicenseCost: String(
+              parseFloat(erpEmployee.driving_license_cost?.toString() || '0')
+            ),
             operatorLicenseNumber: erpEmployee.operator_license_number || null,
-            operatorLicenseExpiry: erpEmployee.operator_license_expiry ? new Date(erpEmployee.operator_license_expiry).toISOString().split('T')[0] : null,
-            operatorLicenseCost: String(parseFloat(erpEmployee.operator_license_cost?.toString() || '0')),
+            operatorLicenseExpiry: erpEmployee.operator_license_expiry
+              ? new Date(erpEmployee.operator_license_expiry).toISOString().split('T')[0]
+              : null,
+            operatorLicenseCost: String(
+              parseFloat(erpEmployee.operator_license_cost?.toString() || '0')
+            ),
             tuvCertificationNumber: erpEmployee.tuv_certification_number || null,
-            tuvCertificationExpiry: erpEmployee.tuv_certification_expiry ? new Date(erpEmployee.tuv_certification_expiry).toISOString().split('T')[0] : null,
-            tuvCertificationCost: String(parseFloat(erpEmployee.tuv_certification_cost?.toString() || '0')),
+            tuvCertificationExpiry: erpEmployee.tuv_certification_expiry
+              ? new Date(erpEmployee.tuv_certification_expiry).toISOString().split('T')[0]
+              : null,
+            tuvCertificationCost: String(
+              parseFloat(erpEmployee.tuv_certification_cost?.toString() || '0')
+            ),
             spspLicenseNumber: erpEmployee.spsp_license_number || null,
-            spspLicenseExpiry: erpEmployee.spsp_license_expiry ? new Date(erpEmployee.spsp_license_expiry).toISOString().split('T')[0] : null,
+            spspLicenseExpiry: erpEmployee.spsp_license_expiry
+              ? new Date(erpEmployee.spsp_license_expiry).toISOString().split('T')[0]
+              : null,
             spspLicenseCost: String(parseFloat(erpEmployee.spsp_license_cost?.toString() || '0')),
             // File paths
             drivingLicenseFile: erpEmployee.driving_license_file || null,
@@ -369,28 +441,34 @@ export async function POST() {
             // Operator status
             isOperator: erpEmployee.is_operator || false,
             // Access control
-            accessRestrictedUntil: erpEmployee.access_restricted_until ? new Date(erpEmployee.access_restricted_until).toISOString().split('T')[0] : null,
-            accessStartDate: erpEmployee.access_start_date ? new Date(erpEmployee.access_start_date).toISOString().split('T')[0] : null,
-            accessEndDate: erpEmployee.access_end_date ? new Date(erpEmployee.access_end_date).toISOString().split('T')[0] : null,
+            accessRestrictedUntil: erpEmployee.access_restricted_until
+              ? new Date(erpEmployee.access_restricted_until).toISOString().split('T')[0]
+              : null,
+            accessStartDate: erpEmployee.access_start_date
+              ? new Date(erpEmployee.access_start_date).toISOString().split('T')[0]
+              : null,
+            accessEndDate: erpEmployee.access_end_date
+              ? new Date(erpEmployee.access_end_date).toISOString().split('T')[0]
+              : null,
             accessRestrictionReason: erpEmployee.access_restriction_reason || null,
             // Current location
             currentLocation: erpEmployee.current_location || null,
             // Advance salary fields
             advanceSalaryEligible: erpEmployee.advance_salary_eligible !== false,
             advanceSalaryApprovedThisMonth: erpEmployee.advance_salary_approved_this_month || false,
-            updatedAt: new Date().toISOString().split('T')[0] as string
+            updatedAt: new Date().toISOString().split('T')[0] as string,
           };
 
           if (existingEmployee.length > 0) {
             const existingEmployeeData = existingEmployee[0];
             if (!existingEmployeeData) {
               console.log('Creating new employee (no existing data):', employeeData.erpnextId);
-              
+
               // Use the already transformed data directly
               const newEmployee = await db.insert(employeesTable).values(employeeData).returning();
               return { type: 'created', employee: (newEmployee as any[])[0] };
             }
-            
+
             // Check if data has changed - comprehensive comparison
             const hasChanges =
               existingEmployeeData.firstName !== firstName ||
@@ -398,20 +476,28 @@ export async function POST() {
               existingEmployeeData.lastName !== lastName ||
               existingEmployeeData.erpnextId !== employeeId ||
               existingEmployeeData.fileNumber !== fileNumber ||
-              existingEmployeeData.basicSalary?.toString() !== parseFloat(basicSalary.toString()).toString() ||
+              existingEmployeeData.basicSalary?.toString() !==
+                parseFloat(basicSalary.toString()).toString() ||
               existingEmployeeData.status !== status.toLowerCase() ||
               existingEmployeeData.email !== email ||
               existingEmployeeData.phone !== cellNumber ||
-              existingEmployeeData.dateOfBirth !== (dateOfBirth ? new Date(dateOfBirth).toISOString().split('T')[0] : null) ||
-              existingEmployeeData.hireDate !== (dateOfJoining ? new Date(dateOfJoining).toISOString().split('T')[0] : null) ||
+              existingEmployeeData.dateOfBirth !==
+                (dateOfBirth ? new Date(dateOfBirth).toISOString().split('T')[0] : null) ||
+              existingEmployeeData.hireDate !==
+                (dateOfJoining ? new Date(dateOfJoining).toISOString().split('T')[0] : null) ||
               existingEmployeeData.departmentId !== departmentId ||
               existingEmployeeData.designationId !== designationId ||
               existingEmployeeData.iqamaNumber !== iqama ||
-              existingEmployeeData.iqamaExpiry !== (iqamaExpiry ? new Date(iqamaExpiry).toISOString().split('T')[0] : null);
+              existingEmployeeData.iqamaExpiry !==
+                (iqamaExpiry ? new Date(iqamaExpiry).toISOString().split('T')[0] : null);
 
             if (hasChanges) {
               console.log('Updating existing employee:', existingEmployeeData.id);
-              const updatedEmployee = await db.update(employeesTable).set(employeeData).where(sql`id = ${existingEmployeeData.id}`).returning();
+              const updatedEmployee = await db
+                .update(employeesTable)
+                .set(employeeData)
+                .where(sql`id = ${existingEmployeeData.id}`)
+                .returning();
               return { type: 'updated', employee: updatedEmployee[0] };
             } else {
               console.log('Employee unchanged, skipping:', existingEmployeeData.id);
@@ -419,14 +505,17 @@ export async function POST() {
             }
           } else {
             console.log('Creating new employee:', employeeData.erpnextId);
-            const newEmployeeResult = await db.insert(employeesTable).values(employeeData).returning();
+            const newEmployeeResult = await db
+              .insert(employeesTable)
+              .values(employeeData)
+              .returning();
             return { type: 'created', employee: (newEmployeeResult as any[])[0] };
           }
         } catch (error) {
           console.error(`Error processing employee ${erpEmployee.name}:`, error);
           dbErrors.push({
             employee: erpEmployee.name,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
           return null;
         }
@@ -491,15 +580,14 @@ export async function POST() {
         successfulSyncs: sortedSyncedEmployees.length,
         fetchErrors: errors.length,
         syncErrors: dbErrors.length,
-      }
+      },
     });
-
   } catch (error) {
     console.error('Error syncing employees:', error);
     console.error('Error details:', {
       name: error instanceof Error ? error.name : 'Unknown',
       message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : 'No stack trace'
+      stack: error instanceof Error ? error.stack : 'No stack trace',
     });
 
     return NextResponse.json(
@@ -509,8 +597,8 @@ export async function POST() {
         error: {
           name: error instanceof Error ? error.name : 'Unknown',
           message: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : 'No stack trace'
-        }
+          stack: error instanceof Error ? error.stack : 'No stack trace',
+        },
       },
       { status: 500 }
     );

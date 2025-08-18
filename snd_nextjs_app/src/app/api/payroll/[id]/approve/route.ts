@@ -1,20 +1,15 @@
-import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { payrolls, employees } from '@/lib/drizzle/schema';
+import { employees, payrolls } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
 
-export async function POST(
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST({ params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: payrollId } = await params;
     const id = parseInt(payrollId);
 
     if (isNaN(id)) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid payroll ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: 'Invalid payroll ID' }, { status: 400 });
     }
 
     // Check if payroll exists
@@ -28,7 +23,7 @@ export async function POST(
           firstName: employees.firstName,
           lastName: employees.lastName,
           fileNumber: employees.fileNumber,
-        }
+        },
       })
       .from(payrolls)
       .leftJoin(employees, eq(payrolls.employeeId, employees.id))
@@ -39,7 +34,7 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          message: 'Payroll not found'
+          message: 'Payroll not found',
         },
         { status: 404 }
       );
@@ -52,7 +47,7 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          message: `Payroll is already ${payroll.status} and cannot be approved`
+          message: `Payroll is already ${payroll.status} and cannot be approved`,
         },
         { status: 400 }
       );
@@ -65,7 +60,7 @@ export async function POST(
         status: 'approved',
         approvedBy: 1, // Mock user ID - in real app, get from session
         approvedAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(payrolls.id, id))
       .returning();
@@ -76,16 +71,16 @@ export async function POST(
       success: true,
       data: {
         ...updatedPayroll,
-        employee: payroll.employee
+        employee: payroll.employee,
       },
-      message: 'Payroll approved successfully'
+      message: 'Payroll approved successfully',
     });
   } catch (error) {
     console.error('Error approving payroll:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Error approving payroll: ' + (error as Error).message
+        message: 'Error approving payroll: ' + (error as Error).message,
       },
       { status: 500 }
     );

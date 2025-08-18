@@ -16,14 +16,16 @@ export class NotificationService {
       description: options.message,
       duration: options.duration || 4000,
       dismissible: options.dismissible !== false,
-      action: options.actionUrl ? {
-        label: 'View',
-        onClick: () => {
-          if (typeof window !== 'undefined') {
-            window.location.href = options.actionUrl!;
+      action: options.actionUrl
+        ? {
+            label: 'View',
+            onClick: () => {
+              if (typeof window !== 'undefined') {
+                window.location.href = options.actionUrl!;
+              }
+            },
           }
-        },
-      } : undefined,
+        : undefined,
     };
 
     toast.success(options.title, toastOptions);
@@ -35,14 +37,16 @@ export class NotificationService {
       description: options.message,
       duration: options.duration || 6000,
       dismissible: options.dismissible !== false,
-      action: options.actionUrl ? {
-        label: 'View',
-        onClick: () => {
-          if (typeof window !== 'undefined') {
-            window.location.href = options.actionUrl!;
+      action: options.actionUrl
+        ? {
+            label: 'View',
+            onClick: () => {
+              if (typeof window !== 'undefined') {
+                window.location.href = options.actionUrl!;
+              }
+            },
           }
-        },
-      } : undefined,
+        : undefined,
     };
 
     toast.error(options.title, toastOptions);
@@ -54,14 +58,16 @@ export class NotificationService {
       description: options.message,
       duration: options.duration || 5000,
       dismissible: options.dismissible !== false,
-      action: options.actionUrl ? {
-        label: 'View',
-        onClick: () => {
-          if (typeof window !== 'undefined') {
-            window.location.href = options.actionUrl!;
+      action: options.actionUrl
+        ? {
+            label: 'View',
+            onClick: () => {
+              if (typeof window !== 'undefined') {
+                window.location.href = options.actionUrl!;
+              }
+            },
           }
-        },
-      } : undefined,
+        : undefined,
     };
 
     toast.warning(options.title, toastOptions);
@@ -73,14 +79,16 @@ export class NotificationService {
       description: options.message,
       duration: options.duration || 4000,
       dismissible: options.dismissible !== false,
-      action: options.actionUrl ? {
-        label: 'View',
-        onClick: () => {
-          if (typeof window !== 'undefined') {
-            window.location.href = options.actionUrl!;
+      action: options.actionUrl
+        ? {
+            label: 'View',
+            onClick: () => {
+              if (typeof window !== 'undefined') {
+                window.location.href = options.actionUrl!;
+              }
+            },
           }
-        },
-      } : undefined,
+        : undefined,
     };
 
     toast.info(options.title, toastOptions);
@@ -124,7 +132,12 @@ export class NotificationService {
   // Create approval notification in database
   static async createApprovalNotification(data: {
     userEmail: string;
-    type: 'timesheet_approval' | 'leave_approval' | 'advance_approval' | 'equipment_approval' | 'bulk_approval';
+    type:
+      | 'timesheet_approval'
+      | 'leave_approval'
+      | 'advance_approval'
+      | 'equipment_approval'
+      | 'bulk_approval';
     title: string;
     message: string;
     data?: any;
@@ -166,8 +179,8 @@ export class NotificationService {
 
   // Create timesheet approval notification
   static async createTimesheetApprovalNotification(
-    managerEmail: string, 
-    employeeName: string, 
+    managerEmail: string,
+    employeeName: string,
     week: string,
     timesheetId: string
   ) {
@@ -180,10 +193,10 @@ export class NotificationService {
         employee_name: employeeName,
         week,
         timesheet_id: timesheetId,
-        request_type: 'timesheet_approval'
+        request_type: 'timesheet_approval',
       },
       actionUrl: `/modules/timesheet-management`,
-      priority: 'high'
+      priority: 'high',
     });
   }
 
@@ -205,10 +218,10 @@ export class NotificationService {
         leave_type: leaveType,
         start_date: startDate,
         leave_request_id: leaveRequestId,
-        request_type: 'leave_approval'
+        request_type: 'leave_approval',
       },
       actionUrl: `/modules/leave-management`,
-      priority: 'medium'
+      priority: 'medium',
     });
   }
 
@@ -230,10 +243,10 @@ export class NotificationService {
         amount,
         reason,
         advance_request_id: advanceRequestId,
-        request_type: 'advance_approval'
+        request_type: 'advance_approval',
       },
       actionUrl: `/modules/payroll-management`,
-      priority: 'high'
+      priority: 'high',
     });
   }
 
@@ -253,10 +266,10 @@ export class NotificationService {
         employee_name: employeeName,
         equipment_type: equipmentType,
         equipment_request_id: equipmentRequestId,
-        request_type: 'equipment_approval'
+        request_type: 'equipment_approval',
       },
       actionUrl: `/modules/equipment-management`,
-      priority: 'medium'
+      priority: 'medium',
     });
   }
 
@@ -275,10 +288,10 @@ export class NotificationService {
       data: {
         count,
         item_type: itemType,
-        request_type: 'bulk_approval'
+        request_type: 'bulk_approval',
       },
       actionUrl,
-      priority: 'high'
+      priority: 'high',
     });
   }
 }
@@ -449,8 +462,8 @@ export const notify = {
       description: 'Click to review and approve/reject',
       action: {
         label: 'Review',
-        onClick: () => window.open('/super-admin-approvals', '_blank')
-      }
+        onClick: () => window.open('/super-admin-approvals', '_blank'),
+      },
     });
   },
 
@@ -459,8 +472,8 @@ export const notify = {
       description: `${employeeName}'s timesheet for ${week} needs your approval`,
       action: {
         label: 'Review',
-        onClick: () => window.open('/modules/timesheet-management', '_blank')
-      }
+        onClick: () => window.open('/modules/timesheet-management', '_blank'),
+      },
     });
   },
 
@@ -469,8 +482,8 @@ export const notify = {
       description: `${employeeName} requested ${leaveType} leave starting ${startDate}`,
       action: {
         label: 'Review',
-        onClick: () => window.open('/modules/leave-management', '_blank')
-      }
+        onClick: () => window.open('/modules/leave-management', '_blank'),
+      },
     });
   },
 
@@ -479,8 +492,8 @@ export const notify = {
       description: `${employeeName} requested $${amount} advance for ${reason}`,
       action: {
         label: 'Review',
-        onClick: () => window.open('/modules/payroll-management', '_blank')
-      }
+        onClick: () => window.open('/modules/payroll-management', '_blank'),
+      },
     });
   },
 
@@ -489,23 +502,23 @@ export const notify = {
       description: `${employeeName} requested ${equipmentType}`,
       action: {
         label: 'Review',
-        onClick: () => window.open('/modules/equipment-management', '_blank')
-      }
+        onClick: () => window.open('/modules/equipment-management', '_blank'),
+      },
     });
   },
 
   // Approval status updates
   approvalGranted: (itemType: string, itemName: string) => {
     toast.success(`Approval Granted`, {
-      description: `Your ${itemType} "${itemName}" has been approved!`
+      description: `Your ${itemType} "${itemName}" has been approved!`,
     });
   },
 
   approvalRejected: (itemType: string, itemName: string, reason?: string) => {
     toast.error(`Approval Rejected`, {
-      description: reason 
+      description: reason
         ? `Your ${itemType} "${itemName}" was rejected: ${reason}`
-        : `Your ${itemType} "${itemName}" was rejected`
+        : `Your ${itemType} "${itemName}" was rejected`,
     });
   },
 
@@ -516,16 +529,16 @@ export const notify = {
         description: `You have 1 new ${itemType} request waiting for approval`,
         action: {
           label: 'Review',
-          onClick: () => window.open('/super-admin-approvals', '_blank')
-        }
+          onClick: () => window.open('/super-admin-approvals', '_blank'),
+        },
       });
     } else {
       toast.info(`New Approval Requests`, {
         description: `You have ${count} new ${itemType} requests waiting for approval`,
         action: {
           label: 'Review All',
-          onClick: () => window.open('/super-admin-approvals', '_blank')
-        }
+          onClick: () => window.open('/super-admin-approvals', '_blank'),
+        },
       });
     }
   },
@@ -536,8 +549,8 @@ export const notify = {
       description: `${count} ${itemType} items need your approval`,
       action: {
         label: 'Review All',
-        onClick: () => window.open('/super-admin-approvals', '_blank')
-      }
+        onClick: () => window.open('/super-admin-approvals', '_blank'),
+      },
     });
-  }
+  },
 };

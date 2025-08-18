@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { companies } from '@/lib/drizzle/schema';
-import { eq, and, ne } from 'drizzle-orm';
+import { and, eq, ne } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Helper function to format company data for frontend
 function formatCompanyForFrontend(company: any) {
@@ -18,35 +18,28 @@ function formatCompanyForFrontend(company: any) {
   };
 }
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: companyId } = await params;
     const id = parseInt(companyId);
-    
+
     if (isNaN(id)) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Invalid company ID'
+          message: 'Invalid company ID',
         },
         { status: 400 }
       );
     }
 
-    const companyRows = await db
-      .select()
-      .from(companies)
-      .where(eq(companies.id, id))
-      .limit(1);
+    const companyRows = await db.select().from(companies).where(eq(companies.id, id)).limit(1);
 
     if (companyRows.length === 0) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Company not found'
+          message: 'Company not found',
         },
         { status: 404 }
       );
@@ -57,33 +50,30 @@ export async function GET(
     return NextResponse.json({
       success: true,
       data: formatCompanyForFrontend(company),
-      message: 'Company retrieved successfully'
+      message: 'Company retrieved successfully',
     });
   } catch (error) {
     console.error('Error in GET /api/companies/[id]:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to fetch company: ' + (error as Error).message
+        message: 'Failed to fetch company: ' + (error as Error).message,
       },
       { status: 500 }
     );
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: companyId } = await params;
     const id = parseInt(companyId);
-    
+
     if (isNaN(id)) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Invalid company ID'
+          message: 'Invalid company ID',
         },
         { status: 400 }
       );
@@ -96,7 +86,7 @@ export async function PUT(
       return NextResponse.json(
         {
           success: false,
-          message: 'Company name is required'
+          message: 'Company name is required',
         },
         { status: 400 }
       );
@@ -113,7 +103,7 @@ export async function PUT(
       return NextResponse.json(
         {
           success: false,
-          message: 'Company not found'
+          message: 'Company not found',
         },
         { status: 404 }
       );
@@ -123,19 +113,14 @@ export async function PUT(
     const duplicateCompanyRows = await db
       .select()
       .from(companies)
-      .where(
-        and(
-          eq(companies.name, body.name),
-          ne(companies.id, id)
-        )
-      )
+      .where(and(eq(companies.name, body.name), ne(companies.id, id)))
       .limit(1);
 
     if (duplicateCompanyRows.length > 0) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Company with this name already exists'
+          message: 'Company with this name already exists',
         },
         { status: 400 }
       );
@@ -151,7 +136,7 @@ export async function PUT(
         phone: body.phone,
         logo: body.logo,
         legalDocument: body.legal_document,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       })
       .where(eq(companies.id, id))
       .returning();
@@ -161,14 +146,14 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       message: 'Company updated successfully',
-      data: formatCompanyForFrontend(updatedCompany)
+      data: formatCompanyForFrontend(updatedCompany),
     });
   } catch (error) {
     console.error('Error in PUT /api/companies/[id]:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to update company: ' + (error as Error).message
+        message: 'Failed to update company: ' + (error as Error).message,
       },
       { status: 500 }
     );
@@ -182,12 +167,12 @@ export async function DELETE(
   try {
     const { id: companyId } = await params;
     const id = parseInt(companyId);
-    
+
     if (isNaN(id)) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Invalid company ID'
+          message: 'Invalid company ID',
         },
         { status: 400 }
       );
@@ -204,29 +189,27 @@ export async function DELETE(
       return NextResponse.json(
         {
           success: false,
-          message: 'Company not found'
+          message: 'Company not found',
         },
         { status: 404 }
       );
     }
 
     // Delete company using Drizzle
-    await db
-      .delete(companies)
-      .where(eq(companies.id, id));
+    await db.delete(companies).where(eq(companies.id, id));
 
     return NextResponse.json({
       success: true,
-      message: 'Company deleted successfully'
+      message: 'Company deleted successfully',
     });
   } catch (error) {
     console.error('Error in DELETE /api/companies/[id]:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to delete company: ' + (error as Error).message
+        message: 'Failed to delete company: ' + (error as Error).message,
       },
       { status: 500 }
     );
   }
-} 
+}

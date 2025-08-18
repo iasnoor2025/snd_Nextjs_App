@@ -1,33 +1,46 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
-  BarChart3,
-  Download,
-  FileText,
-  TrendingUp,
-  TrendingDown,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import apiService from '@/lib/api';
+import { format } from 'date-fns';
+import {
+  Activity,
   AlertTriangle,
+  BarChart3,
+  Calendar,
   CheckCircle,
   Clock,
   DollarSign,
-  Users,
-  Target,
-  Calendar,
+  Download,
+  FileText,
   PieChart,
-  Activity
+  Target,
+  TrendingDown,
+  TrendingUp,
+  Users,
 } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import apiService from '@/lib/api';
 
 interface Project {
   id: string;
@@ -112,11 +125,11 @@ export default function ProjectReportsPage() {
   const fetchReportData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch project details
       const projectRes = await apiService.get<{ data: Project }>(`/projects/${projectId}`);
       setProject(projectRes.data);
-      
+
       // TODO: Project reports endpoint doesn't exist yet, so we'll set empty data
       // Implement this when the endpoint becomes available
       setReportData({
@@ -124,7 +137,7 @@ export default function ProjectReportsPage() {
         cost: { planned: 0, actual: 0, variance: 0, byCategory: [] },
         resources: { total: 0, allocated: 0, utilization: 0, byType: [] },
         risks: [],
-        timeline: { onSchedule: 0, delayed: 0, completed: 0, milestones: [] }
+        timeline: { onSchedule: 0, delayed: 0, completed: 0, milestones: [] },
       });
     } catch (error) {
       console.error('Error fetching report data:', error);
@@ -280,7 +293,8 @@ export default function ProjectReportsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {reportData.timeline.onSchedule}/{reportData.timeline.onSchedule + reportData.timeline.delayed}
+              {reportData.timeline.onSchedule}/
+              {reportData.timeline.onSchedule + reportData.timeline.delayed}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
               {reportData.timeline.delayed} delayed tasks
@@ -310,7 +324,7 @@ export default function ProjectReportsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {reportData.progress.byPhase.map((phase) => (
+                  {reportData.progress.byPhase.map(phase => (
                     <div key={phase.phase} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="font-medium">{phase.phase}</span>
@@ -336,7 +350,7 @@ export default function ProjectReportsPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {reportData.cost.byCategory.map((category) => (
+                  {reportData.cost.byCategory.map(category => (
                     <div key={category.category} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="font-medium">{category.category}</span>
@@ -385,7 +399,10 @@ export default function ProjectReportsPage() {
                   </div>
                   <div className="text-center p-4 border rounded">
                     <div className="text-2xl font-bold text-blue-600">
-                      {reportData.progress.byPhase.filter(p => p.progress > 0 && p.progress < 100).length}
+                      {
+                        reportData.progress.byPhase.filter(p => p.progress > 0 && p.progress < 100)
+                          .length
+                      }
                     </div>
                     <div className="text-sm text-muted-foreground">In Progress</div>
                   </div>
@@ -408,7 +425,7 @@ export default function ProjectReportsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {reportData.progress.byPhase.map((phase) => (
+                    {reportData.progress.byPhase.map(phase => (
                       <TableRow key={phase.phase}>
                         <TableCell className="font-medium">{phase.phase}</TableCell>
                         <TableCell>
@@ -419,8 +436,20 @@ export default function ProjectReportsPage() {
                         </TableCell>
                         <TableCell>{phase.tasks}</TableCell>
                         <TableCell>
-                          <Badge className={getStatusColor(phase.progress === 100 ? 'completed' : phase.progress > 0 ? 'in_progress' : 'pending')}>
-                            {phase.progress === 100 ? 'Completed' : phase.progress > 0 ? 'In Progress' : 'Pending'}
+                          <Badge
+                            className={getStatusColor(
+                              phase.progress === 100
+                                ? 'completed'
+                                : phase.progress > 0
+                                  ? 'in_progress'
+                                  : 'pending'
+                            )}
+                          >
+                            {phase.progress === 100
+                              ? 'Completed'
+                              : phase.progress > 0
+                                ? 'In Progress'
+                                : 'Pending'}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -456,8 +485,11 @@ export default function ProjectReportsPage() {
                     <div className="text-sm text-muted-foreground">Actual Cost</div>
                   </div>
                   <div className="text-center p-4 border rounded">
-                    <div className={`text-2xl font-bold ${reportData.cost.variance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {reportData.cost.variance >= 0 ? '+' : ''}${reportData.cost.variance.toLocaleString()}
+                    <div
+                      className={`text-2xl font-bold ${reportData.cost.variance >= 0 ? 'text-red-600' : 'text-green-600'}`}
+                    >
+                      {reportData.cost.variance >= 0 ? '+' : ''}$
+                      {reportData.cost.variance.toLocaleString()}
                     </div>
                     <div className="text-sm text-muted-foreground">Variance</div>
                   </div>
@@ -475,19 +507,25 @@ export default function ProjectReportsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {reportData.cost.byCategory.map((category) => (
+                    {reportData.cost.byCategory.map(category => (
                       <TableRow key={category.category}>
                         <TableCell className="font-medium">{category.category}</TableCell>
                         <TableCell>${category.planned.toLocaleString()}</TableCell>
                         <TableCell>${category.actual.toLocaleString()}</TableCell>
                         <TableCell>
-                          <div className={`flex items-center ${category.variance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          <div
+                            className={`flex items-center ${category.variance >= 0 ? 'text-red-600' : 'text-green-600'}`}
+                          >
                             {category.variance >= 0 ? '+' : ''}${category.variance.toLocaleString()}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className={`flex items-center ${category.variance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
-                            {category.planned > 0 ? `${((category.variance / category.planned) * 100).toFixed(1)}%` : 'N/A'}
+                          <div
+                            className={`flex items-center ${category.variance >= 0 ? 'text-red-600' : 'text-green-600'}`}
+                          >
+                            {category.planned > 0
+                              ? `${((category.variance / category.planned) * 100).toFixed(1)}%`
+                              : 'N/A'}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -541,7 +579,7 @@ export default function ProjectReportsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {reportData.resources.byType.map((resource) => (
+                    {reportData.resources.byType.map(resource => (
                       <TableRow key={resource.type}>
                         <TableCell className="font-medium">{resource.type}</TableCell>
                         <TableCell>{resource.count}</TableCell>
@@ -594,7 +632,7 @@ export default function ProjectReportsPage() {
 
                 {/* Risk Details */}
                 <div className="space-y-4">
-                  {reportData.risks.map((risk) => (
+                  {reportData.risks.map(risk => (
                     <div key={risk.id} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
@@ -603,9 +641,7 @@ export default function ProjectReportsPage() {
                             <Badge className={getSeverityColor(risk.severity)}>
                               {risk.severity}
                             </Badge>
-                            <Badge variant="outline">
-                              {risk.status}
-                            </Badge>
+                            <Badge variant="outline">{risk.status}</Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mb-3">{risk.description}</p>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -621,7 +657,9 @@ export default function ProjectReportsPage() {
                           {risk.mitigation && (
                             <div className="mt-3">
                               <span className="font-medium text-sm">Mitigation: </span>
-                              <span className="text-sm text-muted-foreground">{risk.mitigation}</span>
+                              <span className="text-sm text-muted-foreground">
+                                {risk.mitigation}
+                              </span>
                             </div>
                           )}
                         </div>

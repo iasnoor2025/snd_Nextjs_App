@@ -1,13 +1,5 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Progress } from '@/components/ui/progress';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,41 +11,56 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import apiService from '@/lib/api';
+import { format } from 'date-fns';
+import {
+  AlertCircle,
+  ArrowLeft,
   Building2,
-  Users,
-  FileText,
+  CheckCircle,
   Clock,
   DollarSign,
-  Plus,
   Edit,
-  Trash2,
-  Search,
+  FileText,
   Filter,
-  ArrowLeft,
-  CheckCircle,
-  AlertCircle,
-  TrendingUp,
-  TrendingDown,
-  User,
-  Wrench,
-  Package,
   Fuel,
+  Package,
+  Plus,
   Receipt,
-  Target
+  Search,
+  Target,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  User,
+  Users,
+  Wrench,
 } from 'lucide-react';
-import { toast } from 'sonner';
-import { format } from 'date-fns';
 import Link from 'next/link';
-import apiService from '@/lib/api';
+import { useParams } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import {
-  ManpowerDialog,
   EquipmentDialog,
-  MaterialDialog,
-  FuelDialog,
   ExpenseDialog,
+  FuelDialog,
+  ManpowerDialog,
+  MaterialDialog,
   TaskDialog,
-  TaskList
+  TaskList,
 } from './components';
 import { ProjectTask } from './components/TaskList';
 
@@ -167,7 +174,7 @@ export default function ProjectResourcesPage() {
 
   // Track the resource being edited
   const [editingResource, setEditingResource] = useState<ProjectResource | null>(null);
-  
+
   // Delete confirmation state
   const [deleteResource, setDeleteResource] = useState<ProjectResource | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -185,14 +192,20 @@ export default function ProjectResourcesPage() {
       setProject(projectResponse.data);
 
       // Fetch project resources
-      const resourcesResponse = await apiService.getProjectResources(projectId) as any;
-      
+      const resourcesResponse = (await apiService.getProjectResources(projectId)) as any;
+
       if (resourcesResponse.success) {
         // Transform the API response to match our frontend structure
         const transformedResources = (resourcesResponse.data || []).map((resource: any) => ({
           id: resource.id.toString(),
           type: resource.type,
-          name: resource.name || resource.title || resource.worker_name || resource.equipment_name || resource.material_name || 'Unnamed Resource',
+          name:
+            resource.name ||
+            resource.title ||
+            resource.worker_name ||
+            resource.equipment_name ||
+            resource.material_name ||
+            'Unnamed Resource',
           description: resource.description,
           quantity: resource.quantity,
           unit_cost: resource.unitCost ? parseFloat(resource.unitCost) : undefined,
@@ -203,12 +216,14 @@ export default function ProjectResourcesPage() {
 
           // Manpower specific fields
           employee_id: resource.employeeId?.toString(),
-          employee: resource.employee ? {
-            id: resource.employee.id.toString(),
-            first_name: resource.employee.first_name,
-            last_name: resource.employee.last_name,
-            full_name: `${resource.employee.first_name} ${resource.employee.last_name}`
-          } : undefined,
+          employee: resource.employee
+            ? {
+                id: resource.employee.id.toString(),
+                first_name: resource.employee.first_name,
+                last_name: resource.employee.last_name,
+                full_name: `${resource.employee.first_name} ${resource.employee.last_name}`,
+              }
+            : undefined,
           employee_name: resource.employeeName,
           employee_file_number: resource.employeeFileNumber,
           worker_name: resource.workerName,
@@ -226,7 +241,9 @@ export default function ProjectResourcesPage() {
           hourly_rate: resource.hourlyRate ? parseFloat(resource.hourlyRate) : undefined,
           hours_worked: resource.hoursWorked ? parseFloat(resource.hoursWorked) : undefined,
           usage_hours: resource.usageHours ? parseFloat(resource.usageHours) : undefined,
-          maintenance_cost: resource.maintenanceCost ? parseFloat(resource.maintenanceCost) : undefined,
+          maintenance_cost: resource.maintenanceCost
+            ? parseFloat(resource.maintenanceCost)
+            : undefined,
 
           // Material specific fields
           material_name: resource.materialName,
@@ -249,20 +266,21 @@ export default function ProjectResourcesPage() {
           priority: resource.priority,
           due_date: resource.dueDate,
           completion_percentage: resource.completionPercentage,
-          assigned_to: resource.assigned_to ? {
-            id: resource.assigned_to.id.toString(),
-            name: `${resource.assigned_to.first_name} ${resource.assigned_to.last_name}`
-          } : undefined,
+          assigned_to: resource.assigned_to
+            ? {
+                id: resource.assigned_to.id.toString(),
+                name: `${resource.assigned_to.first_name} ${resource.assigned_to.last_name}`,
+              }
+            : undefined,
           assigned_to_id: resource.assignedToId?.toString(),
 
           created_at: resource.createdAt,
-          updated_at: resource.updatedAt
+          updated_at: resource.updatedAt,
         }));
         setResources(transformedResources);
       } else {
         setResources([]);
       }
-
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to fetch project data');
@@ -420,7 +438,10 @@ export default function ProjectResourcesPage() {
   };
 
   const calculateTotalCost = (type: ResourceType) => {
-    return filterResourcesByType(type).reduce((sum, resource) => sum + (resource.total_cost || 0), 0);
+    return filterResourcesByType(type).reduce(
+      (sum, resource) => sum + (resource.total_cost || 0),
+      0
+    );
   };
 
   if (loading) {
@@ -534,7 +555,8 @@ export default function ProjectResourcesPage() {
           <CardContent>
             <div className="text-2xl font-bold">{getResourceCount('tasks')}</div>
             <p className="text-xs text-muted-foreground">
-              {filterResourcesByType('tasks').filter(t => t.status === 'completed').length} completed
+              {filterResourcesByType('tasks').filter(t => t.status === 'completed').length}{' '}
+              completed
             </p>
           </CardContent>
         </Card>
@@ -569,7 +591,7 @@ export default function ProjectResourcesPage() {
           </TabsTrigger>
         </TabsList>
 
-        {(['manpower', 'equipment', 'material', 'fuel', 'expense'] as ResourceType[]).map((type) => (
+        {(['manpower', 'equipment', 'material', 'fuel', 'expense'] as ResourceType[]).map(type => (
           <TabsContent key={type} value={type} className="space-y-4">
             <Card>
               <CardHeader>
@@ -579,9 +601,7 @@ export default function ProjectResourcesPage() {
                       {getResourceTypeIcon(type)}
                       <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
                     </CardTitle>
-                    <CardDescription>
-                      Manage {type} resources for this project
-                    </CardDescription>
+                    <CardDescription>Manage {type} resources for this project</CardDescription>
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className="text-sm text-muted-foreground">
@@ -652,13 +672,22 @@ export default function ProjectResourcesPage() {
                   <TableBody>
                     {filterResourcesByType(type).length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={
-                          type === 'manpower' ? 8 : 
-                          type === 'equipment' ? 8 : 
-                          type === 'material' ? 6 : 
-                          type === 'fuel' ? 5 : 
-                          type === 'expense' ? 4 : 4
-                        } className="text-center py-8">
+                        <TableCell
+                          colSpan={
+                            type === 'manpower'
+                              ? 8
+                              : type === 'equipment'
+                                ? 8
+                                : type === 'material'
+                                  ? 6
+                                  : type === 'fuel'
+                                    ? 5
+                                    : type === 'expense'
+                                      ? 4
+                                      : 4
+                          }
+                          className="text-center py-8"
+                        >
                           <div className="flex flex-col items-center space-y-2">
                             {getResourceTypeIcon(type)}
                             <p className="text-muted-foreground">No {type} resources found</p>
@@ -670,7 +699,7 @@ export default function ProjectResourcesPage() {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filterResourcesByType(type).map((resource) => (
+                      filterResourcesByType(type).map(resource => (
                         <TableRow key={resource.id}>
                           {type === 'manpower' ? (
                             <>
@@ -680,51 +709,59 @@ export default function ProjectResourcesPage() {
                                   {resource.employee_file_number || '-'}
                                 </div>
                               </TableCell>
-                              
+
                               {/* Employee Name Column */}
                               <TableCell>
                                 <div className="flex items-center gap-2">
                                   <div className="font-medium">
-                                    {resource.employee_name ? resource.employee_name : (resource.name || resource.title)}
+                                    {resource.employee_name
+                                      ? resource.employee_name
+                                      : resource.name || resource.title}
                                   </div>
-                                  {(resource.employee_id || resource.employee_name || resource.employee_file_number) ? (
-                                    <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
+                                  {resource.employee_id ||
+                                  resource.employee_name ||
+                                  resource.employee_file_number ? (
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-xs bg-blue-100 text-blue-800"
+                                    >
                                       Internal
                                     </Badge>
                                   ) : resource.worker_name ? (
-                                    <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-xs bg-orange-100 text-orange-800"
+                                    >
                                       External
                                     </Badge>
                                   ) : null}
                                 </div>
                               </TableCell>
-                              
+
                               {/* Job Column */}
                               <TableCell>
-                                <div className="text-sm">
-                                  {resource.job_title || '-'}
-                                </div>
+                                <div className="text-sm">{resource.job_title || '-'}</div>
                               </TableCell>
-                              
+
                               {/* Rates Column */}
                               <TableCell>
                                 <div className="text-sm">
                                   {resource.daily_rate ? `SAR ${resource.daily_rate}/day` : '-'}
                                 </div>
                               </TableCell>
-                              
+
                               {/* Joining Date Column */}
                               <TableCell>
                                 <div className="text-sm">
-                                  {resource.start_date ? new Date(resource.start_date).toLocaleDateString() : '-'}
+                                  {resource.start_date
+                                    ? new Date(resource.start_date).toLocaleDateString()
+                                    : '-'}
                                 </div>
                               </TableCell>
-                              
+
                               {/* Days Column */}
                               <TableCell>
-                                <div className="text-sm">
-                                  {resource.total_days || '-'}
-                                </div>
+                                <div className="text-sm">{resource.total_days || '-'}</div>
                               </TableCell>
                             </>
                           ) : type === 'equipment' ? (
@@ -735,35 +772,35 @@ export default function ProjectResourcesPage() {
                                   {resource.equipment_name || resource.name || '-'}
                                 </div>
                               </TableCell>
-                              
+
                               {/* Operator Column */}
                               <TableCell>
-                                <div className="text-sm">
-                                  {resource.operator_name || '-'}
-                                </div>
+                                <div className="text-sm">{resource.operator_name || '-'}</div>
                               </TableCell>
-                              
+
                               {/* Start Date Column */}
                               <TableCell>
                                 <div className="text-sm">
-                                  {resource.start_date ? new Date(resource.start_date).toLocaleDateString() : '-'}
+                                  {resource.start_date
+                                    ? new Date(resource.start_date).toLocaleDateString()
+                                    : '-'}
                                 </div>
                               </TableCell>
-                              
+
                               {/* End Date Column */}
                               <TableCell>
                                 <div className="text-sm">
-                                  {resource.end_date ? new Date(resource.end_date).toLocaleDateString() : '-'}
+                                  {resource.end_date
+                                    ? new Date(resource.end_date).toLocaleDateString()
+                                    : '-'}
                                 </div>
                               </TableCell>
-                              
+
                               {/* Usage Hours Column */}
                               <TableCell>
-                                <div className="text-sm">
-                                  {resource.usage_hours || '-'}
-                                </div>
+                                <div className="text-sm">{resource.usage_hours || '-'}</div>
                               </TableCell>
-                              
+
                               {/* Hourly Rate Column */}
                               <TableCell>
                                 <div className="text-sm">
@@ -779,21 +816,17 @@ export default function ProjectResourcesPage() {
                                   {resource.material_name || resource.name || '-'}
                                 </div>
                               </TableCell>
-                              
+
                               {/* Unit Column */}
                               <TableCell>
-                                <div className="text-sm">
-                                  {resource.unit || '-'}
-                                </div>
+                                <div className="text-sm">{resource.unit || '-'}</div>
                               </TableCell>
-                              
+
                               {/* Quantity Column */}
                               <TableCell>
-                                <div className="text-sm">
-                                  {resource.quantity || '-'}
-                                </div>
+                                <div className="text-sm">{resource.quantity || '-'}</div>
                               </TableCell>
-                              
+
                               {/* Unit Price Column */}
                               <TableCell>
                                 <div className="text-sm">
@@ -805,22 +838,20 @@ export default function ProjectResourcesPage() {
                             <>
                               {/* Fuel Type Column */}
                               <TableCell>
-                                <div className="font-medium">
-                                  {resource.fuel_type || '-'}
-                                </div>
+                                <div className="font-medium">{resource.fuel_type || '-'}</div>
                               </TableCell>
-                              
+
                               {/* Liters Column */}
                               <TableCell>
-                                <div className="text-sm">
-                                  {resource.liters || '-'}
-                                </div>
+                                <div className="text-sm">{resource.liters || '-'}</div>
                               </TableCell>
-                              
+
                               {/* Price Per Liter Column */}
                               <TableCell>
                                 <div className="text-sm">
-                                  {resource.price_per_liter ? `SAR ${resource.price_per_liter}` : '-'}
+                                  {resource.price_per_liter
+                                    ? `SAR ${resource.price_per_liter}`
+                                    : '-'}
                                 </div>
                               </TableCell>
                             </>
@@ -828,11 +859,9 @@ export default function ProjectResourcesPage() {
                             <>
                               {/* Category Column */}
                               <TableCell>
-                                <div className="font-medium">
-                                  {resource.category || '-'}
-                                </div>
+                                <div className="font-medium">{resource.category || '-'}</div>
                               </TableCell>
-                              
+
                               {/* Description Column */}
                               <TableCell>
                                 <div className="text-sm">
@@ -848,16 +877,14 @@ export default function ProjectResourcesPage() {
                                   {resource.name || resource.title || '-'}
                                 </div>
                               </TableCell>
-                              
+
                               {/* Description Column */}
                               <TableCell>
-                                <div className="text-sm">
-                                  {resource.description || '-'}
-                                </div>
+                                <div className="text-sm">{resource.description || '-'}</div>
                               </TableCell>
                             </>
                           )}
-                          
+
                           {/* Cost Column - Common for all types */}
                           <TableCell>
                             <div className="text-sm font-medium">
@@ -903,9 +930,7 @@ export default function ProjectResourcesPage() {
                     <Target className="h-5 w-5 text-blue-600" />
                     <span>Tasks</span>
                   </CardTitle>
-                  <CardDescription>
-                    Manage tasks for this project
-                  </CardDescription>
+                  <CardDescription>Manage tasks for this project</CardDescription>
                 </div>
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-muted-foreground">
@@ -931,15 +956,15 @@ export default function ProjectResourcesPage() {
                   completion_percentage: resource.completion_percentage || 0,
                   assigned_to: resource.assigned_to || null,
                   created_at: resource.created_at,
-                  updated_at: resource.updated_at
+                  updated_at: resource.updated_at,
                 }))}
-                onEdit={(task) => {
+                onEdit={task => {
                   const resource = resources.find(r => r.id === task.id);
                   if (resource) {
                     handleEditResource(resource);
                   }
                 }}
-                onDelete={(task) => {
+                onDelete={task => {
                   const resource = resources.find(r => r.id === task.id);
                   if (resource) {
                     handleDeleteResource(resource);
@@ -1040,13 +1065,13 @@ export default function ProjectResourcesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Resource</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{deleteResource?.name || 'this resource'}"? 
-              This action cannot be undone.
+              Are you sure you want to delete "{deleteResource?.name || 'this resource'}"? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmDelete}
               className="bg-red-600 hover:bg-red-700 text-white"
             >

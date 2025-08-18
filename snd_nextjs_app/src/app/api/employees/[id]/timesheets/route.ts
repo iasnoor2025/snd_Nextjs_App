@@ -1,14 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/db';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
-import { timesheets, employeeAssignments, users } from '@/lib/drizzle/schema';
-import { eq, gte, lte, asc, and } from 'drizzle-orm';
+import { employeeAssignments, timesheets, users } from '@/lib/drizzle/schema';
+import { and, asc, eq, gte, lte } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
@@ -22,19 +19,16 @@ export async function GET(
     }
 
     const resolvedParams = await params;
-    
+
     if (!resolvedParams || !resolvedParams.id) {
       console.error('Invalid params received:', resolvedParams);
-      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
-    
+
     const { id } = resolvedParams;
     const employeeId = parseInt(id);
     if (isNaN(employeeId)) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid employee ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: 'Invalid employee ID' }, { status: 400 });
     }
 
     // Fetch timesheets for the employee within the date range
@@ -54,16 +48,16 @@ export async function GET(
         assignment: {
           id: employeeAssignments.id,
           name: employeeAssignments.name,
-          type: employeeAssignments.type
+          type: employeeAssignments.type,
         },
         approvedBy: {
           id: users.id,
-          name: users.name
+          name: users.name,
         },
         submittedAt: timesheets.submittedAt,
         approvedAt: timesheets.approvedAt,
         createdAt: timesheets.createdAt,
-        updatedAt: timesheets.updatedAt
+        updatedAt: timesheets.updatedAt,
       })
       .from(timesheets)
       .leftJoin(employeeAssignments, eq(timesheets.assignmentId, employeeAssignments.id))
@@ -95,73 +89,68 @@ export async function GET(
       submitted_at: timesheet.submittedAt,
       approved_at: timesheet.approvedAt,
       created_at: timesheet.createdAt,
-      updated_at: timesheet.updatedAt
+      updated_at: timesheet.updatedAt,
     }));
 
     return NextResponse.json({
       success: true,
       data: formattedTimesheets,
-      message: 'Timesheets retrieved successfully'
+      message: 'Timesheets retrieved successfully',
     });
-
   } catch (error) {
     console.error('Error in GET /api/employees/[id]/timesheets:', error);
-    return NextResponse.json(
-      { success: false, message: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const resolvedParams = await params;
-    
+
     if (!resolvedParams || !resolvedParams.id) {
       console.error('Invalid params received:', resolvedParams);
-      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
-    
+
     const { id } = resolvedParams;
     const employeeId = parseInt(id);
     const body = await request.json();
 
     if (!employeeId) {
-      return NextResponse.json(
-        { error: "Invalid employee ID" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
 
     // Create real timesheet in database using Drizzle
-    const timesheetRows = await db.insert(timesheets).values({
-      employeeId: employeeId,
-      date: new Date(body.date).toISOString(),
-      startTime: body.start_time ? new Date(`2000-01-01T${body.start_time}`).toISOString() : new Date(body.date).toISOString(),
-      endTime: body.end_time ? new Date(`2000-01-01T${body.end_time}`).toISOString() : null,
-      hoursWorked: parseFloat(body.hours_worked || 0).toString(),
-      overtimeHours: parseFloat(body.overtime_hours || 0).toString(),
-      status: body.status || 'draft',
-      description: body.description || '',
-      tasks: body.tasks || '',
-      projectId: body.project_id || null,
-      rentalId: body.rental_id || null,
-      assignmentId: body.assignment_id || null,
-      submittedAt: body.status === 'submitted' ? new Date().toISOString() : null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    }).returning();
+    const timesheetRows = await db
+      .insert(timesheets)
+      .values({
+        employeeId: employeeId,
+        date: new Date(body.date).toISOString(),
+        startTime: body.start_time
+          ? new Date(`2000-01-01T${body.start_time}`).toISOString()
+          : new Date(body.date).toISOString(),
+        endTime: body.end_time ? new Date(`2000-01-01T${body.end_time}`).toISOString() : null,
+        hoursWorked: parseFloat(body.hours_worked || 0).toString(),
+        overtimeHours: parseFloat(body.overtime_hours || 0).toString(),
+        status: body.status || 'draft',
+        description: body.description || '',
+        tasks: body.tasks || '',
+        projectId: body.project_id || null,
+        rentalId: body.rental_id || null,
+        assignmentId: body.assignment_id || null,
+        submittedAt: body.status === 'submitted' ? new Date().toISOString() : null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .returning();
 
     const timesheet = timesheetRows[0];
-    
+
     if (!timesheet) {
       return NextResponse.json(
         { success: false, message: 'Failed to create timesheet' },
@@ -184,14 +173,14 @@ export async function POST(
         description: timesheet.description,
         tasks: timesheet.tasks,
         created_at: timesheet.createdAt,
-      }
+      },
     });
   } catch (error) {
     console.error('Error in POST /api/employees/[id]/timesheets:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to create timesheet: ' + (error as Error).message
+        message: 'Failed to create timesheet: ' + (error as Error).message,
       },
       { status: 500 }
     );

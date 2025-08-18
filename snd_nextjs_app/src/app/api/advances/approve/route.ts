@@ -1,11 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { withPermission } from '@/lib/rbac/api-middleware';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { advancePayments, employees, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-
-
 
 // POST /api/advances/approve - Approve advance at specific stage
 export const POST = withPermission(
@@ -27,8 +25,8 @@ export const POST = withPermission(
               id: users.id,
               name: users.name,
               email: users.email,
-            } as any
-          }
+            } as any,
+          },
         })
         .from(advancePayments)
         .leftJoin(employees, eq(advancePayments.employeeId, employees.id))
@@ -41,7 +39,7 @@ export const POST = withPermission(
       }
 
       const advance = advanceRows[0];
-      
+
       if (!advance) {
         return NextResponse.json({ error: 'Advance not found' }, { status: 404 });
       }
@@ -58,7 +56,7 @@ export const POST = withPermission(
 
       switch (approvalStage) {
         case 'manager':
-          canApprove = advance.status === 'pending'; 
+          canApprove = advance.status === 'pending';
           newStatus = 'manager_approved';
           break;
         case 'hr':
@@ -72,9 +70,12 @@ export const POST = withPermission(
       }
 
       if (!canApprove) {
-        return NextResponse.json({
-          error: `Advance cannot be approved at ${approvalStage} stage. Current status: ${advance.status}`
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            error: `Advance cannot be approved at ${approvalStage} stage. Current status: ${advance.status}`,
+          },
+          { status: 400 }
+        );
       }
 
       // Update advance with approval using Drizzle
@@ -108,7 +109,7 @@ export const POST = withPermission(
         .returning();
 
       const updatedAdvance = updatedAdvanceRows[0];
-      
+
       if (!updatedAdvance) {
         return NextResponse.json({ error: 'Failed to update advance' }, { status: 500 });
       }
@@ -123,7 +124,7 @@ export const POST = withPermission(
             id: users.id,
             name: users.name,
             email: users.email,
-          }
+          },
         })
         .from(employees)
         .leftJoin(users, eq(employees.userId, users.id))
@@ -145,29 +146,27 @@ export const POST = withPermission(
         financeApprovalBy: updatedAdvance.financeApprovalBy,
         financeApprovalAt: updatedAdvance.financeApprovalAt,
         financeApprovalNotes: updatedAdvance.financeApprovalNotes,
-        employee: employee ? {
-          id: employee.id,
-          first_name: employee.firstName,
-          last_name: employee.lastName,
-          user: employee.user
-        } : null
+        employee: employee
+          ? {
+              id: employee.id,
+              first_name: employee.firstName,
+              last_name: employee.lastName,
+              user: employee.user,
+            }
+          : null,
       };
 
       return NextResponse.json({
         message: `Advance approved at ${approvalStage} stage`,
-        advance: advanceWithEmployee
+        advance: advanceWithEmployee,
       });
-
     } catch (error) {
       console.error('Error approving advance:', error);
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
   },
   {
     action: 'approve',
-    subject: 'Advance'
+    subject: 'Advance',
   }
-); 
+);

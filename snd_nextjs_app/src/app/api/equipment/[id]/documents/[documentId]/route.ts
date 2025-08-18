@@ -1,20 +1,18 @@
-import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { media } from '@/lib/drizzle/schema';
-import { eq, and } from 'drizzle-orm';
-import { unlink } from 'fs/promises';
-import { join } from 'path';
+import { and, eq } from 'drizzle-orm';
 import { existsSync } from 'fs';
+import { unlink } from 'fs/promises';
+import { NextResponse } from 'next/server';
+import { join } from 'path';
 
 // DELETE /api/equipment/[id]/documents/[documentId]
-export async function DELETE(
-  { params }: { params: Promise<{ id: string; documentId: string }> }
-) {
+export async function DELETE({ params }: { params: Promise<{ id: string; documentId: string }> }) {
   try {
     const { id, documentId } = await params;
     const equipmentId = parseInt(id);
     const docId = parseInt(documentId);
-    
+
     if (isNaN(equipmentId) || isNaN(docId)) {
       return NextResponse.json(
         { success: false, error: 'Invalid equipment ID or document ID' },
@@ -37,10 +35,7 @@ export async function DELETE(
       .limit(1);
 
     if (!document.length) {
-      return NextResponse.json(
-        { success: false, error: 'Document not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'Document not found' }, { status: 404 });
     }
 
     const documentData = document[0];
@@ -58,15 +53,13 @@ export async function DELETE(
     }
 
     // Delete from database
-    await db
-      .delete(media)
-      .where(eq(media.id, docId));
+    await db.delete(media).where(eq(media.id, docId));
 
     return NextResponse.json({
       success: true,
       data: {
-        message: 'Document deleted successfully'
-      }
+        message: 'Document deleted successfully',
+      },
     });
   } catch (error) {
     console.error('Error deleting equipment document:', error);

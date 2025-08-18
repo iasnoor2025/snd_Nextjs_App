@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { analyticsReports } from '@/lib/drizzle/schema';
-import { eq, like, or, desc, and } from 'drizzle-orm';
+import { and, desc, eq, like, or } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -44,10 +44,7 @@ export async function GET(_request: NextRequest) {
         .limit(limit)
         .offset(skip)
         .orderBy(desc(analyticsReports.createdAt)),
-      db
-        .select({ count: analyticsReports.id })
-        .from(analyticsReports)
-        .where(whereClause)
+      db.select({ count: analyticsReports.id }).from(analyticsReports).where(whereClause),
     ]);
 
     const total = totalRows.length;
@@ -64,26 +61,14 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching analytics reports:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch analytics reports' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch analytics reports' }, { status: 500 });
   }
 }
 
 export async function POST(_request: NextRequest) {
   try {
     const body = await _request.json();
-    const {
-      name,
-      type,
-      description,
-      status,
-      created_by,
-      schedule,
-      parameters,
-      is_active,
-    } = body;
+    const { name, type, description, status, created_by, schedule, parameters, is_active } = body;
 
     const analyticsReportRows = await db
       .insert(analyticsReports)
@@ -107,27 +92,15 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json(analyticsReport, { status: 201 });
   } catch (error) {
     console.error('Error creating analytics report:', error);
-    return NextResponse.json(
-      { error: 'Failed to create analytics report' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create analytics report' }, { status: 500 });
   }
 }
 
 export async function PUT(_request: NextRequest) {
   try {
     const body = await _request.json();
-    const {
-      id,
-      name,
-      type,
-      description,
-      status,
-      created_by,
-      schedule,
-      parameters,
-      is_active,
-    } = body;
+    const { id, name, type, description, status, created_by, schedule, parameters, is_active } =
+      body;
 
     const analyticsReportRows = await db
       .update(analyticsReports)
@@ -150,10 +123,7 @@ export async function PUT(_request: NextRequest) {
     return NextResponse.json(analyticsReport);
   } catch (error) {
     console.error('Error updating analytics report:', error);
-    return NextResponse.json(
-      { error: 'Failed to update analytics report' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update analytics report' }, { status: 500 });
   }
 }
 
@@ -162,16 +132,11 @@ export async function DELETE(_request: NextRequest) {
     const body = await _request.json();
     const { id } = body;
 
-    await db
-      .delete(analyticsReports)
-      .where(eq(analyticsReports.id, id));
+    await db.delete(analyticsReports).where(eq(analyticsReports.id, id));
 
     return NextResponse.json({ message: 'Analytics report deleted successfully' });
   } catch (error) {
     console.error('Error deleting analytics report:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete analytics report' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete analytics report' }, { status: 500 });
   }
 }

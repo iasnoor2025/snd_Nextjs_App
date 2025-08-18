@@ -1,57 +1,57 @@
-"use client"
+'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Activity, Clock, User, FileText, AlertCircle, CheckCircle, Info } from "lucide-react"
-import { useI18n } from "@/hooks/use-i18n"
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useI18n } from '@/hooks/use-i18n';
+import { Activity, AlertCircle, CheckCircle, Clock, FileText, Info, User } from 'lucide-react';
 
 interface ActivityItem {
-  id: number
-  type: 'info' | 'success' | 'warning' | 'error'
-  message: string
-  timestamp: string
-  user?: string
-  action?: string
+  id: number;
+  type: 'info' | 'success' | 'warning' | 'error';
+  message: string;
+  timestamp: string;
+  user?: string;
+  action?: string;
 }
 
 interface RecentActivityProps {
-  activities: ActivityItem[]
+  activities: ActivityItem[];
 }
 
 interface RecentActivityProps {
-  activities: ActivityItem[]
-  onHideSection: () => void
+  activities: ActivityItem[];
+  onHideSection: () => void;
 }
 
 export function RecentActivity({ activities, onHideSection }: RecentActivityProps) {
-  const { t } = useI18n()
-  
+  const { t } = useI18n();
+
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'success':
-        return <CheckCircle className="h-4 w-4 text-green-600" />
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'warning':
-        return <AlertCircle className="h-4 w-4 text-yellow-600" />
+        return <AlertCircle className="h-4 w-4 text-yellow-600" />;
       case 'error':
-        return <AlertCircle className="h-4 w-4 text-red-600" />
+        return <AlertCircle className="h-4 w-4 text-red-600" />;
       default:
-        return <Info className="h-4 w-4 text-blue-600" />
+        return <Info className="h-4 w-4 text-blue-600" />;
     }
-  }
+  };
 
   const getActivityColor = (type: string) => {
     switch (type) {
       case 'success':
-        return 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20'
+        return 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/20';
       case 'warning':
-        return 'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20'
+        return 'border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20';
       case 'error':
-        return 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20'
+        return 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/20';
       default:
-        return 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20'
+        return 'border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20';
     }
-  }
+  };
 
   return (
     <Card>
@@ -62,9 +62,7 @@ export function RecentActivity({ activities, onHideSection }: RecentActivityProp
               <Activity className="h-5 w-5" />
               {t('dashboard.recentActivity')}
             </CardTitle>
-            <CardDescription>
-              {t('dashboard.recentActivityDescription')}
-            </CardDescription>
+            <CardDescription>{t('dashboard.recentActivityDescription')}</CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm">
@@ -84,15 +82,13 @@ export function RecentActivity({ activities, onHideSection }: RecentActivityProp
       <CardContent className="space-y-4">
         {activities.length > 0 ? (
           <div className="space-y-3">
-            {activities.slice(0, 8).map((activity) => (
+            {activities.slice(0, 8).map(activity => (
               <div
                 key={activity.id}
                 className={`p-3 rounded-lg border ${getActivityColor(activity.type)} transition-colors hover:bg-opacity-80`}
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 mt-0.5">
-                    {getActivityIcon(activity.type)}
-                  </div>
+                  <div className="flex-shrink-0 mt-0.5">{getActivityIcon(activity.type)}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
@@ -155,13 +151,11 @@ export function RecentActivity({ activities, onHideSection }: RecentActivityProp
                   </span>
                 </div>
               </div>
-              <div className="text-muted-foreground">
-                {t('dashboard.last24Hours')}
-              </div>
+              <div className="text-muted-foreground">{t('dashboard.last24Hours')}</div>
             </div>
           </div>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

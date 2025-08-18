@@ -1,16 +1,13 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { NextResponse } from 'next/server';
 
 export async function DELETE() {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // In a real application, you would delete all notifications for this user from the database
@@ -27,9 +24,6 @@ export async function DELETE() {
     });
   } catch (error) {
     console.error('Error clearing all notifications:', error);
-    return NextResponse.json(
-      { error: 'Failed to clear all notifications' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to clear all notifications' }, { status: 500 });
   }
-} 
+}

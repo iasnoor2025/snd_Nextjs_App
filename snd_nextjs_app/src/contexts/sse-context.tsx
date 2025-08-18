@@ -1,9 +1,9 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
-import { useSession } from 'next-auth/react';
-import { ToastService } from '@/lib/toast-service';
 import ApiService from '@/lib/api-service';
+import { ToastService } from '@/lib/toast-service';
+import { useSession } from 'next-auth/react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 export interface Notification {
   id: string;
@@ -50,7 +50,9 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
   const { data: session } = useSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
+  const [connectionStatus, setConnectionStatus] = useState<
+    'connecting' | 'connected' | 'disconnected' | 'error'
+  >('disconnected');
   const [eventSource, setEventSource] = useState<EventSource | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
   const isMountedRef = useRef(true);
@@ -81,7 +83,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
   // Handle SSE messages with performance optimization
   const handleSSEMessage = useCallback((data: any) => {
     if (!isMountedRef.current) return;
-    
+
     switch (data.type) {
       case 'notification':
         handleNotification(data.payload);
@@ -138,7 +140,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
   // Handle system messages
   const handleSystemMessage = useCallback((payload: any) => {
     if (!isMountedRef.current) return;
-    
+
     switch (payload.action) {
       case 'reload':
         window.location.reload();
@@ -158,7 +160,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
   // Handle update messages
   const handleUpdate = useCallback((payload: any) => {
     if (!isMountedRef.current) return;
-    
+
     // Handle different types of updates
     switch (payload.entity) {
       case 'employee':
@@ -185,7 +187,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
 
     try {
       setConnectionStatus('connecting');
-      
+
       // Close existing connection
       cleanup();
 
@@ -228,15 +230,15 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
       };
 
       const handleError = () => {
-        setIsConnected(false)
-        setConnectionStatus('error')
-        
+        setIsConnected(false);
+        setConnectionStatus('error');
+
         // Attempt to reconnect after a delay
         setTimeout(() => {
           if (isMountedRef.current) {
             connectSSE();
           }
-        }, 5000)
+        }, 5000);
       };
 
       sse.addEventListener('open', handleOpen);
@@ -253,7 +255,6 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
         sse.removeEventListener('error', handleError);
         sse.close();
       };
-
     } catch (error) {
       setConnectionStatus('error');
     }
@@ -263,9 +264,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
   const markAsRead = useCallback(async (notificationId: string) => {
     if (!isMountedRef.current) return;
 
-    setNotifications(prev => 
-      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
-    );
+    setNotifications(prev => prev.map(n => (n.id === notificationId ? { ...n, read: true } : n)));
 
     try {
       await ApiService.markNotificationAsRead(notificationId);
@@ -388,7 +387,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
   // Component mount/unmount tracking
   useEffect(() => {
     isMountedRef.current = true;
-    
+
     return () => {
       isMountedRef.current = false;
       if (cleanupRef.current) {
@@ -438,11 +437,7 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
     reconnect,
   };
 
-  return (
-    <SSEContext.Provider value={value}>
-      {children}
-    </SSEContext.Provider>
-  );
+  return <SSEContext.Provider value={value}>{children}</SSEContext.Provider>;
 };
 
-export default SSEProvider; 
+export default SSEProvider;

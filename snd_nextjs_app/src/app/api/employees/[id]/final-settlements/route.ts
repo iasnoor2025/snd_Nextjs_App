@@ -5,7 +5,7 @@ export async function GET() {
     // For now, return empty data since we're not connected to Laravel backend
     // In the future, this would fetch from Laravel API
     const finalSettlements = {
-      data: []
+      data: [],
     };
 
     return NextResponse.json(finalSettlements);
@@ -14,7 +14,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to fetch final settlements'
+        message: 'Failed to fetch final settlements',
       },
       { status: 500 }
     );

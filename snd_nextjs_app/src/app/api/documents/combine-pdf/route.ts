@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
+import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
-import { employeeDocuments, media, employees, equipment } from '@/lib/drizzle/schema';
+import { employeeDocuments, employees, equipment, media } from '@/lib/drizzle/schema';
 import { eq, inArray } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { DocumentCombinerService } from '@/lib/services/document-combiner-service';
 
@@ -11,17 +11,14 @@ export async function POST(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await _request.json();
     const { documentIds, type = 'all' } = body;
 
     if (!documentIds || !Array.isArray(documentIds) || documentIds.length === 0) {
-      return NextResponse.json(
-        { error: "Document IDs are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Document IDs are required' }, { status: 400 });
     }
 
     let documents: any[] = [];
@@ -47,13 +44,15 @@ export async function POST(_request: NextRequest) {
         .leftJoin(employees, eq(employees.id, employeeDocuments.employeeId))
         .where(inArray(employeeDocuments.id, documentIds));
 
-      documents.push(...employeeDocs.map(doc => ({
-        ...doc,
-        type: 'employee',
-        url: doc.filePath,
-        employeeName: `${doc.employeeFirstName || ''} ${doc.employeeLastName || ''}`.trim(),
-        employeeFileNumber: doc.employeeFileNumber
-      })));
+      documents.push(
+        ...employeeDocs.map(doc => ({
+          ...doc,
+          type: 'employee',
+          url: doc.filePath,
+          employeeName: `${doc.employeeFirstName || ''} ${doc.employeeLastName || ''}`.trim(),
+          employeeFileNumber: doc.employeeFileNumber,
+        }))
+      );
     }
 
     // Fetch equipment documents
@@ -73,30 +72,27 @@ export async function POST(_request: NextRequest) {
         })
         .from(media)
         .leftJoin(equipment, eq(equipment.id, media.modelId))
-        .where(
-          inArray(media.id, documentIds)
-        );
+        .where(inArray(media.id, documentIds));
 
-      documents.push(...equipmentDocs.map(doc => ({
-        ...doc,
-        type: 'equipment',
-        url: `/uploads/documents/${doc.filePath}`,
-        equipmentName: doc.equipmentName,
-        equipmentModel: doc.equipmentModel,
-        equipmentSerial: doc.equipmentSerial
-      })));
+      documents.push(
+        ...equipmentDocs.map(doc => ({
+          ...doc,
+          type: 'equipment',
+          url: `/uploads/documents/${doc.filePath}`,
+          equipmentName: doc.equipmentName,
+          equipmentModel: doc.equipmentModel,
+          equipmentSerial: doc.equipmentSerial,
+        }))
+      );
     }
 
     if (documents.length === 0) {
-      return NextResponse.json(
-        { error: "No documents found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'No documents found' }, { status: 404 });
     }
 
     // Generate combined PDF using the document combiner service
     const combinedPdfBuffer = await DocumentCombinerService.combineDocuments(documents);
-    
+
     // Generate descriptive filename with employee numbers and equipment names
     const timestamp = Date.now();
     const filename = generateDescriptiveFilename(documents, timestamp);
@@ -110,13 +106,12 @@ export async function POST(_request: NextRequest) {
         'Content-Length': combinedPdfBuffer.length.toString(),
       },
     });
-
   } catch (error) {
     console.error('Error combining documents:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to combine documents: ' + (error as Error).message
+        message: 'Failed to combine documents: ' + (error as Error).message,
       },
       { status: 500 }
     );
@@ -129,7 +124,7 @@ export async function POST(_request: NextRequest) {
 function generateDescriptiveFilename(documents: any[], timestamp: number): string {
   const employeeNumbers = new Set<string>();
   const equipmentNames = new Set<string>();
-  
+
   documents.forEach(doc => {
     if (doc.type === 'employee' && doc.employeeFileNumber) {
       employeeNumbers.add(doc.employeeFileNumber);
@@ -137,30 +132,30 @@ function generateDescriptiveFilename(documents: any[], timestamp: number): strin
       equipmentNames.add(doc.equipmentName);
     }
   });
-  
+
   let filename = '';
-  
+
   // Add employee numbers
   if (employeeNumbers.size > 0) {
     filename += `employee_${Array.from(employeeNumbers).join('_')}`;
   }
-  
+
   // Add equipment names
   if (equipmentNames.size > 0) {
     if (filename) filename += '_';
     filename += `equipment_${Array.from(equipmentNames).join('_')}`;
   }
-  
+
   // If no descriptive info, use generic name
   if (!filename) {
     filename = 'documents';
   }
-  
+
   // Add timestamp and extension
   filename += `_combined_${timestamp}.pdf`;
-  
+
   // Clean filename (remove special characters, replace spaces with underscores)
   filename = filename.replace(/[^a-zA-Z0-9_-]/g, '_').replace(/_+/g, '_');
-  
+
   return filename;
 }

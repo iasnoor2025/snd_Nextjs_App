@@ -13,9 +13,9 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   const url = `${ERPNEXT_URL}${endpoint}`;
 
   const defaultHeaders = {
-    'Authorization': `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
+    Authorization: `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
   };
 
   const response = await fetch(url, {
@@ -48,14 +48,14 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: data.data || [],
-      count: data.data?.length || 0
+      count: data.data?.length || 0,
     });
   } catch (error) {
     console.error('Error fetching ERPNext invoices:', error);
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to fetch invoices'
+        message: error instanceof Error ? error.message : 'Failed to fetch invoices',
       },
       { status: 500 }
     );
@@ -74,14 +74,14 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: response.data || response,
-      message: 'Invoice created successfully'
+      message: 'Invoice created successfully',
     });
   } catch (error) {
     console.error('Error creating ERPNext invoice:', error);
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to create invoice'
+        message: error instanceof Error ? error.message : 'Failed to create invoice',
       },
       { status: 500 }
     );

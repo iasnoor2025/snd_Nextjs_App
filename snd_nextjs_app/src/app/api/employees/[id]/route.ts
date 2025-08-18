@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { departments, designations, employees as employeesTable } from '@/lib/drizzle/schema';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
-import { employees as employeesTable, departments, designations } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET handler with employee data filtering
 const getEmployeeHandler = async (
@@ -17,32 +17,29 @@ const getEmployeeHandler = async (
         resolvedParams = await params;
       } catch (error) {
         console.error('Error resolving params Promise:', error);
-        return NextResponse.json({ error: "Failed to resolve route parameters" }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to resolve route parameters' }, { status: 500 });
       }
     } else {
       resolvedParams = params;
     }
-    
+
     if (!resolvedParams || !resolvedParams.id) {
       console.error('Invalid params received:', resolvedParams);
-      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
-    
+
     const { id } = resolvedParams;
     const employeeId = parseInt(id);
 
     if (!employeeId) {
-      return NextResponse.json(
-        { error: "Invalid employee ID" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
 
     // For employee users, ensure they can only access their own employee record
     if (request.employeeAccess?.ownEmployeeId) {
       if (employeeId !== request.employeeAccess.ownEmployeeId) {
         return NextResponse.json(
-          { error: "You can only access your own employee record" },
+          { error: 'You can only access your own employee record' },
           { status: 403 }
         );
       }
@@ -112,15 +109,12 @@ const getEmployeeHandler = async (
       .where(eq(employeesTable.id, employeeId));
 
     if (employeeRows.length === 0) {
-      return NextResponse.json(
-        { error: "Employee not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
     // Update employee status based on current leave status
     await updateEmployeeStatusBasedOnLeave(employeeId);
-    
+
     // Fetch updated employee data after status update
     const updatedEmployeeRows = await db
       .select({
@@ -186,16 +180,16 @@ const getEmployeeHandler = async (
 
     if (updatedEmployeeRows.length === 0) {
       return NextResponse.json(
-        { error: "Employee not found after status update" },
+        { error: 'Employee not found after status update' },
         { status: 404 }
       );
     }
 
     const updatedEmployee = updatedEmployeeRows[0];
-    
+
     if (!updatedEmployee) {
       return NextResponse.json(
-        { error: "Employee not found after status update" },
+        { error: 'Employee not found after status update' },
         { status: 404 }
       );
     }
@@ -211,8 +205,12 @@ const getEmployeeHandler = async (
       email: updatedEmployee.email,
       phone: updatedEmployee.phone,
       employee_id: updatedEmployee.id,
-      department: updatedEmployee.dept_name ? { id: updatedEmployee.department_id, name: updatedEmployee.dept_name } : null,
-      designation: updatedEmployee.desig_name ? { id: updatedEmployee.designation_id, name: updatedEmployee.desig_name } : null,
+      department: updatedEmployee.dept_name
+        ? { id: updatedEmployee.department_id, name: updatedEmployee.dept_name }
+        : null,
+      designation: updatedEmployee.desig_name
+        ? { id: updatedEmployee.designation_id, name: updatedEmployee.desig_name }
+        : null,
       status: updatedEmployee.status,
       hire_date: updatedEmployee.hire_date ? updatedEmployee.hire_date.slice(0, 10) : null,
       basic_salary: updatedEmployee.basic_salary,
@@ -222,7 +220,9 @@ const getEmployeeHandler = async (
       overtime_fixed_rate: updatedEmployee.overtime_fixed_rate,
       contract_days_per_month: updatedEmployee.contract_days_per_month,
       contract_hours_per_day: updatedEmployee.contract_hours_per_day,
-      date_of_birth: updatedEmployee.date_of_birth ? updatedEmployee.date_of_birth.slice(0, 10) : null,
+      date_of_birth: updatedEmployee.date_of_birth
+        ? updatedEmployee.date_of_birth.slice(0, 10)
+        : null,
       address: updatedEmployee.address,
       city: updatedEmployee.city,
       state: updatedEmployee.state,
@@ -234,15 +234,25 @@ const getEmployeeHandler = async (
       iqama_number: updatedEmployee.iqama_number,
       iqama_expiry: updatedEmployee.iqama_expiry ? updatedEmployee.iqama_expiry.slice(0, 10) : null,
       passport_number: updatedEmployee.passport_number,
-      passport_expiry: updatedEmployee.passport_expiry ? updatedEmployee.passport_expiry.slice(0, 10) : null,
+      passport_expiry: updatedEmployee.passport_expiry
+        ? updatedEmployee.passport_expiry.slice(0, 10)
+        : null,
       driving_license_number: updatedEmployee.driving_license_number,
-      driving_license_expiry: updatedEmployee.driving_license_expiry ? updatedEmployee.driving_license_expiry.slice(0, 10) : null,
+      driving_license_expiry: updatedEmployee.driving_license_expiry
+        ? updatedEmployee.driving_license_expiry.slice(0, 10)
+        : null,
       operator_license_number: updatedEmployee.operator_license_number,
-      operator_license_expiry: updatedEmployee.operator_license_expiry ? updatedEmployee.operator_license_expiry.slice(0, 10) : null,
+      operator_license_expiry: updatedEmployee.operator_license_expiry
+        ? updatedEmployee.operator_license_expiry.slice(0, 10)
+        : null,
       tuv_certification_number: updatedEmployee.tuv_certification_number,
-      tuv_certification_expiry: updatedEmployee.tuv_certification_expiry ? updatedEmployee.tuv_certification_expiry.slice(0, 10) : null,
+      tuv_certification_expiry: updatedEmployee.tuv_certification_expiry
+        ? updatedEmployee.tuv_certification_expiry.slice(0, 10)
+        : null,
       spsp_license_number: updatedEmployee.spsp_license_number,
-      spsp_license_expiry: updatedEmployee.spsp_license_expiry ? updatedEmployee.spsp_license_expiry.slice(0, 10) : null,
+      spsp_license_expiry: updatedEmployee.spsp_license_expiry
+        ? updatedEmployee.spsp_license_expiry.slice(0, 10)
+        : null,
       notes: updatedEmployee.notes,
       current_location: updatedEmployee.current_location,
       food_allowance: updatedEmployee.food_allowance,
@@ -260,14 +270,14 @@ const getEmployeeHandler = async (
     return NextResponse.json({
       success: true,
       employee: formattedEmployee,
-      message: 'Employee retrieved successfully'
+      message: 'Employee retrieved successfully',
     });
   } catch (error) {
     console.error('Error in GET /api/employees/[id]:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to fetch employee: ' + (error as Error).message
+        message: 'Failed to fetch employee: ' + (error as Error).message,
       },
       { status: 500 }
     );
@@ -285,17 +295,14 @@ const updateEmployeeHandler = async (
     const body = await request.json();
 
     if (!employeeId) {
-      return NextResponse.json(
-        { error: "Invalid employee ID" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
 
     // For employee users, ensure they can only update their own employee record
     if (request.employeeAccess?.ownEmployeeId) {
       if (employeeId !== request.employeeAccess.ownEmployeeId) {
         return NextResponse.json(
-          { error: "You can only update your own employee record" },
+          { error: 'You can only update your own employee record' },
           { status: 403 }
         );
       }
@@ -318,14 +325,23 @@ const updateEmployeeHandler = async (
     for (const key of dateFields) {
       if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
         const v = updateDataRaw[key];
-        drizzleData[key === 'hire_date' ? 'hireDate' : 
-                  key === 'date_of_birth' ? 'dateOfBirth' :
-                  key === 'iqama_expiry' ? 'iqamaExpiry' :
-                  key === 'passport_expiry' ? 'passportExpiry' :
-                  key === 'driving_license_expiry' ? 'drivingLicenseExpiry' :
-                  key === 'operator_license_expiry' ? 'operatorLicenseExpiry' :
-                  key === 'tuv_certification_expiry' ? 'tuvCertificationExpiry' :
-                  'spspLicenseExpiry'] = v && typeof v === 'string' && v.trim() !== '' ? v : null;
+        drizzleData[
+          key === 'hire_date'
+            ? 'hireDate'
+            : key === 'date_of_birth'
+              ? 'dateOfBirth'
+              : key === 'iqama_expiry'
+                ? 'iqamaExpiry'
+                : key === 'passport_expiry'
+                  ? 'passportExpiry'
+                  : key === 'driving_license_expiry'
+                    ? 'drivingLicenseExpiry'
+                    : key === 'operator_license_expiry'
+                      ? 'operatorLicenseExpiry'
+                      : key === 'tuv_certification_expiry'
+                        ? 'tuvCertificationExpiry'
+                        : 'spspLicenseExpiry'
+        ] = v && typeof v === 'string' && v.trim() !== '' ? v : null;
       }
     }
 
@@ -338,44 +354,87 @@ const updateEmployeeHandler = async (
     for (const key of numberFieldsFloat) {
       if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
         const v = updateDataRaw[key];
-        drizzleData[key === 'hourly_rate' ? 'hourlyRate' :
-                  key === 'basic_salary' ? 'basicSalary' :
-                  key === 'overtime_rate_multiplier' ? 'overtimeRateMultiplier' :
-                  'overtimeFixedRate'] = v === '' || v === null || v === undefined ? null : v;
+        drizzleData[
+          key === 'hourly_rate'
+            ? 'hourlyRate'
+            : key === 'basic_salary'
+              ? 'basicSalary'
+              : key === 'overtime_rate_multiplier'
+                ? 'overtimeRateMultiplier'
+                : 'overtimeFixedRate'
+        ] = v === '' || v === null || v === undefined ? null : v;
       }
     }
 
-    const numberFieldsInt = [
-      'contract_days_per_month',
-      'contract_hours_per_day',
-    ];
+    const numberFieldsInt = ['contract_days_per_month', 'contract_hours_per_day'];
     for (const key of numberFieldsInt) {
       if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
         const v = updateDataRaw[key];
-        drizzleData[key === 'contract_days_per_month' ? 'contractDaysPerMonth' : 'contractHoursPerDay'] = v === '' || v === null || v === undefined ? null : parseInt(v);
+        drizzleData[
+          key === 'contract_days_per_month' ? 'contractDaysPerMonth' : 'contractHoursPerDay'
+        ] = v === '' || v === null || v === undefined ? null : parseInt(v);
       }
     }
 
     // Pass-through other primitive fields if present
     const passthroughFields = [
-      'first_name','middle_name','last_name','email','phone','address','city','state','postal_code','country','nationality','department_id','designation_id','supervisor','status','notes','iqama_number','passport_number','driving_license_number','operator_license_number','tuv_certification_number','spsp_license_number','advance_salary_eligible','advance_salary_approved_this_month'
+      'first_name',
+      'middle_name',
+      'last_name',
+      'email',
+      'phone',
+      'address',
+      'city',
+      'state',
+      'postal_code',
+      'country',
+      'nationality',
+      'department_id',
+      'designation_id',
+      'supervisor',
+      'status',
+      'notes',
+      'iqama_number',
+      'passport_number',
+      'driving_license_number',
+      'operator_license_number',
+      'tuv_certification_number',
+      'spsp_license_number',
+      'advance_salary_eligible',
+      'advance_salary_approved_this_month',
     ];
     for (const key of passthroughFields) {
       if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
-        const drizzleKey = key === 'first_name' ? 'firstName' :
-                          key === 'middle_name' ? 'middleName' :
-                          key === 'last_name' ? 'lastName' :
-                          key === 'postal_code' ? 'postalCode' :
-                          key === 'department_id' ? 'departmentId' :
-                          key === 'designation_id' ? 'designationId' :
-                          key === 'iqama_number' ? 'iqamaNumber' :
-                          key === 'passport_number' ? 'passportNumber' :
-                          key === 'driving_license_number' ? 'drivingLicenseNumber' :
-                          key === 'operator_license_number' ? 'operatorLicenseNumber' :
-                          key === 'tuv_certification_number' ? 'tuvCertificationNumber' :
-                          key === 'spsp_license_number' ? 'spspLicenseNumber' :
-                          key === 'advance_salary_eligible' ? 'advanceSalaryEligible' :
-                          key === 'advance_salary_approved_this_month' ? 'advanceSalaryApprovedThisMonth' : key;
+        const drizzleKey =
+          key === 'first_name'
+            ? 'firstName'
+            : key === 'middle_name'
+              ? 'middleName'
+              : key === 'last_name'
+                ? 'lastName'
+                : key === 'postal_code'
+                  ? 'postalCode'
+                  : key === 'department_id'
+                    ? 'departmentId'
+                    : key === 'designation_id'
+                      ? 'designationId'
+                      : key === 'iqama_number'
+                        ? 'iqamaNumber'
+                        : key === 'passport_number'
+                          ? 'passportNumber'
+                          : key === 'driving_license_number'
+                            ? 'drivingLicenseNumber'
+                            : key === 'operator_license_number'
+                              ? 'operatorLicenseNumber'
+                              : key === 'tuv_certification_number'
+                                ? 'tuvCertificationNumber'
+                                : key === 'spsp_license_number'
+                                  ? 'spspLicenseNumber'
+                                  : key === 'advance_salary_eligible'
+                                    ? 'advanceSalaryEligible'
+                                    : key === 'advance_salary_approved_this_month'
+                                      ? 'advanceSalaryApprovedThisMonth'
+                                      : key;
         drizzleData[drizzleKey] = updateDataRaw[key];
       }
     }
@@ -384,12 +443,14 @@ const updateEmployeeHandler = async (
     if (
       Object.prototype.hasOwnProperty.call(drizzleData, 'basicSalary') &&
       drizzleData.basicSalary &&
-      (Object.prototype.hasOwnProperty.call(drizzleData, 'contractDaysPerMonth') || Object.prototype.hasOwnProperty.call(drizzleData, 'contractHoursPerDay'))
+      (Object.prototype.hasOwnProperty.call(drizzleData, 'contractDaysPerMonth') ||
+        Object.prototype.hasOwnProperty.call(drizzleData, 'contractHoursPerDay'))
     ) {
       const days = drizzleData.contractDaysPerMonth ?? 26;
       const hours = drizzleData.contractHoursPerDay ?? 8;
       if (days > 0 && hours > 0) {
-        drizzleData.hourlyRate = Math.round((Number(drizzleData.basicSalary) / (days * hours)) * 100) / 100;
+        drizzleData.hourlyRate =
+          Math.round((Number(drizzleData.basicSalary) / (days * hours)) * 100) / 100;
       }
     }
 
@@ -404,19 +465,13 @@ const updateEmployeeHandler = async (
       .returning();
 
     if (updatedEmployeeRows.length === 0) {
-      return NextResponse.json(
-        { error: "Employee not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
     const updatedEmployee = updatedEmployeeRows[0];
-    
+
     if (!updatedEmployee) {
-      return NextResponse.json(
-        { error: "Employee not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
     // Fetch updated employee with department and designation info
@@ -440,16 +495,20 @@ const updateEmployeeHandler = async (
       message: 'Employee updated successfully',
       employee: {
         ...updatedEmployee,
-        department: employeeWithDept?.dept_name ? { id: updatedEmployee.departmentId, name: employeeWithDept.dept_name } : null,
-        designation: employeeWithDept?.desig_name ? { id: updatedEmployee.designationId, name: employeeWithDept.desig_name } : null,
-      }
+        department: employeeWithDept?.dept_name
+          ? { id: updatedEmployee.departmentId, name: employeeWithDept.dept_name }
+          : null,
+        designation: employeeWithDept?.desig_name
+          ? { id: updatedEmployee.designationId, name: employeeWithDept.desig_name }
+          : null,
+      },
     });
   } catch (error) {
     console.error('Error in PUT /api/employees/[id]:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to update employee: ' + (error as Error).message
+        message: 'Failed to update employee: ' + (error as Error).message,
       },
       { status: 500 }
     );
@@ -466,17 +525,14 @@ const deleteEmployeeHandler = async (
     const employeeId = parseInt(id);
 
     if (!employeeId) {
-      return NextResponse.json(
-        { error: "Invalid employee ID" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
 
     // For employee users, ensure they can only delete their own employee record
     if (request.employeeAccess?.ownEmployeeId) {
       if (employeeId !== request.employeeAccess.ownEmployeeId) {
         return NextResponse.json(
-          { error: "You can only delete your own employee record" },
+          { error: 'You can only delete your own employee record' },
           { status: 403 }
         );
       }
@@ -490,14 +546,14 @@ const deleteEmployeeHandler = async (
 
     return NextResponse.json({
       success: true,
-      message: 'Employee deleted successfully'
+      message: 'Employee deleted successfully',
     });
   } catch (error) {
     console.error('Error in DELETE /api/employees/[id]:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to delete employee: ' + (error as Error).message
+        message: 'Failed to delete employee: ' + (error as Error).message,
       },
       { status: 500 }
     );

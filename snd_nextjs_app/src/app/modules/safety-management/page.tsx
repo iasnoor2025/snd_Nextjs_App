@@ -1,74 +1,81 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Eye
-} from "lucide-react";
-import { toast } from "sonner";
-import Link from "next/link";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Edit, Eye, Plus, Search, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-
+import { toast } from 'sonner';
 
 export default function SafetyManagementPage() {
   const { t } = useTranslation('safety');
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [severity, setSeverity] = useState("all");
-  const [status, setStatus] = useState("all");
+  const [search, setSearch] = useState('');
+  const [severity, setSeverity] = useState('all');
+  const [status, setStatus] = useState('all');
   const [currentPage] = useState(1);
   const [perPage] = useState(10);
 
   const mockSafetyReports = [
     {
-      id: "1",
-      title: "Equipment malfunction",
-      description: "Excavator showing unusual vibrations during operation",
-      severity: "high",
-      status: "open",
-      reported_by: "John Smith",
-      reported_date: "2024-01-15",
-      assigned_to: "Mike Johnson",
-      location: "Site A"
+      id: '1',
+      title: 'Equipment malfunction',
+      description: 'Excavator showing unusual vibrations during operation',
+      severity: 'high',
+      status: 'open',
+      reported_by: 'John Smith',
+      reported_date: '2024-01-15',
+      assigned_to: 'Mike Johnson',
+      location: 'Site A',
     },
     {
-      id: "2",
-      title: "Safety equipment missing",
-      description: "Hard hats not available for new workers",
-      severity: "medium",
-      status: "in_progress",
-      reported_by: "Jane Doe",
-      reported_date: "2024-01-14",
-      assigned_to: "Sarah Wilson",
-      location: "Site B"
+      id: '2',
+      title: 'Safety equipment missing',
+      description: 'Hard hats not available for new workers',
+      severity: 'medium',
+      status: 'in_progress',
+      reported_by: 'Jane Doe',
+      reported_date: '2024-01-14',
+      assigned_to: 'Sarah Wilson',
+      location: 'Site B',
     },
     {
-      id: "3",
-      title: "Unsafe working conditions",
-      description: "Wet surfaces causing slip hazards",
-      severity: "high",
-      status: "resolved",
-      reported_by: "Bob Johnson",
-      reported_date: "2024-01-13",
-      assigned_to: "Mike Johnson",
-      location: "Site A"
-    }
+      id: '3',
+      title: 'Unsafe working conditions',
+      description: 'Wet surfaces causing slip hazards',
+      severity: 'high',
+      status: 'resolved',
+      reported_by: 'Bob Johnson',
+      reported_date: '2024-01-13',
+      assigned_to: 'Mike Johnson',
+      location: 'Site A',
+    },
   ];
 
   const filteredReports = mockSafetyReports.filter(report => {
-    const matchesSearch = report.title.toLowerCase().includes(search.toLowerCase()) ||
-                        report.description.toLowerCase().includes(search.toLowerCase());
-    const matchesSeverity = severity === "all" || report.severity === severity;
-    const matchesStatus = status === "all" || report.status === status;
+    const matchesSearch =
+      report.title.toLowerCase().includes(search.toLowerCase()) ||
+      report.description.toLowerCase().includes(search.toLowerCase());
+    const matchesSeverity = severity === 'all' || report.severity === severity;
+    const matchesStatus = status === 'all' || report.status === status;
     return matchesSearch && matchesSeverity && matchesStatus;
   });
 
@@ -87,22 +94,22 @@ export default function SafetyManagementPage() {
 
   const handleDelete = async () => {
     try {
-      toast.loading("Deleting safety report...");
+      toast.loading('Deleting safety report...');
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success("Safety report deleted successfully");
+      toast.success('Safety report deleted successfully');
     } catch {
-      toast.error("Failed to delete safety report");
+      toast.error('Failed to delete safety report');
     }
   };
 
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
-      case "high":
+      case 'high':
         return <Badge className="bg-red-100 text-red-800">High</Badge>;
-      case "medium":
+      case 'medium':
         return <Badge className="bg-yellow-100 text-yellow-800">Medium</Badge>;
-      case "low":
+      case 'low':
         return <Badge className="bg-green-100 text-green-800">Low</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{severity}</Badge>;
@@ -111,11 +118,11 @@ export default function SafetyManagementPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "open":
+      case 'open':
         return <Badge className="bg-red-100 text-red-800">Open</Badge>;
-      case "in_progress":
+      case 'in_progress':
         return <Badge className="bg-yellow-100 text-yellow-800">In Progress</Badge>;
-      case "resolved":
+      case 'resolved':
         return <Badge className="bg-green-100 text-green-800">Resolved</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
@@ -158,7 +165,7 @@ export default function SafetyManagementPage() {
               <Input
                 placeholder={t('searchSafetyReportsPlaceholder')}
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={e => setSearch(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -193,9 +200,7 @@ export default function SafetyManagementPage() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>{t('safetyReportsTitle')}</CardTitle>
-              <CardDescription>
-                {t('manageSafetyIncidentsAndComplianceReports')}
-              </CardDescription>
+              <CardDescription>{t('manageSafetyIncidentsAndComplianceReports')}</CardDescription>
             </div>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-500">
@@ -219,7 +224,7 @@ export default function SafetyManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedData.map((report) => (
+              {paginatedData.map(report => (
                 <TableRow key={report.id}>
                   <TableCell>
                     <div>

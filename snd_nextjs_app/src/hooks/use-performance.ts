@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 interface PerformanceMetrics {
   fcp: number | null;
@@ -21,11 +21,7 @@ interface UsePerformanceOptions {
 }
 
 export function usePerformance(options: UsePerformanceOptions = {}) {
-  const {
-    trackMemory = true,
-    trackWebVitals = true,
-    onMetricUpdate
-  } = options;
+  const { trackMemory = true, trackWebVitals = true, onMetricUpdate } = options;
 
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
     fcp: null,
@@ -36,20 +32,23 @@ export function usePerformance(options: UsePerformanceOptions = {}) {
     memory: null,
   });
 
-  const updateMetrics = useCallback((newMetrics: Partial<PerformanceMetrics>) => {
-    setMetrics(prev => {
-      const updated = { ...prev, ...newMetrics };
-      onMetricUpdate?.(updated);
-      return updated;
-    });
-  }, [onMetricUpdate]);
+  const updateMetrics = useCallback(
+    (newMetrics: Partial<PerformanceMetrics>) => {
+      setMetrics(prev => {
+        const updated = { ...prev, ...newMetrics };
+        onMetricUpdate?.(updated);
+        return updated;
+      });
+    },
+    [onMetricUpdate]
+  );
 
   // Track Core Web Vitals
   useEffect(() => {
     if (!trackWebVitals || typeof window === 'undefined') return;
 
     // First Contentful Paint (FCP)
-    const fcpObserver = new PerformanceObserver((list) => {
+    const fcpObserver = new PerformanceObserver(list => {
       const entries = list.getEntries();
       const fcpEntry = entries.find(entry => entry.name === 'first-contentful-paint');
       if (fcpEntry) {
@@ -58,7 +57,7 @@ export function usePerformance(options: UsePerformanceOptions = {}) {
     });
 
     // Largest Contentful Paint (LCP)
-    const lcpObserver = new PerformanceObserver((list) => {
+    const lcpObserver = new PerformanceObserver(list => {
       const entries = list.getEntries();
       const lcpEntry = entries[entries.length - 1];
       if (lcpEntry) {
@@ -67,7 +66,7 @@ export function usePerformance(options: UsePerformanceOptions = {}) {
     });
 
     // First Input Delay (FID)
-    const fidObserver = new PerformanceObserver((list) => {
+    const fidObserver = new PerformanceObserver(list => {
       const entries = list.getEntries();
       const fidEntry = entries[entries.length - 1];
       if (fidEntry && 'startTime' in fidEntry && 'duration' in fidEntry) {
@@ -77,7 +76,7 @@ export function usePerformance(options: UsePerformanceOptions = {}) {
 
     // Cumulative Layout Shift (CLS)
     let clsValue = 0;
-    const clsObserver = new PerformanceObserver((list) => {
+    const clsObserver = new PerformanceObserver(list => {
       const entries = list.getEntries();
       entries.forEach((entry: any) => {
         if (!entry.hadRecentInput) {
@@ -88,7 +87,9 @@ export function usePerformance(options: UsePerformanceOptions = {}) {
     });
 
     // Time to First Byte (TTFB)
-    const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+    const navigationEntry = performance.getEntriesByType(
+      'navigation'
+    )[0] as PerformanceNavigationTiming;
     if (navigationEntry) {
       updateMetrics({ ttfb: navigationEntry.responseStart - navigationEntry.requestStart });
     }
@@ -123,7 +124,7 @@ export function usePerformance(options: UsePerformanceOptions = {}) {
             total: memory.totalJSHeapSize,
             limit: memory.jsHeapSizeLimit,
             usage: memory.usedJSHeapSize / memory.jsHeapSizeLimit,
-          }
+          },
         });
       }
     };

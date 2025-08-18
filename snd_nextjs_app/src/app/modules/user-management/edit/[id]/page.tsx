@@ -1,15 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { ArrowLeft, Mail, Save, Shield, User } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, User, Mail, Shield } from 'lucide-react';
 
 interface User {
   id: string;
@@ -158,9 +164,7 @@ export default function EditUserPage() {
             <User className="h-5 w-5" />
             <span>User Information</span>
           </CardTitle>
-          <CardDescription>
-            Update user details and permissions
-          </CardDescription>
+          <CardDescription>Update user details and permissions</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -169,7 +173,7 @@ export default function EditUserPage() {
               <Input
                 id="name"
                 value={user.name}
-                onChange={(e) => setUser({ ...user, name: e.target.value })}
+                onChange={e => setUser({ ...user, name: e.target.value })}
                 placeholder="Enter full name"
               />
             </div>
@@ -180,22 +184,19 @@ export default function EditUserPage() {
                 id="email"
                 type="email"
                 value={user.email}
-                onChange={(e) => setUser({ ...user, email: e.target.value })}
+                onChange={e => setUser({ ...user, email: e.target.value })}
                 placeholder="Enter email address"
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
-              <Select
-                value={user.role}
-                onValueChange={(value) => setUser({ ...user, role: value })}
-              >
+              <Select value={user.role} onValueChange={value => setUser({ ...user, role: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  {roles.map((role) => (
+                  {roles.map(role => (
                     <SelectItem key={role.id} value={role.name}>
                       {role.name}
                     </SelectItem>
@@ -210,11 +211,9 @@ export default function EditUserPage() {
                 <Switch
                   id="status"
                   checked={user.isActive}
-                  onCheckedChange={(checked) => setUser({ ...user, isActive: checked })}
+                  onCheckedChange={checked => setUser({ ...user, isActive: checked })}
                 />
-                <Label htmlFor="status">
-                  {user.isActive ? 'Active' : 'Inactive'}
-                </Label>
+                <Label htmlFor="status">{user.isActive ? 'Active' : 'Inactive'}</Label>
               </div>
             </div>
           </div>

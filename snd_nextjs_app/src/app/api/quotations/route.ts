@@ -1,114 +1,121 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 // Mock data that mirrors the Laravel controller response
-const getMockQuotationsData = (search: string = '', status: string = 'all', startDate: string = '', endDate: string = '', page: number = 1) => {
+const getMockQuotationsData = (
+  search: string = '',
+  status: string = 'all',
+  startDate: string = '',
+  endDate: string = '',
+  page: number = 1
+) => {
   const mockQuotations = [
     {
       id: 1,
-      quotation_number: "QUOT-2024-001",
+      quotation_number: 'QUOT-2024-001',
       customer: {
         id: 1,
-        company_name: "ABC Construction Ltd",
-        contact_person: "John Smith",
-        email: "john@abcconstruction.com",
-        phone: "+1-555-0123"
+        company_name: 'ABC Construction Ltd',
+        contact_person: 'John Smith',
+        email: 'john@abcconstruction.com',
+        phone: '+1-555-0123',
       },
-      issue_date: "2024-01-15",
-      valid_until: "2024-02-15",
-      status: "sent",
-      subtotal: 15000.00,
+      issue_date: '2024-01-15',
+      valid_until: '2024-02-15',
+      status: 'sent',
+      subtotal: 15000.0,
       discount_percentage: 5.0,
-      discount_amount: 750.00,
+      discount_amount: 750.0,
       tax_percentage: 8.5,
-      tax_amount: 1275.00,
-      total_amount: 15525.00,
-      created_at: "2024-01-15T10:00:00Z",
-      updated_at: "2024-01-15T10:00:00Z",
+      tax_amount: 1275.0,
+      total_amount: 15525.0,
+      created_at: '2024-01-15T10:00:00Z',
+      updated_at: '2024-01-15T10:00:00Z',
       quotationItems: [
         {
           id: 1,
           equipment: {
             id: 1,
-            name: "Excavator CAT 320",
-            model: "CAT 320"
-          }
-        }
-      ]
+            name: 'Excavator CAT 320',
+            model: 'CAT 320',
+          },
+        },
+      ],
     },
     {
       id: 2,
-      quotation_number: "QUOT-2024-002",
+      quotation_number: 'QUOT-2024-002',
       customer: {
         id: 2,
-        company_name: "XYZ Developers",
-        contact_person: "Jane Doe",
-        email: "jane@xyzdevelopers.com",
-        phone: "+1-555-0456"
+        company_name: 'XYZ Developers',
+        contact_person: 'Jane Doe',
+        email: 'jane@xyzdevelopers.com',
+        phone: '+1-555-0456',
       },
-      issue_date: "2024-01-10",
-      valid_until: "2024-02-10",
-      status: "approved",
-      subtotal: 12000.00,
+      issue_date: '2024-01-10',
+      valid_until: '2024-02-10',
+      status: 'approved',
+      subtotal: 12000.0,
       discount_percentage: 0.0,
-      discount_amount: 0.00,
+      discount_amount: 0.0,
       tax_percentage: 8.5,
-      tax_amount: 1020.00,
-      total_amount: 13020.00,
-      created_at: "2024-01-10T10:00:00Z",
-      updated_at: "2024-01-12T14:30:00Z",
+      tax_amount: 1020.0,
+      total_amount: 13020.0,
+      created_at: '2024-01-10T10:00:00Z',
+      updated_at: '2024-01-12T14:30:00Z',
       quotationItems: [
         {
           id: 2,
           equipment: {
             id: 2,
-            name: "Bulldozer Komatsu D65",
-            model: "D65"
-          }
-        }
-      ]
+            name: 'Bulldozer Komatsu D65',
+            model: 'D65',
+          },
+        },
+      ],
     },
     {
       id: 3,
-      quotation_number: "QUOT-2024-003",
+      quotation_number: 'QUOT-2024-003',
       customer: {
         id: 3,
-        company_name: "City Projects Ltd",
-        contact_person: "Bob Wilson",
-        email: "bob@cityprojects.com",
-        phone: "+1-555-0789"
+        company_name: 'City Projects Ltd',
+        contact_person: 'Bob Wilson',
+        email: 'bob@cityprojects.com',
+        phone: '+1-555-0789',
       },
-      issue_date: "2024-01-20",
-      valid_until: "2024-02-20",
-      status: "draft",
-      subtotal: 24000.00,
+      issue_date: '2024-01-20',
+      valid_until: '2024-02-20',
+      status: 'draft',
+      subtotal: 24000.0,
       discount_percentage: 10.0,
-      discount_amount: 2400.00,
+      discount_amount: 2400.0,
       tax_percentage: 8.5,
-      tax_amount: 1836.00,
-      total_amount: 23436.00,
-      created_at: "2024-01-20T10:00:00Z",
-      updated_at: "2024-01-20T10:00:00Z",
+      tax_amount: 1836.0,
+      total_amount: 23436.0,
+      created_at: '2024-01-20T10:00:00Z',
+      updated_at: '2024-01-20T10:00:00Z',
       quotationItems: [
         {
           id: 3,
           equipment: {
             id: 3,
-            name: "Crane Mobile 50T",
-            model: "50T"
-          }
-        }
-      ]
-    }
+            name: 'Crane Mobile 50T',
+            model: '50T',
+          },
+        },
+      ],
+    },
   ];
 
   // Apply filters
   let filteredQuotations = mockQuotations;
 
   if (search) {
-    filteredQuotations = filteredQuotations.filter(quotation =>
-      quotation.quotation_number.toLowerCase().includes(search.toLowerCase()) ||
-      quotation.customer.company_name.toLowerCase().includes(search.toLowerCase()) ||
-      quotation.customer.contact_person.toLowerCase().includes(search.toLowerCase())
+    filteredQuotations = filteredQuotations.filter(
+      quotation =>
+        quotation.quotation_number.toLowerCase().includes(search.toLowerCase()) ||
+        quotation.customer.company_name.toLowerCase().includes(search.toLowerCase()) ||
+        quotation.customer.contact_person.toLowerCase().includes(search.toLowerCase())
     );
   }
 
@@ -117,14 +124,14 @@ const getMockQuotationsData = (search: string = '', status: string = 'all', star
   }
 
   if (startDate) {
-    filteredQuotations = filteredQuotations.filter(quotation =>
-      new Date(quotation.issue_date) >= new Date(startDate)
+    filteredQuotations = filteredQuotations.filter(
+      quotation => new Date(quotation.issue_date) >= new Date(startDate)
     );
   }
 
   if (endDate) {
-    filteredQuotations = filteredQuotations.filter(quotation =>
-      new Date(quotation.valid_until) <= new Date(endDate)
+    filteredQuotations = filteredQuotations.filter(
+      quotation => new Date(quotation.valid_until) <= new Date(endDate)
     );
   }
 
@@ -149,7 +156,7 @@ const getMockQuotationsData = (search: string = '', status: string = 'all', star
     first_page_url: '/api/quotations?page=1',
     last_page_url: `/api/quotations?page=${lastPage}`,
     path: '/api/quotations',
-    links: []
+    links: [],
   };
 };
 
@@ -176,10 +183,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching quotations data:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch quotations data' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch quotations data' }, { status: 500 });
   }
 }
 
@@ -204,14 +208,11 @@ export async function POST(_request: NextRequest) {
       data: {
         id: Math.floor(Math.random() * 1000) + 1,
         quotation_number: `QUOT-2024-${Math.floor(Math.random() * 1000) + 1}`,
-        ...body
-      }
+        ...body,
+      },
     });
   } catch (error) {
     console.error('Error creating quotation:', error);
-    return NextResponse.json(
-      { error: 'Failed to create quotation' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create quotation' }, { status: 500 });
   }
 }

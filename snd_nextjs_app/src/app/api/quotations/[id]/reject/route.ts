@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await request.json();
@@ -26,13 +23,10 @@ export async function POST(
         id: parseInt(id),
         status: 'rejected',
         rejected_at: new Date().toISOString(),
-        notes: body.notes || null
-      }
+        notes: body.notes || null,
+      },
     });
   } catch {
-    return NextResponse.json(
-      { error: 'Failed to reject quotation' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to reject quotation' }, { status: 500 });
   }
 }

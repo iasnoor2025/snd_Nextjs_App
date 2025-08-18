@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { toast } from 'sonner';
 import ApiService from '@/lib/api-service';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export interface Notification {
   id: string;
@@ -46,7 +46,7 @@ export const useNotifications = () => {
         per_page: perPage,
         unread_only: unreadOnly,
       });
-      
+
       if (response.success) {
         setNotifications(response.data.notifications);
         setUnreadCount(response.data.notifications.filter((n: Notification) => !n.read).length);
@@ -63,13 +63,9 @@ export const useNotifications = () => {
   const markAsRead = useCallback(async (notificationId: string) => {
     try {
       await ApiService.markNotificationAsRead(notificationId);
-      
-      setNotifications(prev => 
-        prev.map(n => 
-          n.id === notificationId ? { ...n, read: true } : n
-        )
-      );
-      
+
+      setNotifications(prev => prev.map(n => (n.id === notificationId ? { ...n, read: true } : n)));
+
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
       console.error('Error marking notification as read:', err);
@@ -80,11 +76,9 @@ export const useNotifications = () => {
   const markAllAsRead = useCallback(async () => {
     try {
       await ApiService.markAllNotificationsAsRead();
-      
-      setNotifications(prev => 
-        prev.map(n => ({ ...n, read: true }))
-      );
-      
+
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+
       setUnreadCount(0);
     } catch (err) {
       console.error('Error marking all notifications as read:', err);
@@ -106,14 +100,16 @@ export const useNotifications = () => {
   const showToast = useCallback((notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
     const toastOptions = {
       description: notification.message,
-      action: notification.action_url ? {
-        label: 'View',
-        onClick: () => {
-          if (typeof window !== 'undefined') {
-            window.location.href = notification.action_url!;
+      action: notification.action_url
+        ? {
+            label: 'View',
+            onClick: () => {
+              if (typeof window !== 'undefined') {
+                window.location.href = notification.action_url!;
+              }
+            },
           }
-        },
-      } : undefined,
+        : undefined,
     };
 
     switch (notification.type) {
@@ -134,48 +130,60 @@ export const useNotifications = () => {
   }, []);
 
   // Show success toast
-  const showSuccess = useCallback((title: string, message: string, actionUrl?: string) => {
-    showToast({
-      type: 'success',
-      title,
-      message,
-      action_url: actionUrl || '',
-      priority: 'medium',
-    });
-  }, [showToast]);
+  const showSuccess = useCallback(
+    (title: string, message: string, actionUrl?: string) => {
+      showToast({
+        type: 'success',
+        title,
+        message,
+        action_url: actionUrl || '',
+        priority: 'medium',
+      });
+    },
+    [showToast]
+  );
 
   // Show error toast
-  const showError = useCallback((title: string, message: string, actionUrl?: string) => {
-    showToast({
-      type: 'error',
-      title,
-      message,
-      action_url: actionUrl || '',
-      priority: 'high',
-    });
-  }, [showToast]);
+  const showError = useCallback(
+    (title: string, message: string, actionUrl?: string) => {
+      showToast({
+        type: 'error',
+        title,
+        message,
+        action_url: actionUrl || '',
+        priority: 'high',
+      });
+    },
+    [showToast]
+  );
 
   // Show warning toast
-  const showWarning = useCallback((title: string, message: string, actionUrl?: string) => {
-    showToast({
-      type: 'warning',
-      title,
-      message,
-      action_url: actionUrl || '',
-      priority: 'medium',
-    });
-  }, [showToast]);
+  const showWarning = useCallback(
+    (title: string, message: string, actionUrl?: string) => {
+      showToast({
+        type: 'warning',
+        title,
+        message,
+        action_url: actionUrl || '',
+        priority: 'medium',
+      });
+    },
+    [showToast]
+  );
 
   // Show info toast
-  const showInfo = useCallback((title: string, message: string, actionUrl?: string) => {
-    showToast({
-      type: 'info',
-      title,
-      message,
-      action_url: actionUrl || '',
-      priority: 'low',
-    });
-  }, [showToast]);
+  const showInfo = useCallback(
+    (title: string, message: string, actionUrl?: string) => {
+      showToast({
+        type: 'info',
+        title,
+        message,
+        action_url: actionUrl || '',
+        priority: 'low',
+      });
+    },
+    [showToast]
+  );
 
   // Fetch notifications on mount
   useEffect(() => {

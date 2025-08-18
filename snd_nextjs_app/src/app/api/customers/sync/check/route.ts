@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { sql } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 // ERPNext configuration
 const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
 const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY;
@@ -14,9 +14,9 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   const url = `${ERPNEXT_URL}${endpoint}`;
 
   const defaultHeaders = {
-    'Authorization': `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
+    Authorization: `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
   };
 
   const response = await fetch(url, {
@@ -40,10 +40,10 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
 async function fetchAllCustomersFromERPNext(): Promise<any[]> {
   try {
     console.log('Fetching customers from ERPNext...');
-    
+
     const response = await makeERPNextRequest('/api/resource/Customer?limit_page_length=1000');
     console.log('ERPNext raw customer response:', response);
-    
+
     // Handle different response structures
     let customerList: any[] = [];
     if (response.data && Array.isArray(response.data)) {
@@ -56,16 +56,16 @@ async function fetchAllCustomersFromERPNext(): Promise<any[]> {
       console.error('Unexpected ERPNext response structure:', response);
       throw new Error('Invalid response structure from ERPNext');
     }
-    
+
     console.log(`Found ${customerList.length} customers in ERPNext response`);
-    
+
     // Filter out customers without names
-    const validCustomers = customerList.filter((customer: any) => 
-      customer && (customer.customer_name || customer.name)
+    const validCustomers = customerList.filter(
+      (customer: any) => customer && (customer.customer_name || customer.name)
     );
-    
+
     console.log(`Filtered to ${validCustomers.length} valid customers`);
-    
+
     return validCustomers;
   } catch (error) {
     console.error('Error fetching customers from ERPNext:', error);
@@ -82,7 +82,7 @@ export async function POST(_request: NextRequest) {
       console.log('ERPNext configuration missing:', {
         hasUrl: !!ERPNEXT_URL,
         hasKey: !!ERPNEXT_API_KEY,
-        hasSecret: !!ERPNEXT_API_SECRET
+        hasSecret: !!ERPNEXT_API_SECRET,
       });
 
       return NextResponse.json(
@@ -104,7 +104,9 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Database connection failed: ' + (dbError instanceof Error ? dbError.message : 'Unknown error'),
+          message:
+            'Database connection failed: ' +
+            (dbError instanceof Error ? dbError.message : 'Unknown error'),
         },
         { status: 500 }
       );
@@ -114,7 +116,7 @@ export async function POST(_request: NextRequest) {
     console.log('Fetching customers from ERPNext...');
     const erpnextCustomers = await fetchAllCustomersFromERPNext();
     console.log(`Fetched ${erpnextCustomers.length} customers from ERPNext`);
-    
+
     // Get existing customers count for comparison
     const countRows = await db.execute(sql`select count(*)::int as count from customers`);
     const existingCustomerCount = Number((countRows as any)?.rows?.[0]?.count ?? 0);
@@ -131,7 +133,7 @@ export async function POST(_request: NextRequest) {
         withEmail: erpnextCustomers.filter(c => c.email_id || c.email).length,
         withPhone: erpnextCustomers.filter(c => c.mobile_no || c.phone).length,
         withAddress: erpnextCustomers.filter(c => c.primary_address || c.customer_address).length,
-      }
+      },
     };
 
     console.log('Check result summary:', checkResult.summary);
@@ -139,9 +141,8 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `Successfully checked ERPNext data. Found ${erpnextCustomers.length} customers.`,
-      data: checkResult
+      data: checkResult,
     });
-
   } catch (error) {
     console.error('Error during ERPNext check:', error);
     return NextResponse.json(
@@ -154,4 +155,4 @@ export async function POST(_request: NextRequest) {
   } finally {
     // nothing to disconnect with Drizzle
   }
-} 
+}

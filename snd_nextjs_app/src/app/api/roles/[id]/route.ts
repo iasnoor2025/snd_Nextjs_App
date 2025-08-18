@@ -1,78 +1,163 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { roles, modelHasRoles, users } from '@/lib/drizzle/schema';
+import { modelHasRoles, roles, users } from '@/lib/drizzle/schema';
 import { eq, sql } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Define role permissions based on the ability system
 const rolePermissions = {
   SUPER_ADMIN: [
-    'users.read', 'users.create', 'users.update', 'users.delete',
-    'roles.read', 'roles.create', 'roles.update', 'roles.delete',
-    'equipment.read', 'equipment.create', 'equipment.update', 'equipment.delete',
-    'rentals.read', 'rentals.create', 'rentals.update', 'rentals.delete',
-    'employees.read', 'employees.create', 'employees.update', 'employees.delete',
-    'projects.read', 'projects.create', 'projects.update', 'projects.delete',
-    'reports.read', 'reports.create', 'reports.export',
-    'settings.read', 'settings.update',
-    'analytics.read', 'analytics.export',
+    'users.read',
+    'users.create',
+    'users.update',
+    'users.delete',
+    'roles.read',
+    'roles.create',
+    'roles.update',
+    'roles.delete',
+    'equipment.read',
+    'equipment.create',
+    'equipment.update',
+    'equipment.delete',
+    'rentals.read',
+    'rentals.create',
+    'rentals.update',
+    'rentals.delete',
+    'employees.read',
+    'employees.create',
+    'employees.update',
+    'employees.delete',
+    'projects.read',
+    'projects.create',
+    'projects.update',
+    'projects.delete',
+    'reports.read',
+    'reports.create',
+    'reports.export',
+    'settings.read',
+    'settings.update',
+    'analytics.read',
+    'analytics.export',
     // Timesheet permissions - full access
-    'timesheets.read', 'timesheets.create', 'timesheets.update', 'timesheets.delete',
-    'timesheets.approve', 'timesheets.reject',
-    'timesheets.approve.foreman', 'timesheets.approve.incharge', 'timesheets.approve.checking', 'timesheets.approve.manager',
+    'timesheets.read',
+    'timesheets.create',
+    'timesheets.update',
+    'timesheets.delete',
+    'timesheets.approve',
+    'timesheets.reject',
+    'timesheets.approve.foreman',
+    'timesheets.approve.incharge',
+    'timesheets.approve.checking',
+    'timesheets.approve.manager',
   ],
   ADMIN: [
-    'users.read', 'users.create', 'users.update', 'users.delete',
-    'roles.read', 'roles.create', 'roles.update', 'roles.delete',
-    'equipment.read', 'equipment.create', 'equipment.update', 'equipment.delete',
-    'rentals.read', 'rentals.create', 'rentals.update', 'rentals.delete',
-    'employees.read', 'employees.create', 'employees.update', 'employees.delete',
-    'projects.read', 'projects.create', 'projects.update', 'projects.delete',
-    'reports.read', 'reports.create', 'reports.export',
-    'settings.read', 'settings.update',
-    'analytics.read', 'analytics.export',
+    'users.read',
+    'users.create',
+    'users.update',
+    'users.delete',
+    'roles.read',
+    'roles.create',
+    'roles.update',
+    'roles.delete',
+    'equipment.read',
+    'equipment.create',
+    'equipment.update',
+    'equipment.delete',
+    'rentals.read',
+    'rentals.create',
+    'rentals.update',
+    'rentals.delete',
+    'employees.read',
+    'employees.create',
+    'employees.update',
+    'employees.delete',
+    'projects.read',
+    'projects.create',
+    'projects.update',
+    'projects.delete',
+    'reports.read',
+    'reports.create',
+    'reports.export',
+    'settings.read',
+    'settings.update',
+    'analytics.read',
+    'analytics.export',
     // Timesheet permissions - full access
-    'timesheets.read', 'timesheets.create', 'timesheets.update', 'timesheets.delete',
-    'timesheets.approve', 'timesheets.reject',
-    'timesheets.approve.foreman', 'timesheets.approve.incharge', 'timesheets.approve.checking', 'timesheets.approve.manager',
+    'timesheets.read',
+    'timesheets.create',
+    'timesheets.update',
+    'timesheets.delete',
+    'timesheets.approve',
+    'timesheets.reject',
+    'timesheets.approve.foreman',
+    'timesheets.approve.incharge',
+    'timesheets.approve.checking',
+    'timesheets.approve.manager',
   ],
   MANAGER: [
-    'employees.read', 'employees.update',
-    'equipment.read', 'equipment.update',
-    'rentals.read', 'rentals.create', 'rentals.update',
-    'projects.read', 'projects.create', 'projects.update',
-    'reports.read', 'reports.export',
+    'employees.read',
+    'employees.update',
+    'equipment.read',
+    'equipment.update',
+    'rentals.read',
+    'rentals.create',
+    'rentals.update',
+    'projects.read',
+    'projects.create',
+    'projects.update',
+    'reports.read',
+    'reports.export',
     'settings.read',
     // Timesheet permissions - manager level
-    'timesheets.read', 'timesheets.create', 'timesheets.update',
-    'timesheets.approve', 'timesheets.reject',
+    'timesheets.read',
+    'timesheets.create',
+    'timesheets.update',
+    'timesheets.approve',
+    'timesheets.reject',
     'timesheets.approve.manager',
   ],
   SUPERVISOR: [
     'employees.read',
     'equipment.read',
-    'rentals.read', 'rentals.create', 'rentals.update',
-    'projects.read', 'projects.create', 'projects.update',
+    'rentals.read',
+    'rentals.create',
+    'rentals.update',
+    'projects.read',
+    'projects.create',
+    'projects.update',
     'reports.read',
     // Timesheet permissions - supervisor level
-    'timesheets.read', 'timesheets.create', 'timesheets.update',
-    'timesheets.approve.foreman', 'timesheets.approve.incharge',
+    'timesheets.read',
+    'timesheets.create',
+    'timesheets.update',
+    'timesheets.approve.foreman',
+    'timesheets.approve.incharge',
   ],
   OPERATOR: [
-    'employees.read', 'employees.update',
+    'employees.read',
+    'employees.update',
     'equipment.read',
-    'rentals.read', 'rentals.create', 'rentals.update',
+    'rentals.read',
+    'rentals.create',
+    'rentals.update',
     'projects.read',
     // Timesheet permissions - operator level
-    'timesheets.read', 'timesheets.create', 'timesheets.update',
+    'timesheets.read',
+    'timesheets.create',
+    'timesheets.update',
     'timesheets.approve.foreman',
   ],
   EMPLOYEE: [
-    'employees.read', 'employees.update',
+    'employees.read',
+    'employees.update',
     'equipment.read',
-    'rentals.read', 'rentals.create', 'rentals.update',
+    'rentals.read',
+    'rentals.create',
+    'rentals.update',
     'projects.read',
     // Timesheet permissions - employee level
-    'timesheets.read', 'timesheets.create', 'timesheets.update',
+    'timesheets.read',
+    'timesheets.create',
+    'timesheets.update',
   ],
   USER: [
     'employees.read',
@@ -96,18 +181,12 @@ const roleDescriptions = {
 };
 
 // GET /api/roles/[id] - Get role by ID
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Role ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Role ID is required' }, { status: 400 });
     }
 
     const roleRows = await db
@@ -117,10 +196,7 @@ export async function GET(
       .limit(1);
 
     if (roleRows.length === 0) {
-      return NextResponse.json(
-        { error: 'Role not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Role not found' }, { status: 404 });
     }
 
     const role = roleRows[0];
@@ -146,35 +222,23 @@ export async function GET(
     return NextResponse.json(roleWithUserCount);
   } catch (error) {
     console.error('Error fetching role:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch role' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch role' }, { status: 500 });
   }
 }
 
 // PUT /api/roles/[id] - Update role by ID
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await request.json();
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Role ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Role ID is required' }, { status: 400 });
     }
 
     // Validate required fields
     if (!body.name) {
-      return NextResponse.json(
-        { error: 'Role name is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Role name is required' }, { status: 400 });
     }
 
     // Check if role exists
@@ -185,10 +249,7 @@ export async function PUT(
       .limit(1);
 
     if (existingRoleRows.length === 0) {
-      return NextResponse.json(
-        { error: 'Role not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Role not found' }, { status: 404 });
     }
 
     const existingRole = existingRoleRows[0];
@@ -202,10 +263,7 @@ export async function PUT(
         .limit(1);
 
       if (conflictingRoleRows.length > 0) {
-        return NextResponse.json(
-          { error: 'Role with this name already exists' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Role with this name already exists' }, { status: 400 });
       }
     }
 
@@ -242,9 +300,6 @@ export async function PUT(
     return NextResponse.json(roleWithUserCount);
   } catch (error) {
     console.error('Error updating role:', error);
-    return NextResponse.json(
-      { error: 'Failed to update role' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update role' }, { status: 500 });
   }
 }

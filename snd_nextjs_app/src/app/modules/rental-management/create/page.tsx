@@ -1,29 +1,42 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import { format } from 'date-fns';
+import {
   ArrowLeft,
-  Plus,
-  Trash2,
   Calculator,
-  DollarSign,
-  Package,
-  User,
   Calendar,
   Clock,
-  FileText
+  DollarSign,
+  FileText,
+  Package,
+  Plus,
+  Trash2,
+  User,
 } from 'lucide-react';
-import { toast } from 'sonner';
-import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Equipment {
   id: string;
@@ -158,19 +171,19 @@ export default function CreateRentalPage() {
     };
     setFormData(prev => ({
       ...prev,
-      rentalItems: [...prev.rentalItems, newItem]
+      rentalItems: [...prev.rentalItems, newItem],
     }));
   };
 
   // Update rental item
   const updateRentalItem = (index: number, field: keyof RentalItem, value: any) => {
     const updatedItems = [...formData.rentalItems];
-      updatedItems[index] = { ...updatedItems[index], [field]: value };
+    updatedItems[index] = { ...updatedItems[index], [field]: value };
 
     // If equipment changed, update equipment name and pricing
     if (field === 'equipmentId') {
-        const selectedEquipment = equipment.find(eq => eq.id === value);
-        if (selectedEquipment) {
+      const selectedEquipment = equipment.find(eq => eq.id === value);
+      if (selectedEquipment) {
         updatedItems[index].equipmentName = selectedEquipment.name;
         updatedItems[index].unitPrice = selectedEquipment.dailyRate;
         updatedItems[index].totalPrice = selectedEquipment.dailyRate;
@@ -185,7 +198,7 @@ export default function CreateRentalPage() {
 
     setFormData(prev => ({
       ...prev,
-      rentalItems: updatedItems
+      rentalItems: updatedItems,
     }));
 
     // Recalculate totals
@@ -197,7 +210,7 @@ export default function CreateRentalPage() {
     const updatedItems = formData.rentalItems.filter((_, i) => i !== index);
     setFormData(prev => ({
       ...prev,
-      rentalItems: updatedItems
+      rentalItems: updatedItems,
     }));
     calculateTotals(updatedItems);
   };
@@ -249,7 +262,9 @@ export default function CreateRentalPage() {
           customerId: formData.customerId,
           rentalNumber: formData.rentalNumber,
           startDate: new Date(formData.startDate).toISOString(),
-          expectedEndDate: formData.expectedEndDate ? new Date(formData.expectedEndDate).toISOString() : null,
+          expectedEndDate: formData.expectedEndDate
+            ? new Date(formData.expectedEndDate).toISOString()
+            : null,
           depositAmount: parseFloat(formData.depositAmount) || 0,
           paymentTermsDays: parseInt(formData.paymentTermsDays),
           hasTimesheet: formData.hasTimesheet,
@@ -288,7 +303,7 @@ export default function CreateRentalPage() {
     // Generate rental number
     if (!formData.rentalNumber) {
       setFormData(prev => ({ ...prev, rentalNumber: generateRentalNumber() }));
-  }
+    }
   }, []);
 
   return (
@@ -299,7 +314,7 @@ export default function CreateRentalPage() {
           <Button variant="outline" onClick={() => router.push('/modules/rental-management')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back
-            </Button>
+          </Button>
           <div>
             <h1 className="text-3xl font-bold">Create New Rental</h1>
             <p className="text-muted-foreground">Create a new equipment rental contract</p>
@@ -308,58 +323,60 @@ export default function CreateRentalPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Basic Information */}
-            <Card>
-              <CardHeader>
+        {/* Basic Information */}
+        <Card>
+          <CardHeader>
             <CardTitle>Basic Information</CardTitle>
             <CardDescription>Enter the basic rental details</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
                 <Label htmlFor="rentalNumber">Rental Number</Label>
-                    <Input
+                <Input
                   id="rentalNumber"
                   value={formData.rentalNumber}
-                  onChange={(e) => setFormData(prev => ({ ...prev, rentalNumber: e.target.value }))}
-                      placeholder="Auto-generated"
-                    />
-                  </div>
-                  <div>
+                  onChange={e => setFormData(prev => ({ ...prev, rentalNumber: e.target.value }))}
+                  placeholder="Auto-generated"
+                />
+              </div>
+              <div>
                 <Label htmlFor="customerId">Customer</Label>
                 <Select
                   value={formData.customerId}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, customerId: value }))}
+                  onValueChange={value => setFormData(prev => ({ ...prev, customerId: value }))}
                 >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select customer" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {customers.map((customer) => (
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select customer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {customers.map(customer => (
                       <SelectItem key={customer.id} value={customer.id}>
                         {customer.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div>
                 <Label htmlFor="startDate">Start Date</Label>
                 <Input
                   id="startDate"
                   type="date"
                   value={formData.startDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+                  onChange={e => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
                   required
                 />
-                </div>
-                  <div>
+              </div>
+              <div>
                 <Label htmlFor="expectedEndDate">Expected End Date</Label>
-                    <Input
+                <Input
                   id="expectedEndDate"
-                      type="date"
+                  type="date"
                   value={formData.expectedEndDate}
-                  onChange={(e) => setFormData(prev => ({ ...prev, expectedEndDate: e.target.value }))}
+                  onChange={e =>
+                    setFormData(prev => ({ ...prev, expectedEndDate: e.target.value }))
+                  }
                 />
               </div>
               <div>
@@ -369,25 +386,27 @@ export default function CreateRentalPage() {
                   type="number"
                   step="0.01"
                   value={formData.depositAmount}
-                  onChange={(e) => setFormData(prev => ({ ...prev, depositAmount: e.target.value }))}
-                    />
-                  </div>
-                  <div>
+                  onChange={e => setFormData(prev => ({ ...prev, depositAmount: e.target.value }))}
+                />
+              </div>
+              <div>
                 <Label htmlFor="paymentTermsDays">Payment Terms (Days)</Label>
-                    <Input
+                <Input
                   id="paymentTermsDays"
                   type="number"
                   value={formData.paymentTermsDays}
-                  onChange={(e) => setFormData(prev => ({ ...prev, paymentTermsDays: e.target.value }))}
-                    />
-                  </div>
-                </div>
+                  onChange={e =>
+                    setFormData(prev => ({ ...prev, paymentTermsDays: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                  onValueChange={value => setFormData(prev => ({ ...prev, status: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -404,7 +423,7 @@ export default function CreateRentalPage() {
                 <Label htmlFor="paymentStatus">Payment Status</Label>
                 <Select
                   value={formData.paymentStatus}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, paymentStatus: value }))}
+                  onValueChange={value => setFormData(prev => ({ ...prev, paymentStatus: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -424,7 +443,7 @@ export default function CreateRentalPage() {
                   type="checkbox"
                   id="hasTimesheet"
                   checked={formData.hasTimesheet}
-                  onChange={(e) => setFormData(prev => ({ ...prev, hasTimesheet: e.target.checked }))}
+                  onChange={e => setFormData(prev => ({ ...prev, hasTimesheet: e.target.checked }))}
                 />
                 <Label htmlFor="hasTimesheet">Has Timesheet</Label>
               </div>
@@ -433,7 +452,7 @@ export default function CreateRentalPage() {
                   type="checkbox"
                   id="hasOperators"
                   checked={formData.hasOperators}
-                  onChange={(e) => setFormData(prev => ({ ...prev, hasOperators: e.target.checked }))}
+                  onChange={e => setFormData(prev => ({ ...prev, hasOperators: e.target.checked }))}
                 />
                 <Label htmlFor="hasOperators">Has Operators</Label>
               </div>
@@ -443,17 +462,17 @@ export default function CreateRentalPage() {
               <Textarea
                 id="notes"
                 value={formData.notes}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 rows={3}
                 placeholder="Additional notes about this rental..."
               />
             </div>
-              </CardContent>
-            </Card>
+          </CardContent>
+        </Card>
 
         {/* Rental Items */}
-            <Card>
-              <CardHeader>
+        <Card>
+          <CardHeader>
             <div className="flex justify-between items-center">
               <div>
                 <CardTitle>Rental Items</CardTitle>
@@ -462,20 +481,20 @@ export default function CreateRentalPage() {
               <Button type="button" onClick={addRentalItem}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add Item
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
             {formData.rentalItems.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-muted-foreground">
                 <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <p>No rental items added yet</p>
                 <p className="text-sm text-muted-foreground">
                   This will create a new rental with the number &quot;{formData.rentalNumber}&quot;
                 </p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
+              </div>
+            ) : (
+              <div className="space-y-4">
                 {formData.rentalItems.map((item, index) => (
                   <div key={index} className="border rounded-lg p-4 space-y-4">
                     <div className="flex justify-between items-center">
@@ -490,53 +509,55 @@ export default function CreateRentalPage() {
                       </Button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div>
+                      <div>
                         <Label>Equipment</Label>
-                              <Select
+                        <Select
                           value={item.equipmentId}
-                          onValueChange={(value) => updateRentalItem(index, 'equipmentId', value)}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select equipment" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {equipment.map((eq) => (
+                          onValueChange={value => updateRentalItem(index, 'equipmentId', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select equipment" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {equipment.map(eq => (
                               <SelectItem key={eq.id} value={eq.id}>
-                                      {eq.name} - {eq.model}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                                {eq.name} - {eq.model}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <div>
                         <Label>Unit Price</Label>
                         <Input
                           type="number"
                           step="0.01"
                           value={item.unitPrice}
-                          onChange={(e) => updateRentalItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
+                          onChange={e =>
+                            updateRentalItem(index, 'unitPrice', parseFloat(e.target.value) || 0)
+                          }
                         />
                       </div>
-                            <div>
-                              <Label>Rate Type</Label>
-                              <Select
+                      <div>
+                        <Label>Rate Type</Label>
+                        <Select
                           value={item.rateType}
-                          onValueChange={(value) => updateRentalItem(index, 'rateType', value)}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="daily">Daily</SelectItem>
-                                  <SelectItem value="weekly">Weekly</SelectItem>
-                                  <SelectItem value="monthly">Monthly</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
+                          onValueChange={value => updateRentalItem(index, 'rateType', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="weekly">Weekly</SelectItem>
+                            <SelectItem value="monthly">Monthly</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
                         <Label>Total Price</Label>
-                              <Input
-                                type="number"
+                        <Input
+                          type="number"
                           step="0.01"
                           value={item.totalPrice}
                           readOnly
@@ -547,27 +568,27 @@ export default function CreateRentalPage() {
                         <Label>Notes</Label>
                         <Input
                           value={item.notes || ''}
-                          onChange={(e) => updateRentalItem(index, 'notes', e.target.value)}
+                          onChange={e => updateRentalItem(index, 'notes', e.target.value)}
                           placeholder="Optional notes for this item..."
-                              />
-                            </div>
-                          </div>
+                        />
+                      </div>
+                    </div>
                   </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Financial Summary */}
-            <Card>
-              <CardHeader>
+        <Card>
+          <CardHeader>
             <CardTitle>Financial Summary</CardTitle>
             <CardDescription>Review the rental costs and totals</CardDescription>
-              </CardHeader>
+          </CardHeader>
           <CardContent>
             <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
@@ -601,10 +622,10 @@ export default function CreateRentalPage() {
                     <span>{formData.rentalItems.length}</span>
                   </div>
                 </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Submit Button */}
         <div className="flex justify-end gap-4">
@@ -614,10 +635,10 @@ export default function CreateRentalPage() {
             onClick={() => router.push('/modules/rental-management')}
           >
             Cancel
-                </Button>
+          </Button>
           <Button type="submit" disabled={loading}>
             {loading ? 'Creating...' : 'Create Rental'}
-                </Button>
+          </Button>
         </div>
       </form>
     </div>

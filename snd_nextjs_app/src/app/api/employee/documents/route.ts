@@ -1,21 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authConfig } from '@/lib/auth-config'
-import { employeeDocuments } from '@/lib/drizzle/schema'
-import { writeFile } from 'fs/promises'
-import { join } from 'path'
+import { authConfig } from '@/lib/auth-config';
+import { db } from '@/lib/db';
+import { employeeDocuments } from '@/lib/drizzle/schema';
+import { writeFile } from 'fs/promises';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { join } from 'path';
 
 export async function POST(_request: NextRequest) {
   try {
     // Get the current user session
-    const session = await getServerSession(authConfig)
-    
+    const session = await getServerSession(authConfig);
+
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     // Check if user has EMPLOYEE role
@@ -23,55 +20,65 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json(
         { error: 'Access denied. Employee role required.' },
         { status: 403 }
-      )
+      );
     }
 
-    const formData = await _request.formData()
+    const formData = await _request.formData();
     // Support both field names for compatibility
-    const employee_id = formData.get('employee_id') || formData.get('employeeId')
-    const document_type = formData.get('document_type') as string
-    const description = formData.get('description') as string
-    const file = formData.get('file') as File
+    const employee_id = formData.get('employee_id') || formData.get('employeeId');
+    const document_type = formData.get('document_type') as string;
+    const description = formData.get('description') as string;
+    const file = formData.get('file') as File;
 
     // Validate required fields
     if (!employee_id || !document_type || !file) {
       return NextResponse.json(
-        { error: 'Missing required fields: employee_id/employeeId, document_type, and file are required' },
+        {
+          error:
+            'Missing required fields: employee_id/employeeId, document_type, and file are required',
+        },
         { status: 400 }
-      )
+      );
     }
 
     // Validate file type
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/jpg', 'image/png']
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+    ];
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
         { error: 'Invalid file type. Only PDF, DOC, DOCX, JPG, and PNG files are allowed.' },
         { status: 400 }
-      )
+      );
     }
 
     // Validate file size (5MB limit)
-    const maxSize = 5 * 1024 * 1024 // 5MB
+    const maxSize = 5 * 1024 * 1024; // 5MB
     if (file.size > maxSize) {
       return NextResponse.json(
         { error: 'File size too large. Maximum size is 5MB.' },
         { status: 400 }
-      )
+      );
     }
 
     // Generate unique filename
-    const timestamp = Date.now()
-    const fileExtension = file.name.split('.').pop()
-    const fileName = `${employee_id}_${document_type}_${timestamp}.${fileExtension}`
+    const timestamp = Date.now();
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${employee_id}_${document_type}_${timestamp}.${fileExtension}`;
 
     // Save file to uploads directory
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'documents')
-    const filePath = join(uploadsDir, fileName)
-    
-    const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
-    
-    await writeFile(filePath, buffer)
+    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'documents');
+    const filePath = join(uploadsDir, fileName);
+
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    await writeFile(filePath, buffer);
 
     // Create document record in database using Drizzle
     const documentRows = await db
@@ -93,14 +100,10 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json({
       message: 'Document uploaded successfully',
-      document
-    })
-
+      document,
+    });
   } catch (error) {
-    console.error('Error uploading document:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('Error uploading document:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Play } from 'lucide-react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
 interface AutoGenerateResult {
@@ -22,7 +22,10 @@ interface AutoGenerateButtonProps {
   onAutoGenerateComplete?: () => void;
 }
 
-export default function AutoGenerateButton({ isAutoGenerating = false, onAutoGenerateComplete }: AutoGenerateButtonProps) {
+export default function AutoGenerateButton({
+  isAutoGenerating = false,
+  onAutoGenerateComplete,
+}: AutoGenerateButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleAutoGenerate = useCallback(async () => {
@@ -48,10 +51,10 @@ export default function AutoGenerateButton({ isAutoGenerating = false, onAutoGen
         if (result.errors.length > 0) {
           toast.warning(`${result.errors.length} errors occurred during generation`);
         }
-        
+
         // Show notification that table will refresh
         toast.info('Refreshing timesheets table...');
-        
+
         // Notify parent component to refresh the timesheets table
         if (onAutoGenerateComplete) {
           onAutoGenerateComplete();

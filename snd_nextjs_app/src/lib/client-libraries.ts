@@ -5,7 +5,7 @@ export const loadJsPDF = async () => {
   if (typeof window === 'undefined') {
     throw new Error('jsPDF can only be used on the client side');
   }
-  
+
   try {
     const { jsPDF } = await import('jspdf');
     return jsPDF;
@@ -15,16 +15,11 @@ export const loadJsPDF = async () => {
   }
 };
 
-
-
 // Check if we're on the client side
 export const isClient = typeof window !== 'undefined';
 
 // Safe wrapper for client-side operations
-export const safeClientOperation = <T>(
-  operation: () => T,
-  fallback: T
-): T => {
+export const safeClientOperation = <T>(operation: () => T, fallback: T): T => {
   if (isClient) {
     try {
       return operation();

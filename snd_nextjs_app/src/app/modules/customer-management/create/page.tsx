@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, UserPlus, Upload } from "lucide-react";
-import { toast } from "sonner";
-import Link from "next/link";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, Upload, UserPlus } from 'lucide-react';
+import Link from 'next/link';
+import { useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 interface CustomerFormData {
   name: string;
@@ -32,21 +32,21 @@ interface CustomerFormData {
 
 export default function CreateCustomerPage() {
   const [formData, setFormData] = useState<CustomerFormData>({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-    notes: "",
-    company_name: "",
-    contact_person: "",
-    city: "",
-    state: "",
-    postal_code: "",
-    country: "",
-    website: "",
-    tax_number: "",
-    credit_limit: "",
-    payment_terms: "",
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    notes: '',
+    company_name: '',
+    contact_person: '',
+    city: '',
+    state: '',
+    postal_code: '',
+    country: '',
+    website: '',
+    tax_number: '',
+    credit_limit: '',
+    payment_terms: '',
     is_active: true,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -58,7 +58,7 @@ export default function CreateCustomerPage() {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: "" }));
+      setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -93,11 +93,11 @@ export default function CreateCustomerPage() {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      toast.success("Customer created successfully");
+      toast.success('Customer created successfully');
       // Redirect to customers list
-      window.location.href = "/modules/customer-management";
+      window.location.href = '/modules/customer-management';
     } catch {
-      toast.error("Failed to create customer");
+      toast.error('Failed to create customer');
     } finally {
       setLoading(false);
     }
@@ -134,9 +134,9 @@ export default function CreateCustomerPage() {
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => handleInputChange("name", e.target.value)}
+                    onChange={e => handleInputChange('name', e.target.value)}
                     placeholder="Enter customer name"
-                    className={errors.name ? "border-red-500" : ""}
+                    className={errors.name ? 'border-red-500' : ''}
                   />
                   {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
                 </div>
@@ -146,9 +146,9 @@ export default function CreateCustomerPage() {
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
+                    onChange={e => handleInputChange('email', e.target.value)}
                     placeholder="Enter email address"
-                    className={errors.email ? "border-red-500" : ""}
+                    className={errors.email ? 'border-red-500' : ''}
                   />
                   {errors.email && <p className="text-sm text-red-500">{errors.email}</p>}
                 </div>
@@ -157,7 +157,7 @@ export default function CreateCustomerPage() {
                   <Input
                     id="phone"
                     value={formData.phone}
-                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                    onChange={e => handleInputChange('phone', e.target.value)}
                     placeholder="Enter phone number"
                   />
                 </div>
@@ -166,7 +166,7 @@ export default function CreateCustomerPage() {
                   <Input
                     id="company_name"
                     value={formData.company_name}
-                    onChange={(e) => handleInputChange("company_name", e.target.value)}
+                    onChange={e => handleInputChange('company_name', e.target.value)}
                     placeholder="Enter company name"
                   />
                 </div>
@@ -175,7 +175,7 @@ export default function CreateCustomerPage() {
                   <Input
                     id="contact_person"
                     value={formData.contact_person}
-                    onChange={(e) => handleInputChange("contact_person", e.target.value)}
+                    onChange={e => handleInputChange('contact_person', e.target.value)}
                     placeholder="Enter contact person name"
                   />
                 </div>
@@ -184,7 +184,7 @@ export default function CreateCustomerPage() {
                   <Input
                     id="website"
                     value={formData.website}
-                    onChange={(e) => handleInputChange("website", e.target.value)}
+                    onChange={e => handleInputChange('website', e.target.value)}
                     placeholder="Enter website URL"
                   />
                 </div>
@@ -200,7 +200,7 @@ export default function CreateCustomerPage() {
                   <Textarea
                     id="address"
                     value={formData.address}
-                    onChange={(e) => handleInputChange("address", e.target.value)}
+                    onChange={e => handleInputChange('address', e.target.value)}
                     placeholder="Enter full address"
                     rows={3}
                   />
@@ -211,7 +211,7 @@ export default function CreateCustomerPage() {
                     <Input
                       id="city"
                       value={formData.city}
-                      onChange={(e) => handleInputChange("city", e.target.value)}
+                      onChange={e => handleInputChange('city', e.target.value)}
                       placeholder="Enter city"
                     />
                   </div>
@@ -220,7 +220,7 @@ export default function CreateCustomerPage() {
                     <Input
                       id="state"
                       value={formData.state}
-                      onChange={(e) => handleInputChange("state", e.target.value)}
+                      onChange={e => handleInputChange('state', e.target.value)}
                       placeholder="Enter state"
                     />
                   </div>
@@ -229,7 +229,7 @@ export default function CreateCustomerPage() {
                     <Input
                       id="postal_code"
                       value={formData.postal_code}
-                      onChange={(e) => handleInputChange("postal_code", e.target.value)}
+                      onChange={e => handleInputChange('postal_code', e.target.value)}
                       placeholder="Enter postal code"
                     />
                   </div>
@@ -238,7 +238,7 @@ export default function CreateCustomerPage() {
                     <Input
                       id="country"
                       value={formData.country}
-                      onChange={(e) => handleInputChange("country", e.target.value)}
+                      onChange={e => handleInputChange('country', e.target.value)}
                       placeholder="Enter country"
                     />
                   </div>
@@ -255,7 +255,7 @@ export default function CreateCustomerPage() {
                   <Input
                     id="tax_number"
                     value={formData.tax_number}
-                    onChange={(e) => handleInputChange("tax_number", e.target.value)}
+                    onChange={e => handleInputChange('tax_number', e.target.value)}
                     placeholder="Enter tax number"
                   />
                 </div>
@@ -265,7 +265,7 @@ export default function CreateCustomerPage() {
                     id="credit_limit"
                     type="number"
                     value={formData.credit_limit}
-                    onChange={(e) => handleInputChange("credit_limit", e.target.value)}
+                    onChange={e => handleInputChange('credit_limit', e.target.value)}
                     placeholder="Enter credit limit"
                   />
                 </div>
@@ -274,7 +274,7 @@ export default function CreateCustomerPage() {
                   <Input
                     id="payment_terms"
                     value={formData.payment_terms}
-                    onChange={(e) => handleInputChange("payment_terms", e.target.value)}
+                    onChange={e => handleInputChange('payment_terms', e.target.value)}
                     placeholder="e.g., Net 30"
                   />
                 </div>
@@ -290,7 +290,7 @@ export default function CreateCustomerPage() {
                   <Textarea
                     id="notes"
                     value={formData.notes}
-                    onChange={(e) => handleInputChange("notes", e.target.value)}
+                    onChange={e => handleInputChange('notes', e.target.value)}
                     placeholder="Enter any additional notes"
                     rows={4}
                   />
@@ -306,9 +306,7 @@ export default function CreateCustomerPage() {
                       <Upload className="mr-2 h-4 w-4" />
                       Choose File
                     </Button>
-                    {document && (
-                      <span className="text-sm text-gray-600">{document.name}</span>
-                    )}
+                    {document && <span className="text-sm text-gray-600">{document.name}</span>}
                   </div>
                   <input
                     ref={fileInputRef}
@@ -322,7 +320,7 @@ export default function CreateCustomerPage() {
                   <Switch
                     id="is_active"
                     checked={formData.is_active}
-                    onCheckedChange={(checked) => handleInputChange("is_active", checked)}
+                    onCheckedChange={checked => handleInputChange('is_active', checked)}
                   />
                   <Label htmlFor="is_active">Active Customer</Label>
                 </div>
@@ -335,7 +333,7 @@ export default function CreateCustomerPage() {
                 <Link href="/modules/customer-management">Cancel</Link>
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? "Creating..." : "Create Customer"}
+                {loading ? 'Creating...' : 'Create Customer'}
               </Button>
             </div>
           </form>

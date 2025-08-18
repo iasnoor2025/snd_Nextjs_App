@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { db } from '@/lib/drizzle';
-import { timesheets as timesheetsTable, employees } from '@/lib/drizzle/schema';
-import { eq, and, desc, sql, or, ilike } from 'drizzle-orm';
-import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
+import { db } from '@/lib/drizzle';
+import { employees, timesheets as timesheetsTable } from '@/lib/drizzle/schema';
+import { withAuth } from '@/lib/rbac/api-middleware';
+import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/timesheets - List timesheets with employee data filtering
 const getTimesheetsHandler = async (request: NextRequest) => {
@@ -20,7 +20,6 @@ const getTimesheetsHandler = async (request: NextRequest) => {
 
     // Allow test access without authentication
     if (test === 'true') {
-      
       const rows = await db
         .select({
           id: timesheetsTable.id,
@@ -59,31 +58,41 @@ const getTimesheetsHandler = async (request: NextRequest) => {
         date: new Date(timesheet.date as unknown as string).toISOString().split('T')[0],
         hoursWorked: timesheet.hours_worked,
         overtimeHours: timesheet.overtime_hours,
-        startTime: timesheet.start_time ? new Date(timesheet.start_time as unknown as string).toISOString() : '',
-        endTime: timesheet.end_time ? new Date(timesheet.end_time as unknown as string).toISOString() : '',
+        startTime: timesheet.start_time
+          ? new Date(timesheet.start_time as unknown as string).toISOString()
+          : '',
+        endTime: timesheet.end_time
+          ? new Date(timesheet.end_time as unknown as string).toISOString()
+          : '',
         status: timesheet.status,
         projectId: timesheet.project_id ? String(timesheet.project_id) : undefined,
         rentalId: timesheet.rental_id ? String(timesheet.rental_id) : undefined,
         assignmentId: timesheet.assignment_id ? String(timesheet.assignment_id) : undefined,
         description: timesheet.description || '',
         tasksCompleted: timesheet.tasks || '',
-        submittedAt: timesheet.submitted_at ? new Date(timesheet.submitted_at as unknown as string).toISOString() : '',
+        submittedAt: timesheet.submitted_at
+          ? new Date(timesheet.submitted_at as unknown as string).toISOString()
+          : '',
         approvedBy: '',
-        approvedAt: timesheet.approved_at ? new Date(timesheet.approved_at as unknown as string).toISOString() : '',
+        approvedAt: timesheet.approved_at
+          ? new Date(timesheet.approved_at as unknown as string).toISOString()
+          : '',
         createdAt: new Date(timesheet.created_at as unknown as string).toISOString(),
         updatedAt: new Date(timesheet.updated_at as unknown as string).toISOString(),
-        employee: timesheet.employee ? {
-          id: String((timesheet.employee as any).id),
-          firstName: (timesheet.employee as any).first_name as unknown as string,
-          lastName: (timesheet.employee as any).last_name as unknown as string,
-          fileNumber: (timesheet.employee as any).file_number as unknown as string,
-        } : undefined,
+        employee: timesheet.employee
+          ? {
+              id: String((timesheet.employee as any).id),
+              firstName: (timesheet.employee as any).first_name as unknown as string,
+              lastName: (timesheet.employee as any).last_name as unknown as string,
+              fileNumber: (timesheet.employee as any).file_number as unknown as string,
+            }
+          : undefined,
       }));
 
       return NextResponse.json({
         data: transformedTimesheets,
         total: transformedTimesheets.length,
-        message: 'Test access successful'
+        message: 'Test access successful',
       });
     }
 
@@ -94,7 +103,7 @@ const getTimesheetsHandler = async (request: NextRequest) => {
     // Get session to check user role
     const session = await getServerSession(authConfig);
     const user = session?.user;
-    
+
     // For employee users, only show their own timesheets
     if (user?.role === 'EMPLOYEE') {
       // Find employee record that matches user's national_id
@@ -121,15 +130,15 @@ const getTimesheetsHandler = async (request: NextRequest) => {
       const [year, monthNum] = month.split('-');
       if (year && monthNum) {
         console.log(`Month filter: ${month} -> Year: ${year}, Month: ${monthNum}`);
-        
+
         // Use raw SQL to avoid timezone conversion issues
         const monthFilter = sql`
           EXTRACT(YEAR FROM timesheets.date) = ${parseInt(year)} 
           AND EXTRACT(MONTH FROM timesheets.date) = ${parseInt(monthNum)}
         `;
-        
+
         filters.push(monthFilter);
-        
+
         console.log(`Applied month filter for ${month}`);
       }
     }
@@ -208,12 +217,14 @@ const getTimesheetsHandler = async (request: NextRequest) => {
       approvedAt: timesheet.approved_at ? String(timesheet.approved_at) : '',
       createdAt: String(timesheet.created_at),
       updatedAt: String(timesheet.updated_at),
-      employee: timesheet.emp_id ? {
-        id: String(timesheet.emp_id),
-        firstName: timesheet.emp_first as unknown as string,
-        lastName: timesheet.emp_last as unknown as string,
-        fileNumber: timesheet.emp_file_number as unknown as string,
-      } : undefined,
+      employee: timesheet.emp_id
+        ? {
+            id: String(timesheet.emp_id),
+            firstName: timesheet.emp_first as unknown as string,
+            lastName: timesheet.emp_last as unknown as string,
+            fileNumber: timesheet.emp_file_number as unknown as string,
+          }
+        : undefined,
     }));
 
     const totalPages = Math.ceil(total / limit);
@@ -230,7 +241,10 @@ const getTimesheetsHandler = async (request: NextRequest) => {
   } catch (error) {
     console.error('Error fetching timesheets:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch timesheets', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Failed to fetch timesheets',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }
@@ -240,139 +254,142 @@ const getTimesheetsHandler = async (request: NextRequest) => {
 export const GET = async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const test = searchParams.get('test');
-  
+
   // Check if this is a test request (bypasses authentication)
   if (test === 'true') {
     return getTimesheetsHandler(request);
   }
-  
+
   // Apply authentication middleware for regular requests
   const authenticatedHandler = withAuth(getTimesheetsHandler);
   return authenticatedHandler(request);
 };
 
 // POST /api/timesheets - Create timesheet with permission check
-export const POST = withAuth(
-  async (request: NextRequest) => {
-    try {
-      const body = await request.json();
+export const POST = withAuth(async (request: NextRequest) => {
+  try {
+    const body = await request.json();
 
-      // Handle both Laravel-style and Next.js-style field names
-      const employeeId = body.employee_id || body.employeeId;
-      const date = body.date;
-      const hoursWorked = body.hours_worked || body.hoursWorked;
-      const overtimeHours = body.overtime_hours || body.overtimeHours;
-      const startTime = body.start_time || body.startTime;
-      const endTime = body.end_time || body.endTime;
-      const status = body.status;
-      const projectId = body.project_id || body.projectId;
-      const rentalId = body.rental_id || body.rentalId;
-      const assignmentId = body.assignment_id || body.assignmentId;
-      const description = body.description;
-      const tasksCompleted = body.tasks_completed || body.tasksCompleted;
-      const notes = body.notes;
+    // Handle both Laravel-style and Next.js-style field names
+    const employeeId = body.employee_id || body.employeeId;
+    const date = body.date;
+    const hoursWorked = body.hours_worked || body.hoursWorked;
+    const overtimeHours = body.overtime_hours || body.overtimeHours;
+    const startTime = body.start_time || body.startTime;
+    const endTime = body.end_time || body.endTime;
+    const status = body.status;
+    const projectId = body.project_id || body.projectId;
+    const rentalId = body.rental_id || body.rentalId;
+    const assignmentId = body.assignment_id || body.assignmentId;
+    const description = body.description;
+    const tasksCompleted = body.tasks_completed || body.tasksCompleted;
+    const notes = body.notes;
 
-      const inserted = await db
-        .insert(timesheetsTable)
-        .values({
-          employeeId: parseInt(employeeId),
-          date: new Date(date).toISOString(),
-          hoursWorked: String(parseFloat(hoursWorked || '0')),
-          overtimeHours: String(parseFloat(overtimeHours || '0')),
-          startTime: startTime ? new Date(startTime).toISOString() : new Date().toISOString(),
-          endTime: endTime ? new Date(endTime).toISOString() : null,
-          status: status || 'draft',
-          projectId: projectId ? parseInt(projectId) : null,
-          rentalId: rentalId ? parseInt(rentalId) : null,
-          assignmentId: assignmentId ? parseInt(assignmentId) : null,
-          description,
-          tasks: tasksCompleted,
-          notes,
-          updatedAt: new Date().toISOString(),
-        })
-        .returning();
+    const inserted = await db
+      .insert(timesheetsTable)
+      .values({
+        employeeId: parseInt(employeeId),
+        date: new Date(date).toISOString(),
+        hoursWorked: String(parseFloat(hoursWorked || '0')),
+        overtimeHours: String(parseFloat(overtimeHours || '0')),
+        startTime: startTime ? new Date(startTime).toISOString() : new Date().toISOString(),
+        endTime: endTime ? new Date(endTime).toISOString() : null,
+        status: status || 'draft',
+        projectId: projectId ? parseInt(projectId) : null,
+        rentalId: rentalId ? parseInt(rentalId) : null,
+        assignmentId: assignmentId ? parseInt(assignmentId) : null,
+        description,
+        tasks: tasksCompleted,
+        notes,
+        updatedAt: new Date().toISOString(),
+      })
+      .returning();
 
-      return NextResponse.json(inserted[0], { status: 201 });
-    } catch (error) {
-      console.error('Error creating timesheet:', error);
-      return NextResponse.json(
-        { error: 'Failed to create timesheet', details: error instanceof Error ? error.message : 'Unknown error' },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(inserted[0], { status: 201 });
+  } catch (error) {
+    console.error('Error creating timesheet:', error);
+    return NextResponse.json(
+      {
+        error: 'Failed to create timesheet',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
-);
+});
 
 // PUT /api/timesheets - Update timesheet with permission check
-export const PUT = withAuth(
-  async (request: NextRequest) => {
-    try {
-      const body = await request.json();
-      const {
-        id,
+export const PUT = withAuth(async (request: NextRequest) => {
+  try {
+    const body = await request.json();
+    const {
+      id,
+      employeeId,
+      date,
+      hoursWorked,
+      overtimeHours,
+      startTime,
+      endTime,
+      status,
+      projectId,
+      rentalId,
+      assignmentId,
+      description,
+      tasksCompleted,
+      notes,
+    } = body;
+
+    const updated = await db
+      .update(timesheetsTable)
+      .set({
         employeeId,
-        date,
-        hoursWorked,
-        overtimeHours,
-        startTime,
-        endTime,
+        date: new Date(date).toISOString(),
+        hoursWorked: String(parseFloat(hoursWorked || '0')),
+        overtimeHours: String(parseFloat(overtimeHours || '0')),
+        startTime: startTime ? new Date(startTime).toISOString() : new Date().toISOString(),
+        endTime: endTime ? new Date(endTime).toISOString() : null,
         status,
-        projectId,
-        rentalId,
-        assignmentId,
+        projectId: projectId ?? null,
+        rentalId: rentalId ?? null,
+        assignmentId: assignmentId ?? null,
         description,
-        tasksCompleted,
+        tasks: tasksCompleted,
         notes,
-      } = body;
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(timesheetsTable.id, id))
+      .returning();
 
-      const updated = await db
-        .update(timesheetsTable)
-        .set({
-          employeeId,
-          date: new Date(date).toISOString(),
-          hoursWorked: String(parseFloat(hoursWorked || '0')),
-          overtimeHours: String(parseFloat(overtimeHours || '0')),
-          startTime: startTime ? new Date(startTime).toISOString() : new Date().toISOString(),
-          endTime: endTime ? new Date(endTime).toISOString() : null,
-          status,
-          projectId: projectId ?? null,
-          rentalId: rentalId ?? null,
-          assignmentId: assignmentId ?? null,
-          description,
-          tasks: tasksCompleted,
-          notes,
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(timesheetsTable.id, id))
-        .returning();
-
-      return NextResponse.json(updated[0]);
-    } catch (error) {
-      console.error('Error updating timesheet:', error);
-      return NextResponse.json(
-        { error: 'Failed to update timesheet', details: error instanceof Error ? error.message : 'Unknown error' },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json(updated[0]);
+  } catch (error) {
+    console.error('Error updating timesheet:', error);
+    return NextResponse.json(
+      {
+        error: 'Failed to update timesheet',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
-);
+});
 
 // DELETE /api/timesheets - Delete timesheet with permission check
-export const DELETE = withAuth(
-  async (request: NextRequest) => {
-    try {
-      const body = await request.json();
-      const { id } = body;
+export const DELETE = withAuth(async (request: NextRequest) => {
+  try {
+    const body = await request.json();
+    const { id } = body;
 
-      await db.delete(timesheetsTable).where(eq(timesheetsTable.id, id));
+    await db.delete(timesheetsTable).where(eq(timesheetsTable.id, id));
 
-      return NextResponse.json({ message: 'Timesheet deleted successfully' });
-    } catch (error) {
-      console.error('Error deleting timesheet:', error);
-      return NextResponse.json(
-        { error: 'Failed to delete timesheet', details: error instanceof Error ? error.message : 'Unknown error' },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json({ message: 'Timesheet deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting timesheet:', error);
+    return NextResponse.json(
+      {
+        error: 'Failed to delete timesheet',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
-);
+});

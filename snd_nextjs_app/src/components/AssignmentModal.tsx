@@ -1,15 +1,28 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { Loader2, X } from "lucide-react";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Assignment {
   id: string;
@@ -48,16 +61,21 @@ interface AssignmentModalProps {
   onSuccess: () => void;
 }
 
-export default function AssignmentModal({ employeeId, assignment, onClose, onSuccess }: AssignmentModalProps) {
+export default function AssignmentModal({
+  employeeId,
+  assignment,
+  onClose,
+  onSuccess,
+}: AssignmentModalProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    startDate: "",
-    endDate: "",
-    location: "",
-    notes: "",
-    projectId: "none",
-    rentalId: "none",
+    name: '',
+    startDate: '',
+    endDate: '',
+    location: '',
+    notes: '',
+    projectId: 'none',
+    rentalId: 'none',
   });
 
   useEffect(() => {
@@ -65,11 +83,11 @@ export default function AssignmentModal({ employeeId, assignment, onClose, onSuc
       setFormData({
         name: assignment.name,
         startDate: assignment.startDate.split('T')[0],
-        endDate: assignment.endDate ? assignment.endDate.split('T')[0] : "",
-        location: assignment.location || "",
-        notes: assignment.notes || "",
-        projectId: assignment.projectId || "none",
-        rentalId: assignment.rentalId || "none",
+        endDate: assignment.endDate ? assignment.endDate.split('T')[0] : '',
+        location: assignment.location || '',
+        notes: assignment.notes || '',
+        projectId: assignment.projectId || 'none',
+        rentalId: assignment.rentalId || 'none',
       });
     }
   }, [assignment]);
@@ -88,8 +106,8 @@ export default function AssignmentModal({ employeeId, assignment, onClose, onSuc
       // Convert "none" values back to empty strings for API
       const submitData = {
         ...formData,
-        projectId: formData.projectId === "none" ? "" : formData.projectId,
-        rentalId: formData.rentalId === "none" ? "" : formData.rentalId,
+        projectId: formData.projectId === 'none' ? '' : formData.projectId,
+        rentalId: formData.rentalId === 'none' ? '' : formData.rentalId,
       };
 
       const response = await fetch(url, {
@@ -127,14 +145,11 @@ export default function AssignmentModal({ employeeId, assignment, onClose, onSuc
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>
-            {assignment ? 'Edit Assignment' : 'Add New Assignment'}
-          </DialogTitle>
+          <DialogTitle>{assignment ? 'Edit Assignment' : 'Add New Assignment'}</DialogTitle>
           <DialogDescription>
             {assignment
               ? 'Update the employee assignment details'
-              : 'Create a new assignment for this employee'
-            }
+              : 'Create a new assignment for this employee'}
           </DialogDescription>
         </DialogHeader>
 
@@ -145,7 +160,7 @@ export default function AssignmentModal({ employeeId, assignment, onClose, onSuc
               <Input
                 id="name"
                 value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
+                onChange={e => handleInputChange('name', e.target.value)}
                 placeholder="Enter assignment name"
                 required
               />
@@ -156,7 +171,7 @@ export default function AssignmentModal({ employeeId, assignment, onClose, onSuc
               <Input
                 id="location"
                 value={formData.location}
-                onChange={(e) => handleInputChange('location', e.target.value)}
+                onChange={e => handleInputChange('location', e.target.value)}
                 placeholder="Enter location"
               />
             </div>
@@ -169,7 +184,7 @@ export default function AssignmentModal({ employeeId, assignment, onClose, onSuc
                 id="startDate"
                 type="date"
                 value={formData.startDate}
-                onChange={(e) => handleInputChange('startDate', e.target.value)}
+                onChange={e => handleInputChange('startDate', e.target.value)}
                 required
               />
             </div>
@@ -180,7 +195,7 @@ export default function AssignmentModal({ employeeId, assignment, onClose, onSuc
                 id="endDate"
                 type="date"
                 value={formData.endDate}
-                onChange={(e) => handleInputChange('endDate', e.target.value)}
+                onChange={e => handleInputChange('endDate', e.target.value)}
                 min={formData.startDate}
               />
             </div>
@@ -191,7 +206,7 @@ export default function AssignmentModal({ employeeId, assignment, onClose, onSuc
               <Label htmlFor="projectId">Project (Optional)</Label>
               <Select
                 value={formData.projectId}
-                onValueChange={(value) => handleInputChange('projectId', value)}
+                onValueChange={value => handleInputChange('projectId', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a project" />
@@ -209,7 +224,7 @@ export default function AssignmentModal({ employeeId, assignment, onClose, onSuc
               <Label htmlFor="rentalId">Rental (Optional)</Label>
               <Select
                 value={formData.rentalId}
-                onValueChange={(value) => handleInputChange('rentalId', value)}
+                onValueChange={value => handleInputChange('rentalId', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a rental" />
@@ -229,7 +244,7 @@ export default function AssignmentModal({ employeeId, assignment, onClose, onSuc
             <Textarea
               id="notes"
               value={formData.notes}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
+              onChange={e => handleInputChange('notes', e.target.value)}
               placeholder="Enter any additional notes"
               rows={3}
             />

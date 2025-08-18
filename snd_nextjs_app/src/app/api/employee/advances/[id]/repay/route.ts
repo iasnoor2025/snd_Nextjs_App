@@ -1,50 +1,40 @@
-import { NextRequest, NextResponse } from "next/server";
+import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/db';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
-import { advancePayments, advancePaymentHistories } from '@/lib/drizzle/schema';
-import { eq, and, isNull, asc } from 'drizzle-orm';
+import { advancePaymentHistories, advancePayments } from '@/lib/drizzle/schema';
+import { and, asc, eq, isNull } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Explicit route configuration for Next.js 15
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 export const fetchCache = 'force-no-store';
 
-
-
 // Additional route configuration for Next.js 15
 export const runtime = 'nodejs';
 export const preferredRegion = 'auto';
 
-
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    console.log("POST /api/employee/advances/[id]/repay called");
+    console.log('POST /api/employee/advances/[id]/repay called');
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      console.log("Unauthorized - no session");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      console.log('Unauthorized - no session');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
     const { repaymentAmount } = body;
 
     if (!repaymentAmount || parseFloat(repaymentAmount) <= 0) {
-      return NextResponse.json(
-        { error: "Valid repayment amount is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Valid repayment amount is required' }, { status: 400 });
     }
 
     const resolvedParams = await params;
     const advanceId = parseInt(resolvedParams.id);
     if (!advanceId) {
-      return NextResponse.json({ error: "Invalid advance ID" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid advance ID' }, { status: 400 });
     }
 
     // Check if advance exists and is approved using Drizzle
@@ -55,21 +45,18 @@ export async function POST(
       .limit(1);
 
     if (advanceRows.length === 0) {
-      return NextResponse.json({ error: "Advance not found" }, { status: 404 });
+      return NextResponse.json({ error: 'Advance not found' }, { status: 404 });
     }
 
     const advance = advanceRows[0];
-    
+
     if (!advance) {
-      return NextResponse.json(
-        { error: "Advance not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Advance not found' }, { status: 404 });
     }
 
-    if (advance.status !== "approved" && advance.status !== "partially_repaid") {
+    if (advance.status !== 'approved' && advance.status !== 'partially_repaid') {
       return NextResponse.json(
-        { error: "Only approved and partially repaid advances can be repaid" },
+        { error: 'Only approved and partially repaid advances can be repaid' },
         { status: 400 }
       );
     }
@@ -81,7 +68,9 @@ export async function POST(
     // Validate minimum repayment amount
     if (monthlyDeduction > 0 && repaymentAmountNum < monthlyDeduction) {
       return NextResponse.json(
-        { error: `Repayment amount must be at least the monthly deduction (SAR ${monthlyDeduction.toFixed(2)})` },
+        {
+          error: `Repayment amount must be at least the monthly deduction (SAR ${monthlyDeduction.toFixed(2)})`,
+        },
         { status: 400 }
       );
     }
@@ -89,7 +78,7 @@ export async function POST(
     // Check if repayment amount exceeds the advance amount
     if (repaymentAmountNum > advanceAmount) {
       return NextResponse.json(
-        { error: "Repayment amount cannot exceed the advance amount" },
+        { error: 'Repayment amount cannot exceed the advance amount' },
         { status: 400 }
       );
     }
@@ -100,7 +89,7 @@ export async function POST(
 
     if (repaymentAmountNum > remainingBalance) {
       return NextResponse.json(
-        { error: "Repayment amount cannot exceed the remaining balance" },
+        { error: 'Repayment amount cannot exceed the remaining balance' },
         { status: 400 }
       );
     }
@@ -112,10 +101,7 @@ export async function POST(
       .where(
         and(
           eq(advancePayments.employeeId, advance.employeeId),
-          and(
-            eq(advancePayments.status, 'approved'),
-            isNull(advancePayments.deletedAt)
-          )
+          and(eq(advancePayments.status, 'approved'), isNull(advancePayments.deletedAt))
         )
       )
       .orderBy(asc(advancePayments.amount));
@@ -131,7 +117,9 @@ export async function POST(
     // Validate the repayment amount
     if (repaymentAmountNum > totalRemainingBalance) {
       return NextResponse.json(
-        { error: `Repayment amount cannot exceed the total remaining balance of SAR ${totalRemainingBalance.toFixed(2)}` },
+        {
+          error: `Repayment amount cannot exceed the total remaining balance of SAR ${totalRemainingBalance.toFixed(2)}`,
+        },
         { status: 400 }
       );
     }
@@ -152,7 +140,8 @@ export async function POST(
 
       // Update the advance payment using Drizzle
       const newRepaidAmount = currentRepaidAmount + amountForThisAdvance;
-      const newStatus = newRepaidAmount >= Number(activeAdvance.amount) ? "fully_repaid" : "partially_repaid";
+      const newStatus =
+        newRepaidAmount >= Number(activeAdvance.amount) ? 'fully_repaid' : 'partially_repaid';
 
       await db
         .update(advancePayments)
@@ -165,18 +154,16 @@ export async function POST(
         .where(eq(advancePayments.id, activeAdvance.id));
 
       // Create a payment history record for tracking using Drizzle
-      await db
-        .insert(advancePaymentHistories)
-        .values({
-          employeeId: activeAdvance.employeeId,
-          advancePaymentId: activeAdvance.id,
-          amount: amountForThisAdvance.toString(),
-          paymentDate: paymentDate,
-          notes: notes,
-          recordedBy: parseInt(session.user.id),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
+      await db.insert(advancePaymentHistories).values({
+        employeeId: activeAdvance.employeeId,
+        advancePaymentId: activeAdvance.id,
+        amount: amountForThisAdvance.toString(),
+        paymentDate: paymentDate,
+        notes: notes,
+        recordedBy: parseInt(session.user.id),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
 
       remainingRepaymentAmount -= amountForThisAdvance;
     }
@@ -190,18 +177,20 @@ export async function POST(
 
     const updatedAdvance = updatedAdvanceRows[0];
 
-    console.log("Repayment recorded successfully:", updatedAdvance);
+    console.log('Repayment recorded successfully:', updatedAdvance);
 
     return NextResponse.json({
       success: true,
       advance: updatedAdvance,
-      message: "Repayment recorded successfully",
+      message: 'Repayment recorded successfully',
     });
   } catch (error) {
-    console.error("Error recording repayment:", error);
+    console.error('Error recording repayment:', error);
     return NextResponse.json(
-      { error: `Failed to record repayment: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      {
+        error: `Failed to record repayment: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      },
       { status: 500 }
     );
   }
-} 
+}

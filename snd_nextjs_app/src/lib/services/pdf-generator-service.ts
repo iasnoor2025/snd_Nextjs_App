@@ -22,7 +22,7 @@ export interface DocumentSummary {
 export class PDFGeneratorService {
   static generateDocumentReport(summary: DocumentSummary): jsPDF {
     const doc = new jsPDF();
-    
+
     // Set document properties
     doc.setProperties({
       title: summary.title,
@@ -35,50 +35,50 @@ export class PDFGeneratorService {
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
     doc.text(summary.title, 105, 20, { align: 'center' });
-    
+
     // Add generation info
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.text(`Generated: ${new Date(summary.generatedAt).toLocaleString()}`, 20, 35);
-    
+
     // Add summary statistics
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.text('Summary Statistics', 20, 50);
-    
+
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.text(`Total Documents: ${summary.totalDocuments}`, 20, 60);
     doc.text(`Employee Documents: ${summary.employeeDocuments}`, 20, 70);
     doc.text(`Equipment Documents: ${summary.equipmentDocuments}`, 20, 80);
-    
+
     // Add document details
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.text('Document Details', 20, 100);
-    
+
     let yPosition = 110;
     const pageHeight = 280;
     const margin = 20;
     const lineHeight = 8;
-    
+
     summary.documents.forEach((docItem, index) => {
       // Check if we need a new page
       if (yPosition > pageHeight) {
         doc.addPage();
         yPosition = 20;
       }
-      
+
       // Document number and name
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.text(`${index + 1}. ${docItem.name}`, margin, yPosition);
       yPosition += lineHeight;
-      
+
       // Document details
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      
+
       const details = [
         `Type: ${docItem.type.toUpperCase()}`,
         `Owner: ${docItem.owner} (${docItem.ownerId || 'N/A'})`,
@@ -87,11 +87,11 @@ export class PDFGeneratorService {
         `MIME Type: ${docItem.mimeType}`,
         `Date: ${docItem.date}`,
       ];
-      
+
       if (docItem.description) {
         details.push(`Description: ${docItem.description}`);
       }
-      
+
       details.forEach(detail => {
         if (yPosition > pageHeight) {
           doc.addPage();
@@ -100,11 +100,11 @@ export class PDFGeneratorService {
         doc.text(detail, margin + 5, yPosition);
         yPosition += lineHeight;
       });
-      
+
       // Add spacing between documents
       yPosition += 5;
     });
-    
+
     // Add footer
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
@@ -115,13 +115,13 @@ export class PDFGeneratorService {
       doc.text('SND Rental System', 20, 290);
       doc.text(new Date().toLocaleDateString(), 180, 290);
     }
-    
+
     return doc;
   }
-  
+
   static async generatePDFFromDocuments(documents: any[]): Promise<jsPDF> {
     const summary: DocumentSummary = {
-      title: "Document Summary Report",
+      title: 'Document Summary Report',
       generatedAt: new Date().toISOString(),
       totalDocuments: documents.length,
       employeeDocuments: documents.filter(d => d.type === 'employee').length,
@@ -130,18 +130,21 @@ export class PDFGeneratorService {
         name: doc.fileName,
         type: doc.type,
         owner: doc.type === 'employee' ? doc.employeeName : doc.equipmentName,
-        ownerId: doc.type === 'employee' ? doc.employeeFileNumber : (doc.equipmentSerial || doc.equipmentModel),
+        ownerId:
+          doc.type === 'employee'
+            ? doc.employeeFileNumber
+            : doc.equipmentSerial || doc.equipmentModel,
         documentType: doc.documentType || 'equipment_document',
         size: this.formatFileSize(doc.fileSize),
         mimeType: doc.mimeType,
         date: new Date(doc.createdAt).toLocaleDateString(),
-        description: doc.description || ''
-      }))
+        description: doc.description || '',
+      })),
     };
-    
+
     return this.generateDocumentReport(summary);
   }
-  
+
   private static formatFileSize(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;

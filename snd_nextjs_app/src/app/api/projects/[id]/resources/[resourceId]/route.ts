@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { projectResources } from '@/lib/drizzle/schema';
-import { eq, and } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; resourceId: string }> }
@@ -12,10 +12,7 @@ export async function PUT(
 
     // Validate required fields
     if (!body.type || !body.name) {
-      return NextResponse.json(
-        { error: 'Type and name are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Type and name are required' }, { status: 400 });
     }
 
     // Prepare the data for update
@@ -71,7 +68,9 @@ export async function PUT(
       title: body.title,
       priority: body.priority,
       dueDate: body.due_date ? new Date(body.due_date).toISOString() : null,
-      completionPercentage: body.completion_percentage ? parseInt(body.completion_percentage) : null,
+      completionPercentage: body.completion_percentage
+        ? parseInt(body.completion_percentage)
+        : null,
       assignedToId: body.assigned_to_id ? parseInt(body.assigned_to_id) : null,
     };
 
@@ -87,7 +86,9 @@ export async function PUT(
         hourlyRate: resourceData.hourlyRate ? resourceData.hourlyRate.toString() : null,
         // hoursWorked field removed - not in schema
         usageHours: resourceData.usageHours ? resourceData.usageHours.toString() : null,
-        maintenanceCost: resourceData.maintenanceCost ? resourceData.maintenanceCost.toString() : null,
+        maintenanceCost: resourceData.maintenanceCost
+          ? resourceData.maintenanceCost.toString()
+          : null,
         unitPrice: resourceData.unitPrice ? resourceData.unitPrice.toString() : null,
         liters: resourceData.liters ? resourceData.liters.toString() : null,
         pricePerLiter: resourceData.pricePerLiter ? resourceData.pricePerLiter.toString() : null,
@@ -97,7 +98,7 @@ export async function PUT(
         startDate: resourceData.startDate ? new Date(resourceData.startDate).toISOString() : null,
         endDate: resourceData.endDate ? new Date(resourceData.endDate).toISOString() : null,
         dueDate: resourceData.dueDate ? new Date(resourceData.dueDate).toISOString() : null,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       })
       .where(
         and(
@@ -110,22 +111,16 @@ export async function PUT(
     const resource = updatedResource[0];
 
     if (!resource) {
-      return NextResponse.json(
-        { error: 'Resource not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Resource not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      data: resource 
+      data: resource,
     });
   } catch (error) {
     console.error('Error updating project resource:', error);
-    return NextResponse.json(
-      { error: 'Failed to update project resource' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update project resource' }, { status: 500 });
   }
 }
 
@@ -150,30 +145,27 @@ export async function DELETE(
       .returning();
 
     if (deletedResource.length === 0 || !deletedResource[0]) {
-      return NextResponse.json(
-        { error: 'Resource not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Resource not found' }, { status: 404 });
     }
 
     const deletedResourceItem = deletedResource[0];
     console.log('Resource deleted successfully:', deletedResourceItem.id);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       message: 'Resource deleted successfully',
-      data: deletedResourceItem
+      data: deletedResourceItem,
     });
   } catch (error) {
     console.error('Error deleting project resource:', error);
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to delete project resource',
         details: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : 'No stack trace'
+        stack: error instanceof Error ? error.stack : 'No stack trace',
       },
       { status: 500 }
     );
   }
-} 
+}

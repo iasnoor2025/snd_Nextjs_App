@@ -49,4 +49,4 @@ export class I18nErrorBoundary extends Component<Props, State> {
 
     return this.props.children;
   }
-} 
+}

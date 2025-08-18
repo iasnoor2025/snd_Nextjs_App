@@ -1,75 +1,96 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
 import { ProtectedRoute } from '@/components/protected-route';
-import { PermissionContent, RoleContent, RoleBased } from '@/lib/rbac/rbac-components';
-import { useRBAC } from '@/lib/rbac/rbac-context';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Pagination } from '@/components/ui/pagination';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/hooks/use-i18n';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { EmployeeDropdown } from "@/components/ui/employee-dropdown";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Pagination } from "@/components/ui/pagination";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import Link from "next/link";
-import { loadJsPDF } from "@/lib/client-libraries";
+import { loadJsPDF } from '@/lib/client-libraries';
+import { PermissionContent, RoleBased, RoleContent } from '@/lib/rbac/rbac-components';
+import { useRBAC } from '@/lib/rbac/rbac-context';
 import {
-  Plus,
-  Search,
-  Filter,
-  Download,
-  RefreshCw,
-  FileText,
-  BarChart3,
-  TrendingUp,
-  Settings,
-  Eye,
-  Edit,
-  Trash2,
-  CheckCircle,
-  XCircle,
-  Clock,
-  DollarSign,
-  User,
-  Calendar as CalendarIcon,
-  MoreHorizontal,
-  Printer,
-  Share2,
-  FileDown,
-  Ban,
-  AlertCircle,
-  CheckSquare,
-  Square,
-  Play,
-  Zap,
-  CalendarDays,
-  Users,
-  Upload,
-  Shield,
-  CreditCard,
-  ChevronLeft,
-  ChevronRight,
-  Calculator
-} from "lucide-react";
-import { toast } from "sonner";
-import { format } from "date-fns";
-import { useTranslation } from 'react-i18next';
-import {
+  batchTranslateNames,
   convertToArabicNumerals,
   getTranslatedName,
-  batchTranslateNames
 } from '@/lib/translation-utils';
-import { useDeleteConfirmations } from "@/lib/utils/confirmation-utils";
+import { useDeleteConfirmations } from '@/lib/utils/confirmation-utils';
+import { format } from 'date-fns';
+import {
+  AlertCircle,
+  Ban,
+  BarChart3,
+  Calculator,
+  CalendarDays,
+  Calendar as CalendarIcon,
+  CheckCircle,
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  CreditCard,
+  DollarSign,
+  Download,
+  Edit,
+  Eye,
+  FileDown,
+  FileText,
+  Filter,
+  MoreHorizontal,
+  Play,
+  Plus,
+  Printer,
+  RefreshCw,
+  Search,
+  Settings,
+  Share2,
+  Shield,
+  Square,
+  Trash2,
+  TrendingUp,
+  Upload,
+  User,
+  Users,
+  XCircle,
+  Zap,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 interface PayrollItem {
   id: number;
@@ -148,15 +169,15 @@ export default function PayrollManagementPage() {
   const [loading, setLoading] = useState(true);
   const [selectedPayrolls, setSelectedPayrolls] = useState<Set<number>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [monthFilter, setMonthFilter] = useState<Date | undefined>(undefined);
   const [showFilters, setShowFilters] = useState(false);
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [employeeFilter, setEmployeeFilter] = useState<string>("all");
+  const [employeeFilter, setEmployeeFilter] = useState<string>('all');
   const [recalculating, setRecalculating] = useState(false);
   const [downloadingPayslip, setDownloadingPayslip] = useState<number | null>(null);
   const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({});
@@ -170,19 +191,19 @@ export default function PayrollManagementPage() {
       setLoading(true);
       const params = new URLSearchParams({
         page: currentPage.toString(),
-        per_page: "10"
+        per_page: '10',
       });
 
-      if (statusFilter !== "all") {
-        params.append("status", statusFilter);
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter);
       }
 
       if (monthFilter) {
-        params.append("month", monthFilter.toISOString().slice(0, 7)); // Format as YYYY-MM
+        params.append('month', monthFilter.toISOString().slice(0, 7)); // Format as YYYY-MM
       }
 
       if (searchTerm) {
-        params.append("search", searchTerm);
+        params.append('search', searchTerm);
       }
 
       const response = await fetch(`/api/payroll?${params}`);
@@ -191,13 +212,17 @@ export default function PayrollManagementPage() {
       if (data.success) {
         // The API response structure matches PayrollResponse interface
         setPayrolls(data);
-        
+
         // Batch translate employee names for Arabic display
         if (data.data && data.data.length > 0) {
           const namesToTranslate = data.data
-            .map(payroll => payroll.employee?.full_name || `${payroll.employee?.first_name} ${payroll.employee?.last_name}`)
+            .map(
+              payroll =>
+                payroll.employee?.full_name ||
+                `${payroll.employee?.first_name} ${payroll.employee?.last_name}`
+            )
             .filter(name => name && name.trim() !== '');
-          
+
           if (namesToTranslate.length > 0) {
             batchTranslateNames(namesToTranslate, isRTL, setTranslatedNames);
           }
@@ -218,12 +243,12 @@ export default function PayrollManagementPage() {
           first_page_url: '',
           last_page_url: '',
           path: '',
-          links: []
+          links: [],
         });
       }
     } catch (error) {
       toast.error(t('payroll:error.fetchPayrolls'));
-      console.error("Error:", error);
+      console.error('Error:', error);
       // Set empty data structure to prevent errors
       setPayrolls({
         data: [],
@@ -238,7 +263,7 @@ export default function PayrollManagementPage() {
         first_page_url: '',
         last_page_url: '',
         path: '',
-        links: []
+        links: [],
       });
     } finally {
       setLoading(false);
@@ -248,13 +273,13 @@ export default function PayrollManagementPage() {
   // Fetch employees for filter
   const fetchEmployees = async () => {
     try {
-      const response = await fetch("/api/employees");
+      const response = await fetch('/api/employees');
       const data = await response.json();
       if (data.success) {
         setEmployees(data.data);
       }
     } catch (error) {
-      console.error("Error fetching employees:", error);
+      console.error('Error fetching employees:', error);
     }
   };
 
@@ -266,10 +291,10 @@ export default function PayrollManagementPage() {
   const handleGenerateApproved = async () => {
     try {
       setGenerating(true);
-      const response = await fetch("/api/payroll/generate-payroll", {
-        method: "POST",
+      const response = await fetch('/api/payroll/generate-payroll', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       });
 
@@ -284,7 +309,7 @@ export default function PayrollManagementPage() {
       }
     } catch (error) {
       toast.error(t('payroll:error.generateApproved'));
-      console.error("Error:", error);
+      console.error('Error:', error);
     } finally {
       setGenerating(false);
     }
@@ -293,7 +318,7 @@ export default function PayrollManagementPage() {
   const handleApprove = async (payrollId: number) => {
     try {
       const response = await fetch(`/api/payroll/${payrollId}/approve`, {
-        method: "POST",
+        method: 'POST',
       });
 
       const data = await response.json();
@@ -306,19 +331,19 @@ export default function PayrollManagementPage() {
       }
     } catch (error) {
       toast.error(t('payroll:error.approve'));
-      console.error("Error:", error);
+      console.error('Error:', error);
     }
   };
 
   const handleProcessPayment = async (payrollId: number) => {
     try {
       const response = await fetch(`/api/payroll/${payrollId}/process-payment`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          payment_method: "bank_transfer",
+          payment_method: 'bank_transfer',
           reference: `PAY-${payrollId}-${Date.now()}`,
         }),
       });
@@ -333,7 +358,7 @@ export default function PayrollManagementPage() {
       }
     } catch (error) {
       toast.error(t('payroll:error.processPayment'));
-      console.error("Error:", error);
+      console.error('Error:', error);
     }
   };
 
@@ -344,7 +369,7 @@ export default function PayrollManagementPage() {
 
     try {
       const response = await fetch(`/api/payroll/${payrollId}/cancel`, {
-        method: "POST",
+        method: 'POST',
       });
 
       const data = await response.json();
@@ -357,7 +382,7 @@ export default function PayrollManagementPage() {
       }
     } catch (error) {
       toast.error(t('payroll:error.cancel'));
-      console.error("Error:", error);
+      console.error('Error:', error);
     }
   };
 
@@ -368,7 +393,7 @@ export default function PayrollManagementPage() {
 
     try {
       const response = await fetch(`/api/payroll/${payrollId}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
 
       const data = await response.json();
@@ -381,7 +406,7 @@ export default function PayrollManagementPage() {
       }
     } catch (error) {
       toast.error(t('payroll:error.delete'));
-      console.error("Error:", error);
+      console.error('Error:', error);
     }
   };
 
@@ -396,10 +421,10 @@ export default function PayrollManagementPage() {
     }
 
     try {
-      const response = await fetch("/api/payroll/bulk-delete", {
-        method: "POST",
+      const response = await fetch('/api/payroll/bulk-delete', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ ids: Array.from(selectedPayrolls) }),
       });
@@ -415,15 +440,14 @@ export default function PayrollManagementPage() {
       }
     } catch (error) {
       toast.error(t('payroll:error.bulkDelete'));
-      console.error("Error:", error);
+      console.error('Error:', error);
     }
   };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const payrollIds = payrolls?.data && Array.isArray(payrolls.data) 
-        ? payrolls.data.map(p => p.id) 
-        : [];
+      const payrollIds =
+        payrolls?.data && Array.isArray(payrolls.data) ? payrolls.data.map(p => p.id) : [];
       setSelectedPayrolls(new Set(payrollIds));
     } else {
       setSelectedPayrolls(new Set());
@@ -445,7 +469,7 @@ export default function PayrollManagementPage() {
       toast.success(t('payroll:success.payslipOpen'));
     } catch (error) {
       toast.error(t('payroll:error.payslipOpen'));
-      console.error("Error:", error);
+      console.error('Error:', error);
     }
   };
 
@@ -467,13 +491,16 @@ export default function PayrollManagementPage() {
         document.body.appendChild(iframe);
 
         // Calculate additional data needed for the payslip
-        const monthName = new Date(data.data.payroll.year, data.data.payroll.month - 1).toLocaleDateString("en-US", { month: "long" });
+        const monthName = new Date(
+          data.data.payroll.year,
+          data.data.payroll.month - 1
+        ).toLocaleDateString('en-US', { month: 'long' });
         const startDate = new Date(data.data.payroll.year, data.data.payroll.month - 1, 1);
         const endDate = new Date(data.data.payroll.year, data.data.payroll.month, 0);
         const formattedStartDate = startDate.toLocaleDateString();
         const formattedEndDate = endDate.toLocaleDateString();
         const daysInMonth = new Date(data.data.payroll.year, data.data.payroll.month, 0).getDate();
-        
+
         // Calculate attendance data
         const attendanceMap = new Map();
         if (data.data.attendanceData && Array.isArray(data.data.attendanceData)) {
@@ -481,22 +508,31 @@ export default function PayrollManagementPage() {
             attendanceMap.set(day.date, day);
           });
         }
-        
+
         // Calculate totals
         const basicSalary = Number(data.data.payroll.base_salary) || 0;
         const overtimeAmount = Number(data.data.payroll.overtime_amount) || 0;
         const bonusAmount = Number(data.data.payroll.bonus_amount) || 0;
         const advanceDeduction = Number(data.data.payroll.advance_deduction) || 0;
-        const totalWorkedHoursFromAttendance = data.data.attendanceData.reduce((total: number, day: any) => {
-          return total + (Number(day.hours) || 0) + (Number(day.overtime) || 0);
-        }, 0);
-        const overtimeHoursFromAttendance = data.data.attendanceData.reduce((total: number, day: any) => {
-          return total + (Number(day.overtime) || 0);
-        }, 0);
-        const daysWorkedFromAttendance = data.data.attendanceData.reduce((count: number, day: any) => {
-          return count + ((Number(day.hours) > 0 || Number(day.overtime) > 0) ? 1 : 0);
-        }, 0);
-        
+        const totalWorkedHoursFromAttendance = data.data.attendanceData.reduce(
+          (total: number, day: any) => {
+            return total + (Number(day.hours) || 0) + (Number(day.overtime) || 0);
+          },
+          0
+        );
+        const overtimeHoursFromAttendance = data.data.attendanceData.reduce(
+          (total: number, day: any) => {
+            return total + (Number(day.overtime) || 0);
+          },
+          0
+        );
+        const daysWorkedFromAttendance = data.data.attendanceData.reduce(
+          (count: number, day: any) => {
+            return count + (Number(day.hours) > 0 || Number(day.overtime) > 0 ? 1 : 0);
+          },
+          0
+        );
+
         // Calculate absent days
         const absentDays = data.data.attendanceData.reduce((count: number, day: any) => {
           const date = new Date(day.date);
@@ -507,76 +543,98 @@ export default function PayrollManagementPage() {
           }
           return count;
         }, 0);
-        
+
         const absentDeduction = absentDays > 0 ? (basicSalary / daysInMonth) * absentDays : 0;
-        const totalAllowances = (Number(data.data.employee.food_allowance) || 0) + (Number(data.data.employee.housing_allowance) || 0) + (Number(data.data.employee.transport_allowance) || 0);
-        const netSalary = basicSalary + totalAllowances + overtimeAmount + bonusAmount - absentDeduction - advanceDeduction;
-        
-        const employeeName = data.data.employee.full_name || `${data.data.employee.first_name || ''} ${data.data.employee.last_name || ''}`.trim() || 'Unknown Employee';
-        
+        const totalAllowances =
+          (Number(data.data.employee.food_allowance) || 0) +
+          (Number(data.data.employee.housing_allowance) || 0) +
+          (Number(data.data.employee.transport_allowance) || 0);
+        const netSalary =
+          basicSalary +
+          totalAllowances +
+          overtimeAmount +
+          bonusAmount -
+          absentDeduction -
+          advanceDeduction;
+
+        const employeeName =
+          data.data.employee.full_name ||
+          `${data.data.employee.first_name || ''} ${data.data.employee.last_name || ''}`.trim() ||
+          'Unknown Employee';
+
         const formatCurrency = (amount: number) => {
-          return new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "SAR",
+          return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'SAR',
           }).format(amount);
         };
 
         // Generate attendance table HTML
         const generateAttendanceTable = () => {
-          let tableHTML = '<table class="w-full border-collapse rounded-lg overflow-hidden shadow-md">';
+          let tableHTML =
+            '<table class="w-full border-collapse rounded-lg overflow-hidden shadow-md">';
           tableHTML += '<thead><tr>';
-          
+
           // Day numbers header
           for (let day = 1; day <= 31; day++) {
             tableHTML += `<th class="bg-gray-900 text-white font-semibold p-1 text-center text-xs">${day.toString().padStart(2, '0')}</th>`;
           }
           tableHTML += '</tr><tr>';
-          
+
           // Day names header
           for (let day = 1; day <= 31; day++) {
-            const date = new Date(`${data.data.payroll.year}-${String(data.data.payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`);
+            const date = new Date(
+              `${data.data.payroll.year}-${String(data.data.payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`
+            );
             const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
             tableHTML += `<th class="bg-gray-900 text-gray-300 font-medium p-1 text-center text-xs">${dayName.substring(0, 1).toUpperCase()}</th>`;
           }
           tableHTML += '</tr></thead><tbody><tr>';
-          
+
           // Regular hours row
           for (let day = 1; day <= 31; day++) {
-            const date = new Date(`${data.data.payroll.year}-${String(data.data.payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`);
+            const date = new Date(
+              `${data.data.payroll.year}-${String(data.data.payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`
+            );
             const dateString = date.toISOString().split('T')[0];
             const dayData = attendanceMap.get(dateString);
             const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
             const isFriday = dayName === 'Fri';
-            
+
             let displayValue = '-';
             let cellClass = 'bg-white';
-            
+
             if (dayData && Number(dayData.hours) > 0) {
               displayValue = dayData.hours.toString();
               cellClass = 'text-green-700 font-semibold';
             } else if (isFriday && (!dayData || Number(dayData.hours) === 0)) {
               displayValue = 'F';
               cellClass = 'bg-blue-100';
-            } else if (!dayData || (Number(dayData.hours) === 0 && Number(dayData.overtime) === 0)) {
+            } else if (
+              !dayData ||
+              (Number(dayData.hours) === 0 && Number(dayData.overtime) === 0)
+            ) {
               displayValue = 'A';
               cellClass = 'bg-red-100 text-red-700 font-semibold';
             }
-            
+
             tableHTML += `<td class="p-1 text-center text-xs border border-gray-200 ${cellClass}">${displayValue}</td>`;
           }
           tableHTML += '</tr><tr>';
-          
+
           // Overtime hours row
           for (let day = 1; day <= 31; day++) {
-            const date = new Date(`${data.data.payroll.year}-${String(data.data.payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`);
+            const date = new Date(
+              `${data.data.payroll.year}-${String(data.data.payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`
+            );
             const dateString = date.toISOString().split('T')[0];
             const dayData = attendanceMap.get(dateString);
             const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
             const isFriday = dayName === 'Fri';
-            
+
             let overtimeValue = '-';
             let cellClass = 'bg-white';
-            
+
             if (dayData && Number(dayData.hours) > 0) {
               const overtime = Number(dayData.overtime) || 0;
               if (overtime > 0) {
@@ -587,14 +645,17 @@ export default function PayrollManagementPage() {
               }
             } else if (isFriday && (!dayData || Number(dayData.hours) === 0)) {
               cellClass = 'bg-blue-100';
-            } else if (!dayData || (Number(dayData.hours) === 0 && Number(dayData.overtime) === 0)) {
+            } else if (
+              !dayData ||
+              (Number(dayData.hours) === 0 && Number(dayData.overtime) === 0)
+            ) {
               cellClass = 'bg-red-100';
             }
-            
+
             tableHTML += `<td class="p-1 text-center text-xs border border-gray-200 ${cellClass}">${overtimeValue}</td>`;
           }
           tableHTML += '</tr></tbody></table>';
-          
+
           return tableHTML;
         };
 
@@ -733,24 +794,36 @@ export default function PayrollManagementPage() {
                         <span class="text-xs text-gray-600 font-medium">Basic Salary</span>
                         <span class="text-xs font-semibold text-green-700">${formatCurrency(basicSalary)}</span>
                       </div>
-                      ${Number(data.data.employee.food_allowance) > 0 ? `
+                      ${
+                        Number(data.data.employee.food_allowance) > 0
+                          ? `
                         <div class="flex justify-between items-center py-1 border-b border-gray-200">
                           <span class="text-xs text-gray-600 font-medium">Food Allowance</span>
                           <span class="text-xs font-semibold text-gray-900">${formatCurrency(Number(data.data.employee.food_allowance))}</span>
                         </div>
-                      ` : ''}
-                      ${Number(data.data.employee.housing_allowance) > 0 ? `
+                      `
+                          : ''
+                      }
+                      ${
+                        Number(data.data.employee.housing_allowance) > 0
+                          ? `
                         <div class="flex justify-between items-center py-1 border-b border-gray-200">
                           <span class="text-xs text-gray-600 font-medium">Housing Allowance</span>
                           <span class="text-xs font-semibold text-gray-900">${formatCurrency(Number(data.data.employee.housing_allowance))}</span>
                         </div>
-                      ` : ''}
-                      ${Number(data.data.employee.transport_allowance) > 0 ? `
+                      `
+                          : ''
+                      }
+                      ${
+                        Number(data.data.employee.transport_allowance) > 0
+                          ? `
                         <div class="flex justify-between items-center py-1 border-b border-gray-200">
                           <span class="text-xs text-gray-600 font-medium">Transport Allowance</span>
                           <span class="text-xs font-semibold text-gray-900">${formatCurrency(Number(data.data.employee.transport_allowance))}</span>
                         </div>
-                      ` : ''}
+                      `
+                          : ''
+                      }
                       <div class="flex justify-between items-center py-1 border-b border-gray-200">
                         <span class="text-xs text-gray-600 font-medium">Overtime Pay</span>
                         <span class="text-xs font-semibold text-green-700">${formatCurrency(overtimeAmount)}</span>
@@ -836,29 +909,43 @@ export default function PayrollManagementPage() {
                             <span class="text-xs text-gray-600 font-medium">Basic Salary</span>
                             <span class="text-xs font-semibold text-green-700">${formatCurrency(basicSalary)}</span>
                           </div>
-                          ${Number(data.data.employee.food_allowance) > 0 ? `
+                          ${
+                            Number(data.data.employee.food_allowance) > 0
+                              ? `
                             <div class="flex justify-between items-center py-1">
                               <span class="text-xs text-gray-600 font-medium">Food Allowance</span>
                               <span class="text-xs font-semibold text-gray-900">${formatCurrency(Number(data.data.employee.food_allowance))}</span>
                             </div>
-                          ` : ''}
-                          ${Number(data.data.employee.housing_allowance) > 0 ? `
+                          `
+                              : ''
+                          }
+                          ${
+                            Number(data.data.employee.housing_allowance) > 0
+                              ? `
                             <div class="flex justify-between items-center py-1">
                               <span class="text-xs text-gray-600 font-medium">Housing Allowance</span>
                               <span class="text-xs font-semibold text-gray-900">${formatCurrency(Number(data.data.employee.housing_allowance))}</span>
                             </div>
-                          ` : ''}
-                          ${Number(data.data.employee.transport_allowance) > 0 ? `
+                          `
+                              : ''
+                          }
+                          ${
+                            Number(data.data.employee.transport_allowance) > 0
+                              ? `
                             <div class="flex justify-between items-center py-1">
                               <span class="text-xs text-gray-600 font-medium">Transport Allowance</span>
                               <span class="text-xs font-semibold text-gray-900">${formatCurrency(Number(data.data.employee.transport_allowance))}</span>
                             </div>
-                          ` : ''}
+                          `
+                              : ''
+                          }
                           <div class="flex justify-between items-center py-1">
                             <span class="text-xs text-gray-600 font-medium">Overtime Pay</span>
                             <span class="text-xs font-semibold text-green-700">${formatCurrency(overtimeAmount)}</span>
                           </div>
-                          ${overtimeHoursFromAttendance > 0 ? `
+                          ${
+                            overtimeHoursFromAttendance > 0
+                              ? `
                             <div class="ml-4 space-y-1 text-xs text-gray-500">
                               <div class="flex justify-between items-center">
                                 <span>Overtime Hours:</span>
@@ -867,14 +954,18 @@ export default function PayrollManagementPage() {
                               <div class="flex justify-between items-center">
                                 <span>Overtime Rate:</span>
                                 <span>
-                                  ${data.data.employee.overtime_fixed_rate && data.data.employee.overtime_fixed_rate > 0 
-                                    ? `${formatCurrency(Number(data.data.employee.overtime_fixed_rate))}/hr (Fixed)`
-                                    : `${data.data.employee.overtime_rate_multiplier || 1.5}x (Basic/30/8)`
+                                  ${
+                                    data.data.employee.overtime_fixed_rate &&
+                                    data.data.employee.overtime_fixed_rate > 0
+                                      ? `${formatCurrency(Number(data.data.employee.overtime_fixed_rate))}/hr (Fixed)`
+                                      : `${data.data.employee.overtime_rate_multiplier || 1.5}x (Basic/30/8)`
                                   }
                                 </span>
                               </div>
                             </div>
-                          ` : ''}
+                          `
+                              : ''
+                          }
                           <div class="flex justify-between items-center py-1">
                             <span class="text-xs text-gray-600 font-medium">Bonus Amount</span>
                             <span class="text-xs font-semibold text-green-700">${formatCurrency(bonusAmount)}</span>
@@ -940,51 +1031,76 @@ export default function PayrollManagementPage() {
           try {
             // Dynamically load jsPDF library
             const jsPDF = await loadJsPDF();
-            
+
             // Create PDF using jsPDF only (without html2canvas)
             const pdf = new jsPDF('landscape', 'mm', 'a4');
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
             const margin = 20;
-            
+
             // Set font
             pdf.setFont('helvetica', 'bold');
             pdf.setFontSize(24);
-            
+
             // Company header
             pdf.text('C.A.T. INTERNATIONAL L.L.L.C.', pageWidth / 2, margin, { align: 'center' });
-            
+
             pdf.setFontSize(14);
             pdf.setFont('helvetica', 'normal');
-            pdf.text('Equipment Rental & Construction Services', pageWidth / 2, margin + 15, { align: 'center' });
-            
+            pdf.text('Equipment Rental & Construction Services', pageWidth / 2, margin + 15, {
+              align: 'center',
+            });
+
             // Payslip title
             pdf.setFontSize(20);
             pdf.setFont('helvetica', 'bold');
             pdf.text('PAYSLIP', pageWidth / 2, margin + 40, { align: 'center' });
-            
+
             // Employee information
             pdf.setFontSize(12);
             pdf.setFont('helvetica', 'normal');
             const employeeName = data.data.employee.full_name || 'Unknown Employee';
             const employeeId = data.data.employee.file_number || data.data.employee.id;
-            const monthName = new Date(data.data.payroll.year, data.data.payroll.month - 1).toLocaleDateString("en-US", { month: "long" });
-            
+            const monthName = new Date(
+              data.data.payroll.year,
+              data.data.payroll.month - 1
+            ).toLocaleDateString('en-US', { month: 'long' });
+
             pdf.text(`Employee: ${employeeName}`, margin, margin + 70);
             pdf.text(`Employee ID: ${employeeId}`, margin, margin + 85);
             pdf.text(`Month: ${monthName} ${data.data.payroll.year}`, margin, margin + 100);
-            
+
             // Salary details
-            pdf.text(`Basic Salary: ${formatCurrency(Number(data.data.payroll.base_salary || 0))}`, margin, margin + 125);
-            pdf.text(`Overtime: ${formatCurrency(Number(data.data.payroll.overtime_amount || 0))}`, margin, margin + 140);
-            pdf.text(`Bonus: ${formatCurrency(Number(data.data.payroll.bonus_amount || 0))}`, margin, margin + 155);
-            pdf.text(`Deductions: ${formatCurrency(Number(data.data.payroll.deduction_amount || 0))}`, margin, margin + 170);
-            pdf.text(`Final Amount: ${formatCurrency(Number(data.data.payroll.final_amount || 0))}`, margin, margin + 185);
-            
+            pdf.text(
+              `Basic Salary: ${formatCurrency(Number(data.data.payroll.base_salary || 0))}`,
+              margin,
+              margin + 125
+            );
+            pdf.text(
+              `Overtime: ${formatCurrency(Number(data.data.payroll.overtime_amount || 0))}`,
+              margin,
+              margin + 140
+            );
+            pdf.text(
+              `Bonus: ${formatCurrency(Number(data.data.payroll.bonus_amount || 0))}`,
+              margin,
+              margin + 155
+            );
+            pdf.text(
+              `Deductions: ${formatCurrency(Number(data.data.payroll.deduction_amount || 0))}`,
+              margin,
+              margin + 170
+            );
+            pdf.text(
+              `Final Amount: ${formatCurrency(Number(data.data.payroll.final_amount || 0))}`,
+              margin,
+              margin + 185
+            );
+
             // Save PDF
             const fileName = `payslip_${employeeId}_${monthName}_${data.data.payroll.year}.pdf`;
             pdf.save(fileName);
-            
+
             // Clean up
             document.body.removeChild(iframe);
             toast.success(t('payroll:success.payslipDownload'));
@@ -994,15 +1110,14 @@ export default function PayrollManagementPage() {
             toast.error(t('payroll:error.payslipDownload'));
           }
         }, 1500);
-
       } else {
         toast.error(data.message || t('payroll:error.payslipDownload'));
       }
     } catch (error) {
       toast.error(t('payroll:error.payslipDownload'));
-      console.error("Error:", error);
-      } finally {
-        setDownloadingPayslip(null);
+      console.error('Error:', error);
+    } finally {
+      setDownloadingPayslip(null);
     }
   };
 
@@ -1031,18 +1146,18 @@ export default function PayrollManagementPage() {
   // getStatusBadge function removed - now using inline logic in the table
 
   const formatCurrency = (amount: number) => {
-    const locale = isRTL ? "ar-SA" : "en-US";
+    const locale = isRTL ? 'ar-SA' : 'en-US';
     const formatted = new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: "SAR",
+      style: 'currency',
+      currency: 'SAR',
     }).format(amount);
-    
+
     // Convert to Arabic numerals if in RTL mode
     return isRTL ? convertToArabicNumerals(formatted, true) : formatted;
   };
 
   const formatDate = (dateString: string) => {
-    const formatted = format(new Date(dateString), "MMM dd, yyyy");
+    const formatted = format(new Date(dateString), 'MMM dd, yyyy');
     return isRTL ? convertToArabicNumerals(formatted, true) : formatted;
   };
 
@@ -1084,30 +1199,34 @@ export default function PayrollManagementPage() {
                     {t('payroll:generateApproved')}
                   </Button>
                 </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>{t('payroll:generateApprovedTitle')}</DialogTitle>
-                  <DialogDescription>
-                    {t('payroll:generateApprovedDescription')}
-                  </DialogDescription>
-                </DialogHeader>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsApproveDialogOpen(false)} disabled={generating}>
-                    {t('payroll:cancel')}
-                  </Button>
-                  <Button onClick={handleGenerateApproved} disabled={generating}>
-                    {generating ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        {t('payroll:generating')}
-                      </>
-                    ) : (
-                      t('payroll:generatePayroll')
-                    )}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>{t('payroll:generateApprovedTitle')}</DialogTitle>
+                    <DialogDescription>
+                      {t('payroll:generateApprovedDescription')}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsApproveDialogOpen(false)}
+                      disabled={generating}
+                    >
+                      {t('payroll:cancel')}
+                    </Button>
+                    <Button onClick={handleGenerateApproved} disabled={generating}>
+                      {generating ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          {t('payroll:generating')}
+                        </>
+                      ) : (
+                        t('payroll:generatePayroll')
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </PermissionContent>
 
             <Button
@@ -1121,460 +1240,501 @@ export default function PayrollManagementPage() {
               {recalculating ? t('payroll:recalculating') : t('payroll:recalculateOvertime')}
             </Button>
 
-          <Link href="/modules/payroll-management/reports">
-            <Button variant="outline" size="sm">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              {t('payroll:reports')}
-            </Button>
-          </Link>
-          <Link href="/modules/payroll-management/salary-advances">
-            <Button variant="outline" size="sm">
-              <TrendingUp className="h-4 w-4 mr-2" />
-              {t('payroll:salaryAdvances')}
-            </Button>
-          </Link>
-          <Link href="/modules/payroll-management/settings">
-            <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              {t('payroll:settings')}
-            </Button>
-          </Link>
-          <Link href="/modules/payroll-management/create">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              {t('payroll:createPayroll')}
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('payroll:filters')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="search">{t('payroll:search')}</Label>
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="search"
-                  placeholder={t('payroll:searchPlaceholder')}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="status">{t('payroll:status')}</Label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('payroll:selectStatus')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('payroll:allStatus')}</SelectItem>
-                  <SelectItem value="pending">{t('payroll:pending')}</SelectItem>
-                  <SelectItem value="approved">{t('payroll:approved')}</SelectItem>
-                  <SelectItem value="paid">{t('payroll:paid')}</SelectItem>
-                  <SelectItem value="cancelled">{t('payroll:cancelled')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="month">{t('payroll:month')}</Label>
-              <Input
-                id="month"
-                type="month"
-                value={monthFilter ? monthFilter.toISOString().slice(0, 7) : ""}
-                onChange={(e) => setMonthFilter(new Date(e.target.value))}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="employee">{t('payroll:employee')}</Label>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant={employeeFilter === "all" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setEmployeeFilter("all")}
-                >
-                  {t('payroll:allEmployees')}
-                </Button>
-                <EmployeeDropdown
-                  value={employeeFilter === "all" ? "" : employeeFilter}
-                  onValueChange={(value) => setEmployeeFilter(value || "all")}
-                  placeholder={t('payroll:selectEmployee')}
-                  showSearch={true}
-                />
-              </div>
-            </div>
+            <Link href="/modules/payroll-management/reports">
+              <Button variant="outline" size="sm">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                {t('payroll:reports')}
+              </Button>
+            </Link>
+            <Link href="/modules/payroll-management/salary-advances">
+              <Button variant="outline" size="sm">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                {t('payroll:salaryAdvances')}
+              </Button>
+            </Link>
+            <Link href="/modules/payroll-management/settings">
+              <Button variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-2" />
+                {t('payroll:settings')}
+              </Button>
+            </Link>
+            <Link href="/modules/payroll-management/create">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                {t('payroll:createPayroll')}
+              </Button>
+            </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Bulk Actions */}
-      {selectedPayrolls.size > 0 && (
+        {/* Filters */}
         <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">
-                  {selectedPayrolls.size} {t('payroll:selectedPayrolls', { count: selectedPayrolls.size })}
-                </span>
+          <CardHeader>
+            <CardTitle>{t('payroll:filters')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="search">{t('payroll:search')}</Label>
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="search"
+                    placeholder={t('payroll:searchPlaceholder')}
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBulkDelete}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {t('payroll:deleteSelected')}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedPayrolls(new Set())}
-                >
-                  <XCircle className="h-4 w-4 mr-2" />
-                  {t('payroll:clearSelection')}
-                </Button>
+
+              <div className="space-y-2">
+                <Label htmlFor="status">{t('payroll:status')}</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('payroll:selectStatus')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('payroll:allStatus')}</SelectItem>
+                    <SelectItem value="pending">{t('payroll:pending')}</SelectItem>
+                    <SelectItem value="approved">{t('payroll:approved')}</SelectItem>
+                    <SelectItem value="paid">{t('payroll:paid')}</SelectItem>
+                    <SelectItem value="cancelled">{t('payroll:cancelled')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="month">{t('payroll:month')}</Label>
+                <Input
+                  id="month"
+                  type="month"
+                  value={monthFilter ? monthFilter.toISOString().slice(0, 7) : ''}
+                  onChange={e => setMonthFilter(new Date(e.target.value))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="employee">{t('payroll:employee')}</Label>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant={employeeFilter === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setEmployeeFilter('all')}
+                  >
+                    {t('payroll:allEmployees')}
+                  </Button>
+                  <EmployeeDropdown
+                    value={employeeFilter === 'all' ? '' : employeeFilter}
+                    onValueChange={value => setEmployeeFilter(value || 'all')}
+                    placeholder={t('payroll:selectEmployee')}
+                    showSearch={true}
+                  />
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Payrolls Table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-                            <CardTitle>{t('payroll:payrolls', { total: payrolls?.total || 0 })}</CardTitle>
-            <div className="flex items-center gap-2">
-              <Checkbox
-                checked={selectedPayrolls.size === (payrolls?.data && Array.isArray(payrolls.data) ? payrolls.data.length : 0) && (payrolls?.data && Array.isArray(payrolls.data) ? payrolls.data.length : 0) > 0}
-                onCheckedChange={handleSelectAll}
-              />
-              <span className="text-sm text-muted-foreground">{t('payroll:selectAll')}</span>
+        {/* Bulk Actions */}
+        {selectedPayrolls.size > 0 && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">
+                    {selectedPayrolls.size}{' '}
+                    {t('payroll:selectedPayrolls', { count: selectedPayrolls.size })}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleBulkDelete}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t('payroll:deleteSelected')}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedPayrolls(new Set())}
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    {t('payroll:clearSelection')}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Payrolls Table */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>{t('payroll:payrolls', { total: payrolls?.total || 0 })}</CardTitle>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={
+                    selectedPayrolls.size ===
+                      (payrolls?.data && Array.isArray(payrolls.data) ? payrolls.data.length : 0) &&
+                    (payrolls?.data && Array.isArray(payrolls.data) ? payrolls.data.length : 0) > 0
+                  }
+                  onCheckedChange={handleSelectAll}
+                />
+                <span className="text-sm text-muted-foreground">{t('payroll:selectAll')}</span>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center items-center h-32">
-              <RefreshCw className="h-6 w-6 animate-spin" />
-            </div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12"></TableHead>
-                    <TableHead className={isRTL ? 'text-right' : 'text-left'}>{t('payroll:employee')}</TableHead>
-                    <TableHead className={isRTL ? 'text-right' : 'text-left'}>{t('payroll:period')}</TableHead>
-                    <TableHead className={isRTL ? 'text-right' : 'text-left'}>{t('payroll:basicSalary')}</TableHead>
-                    <TableHead className={isRTL ? 'text-right' : 'text-left'}>{t('payroll:overtime')}</TableHead>
-                    <TableHead className={isRTL ? 'text-right' : 'text-left'}>{t('payroll:finalAmount')}</TableHead>
-                    <TableHead className={isRTL ? 'text-right' : 'text-left'}>{t('payroll:status')}</TableHead>
-                    <TableHead className={isRTL ? 'text-right' : 'text-left'}>{t('payroll:created')}</TableHead>
-                    <TableHead className={isRTL ? 'text-left' : 'text-right'}>{t('payroll:actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {payrolls?.data && Array.isArray(payrolls.data) ? (
-                    payrolls.data.map((payroll) => (
-                      <TableRow key={payroll.id}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedPayrolls.has(payroll.id)}
-                            onCheckedChange={(checked) =>
-                              handleSelectPayroll(payroll.id, checked as boolean)
-                            }
-                          />
-                        </TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
-                          <div>
-                            <div className="font-medium">
-                              {payroll.employee ? 
-                                getTranslatedName(
-                                  payroll.employee.full_name || `${payroll.employee.first_name} ${payroll.employee.last_name}`,
-                                  isRTL,
-                                  translatedNames,
-                                  setTranslatedNames
-                                ) || t('payroll:unknownEmployee') : 
-                                t('payroll:unknownEmployee')
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex justify-center items-center h-32">
+                <RefreshCw className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12"></TableHead>
+                      <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                        {t('payroll:employee')}
+                      </TableHead>
+                      <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                        {t('payroll:period')}
+                      </TableHead>
+                      <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                        {t('payroll:basicSalary')}
+                      </TableHead>
+                      <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                        {t('payroll:overtime')}
+                      </TableHead>
+                      <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                        {t('payroll:finalAmount')}
+                      </TableHead>
+                      <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                        {t('payroll:status')}
+                      </TableHead>
+                      <TableHead className={isRTL ? 'text-right' : 'text-left'}>
+                        {t('payroll:created')}
+                      </TableHead>
+                      <TableHead className={isRTL ? 'text-left' : 'text-right'}>
+                        {t('payroll:actions')}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {payrolls?.data && Array.isArray(payrolls.data) ? (
+                      payrolls.data.map(payroll => (
+                        <TableRow key={payroll.id}>
+                          <TableCell>
+                            <Checkbox
+                              checked={selectedPayrolls.has(payroll.id)}
+                              onCheckedChange={checked =>
+                                handleSelectPayroll(payroll.id, checked as boolean)
                               }
+                            />
+                          </TableCell>
+                          <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                            <div>
+                              <div className="font-medium">
+                                {payroll.employee
+                                  ? getTranslatedName(
+                                      payroll.employee.full_name ||
+                                        `${payroll.employee.first_name} ${payroll.employee.last_name}`,
+                                      isRTL,
+                                      translatedNames,
+                                      setTranslatedNames
+                                    ) || t('payroll:unknownEmployee')
+                                  : t('payroll:unknownEmployee')}
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {payroll.employee
+                                  ? `${payroll.employee.department || t('payroll:na')} • ${payroll.employee.designation || t('payroll:na')}`
+                                  : t('payroll:noDetails')}
+                              </div>
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              {payroll.employee ? 
-                                `${payroll.employee.department || t('payroll:na')} • ${payroll.employee.designation || t('payroll:na')}` : 
-                                t('payroll:noDetails')
+                          </TableCell>
+                          <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                            {new Date(payroll.year, payroll.month - 1).toLocaleDateString(
+                              isRTL ? 'ar-SA' : 'en-US',
+                              {
+                                month: 'long',
+                                year: 'numeric',
                               }
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
-                          {new Date(payroll.year, payroll.month - 1).toLocaleDateString(isRTL ? "ar-SA" : "en-US", {
-                            month: "long",
-                            year: "numeric",
-                          })}
-                        </TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{formatCurrency(payroll.base_salary)}</TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{formatCurrency(payroll.overtime_amount)}</TableCell>
-                        <TableCell className={`font-medium ${isRTL ? 'text-right' : 'text-left'}`}>{formatCurrency(payroll.final_amount)}</TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
-                          <Badge 
-                            variant={
-                              payroll.status === 'pending' ? 'secondary' : 
-                              payroll.status === 'approved' ? 'default' :
-                              payroll.status === 'paid' ? 'default' :
-                              payroll.status === 'cancelled' ? 'destructive' :
-                              payroll.status === 'processed' ? 'default' :
-                              'secondary'
-                            }
+                            )}
+                          </TableCell>
+                          <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                            {formatCurrency(payroll.base_salary)}
+                          </TableCell>
+                          <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                            {formatCurrency(payroll.overtime_amount)}
+                          </TableCell>
+                          <TableCell
+                            className={`font-medium ${isRTL ? 'text-right' : 'text-left'}`}
                           >
-                            {payroll.status === 'pending' ? t('payroll:status.pending') :
-                             payroll.status === 'approved' ? t('payroll:status.approved') :
-                             payroll.status === 'paid' ? t('payroll:status.paid') :
-                             payroll.status === 'cancelled' ? t('payroll:status.cancelled') :
-                             payroll.status === 'processed' ? t('payroll:status.processed') :
-                             payroll.status || t('common.na')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{formatDate(payroll.created_at)}</TableCell>
-                        <TableCell className={isRTL ? 'text-left' : 'text-right'}>
-                          <div className={`flex gap-2 ${isRTL ? 'justify-start' : 'justify-end'}`}>
-                            <Link href={`/modules/payroll-management/${payroll.id}`}>
-                              <Button variant="outline" size="sm">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                            <Link href={`/modules/payroll-management/${payroll.id}/edit`}>
-                              <Button variant="outline" size="sm">
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </Link>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDownloadPayslip(payroll.id)}
-                              title={t('payroll:viewPayslip')}
+                            {formatCurrency(payroll.final_amount)}
+                          </TableCell>
+                          <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                            <Badge
+                              variant={
+                                payroll.status === 'pending'
+                                  ? 'secondary'
+                                  : payroll.status === 'approved'
+                                    ? 'default'
+                                    : payroll.status === 'paid'
+                                      ? 'default'
+                                      : payroll.status === 'cancelled'
+                                        ? 'destructive'
+                                        : payroll.status === 'processed'
+                                          ? 'default'
+                                          : 'secondary'
+                              }
                             >
-                              <FileText className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDirectDownloadPayslip(payroll.id)}
-                              disabled={downloadingPayslip === payroll.id}
-                              title={t('payroll:downloadPdf')}
+                              {payroll.status === 'pending'
+                                ? t('payroll:status.pending')
+                                : payroll.status === 'approved'
+                                  ? t('payroll:status.approved')
+                                  : payroll.status === 'paid'
+                                    ? t('payroll:status.paid')
+                                    : payroll.status === 'cancelled'
+                                      ? t('payroll:status.cancelled')
+                                      : payroll.status === 'processed'
+                                        ? t('payroll:status.processed')
+                                        : payroll.status || t('common.na')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                            {formatDate(payroll.created_at)}
+                          </TableCell>
+                          <TableCell className={isRTL ? 'text-left' : 'text-right'}>
+                            <div
+                              className={`flex gap-2 ${isRTL ? 'justify-start' : 'justify-end'}`}
                             >
-                              {downloadingPayslip === payroll.id ? (
-                                <>
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                                  <span className="sr-only">{t('payroll:generating')}</span>
-                                </>
-                              ) : (
-                              <FileDown className="h-4 w-4" />
+                              <Link href={`/modules/payroll-management/${payroll.id}`}>
+                                <Button variant="outline" size="sm">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                              <Link href={`/modules/payroll-management/${payroll.id}/edit`}>
+                                <Button variant="outline" size="sm">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownloadPayslip(payroll.id)}
+                                title={t('payroll:viewPayslip')}
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDirectDownloadPayslip(payroll.id)}
+                                disabled={downloadingPayslip === payroll.id}
+                                title={t('payroll:downloadPdf')}
+                              >
+                                {downloadingPayslip === payroll.id ? (
+                                  <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                                    <span className="sr-only">{t('payroll:generating')}</span>
+                                  </>
+                                ) : (
+                                  <FileDown className="h-4 w-4" />
+                                )}
+                              </Button>
+                              {payroll.status === 'pending' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleApprove(payroll.id)}
+                                >
+                                  <CheckCircle className="h-4 w-4" />
+                                </Button>
                               )}
-                            </Button>
-                            {payroll.status === "pending" && (
+                              {payroll.status === 'approved' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleProcessPayment(payroll.id)}
+                                >
+                                  <DollarSign className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {payroll.status !== 'paid' && payroll.status !== 'cancelled' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleCancel(payroll.id)}
+                                >
+                                  <Ban className="h-4 w-4" />
+                                </Button>
+                              )}
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleApprove(payroll.id)}
+                                onClick={() => handleDelete(payroll.id)}
                               >
-                                <CheckCircle className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4" />
                               </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={11} className="text-center py-8">
+                          <div className="text-muted-foreground">
+                            {loading ? (
+                              <div className="flex items-center justify-center">
+                                <RefreshCw className="h-6 w-6 animate-spin mr-2" />
+                                {t('payroll:loadingPayrolls')}
+                              </div>
+                            ) : (
+                              t('payroll:noPayrollsFound')
                             )}
-                            {payroll.status === "approved" && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleProcessPayment(payroll.id)}
-                              >
-                                <DollarSign className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {payroll.status !== "paid" && payroll.status !== "cancelled" && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleCancel(payroll.id)}
-                              >
-                                <Ban className="h-4 w-4" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDelete(payroll.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={11} className="text-center py-8">
-                        <div className="text-muted-foreground">
-                          {loading ? (
-                            <div className="flex items-center justify-center">
-                              <RefreshCw className="h-6 w-6 animate-spin mr-2" />
-                              {t('payroll:loadingPayrolls')}
-                            </div>
-                          ) : (
-                            t('payroll:noPayrollsFound')
+                    )}
+                  </TableBody>
+                </Table>
+
+                {/* Pagination */}
+                {payrolls && payrolls.last_page > 1 && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-gray-500">
+                        {t('payroll:showing', {
+                          from: (currentPage - 1) * payrolls.per_page + 1,
+                          to: Math.min(currentPage * payrolls.per_page, payrolls.total),
+                          total: payrolls.total,
+                        })}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-1" />
+                          {t('payroll:previous')}
+                        </Button>
+
+                        <div className="flex items-center gap-1">
+                          {/* First page */}
+                          {currentPage > 2 && (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(1)}
+                                className="w-8 h-8 p-0"
+                              >
+                                1
+                              </Button>
+                              {currentPage > 3 && (
+                                <span className="px-2 text-muted-foreground">...</span>
+                              )}
+                            </>
+                          )}
+
+                          {/* Current page and surrounding pages */}
+                          {(() => {
+                            const pages: number[] = [];
+                            const startPage = Math.max(1, currentPage - 1);
+                            const endPage = Math.min(payrolls.last_page, currentPage + 1);
+
+                            for (let page = startPage; page <= endPage; page++) {
+                              pages.push(page);
+                            }
+
+                            return pages.map(page => (
+                              <Button
+                                key={page}
+                                variant={currentPage === page ? 'default' : 'outline'}
+                                size="sm"
+                                onClick={() => setCurrentPage(page)}
+                                className="w-8 h-8 p-0"
+                              >
+                                {page}
+                              </Button>
+                            ));
+                          })()}
+
+                          {/* Last page */}
+                          {currentPage < payrolls.last_page - 1 && (
+                            <>
+                              {currentPage < payrolls.last_page - 2 && (
+                                <span className="px-2 text-muted-foreground">...</span>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCurrentPage(payrolls.last_page)}
+                                className="w-8 h-8 p-0"
+                              >
+                                {payrolls.last_page}
+                              </Button>
+                            </>
                           )}
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
 
-              {/* Pagination */}
-              {payrolls && payrolls.last_page > 1 && (
-                <div className="mt-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-500">
-                      {t('payroll:showing', {
-                        from: ((currentPage - 1) * payrolls.per_page) + 1,
-                        to: Math.min(currentPage * payrolls.per_page, payrolls.total),
-                        total: payrolls.total
-                      })}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                        disabled={currentPage === 1}
-                      >
-                        <ChevronLeft className="h-4 w-4 mr-1" />
-                        {t('payroll:previous')}
-                      </Button>
-
-                      <div className="flex items-center gap-1">
-                        {/* First page */}
-                        {currentPage > 2 && (
-                          <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setCurrentPage(1)}
-                              className="w-8 h-8 p-0"
-                            >
-                              1
-                            </Button>
-                            {currentPage > 3 && (
-                              <span className="px-2 text-muted-foreground">...</span>
-                            )}
-                          </>
-                        )}
-
-                        {/* Current page and surrounding pages */}
-                        {(() => {
-                          const pages: number[] = [];
-                          const startPage = Math.max(1, currentPage - 1);
-                          const endPage = Math.min(payrolls.last_page, currentPage + 1);
-
-                          for (let page = startPage; page <= endPage; page++) {
-                            pages.push(page);
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setCurrentPage(Math.min(payrolls.last_page, currentPage + 1))
                           }
-
-                          return pages.map((page) => (
-                            <Button
-                              key={page}
-                              variant={currentPage === page ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setCurrentPage(page)}
-                              className="w-8 h-8 p-0"
-                            >
-                              {page}
-                            </Button>
-                          ));
-                        })()}
-
-                        {/* Last page */}
-                        {currentPage < payrolls.last_page - 1 && (
-                          <>
-                            {currentPage < payrolls.last_page - 2 && (
-                              <span className="px-2 text-muted-foreground">...</span>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setCurrentPage(payrolls.last_page)}
-                              className="w-8 h-8 p-0"
-                            >
-                              {payrolls.last_page}
-                            </Button>
-                          </>
-                        )}
+                          disabled={currentPage === payrolls.last_page}
+                        >
+                          {t('payroll:next')}
+                          <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
                       </div>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(Math.min(payrolls.last_page, currentPage + 1))}
-                        disabled={currentPage === payrolls.last_page}
-                      >
-                        {t('payroll:next')}
-                        <ChevronRight className="h-4 w-4 ml-1" />
-                      </Button>
                     </div>
                   </div>
-                </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Role-based content example */}
-      <RoleContent role="ADMIN">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('payroll:administration')}</CardTitle>
-            <CardDescription>
-              {t('payroll:administrationDescription')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <PermissionContent action="approve" subject="Payroll">
-                <Button variant="outline">
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                  {t('payroll:approveAllPending')}
-                </Button>
-              </PermissionContent>
-
-              <PermissionContent action="manage" subject="Payroll">
-                <Button variant="outline">
-                  <Shield className="h-4 w-4 mr-2" />
-                  {t('payroll:payrollSettings')}
-                </Button>
-              </PermissionContent>
-
-              <PermissionContent action="export" subject="Payroll">
-                <Button variant="outline">
-                  <FileText className="h-4 w-4 mr-2" />
-                  {t('payroll:generateReports')}
-                </Button>
-              </PermissionContent>
-            </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
-      </RoleContent>
-    </div>
-  </ProtectedRoute>
+
+        {/* Role-based content example */}
+        <RoleContent role="ADMIN">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('payroll:administration')}</CardTitle>
+              <CardDescription>{t('payroll:administrationDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2">
+                <PermissionContent action="approve" subject="Payroll">
+                  <Button variant="outline">
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    {t('payroll:approveAllPending')}
+                  </Button>
+                </PermissionContent>
+
+                <PermissionContent action="manage" subject="Payroll">
+                  <Button variant="outline">
+                    <Shield className="h-4 w-4 mr-2" />
+                    {t('payroll:payrollSettings')}
+                  </Button>
+                </PermissionContent>
+
+                <PermissionContent action="export" subject="Payroll">
+                  <Button variant="outline">
+                    <FileText className="h-4 w-4 mr-2" />
+                    {t('payroll:generateReports')}
+                  </Button>
+                </PermissionContent>
+              </div>
+            </CardContent>
+          </Card>
+        </RoleContent>
+      </div>
+    </ProtectedRoute>
   );
 }

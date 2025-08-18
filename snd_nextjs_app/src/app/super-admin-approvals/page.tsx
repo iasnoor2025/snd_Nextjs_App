@@ -1,16 +1,16 @@
 'use client';
 
-import { SuperAdminApprovals } from '@/components/super-admin-approvals';
 import { ProtectedRoute } from '@/components/protected-route';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { SuperAdminApprovals } from '@/components/super-admin-approvals';
 import { Badge } from '@/components/ui/badge';
-import { Shield, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AlertTriangle, CheckCircle, Clock, Shield, XCircle } from 'lucide-react';
 // i18n refactor: All user-facing strings now use useTranslation('admin')
 import { useTranslation } from 'react-i18next';
 
 export default function SuperAdminApprovalsPage() {
   const { t } = useTranslation('admin');
-  
+
   return (
     <ProtectedRoute requiredRole="SUPER_ADMIN">
       <div className="container mx-auto py-6 space-y-6">
@@ -21,9 +21,7 @@ export default function SuperAdminApprovalsPage() {
               <Shield className="h-8 w-8 text-blue-600" />
               {t('super_admin_approval_center')}
             </h1>
-            <p className="text-muted-foreground">
-              {t('manage_all_system_approvals')}
-            </p>
+            <p className="text-muted-foreground">{t('manage_all_system_approvals')}</p>
           </div>
           <div className="flex gap-2">
             <Badge variant="outline" className="flex items-center gap-1">
@@ -42,9 +40,7 @@ export default function SuperAdminApprovalsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">15</div>
-              <p className="text-xs text-muted-foreground">
-                {t('across_all_modules')}
-              </p>
+              <p className="text-xs text-muted-foreground">{t('across_all_modules')}</p>
             </CardContent>
           </Card>
 
@@ -55,9 +51,7 @@ export default function SuperAdminApprovalsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">5</div>
-              <p className="text-xs text-muted-foreground">
-                {t('awaiting_approval')}
-              </p>
+              <p className="text-xs text-muted-foreground">{t('awaiting_approval')}</p>
             </CardContent>
           </Card>
 
@@ -68,9 +62,7 @@ export default function SuperAdminApprovalsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">8</div>
-              <p className="text-xs text-muted-foreground">
-                {t('successfully_processed')}
-              </p>
+              <p className="text-xs text-muted-foreground">{t('successfully_processed')}</p>
             </CardContent>
           </Card>
 
@@ -81,9 +73,7 @@ export default function SuperAdminApprovalsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">2</div>
-              <p className="text-xs text-muted-foreground">
-                {t('declined_requests')}
-              </p>
+              <p className="text-xs text-muted-foreground">{t('declined_requests')}</p>
             </CardContent>
           </Card>
         </div>
@@ -92,9 +82,7 @@ export default function SuperAdminApprovalsPage() {
         <Card>
           <CardHeader>
             <CardTitle>{t('approval_modules')}</CardTitle>
-            <CardDescription>
-              {t('overview_of_approval_types')}
-            </CardDescription>
+            <CardDescription>{t('overview_of_approval_types')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -135,4 +123,4 @@ export default function SuperAdminApprovalsPage() {
       </div>
     </ProtectedRoute>
   );
-} 
+}

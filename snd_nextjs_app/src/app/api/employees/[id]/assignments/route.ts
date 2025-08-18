@@ -1,9 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/db';
-import { employeeAssignments, employees as employeesTable, projects, rentals, equipmentRentalHistory } from '@/lib/drizzle/schema';
-import { eq, and, desc, asc } from 'drizzle-orm';
+import {
+  employeeAssignments,
+  employees as employeesTable,
+  equipmentRentalHistory,
+  projects,
+  rentals,
+} from '@/lib/drizzle/schema';
+import { and, asc, desc, eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Helper function to manage assignment statuses
 async function manageAssignmentStatuses(employeeId: number) {
@@ -35,9 +41,9 @@ async function manageAssignmentStatuses(employeeId: number) {
     // Update all assignments based on their position
     for (let i = 0; i < allAssignmentsRows.length; i++) {
       const assignment = allAssignmentsRows[i];
-      
+
       if (!assignment) continue;
-      
+
       const isCurrent = assignment.id === currentAssignment?.id;
 
       console.log(`\n📝 Processing assignment ${assignment.name} (ID: ${assignment.id}):`);
@@ -53,7 +59,7 @@ async function manageAssignmentStatuses(employeeId: number) {
             .update(employeeAssignments)
             .set({
               status: 'active',
-              endDate: null
+              endDate: null,
             })
             .where(eq(employeeAssignments.id, assignment.id));
         } else {
@@ -77,19 +83,23 @@ async function manageAssignmentStatuses(employeeId: number) {
           // Set end date to the day before the next assignment starts
           endDate = new Date(nextAssignment.startDate);
           endDate.setDate(endDate.getDate() - 1);
-          console.log(`  🔄 Updating previous assignment to completed with end date: ${endDate.toISOString().slice(0, 10)} (day before ${nextAssignment.name})`);
+          console.log(
+            `  🔄 Updating previous assignment to completed with end date: ${endDate.toISOString().slice(0, 10)} (day before ${nextAssignment.name})`
+          );
         } else {
           // If no next assignment, set to the day before current assignment starts
           endDate = new Date(currentAssignment.startDate);
           endDate.setDate(endDate.getDate() - 1);
-          console.log(`  🔄 Updating previous assignment to completed with end date: ${endDate.toISOString().slice(0, 10)} (day before current assignment)`);
+          console.log(
+            `  🔄 Updating previous assignment to completed with end date: ${endDate.toISOString().slice(0, 10)} (day before current assignment)`
+          );
         }
 
         await db
           .update(employeeAssignments)
           .set({
             status: 'completed',
-            endDate: endDate.toISOString()
+            endDate: endDate.toISOString(),
           })
           .where(eq(employeeAssignments.id, assignment.id));
         console.log(`  ✅ Updated previous assignment`);
@@ -100,31 +110,25 @@ async function manageAssignmentStatuses(employeeId: number) {
   }
 }
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const resolvedParams = await params;
-    
+
     if (!resolvedParams || !resolvedParams.id) {
       console.error('Invalid params received:', resolvedParams);
-      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
-    
+
     const { id } = resolvedParams;
     const employeeId = parseInt(id);
 
     if (!employeeId) {
-      return NextResponse.json(
-        { error: "Invalid employee ID" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
 
     // Check if employee exists
@@ -135,10 +139,7 @@ export async function GET(
       .limit(1);
 
     if (employeeRows.length === 0) {
-      return NextResponse.json(
-        { error: "Employee not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
     // Ensure assignment statuses are properly managed before fetching
@@ -185,15 +186,19 @@ export async function GET(
       notes: assignment.notes || '',
       project_id: assignment.projectId,
       rental_id: assignment.rentalId,
-      project: assignment.projectId_rel ? {
-        id: assignment.projectId_rel,
-        name: assignment.projectName || 'Unknown Project',
-      } : null,
-      rental: assignment.rentalId_rel ? {
-        id: assignment.rentalId_rel,
-        rental_number: assignment.rentalNumber || 'Unknown Rental',
-        project_name: 'Unknown Customer', // We'll need to join with customers for this
-      } : null,
+      project: assignment.projectId_rel
+        ? {
+            id: assignment.projectId_rel,
+            name: assignment.projectName || 'Unknown Project',
+          }
+        : null,
+      rental: assignment.rentalId_rel
+        ? {
+            id: assignment.rentalId_rel,
+            rental_number: assignment.rentalNumber || 'Unknown Rental',
+            project_name: 'Unknown Customer', // We'll need to join with customers for this
+          }
+        : null,
       created_at: assignment.createdAt,
       updated_at: assignment.updatedAt,
     }));
@@ -201,46 +206,40 @@ export async function GET(
     return NextResponse.json({
       success: true,
       data: formattedAssignments,
-      message: 'Assignments retrieved successfully'
+      message: 'Assignments retrieved successfully',
     });
   } catch (error) {
     console.error('Error fetching employee assignments:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to fetch employee assignments',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const resolvedParams = await params;
-    
+
     if (!resolvedParams || !resolvedParams.id) {
       console.error('Invalid params received:', resolvedParams);
-      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
-    
+
     const { id } = resolvedParams;
     const employeeId = parseInt(id);
     const body = await request.json();
 
     if (!employeeId) {
-      return NextResponse.json(
-        { error: "Invalid employee ID" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
 
     // Check if employee exists
@@ -251,16 +250,13 @@ export async function POST(
       .limit(1);
 
     if (employeeRows.length === 0) {
-      return NextResponse.json(
-        { error: "Employee not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
     // Validate required fields
     if (!body.name || !body.start_date) {
       return NextResponse.json(
-        { error: "Assignment name and start date are required" },
+        { error: 'Assignment name and start date are required' },
         { status: 400 }
       );
     }
@@ -289,49 +285,46 @@ export async function POST(
     // Manage assignment statuses after creating new assignment
     await manageAssignmentStatuses(employeeId);
 
-    return NextResponse.json({
-      success: true,
-      message: 'Assignment created successfully',
-      assignment,
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        message: 'Assignment created successfully',
+        assignment,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error creating employee assignment:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to create employee assignment',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const resolvedParams = await params;
-    
+
     if (!resolvedParams || !resolvedParams.id) {
       console.error('Invalid params received:', resolvedParams);
-      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
-    
+
     const { id } = resolvedParams;
     const employeeId = parseInt(id);
     const body = await request.json();
 
     if (!employeeId) {
-      return NextResponse.json(
-        { error: "Invalid employee ID" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
 
     // Check if employee exists
@@ -342,16 +335,13 @@ export async function PUT(
       .limit(1);
 
     if (employeeRows.length === 0) {
-      return NextResponse.json(
-        { error: "Employee not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
     // Validate required fields
     if (!body.name || !body.start_date) {
       return NextResponse.json(
-        { error: "Assignment name and start date are required" },
+        { error: 'Assignment name and start date are required' },
         { status: 400 }
       );
     }
@@ -398,14 +388,14 @@ export async function PUT(
         rental: null, // We'll need to fetch this separately if needed
         created_at: assignment?.createdAt,
         updated_at: assignment?.updatedAt,
-      }
+      },
     });
   } catch (error) {
     console.error('Error in PUT /api/employees/[id]/assignments:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to update assignment: ' + (error as Error).message
+        message: 'Failed to update assignment: ' + (error as Error).message,
       },
       { status: 500 }
     );
@@ -419,33 +409,27 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const resolvedParams = await params;
-    
+
     if (!resolvedParams || !resolvedParams.id) {
       console.error('Invalid params received:', resolvedParams);
-      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
-    
+
     const { id } = resolvedParams;
     const employeeId = parseInt(id);
     const url = new URL(request.url);
     const assignmentId = url.searchParams.get('assignmentId');
 
     if (!employeeId) {
-      return NextResponse.json(
-        { error: "Invalid employee ID" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
 
     if (!assignmentId) {
-      return NextResponse.json(
-        { error: "Assignment ID is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Assignment ID is required' }, { status: 400 });
     }
 
     // Check if employee exists
@@ -456,10 +440,7 @@ export async function DELETE(
       .limit(1);
 
     if (employeeRows.length === 0) {
-      return NextResponse.json(
-        { error: "Employee not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
     // Check if assignment exists and belongs to this employee
@@ -470,24 +451,27 @@ export async function DELETE(
         name: employeeAssignments.name,
       })
       .from(employeeAssignments)
-      .where(and(
-        eq(employeeAssignments.id, parseInt(assignmentId)),
-        eq(employeeAssignments.employeeId, employeeId)
-      ))
+      .where(
+        and(
+          eq(employeeAssignments.id, parseInt(assignmentId)),
+          eq(employeeAssignments.employeeId, employeeId)
+        )
+      )
       .limit(1);
 
     if (assignmentRows.length === 0) {
-      return NextResponse.json(
-        { error: "Assignment not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
     }
 
     const assignment = assignmentRows[0];
 
     // If this is a manual assignment that was created from an equipment assignment, also delete the corresponding equipment assignment
     let deletedEquipmentAssignment: any = null;
-    if (assignment?.type === 'manual' && assignment?.name && assignment.name.includes('Equipment Assignment -')) {
+    if (
+      assignment?.type === 'manual' &&
+      assignment?.name &&
+      assignment.name.includes('Equipment Assignment -')
+    ) {
       try {
         // Find and delete the corresponding equipment assignment
         const equipmentAssignmentRows = await db
@@ -495,16 +479,18 @@ export async function DELETE(
             id: equipmentRentalHistory.id,
           })
           .from(equipmentRentalHistory)
-          .where(and(
-            eq(equipmentRentalHistory.employeeId, employeeId),
-            eq(equipmentRentalHistory.assignmentType, 'manual'),
-            eq(equipmentRentalHistory.status, 'active')
-          ))
+          .where(
+            and(
+              eq(equipmentRentalHistory.employeeId, employeeId),
+              eq(equipmentRentalHistory.assignmentType, 'manual'),
+              eq(equipmentRentalHistory.status, 'active')
+            )
+          )
           .limit(1);
 
         if (equipmentAssignmentRows.length > 0) {
           const equipmentAssignment = equipmentAssignmentRows[0];
-          
+
           if (equipmentAssignment && equipmentAssignment.id) {
             await db
               .delete(equipmentRentalHistory)
@@ -520,31 +506,29 @@ export async function DELETE(
     }
 
     // Delete the employee assignment
-    await db
-      .delete(employeeAssignments)
-      .where(eq(employeeAssignments.id, parseInt(assignmentId)));
+    await db.delete(employeeAssignments).where(eq(employeeAssignments.id, parseInt(assignmentId)));
 
     // Manage assignment statuses after deleting assignment
     await manageAssignmentStatuses(employeeId);
 
     return NextResponse.json({
       success: true,
-      message: 'Assignment deleted successfully' + (deletedEquipmentAssignment ? ' and equipment assignment deleted automatically' : ''),
+      message:
+        'Assignment deleted successfully' +
+        (deletedEquipmentAssignment ? ' and equipment assignment deleted automatically' : ''),
       data: {
         deletedEmployeeAssignment: assignment,
-        deletedEquipmentAssignment
-      }
+        deletedEquipmentAssignment,
+      },
     });
   } catch (error) {
     console.error('Error deleting employee assignment:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to delete employee assignment',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
 }
-
-

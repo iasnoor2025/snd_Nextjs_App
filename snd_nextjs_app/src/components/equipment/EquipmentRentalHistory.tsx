@@ -1,39 +1,59 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { EmployeeDropdown } from "@/components/ui/employee-dropdown";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { 
-  History, 
-  Calendar, 
-  User, 
-  DollarSign, 
-  Package, 
-  MapPin, 
-  FileText, 
-  Eye,
-  Loader2,
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import ApiService from '@/lib/api-service';
+import { format } from 'date-fns';
+import {
   AlertCircle,
-  RefreshCw,
-  Plus,
-  Edit,
+  Calendar,
   CheckCircle,
+  DollarSign,
+  Edit,
+  Eye,
+  FileText,
+  History,
+  Loader2,
+  MapPin,
+  MoreHorizontal,
+  Package,
+  Plus,
+  RefreshCw,
   Trash2,
-  MoreHorizontal
-} from "lucide-react";
-import { format } from "date-fns";
-import { toast } from "sonner";
-import ApiService from "@/lib/api-service";
-import Link from "next/link";
+  User,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface AssignmentHistoryItem {
   id: number;
@@ -75,7 +95,9 @@ interface EquipmentAssignmentHistoryProps {
   equipmentId: number;
 }
 
-export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAssignmentHistoryProps) {
+export default function EquipmentAssignmentHistory({
+  equipmentId,
+}: EquipmentAssignmentHistoryProps) {
   const [assignmentHistory, setAssignmentHistory] = useState<AssignmentHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,7 +112,7 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
     endDate: '',
     dailyRate: '',
     totalAmount: '',
-    notes: ''
+    notes: '',
   });
   const [editAssignmentForm, setEditAssignmentForm] = useState({
     employeeId: '',
@@ -98,7 +120,7 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
     endDate: '',
     dailyRate: '',
     totalAmount: '',
-    notes: ''
+    notes: '',
   });
   const [submittingManualAssignment, setSubmittingManualAssignment] = useState(false);
   const [submittingEditAssignment, setSubmittingEditAssignment] = useState(false);
@@ -127,81 +149,81 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      active: { 
-        className: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200", 
-        label: 'Active' 
+      active: {
+        className: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200',
+        label: 'Active',
       },
-      completed: { 
-        className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200", 
-        label: 'Completed' 
+      completed: {
+        className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200',
+        label: 'Completed',
       },
-      cancelled: { 
-        className: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200", 
-        label: 'Cancelled' 
+      cancelled: {
+        className: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200',
+        label: 'Cancelled',
       },
-      pending: { 
-        className: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200", 
-        label: 'Pending' 
+      pending: {
+        className: 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200',
+        label: 'Pending',
       },
     };
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || { 
-      className: "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200", 
-      label: status 
+
+    const config = statusConfig[status as keyof typeof statusConfig] || {
+      className: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200',
+      label: status,
     };
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 
   const getRentalStatusBadge = (status: string) => {
     const statusConfig = {
-      active: { 
-        className: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200", 
-        label: 'Active' 
+      active: {
+        className: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200',
+        label: 'Active',
       },
-      completed: { 
-        className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200", 
-        label: 'Completed' 
+      completed: {
+        className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200',
+        label: 'Completed',
       },
-      cancelled: { 
-        className: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200", 
-        label: 'Cancelled' 
+      cancelled: {
+        className: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200',
+        label: 'Cancelled',
       },
-      pending: { 
-        className: "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200", 
-        label: 'Pending' 
+      pending: {
+        className: 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200',
+        label: 'Pending',
       },
-      approved: { 
-        className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200", 
-        label: 'Approved' 
+      approved: {
+        className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200',
+        label: 'Approved',
       },
     };
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || { 
-      className: "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200", 
-      label: status 
+
+    const config = statusConfig[status as keyof typeof statusConfig] || {
+      className: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200',
+      label: status,
     };
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 
   const getRateTypeBadge = (rateType: string) => {
     const typeConfig = {
-      daily: { 
-        className: "bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200", 
-        label: 'Daily' 
+      daily: {
+        className: 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200',
+        label: 'Daily',
       },
-      weekly: { 
-        className: "bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-200", 
-        label: 'Weekly' 
+      weekly: {
+        className: 'bg-indigo-100 text-indigo-800 border-indigo-200 hover:bg-indigo-200',
+        label: 'Weekly',
       },
-      monthly: { 
-        className: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200", 
-        label: 'Monthly' 
+      monthly: {
+        className: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200',
+        label: 'Monthly',
       },
     };
-    
-    const config = typeConfig[rateType as keyof typeof typeConfig] || { 
-      className: "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200", 
-      label: rateType 
+
+    const config = typeConfig[rateType as keyof typeof typeConfig] || {
+      className: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200',
+      label: rateType,
     };
     return <Badge className={config.className}>{config.label}</Badge>;
   };
@@ -212,20 +234,26 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
   };
 
   const getCurrentAssignment = () => {
-    return assignmentHistory.find(assignment => 
-      assignment.status === 'active' && 
-      (assignment.rental_status === 'active' || assignment.rental_status === 'approved' || !assignment.rental_status)
+    return assignmentHistory.find(
+      assignment =>
+        assignment.status === 'active' &&
+        (assignment.rental_status === 'active' ||
+          assignment.rental_status === 'approved' ||
+          !assignment.rental_status)
     );
   };
 
   const getCompletedAssignments = () => {
-    return assignmentHistory.filter(assignment => 
-      assignment.rental_status === 'completed' || assignment.status === 'completed'
+    return assignmentHistory.filter(
+      assignment => assignment.rental_status === 'completed' || assignment.status === 'completed'
     );
   };
 
   const getTotalRevenue = () => {
-    return assignmentHistory.reduce((total, assignment) => total + (Number(assignment.total_price) || 0), 0);
+    return assignmentHistory.reduce(
+      (total, assignment) => total + (Number(assignment.total_price) || 0),
+      0
+    );
   };
 
   const fetchEmployees = async () => {
@@ -248,15 +276,19 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
         assignment_type: 'manual' as const,
         start_date: manualAssignmentForm.startDate,
         end_date: manualAssignmentForm.endDate || undefined,
-        daily_rate: manualAssignmentForm.dailyRate ? parseFloat(manualAssignmentForm.dailyRate) : undefined,
-        total_amount: manualAssignmentForm.totalAmount ? parseFloat(manualAssignmentForm.totalAmount) : undefined,
+        daily_rate: manualAssignmentForm.dailyRate
+          ? parseFloat(manualAssignmentForm.dailyRate)
+          : undefined,
+        total_amount: manualAssignmentForm.totalAmount
+          ? parseFloat(manualAssignmentForm.totalAmount)
+          : undefined,
         notes: manualAssignmentForm.notes || undefined,
         status: 'active',
-        employee_id: parseInt(manualAssignmentForm.employeeId)
+        employee_id: parseInt(manualAssignmentForm.employeeId),
       };
 
       const response = await ApiService.createEquipmentAssignment(equipmentId, assignmentData);
-      
+
       if (response.success) {
         toast.success('Manual assignment created successfully');
         setShowManualAssignmentDialog(false);
@@ -266,7 +298,7 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
           endDate: '',
           dailyRate: '',
           totalAmount: '',
-          notes: ''
+          notes: '',
         });
         fetchAssignmentHistory(); // Refresh the history
       } else {
@@ -282,21 +314,28 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
   const handleEditAssignmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedAssignment) return;
-    
+
     setSubmittingEditAssignment(true);
 
     try {
       const assignmentData = {
         start_date: editAssignmentForm.startDate,
         end_date: editAssignmentForm.endDate || undefined,
-        daily_rate: editAssignmentForm.dailyRate ? parseFloat(editAssignmentForm.dailyRate) : undefined,
-        total_amount: editAssignmentForm.totalAmount ? parseFloat(editAssignmentForm.totalAmount) : undefined,
+        daily_rate: editAssignmentForm.dailyRate
+          ? parseFloat(editAssignmentForm.dailyRate)
+          : undefined,
+        total_amount: editAssignmentForm.totalAmount
+          ? parseFloat(editAssignmentForm.totalAmount)
+          : undefined,
         notes: editAssignmentForm.notes || undefined,
-        employee_id: parseInt(editAssignmentForm.employeeId)
+        employee_id: parseInt(editAssignmentForm.employeeId),
       };
 
-      const response = await ApiService.updateEquipmentAssignment(selectedAssignment.id, assignmentData);
-      
+      const response = await ApiService.updateEquipmentAssignment(
+        selectedAssignment.id,
+        assignmentData
+      );
+
       if (response.success) {
         toast.success('Assignment updated successfully');
         setShowEditAssignmentDialog(false);
@@ -306,7 +345,7 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
           endDate: '',
           dailyRate: '',
           totalAmount: '',
-          notes: ''
+          notes: '',
         });
         setSelectedAssignment(null);
         fetchAssignmentHistory(); // Refresh the history
@@ -335,11 +374,15 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
     // Populate the edit form with current assignment data
     setEditAssignmentForm({
       employeeId: assignment.employee_id?.toString() || '',
-      startDate: assignment.start_date ? new Date(assignment.start_date).toISOString().split('T')[0] : '',
-      endDate: assignment.expected_end_date ? new Date(assignment.expected_end_date).toISOString().split('T')[0] : '',
+      startDate: assignment.start_date
+        ? new Date(assignment.start_date).toISOString().split('T')[0]
+        : '',
+      endDate: assignment.expected_end_date
+        ? new Date(assignment.expected_end_date).toISOString().split('T')[0]
+        : '',
       dailyRate: assignment.unit_price?.toString() || '',
       totalAmount: assignment.total_price?.toString() || '',
-      notes: assignment.notes || ''
+      notes: assignment.notes || '',
     });
 
     setSelectedAssignment(assignment);
@@ -354,9 +397,9 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
 
     try {
       const response = await ApiService.updateEquipmentAssignment(assignment.id, {
-        status: 'completed'
+        status: 'completed',
       });
-      
+
       if (response.success) {
         toast.success('Assignment completed successfully');
         fetchAssignmentHistory();
@@ -369,13 +412,15 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
   };
 
   const handleDeleteAssignment = async (assignment: AssignmentHistoryItem) => {
-    if (!confirm(`Are you sure you want to delete this assignment? This action cannot be undone.`)) {
+    if (
+      !confirm(`Are you sure you want to delete this assignment? This action cannot be undone.`)
+    ) {
       return;
     }
 
     try {
       const response = await ApiService.deleteEquipmentAssignment(assignment.id);
-      
+
       if (response.success) {
         toast.success('Assignment deleted successfully');
         fetchAssignmentHistory();
@@ -419,12 +464,7 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
           <div className="flex items-center justify-center py-8">
             <AlertCircle className="h-8 w-8 text-destructive" />
             <span className="ml-2">{error}</span>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={fetchAssignmentHistory}
-              className="ml-4"
-            >
+            <Button variant="outline" size="sm" onClick={fetchAssignmentHistory} className="ml-4">
               <RefreshCw className="h-4 w-4 mr-2" />
               Retry
             </Button>
@@ -458,7 +498,7 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
               </div>
               <div className="text-2xl font-bold">{assignmentHistory.length}</div>
             </div>
-            
+
             <div className="bg-muted p-4 rounded-lg">
               <div className="flex items-center space-x-2">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
@@ -466,7 +506,7 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
               </div>
               <div className="text-2xl font-bold">SAR {totalRevenue.toFixed(2)}</div>
             </div>
-            
+
             <div className="bg-muted p-4 rounded-lg">
               <div className="flex items-center space-x-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -474,7 +514,7 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
               </div>
               <div className="text-2xl font-bold">{getCompletedAssignments().length}</div>
             </div>
-            
+
             <div className="bg-muted p-4 rounded-lg">
               <div className="flex items-center space-x-2">
                 <User className="h-4 w-4 text-muted-foreground" />
@@ -498,31 +538,45 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
                         <span className="font-medium">
-                          {getCurrentAssignment()?.assignment_type === 'rental' 
+                          {getCurrentAssignment()?.assignment_type === 'rental'
                             ? `Rental #${getCurrentAssignment()?.rental_number}`
                             : getCurrentAssignment()?.assignment_type === 'project'
-                            ? `Project: ${getCurrentAssignment()?.project_name}`
-                            : `Manual: ${getCurrentAssignment()?.employee_name}`
-                          }
+                              ? `Project: ${getCurrentAssignment()?.project_name}`
+                              : `Manual: ${getCurrentAssignment()?.employee_name}`}
                         </span>
-                        {getCurrentAssignment()?.rental_status && getRentalStatusBadge(getCurrentAssignment()!.rental_status!)}
+                        {getCurrentAssignment()?.rental_status &&
+                          getRentalStatusBadge(getCurrentAssignment()!.rental_status!)}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {getCurrentAssignment()?.assignment_type === 'rental' && `Customer: ${getCurrentAssignment()?.customer_name}`}
-                        {getCurrentAssignment()?.assignment_type === 'project' && `Project: ${getCurrentAssignment()?.project_name}`}
-                        {getCurrentAssignment()?.assignment_type === 'manual' && `Employee: ${getCurrentAssignment()?.employee_name}`}
+                        {getCurrentAssignment()?.assignment_type === 'rental' &&
+                          `Customer: ${getCurrentAssignment()?.customer_name}`}
+                        {getCurrentAssignment()?.assignment_type === 'project' &&
+                          `Project: ${getCurrentAssignment()?.project_name}`}
+                        {getCurrentAssignment()?.assignment_type === 'manual' &&
+                          `Employee: ${getCurrentAssignment()?.employee_name}`}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Start Date: {getCurrentAssignment()?.rental_start_date || getCurrentAssignment()?.start_date ? 
-                          format(new Date(getCurrentAssignment()!.rental_start_date || getCurrentAssignment()!.start_date!), 'MMM dd, yyyy') : 
-                          'Not specified'
-                        }
+                        Start Date:{' '}
+                        {getCurrentAssignment()?.rental_start_date ||
+                        getCurrentAssignment()?.start_date
+                          ? format(
+                              new Date(
+                                getCurrentAssignment()!.rental_start_date ||
+                                  getCurrentAssignment()!.start_date!
+                              ),
+                              'MMM dd, yyyy'
+                            )
+                          : 'Not specified'}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold">SAR {(Number(getCurrentAssignment()!.total_price) || 0).toFixed(2)}</div>
+                      <div className="text-lg font-bold">
+                        SAR {(Number(getCurrentAssignment()!.total_price) || 0).toFixed(2)}
+                      </div>
                       <div className="text-sm text-muted-foreground">
-                                                  {getCurrentAssignment()!.quantity} × SAR {(Number(getCurrentAssignment()!.unit_price) || 0).toFixed(2)} {getCurrentAssignment()!.rate_type}
+                        {getCurrentAssignment()!.quantity} × SAR{' '}
+                        {(Number(getCurrentAssignment()!.unit_price) || 0).toFixed(2)}{' '}
+                        {getCurrentAssignment()!.rate_type}
                       </div>
                     </div>
                   </div>
@@ -533,22 +587,22 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
 
           <Separator />
 
-                     {/* Assignment History Table */}
-           <div className="space-y-4">
-             <div className="flex items-center justify-between">
-               <h3 className="text-lg font-semibold">Assignment History</h3>
-               <div className="flex gap-2">
-                 <Button variant="outline" size="sm" onClick={fetchAssignmentHistory}>
-                   <RefreshCw className="h-4 w-4 mr-2" />
-                   Refresh
-                 </Button>
-                 <Button variant="default" size="sm" onClick={openManualAssignmentDialog}>
-                   <Plus className="h-4 w-4 mr-2" />
-                   Add Manual Assignment
-                 </Button>
-               </div>
-             </div>
-            
+          {/* Assignment History Table */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Assignment History</h3>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={fetchAssignmentHistory}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh
+                </Button>
+                <Button variant="default" size="sm" onClick={openManualAssignmentDialog}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Manual Assignment
+                </Button>
+              </div>
+            </div>
+
             {assignmentHistory.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Package className="h-8 w-8 mx-auto mb-2" />
@@ -570,24 +624,31 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {assignmentHistory.map((assignment) => (
+                    {assignmentHistory.map(assignment => (
                       <TableRow key={assignment.id}>
                         <TableCell>
-                          <Badge variant={assignment.assignment_type === 'rental' ? 'default' : 'secondary'}>
-                            {assignment.assignment_type === 'rental' ? 'Rental' : 
-                             assignment.assignment_type === 'project' ? 'Project' : 'Manual'}
+                          <Badge
+                            variant={
+                              assignment.assignment_type === 'rental' ? 'default' : 'secondary'
+                            }
+                          >
+                            {assignment.assignment_type === 'rental'
+                              ? 'Rental'
+                              : assignment.assignment_type === 'project'
+                                ? 'Project'
+                                : 'Manual'}
                           </Badge>
                         </TableCell>
                         <TableCell className="font-medium">
                           {assignment.assignment_type === 'rental' ? (
-                            <Link 
+                            <Link
                               href={`/modules/rental-management/${assignment.rental_id}`}
                               className="hover:underline text-blue-600"
                             >
                               {assignment.rental_number}
                             </Link>
                           ) : assignment.assignment_type === 'project' ? (
-                            <Link 
+                            <Link
                               href={`/modules/project-management/${assignment.project_id}`}
                               className="hover:underline text-green-600"
                             >
@@ -603,7 +664,9 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                               <>
                                 <div className="font-medium">{assignment.customer_name}</div>
                                 {assignment.customer_email && (
-                                  <div className="text-sm text-muted-foreground">{assignment.customer_email}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {assignment.customer_email}
+                                  </div>
                                 )}
                               </>
                             )}
@@ -611,7 +674,9 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                               <>
                                 <div className="font-medium">{assignment.project_name}</div>
                                 {assignment.project_description && (
-                                  <div className="text-sm text-muted-foreground">{assignment.project_description}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    {assignment.project_description}
+                                  </div>
                                 )}
                               </>
                             )}
@@ -619,7 +684,9 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                               <>
                                 <div className="font-medium">{assignment.employee_name}</div>
                                 {assignment.employee_id_number && (
-                                  <div className="text-sm text-muted-foreground">ID: {assignment.employee_id_number}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    ID: {assignment.employee_id_number}
+                                  </div>
                                 )}
                               </>
                             )}
@@ -627,29 +694,48 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                         </TableCell>
                         <TableCell>
                           <div className="text-sm">
-                            <div>{assignment.rental_start_date || assignment.start_date ? 
-                              format(new Date(assignment.rental_start_date || assignment.start_date!), 'MMM dd, yyyy') : 
-                              'Not specified'
-                            }</div>
-                            {(assignment.rental_expected_end_date || assignment.expected_end_date) && (
+                            <div>
+                              {assignment.rental_start_date || assignment.start_date
+                                ? format(
+                                    new Date(
+                                      assignment.rental_start_date || assignment.start_date!
+                                    ),
+                                    'MMM dd, yyyy'
+                                  )
+                                : 'Not specified'}
+                            </div>
+                            {(assignment.rental_expected_end_date ||
+                              assignment.expected_end_date) && (
                               <div className="text-muted-foreground">
-                                to {format(new Date(assignment.rental_expected_end_date || assignment.expected_end_date!), 'MMM dd, yyyy')}
+                                to{' '}
+                                {format(
+                                  new Date(
+                                    assignment.rental_expected_end_date ||
+                                      assignment.expected_end_date!
+                                  ),
+                                  'MMM dd, yyyy'
+                                )}
                               </div>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div>
-                            <div className="font-medium">SAR {(Number(assignment.total_price) || 0).toFixed(2)}</div>
-                                                          <div className="text-sm text-muted-foreground">
-                                {assignment.quantity} × SAR {(Number(assignment.unit_price) || 0).toFixed(2)} {getRateTypeBadge(assignment.rate_type)}
-                              </div>
+                            <div className="font-medium">
+                              SAR {(Number(assignment.total_price) || 0).toFixed(2)}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {assignment.quantity} × SAR{' '}
+                              {(Number(assignment.unit_price) || 0).toFixed(2)}{' '}
+                              {getRateTypeBadge(assignment.rate_type)}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
                             {getStatusBadge(assignment.status)}
-                            {assignment.rental_status && getRentalStatusBadge(assignment.rental_status)}
+                            {assignment.rental_status &&
+                              getRentalStatusBadge(assignment.rental_status)}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -664,25 +750,30 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
-                              
-                              {assignment.status === 'active' && assignment.assignment_type === 'manual' && (
-                                <>
-                                  <DropdownMenuItem onClick={() => handleEditAssignment(assignment)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit Assignment
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                </>
-                              )}
-                              
+
+                              {assignment.status === 'active' &&
+                                assignment.assignment_type === 'manual' && (
+                                  <>
+                                    <DropdownMenuItem
+                                      onClick={() => handleEditAssignment(assignment)}
+                                    >
+                                      <Edit className="h-4 w-4 mr-2" />
+                                      Edit Assignment
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                  </>
+                                )}
+
                               {assignment.status === 'active' && (
-                                <DropdownMenuItem onClick={() => handleCompleteAssignment(assignment)}>
+                                <DropdownMenuItem
+                                  onClick={() => handleCompleteAssignment(assignment)}
+                                >
                                   <CheckCircle className="h-4 w-4 mr-2" />
                                   Complete Assignment
                                 </DropdownMenuItem>
                               )}
-                              
-                              <DropdownMenuItem 
+
+                              <DropdownMenuItem
                                 onClick={() => handleDeleteAssignment(assignment)}
                                 className="text-destructive focus:text-destructive"
                               >
@@ -707,26 +798,34 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Assignment Details</DialogTitle>
-            <DialogDescription>
-              Detailed information about this assignment
-            </DialogDescription>
+            <DialogDescription>Detailed information about this assignment</DialogDescription>
           </DialogHeader>
-          
+
           {selectedAssignment && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">Assignment Type</Label>
-                  <Badge variant={selectedAssignment.assignment_type === 'rental' ? 'default' : 'secondary'}>
-                    {selectedAssignment.assignment_type === 'rental' ? 'Rental' : 
-                     selectedAssignment.assignment_type === 'project' ? 'Project' : 'Manual'}
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Assignment Type
+                  </Label>
+                  <Badge
+                    variant={
+                      selectedAssignment.assignment_type === 'rental' ? 'default' : 'secondary'
+                    }
+                  >
+                    {selectedAssignment.assignment_type === 'rental'
+                      ? 'Rental'
+                      : selectedAssignment.assignment_type === 'project'
+                        ? 'Project'
+                        : 'Manual'}
                   </Badge>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Status</Label>
                   <div className="flex space-x-2">
                     {getStatusBadge(selectedAssignment.status)}
-                    {selectedAssignment.rental_status && getRentalStatusBadge(selectedAssignment.rental_status)}
+                    {selectedAssignment.rental_status &&
+                      getRentalStatusBadge(selectedAssignment.rental_status)}
                   </div>
                 </div>
               </div>
@@ -736,21 +835,29 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
               {selectedAssignment.assignment_type === 'rental' && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Rental Information</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Rental Information
+                    </Label>
                     <div className="mt-2 space-y-1">
                       <p className="font-medium">Rental #{selectedAssignment.rental_number}</p>
                     </div>
                   </div>
                   <Separator />
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Customer Information</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Customer Information
+                    </Label>
                     <div className="mt-2 space-y-1">
                       <p className="font-medium">{selectedAssignment.customer_name}</p>
                       {selectedAssignment.customer_email && (
-                        <p className="text-sm text-muted-foreground">{selectedAssignment.customer_email}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedAssignment.customer_email}
+                        </p>
                       )}
                       {selectedAssignment.customer_phone && (
-                        <p className="text-sm text-muted-foreground">{selectedAssignment.customer_phone}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedAssignment.customer_phone}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -760,13 +867,19 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
               {selectedAssignment.assignment_type === 'project' && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Project Information</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Project Information
+                    </Label>
                     <div className="mt-2 space-y-1">
                       <p className="font-medium">{selectedAssignment.project_name}</p>
                       {selectedAssignment.project_description && (
-                        <p className="text-sm text-muted-foreground">{selectedAssignment.project_description}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedAssignment.project_description}
+                        </p>
                       )}
-                      <p className="text-sm text-muted-foreground">Project ID: {selectedAssignment.project_id}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Project ID: {selectedAssignment.project_id}
+                      </p>
                     </div>
                   </div>
                 </>
@@ -775,17 +888,25 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
               {selectedAssignment.assignment_type === 'manual' && (
                 <>
                   <div>
-                    <Label className="text-sm font-medium text-muted-foreground">Employee Information</Label>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Employee Information
+                    </Label>
                     <div className="mt-2 space-y-1">
                       <p className="font-medium">{selectedAssignment.employee_name}</p>
                       {selectedAssignment.employee_id_number && (
-                        <p className="text-sm text-muted-foreground">ID: {selectedAssignment.employee_id_number}</p>
+                        <p className="text-sm text-muted-foreground">
+                          ID: {selectedAssignment.employee_id_number}
+                        </p>
                       )}
                       {selectedAssignment.employee_email && (
-                        <p className="text-sm text-muted-foreground">{selectedAssignment.employee_email}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedAssignment.employee_email}
+                        </p>
                       )}
                       {selectedAssignment.employee_phone && (
-                        <p className="text-sm text-muted-foreground">{selectedAssignment.employee_phone}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedAssignment.employee_phone}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -794,32 +915,57 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
 
               <Separator />
 
-                             <div className="grid grid-cols-2 gap-4">
-                 <div>
-                   <Label className="text-sm font-medium text-muted-foreground">Start Date</Label>
-                   <p>{selectedAssignment.rental_start_date || selectedAssignment.start_date ? 
-                    format(new Date(selectedAssignment.rental_start_date || selectedAssignment.start_date!), 'MMM dd, yyyy') : 
-                    'Not specified'
-                  }</p>
-                 </div>
-                 <div>
-                   <Label className="text-sm font-medium text-muted-foreground">Expected End Date</Label>
-                   <p>
-                     {(selectedAssignment.rental_expected_end_date || selectedAssignment.expected_end_date)
-                       ? format(new Date(selectedAssignment.rental_expected_end_date || selectedAssignment.expected_end_date!), 'MMM dd, yyyy')
-                       : 'Not specified'
-                     }
-                   </p>
-                 </div>
-                 {(selectedAssignment.rental_actual_end_date || selectedAssignment.actual_end_date) && (
-                   <div>
-                     <Label className="text-sm font-medium text-muted-foreground">Actual End Date</Label>
-                     <p>{selectedAssignment.rental_actual_end_date || selectedAssignment.actual_end_date ? 
-                      format(new Date(selectedAssignment.rental_actual_end_date || selectedAssignment.actual_end_date!), 'MMM dd, yyyy') : 
-                      'Not specified'
-                    }</p>
-                   </div>
-                 )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">Start Date</Label>
+                  <p>
+                    {selectedAssignment.rental_start_date || selectedAssignment.start_date
+                      ? format(
+                          new Date(
+                            selectedAssignment.rental_start_date || selectedAssignment.start_date!
+                          ),
+                          'MMM dd, yyyy'
+                        )
+                      : 'Not specified'}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-muted-foreground">
+                    Expected End Date
+                  </Label>
+                  <p>
+                    {selectedAssignment.rental_expected_end_date ||
+                    selectedAssignment.expected_end_date
+                      ? format(
+                          new Date(
+                            selectedAssignment.rental_expected_end_date ||
+                              selectedAssignment.expected_end_date!
+                          ),
+                          'MMM dd, yyyy'
+                        )
+                      : 'Not specified'}
+                  </p>
+                </div>
+                {(selectedAssignment.rental_actual_end_date ||
+                  selectedAssignment.actual_end_date) && (
+                  <div>
+                    <Label className="text-sm font-medium text-muted-foreground">
+                      Actual End Date
+                    </Label>
+                    <p>
+                      {selectedAssignment.rental_actual_end_date ||
+                      selectedAssignment.actual_end_date
+                        ? format(
+                            new Date(
+                              selectedAssignment.rental_actual_end_date ||
+                                selectedAssignment.actual_end_date!
+                            ),
+                            'MMM dd, yyyy'
+                          )
+                        : 'Not specified'}
+                    </p>
+                  </div>
+                )}
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Days</Label>
                   <p>{selectedAssignment.days || 'Not specified'}</p>
@@ -843,7 +989,9 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-muted-foreground">Total Price</Label>
-                  <p className="font-bold">SAR {(Number(selectedAssignment.total_price) || 0).toFixed(2)}</p>
+                  <p className="font-bold">
+                    SAR {(Number(selectedAssignment.total_price) || 0).toFixed(2)}
+                  </p>
                 </div>
               </div>
 
@@ -871,220 +1019,238 @@ export default function EquipmentAssignmentHistory({ equipmentId }: EquipmentAss
               </div>
             </div>
           )}
-                 </DialogContent>
-       </Dialog>
+        </DialogContent>
+      </Dialog>
 
-       {/* Manual Assignment Dialog */}
-       <Dialog open={showManualAssignmentDialog} onOpenChange={setShowManualAssignmentDialog}>
-         <DialogContent className="max-w-2xl">
-           <DialogHeader>
-             <DialogTitle>Add Manual Assignment</DialogTitle>
-             <DialogDescription>
-               Assign this equipment to an employee manually
-             </DialogDescription>
-           </DialogHeader>
-           
-           <form onSubmit={handleManualAssignmentSubmit} className="space-y-4">
-             {/* Employee Selection */}
-             <div className="space-y-2">
-               <EmployeeDropdown
-                 value={manualAssignmentForm.employeeId}
-                 onValueChange={(value) => setManualAssignmentForm(prev => ({ ...prev, employeeId: value }))}
-                 label="Employee"
-                 placeholder="Select an employee"
-                 required={true}
-               />
-             </div>
+      {/* Manual Assignment Dialog */}
+      <Dialog open={showManualAssignmentDialog} onOpenChange={setShowManualAssignmentDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Manual Assignment</DialogTitle>
+            <DialogDescription>Assign this equipment to an employee manually</DialogDescription>
+          </DialogHeader>
 
-             {/* Date Range */}
-             <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-2">
-                 <Label htmlFor="start-date">Start Date *</Label>
-                 <Input
-                   id="start-date"
-                   type="date"
-                   value={manualAssignmentForm.startDate}
-                   onChange={(e) => setManualAssignmentForm(prev => ({ ...prev, startDate: e.target.value }))}
-                   required
-                 />
-               </div>
-               <div className="space-y-2">
-                 <Label htmlFor="end-date">End Date (Optional)</Label>
-                 <Input
-                   id="end-date"
-                   type="date"
-                   value={manualAssignmentForm.endDate}
-                   onChange={(e) => setManualAssignmentForm(prev => ({ ...prev, endDate: e.target.value }))}
-                   min={manualAssignmentForm.startDate}
-                 />
-               </div>
-             </div>
+          <form onSubmit={handleManualAssignmentSubmit} className="space-y-4">
+            {/* Employee Selection */}
+            <div className="space-y-2">
+              <EmployeeDropdown
+                value={manualAssignmentForm.employeeId}
+                onValueChange={value =>
+                  setManualAssignmentForm(prev => ({ ...prev, employeeId: value }))
+                }
+                label="Employee"
+                placeholder="Select an employee"
+                required={true}
+              />
+            </div>
 
-             {/* Financial Information */}
-             <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-2">
-                 <Label htmlFor="daily-rate">Daily Rate</Label>
-                 <Input
-                   id="daily-rate"
-                   type="number"
-                   step="0.01"
-                   placeholder="0.00"
-                   value={manualAssignmentForm.dailyRate}
-                   onChange={(e) => setManualAssignmentForm(prev => ({ ...prev, dailyRate: e.target.value }))}
-                 />
-               </div>
-               <div className="space-y-2">
-                 <Label htmlFor="total-amount">Total Amount (Optional)</Label>
-                 <Input
-                   id="total-amount"
-                   type="number"
-                   step="0.01"
-                   placeholder="0.00"
-                   value={manualAssignmentForm.totalAmount}
-                   onChange={(e) => setManualAssignmentForm(prev => ({ ...prev, totalAmount: e.target.value }))}
-                 />
-               </div>
-             </div>
+            {/* Date Range */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="start-date">Start Date *</Label>
+                <Input
+                  id="start-date"
+                  type="date"
+                  value={manualAssignmentForm.startDate}
+                  onChange={e =>
+                    setManualAssignmentForm(prev => ({ ...prev, startDate: e.target.value }))
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="end-date">End Date (Optional)</Label>
+                <Input
+                  id="end-date"
+                  type="date"
+                  value={manualAssignmentForm.endDate}
+                  onChange={e =>
+                    setManualAssignmentForm(prev => ({ ...prev, endDate: e.target.value }))
+                  }
+                  min={manualAssignmentForm.startDate}
+                />
+              </div>
+            </div>
 
-             {/* Notes */}
-             <div className="space-y-2">
-               <Label htmlFor="notes">Notes</Label>
-               <Textarea
-                 id="notes"
-                 placeholder="Add any additional notes about this assignment..."
-                 value={manualAssignmentForm.notes}
-                 onChange={(e) => setManualAssignmentForm(prev => ({ ...prev, notes: e.target.value }))}
-                 rows={3}
-               />
-             </div>
+            {/* Financial Information */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="daily-rate">Daily Rate</Label>
+                <Input
+                  id="daily-rate"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={manualAssignmentForm.dailyRate}
+                  onChange={e =>
+                    setManualAssignmentForm(prev => ({ ...prev, dailyRate: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="total-amount">Total Amount (Optional)</Label>
+                <Input
+                  id="total-amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={manualAssignmentForm.totalAmount}
+                  onChange={e =>
+                    setManualAssignmentForm(prev => ({ ...prev, totalAmount: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
 
-             {/* Dialog Footer */}
-             <div className="flex justify-end space-x-2 pt-4">
-               <Button
-                 type="button"
-                 variant="outline"
-                 onClick={() => setShowManualAssignmentDialog(false)}
-               >
-                 Cancel
-               </Button>
-               <Button type="submit" disabled={submittingManualAssignment}>
-                 {submittingManualAssignment ? (
-                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                 ) : (
-                   <Plus className="h-4 w-4 mr-2" />
-                 )}
-                 Create Manual Assignment
-               </Button>
-             </div>
-           </form>
-         </DialogContent>
-       </Dialog>
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes</Label>
+              <Textarea
+                id="notes"
+                placeholder="Add any additional notes about this assignment..."
+                value={manualAssignmentForm.notes}
+                onChange={e =>
+                  setManualAssignmentForm(prev => ({ ...prev, notes: e.target.value }))
+                }
+                rows={3}
+              />
+            </div>
 
-       {/* Edit Assignment Dialog */}
-       <Dialog open={showEditAssignmentDialog} onOpenChange={setShowEditAssignmentDialog}>
-         <DialogContent className="max-w-2xl">
-           <DialogHeader>
-             <DialogTitle>Edit Assignment</DialogTitle>
-             <DialogDescription>
-               Modify the details of this manual assignment
-             </DialogDescription>
-           </DialogHeader>
-           
-           <form onSubmit={handleEditAssignmentSubmit} className="space-y-4">
-             {/* Employee Selection */}
-             <div className="space-y-2">
-               <EmployeeDropdown
-                 value={editAssignmentForm.employeeId}
-                 onValueChange={(value) => setEditAssignmentForm(prev => ({ ...prev, employeeId: value }))}
-                 label="Employee"
-                 placeholder="Select an employee"
-                 required={true}
-               />
-             </div>
+            {/* Dialog Footer */}
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowManualAssignmentDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submittingManualAssignment}>
+                {submittingManualAssignment ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4 mr-2" />
+                )}
+                Create Manual Assignment
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-             {/* Date Range */}
-             <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-2">
-                 <Label htmlFor="edit-start-date">Start Date *</Label>
-                 <Input
-                   id="edit-start-date"
-                   type="date"
-                   value={editAssignmentForm.startDate}
-                   onChange={(e) => setEditAssignmentForm(prev => ({ ...prev, startDate: e.target.value }))}
-                   required
-                 />
-               </div>
-               <div className="space-y-2">
-                 <Label htmlFor="edit-end-date">End Date (Optional)</Label>
-                 <Input
-                   id="edit-end-date"
-                   type="date"
-                   value={editAssignmentForm.endDate}
-                   onChange={(e) => setEditAssignmentForm(prev => ({ ...prev, endDate: e.target.value }))}
-                   min={editAssignmentForm.startDate}
-                 />
-               </div>
-             </div>
+      {/* Edit Assignment Dialog */}
+      <Dialog open={showEditAssignmentDialog} onOpenChange={setShowEditAssignmentDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Assignment</DialogTitle>
+            <DialogDescription>Modify the details of this manual assignment</DialogDescription>
+          </DialogHeader>
 
-             {/* Financial Information */}
-             <div className="grid grid-cols-2 gap-4">
-               <div className="space-y-2">
-                 <Label htmlFor="edit-daily-rate">Daily Rate</Label>
-                 <Input
-                   id="edit-daily-rate"
-                   type="number"
-                   step="0.01"
-                   placeholder="0.00"
-                   value={editAssignmentForm.dailyRate}
-                   onChange={(e) => setEditAssignmentForm(prev => ({ ...prev, dailyRate: e.target.value }))}
-                 />
-               </div>
-               <div className="space-y-2">
-                 <Label htmlFor="edit-total-amount">Total Amount (Optional)</Label>
-                 <Input
-                   id="edit-total-amount"
-                   type="number"
-                   step="0.01"
-                   placeholder="0.00"
-                   value={editAssignmentForm.totalAmount}
-                   onChange={(e) => setEditAssignmentForm(prev => ({ ...prev, totalAmount: e.target.value }))}
-                 />
-               </div>
-             </div>
+          <form onSubmit={handleEditAssignmentSubmit} className="space-y-4">
+            {/* Employee Selection */}
+            <div className="space-y-2">
+              <EmployeeDropdown
+                value={editAssignmentForm.employeeId}
+                onValueChange={value =>
+                  setEditAssignmentForm(prev => ({ ...prev, employeeId: value }))
+                }
+                label="Employee"
+                placeholder="Select an employee"
+                required={true}
+              />
+            </div>
 
-             {/* Notes */}
-             <div className="space-y-2">
-               <Label htmlFor="edit-notes">Notes</Label>
-               <Textarea
-                 id="edit-notes"
-                 placeholder="Add any additional notes about this assignment..."
-                 value={editAssignmentForm.notes}
-                 onChange={(e) => setEditAssignmentForm(prev => ({ ...prev, notes: e.target.value }))}
-                 rows={3}
-               />
-             </div>
+            {/* Date Range */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-start-date">Start Date *</Label>
+                <Input
+                  id="edit-start-date"
+                  type="date"
+                  value={editAssignmentForm.startDate}
+                  onChange={e =>
+                    setEditAssignmentForm(prev => ({ ...prev, startDate: e.target.value }))
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-end-date">End Date (Optional)</Label>
+                <Input
+                  id="edit-end-date"
+                  type="date"
+                  value={editAssignmentForm.endDate}
+                  onChange={e =>
+                    setEditAssignmentForm(prev => ({ ...prev, endDate: e.target.value }))
+                  }
+                  min={editAssignmentForm.startDate}
+                />
+              </div>
+            </div>
 
-             {/* Dialog Footer */}
-             <div className="flex justify-end space-x-2 pt-4">
-               <Button
-                 type="button"
-                 variant="outline"
-                 onClick={() => setShowEditAssignmentDialog(false)}
-               >
-                 Cancel
-               </Button>
-               <Button type="submit" disabled={submittingEditAssignment}>
-                 {submittingEditAssignment ? (
-                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                 ) : (
-                   <Edit className="h-4 w-4 mr-2" />
-                 )}
-                 Update Assignment
-               </Button>
-             </div>
-           </form>
-         </DialogContent>
-       </Dialog>
-     </>
-   );
- } 
+            {/* Financial Information */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-daily-rate">Daily Rate</Label>
+                <Input
+                  id="edit-daily-rate"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={editAssignmentForm.dailyRate}
+                  onChange={e =>
+                    setEditAssignmentForm(prev => ({ ...prev, dailyRate: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-total-amount">Total Amount (Optional)</Label>
+                <Input
+                  id="edit-total-amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={editAssignmentForm.totalAmount}
+                  onChange={e =>
+                    setEditAssignmentForm(prev => ({ ...prev, totalAmount: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-notes">Notes</Label>
+              <Textarea
+                id="edit-notes"
+                placeholder="Add any additional notes about this assignment..."
+                value={editAssignmentForm.notes}
+                onChange={e => setEditAssignmentForm(prev => ({ ...prev, notes: e.target.value }))}
+                rows={3}
+              />
+            </div>
+
+            {/* Dialog Footer */}
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowEditAssignmentDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={submittingEditAssignment}>
+                {submittingEditAssignment ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Edit className="h-4 w-4 mr-2" />
+                )}
+                Update Assignment
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

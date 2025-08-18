@@ -1,15 +1,15 @@
 'use client';
 
-import React, { createContext, useContext, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
-import { 
-  User, 
-  Action, 
+import React, { createContext, useContext, useMemo } from 'react';
+import {
+  Action,
   Subject,
-  hasPermission, 
-  getAllowedActions, 
-  canAccessRoute, 
-  createUserFromSession 
+  User,
+  canAccessRoute,
+  createUserFromSession,
+  getAllowedActions,
+  hasPermission,
 } from './custom-rbac';
 
 interface RBACContextType {
@@ -45,28 +45,27 @@ export function RBACProvider({ children }: RBACProviderProps) {
     return createUserFromSession(session);
   }, [session, status]);
 
-  const contextValue: RBACContextType = useMemo(() => ({
-    user,
-    hasPermission: (action: string, subject: string) => {
-      if (!user) return false;
-      return hasPermission(user, action as Action, subject as Subject);
-    },
-    getAllowedActions: (subject: string) => {
-      if (!user) return [];
-      return getAllowedActions(user, subject as Subject);
-    },
-    canAccessRoute: (route: string) => {
-      if (!user) return false;
-      return canAccessRoute(user, route);
-    },
-    isLoading: status === 'loading',
-  }), [user, status]);
-
-  return (
-    <RBACContext.Provider value={contextValue}>
-      {children}
-    </RBACContext.Provider>
+  const contextValue: RBACContextType = useMemo(
+    () => ({
+      user,
+      hasPermission: (action: string, subject: string) => {
+        if (!user) return false;
+        return hasPermission(user, action as Action, subject as Subject);
+      },
+      getAllowedActions: (subject: string) => {
+        if (!user) return [];
+        return getAllowedActions(user, subject as Subject);
+      },
+      canAccessRoute: (route: string) => {
+        if (!user) return false;
+        return canAccessRoute(user, route);
+      },
+      isLoading: status === 'loading',
+    }),
+    [user, status]
   );
+
+  return <RBACContext.Provider value={contextValue}>{children}</RBACContext.Provider>;
 }
 
 export function useRBAC() {

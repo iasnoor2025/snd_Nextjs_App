@@ -1,5 +1,5 @@
 import { db } from '@/lib/drizzle';
-import { users, modelHasRoles, roles } from '@/lib/drizzle/schema';
+import { modelHasRoles, roles, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 export type UserWithRoles = {
@@ -35,8 +35,8 @@ export async function findUserByEmailWithRoles(email: string): Promise<UserWithR
 
   const base = rows[0];
   const roleNames = rows
-    .filter((r) => r.roleName != null)
-    .map((r) => ({ role: { name: r.roleName! } }));
+    .filter(r => r.roleName != null)
+    .map(r => ({ role: { name: r.roleName! } }));
 
   return {
     id: base?.id || 0,
@@ -63,5 +63,3 @@ export async function upsertGoogleUser(email: string, name: string | null): Prom
     updatedAt: new Date().toISOString(),
   });
 }
-
-

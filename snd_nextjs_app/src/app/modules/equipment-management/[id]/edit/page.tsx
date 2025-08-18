@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
-  ArrowLeft,
-  Save,
-  Loader2,
-  AlertCircle,
-  Package,
-} from "lucide-react";
-import { toast } from "sonner";
-import ApiService from "@/lib/api-service";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import ApiService from '@/lib/api-service';
+import { AlertCircle, ArrowLeft, Loader2, Package, Save } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Equipment {
   id: number;
@@ -97,13 +97,13 @@ export default function EquipmentEditPage() {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!equipment) return;
 
     setSaving(true);
@@ -187,7 +187,7 @@ export default function EquipmentEditPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  onChange={e => handleInputChange('name', e.target.value)}
                   placeholder="Equipment name"
                   required
                 />
@@ -199,7 +199,7 @@ export default function EquipmentEditPage() {
                   <Input
                     id="model_number"
                     value={formData.model_number}
-                    onChange={(e) => handleInputChange('model_number', e.target.value)}
+                    onChange={e => handleInputChange('model_number', e.target.value)}
                     placeholder="Model number"
                   />
                 </div>
@@ -208,7 +208,7 @@ export default function EquipmentEditPage() {
                   <Input
                     id="manufacturer"
                     value={formData.manufacturer}
-                    onChange={(e) => handleInputChange('manufacturer', e.target.value)}
+                    onChange={e => handleInputChange('manufacturer', e.target.value)}
                     placeholder="Manufacturer"
                   />
                 </div>
@@ -219,7 +219,7 @@ export default function EquipmentEditPage() {
                 <Input
                   id="serial_number"
                   value={formData.serial_number}
-                  onChange={(e) => handleInputChange('serial_number', e.target.value)}
+                  onChange={e => handleInputChange('serial_number', e.target.value)}
                   placeholder="Serial number"
                 />
               </div>
@@ -228,7 +228,7 @@ export default function EquipmentEditPage() {
                 <Label htmlFor="status">Status *</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value) => handleInputChange('status', value)}
+                  onValueChange={value => handleInputChange('status', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
@@ -247,7 +247,7 @@ export default function EquipmentEditPage() {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  onChange={e => handleInputChange('description', e.target.value)}
                   placeholder="Equipment description"
                   rows={3}
                 />
@@ -259,9 +259,7 @@ export default function EquipmentEditPage() {
           <Card>
             <CardHeader>
               <CardTitle>Financial Information</CardTitle>
-              <CardDescription>
-                Set rental rates for this equipment
-              </CardDescription>
+              <CardDescription>Set rental rates for this equipment</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -272,7 +270,7 @@ export default function EquipmentEditPage() {
                   step="0.01"
                   min="0"
                   value={formData.daily_rate}
-                  onChange={(e) => handleInputChange('daily_rate', e.target.value)}
+                  onChange={e => handleInputChange('daily_rate', e.target.value)}
                   placeholder="0.00"
                 />
               </div>
@@ -285,7 +283,7 @@ export default function EquipmentEditPage() {
                   step="0.01"
                   min="0"
                   value={formData.weekly_rate}
-                  onChange={(e) => handleInputChange('weekly_rate', e.target.value)}
+                  onChange={e => handleInputChange('weekly_rate', e.target.value)}
                   placeholder="0.00"
                 />
               </div>
@@ -298,7 +296,7 @@ export default function EquipmentEditPage() {
                   step="0.01"
                   min="0"
                   value={formData.monthly_rate}
-                  onChange={(e) => handleInputChange('monthly_rate', e.target.value)}
+                  onChange={e => handleInputChange('monthly_rate', e.target.value)}
                   placeholder="0.00"
                 />
               </div>
@@ -309,9 +307,7 @@ export default function EquipmentEditPage() {
           <Card>
             <CardHeader>
               <CardTitle>Istimara Information</CardTitle>
-              <CardDescription>
-                Vehicle registration details
-              </CardDescription>
+              <CardDescription>Vehicle registration details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -320,7 +316,7 @@ export default function EquipmentEditPage() {
                   <Input
                     id="istimara"
                     value={formData.istimara}
-                    onChange={(e) => handleInputChange('istimara', e.target.value)}
+                    onChange={e => handleInputChange('istimara', e.target.value)}
                     placeholder="Istimara number"
                   />
                 </div>
@@ -330,7 +326,7 @@ export default function EquipmentEditPage() {
                     id="istimara_expiry_date"
                     type="date"
                     value={formData.istimara_expiry_date}
-                    onChange={(e) => handleInputChange('istimara_expiry_date', e.target.value)}
+                    onChange={e => handleInputChange('istimara_expiry_date', e.target.value)}
                   />
                 </div>
               </div>
@@ -359,4 +355,4 @@ export default function EquipmentEditPage() {
       </form>
     </div>
   );
-} 
+}

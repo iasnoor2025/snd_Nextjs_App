@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { employees, employeeLeaves } from '@/lib/drizzle/schema';
-import { and, eq, lte, gte, sql } from 'drizzle-orm';
+import { employeeLeaves, employees } from '@/lib/drizzle/schema';
+import { and, eq, gte, lte, sql } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -24,7 +24,7 @@ export async function GET(_request: NextRequest) {
       .select({
         employeeId: employeeLeaves.employeeId,
         startDate: employeeLeaves.startDate,
-        endDate: employeeLeaves.endDate
+        endDate: employeeLeaves.endDate,
       })
       .from(employeeLeaves)
       .where(
@@ -55,7 +55,7 @@ export async function GET(_request: NextRequest) {
     const employeesToReactivate = await db
       .select({
         id: employees.id,
-        status: employees.status
+        status: employees.status,
       })
       .from(employees)
       .where(
@@ -77,17 +77,16 @@ export async function GET(_request: NextRequest) {
     let activeUpdated = 0;
     for (const employee of employeesToReactivate) {
       try {
-        await db
-          .update(employees)
-          .set({ status: 'active' })
-          .where(eq(employees.id, employee.id));
+        await db.update(employees).set({ status: 'active' }).where(eq(employees.id, employee.id));
         activeUpdated++;
       } catch (error) {
         console.error(`Error updating employee ${employee.id} to active:`, error);
       }
     }
 
-    console.log(`Cron job completed: ${onLeaveUpdated} employees set to on_leave, ${activeUpdated} employees set to active`);
+    console.log(
+      `Cron job completed: ${onLeaveUpdated} employees set to on_leave, ${activeUpdated} employees set to active`
+    );
 
     return NextResponse.json({
       success: true,
@@ -95,17 +94,16 @@ export async function GET(_request: NextRequest) {
       data: {
         onLeaveUpdated,
         activeUpdated,
-        totalProcessed: onLeaveUpdated + activeUpdated
-      }
+        totalProcessed: onLeaveUpdated + activeUpdated,
+      },
     });
-
   } catch (error) {
     console.error('Error in employee status cron job:', error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Failed to update employee statuses',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

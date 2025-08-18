@@ -2,7 +2,7 @@
   "title": "إدارة الموظفين",
   "subtitle": "إدارة معلومات وسجلات الموظفين",
   "description": "عرض وإضافة وتعديل وإدارة بيانات الموظفين",
-  
+
   "create": {
     "title": "إنشاء موظف جديد",
     "description": "إضافة موظف جديد للنظام",
@@ -40,7 +40,7 @@
     },
     "emergencyContact": "جهة اتصال الطوارئ"
   },
-  
+
   "actions": {
     "add": "إضافة موظف",
     "edit": "تعديل موظف",
@@ -57,7 +57,7 @@
     "refresh": "تحديث",
     "clear": "مسح"
   },
-  
+
   "fields": {
     "fileNumber": "رقم الملف",
     "firstName": "الاسم الأول",
@@ -95,7 +95,7 @@
     "iqamaCost": "تكلفة الإقامة",
     "iqamaFile": "ملف الإقامة"
   },
-  
+
   "status": {
     "active": "نشط",
     "inactive": "غير نشط",
@@ -103,7 +103,7 @@
     "onLeave": "في إجازة",
     "probation": "فترة تجريبية"
   },
-  
+
   "departments": {
     "it": "تقنية المعلومات",
     "hr": "الموارد البشرية",
@@ -115,7 +115,7 @@
     "maintenance": "الصيانة",
     "general": "عام"
   },
-  
+
   "messages": {
     "loading": "جاري تحميل الموظفين...",
     "noEmployees": "لم يتم العثور على موظفين.",
@@ -136,7 +136,7 @@
     "fileUploadSuccess": "تم رفع الملف بنجاح",
     "fileUploadError": "فشل في رفع الملف"
   },
-  
+
   "confirmDelete": {
     "department": {
       "title": "حذف القسم",
@@ -147,7 +147,7 @@
       "description": "هل أنت متأكد من أنك تريد حذف المسمى الوظيفي '{name}'؟ لا يمكن التراجع عن هذا الإجراء."
     }
   },
-  
+
   "pagination": {
     "showing": "عرض {start}-{end} من {total} موظف",
     "show": "عرض",
@@ -156,14 +156,14 @@
     "next": "التالي",
     "page": "الصفحة {current} من {total}"
   },
-  
+
   "filters": {
     "all": "الكل",
     "status": "الحالة",
     "department": "القسم",
     "clear": "مسح الفلاتر"
   },
-  
+
   "table": {
     "headers": {
       "fileNumber": "رقم الملف",
@@ -176,7 +176,7 @@
       "company": "الشركة"
     }
   },
-  
+
   "form": {
     "addTitle": "إضافة موظف جديد",
     "editTitle": "تعديل موظف",
@@ -186,11 +186,11 @@
     "invalidPhone": "يرجى إدخال رقم هاتف صحيح",
     "invalidSalary": "يرجى إدخال مبلغ راتب صحيح"
   },
-  
+
   "documents": {
     "iqama": "مستندات الإقامة"
   },
-  
+
   "iqama": {
     "expired": "منتهي الصلاحية",
     "management": "إدارة الإقامة",
@@ -211,7 +211,7 @@
     "tryAdjustingSearch": "حاول تعديل البحث أو الفلاتر",
     "allRecordsActive": "جميع سجلات الإقامة نشطة حالياً"
   },
-  
+
   "assignment": {
     "project": "مشروع",
     "rental": "إيجار",
@@ -220,14 +220,14 @@
     "assigned": "مخصص",
     "noAssignment": "لا يوجد تخصيص"
   },
-  
+
   "statistics": {
     "totalEmployees": "إجمالي الموظفين",
     "currentlyAssigned": "المخصصون حالياً",
     "projectAssignments": "تخصيصات المشاريع",
     "rentalAssignments": "تخصيصات الإيجار"
   },
-  
+
   "sync": {
     "button": "مزامنة مع ERPNext",
     "syncing": "جاري المزامنة..."

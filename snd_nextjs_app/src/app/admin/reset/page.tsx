@@ -1,18 +1,22 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Trash2, User, Shield } from "lucide-react";
-import { toast } from "sonner";
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2, Shield, Trash2, User } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function AdminResetPage() {
   const [isResetting, setIsResetting] = useState(false);
   const [resetResult, setResetResult] = useState<Record<string, any> | null>(null);
 
   const handleResetDatabase = async () => {
-    if (!confirm("⚠️ WARNING: This will delete ALL data from the database and create a fresh admin user. This action cannot be undone. Are you sure you want to continue?")) {
+    if (
+      !confirm(
+        '⚠️ WARNING: This will delete ALL data from the database and create a fresh admin user. This action cannot be undone. Are you sure you want to continue?'
+      )
+    ) {
       return;
     }
 
@@ -20,7 +24,7 @@ export default function AdminResetPage() {
     setResetResult(null);
 
     try {
-      toast.loading("Resetting database...");
+      toast.loading('Resetting database...');
 
       const response = await fetch('/api/admin/reset-db', {
         method: 'POST',
@@ -32,14 +36,14 @@ export default function AdminResetPage() {
       const result = await response.json();
 
       if (result.success) {
-        toast.success("Database reset completed successfully!");
+        toast.success('Database reset completed successfully!');
         setResetResult(result);
       } else {
         throw new Error(result.message || 'Reset failed');
       }
     } catch (error) {
       console.error('Error resetting database:', error);
-      toast.error(error instanceof Error ? error.message : "Failed to reset database");
+      toast.error(error instanceof Error ? error.message : 'Failed to reset database');
     } finally {
       setIsResetting(false);
     }
@@ -49,9 +53,7 @@ export default function AdminResetPage() {
     <div className="p-6 max-w-2xl mx-auto">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-red-600">Database Reset</h1>
-        <p className="text-gray-600 mt-2">
-          Reset the database to a clean state with admin user
-        </p>
+        <p className="text-gray-600 mt-2">Reset the database to a clean state with admin user</p>
       </div>
 
       <Card className="border-red-200">
@@ -84,9 +86,15 @@ export default function AdminResetPage() {
               New Admin User
             </h3>
             <div className="space-y-1 text-sm text-blue-700">
-              <p><strong>Email:</strong> admin@ias.com</p>
-              <p><strong>Password:</strong> password</p>
-              <p><strong>Role:</strong> admin</p>
+              <p>
+                <strong>Email:</strong> admin@ias.com
+              </p>
+              <p>
+                <strong>Password:</strong> password
+              </p>
+              <p>
+                <strong>Role:</strong> admin
+              </p>
             </div>
           </div>
 
@@ -122,15 +130,17 @@ export default function AdminResetPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <p className="text-green-700">
-                ✅ Database has been successfully reset!
-              </p>
+              <p className="text-green-700">✅ Database has been successfully reset!</p>
 
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <h4 className="font-semibold text-green-800 mb-2">Admin Credentials:</h4>
                 <div className="space-y-1 text-sm text-green-700">
-                  <p><strong>Email:</strong> {resetResult.credentials.email}</p>
-                  <p><strong>Password:</strong> {resetResult.credentials.password}</p>
+                  <p>
+                    <strong>Email:</strong> {resetResult.credentials.email}
+                  </p>
+                  <p>
+                    <strong>Password:</strong> {resetResult.credentials.password}
+                  </p>
                 </div>
               </div>
 

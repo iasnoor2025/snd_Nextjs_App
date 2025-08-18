@@ -1,31 +1,38 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertCircle,
-  CheckCircle,
-  RefreshCw,
-  Download,
-  Upload,
-  Settings,
-  Database,
-  Users,
-  Package,
-  FileText,
-  Loader2,
   AlertTriangle,
+  CheckCircle,
+  Database,
+  Download,
+  FileText,
   Info,
+  Loader2,
+  Package,
+  RefreshCw,
+  Settings,
+  Upload,
+  Users,
   Wifi,
-} from "lucide-react";
-import { toast } from "sonner";
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface ERPNextConfig {
   url: string;
@@ -63,7 +70,7 @@ export default function ERPNextIntegrationPage() {
   });
 
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
     testConnection();
@@ -78,7 +85,6 @@ export default function ERPNextIntegrationPage() {
 
       if (result.success) {
         toast.success(`Connection successful! Found ${result.data.employeeCount} employees`);
-  
       } else {
         toast.error(`Connection failed: ${result.message}`);
         console.error('Connection test failed:', result);
@@ -160,12 +166,12 @@ export default function ERPNextIntegrationPage() {
                   notes: customer.notes || '',
                   is_active: !customer.disabled,
                   erpnext_id: customer.name || '',
-                }
+                },
               })),
               toUpdate: [],
-              toSkip: []
-            }
-          })
+              toSkip: [],
+            },
+          }),
         });
 
         const syncResult = await syncResponse.json();
@@ -174,7 +180,7 @@ export default function ERPNextIntegrationPage() {
           toast.success(`Synced ${syncResult.data.processed} customers from ERPNext`);
           setSyncStatus(prev => ({
             ...prev,
-            customers: { count: syncResult.data.processed, lastSync: new Date().toISOString() }
+            customers: { count: syncResult.data.processed, lastSync: new Date().toISOString() },
           }));
         } else {
           toast.error(`Failed to sync customers: ${syncResult.message}`);
@@ -200,7 +206,7 @@ export default function ERPNextIntegrationPage() {
         toast.success(`Synced ${result.count} employees from ERPNext`);
         setSyncStatus(prev => ({
           ...prev,
-          employees: { count: result.count, lastSync: new Date().toISOString() }
+          employees: { count: result.count, lastSync: new Date().toISOString() },
         }));
       } else {
         toast.error('Failed to sync employees');
@@ -219,10 +225,12 @@ export default function ERPNextIntegrationPage() {
       const result = await response.json();
 
       if (result.success) {
-        toast.success(`Synced ${result.data?.created || 0} created, ${result.data?.updated || 0} updated equipment from ERPNext`);
+        toast.success(
+          `Synced ${result.data?.created || 0} created, ${result.data?.updated || 0} updated equipment from ERPNext`
+        );
         setSyncStatus(prev => ({
           ...prev,
-          items: { count: result.data?.total_processed || 0, lastSync: new Date().toISOString() }
+          items: { count: result.data?.total_processed || 0, lastSync: new Date().toISOString() },
         }));
       } else {
         toast.error('Failed to sync equipment');
@@ -278,12 +286,10 @@ export default function ERPNextIntegrationPage() {
               <p className="font-medium">
                 {connectionStatus.connected ? 'Connected' : 'Disconnected'}
               </p>
-              <p className="text-sm text-muted-foreground">
-                {connectionStatus.message}
-              </p>
+              <p className="text-sm text-muted-foreground">{connectionStatus.message}</p>
             </div>
-            <Badge variant={connectionStatus.connected ? "default" : "destructive"}>
-              {connectionStatus.connected ? "Online" : "Offline"}
+            <Badge variant={connectionStatus.connected ? 'default' : 'destructive'}>
+              {connectionStatus.connected ? 'Online' : 'Offline'}
             </Badge>
           </div>
         </CardContent>
@@ -296,9 +302,7 @@ export default function ERPNextIntegrationPage() {
             <Settings className="h-5 w-5" />
             <span>Configuration</span>
           </CardTitle>
-          <CardDescription>
-            ERPNext API configuration settings
-          </CardDescription>
+          <CardDescription>ERPNext API configuration settings</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -307,7 +311,7 @@ export default function ERPNextIntegrationPage() {
               <Input
                 id="url"
                 value={config.url}
-                onChange={(e) => setConfig(prev => ({ ...prev, url: e.target.value }))}
+                onChange={e => setConfig(prev => ({ ...prev, url: e.target.value }))}
                 placeholder="https://erp.snd-ksa.online"
               />
             </div>
@@ -317,7 +321,7 @@ export default function ERPNextIntegrationPage() {
                 id="apiKey"
                 type="password"
                 value={config.apiKey}
-                onChange={(e) => setConfig(prev => ({ ...prev, apiKey: e.target.value }))}
+                onChange={e => setConfig(prev => ({ ...prev, apiKey: e.target.value }))}
                 placeholder="Enter API key"
               />
             </div>
@@ -328,7 +332,7 @@ export default function ERPNextIntegrationPage() {
               id="apiSecret"
               type="password"
               value={config.apiSecret}
-              onChange={(e) => setConfig(prev => ({ ...prev, apiSecret: e.target.value }))}
+              onChange={e => setConfig(prev => ({ ...prev, apiSecret: e.target.value }))}
               placeholder="Enter API secret"
             />
           </div>
@@ -352,21 +356,21 @@ export default function ERPNextIntegrationPage() {
           <Card>
             <CardHeader>
               <CardTitle>ERPNext Integration Status</CardTitle>
-              <CardDescription>
-                Monitor the status of your ERPNext integration
-              </CardDescription>
+              <CardDescription>Monitor the status of your ERPNext integration</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">Connection Status</p>
-                    <p className="text-sm text-muted-foreground">
-                      Test your ERPNext connection
-                    </p>
+                    <p className="text-sm text-muted-foreground">Test your ERPNext connection</p>
                   </div>
                   <Button onClick={testConnection} disabled={loading}>
-                    {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Wifi className="h-4 w-4 mr-2" />}
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Wifi className="h-4 w-4 mr-2" />
+                    )}
                     Test Connection
                   </Button>
                 </div>
@@ -376,7 +380,10 @@ export default function ERPNextIntegrationPage() {
                   <div className="text-sm text-muted-foreground space-y-1">
                     <p>URL: {config.url}</p>
                     <p>API Key: {config.apiKey ? '***' + config.apiKey.slice(-4) : 'Not set'}</p>
-                    <p>API Secret: {config.apiSecret ? '***' + config.apiSecret.slice(-4) : 'Not set'}</p>
+                    <p>
+                      API Secret:{' '}
+                      {config.apiSecret ? '***' + config.apiSecret.slice(-4) : 'Not set'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -385,22 +392,32 @@ export default function ERPNextIntegrationPage() {
           <Card>
             <CardHeader>
               <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>
-                Synchronize data from ERPNext
-              </CardDescription>
+              <CardDescription>Synchronize data from ERPNext</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2">
                 <Button onClick={syncCustomers} disabled={loading}>
-                  {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
                   Sync Customers
                 </Button>
                 <Button onClick={syncEmployees} disabled={loading}>
-                  {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
                   Sync Employees
                 </Button>
                 <Button onClick={syncItems} disabled={loading}>
-                  {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4 mr-2" />
+                  )}
                   Sync Items
                 </Button>
               </div>
@@ -413,9 +430,7 @@ export default function ERPNextIntegrationPage() {
           <Card>
             <CardHeader>
               <CardTitle>Customer Synchronization</CardTitle>
-              <CardDescription>
-                Manage customer data synchronization with ERPNext
-              </CardDescription>
+              <CardDescription>Manage customer data synchronization with ERPNext</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -427,7 +442,11 @@ export default function ERPNextIntegrationPage() {
                     </p>
                   </div>
                   <Button onClick={syncCustomers} disabled={loading}>
-                    {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
                     Sync Now
                   </Button>
                 </div>
@@ -448,9 +467,7 @@ export default function ERPNextIntegrationPage() {
           <Card>
             <CardHeader>
               <CardTitle>Employee Synchronization</CardTitle>
-              <CardDescription>
-                Manage employee data synchronization with ERPNext
-              </CardDescription>
+              <CardDescription>Manage employee data synchronization with ERPNext</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -462,7 +479,11 @@ export default function ERPNextIntegrationPage() {
                     </p>
                   </div>
                   <Button onClick={syncEmployees} disabled={loading}>
-                    {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
                     Sync Now
                   </Button>
                 </div>
@@ -483,9 +504,7 @@ export default function ERPNextIntegrationPage() {
           <Card>
             <CardHeader>
               <CardTitle>Equipment Synchronization</CardTitle>
-              <CardDescription>
-                Manage equipment data synchronization with ERPNext
-              </CardDescription>
+              <CardDescription>Manage equipment data synchronization with ERPNext</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -497,7 +516,11 @@ export default function ERPNextIntegrationPage() {
                     </p>
                   </div>
                   <Button onClick={syncItems} disabled={loading}>
-                    {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                    {loading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
                     Sync Now
                   </Button>
                 </div>
@@ -529,7 +552,8 @@ export default function ERPNextIntegrationPage() {
               <div>
                 <p className="font-medium">Data Synchronization</p>
                 <p className="text-sm text-muted-foreground">
-                  Data is synchronized from ERPNext to your local system. Changes made in ERPNext will be reflected here after synchronization.
+                  Data is synchronized from ERPNext to your local system. Changes made in ERPNext
+                  will be reflected here after synchronization.
                 </p>
               </div>
             </div>
@@ -538,7 +562,8 @@ export default function ERPNextIntegrationPage() {
               <div>
                 <p className="font-medium">API Configuration</p>
                 <p className="text-sm text-muted-foreground">
-                  Ensure your ERPNext API credentials are correctly configured. The system uses token-based authentication.
+                  Ensure your ERPNext API credentials are correctly configured. The system uses
+                  token-based authentication.
                 </p>
               </div>
             </div>

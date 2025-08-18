@@ -1,15 +1,23 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import {
+  departments,
+  designations,
+  employeeAssignments,
+  employees as employeesTable,
+  projects,
+  rentals,
+  users as usersTable,
+} from '@/lib/drizzle/schema';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
-import { employees as employeesTable, departments, designations, users as usersTable, employeeAssignments, projects, rentals } from '@/lib/drizzle/schema';
-import { and, asc, desc, eq, ilike, or, sql, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/employees - List employees
 const getEmployeesHandler = async (request: NextRequest) => {
   try {
     console.log('🔍 Starting employee fetch...');
-    
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
@@ -31,7 +39,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
           ilike(employeesTable.firstName, s),
           ilike(employeesTable.lastName, s),
           ilike(employeesTable.fileNumber, s),
-          ilike(employeesTable.email as any, s),
+          ilike(employeesTable.email as any, s)
         )
       );
     }
@@ -97,7 +105,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
 
     // Update employee statuses based on current leave status
     console.log('🔄 Updating employee statuses based on leave...');
-    const statusUpdatePromises = employeeRows.map(employee => 
+    const statusUpdatePromises = employeeRows.map(employee =>
       updateEmployeeStatusBasedOnLeave(employee.id as number)
     );
     await Promise.all(statusUpdatePromises);
@@ -137,9 +145,15 @@ const getEmployeesHandler = async (request: NextRequest) => {
 
     // Transform
     const transformedEmployees = employeeRows.map(employee => {
-      const fullName = [employee.first_name, employee.middle_name, employee.last_name].filter(Boolean).join(' ');
+      const fullName = [employee.first_name, employee.middle_name, employee.last_name]
+        .filter(Boolean)
+        .join(' ');
       const currentAssignment = latestAssignments[employee.file_number as string] || null;
-      const isAssignmentActive = currentAssignment && currentAssignment.status === 'active' && (!currentAssignment.end_date || new Date(currentAssignment.end_date as unknown as string) > new Date());
+      const isAssignmentActive =
+        currentAssignment &&
+        currentAssignment.status === 'active' &&
+        (!currentAssignment.end_date ||
+          new Date(currentAssignment.end_date as unknown as string) > new Date());
       return {
         id: employee.id,
         first_name: employee.first_name,
@@ -159,21 +173,46 @@ const getEmployeesHandler = async (request: NextRequest) => {
         nationality: employee.nationality || null,
         basic_salary: employee.basic_salary ? Number(employee.basic_salary) : null,
         hourly_rate: employee.hourly_rate ? Number(employee.hourly_rate) : null,
-        overtime_rate_multiplier: employee.overtime_rate_multiplier ? Number(employee.overtime_rate_multiplier) : null,
-        overtime_fixed_rate: employee.overtime_fixed_rate ? Number(employee.overtime_fixed_rate) : null,
-        current_assignment: isAssignmentActive ? {
-          id: currentAssignment.id,
-          type: currentAssignment.type,
-          name: currentAssignment.name || (currentAssignment.project_name || currentAssignment.rental_number || 'Unnamed Assignment'),
-          location: currentAssignment.location || null,
-          start_date: currentAssignment.start_date ? new Date(currentAssignment.start_date as unknown as string).toISOString() : null,
-          end_date: currentAssignment.end_date ? new Date(currentAssignment.end_date as unknown as string).toISOString() : null,
-          status: currentAssignment.status,
-          notes: currentAssignment.notes,
-          project: currentAssignment.project_name ? { name: currentAssignment.project_name } : null,
-          rental: currentAssignment.rental_number ? { rental_number: currentAssignment.rental_number } : null,
-        } : null,
-        user: employee.user_id ? { id: employee.user_id, name: employee.user_name, email: employee.user_email, isActive: employee.user_is_active } : null,
+        overtime_rate_multiplier: employee.overtime_rate_multiplier
+          ? Number(employee.overtime_rate_multiplier)
+          : null,
+        overtime_fixed_rate: employee.overtime_fixed_rate
+          ? Number(employee.overtime_fixed_rate)
+          : null,
+        current_assignment: isAssignmentActive
+          ? {
+              id: currentAssignment.id,
+              type: currentAssignment.type,
+              name:
+                currentAssignment.name ||
+                currentAssignment.project_name ||
+                currentAssignment.rental_number ||
+                'Unnamed Assignment',
+              location: currentAssignment.location || null,
+              start_date: currentAssignment.start_date
+                ? new Date(currentAssignment.start_date as unknown as string).toISOString()
+                : null,
+              end_date: currentAssignment.end_date
+                ? new Date(currentAssignment.end_date as unknown as string).toISOString()
+                : null,
+              status: currentAssignment.status,
+              notes: currentAssignment.notes,
+              project: currentAssignment.project_name
+                ? { name: currentAssignment.project_name }
+                : null,
+              rental: currentAssignment.rental_number
+                ? { rental_number: currentAssignment.rental_number }
+                : null,
+            }
+          : null,
+        user: employee.user_id
+          ? {
+              id: employee.user_id,
+              name: employee.user_name,
+              email: employee.user_email,
+              isActive: employee.user_is_active,
+            }
+          : null,
       };
     });
 
@@ -194,15 +233,14 @@ const getEmployeesHandler = async (request: NextRequest) => {
 
     console.log('✅ Returning response with', transformedEmployees.length, 'employees');
     return NextResponse.json(response);
-    
   } catch (error) {
     console.error('❌ Error fetching employees:', error);
     console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { 
-        error: 'Internal server error', 
+      {
+        error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );
@@ -242,10 +280,7 @@ const createEmployeeHandler = async (request: NextRequest) => {
     const existingEmployee = existing[0];
 
     if (existingEmployee) {
-      return NextResponse.json(
-        { error: 'Employee ID already exists' },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: 'Employee ID already exists' }, { status: 409 });
     }
 
     // Create new employee
@@ -267,16 +302,16 @@ const createEmployeeHandler = async (request: NextRequest) => {
       .returning();
     const employee = (inserted as any[])[0];
 
-    return NextResponse.json({
-      message: 'Employee created successfully',
-      employee,
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        message: 'Employee created successfully',
+        employee,
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error creating employee:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 };
 

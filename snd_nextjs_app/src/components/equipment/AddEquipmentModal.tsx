@@ -1,16 +1,28 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
-import { Loader2, Plus } from "lucide-react";
-import ApiService from "@/lib/api-service";
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import ApiService from '@/lib/api-service';
+import { Loader2, Plus } from 'lucide-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 interface AddEquipmentModalProps {
   open: boolean;
@@ -35,7 +47,11 @@ interface EquipmentFormData {
   istimara_expiry_date: string;
 }
 
-export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: AddEquipmentModalProps) {
+export default function AddEquipmentModal({
+  open,
+  onOpenChange,
+  onSuccess,
+}: AddEquipmentModalProps) {
   const { t } = useTranslation('equipment');
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<EquipmentFormData>({
@@ -64,7 +80,7 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       toast.error('Equipment name is required');
       return;
@@ -90,13 +106,13 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
       };
 
       const response = await ApiService.createEquipment(payload);
-      
+
       if (response.success) {
         toast.success('Equipment created successfully!');
         onSuccess();
         onOpenChange(false);
         // Reset form
-                setFormData({
+        setFormData({
           name: '',
           description: '',
           manufacturer: '',
@@ -139,14 +155,14 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Basic Information</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Equipment Name *</Label>
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  onChange={e => handleInputChange('name', e.target.value)}
                   placeholder="Enter equipment name"
                   required
                 />
@@ -154,7 +170,10 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
 
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
-                <Select value={formData.status} onValueChange={(value) => handleInputChange('status', value)}>
+                <Select
+                  value={formData.status}
+                  onValueChange={value => handleInputChange('status', value)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -172,7 +191,7 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
               <Textarea
                 id="description"
                 value={formData.description}
-                onChange={(e) => handleInputChange('description', e.target.value)}
+                onChange={e => handleInputChange('description', e.target.value)}
                 placeholder="Enter equipment description"
                 rows={3}
               />
@@ -182,14 +201,14 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
           {/* Manufacturer & Model Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Manufacturer & Model</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="manufacturer">Manufacturer</Label>
                 <Input
                   id="manufacturer"
                   value={formData.manufacturer}
-                  onChange={(e) => handleInputChange('manufacturer', e.target.value)}
+                  onChange={e => handleInputChange('manufacturer', e.target.value)}
                   placeholder="Enter manufacturer name"
                 />
               </div>
@@ -199,7 +218,7 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
                 <Input
                   id="modelNumber"
                   value={formData.modelNumber}
-                  onChange={(e) => handleInputChange('modelNumber', e.target.value)}
+                  onChange={e => handleInputChange('modelNumber', e.target.value)}
                   placeholder="Enter model number"
                 />
               </div>
@@ -210,7 +229,7 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
               <Input
                 id="serialNumber"
                 value={formData.serialNumber}
-                onChange={(e) => handleInputChange('serialNumber', e.target.value)}
+                onChange={e => handleInputChange('serialNumber', e.target.value)}
                 placeholder="Enter serial number"
               />
             </div>
@@ -219,7 +238,7 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
           {/* Purchase Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Purchase Information</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="purchaseDate">Purchase Date</Label>
@@ -227,7 +246,7 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
                   id="purchaseDate"
                   type="date"
                   value={formData.purchaseDate}
-                  onChange={(e) => handleInputChange('purchaseDate', e.target.value)}
+                  onChange={e => handleInputChange('purchaseDate', e.target.value)}
                 />
               </div>
 
@@ -239,7 +258,7 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
                   step="0.01"
                   min="0"
                   value={formData.purchasePrice}
-                  onChange={(e) => handleInputChange('purchasePrice', e.target.value)}
+                  onChange={e => handleInputChange('purchasePrice', e.target.value)}
                   placeholder="0.00"
                 />
               </div>
@@ -249,7 +268,7 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
           {/* Rental Rates */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Rental Rates</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="dailyRate">Daily Rate</Label>
@@ -259,7 +278,7 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
                   step="0.01"
                   min="0"
                   value={formData.dailyRate}
-                  onChange={(e) => handleInputChange('dailyRate', e.target.value)}
+                  onChange={e => handleInputChange('dailyRate', e.target.value)}
                   placeholder="0.00"
                 />
               </div>
@@ -272,7 +291,7 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
                   step="0.01"
                   min="0"
                   value={formData.weeklyRate}
-                  onChange={(e) => handleInputChange('weeklyRate', e.target.value)}
+                  onChange={e => handleInputChange('weeklyRate', e.target.value)}
                   placeholder="0.00"
                 />
               </div>
@@ -285,7 +304,7 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
                   step="0.01"
                   min="0"
                   value={formData.monthlyRate}
-                  onChange={(e) => handleInputChange('monthlyRate', e.target.value)}
+                  onChange={e => handleInputChange('monthlyRate', e.target.value)}
                   placeholder="0.00"
                 />
               </div>
@@ -295,13 +314,13 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
           {/* ERPNext Integration */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">ERPNext Integration</h3>
-            
+
             <div className="space-y-2">
               <Label htmlFor="erpnextId">ERPNext ID</Label>
               <Input
                 id="erpnextId"
                 value={formData.erpnextId}
-                onChange={(e) => handleInputChange('erpnextId', e.target.value)}
+                onChange={e => handleInputChange('erpnextId', e.target.value)}
                 placeholder="Enter ERPNext ID for synchronization"
               />
             </div>
@@ -310,26 +329,26 @@ export default function AddEquipmentModal({ open, onOpenChange, onSuccess }: Add
           {/* Istimara Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Istimara (Vehicle Registration)</h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="istimara">Istimara Number</Label>
                 <Input
                   id="istimara"
                   value={formData.istimara}
-                  onChange={(e) => handleInputChange('istimara', e.target.value)}
+                  onChange={e => handleInputChange('istimara', e.target.value)}
                   placeholder="Enter Istimara number"
                 />
               </div>
 
               <div className="space-y-2">
-                                  <Label htmlFor="istimara_expiry_date">Istimara Expiry Date</Label>
-                  <Input
-                    id="istimara_expiry_date"
-                    type="date"
-                    value={formData.istimara_expiry_date}
-                    onChange={(e) => handleInputChange('istimara_expiry_date', e.target.value)}
-                  />
+                <Label htmlFor="istimara_expiry_date">Istimara Expiry Date</Label>
+                <Input
+                  id="istimara_expiry_date"
+                  type="date"
+                  value={formData.istimara_expiry_date}
+                  onChange={e => handleInputChange('istimara_expiry_date', e.target.value)}
+                />
               </div>
             </div>
           </div>

@@ -1,35 +1,35 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Info, AlertCircle, Shield } from "lucide-react"
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { AlertCircle, Info, Shield } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 interface NationIdRequiredProps {
-  userName: string
-  userEmail: string
-  onNationIdSet: () => void
+  userName: string;
+  userEmail: string;
+  onNationIdSet: () => void;
 }
 
 export function NationIdRequired({ userName, userEmail, onNationIdSet }: NationIdRequiredProps) {
-  const [nationId, setNationId] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("")
+  const [nationId, setNationId] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (!nationId.trim()) {
-      setError("Nation ID is required")
-      return
+      setError('Nation ID is required');
+      return;
     }
 
-    setIsLoading(true)
-    setError("")
+    setIsLoading(true);
+    setError('');
 
     try {
       const response = await fetch('/api/user/nation-id', {
@@ -38,23 +38,23 @@ export function NationIdRequired({ userName, userEmail, onNationIdSet }: NationI
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ nationId: nationId.trim() }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (response.ok) {
-        toast.success("Nation ID saved successfully!")
-        onNationIdSet()
+        toast.success('Nation ID saved successfully!');
+        onNationIdSet();
       } else {
-        setError(data.error || "Failed to save nation ID")
+        setError(data.error || 'Failed to save nation ID');
       }
     } catch (error) {
-      console.error('Error saving nation ID:', error)
-      setError("An error occurred while saving your nation ID")
+      console.error('Error saving nation ID:', error);
+      setError('An error occurred while saving your nation ID');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
@@ -63,9 +63,7 @@ export function NationIdRequired({ userName, userEmail, onNationIdSet }: NationI
           <div className="flex h-16 w-16 items-center justify-center rounded-full bg-yellow-100 mx-auto mb-4">
             <Shield className="h-8 w-8 text-yellow-600" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">
-            Profile Completion Required
-          </h1>
+          <h1 className="text-2xl font-bold text-foreground mb-2">Profile Completion Required</h1>
           <p className="text-muted-foreground">
             Please provide your National ID to access the dashboard
           </p>
@@ -92,8 +90,12 @@ export function NationIdRequired({ userName, userEmail, onNationIdSet }: NationI
             <div className="space-y-2">
               <Label htmlFor="user-info">User Information</Label>
               <div className="text-sm text-muted-foreground space-y-1">
-                <p><strong>Name:</strong> {userName}</p>
-                <p><strong>Email:</strong> {userEmail}</p>
+                <p>
+                  <strong>Name:</strong> {userName}
+                </p>
+                <p>
+                  <strong>Email:</strong> {userEmail}
+                </p>
               </div>
             </div>
 
@@ -105,29 +107,23 @@ export function NationIdRequired({ userName, userEmail, onNationIdSet }: NationI
                   type="text"
                   placeholder="Enter your national ID"
                   value={nationId}
-                  onChange={(e) => {
-                    setNationId(e.target.value)
-                    setError("")
+                  onChange={e => {
+                    setNationId(e.target.value);
+                    setError('');
                   }}
                   disabled={isLoading}
-                  className={error ? "border-red-500" : ""}
+                  className={error ? 'border-red-500' : ''}
                 />
-                {error && (
-                  <p className="text-sm text-red-500">{error}</p>
-                )}
+                {error && <p className="text-sm text-red-500">{error}</p>}
               </div>
 
-              <Button
-                type="submit"
-                disabled={isLoading || !nationId.trim()}
-                className="w-full"
-              >
-                {isLoading ? "Saving..." : "Save Nation ID & Continue"}
+              <Button type="submit" disabled={isLoading || !nationId.trim()} className="w-full">
+                {isLoading ? 'Saving...' : 'Save Nation ID & Continue'}
               </Button>
             </form>
           </CardContent>
         </Card>
       </div>
     </div>
-  )
-} 
+  );
+}

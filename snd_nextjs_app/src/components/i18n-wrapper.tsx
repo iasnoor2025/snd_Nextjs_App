@@ -1,9 +1,9 @@
 'use client';
 
+import i18n from '@/lib/i18n-client';
+import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { I18nextProvider } from 'react-i18next';
-import { useSession } from 'next-auth/react';
-import i18n from '@/lib/i18n-client';
 
 interface I18nWrapperProps {
   children: React.ReactNode;
@@ -45,9 +45,5 @@ export function I18nWrapper({ children }: I18nWrapperProps) {
   }
 
   // Wrap children with I18nextProvider to ensure i18n context is available
-  return (
-    <I18nextProvider i18n={i18n}>
-      {children}
-    </I18nextProvider>
-  );
-} 
+  return <I18nextProvider i18n={i18n}>{children}</I18nextProvider>;
+}

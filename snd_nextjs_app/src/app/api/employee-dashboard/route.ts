@@ -1,20 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authConfig } from '@/lib/auth-config'
-import { employees, users, departments, designations, timesheets, employeeLeaves, employeeAssignments, projects, rentals, advancePayments, employeeDocuments } from '@/lib/drizzle/schema'
-import { eq, gte, desc, and } from 'drizzle-orm'
+import { authConfig } from '@/lib/auth-config';
+import { db } from '@/lib/db';
+import {
+  advancePayments,
+  departments,
+  designations,
+  employeeAssignments,
+  employeeDocuments,
+  employeeLeaves,
+  employees,
+  projects,
+  rentals,
+  timesheets,
+  users,
+} from '@/lib/drizzle/schema';
+import { and, desc, eq, gte } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest) {
   try {
     // Get the current user session
-    const session = await getServerSession(authConfig)
-    
+    const session = await getServerSession(authConfig);
+
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     // Check if user has EMPLOYEE role
@@ -22,7 +31,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json(
         { error: 'Access denied. Employee role required.' },
         { status: 403 }
-      )
+      );
     }
 
     // Get employee data for the current user using Drizzle
@@ -43,19 +52,19 @@ export async function GET(_request: NextRequest) {
         department: {
           id: departments.id,
           name: departments.name,
-          code: departments.code
+          code: departments.code,
         },
         designation: {
           id: designations.id,
           name: designations.name,
-          description: designations.description
+          description: designations.description,
         },
-                  user: {
-            id: users.id,
-            name: users.name,
-            email: users.email,
-            roleId: users.roleId
-          }
+        user: {
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          roleId: users.roleId,
+        },
       })
       .from(employees)
       .leftJoin(users, eq(employees.userId, users.id))
@@ -65,19 +74,13 @@ export async function GET(_request: NextRequest) {
       .limit(1);
 
     if (employeeRows.length === 0) {
-      return NextResponse.json(
-        { error: 'Employee not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
     const employee = employeeRows[0];
-    
+
     if (!employee) {
-      return NextResponse.json(
-        { error: 'Employee not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
 
     // Get recent timesheets (last 7 days) using Drizzle
@@ -93,17 +96,12 @@ export async function GET(_request: NextRequest) {
         projectId: timesheets.projectId,
         project: {
           id: projects.id,
-          name: projects.name
-        }
+          name: projects.name,
+        },
       })
       .from(timesheets)
       .leftJoin(projects, eq(timesheets.projectId, projects.id))
-      .where(
-        and(
-          eq(timesheets.employeeId, employee.id),
-          gte(timesheets.date, sevenDaysAgo)
-        )
-      )
+      .where(and(eq(timesheets.employeeId, employee.id), gte(timesheets.date, sevenDaysAgo)))
       .orderBy(desc(timesheets.date))
       .limit(5);
 
@@ -117,7 +115,7 @@ export async function GET(_request: NextRequest) {
         days: employeeLeaves.days,
         status: employeeLeaves.status,
         reason: employeeLeaves.reason,
-        createdAt: employeeLeaves.createdAt
+        createdAt: employeeLeaves.createdAt,
       })
       .from(employeeLeaves)
       .where(eq(employeeLeaves.employeeId, employee.id))
@@ -136,12 +134,12 @@ export async function GET(_request: NextRequest) {
         createdAt: employeeAssignments.createdAt,
         project: {
           id: projects.id,
-          name: projects.name
+          name: projects.name,
         },
         rental: {
           id: rentals.id,
-          name: rentals.equipmentName
-        }
+          name: rentals.equipmentName,
+        },
       })
       .from(employeeAssignments)
       .leftJoin(projects, eq(employeeAssignments.projectId, projects.id))
@@ -163,7 +161,7 @@ export async function GET(_request: NextRequest) {
         purpose: advancePayments.purpose,
         status: advancePayments.status,
         monthlyDeduction: advancePayments.monthlyDeduction,
-        createdAt: advancePayments.createdAt
+        createdAt: advancePayments.createdAt,
       })
       .from(advancePayments)
       .where(eq(advancePayments.employeeId, employee.id))
@@ -177,7 +175,7 @@ export async function GET(_request: NextRequest) {
         documentType: employeeDocuments.documentType,
         fileName: employeeDocuments.fileName,
         filePath: employeeDocuments.filePath,
-        createdAt: employeeDocuments.createdAt
+        createdAt: employeeDocuments.createdAt,
       })
       .from(employeeDocuments)
       .where(eq(employeeDocuments.employeeId, employee.id))
@@ -192,7 +190,7 @@ export async function GET(_request: NextRequest) {
       overtime_hours: ts.overtimeHours,
       status: ts.status,
       description: ts.description,
-      project_rel: ts.project
+      project_rel: ts.project,
     }));
 
     const recentLeaves = recentLeavesRows.map(leave => ({
@@ -203,7 +201,7 @@ export async function GET(_request: NextRequest) {
       days: leave.days,
       status: leave.status,
       reason: leave.reason,
-      created_at: leave.createdAt
+      created_at: leave.createdAt,
     }));
 
     const currentAssignments = currentAssignmentsRows.map(assignment => ({
@@ -213,7 +211,7 @@ export async function GET(_request: NextRequest) {
       status: assignment.status,
       project: assignment.project,
       rental: assignment.rental,
-      created_at: assignment.createdAt
+      created_at: assignment.createdAt,
     }));
 
     const recentAdvances = recentAdvancesRows.map(advance => ({
@@ -222,7 +220,7 @@ export async function GET(_request: NextRequest) {
       purpose: advance.purpose,
       status: advance.status,
       monthly_deduction: advance.monthlyDeduction,
-      created_at: advance.createdAt
+      created_at: advance.createdAt,
     }));
 
     const employeeDocumentsList = employeeDocumentsRows.map(doc => ({
@@ -230,7 +228,7 @@ export async function GET(_request: NextRequest) {
       document_type: doc.documentType,
       file_name: doc.fileName,
       file_path: doc.filePath,
-      created_at: doc.createdAt
+      created_at: doc.createdAt,
     }));
 
     return NextResponse.json({
@@ -245,20 +243,16 @@ export async function GET(_request: NextRequest) {
         status: employee.status,
         department: employee.department,
         designation: employee.designation,
-        user: employee.user
+        user: employee.user,
       },
       recentTimesheets,
       recentLeaves,
       currentAssignments,
       recentAdvances,
-      employeeDocuments: employeeDocumentsList
-    })
-
+      employeeDocuments: employeeDocumentsList,
+    });
   } catch (error) {
-    console.error('Error fetching employee dashboard data:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('Error fetching employee dashboard data:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

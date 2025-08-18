@@ -1,15 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { salaryIncrements } from '@/lib/drizzle/schema';
+import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
-import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -32,8 +29,8 @@ export async function POST(
 
     // Check if salary increment exists and can be approved
     const existingIncrement = await db
-      .select({ 
-        id: salaryIncrements.id, 
+      .select({
+        id: salaryIncrements.id,
         status: salaryIncrements.status,
         employee_id: salaryIncrements.employeeId,
         effective_date: salaryIncrements.effectiveDate,
@@ -60,7 +57,7 @@ export async function POST(
     const effectiveDate = new Date(increment!.effective_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0); // Reset time to start of day for fair comparison
-    
+
     if (effectiveDate < today) {
       return NextResponse.json(
         { error: 'Cannot approve salary increment with effective date in the past' },
@@ -98,9 +95,6 @@ export async function POST(
     });
   } catch (error) {
     console.error('Error approving salary increment:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

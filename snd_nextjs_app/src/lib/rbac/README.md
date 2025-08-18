@@ -45,6 +45,7 @@ USER (1) - Read-only access
 ## 🔐 Permission System
 
 ### Actions
+
 - `create` - Create new resources
 - `read` - View resources
 - `update` - Modify resources
@@ -58,6 +59,7 @@ USER (1) - Read-only access
 - `reset` - Reset system data
 
 ### Subjects
+
 - `User` - User management
 - `Employee` - Employee records
 - `Customer` - Customer data
@@ -128,11 +130,11 @@ import { hasPermission } from '@/lib/rbac/abilities';
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
-  
+
   if (!hasPermission(user, 'create', 'Employee')) {
     return new Response('Unauthorized', { status: 403 });
   }
-  
+
   // Handle request
 }
 ```
@@ -140,49 +142,55 @@ export async function POST(request: Request) {
 ## 🛡️ Security Features
 
 ### 1. Multi-Level Protection
+
 - **Route Level**: Middleware checks before page load
 - **Component Level**: Conditional rendering based on permissions
 - **API Level**: Server-side permission validation
 - **Data Level**: Field-level access control
 
 ### 2. Role Hierarchy
+
 - Higher roles inherit permissions from lower roles
 - Automatic permission escalation
 - Granular permission control
 
 ### 3. Session Integration
+
 - Seamless integration with NextAuth
 - Automatic permission updates on role changes
 - Secure JWT-based authentication
 
 ## 📋 Role Permissions Matrix
 
-| Role | Employee | Customer | Equipment | Rental | Payroll | Timesheet | Project | Settings |
-|------|----------|----------|-----------|--------|---------|-----------|---------|----------|
-| SUPER_ADMIN | Full | Full | Full | Full | Full | Full | Full | Full |
-| ADMIN | Full | Full | Full | Full | Full | Full | Full | Full |
-| MANAGER | Read/Update | Full | Read/Update | Read/Create/Update | Read/Approve | Read/Approve | Full | Read |
-| SUPERVISOR | Read | Read/Create/Update | Read | Read/Create/Update | Read | Read/Approve | Read/Create/Update | None |
-| OPERATOR | Read/Update* | Read | Read | Read/Create/Update | Read | Read/Create/Update* | Read | None |
-| USER | Read | Read | Read | Read | None | Read | Read | None |
+| Role        | Employee      | Customer           | Equipment   | Rental             | Payroll      | Timesheet            | Project            | Settings |
+| ----------- | ------------- | ------------------ | ----------- | ------------------ | ------------ | -------------------- | ------------------ | -------- |
+| SUPER_ADMIN | Full          | Full               | Full        | Full               | Full         | Full                 | Full               | Full     |
+| ADMIN       | Full          | Full               | Full        | Full               | Full         | Full                 | Full               | Full     |
+| MANAGER     | Read/Update   | Full               | Read/Update | Read/Create/Update | Read/Approve | Read/Approve         | Full               | Read     |
+| SUPERVISOR  | Read          | Read/Create/Update | Read        | Read/Create/Update | Read         | Read/Approve         | Read/Create/Update | None     |
+| OPERATOR    | Read/Update\* | Read               | Read        | Read/Create/Update | Read         | Read/Create/Update\* | Read               | None     |
+| USER        | Read          | Read               | Read        | Read               | None         | Read                 | Read               | None     |
 
-*Limited to own data
+\*Limited to own data
 
 ## 🔧 Configuration
 
 ### Environment Variables
+
 ```env
 NEXTAUTH_SECRET=your-secret-key
 NEXTAUTH_URL=http://localhost:3000
 ```
 
 ### Adding New Roles
+
 1. Update `rolePermissions` in `abilities.ts`
 2. Add role to `roleHierarchy` in middleware
 3. Update route permissions in middleware
 4. Test with different user roles
 
 ### Adding New Permissions
+
 1. Add action to `Actions` type
 2. Add subject to `Subjects` type
 3. Update role permissions matrix
@@ -191,6 +199,7 @@ NEXTAUTH_URL=http://localhost:3000
 ## 🧪 Testing
 
 ### Test Different Roles
+
 ```bash
 # Create test users with different roles
 npm run db:reset  # Creates admin user
@@ -198,6 +207,7 @@ npm run db:reset  # Creates admin user
 ```
 
 ### Test Permission Components
+
 ```tsx
 // Test permission-based rendering
 <Can action="create" subject="Employee" fallback={<p>No permission</p>}>
@@ -218,12 +228,13 @@ npm run db:reset  # Creates admin user
 ## 🔍 Debugging
 
 ### Check User Permissions
+
 ```tsx
 import { useRBAC } from '@/lib/rbac/rbac-context';
 
 function DebugComponent() {
   const { user, hasPermission, getAllowedActions } = useRBAC();
-  
+
   console.log('User:', user);
   console.log('Can create employee:', hasPermission('create', 'Employee'));
   console.log('Allowed actions for Employee:', getAllowedActions('Employee'));
@@ -231,6 +242,7 @@ function DebugComponent() {
 ```
 
 ### Check Route Access
+
 ```tsx
 import { useRouteAccess } from '@/lib/rbac/rbac-context';
 
@@ -244,4 +256,4 @@ function DebugRoute() {
 
 - [CASL Documentation](https://casl.js.org/)
 - [NextAuth.js Documentation](https://next-auth.js.org/)
-- [React Context Documentation](https://reactjs.org/docs/context.html) 
+- [React Context Documentation](https://reactjs.org/docs/context.html)

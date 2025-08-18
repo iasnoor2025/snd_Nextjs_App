@@ -1,24 +1,19 @@
-import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { payrolls, employees, payrollItems, timesheets } from '@/lib/drizzle/schema';
-import { eq, and, asc, sql } from 'drizzle-orm';
+import { employees, payrollItems, payrolls, timesheets } from '@/lib/drizzle/schema';
+import { and, asc, eq, sql } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
 
-export async function GET(
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET({ params }: { params: Promise<{ id: string }> }) {
   try {
     console.log('🔍 PAYSLIP DOWNLOAD API - Starting request');
-    
+
     const { id: idParam } = await params;
     const id = parseInt(idParam);
-    
+
     console.log('🔍 PAYSLIP DOWNLOAD API - Payroll ID:', id);
 
     if (isNaN(id)) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid payroll ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: 'Invalid payroll ID' }, { status: 400 });
     }
 
     // Get payroll with employee and items
@@ -56,7 +51,7 @@ export async function GET(
           overtimeFixedRate: employees.overtimeFixedRate,
           contractDaysPerMonth: employees.contractDaysPerMonth,
           contractHoursPerDay: employees.contractHoursPerDay,
-        }
+        },
       })
       .from(payrolls)
       .leftJoin(employees, eq(payrolls.employeeId, employees.id))
@@ -70,7 +65,7 @@ export async function GET(
       return NextResponse.json(
         {
           success: false,
-          message: 'Payroll not found'
+          message: 'Payroll not found',
         },
         { status: 404 }
       );
@@ -95,7 +90,7 @@ export async function GET(
 
     // Get attendance data for the payroll month
     console.log('🔍 PAYSLIP DOWNLOAD API - Fetching attendance data...');
-    
+
     // Use month-based filtering to avoid timezone issues
     const attendanceData = await db
       .select({
@@ -114,17 +109,23 @@ export async function GET(
         )
       )
       .orderBy(asc(timesheets.date));
-    
+
     console.log('🔍 PAYSLIP DOWNLOAD API - Attendance records found:', attendanceData.length);
-    console.log('🔍 PAYSLIP DOWNLOAD API - Month filter applied:', { year: payroll.year, month: payroll.month });
-    console.log('🔍 PAYSLIP DOWNLOAD API - Sample attendance data:', attendanceData.slice(0, 3).map(a => ({
-      date: a.date,
-      dateStr: a.date ? String(a.date).split('T')[0] : '',
-      day: a.date ? new Date(String(a.date).split('T')[0] || '').getDate() : 0,
-      hours: a.hoursWorked,
-      overtime: a.overtimeHours,
-      status: a.status
-    })));
+    console.log('🔍 PAYSLIP DOWNLOAD API - Month filter applied:', {
+      year: payroll.year,
+      month: payroll.month,
+    });
+    console.log(
+      '🔍 PAYSLIP DOWNLOAD API - Sample attendance data:',
+      attendanceData.slice(0, 3).map(a => ({
+        date: a.date,
+        dateStr: a.date ? String(a.date).split('T')[0] : '',
+        day: a.date ? new Date(String(a.date).split('T')[0] || '').getDate() : 0,
+        hours: a.hoursWorked,
+        overtime: a.overtimeHours,
+        status: a.status,
+      }))
+    );
 
     // Transform attendance data
     const transformedAttendanceData = attendanceData.map(attendance => ({
@@ -133,7 +134,7 @@ export async function GET(
       day: attendance.date ? new Date(String(attendance.date).split('T')[0] || '').getDate() : 0,
       status: attendance.status,
       hours: Number(attendance.hoursWorked) || 0,
-      overtime: Number(attendance.overtimeHours) || 0
+      overtime: Number(attendance.overtimeHours) || 0,
     }));
 
     // Transform payroll data
@@ -146,7 +147,7 @@ export async function GET(
       final_amount: Number(payroll.finalAmount),
       total_worked_hours: Number(payroll.totalWorkedHours),
       overtime_hours: Number(payroll.overtimeHours),
-      items: payrollItemsData
+      items: payrollItemsData,
     };
 
     // Transform employee data
@@ -158,17 +159,17 @@ export async function GET(
       transport_allowance: Number(payroll.employee?.transportAllowance || 0),
       overtime_rate_multiplier: Number(payroll.employee?.overtimeRateMultiplier || 1.5),
       overtime_fixed_rate: Number(payroll.employee?.overtimeFixedRate || 0),
-              contract_days_per_month: Number(payroll.employee?.contractDaysPerMonth || 26),
-        contract_hours_per_day: Number(payroll.employee?.contractHoursPerDay || 8)
+      contract_days_per_month: Number(payroll.employee?.contractDaysPerMonth || 26),
+      contract_hours_per_day: Number(payroll.employee?.contractHoursPerDay || 8),
     };
 
     // Company data
     const company = {
-      name: "Samhan Naser Al-Dosri Est.",
-      address: "For Gen. Contracting & Rent. Equipments",
-      phone: "+966501234567",
-      email: "info@snd.com",
-      website: "www.snd.com"
+      name: 'Samhan Naser Al-Dosri Est.',
+      address: 'For Gen. Contracting & Rent. Equipments',
+      phone: '+966501234567',
+      email: 'info@snd.com',
+      website: 'www.snd.com',
     };
 
     // For now, return JSON data with instructions to generate PDF on frontend
@@ -180,22 +181,21 @@ export async function GET(
         payroll: transformedPayroll,
         employee: transformedEmployee,
         attendanceData: transformedAttendanceData,
-        company
+        company,
       },
-      message: 'Use frontend PDF generation'
+      message: 'Use frontend PDF generation',
     });
-
   } catch (error) {
     console.error('🔍 PAYSLIP DOWNLOAD API - Error:', error);
     console.error('🔍 PAYSLIP DOWNLOAD API - Error message:', (error as Error).message);
     console.error('🔍 PAYSLIP DOWNLOAD API - Error stack:', (error as Error).stack);
-    
+
     return NextResponse.json(
       {
         success: false,
-        message: 'Error generating payslip PDF: ' + (error as Error).message
+        message: 'Error generating payslip PDF: ' + (error as Error).message,
       },
       { status: 500 }
     );
   }
-} 
+}

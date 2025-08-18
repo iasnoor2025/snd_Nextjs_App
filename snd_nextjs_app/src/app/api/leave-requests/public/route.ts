@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { employeeLeaves, employees } from '@/lib/drizzle/schema';
-import { eq, ilike, or, desc, sql, and } from 'drizzle-orm';
+import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/leave-requests/public - Get leave requests for management (no auth required)
 export async function GET(_request: NextRequest) {
   try {
     console.log('🔍 Starting public leave requests fetch...');
-    
+
     const { searchParams } = new URL(_request.url);
     const limit = parseInt(searchParams.get('limit') || '10');
     const page = parseInt(searchParams.get('page') || '1');
@@ -21,7 +21,7 @@ export async function GET(_request: NextRequest) {
 
     // Build where conditions
     let whereConditions: any[] = [];
-    
+
     if (status && status !== 'all') {
       whereConditions.push(eq(employeeLeaves.status, status));
     }
@@ -93,7 +93,9 @@ export async function GET(_request: NextRequest) {
       reason: leave.reason,
       employee: {
         id: leave.employee?.id || 0,
-        name: leave.employee ? `${leave.employee.firstName} ${leave.employee.lastName}` : 'Unknown Employee',
+        name: leave.employee
+          ? `${leave.employee.firstName} ${leave.employee.lastName}`
+          : 'Unknown Employee',
         employee_id: leave.employee?.fileNumber || 'Unknown',
       },
       created_at: leave.createdAt,
@@ -111,15 +113,14 @@ export async function GET(_request: NextRequest) {
 
     console.log('✅ Returning response with', formattedLeaves.length, 'leave requests');
     return NextResponse.json(response);
-    
   } catch (error) {
     console.error('❌ Error fetching leave requests:', error);
     console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { 
-        error: 'Internal server error', 
+      {
+        error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );

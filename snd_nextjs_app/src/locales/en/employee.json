@@ -2,7 +2,7 @@
   "title": "Employee Management",
   "subtitle": "Manage employee information and records",
   "description": "View, add, edit, and manage employee data",
-  
+
   "create": {
     "title": "Create New Employee",
     "description": "Add a new employee to the system",
@@ -40,7 +40,7 @@
     },
     "emergencyContact": "Emergency Contact"
   },
-  
+
   "actions": {
     "add": "Add Employee",
     "edit": "Edit Employee",
@@ -57,7 +57,7 @@
     "refresh": "Refresh",
     "clear": "Clear"
   },
-  
+
   "fields": {
     "fileNumber": "File Number",
     "firstName": "First Name",
@@ -96,7 +96,7 @@
     "iqamaCost": "Iqama Cost",
     "iqamaFile": "Iqama File"
   },
-  
+
   "status": {
     "active": "Active",
     "inactive": "Inactive",
@@ -104,7 +104,7 @@
     "onLeave": "On Leave",
     "probation": "Probation"
   },
-  
+
   "departments": {
     "it": "Information Technology",
     "hr": "Human Resources",
@@ -116,7 +116,7 @@
     "maintenance": "Maintenance",
     "general": "General"
   },
-  
+
   "messages": {
     "loading": "Loading employees...",
     "noEmployees": "No employees found.",
@@ -137,7 +137,7 @@
     "fileUploadSuccess": "File uploaded successfully",
     "fileUploadError": "Failed to upload file"
   },
-  
+
   "confirmDelete": {
     "department": {
       "title": "Delete Department",
@@ -148,7 +148,7 @@
       "description": "Are you sure you want to delete the designation '{name}'? This action cannot be undone."
     }
   },
-  
+
   "pagination": {
     "showing": "Showing {start}-{end} of {total} employees",
     "show": "Show",
@@ -157,14 +157,14 @@
     "next": "Next",
     "page": "Page {current} of {total}"
   },
-  
+
   "filters": {
     "all": "All",
     "status": "Status",
     "department": "Department",
     "clear": "Clear Filters"
   },
-  
+
   "table": {
     "headers": {
       "fileNumber": "File #",
@@ -179,7 +179,7 @@
       "company": "Company"
     }
   },
-  
+
   "form": {
     "addTitle": "Add New Employee",
     "editTitle": "Edit Employee",
@@ -189,11 +189,11 @@
     "invalidPhone": "Please enter a valid phone number",
     "invalidSalary": "Please enter a valid salary amount"
   },
-  
+
   "documents": {
     "iqama": "Iqama Documents"
   },
-  
+
   "iqama": {
     "expired": "Expired",
     "management": "Iqama Management",
@@ -214,7 +214,7 @@
     "tryAdjustingSearch": "Try adjusting your search or filters",
     "allRecordsActive": "All Iqama records are currently active"
   },
-  
+
   "assignment": {
     "project": "Project",
     "rental": "Rental",
@@ -223,14 +223,14 @@
     "assigned": "Assigned",
     "noAssignment": "No Assignment"
   },
-  
+
   "statistics": {
     "totalEmployees": "Total Employees",
     "currentlyAssigned": "Currently Assigned",
     "projectAssignments": "Project Assignments",
     "rentalAssignments": "Rental Assignments"
   },
-  
+
   "sync": {
     "button": "Sync with ERPNext",
     "syncing": "Syncing..."

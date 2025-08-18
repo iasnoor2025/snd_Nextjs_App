@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { isDateExpired, isDateExpiringSoon, getDaysUntilExpiry } from '@/lib/utils/date-utils';
-import { AlertTriangle, Clock, CheckCircle } from 'lucide-react';
+import { getDaysUntilExpiry, isDateExpired, isDateExpiringSoon } from '@/lib/utils/date-utils';
+import { AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
 interface ExpiryDateDisplayProps {
   date: string | Date | null | undefined;
@@ -10,11 +10,11 @@ interface ExpiryDateDisplayProps {
   className?: string;
 }
 
-export default function ExpiryDateDisplay({ 
-  date, 
-  showIcon = true, 
+export default function ExpiryDateDisplay({
+  date,
+  showIcon = true,
   showPrefix = true,
-  className = "" 
+  className = '',
 }: ExpiryDateDisplayProps) {
   if (!date) {
     return <span className="text-muted-foreground">Not specified</span>;
@@ -45,15 +45,9 @@ export default function ExpiryDateDisplay({
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      {showIcon && (
-        <Icon className={`h-4 w-4 ${statusColor}`} />
-      )}
+      {showIcon && <Icon className={`h-4 w-4 ${statusColor}`} />}
       <div className="flex flex-col">
-        {showPrefix && (
-          <span className={`text-xs font-medium ${statusColor}`}>
-            {statusText}
-          </span>
-        )}
+        {showPrefix && <span className={`text-xs font-medium ${statusColor}`}>{statusText}</span>}
         <span className={`text-sm ${isExpired ? 'text-red-600 font-medium' : ''}`}>
           {formattedDate}
         </span>

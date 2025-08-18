@@ -1,34 +1,31 @@
-import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { employeeDocuments } from '@/lib/drizzle/schema';
+import { withAuth } from '@/lib/rbac/api-middleware';
 import { eq } from 'drizzle-orm';
-import { withAuth } from "@/lib/rbac/api-middleware";
+import { NextResponse } from 'next/server';
 
-const getDocumentsHandler = async (
-  _request: any,
-  { params }: { params: { id: string } }
-) => {
+const getDocumentsHandler = async (_request: any, { params }: { params: { id: string } }) => {
   try {
     console.log('Starting GET /api/employees/[id]/documents');
-    
+
     console.log('Raw params object:', params);
     console.log('Params type:', typeof params);
     console.log('Params keys:', params ? Object.keys(params) : 'null/undefined');
-    
+
     if (!params || !params.id) {
       console.error('Invalid params received:', params);
-      return NextResponse.json({ error: "Invalid route parameters" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
-    
+
     const { id } = params;
     const employeeId = parseInt(id);
 
     if (isNaN(employeeId)) {
-      return NextResponse.json({ error: "Invalid employee ID" }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
 
     console.log('About to query database for employee:', employeeId);
-    
+
     // Use the same approach as the working test endpoint
     const documentsRows = await db
       .select({
@@ -72,26 +69,25 @@ const getDocumentsHandler = async (
     }));
 
     return NextResponse.json(formattedDocuments);
-    
   } catch (error) {
     console.error('Error in GET /api/employees/[id]/documents:', error);
-    
+
     // More detailed error information
     let errorMessage = 'Internal server error';
     let errorDetails = '';
-    
+
     if (error instanceof Error) {
       errorMessage = error.message;
       errorDetails = error.stack || '';
     }
-    
+
     console.error('Error details:', { message: errorMessage, stack: errorDetails });
-    
+
     return NextResponse.json(
-      { 
+      {
         error: errorMessage,
         details: errorDetails,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );

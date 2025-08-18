@@ -1,16 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
-import { employeeDocuments, employees, media, equipment } from '@/lib/drizzle/schema';
-import { eq, ilike, or, and, desc } from 'drizzle-orm';
-import { sql } from 'drizzle-orm';
+import { employeeDocuments, employees, equipment, media } from '@/lib/drizzle/schema';
+import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(_request.url);
@@ -76,7 +75,8 @@ export async function GET(_request: NextRequest) {
         employeeName: `${doc.employeeFirstName || ''} ${doc.employeeLastName || ''}`.trim(),
         employeeFileNumber: doc.employeeFileNumber,
         url: doc.filePath.startsWith('/') ? doc.filePath : `/uploads/documents/${doc.filePath}`,
-        searchableText: `${doc.employeeFirstName || ''} ${doc.employeeLastName || ''} ${doc.employeeFileNumber || ''} ${doc.fileName} ${doc.documentType}`.toLowerCase()
+        searchableText:
+          `${doc.employeeFirstName || ''} ${doc.employeeLastName || ''} ${doc.employeeFileNumber || ''} ${doc.fileName} ${doc.documentType}`.toLowerCase(),
       }));
     }
 
@@ -137,13 +137,14 @@ export async function GET(_request: NextRequest) {
         equipmentModel: doc.equipmentModel,
         equipmentSerial: doc.equipmentSerial,
         url: doc.filePath.startsWith('/') ? doc.filePath : `/uploads/documents/${doc.filePath}`,
-        searchableText: `${doc.equipmentName || ''} ${doc.equipmentModel || ''} ${doc.equipmentSerial || ''} ${doc.fileName}`.toLowerCase()
+        searchableText:
+          `${doc.equipmentName || ''} ${doc.equipmentModel || ''} ${doc.equipmentSerial || ''} ${doc.fileName}`.toLowerCase(),
       }));
     }
 
     // Combine and sort all documents
-    const allDocuments = [...employeeDocs, ...equipmentDocs].sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    const allDocuments = [...employeeDocs, ...equipmentDocs].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
     // Get total counts for pagination
@@ -206,22 +207,21 @@ export async function GET(_request: NextRequest) {
           total: totalDocs,
           totalPages: Math.ceil(totalDocs / limit),
           hasNext: page * limit < totalDocs,
-          hasPrev: page > 1
+          hasPrev: page > 1,
         },
         counts: {
           employee: totalEmployeeDocs,
           equipment: totalEquipmentDocs,
-          total: totalDocs
-        }
-      }
+          total: totalDocs,
+        },
+      },
     });
-
   } catch (error) {
     console.error('Error fetching all documents:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to fetch documents: ' + (error as Error).message
+        message: 'Failed to fetch documents: ' + (error as Error).message,
       },
       { status: 500 }
     );

@@ -1,35 +1,35 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import apiService from '@/lib/api';
 import {
-  Calendar,
-  Users,
-  DollarSign,
-  FileText,
-  Clock,
-  Target,
-  Building2,
-  User,
-  ArrowLeft,
-  Edit,
-  Trash2,
   AlertCircle,
+  ArrowLeft,
   BarChart2,
+  Building2,
+  Calendar,
   CheckSquare,
   ClipboardList,
+  Clock,
+  DollarSign,
+  Edit,
+  FileText,
   Package,
-  Plus
+  Plus,
+  Target,
+  Trash2,
+  User,
+  Users,
 } from 'lucide-react';
-import { toast } from 'sonner';
-import apiService from '@/lib/api';
 import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Project {
   id: string;
@@ -237,13 +237,16 @@ export default function ProjectDetailPage() {
         setProject(projectResponse.data);
 
         // Fetch project resources
-        const resourcesResponse = await apiService.get<{ data: ProjectResource[] }>(`/projects/${projectId}/resources`);
+        const resourcesResponse = await apiService.get<{ data: ProjectResource[] }>(
+          `/projects/${projectId}/resources`
+        );
         setResources(resourcesResponse.data);
 
         // Fetch tasks
-        const tasksResponse = await apiService.get<{ data: ProjectTask[] }>(`/projects/${projectId}/tasks`);
+        const tasksResponse = await apiService.get<{ data: ProjectTask[] }>(
+          `/projects/${projectId}/tasks`
+        );
         setTasks(tasksResponse.data);
-
       } catch (error) {
         console.error('Error fetching project:', error);
         toast.error('Failed to load project details');
@@ -290,9 +293,7 @@ export default function ProjectDetailPage() {
                 {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
               </Badge>
             </div>
-            <p className="text-sm text-muted-foreground">
-              Project ID: {project.id}
-            </p>
+            <p className="text-sm text-muted-foreground">Project ID: {project.id}</p>
           </div>
           <div className="mt-3 flex items-center space-x-2 md:mt-0">
             <Button variant="outline" size="sm" asChild>
@@ -399,7 +400,9 @@ export default function ProjectDetailPage() {
                     'Not started'
                   )}
                 </span>
-                <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">days</span>
+                <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">
+                  days
+                </span>
               </div>
             </div>
           </div>
@@ -411,10 +414,10 @@ export default function ProjectDetailPage() {
             <div>
               <p className="text-xs font-medium text-red-800">Overdue</p>
               <div className="flex items-center gap-2">
-                <span className="text-xl font-bold text-red-700">
-                  {getOverdueTasksCount()}
+                <span className="text-xl font-bold text-red-700">{getOverdueTasksCount()}</span>
+                <span className="rounded-md bg-red-100 px-1.5 py-0.5 text-xs text-red-800">
+                  tasks
                 </span>
-                <span className="rounded-md bg-red-100 px-1.5 py-0.5 text-xs text-red-800">tasks</span>
               </div>
             </div>
           </div>
@@ -426,19 +429,16 @@ export default function ProjectDetailPage() {
             <>
               <div className="mb-2 flex justify-between">
                 <span className="text-sm font-medium">Progress</span>
-                <span className="text-sm font-semibold">
-                  {calculateProjectProgress(project)}%
-                </span>
+                <span className="text-sm font-semibold">{calculateProjectProgress(project)}%</span>
               </div>
-              <Progress
-                value={calculateProjectProgress(project)}
-                className="h-3 bg-gray-100"
-              />
+              <Progress value={calculateProjectProgress(project)} className="h-3 bg-gray-100" />
               <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
                 <div className="flex items-center">
                   <Clock className="mr-1.5 h-3.5 w-3.5 text-gray-500" />
                   <span>
-                    {calculateDaysRemaining(project) === 0 ? 'Deadline reached' : `${calculateDaysRemaining(project)} days remaining`}
+                    {calculateDaysRemaining(project) === 0
+                      ? 'Deadline reached'
+                      : `${calculateDaysRemaining(project)} days remaining`}
                   </span>
                 </div>
               </div>
@@ -460,9 +460,7 @@ export default function ProjectDetailPage() {
               <div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500">Total Cost</span>
-                  <span className="text-sm font-medium">
-                    {formatCurrency(grandTotal)}
-                  </span>
+                  <span className="text-sm font-medium">{formatCurrency(grandTotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500">Budget</span>
@@ -477,7 +475,9 @@ export default function ProjectDetailPage() {
                   return (
                     <div className="mt-1 flex justify-between">
                       <span className="text-sm text-gray-500">Balance</span>
-                      <span className={`text-sm font-medium ${isProfitable ? 'text-green-600' : 'text-red-600'}`}>
+                      <span
+                        className={`text-sm font-medium ${isProfitable ? 'text-green-600' : 'text-red-600'}`}
+                      >
                         {formatCurrency(balance)}
                       </span>
                     </div>
@@ -490,7 +490,10 @@ export default function ProjectDetailPage() {
                 const budgetPercentage = Math.min(Math.round((grandTotal / budget) * 100), 100);
                 const profitPercentage =
                   Number(project.budget) > 0
-                    ? Math.round((Math.abs(Number(project.budget) - grandTotal) / Number(project.budget)) * 100)
+                    ? Math.round(
+                        (Math.abs(Number(project.budget) - grandTotal) / Number(project.budget)) *
+                          100
+                      )
                     : 0;
                 const isProfitable = Number(project.budget) - grandTotal >= 0;
                 return (
@@ -536,8 +539,16 @@ export default function ProjectDetailPage() {
             <div className="space-y-4">
               {[
                 { name: 'Manpower', color: 'bg-blue-500', cost: getResourceCostByType('manpower') },
-                { name: 'Equipment', color: 'bg-green-500', cost: getResourceCostByType('equipment') },
-                { name: 'Materials', color: 'bg-amber-500', cost: getResourceCostByType('material') },
+                {
+                  name: 'Equipment',
+                  color: 'bg-green-500',
+                  cost: getResourceCostByType('equipment'),
+                },
+                {
+                  name: 'Materials',
+                  color: 'bg-amber-500',
+                  cost: getResourceCostByType('material'),
+                },
                 { name: 'Fuel', color: 'bg-purple-500', cost: getResourceCostByType('fuel') },
                 { name: 'Expenses', color: 'bg-red-500', cost: getResourceCostByType('expense') },
               ].map((category, index) => {
@@ -572,23 +583,33 @@ export default function ProjectDetailPage() {
             </h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col items-center justify-center rounded-md bg-gray-50 p-3 text-center">
-                <div className="text-2xl font-semibold text-blue-600">{getResourceCountByType('manpower')}</div>
+                <div className="text-2xl font-semibold text-blue-600">
+                  {getResourceCountByType('manpower')}
+                </div>
                 <p className="mt-1 text-xs text-muted-foreground">Manpower</p>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md bg-gray-50 p-3 text-center">
-                <div className="text-2xl font-semibold text-green-600">{getResourceCountByType('equipment')}</div>
+                <div className="text-2xl font-semibold text-green-600">
+                  {getResourceCountByType('equipment')}
+                </div>
                 <p className="mt-1 text-xs text-muted-foreground">Equipment</p>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md bg-gray-50 p-3 text-center">
-                <div className="text-2xl font-semibold text-amber-600">{getResourceCountByType('material')}</div>
+                <div className="text-2xl font-semibold text-amber-600">
+                  {getResourceCountByType('material')}
+                </div>
                 <p className="mt-1 text-xs text-muted-foreground">Materials</p>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md bg-gray-50 p-3 text-center">
-                <div className="text-2xl font-semibold text-purple-600">{getResourceCountByType('fuel')}</div>
+                <div className="text-2xl font-semibold text-purple-600">
+                  {getResourceCountByType('fuel')}
+                </div>
                 <p className="mt-1 text-xs text-muted-foreground">Fuel</p>
               </div>
               <div className="flex flex-col items-center justify-center rounded-md bg-gray-50 p-3 text-center">
-                <div className="text-2xl font-semibold text-red-600">{getResourceCountByType('expense')}</div>
+                <div className="text-2xl font-semibold text-red-600">
+                  {getResourceCountByType('expense')}
+                </div>
                 <p className="mt-1 text-xs text-muted-foreground">Expenses</p>
               </div>
             </div>
@@ -606,24 +627,37 @@ export default function ProjectDetailPage() {
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-500">Overall Progress</span>
                 <span className="text-sm font-medium">
-                  {tasks.length > 0 ? Math.round((getTaskCountByStatus('completed') / tasks.length) * 100) : 0}%
+                  {tasks.length > 0
+                    ? Math.round((getTaskCountByStatus('completed') / tasks.length) * 100)
+                    : 0}
+                  %
                 </span>
               </div>
               <Progress
-                value={tasks.length > 0 ? Math.round((getTaskCountByStatus('completed') / tasks.length) * 100) : 0}
+                value={
+                  tasks.length > 0
+                    ? Math.round((getTaskCountByStatus('completed') / tasks.length) * 100)
+                    : 0
+                }
                 className="h-2"
               />
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">{getTaskCountByStatus('completed')}</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {getTaskCountByStatus('completed')}
+                  </div>
                   <p className="text-xs text-gray-500">Completed</p>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">{getTaskCountByStatus('in_progress')}</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {getTaskCountByStatus('in_progress')}
+                  </div>
                   <p className="text-xs text-gray-500">In Progress</p>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-600">{getTaskCountByStatus('pending')}</div>
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {getTaskCountByStatus('pending')}
+                  </div>
                   <p className="text-xs text-gray-500">Pending</p>
                 </div>
                 <div className="text-center">
@@ -641,8 +675,12 @@ export default function ProjectDetailPage() {
         <div className="mb-3 flex items-center gap-2 rounded-lg bg-blue-50 p-4 dark:bg-blue-900/10">
           <FileText className="h-5 w-5 text-blue-600" />
           <div>
-            <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-500">Project Overview</h3>
-            <p className="text-sm text-blue-600/70 dark:text-blue-400/70">Description and timeline details</p>
+            <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-500">
+              Project Overview
+            </h3>
+            <p className="text-sm text-blue-600/70 dark:text-blue-400/70">
+              Description and timeline details
+            </p>
           </div>
         </div>
 
@@ -663,15 +701,11 @@ export default function ProjectDetailPage() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
               <div>
                 <p className="mb-1 text-sm text-gray-500">Start Date</p>
-                <p className="text-base font-medium">
-                  {formatDate(project.start_date)}
-                </p>
+                <p className="text-base font-medium">{formatDate(project.start_date)}</p>
               </div>
               <div>
                 <p className="mb-1 text-sm text-gray-500">End Date</p>
-                <p className="text-base font-medium">
-                  {formatDate(project.end_date)}
-                </p>
+                <p className="text-base font-medium">{formatDate(project.end_date)}</p>
               </div>
               <div>
                 <p className="mb-1 text-sm text-gray-500">Duration</p>
@@ -709,25 +743,34 @@ export default function ProjectDetailPage() {
                   <div className="h-3 w-3 rounded-full bg-blue-500"></div>
                   <h4 className="text-sm font-medium text-blue-700">Project Started</h4>
                 </div>
-                <p className="pl-5 text-xs text-gray-600">Project was initiated with initial requirements and planning.</p>
+                <p className="pl-5 text-xs text-gray-600">
+                  Project was initiated with initial requirements and planning.
+                </p>
               </div>
 
               {/* Current Status Milestone */}
               <div className="flex-1 rounded-lg bg-green-50/50 p-4">
                 <div className="mb-2 flex justify-end">
-                  <span className="text-xs text-green-700">{new Date().toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}</span>
+                  <span className="text-xs text-green-700">
+                    {new Date().toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </span>
                 </div>
                 <div className="mb-2 flex items-center gap-2">
                   <div className="h-3 w-3 rounded-full bg-green-500"></div>
                   <h4 className="text-sm font-medium text-green-700">Current Status: Active</h4>
                 </div>
-                <p className="pl-5 text-xs text-gray-600">Project is {calculateProjectProgress(project)}% complete based on timeline.</p>
+                <p className="pl-5 text-xs text-gray-600">
+                  Project is {calculateProjectProgress(project)}% complete based on timeline.
+                </p>
                 <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-green-100">
-                  <div className="h-full bg-green-500" style={{ width: `${calculateProjectProgress(project)}%` }}></div>
+                  <div
+                    className="h-full bg-green-500"
+                    style={{ width: `${calculateProjectProgress(project)}%` }}
+                  ></div>
                 </div>
               </div>
 
@@ -735,11 +778,13 @@ export default function ProjectDetailPage() {
               {project.end_date && (
                 <div className="flex-1 rounded-lg bg-gray-50 p-4">
                   <div className="mb-2 flex justify-end">
-                    <span className="text-xs text-gray-700">{new Date(project.end_date).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}</span>
+                    <span className="text-xs text-gray-700">
+                      {new Date(project.end_date).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </span>
                   </div>
                   <div className="mb-2 flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full bg-gray-400"></div>
@@ -806,7 +851,10 @@ export default function ProjectDetailPage() {
                     <Avatar>
                       <AvatarImage src="" />
                       <AvatarFallback>
-                        {project.manager.name.split(' ').map(n => n[0]).join('')}
+                        {project.manager.name
+                          .split(' ')
+                          .map(n => n[0])
+                          .join('')}
                       </AvatarFallback>
                     </Avatar>
                     <div>
@@ -852,14 +900,14 @@ export default function ProjectDetailPage() {
                   <div>
                     <p className="text-sm font-medium">End Date</p>
                     <p className="text-sm text-gray-600">
-                      {project.end_date ? new Date(project.end_date).toLocaleDateString() : 'Ongoing'}
+                      {project.end_date
+                        ? new Date(project.end_date).toLocaleDateString()
+                        : 'Ongoing'}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">Priority</p>
-                    <Badge className={getPriorityColor(project.priority)}>
-                      {project.priority}
-                    </Badge>
+                    <Badge className={getPriorityColor(project.priority)}>{project.priority}</Badge>
                   </div>
                 </div>
               </CardContent>
@@ -874,9 +922,7 @@ export default function ProjectDetailPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Project Tasks</CardTitle>
-                  <CardDescription>
-                    {tasks.length} tasks in this project
-                  </CardDescription>
+                  <CardDescription>{tasks.length} tasks in this project</CardDescription>
                 </div>
                 <Button asChild>
                   <Link href={`/modules/project-management/${projectId}/resources?tab=tasks`}>
@@ -888,17 +934,16 @@ export default function ProjectDetailPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {tasks.map((task) => (
-                  <div key={task.id} className="flex items-center justify-between p-4 border rounded-lg">
+                {tasks.map(task => (
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
                         <h4 className="font-medium">{task.name}</h4>
-                        <Badge className={getStatusColor(task.status)}>
-                          {task.status}
-                        </Badge>
-                        <Badge className={getPriorityColor(task.priority)}>
-                          {task.priority}
-                        </Badge>
+                        <Badge className={getStatusColor(task.status)}>{task.status}</Badge>
+                        <Badge className={getPriorityColor(task.priority)}>{task.priority}</Badge>
                       </div>
                       <p className="text-sm text-gray-600 mb-2">{task.description}</p>
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
@@ -922,15 +967,12 @@ export default function ProjectDetailPage() {
           </Card>
         </TabsContent>
 
-
         {/* Milestones Tab */}
         <TabsContent value="milestones" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Project Milestones</CardTitle>
-              <CardDescription>
-                No milestones found
-              </CardDescription>
+              <CardDescription>No milestones found</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-center text-gray-500 py-8">No milestones found</p>
@@ -943,9 +985,7 @@ export default function ProjectDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle>Project Documents</CardTitle>
-              <CardDescription>
-                No documents found
-              </CardDescription>
+              <CardDescription>No documents found</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-center text-gray-500 py-8">No documents found</p>
@@ -1003,7 +1043,9 @@ export default function ProjectDetailPage() {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500">Budget</span>
-                  <span className="text-sm font-medium">{formatCurrency(Number(project.budget))}</span>
+                  <span className="text-sm font-medium">
+                    {formatCurrency(Number(project.budget))}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500">Spent</span>
@@ -1011,14 +1053,18 @@ export default function ProjectDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-500">Remaining</span>
-                  <span className={`text-sm font-medium ${Number(project.budget) - grandTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <span
+                    className={`text-sm font-medium ${Number(project.budget) - grandTotal >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                  >
                     {formatCurrency(Number(project.budget) - grandTotal)}
                   </span>
                 </div>
                 <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-200">
                   <div
                     className={`h-full ${grandTotal <= Number(project.budget) ? 'bg-green-500' : 'bg-red-500'}`}
-                    style={{ width: `${Math.min(100, (grandTotal / Number(project.budget)) * 100)}%` }}
+                    style={{
+                      width: `${Math.min(100, (grandTotal / Number(project.budget)) * 100)}%`,
+                    }}
                   ></div>
                 </div>
               </div>
@@ -1039,19 +1085,23 @@ export default function ProjectDetailPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">High Risk</span>
-                  <Badge variant="destructive" className="text-xs">1</Badge>
+                  <Badge variant="destructive" className="text-xs">
+                    1
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">Medium Risk</span>
-                  <Badge variant="secondary" className="text-xs">2</Badge>
+                  <Badge variant="secondary" className="text-xs">
+                    2
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-500">Low Risk</span>
-                  <Badge variant="outline" className="text-xs">3</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    3
+                  </Badge>
                 </div>
-                <div className="mt-2 text-xs text-gray-500">
-                  Risk monitoring active
-                </div>
+                <div className="mt-2 text-xs text-gray-500">Risk monitoring active</div>
               </div>
             </CardContent>
           </Card>

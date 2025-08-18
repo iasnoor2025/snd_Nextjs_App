@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
 import { pool } from '@/lib/drizzle';
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
     const client = await pool.connect();
-    
+
     // Check what tables exist
     const tablesQuery = `
       SELECT table_name 
@@ -12,23 +12,23 @@ export async function GET() {
       WHERE table_schema = 'public' 
       ORDER BY table_name;
     `;
-    
+
     const result = await client.query(tablesQuery);
     client.release();
-    
+
     return NextResponse.json({
       success: true,
       message: 'Database tables check successful',
       tables: result.rows.map((row: any) => row.table_name),
-      count: result.rows.length
+      count: result.rows.length,
     });
   } catch (error) {
     console.error('Database tables check error:', error);
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: 'Database tables check failed',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

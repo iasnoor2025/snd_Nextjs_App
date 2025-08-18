@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { employees as employeesTable, departments, designations } from '@/lib/drizzle/schema';
+import { departments, designations, employees as employeesTable } from '@/lib/drizzle/schema';
 import { and, asc, eq, ilike, or } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/employees/public - Get employees for dropdown (no auth required)
 export async function GET(_request: NextRequest) {
@@ -24,7 +24,7 @@ export async function GET(_request: NextRequest) {
           ilike(employeesTable.firstName, s),
           ilike(employeesTable.lastName, s),
           ilike(employeesTable.fileNumber, s),
-          ilike(employeesTable.email as any, s),
+          ilike(employeesTable.email as any, s)
         )
       );
     }
@@ -53,7 +53,7 @@ export async function GET(_request: NextRequest) {
 
     console.log(`✅ Found ${rows.length} employees`);
 
-    const transformedEmployees = rows.map((employee) => ({
+    const transformedEmployees = rows.map(employee => ({
       id: String(employee.id),
       first_name: employee.first_name,
       last_name: employee.last_name,
@@ -83,7 +83,7 @@ export async function GET(_request: NextRequest) {
         details: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString(),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/drizzle';
-import { timesheets, employees, users } from '@/lib/drizzle/schema';
-import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
+import { db } from '@/lib/drizzle';
+import { employees, timesheets, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest) {
   try {
@@ -33,8 +32,8 @@ export async function POST(_request: NextRequest) {
           fileNumber: employees.fileNumber,
           userId: users.id,
           userName: users.name,
-          userEmail: users.email
-        }
+          userEmail: users.email,
+        },
       })
       .from(timesheets)
       .leftJoin(employees, eq(timesheets.employeeId, employees.id))
@@ -52,8 +51,8 @@ export async function POST(_request: NextRequest) {
       .select({
         id: users.id,
         employees: {
-          id: employees.id
-        }
+          id: employees.id,
+        },
       })
       .from(users)
       .leftJoin(employees, eq(users.id, employees.userId))
@@ -65,31 +64,42 @@ export async function POST(_request: NextRequest) {
 
     // Check if user is the employee or has permission to submit for others
     const userEmployeeIds = userData.map(emp => emp.employees?.id).filter(Boolean);
-    const canSubmit = userEmployeeIds.includes(timesheet.employeeId) ||
-                     session.user.role === 'ADMIN' ||
-                     session.user.role === 'MANAGER' ||
-                     session.user.role === 'SUPER_ADMIN';
+    const canSubmit =
+      userEmployeeIds.includes(timesheet.employeeId) ||
+      session.user.role === 'ADMIN' ||
+      session.user.role === 'MANAGER' ||
+      session.user.role === 'SUPER_ADMIN';
 
     if (!canSubmit) {
-      return NextResponse.json({
-        error: 'You can only submit your own timesheets or have admin/manager/super_admin permissions'
-      }, { status: 403 });
+      return NextResponse.json(
+        {
+          error:
+            'You can only submit your own timesheets or have admin/manager/super_admin permissions',
+        },
+        { status: 403 }
+      );
     }
 
     // Check if the timesheet is in a state that can be submitted
     if (timesheet.status !== 'draft' && timesheet.status !== 'rejected') {
-      return NextResponse.json({
-        error: `Timesheet cannot be submitted. Current status: ${timesheet.status}`
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: `Timesheet cannot be submitted. Current status: ${timesheet.status}`,
+        },
+        { status: 400 }
+      );
     }
 
     // Check if there are any hours worked
     const hoursWorked = Number(timesheet.hoursWorked || 0);
     const overtimeHours = Number(timesheet.overtimeHours || 0);
     if (hoursWorked <= 0 && overtimeHours <= 0) {
-      return NextResponse.json({
-        error: 'Cannot submit timesheet with no hours worked'
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Cannot submit timesheet with no hours worked',
+        },
+        { status: 400 }
+      );
     }
 
     // Check minimum required hours (75% of expected 8 hours per day)
@@ -105,9 +115,12 @@ export async function POST(_request: NextRequest) {
 
     const totalHours = hoursWorked + overtimeHours;
     if (totalHours < minRequiredHours) {
-      return NextResponse.json({
-        error: `Insufficient hours submitted. Expected at least ${minRequiredHours} hours for a work day.`
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: `Insufficient hours submitted. Expected at least ${minRequiredHours} hours for a work day.`,
+        },
+        { status: 400 }
+      );
     }
 
     // Update timesheet status and submission details
@@ -116,7 +129,7 @@ export async function POST(_request: NextRequest) {
       .set({
         status: 'submitted',
         submittedAt: new Date().toISOString().split('T')[0],
-        notes: notes || timesheet.notes
+        notes: notes || timesheet.notes,
       })
       .where(eq(timesheets.id, parseInt(timesheetId)));
 
@@ -138,8 +151,8 @@ export async function POST(_request: NextRequest) {
           fileNumber: employees.fileNumber,
           userId: users.id,
           userName: users.name,
-          userEmail: users.email
-        }
+          userEmail: users.email,
+        },
       })
       .from(timesheets)
       .leftJoin(employees, eq(timesheets.employeeId, employees.id))
@@ -151,14 +164,10 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json({
       message: 'Timesheet submitted successfully',
-      timesheet: updatedTimesheet
+      timesheet: updatedTimesheet,
     });
-
   } catch (error) {
     console.error('Error submitting timesheet:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

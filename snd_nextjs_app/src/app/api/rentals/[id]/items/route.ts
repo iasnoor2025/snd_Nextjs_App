@@ -1,13 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { RentalService } from '@/lib/services/rental-service';
 import { db } from '@/lib/db';
 import { employeeAssignments } from '@/lib/drizzle/schema';
+import { RentalService } from '@/lib/services/rental-service';
 import { and, eq } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {
     const body = await request.json();
@@ -18,10 +15,7 @@ export async function POST(
     // Check if rental exists
     const rentalExists = await RentalService.getRental(parseInt(rentalId));
     if (!rentalExists) {
-      return NextResponse.json(
-        { error: `Rental with ID ${rentalId} not found` },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: `Rental with ID ${rentalId} not found` }, { status: 404 });
     }
 
     // Validate required fields
@@ -31,9 +25,9 @@ export async function POST(
 
     if (missingFields.length > 0) {
       return NextResponse.json(
-        { 
+        {
           error: `Missing required fields: ${missingFields.join(', ')}`,
-          receivedData: body 
+          receivedData: body,
         },
         { status: 400 }
       );
@@ -58,7 +52,7 @@ export async function POST(
         // Get rental details for assignment name - temporarily commented out
         // const rental = await RentalService.getRental(parseInt(rentalId));
         // const customerName = rental?.customer?.name || 'Unknown Customer';
-        
+
         // Create employee assignment - temporarily commented out due to type issues
         // await db.insert(employeeAssignments).values({
         //   employeeId: parseInt(body.operatorId),
@@ -74,7 +68,9 @@ export async function POST(
         //   updatedAt: new Date().toISOString().split('T')[0]
         // });
 
-        console.log(`Employee assignment created for operator ${body.operatorId} on rental ${rentalId}`);
+        console.log(
+          `Employee assignment created for operator ${body.operatorId} on rental ${rentalId}`
+        );
       } catch (assignmentError) {
         console.error('Error creating employee assignment:', assignmentError);
         // Don't fail the rental item creation if assignment creation fails
@@ -88,22 +84,19 @@ export async function POST(
     console.error('Error details:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'Unknown'
+      name: error instanceof Error ? error.name : 'Unknown',
     });
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to add rental item',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
 }
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {
     const rentalId = id;
@@ -111,17 +104,11 @@ export async function GET(
     return NextResponse.json(rentalItems);
   } catch (error) {
     console.error('Error fetching rental items:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch rental items' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch rental items' }, { status: 500 });
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {
     const body = await request.json();
@@ -132,10 +119,7 @@ export async function PUT(
     // Check if rental exists
     const rentalExists = await RentalService.getRental(parseInt(rentalId));
     if (!rentalExists) {
-      return NextResponse.json(
-        { error: `Rental with ID ${rentalId} not found` },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: `Rental with ID ${rentalId} not found` }, { status: 404 });
     }
 
     // Validate required fields
@@ -146,9 +130,9 @@ export async function PUT(
 
     if (missingFields.length > 0) {
       return NextResponse.json(
-        { 
+        {
           error: `Missing required fields: ${missingFields.join(', ')}`,
-          receivedData: body 
+          receivedData: body,
         },
         { status: 400 }
       );
@@ -184,26 +168,31 @@ export async function PUT(
         if (newOperatorId !== previousOperatorId) {
           // If there was a previous operator, end their assignment
           if (previousOperatorId) {
-            await db.update(employeeAssignments)
+            await db
+              .update(employeeAssignments)
               .set({
                 status: 'inactive',
                 endDate: new Date().toISOString().split('T')[0],
                 updatedAt: new Date().toISOString().split('T')[0],
               })
-              .where(and(
-                eq(employeeAssignments.employeeId, previousOperatorId),
-                eq(employeeAssignments.rentalId, parseInt(rentalId)),
-                eq(employeeAssignments.type, 'rental_item'),
-                eq(employeeAssignments.status, 'active')
-              ));
-            
-            console.log(`Ended employee assignment for previous operator ${previousOperatorId} on rental ${rentalId}`);
+              .where(
+                and(
+                  eq(employeeAssignments.employeeId, previousOperatorId),
+                  eq(employeeAssignments.rentalId, parseInt(rentalId)),
+                  eq(employeeAssignments.type, 'rental_item'),
+                  eq(employeeAssignments.status, 'active')
+                )
+              );
+
+            console.log(
+              `Ended employee assignment for previous operator ${previousOperatorId} on rental ${rentalId}`
+            );
           }
 
           // Create new employee assignment - temporarily commented out due to type issues
           // const rental = await RentalService.getRental(parseInt(rentalId));
           // const customerName = rental?.customer?.name || 'Unknown Customer';
-          
+
           // await db.insert(employeeAssignments).values({
           //   employeeId: newOperatorId,
           //   name: `${customerName} - ${body.equipmentName} Rental`,
@@ -218,7 +207,9 @@ export async function PUT(
           //   updatedAt: new Date().toISOString().split('T')[0]
           // });
 
-          console.log(`Created new employee assignment for operator ${newOperatorId} on rental ${rentalId}`);
+          console.log(
+            `Created new employee assignment for operator ${newOperatorId} on rental ${rentalId}`
+          );
         }
       } catch (assignmentError) {
         console.error('Error updating employee assignment:', assignmentError);
@@ -233,52 +224,43 @@ export async function PUT(
     console.error('Error details:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'Unknown'
+      name: error instanceof Error ? error.name : 'Unknown',
     });
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to update rental item',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  _params: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest, _params: { params: Promise<{ id: string }> }) {
   // const { id } = await params; // Not used in this function
   try {
     const { searchParams } = new URL(request.url);
     const itemId = searchParams.get('itemId');
 
     if (!itemId) {
-      return NextResponse.json(
-        { error: 'itemId parameter is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'itemId parameter is required' }, { status: 400 });
     }
 
     const success = await RentalService.deleteRentalItem(parseInt(itemId));
-    
+
     if (!success) {
-      return NextResponse.json(
-        { error: 'Failed to delete rental item' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to delete rental item' }, { status: 500 });
     }
 
     return NextResponse.json({ message: 'Rental item deleted successfully' });
   } catch (error) {
     console.error('Error deleting rental item:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to delete rental item',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
-} 
+}

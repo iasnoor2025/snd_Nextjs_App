@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { customers } from '@/lib/drizzle/schema';
+import { NextRequest, NextResponse } from 'next/server';
 /**
  * Map ERPNext customer fields to local fields
  */
 function mapERPNextToLocal(erpCustomer: any) {
   console.log('Mapping customer:', erpCustomer.name || erpCustomer.customer_name);
-  
+
   // Extract address from primary_address if it's HTML
   let address = null;
   if (erpCustomer.primary_address) {
@@ -16,14 +16,19 @@ function mapERPNextToLocal(erpCustomer: any) {
       .replace(/<[^>]*>/g, '')
       .trim();
   }
-  
+
   const mappedData = {
     name: erpCustomer.customer_name || erpCustomer.name || null,
     company_name: erpCustomer.customer_name || erpCustomer.name || null,
     contact_person: erpCustomer.contact_person || null,
     email: erpCustomer.email_id || erpCustomer.email || null,
     phone: erpCustomer.mobile_no || erpCustomer.phone || null,
-    address: address || erpCustomer.customer_address || erpCustomer.address_line1 || erpCustomer.address || null,
+    address:
+      address ||
+      erpCustomer.customer_address ||
+      erpCustomer.address_line1 ||
+      erpCustomer.address ||
+      null,
     city: erpCustomer.city || null,
     state: erpCustomer.state || null,
     postal_code: erpCustomer.pincode || erpCustomer.postal_code || null,
@@ -35,7 +40,7 @@ function mapERPNextToLocal(erpCustomer: any) {
     is_active: (erpCustomer.disabled || 0) == 0,
     erpnext_id: erpCustomer.name || null,
   };
-  
+
   console.log('Mapped data:', mappedData);
   return mappedData;
 }
@@ -74,7 +79,13 @@ export async function POST(_request: NextRequest) {
     const matchResults: {
       toCreate: Array<{ data: any; originalCustomer: any }>;
       toUpdate: Array<{ existingId: number; existingData: any; newData: any; changes: any }>;
-      toSkip: Array<{ reason: string; customer: any; mappedData?: any; existingId?: number; error?: string }>;
+      toSkip: Array<{
+        reason: string;
+        customer: any;
+        mappedData?: any;
+        existingId?: number;
+        error?: string;
+      }>;
       summary: { total: number; toCreate: number; toUpdate: number; toSkip: number };
     } = {
       toCreate: [],
@@ -85,23 +96,26 @@ export async function POST(_request: NextRequest) {
         toCreate: 0,
         toUpdate: 0,
         toSkip: 0,
-      }
+      },
     };
 
     // Process each ERPNext customer
     for (const erpCustomer of erpnextCustomers) {
       try {
-        console.log('Processing customer for matching:', erpCustomer.name || erpCustomer.customer_name);
-        
+        console.log(
+          'Processing customer for matching:',
+          erpCustomer.name || erpCustomer.customer_name
+        );
+
         const mappedData = mapERPNextToLocal(erpCustomer);
-        
+
         // Skip if no ERPNext ID
         if (!mappedData.erpnext_id) {
           console.log('Skipping customer without ERPNext ID:', erpCustomer);
           matchResults.toSkip.push({
             reason: 'No ERPNext ID',
             customer: erpCustomer,
-            mappedData
+            mappedData,
           });
           matchResults.summary.toSkip++;
           continue;
@@ -123,20 +137,20 @@ export async function POST(_request: NextRequest) {
           matchResults.toSkip.push({
             reason: 'Missing essential data',
             customer: erpCustomer,
-            mappedData
+            mappedData,
           });
           matchResults.summary.toSkip++;
           continue;
         }
 
-                // Check if customer already exists by ERPNext ID
-        const existingCustomer = dbCustomers.find((dbCustomer: any) =>
-          dbCustomer.erpnextId === mappedData.erpnext_id
+        // Check if customer already exists by ERPNext ID
+        const existingCustomer = dbCustomers.find(
+          (dbCustomer: any) => dbCustomer.erpnextId === mappedData.erpnext_id
         );
 
         if (existingCustomer) {
           // Customer exists - check if update is needed
-          const needsUpdate = 
+          const needsUpdate =
             existingCustomer.name !== mappedData.name ||
             existingCustomer.email !== mappedData.email ||
             existingCustomer.phone !== mappedData.phone ||
@@ -153,7 +167,7 @@ export async function POST(_request: NextRequest) {
                 email: existingCustomer.email !== mappedData.email,
                 phone: existingCustomer.phone !== mappedData.phone,
                 company_name: existingCustomer.companyName !== mappedData.company_name,
-              }
+              },
             });
             matchResults.summary.toUpdate++;
           } else {
@@ -162,7 +176,7 @@ export async function POST(_request: NextRequest) {
               reason: 'Already up to date',
               customer: erpCustomer,
               mappedData,
-              existingId: existingCustomer.id
+              existingId: existingCustomer.id,
             });
             matchResults.summary.toSkip++;
           }
@@ -171,17 +185,16 @@ export async function POST(_request: NextRequest) {
           console.log('New customer to create:', mappedData.name);
           matchResults.toCreate.push({
             data: mappedData,
-            originalCustomer: erpCustomer
+            originalCustomer: erpCustomer,
           });
           matchResults.summary.toCreate++;
         }
-
       } catch (error) {
         console.error('Error processing customer for matching:', error);
         matchResults.toSkip.push({
           reason: 'Processing error',
           customer: erpCustomer,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
         matchResults.summary.toSkip++;
       }
@@ -192,9 +205,8 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: `Matching completed. ${matchResults.summary.toCreate} to create, ${matchResults.summary.toUpdate} to update, ${matchResults.summary.toSkip} to skip.`,
-      data: matchResults
+      data: matchResults,
     });
-
   } catch (error) {
     console.error('Error during data matching:', error);
     return NextResponse.json(
@@ -207,4 +219,4 @@ export async function POST(_request: NextRequest) {
   } finally {
     // No explicit disconnect needed for Drizzle, it's managed by the ORM
   }
-} 
+}

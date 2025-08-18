@@ -17,11 +17,7 @@ export function RTLAwareLayout({ children, className, dir = 'auto' }: RTLAwareLa
   return (
     <div
       dir={effectiveDir}
-      className={cn(
-        'transition-all duration-200',
-        isRTL && 'rtl',
-        className
-      )}
+      className={cn('transition-all duration-200', isRTL && 'rtl', className)}
     >
       {children}
     </div>
@@ -42,16 +38,7 @@ export function RTLAwareText({ children, className, align }: RTLAwareTextProps) 
     return isRTL ? 'right' : 'left';
   };
 
-  return (
-    <div
-      className={cn(
-        `text-${getAlignment()}`,
-        className
-      )}
-    >
-      {children}
-    </div>
-  );
+  return <div className={cn(`text-${getAlignment()}`, className)}>{children}</div>;
 }
 
 interface RTLAwareFlexProps {
@@ -66,29 +53,23 @@ export function RTLAwareFlex({ children, className, justify, items }: RTLAwareFl
 
   const getJustify = () => {
     if (!justify) return isRTL ? 'justify-end' : 'justify-start';
-    
+
     if (isRTL) {
       // Mirror justify classes for RTL
       switch (justify) {
-        case 'start': return 'justify-end';
-        case 'end': return 'justify-start';
-        default: return `justify-${justify}`;
+        case 'start':
+          return 'justify-end';
+        case 'end':
+          return 'justify-start';
+        default:
+          return `justify-${justify}`;
       }
     }
-    
+
     return `justify-${justify}`;
   };
 
   return (
-    <div
-      className={cn(
-        'flex',
-        getJustify(),
-        items && `items-${items}`,
-        className
-      )}
-    >
-      {children}
-    </div>
+    <div className={cn('flex', getJustify(), items && `items-${items}`, className)}>{children}</div>
   );
-} 
+}

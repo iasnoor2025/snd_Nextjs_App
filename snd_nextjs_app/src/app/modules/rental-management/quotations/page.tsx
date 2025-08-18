@@ -1,51 +1,64 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Eye,
-  Calendar,
-  RefreshCw,
-  Download,
-  Printer,
-  Filter,
-  MoreHorizontal,
-  FileText,
-  DollarSign,
-  CheckCircle,
-  XCircle,
-  Mail,
-  Clock,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight
-} from "lucide-react";
-import { toast } from "sonner";
-import Link from "next/link";
-import { usePrint } from "@/hooks/use-print";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationLink,
   PaginationNext,
-  PaginationPrevious
-} from "@/components/ui/pagination";
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { usePrint } from '@/hooks/use-print';
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  DollarSign,
+  Download,
+  Edit,
+  Eye,
+  FileText,
+  Filter,
+  Mail,
+  MoreHorizontal,
+  Plus,
+  Printer,
+  RefreshCw,
+  Search,
+  Trash2,
+  XCircle,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Customer {
   id: number;
@@ -112,18 +125,18 @@ interface PaginatedResponse {
 export default function QuotationsPage() {
   const [quotations, setQuotations] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const { printRef, handlePrint } = usePrint({
-    documentTitle: "Rental-Quotations-List",
+    documentTitle: 'Rental-Quotations-List',
     waitForImages: true,
-    onPrintError: (error) => {
+    onPrintError: error => {
       console.error('Print error details:', error);
       // Continue with print even if there are image errors
-    }
+    },
   });
   const [showFilters, setShowFilters] = useState(false);
 
@@ -146,117 +159,123 @@ export default function QuotationsPage() {
     fetchQuotations();
   }, [search, status, startDate, endDate, currentPage]);
 
-    const getMockQuotationsData = (search: string = '', status: string = 'all', startDate: string = '', endDate: string = '', page: number = 1): PaginatedResponse => {
+  const getMockQuotationsData = (
+    search: string = '',
+    status: string = 'all',
+    startDate: string = '',
+    endDate: string = '',
+    page: number = 1
+  ): PaginatedResponse => {
     const mockQuotations = [
       {
         id: 1,
-        quotation_number: "QUOT-2024-001",
+        quotation_number: 'QUOT-2024-001',
         customer: {
           id: 1,
-          name: "ABC Construction Ltd",
-          company_name: "ABC Construction Ltd",
-          contact_person: "John Smith",
-          email: "john@abcconstruction.com",
-          phone: "+1-555-0123"
+          name: 'ABC Construction Ltd',
+          company_name: 'ABC Construction Ltd',
+          contact_person: 'John Smith',
+          email: 'john@abcconstruction.com',
+          phone: '+1-555-0123',
         },
-        issue_date: "2024-01-08",
-        valid_until: "2024-01-22",
-        status: "pending",
+        issue_date: '2024-01-08',
+        valid_until: '2024-01-22',
+        status: 'pending',
         subtotal: 14285.71,
         tax_percentage: 8.5,
         tax_amount: 1214.29,
-        discount_amount: 500.00,
-        total_amount: 15000.00,
-        terms_conditions: "Standard rental terms apply",
-        notes: "Equipment needed for downtown construction project",
+        discount_amount: 500.0,
+        total_amount: 15000.0,
+        terms_conditions: 'Standard rental terms apply',
+        notes: 'Equipment needed for downtown construction project',
         created_by: 1,
-        created_at: "2024-01-08T09:00:00Z",
-        updated_at: "2024-01-08T09:00:00Z",
-        nextPossibleStates: ["approve", "reject", "send-email"],
+        created_at: '2024-01-08T09:00:00Z',
+        updated_at: '2024-01-08T09:00:00Z',
+        nextPossibleStates: ['approve', 'reject', 'send-email'],
         quotationItems: [
           {
             id: 1,
             equipment_id: 1,
             equipment: {
               id: 1,
-              name: "Excavator CAT 320",
-              model: "CAT 320",
-              manufacturer: "Caterpillar"
+              name: 'Excavator CAT 320',
+              model: 'CAT 320',
+              manufacturer: 'Caterpillar',
             },
-            rate: 500.00,
-            rate_type: "daily",
+            rate: 500.0,
+            rate_type: 'daily',
             days: 30,
-            total_amount: 15000.00
-          }
-        ]
+            total_amount: 15000.0,
+          },
+        ],
       },
       {
         id: 2,
-        quotation_number: "QUOT-2024-002",
+        quotation_number: 'QUOT-2024-002',
         customer: {
           id: 2,
-          name: "XYZ Developers",
-          company_name: "XYZ Developers",
-          contact_person: "Jane Doe",
-          email: "jane@xyzdevelopers.com",
-          phone: "+1-555-0456"
+          name: 'XYZ Developers',
+          company_name: 'XYZ Developers',
+          contact_person: 'Jane Doe',
+          email: 'jane@xyzdevelopers.com',
+          phone: '+1-555-0456',
         },
-        issue_date: "2024-01-05",
-        valid_until: "2024-01-19",
-        status: "approved",
+        issue_date: '2024-01-05',
+        valid_until: '2024-01-19',
+        status: 'approved',
         subtotal: 11428.57,
         tax_percentage: 8.5,
         tax_amount: 971.43,
         discount_amount: 0,
-        total_amount: 12400.00,
-        terms_conditions: "Standard rental terms apply",
-        notes: "Approved by management",
+        total_amount: 12400.0,
+        terms_conditions: 'Standard rental terms apply',
+        notes: 'Approved by management',
         created_by: 1,
         approved_by: 2,
-        created_at: "2024-01-05T10:00:00Z",
-        updated_at: "2024-01-10T14:30:00Z",
-        nextPossibleStates: ["convert-to-rental", "convert-to-invoice"],
+        created_at: '2024-01-05T10:00:00Z',
+        updated_at: '2024-01-10T14:30:00Z',
+        nextPossibleStates: ['convert-to-rental', 'convert-to-invoice'],
         quotationItems: [
           {
             id: 2,
             equipment_id: 2,
             equipment: {
               id: 2,
-              name: "Bulldozer Komatsu D65",
-              model: "D65",
-              manufacturer: "Komatsu"
+              name: 'Bulldozer Komatsu D65',
+              model: 'D65',
+              manufacturer: 'Komatsu',
             },
-            rate: 400.00,
-            rate_type: "daily",
+            rate: 400.0,
+            rate_type: 'daily',
             days: 31,
-            total_amount: 12400.00
-          }
-        ]
+            total_amount: 12400.0,
+          },
+        ],
       },
       {
         id: 3,
-        quotation_number: "QUOT-2024-003",
+        quotation_number: 'QUOT-2024-003',
         customer: {
           id: 3,
-          name: "City Projects Ltd",
-          company_name: "City Projects Ltd",
-          contact_person: "Bob Wilson",
-          email: "bob@cityprojects.com",
-          phone: "+1-555-0789"
+          name: 'City Projects Ltd',
+          company_name: 'City Projects Ltd',
+          contact_person: 'Bob Wilson',
+          email: 'bob@cityprojects.com',
+          phone: '+1-555-0789',
         },
-        issue_date: "2024-01-12",
-        valid_until: "2024-01-26",
-        status: "rejected",
+        issue_date: '2024-01-12',
+        valid_until: '2024-01-26',
+        status: 'rejected',
         subtotal: 22857.14,
         tax_percentage: 8.5,
         tax_amount: 1942.86,
         discount_amount: 0,
-        total_amount: 24800.00,
-        terms_conditions: "Standard rental terms apply",
-        notes: "Rejected due to budget constraints",
+        total_amount: 24800.0,
+        terms_conditions: 'Standard rental terms apply',
+        notes: 'Rejected due to budget constraints',
         created_by: 1,
-        created_at: "2024-01-12T11:00:00Z",
-        updated_at: "2024-01-15T16:45:00Z",
+        created_at: '2024-01-12T11:00:00Z',
+        updated_at: '2024-01-15T16:45:00Z',
         nextPossibleStates: [],
         quotationItems: [
           {
@@ -264,27 +283,28 @@ export default function QuotationsPage() {
             equipment_id: 3,
             equipment: {
               id: 3,
-              name: "Crane Liebherr LTM 1100",
-              model: "LTM 1100",
-              manufacturer: "Liebherr"
+              name: 'Crane Liebherr LTM 1100',
+              model: 'LTM 1100',
+              manufacturer: 'Liebherr',
             },
-            rate: 800.00,
-            rate_type: "daily",
+            rate: 800.0,
+            rate_type: 'daily',
             days: 31,
-            total_amount: 24800.00
-          }
-        ]
-      }
+            total_amount: 24800.0,
+          },
+        ],
+      },
     ];
 
     // Filter quotations based on search and status
     let filteredQuotations = mockQuotations;
 
     if (search) {
-      filteredQuotations = filteredQuotations.filter(quotation =>
-        quotation.quotation_number.toLowerCase().includes(search.toLowerCase()) ||
-        quotation.customer.company_name.toLowerCase().includes(search.toLowerCase()) ||
-        quotation.customer.name.toLowerCase().includes(search.toLowerCase())
+      filteredQuotations = filteredQuotations.filter(
+        quotation =>
+          quotation.quotation_number.toLowerCase().includes(search.toLowerCase()) ||
+          quotation.customer.company_name.toLowerCase().includes(search.toLowerCase()) ||
+          quotation.customer.name.toLowerCase().includes(search.toLowerCase())
       );
     }
 
@@ -293,7 +313,9 @@ export default function QuotationsPage() {
     }
 
     if (startDate) {
-      filteredQuotations = filteredQuotations.filter(quotation => quotation.issue_date >= startDate);
+      filteredQuotations = filteredQuotations.filter(
+        quotation => quotation.issue_date >= startDate
+      );
     }
 
     if (endDate) {
@@ -318,10 +340,10 @@ export default function QuotationsPage() {
       to,
       next_page_url: page < lastPage ? `?page=${page + 1}` : null,
       prev_page_url: page > 1 ? `?page=${page - 1}` : null,
-      first_page_url: "?page=1",
+      first_page_url: '?page=1',
       last_page_url: `?page=${lastPage}`,
-      path: "/modules/rental-management/quotations",
-      links: []
+      path: '/modules/rental-management/quotations',
+      links: [],
     };
   };
 
@@ -341,15 +363,15 @@ export default function QuotationsPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "pending":
+      case 'pending':
         return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
-      case "approved":
+      case 'approved':
         return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
-      case "rejected":
+      case 'rejected':
         return <Badge className="bg-red-100 text-red-800">Rejected</Badge>;
-      case "expired":
+      case 'expired':
         return <Badge className="bg-gray-100 text-gray-800">Expired</Badge>;
-      case "converted":
+      case 'converted':
         return <Badge className="bg-blue-100 text-blue-800">Converted</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
@@ -401,9 +423,7 @@ export default function QuotationsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Quotations</h1>
-          <p className="text-muted-foreground">
-            Manage equipment rental quotations and proposals
-          </p>
+          <p className="text-muted-foreground">Manage equipment rental quotations and proposals</p>
         </div>
         <div className="flex space-x-2">
           <Button variant="outline" onClick={handleRefresh}>
@@ -435,11 +455,7 @@ export default function QuotationsPage() {
               <Filter className="h-5 w-5" />
               <span>Filters</span>
             </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)}>
               {showFilters ? <XCircle className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
             </Button>
           </div>
@@ -452,7 +468,7 @@ export default function QuotationsPage() {
                 <Input
                   placeholder="Search quotations..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={e => setSearch(e.target.value)}
                 />
               </div>
               <div>
@@ -473,19 +489,11 @@ export default function QuotationsPage() {
               </div>
               <div>
                 <label className="text-sm font-medium">From Date</label>
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
+                <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
               </div>
               <div>
                 <label className="text-sm font-medium">To Date</label>
-                <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
+                <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
               </div>
             </div>
           </CardContent>
@@ -497,7 +505,8 @@ export default function QuotationsPage() {
         <CardHeader>
           <CardTitle>Quotations</CardTitle>
           <CardDescription>
-            Showing {quotations?.from || 0} to {quotations?.to || 0} of {quotations?.total || 0} quotations
+            Showing {quotations?.from || 0} to {quotations?.to || 0} of {quotations?.total || 0}{' '}
+            quotations
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -514,11 +523,9 @@ export default function QuotationsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {quotations?.data.map((quotation) => (
+              {quotations?.data.map(quotation => (
                 <TableRow key={quotation.id}>
-                  <TableCell className="font-medium">
-                    {quotation.quotation_number}
-                  </TableCell>
+                  <TableCell className="font-medium">{quotation.quotation_number}</TableCell>
                   <TableCell>
                     <div>
                       <div className="font-medium">{quotation.customer.company_name}</div>
@@ -562,31 +569,41 @@ export default function QuotationsPage() {
                           Download PDF
                         </DropdownMenuItem>
                         {quotation.nextPossibleStates?.includes('approve') && (
-                          <DropdownMenuItem onClick={() => handleWorkflowAction(quotation.id, 'approve')}>
+                          <DropdownMenuItem
+                            onClick={() => handleWorkflowAction(quotation.id, 'approve')}
+                          >
                             <CheckCircle className="h-4 w-4 mr-2" />
                             Approve
                           </DropdownMenuItem>
                         )}
                         {quotation.nextPossibleStates?.includes('reject') && (
-                          <DropdownMenuItem onClick={() => handleWorkflowAction(quotation.id, 'reject')}>
+                          <DropdownMenuItem
+                            onClick={() => handleWorkflowAction(quotation.id, 'reject')}
+                          >
                             <XCircle className="h-4 w-4 mr-2" />
                             Reject
                           </DropdownMenuItem>
                         )}
                         {quotation.nextPossibleStates?.includes('send-email') && (
-                          <DropdownMenuItem onClick={() => handleWorkflowAction(quotation.id, 'send-email')}>
+                          <DropdownMenuItem
+                            onClick={() => handleWorkflowAction(quotation.id, 'send-email')}
+                          >
                             <Mail className="h-4 w-4 mr-2" />
                             Send Email
                           </DropdownMenuItem>
                         )}
                         {quotation.nextPossibleStates?.includes('convert-to-rental') && (
-                          <DropdownMenuItem onClick={() => handleWorkflowAction(quotation.id, 'convert-to-rental')}>
+                          <DropdownMenuItem
+                            onClick={() => handleWorkflowAction(quotation.id, 'convert-to-rental')}
+                          >
                             <FileText className="h-4 w-4 mr-2" />
                             Convert to Rental
                           </DropdownMenuItem>
                         )}
                         {quotation.nextPossibleStates?.includes('convert-to-invoice') && (
-                          <DropdownMenuItem onClick={() => handleWorkflowAction(quotation.id, 'convert-to-invoice')}>
+                          <DropdownMenuItem
+                            onClick={() => handleWorkflowAction(quotation.id, 'convert-to-invoice')}
+                          >
                             <DollarSign className="h-4 w-4 mr-2" />
                             Convert to Invoice
                           </DropdownMenuItem>
@@ -611,8 +628,8 @@ export default function QuotationsPage() {
             <div className="mt-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-500">
-                  Showing {((currentPage - 1) * quotations.per_page) + 1} to{" "}
-                  {Math.min(currentPage * quotations.per_page, quotations.total)} of{" "}
+                  Showing {(currentPage - 1) * quotations.per_page + 1} to{' '}
+                  {Math.min(currentPage * quotations.per_page, quotations.total)} of{' '}
                   {quotations.total} results
                 </div>
                 <div className="flex items-center gap-2">
@@ -638,15 +655,13 @@ export default function QuotationsPage() {
                         >
                           1
                         </Button>
-                        {currentPage > 3 && (
-                          <span className="px-2 text-muted-foreground">...</span>
-                        )}
+                        {currentPage > 3 && <span className="px-2 text-muted-foreground">...</span>}
                       </>
                     )}
 
                     {/* Current page and surrounding pages */}
                     {(() => {
-                  const pages: number[] = [];
+                      const pages: number[] = [];
                       const startPage = Math.max(1, currentPage - 1);
                       const endPage = Math.min(quotations.last_page, currentPage + 1);
 
@@ -654,10 +669,10 @@ export default function QuotationsPage() {
                         pages.push(page);
                       }
 
-                      return pages.map((page) => (
+                      return pages.map(page => (
                         <Button
                           key={page}
-                          variant={currentPage === page ? "default" : "outline"}
+                          variant={currentPage === page ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => setCurrentPage(page)}
                           className="w-8 h-8 p-0"

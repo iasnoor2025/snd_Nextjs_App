@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { roles as rolesTable, modelHasRoles as modelHasRolesTable } from '@/lib/drizzle/schema';
+import { modelHasRoles as modelHasRolesTable, roles as rolesTable } from '@/lib/drizzle/schema';
 import { desc, eq, sql } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 // GET /api/roles - Get all roles with user count
 export async function GET() {
   try {
@@ -26,7 +26,7 @@ export async function GET() {
     const roleIdToCount = new Map<number, number>();
     for (const c of counts as any[]) roleIdToCount.set(c.role_id, Number(c.count || 0));
 
-    const rolesWithUserCount = roles.map((role) => ({
+    const rolesWithUserCount = roles.map(role => ({
       id: role.id,
       name: role.name,
       guard_name: role.guard_name,
@@ -38,10 +38,7 @@ export async function GET() {
     return NextResponse.json(rolesWithUserCount);
   } catch (error) {
     console.error('Error fetching roles:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch roles' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch roles' }, { status: 500 });
   }
 }
 
@@ -53,10 +50,7 @@ export async function POST(_request: NextRequest) {
 
     // Validate required fields
     if (!name) {
-      return NextResponse.json(
-        { error: 'Role name is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Role name is required' }, { status: 400 });
     }
 
     // Check if role already exists
@@ -66,10 +60,7 @@ export async function POST(_request: NextRequest) {
       .where(eq(rolesTable.name, name))
       .limit(1);
     if (existing[0]) {
-      return NextResponse.json(
-        { error: 'Role with this name already exists' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Role with this name already exists' }, { status: 400 });
     }
 
     // Create role
@@ -97,10 +88,7 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json(roleWithUserCount, { status: 201 });
   } catch (error) {
     console.error('Error creating role:', error);
-    return NextResponse.json(
-      { error: 'Failed to create role' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create role' }, { status: 500 });
   }
 }
 
@@ -111,10 +99,7 @@ export async function PUT(_request: NextRequest) {
     const { id, name, guard_name } = body;
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Role ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Role ID is required' }, { status: 400 });
     }
 
     // Check if role exists
@@ -125,10 +110,7 @@ export async function PUT(_request: NextRequest) {
       .limit(1);
     const existingRole = existing[0];
     if (!existingRole) {
-      return NextResponse.json(
-        { error: 'Role not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Role not found' }, { status: 404 });
     }
 
     // Check if name is being changed and if it's already taken
@@ -139,10 +121,7 @@ export async function PUT(_request: NextRequest) {
         .where(eq(rolesTable.name, name))
         .limit(1);
       if (nameExists[0]) {
-        return NextResponse.json(
-          { error: 'Role name already exists' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Role name already exists' }, { status: 400 });
       }
     }
 
@@ -183,10 +162,7 @@ export async function PUT(_request: NextRequest) {
     return NextResponse.json(roleWithUserCount);
   } catch (error) {
     console.error('Error updating role:', error);
-    return NextResponse.json(
-      { error: 'Failed to update role' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update role' }, { status: 500 });
   }
 }
 
@@ -197,10 +173,7 @@ export async function DELETE(_request: NextRequest) {
     const { id } = body;
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Role ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Role ID is required' }, { status: 400 });
     }
 
     // Check existing and user count
@@ -222,9 +195,6 @@ export async function DELETE(_request: NextRequest) {
     return NextResponse.json({ message: 'Role deleted successfully' });
   } catch (error) {
     console.error('Error deleting role:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete role' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete role' }, { status: 500 });
   }
 }

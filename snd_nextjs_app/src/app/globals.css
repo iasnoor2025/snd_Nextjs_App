@@ -89,15 +89,15 @@
   }
 
   .sidebar-content {
-    @apply flex-1 flex flex-col min-w-0;
+    @apply flex min-w-0 flex-1 flex-col;
   }
 
   .sidebar {
-    @apply flex-shrink-0 w-64 bg-sidebar border-r border-sidebar-border;
+    @apply w-64 flex-shrink-0 border-r border-sidebar-border bg-sidebar;
   }
 
   .sidebar-inset {
-    @apply flex-1 flex flex-col min-w-0 transition-all duration-200 ease-linear;
+    @apply flex min-w-0 flex-1 flex-col transition-all duration-200 ease-linear;
   }
 
   /* RTL Support */
@@ -119,28 +119,28 @@
   }
 
   /* Ensure proper content width in RTL */
-  .rtl [data-slot="sidebar-inset"] {
-    @apply flex-1 min-w-0;
+  .rtl [data-slot='sidebar-inset'] {
+    @apply min-w-0 flex-1;
   }
 
   /* Fix content positioning in RTL */
   .rtl .main-content {
-    @apply flex-1 min-w-0;
+    @apply min-w-0 flex-1;
   }
 
   /* Ensure sidebar has proper background and positioning */
   [data-sidebar] {
-    @apply bg-sidebar border-r border-sidebar-border;
+    @apply border-r border-sidebar-border bg-sidebar;
   }
 
   /* Ensure content area doesn't overlap with sidebar */
   [data-sidebar-inset] {
-    @apply flex-1 flex flex-col min-w-0 transition-all duration-200 ease-linear;
+    @apply flex min-w-0 flex-1 flex-col transition-all duration-200 ease-linear;
   }
 
   /* Fix for content width issues */
   .main-content {
-    @apply flex-1 min-w-0 overflow-auto transition-all duration-200 ease-linear;
+    @apply min-w-0 flex-1 overflow-auto transition-all duration-200 ease-linear;
   }
 
   /* Ensure tables and content don't get cut off */
@@ -149,31 +149,31 @@
   }
 
   /* Ensure proper content area management */
-  [data-slot="sidebar-inset"] {
-    @apply flex-1 flex flex-col min-w-0 transition-all duration-200 ease-linear;
+  [data-slot='sidebar-inset'] {
+    @apply flex min-w-0 flex-1 flex-col transition-all duration-200 ease-linear;
   }
 
   /* Fix content width when sidebar toggles */
-  [data-slot="sidebar-inset"] > main {
-    @apply flex-1 min-w-0 overflow-auto transition-all duration-200 ease-linear;
+  [data-slot='sidebar-inset'] > main {
+    @apply min-w-0 flex-1 overflow-auto transition-all duration-200 ease-linear;
   }
 
   /* Desktop: Sidebar uses fixed positioning, no margin needed */
   @media (min-width: 768px) {
-    [data-slot="sidebar-inset"] {
+    [data-slot='sidebar-inset'] {
       @apply transition-all duration-200 ease-linear;
     }
   }
 
   /* Mobile: Sidebar overlays content */
   @media (max-width: 767px) {
-    [data-slot="sidebar-inset"] {
+    [data-slot='sidebar-inset'] {
       @apply ml-0;
     }
   }
 
   /* Fix for content area width transitions */
-  [data-slot="sidebar-inset"] {
+  [data-slot='sidebar-inset'] {
     @apply transition-all duration-200 ease-linear;
   }
 
@@ -198,7 +198,7 @@
 
   /* Fix for mobile RTL layout */
   @media (max-width: 767px) {
-    .rtl [data-slot="sidebar-inset"] {
+    .rtl [data-slot='sidebar-inset'] {
       @apply ml-0 mr-0;
     }
   }
@@ -252,18 +252,18 @@
   }
 
   /* RTL SidebarInset Margin Override - Mirror LTR logic exactly */
-  .rtl [data-slot="sidebar-inset"] {
+  .rtl [data-slot='sidebar-inset'] {
     margin-left: 0 !important;
     margin-right: 16rem;
   }
 
   /* RTL collapsed state - same as LTR but with right margin */
-  .rtl [data-slot="sidebar-inset"].peer-data-\[state\=collapsed\] {
+  .rtl [data-slot='sidebar-inset'].peer-data-\[state\=collapsed\] {
     margin-right: 0 !important;
   }
 
   /* RTL expanded state - same as LTR but with right margin */
-  .rtl [data-slot="sidebar-inset"]:not(.peer-data-\[state\=collapsed\]) {
+  .rtl [data-slot='sidebar-inset']:not(.peer-data-\[state\=collapsed\]) {
     margin-right: 16rem !important;
   }
 }

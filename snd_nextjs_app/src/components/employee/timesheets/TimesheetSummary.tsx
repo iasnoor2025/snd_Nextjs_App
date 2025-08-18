@@ -1,10 +1,23 @@
 // TimesheetSummary.tsx
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Loader2 } from "lucide-react";
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Loader2 } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface TimesheetRecord {
   date: string;
@@ -20,7 +33,10 @@ interface TimesheetSummaryProps {
   showEmployeeSelector?: boolean;
 }
 
-export default function TimesheetSummary({ employeeId, showEmployeeSelector = false }: TimesheetSummaryProps) {
+export default function TimesheetSummary({
+  employeeId,
+  showEmployeeSelector = false,
+}: TimesheetSummaryProps) {
   // Initialize with current month (July 2025)
   const [selectedMonth, setSelectedMonth] = useState<Date>(new Date()); // Current month
   const [dailyRecords, setDailyRecords] = useState<TimesheetRecord[]>([]);
@@ -59,38 +75,38 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
   // Fetch real timesheet data for the selected month
   const fetchTimesheetData = async (year: number, month: number) => {
     if (!selectedEmployeeId) return;
-    
+
     setIsLoading(true);
     try {
       const startDate = new Date(year, month, 1);
       const endDate = new Date(year, month + 1, 0); // This gets the last day of the month
-      
+
       // Fix: Use correct date range for any month
       const startDateStr = `${year}-${String(month + 1).padStart(2, '0')}-01`;
       const endDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${endDate.getDate()}`;
-      
 
-      
-      const response = await fetch(`/api/employees/${selectedEmployeeId}/timesheets?startDate=${startDateStr}&endDate=${endDateStr}`);
+      const response = await fetch(
+        `/api/employees/${selectedEmployeeId}/timesheets?startDate=${startDateStr}&endDate=${endDateStr}`
+      );
       const data = await response.json();
-      
+
       if (data.success) {
         // Create a map of existing timesheet data
         const timesheetMap = new Map();
         data.data.forEach((timesheet: any) => {
           // Normalize the date to YYYY-MM-DD format by removing time component
           const normalizedDate = timesheet.date.split(' ')[0];
-          
+
           timesheetMap.set(normalizedDate, {
             regularHours: timesheet.regular_hours || 0,
             overtimeHours: timesheet.overtime_hours || 0,
-            status: timesheet.status || 'absent'
+            status: timesheet.status || 'absent',
           });
         });
-        
+
         // Generate daily records for the month with proper date handling
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        
+
         const records = Array.from({ length: daysInMonth }, (_, i) => {
           const day = i + 1;
           // Use proper date construction to avoid timezone issues
@@ -99,20 +115,24 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
           const isFriday = date.getDay() === 5;
           // Format date as YYYY-MM-DD
           const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          
+
           // Get real data if exists, otherwise default
           const timesheetData = timesheetMap.get(dateString);
-          
+
           return {
             date: dateString,
             day: String(day),
             dayName,
             regularHours: timesheetData ? timesheetData.regularHours : 0,
             overtimeHours: timesheetData ? timesheetData.overtimeHours : 0,
-            status: isFriday ? 'friday' : (timesheetData && timesheetData.regularHours > 0 ? 'present' : 'absent')
+            status: isFriday
+              ? 'friday'
+              : timesheetData && timesheetData.regularHours > 0
+                ? 'present'
+                : 'absent',
           };
         });
-        
+
         setDailyRecords(records);
       }
     } catch (error) {
@@ -130,7 +150,7 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
       daysAbsent: 0,
     };
 
-    records.forEach((record) => {
+    records.forEach(record => {
       summary.totalRegularHours += Number(record.regularHours || 0);
       summary.totalOvertimeHours += Number(record.overtimeHours || 0);
 
@@ -160,7 +180,7 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
   const year = selectedMonth.getFullYear();
   const month = selectedMonth.getMonth();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
@@ -173,7 +193,7 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
                 <SelectValue placeholder="Select Month" />
               </SelectTrigger>
               <SelectContent>
-                {months.map((month) => (
+                {months.map(month => (
                   <SelectItem key={month.value} value={month.value.toString()}>
                     {month.label}
                   </SelectItem>
@@ -185,7 +205,7 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
                 <SelectValue placeholder="Select Year" />
               </SelectTrigger>
               <SelectContent>
-                {years.map((year) => (
+                {years.map(year => (
                   <SelectItem key={year} value={year.toString()}>
                     {year}
                   </SelectItem>
@@ -205,7 +225,6 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
         </div>
       ) : (
         <>
-
           <Card>
             <CardHeader>
               <CardTitle>Monthly Timesheet Records</CardTitle>
@@ -225,8 +244,9 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
                           return (
                             <TableHead
                               key={i + 1}
-                              className={`p-1 text-center text-xs font-medium border ${isFridayDay ? 'bg-blue-900 text-blue-200' : 'text-muted-foreground'
-                                }`}
+                              className={`p-1 text-center text-xs font-medium border ${
+                                isFridayDay ? 'bg-blue-900 text-blue-200' : 'text-muted-foreground'
+                              }`}
                             >
                               {i + 1}
                             </TableHead>
@@ -241,11 +261,16 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
                           const day = i + 1;
                           const date = new Date(year, month, day);
                           const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                          const record = dailyRecords.find((r) => r.date === dateString);
+                          const record = dailyRecords.find(r => r.date === dateString);
                           const isFridayDay = date.getDay() === 5;
                           return (
-                            <TableCell key={`day-${dateString}`} className={`p-1 text-center border ${isFridayDay ? 'bg-blue-900' : ''}`}>
-                              <div className={`text-[10px] ${isFridayDay ? 'font-bold text-blue-200' : 'text-muted-foreground'}`}>
+                            <TableCell
+                              key={`day-${dateString}`}
+                              className={`p-1 text-center border ${isFridayDay ? 'bg-blue-900' : ''}`}
+                            >
+                              <div
+                                className={`text-[10px] ${isFridayDay ? 'font-bold text-blue-200' : 'text-muted-foreground'}`}
+                              >
                                 {record ? record.dayName : ''}
                               </div>
                             </TableCell>
@@ -258,16 +283,25 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
                           const day = i + 1;
                           const date = new Date(year, month, day);
                           const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                          const record = dailyRecords.find((r) => r.date === dateString);
+                          const record = dailyRecords.find(r => r.date === dateString);
                           const isFridayDay = date.getDay() === 5;
                           return (
-                            <TableCell key={`regular-${dateString}`} className={`p-1 text-center border ${isFridayDay ? 'bg-blue-900' : ''}`}>
+                            <TableCell
+                              key={`regular-${dateString}`}
+                              className={`p-1 text-center border ${isFridayDay ? 'bg-blue-900' : ''}`}
+                            >
                               {record && record.regularHours > 0 ? (
-                                <div className={`text-[10px] font-medium ${isFridayDay ? 'text-blue-200' : 'text-foreground'}`}>
+                                <div
+                                  className={`text-[10px] font-medium ${isFridayDay ? 'text-blue-200' : 'text-foreground'}`}
+                                >
                                   {record.regularHours}h
                                 </div>
                               ) : (
-                                <div className={`text-[10px] ${isFridayDay ? 'text-blue-400' : 'text-muted-foreground'}`}>-</div>
+                                <div
+                                  className={`text-[10px] ${isFridayDay ? 'text-blue-400' : 'text-muted-foreground'}`}
+                                >
+                                  -
+                                </div>
                               )}
                             </TableCell>
                           );
@@ -279,16 +313,25 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
                           const day = i + 1;
                           const date = new Date(year, month, day);
                           const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                          const record = dailyRecords.find((r) => r.date === dateString);
+                          const record = dailyRecords.find(r => r.date === dateString);
                           const isFridayDay = date.getDay() === 5;
                           return (
-                            <TableCell key={`overtime-${dateString}`} className={`p-1 text-center border ${isFridayDay ? 'bg-blue-900' : ''}`}>
+                            <TableCell
+                              key={`overtime-${dateString}`}
+                              className={`p-1 text-center border ${isFridayDay ? 'bg-blue-900' : ''}`}
+                            >
                               {record && record.overtimeHours > 0 ? (
-                                <div className={`text-[10px] font-medium ${isFridayDay ? 'text-blue-200' : 'text-orange-500'}`}>
+                                <div
+                                  className={`text-[10px] font-medium ${isFridayDay ? 'text-blue-200' : 'text-orange-500'}`}
+                                >
                                   +{record.overtimeHours}h
                                 </div>
                               ) : (
-                                <div className={`text-[10px] ${isFridayDay ? 'text-blue-400' : 'text-muted-foreground'}`}>-</div>
+                                <div
+                                  className={`text-[10px] ${isFridayDay ? 'text-blue-400' : 'text-muted-foreground'}`}
+                                >
+                                  -
+                                </div>
                               )}
                             </TableCell>
                           );
@@ -300,19 +343,23 @@ export default function TimesheetSummary({ employeeId, showEmployeeSelector = fa
                           const day = i + 1;
                           const date = new Date(year, month, day);
                           const dateString = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                          const record = dailyRecords.find((r) => r.date === dateString);
+                          const record = dailyRecords.find(r => r.date === dateString);
                           const isFridayDay = date.getDay() === 5;
                           return (
-                            <TableCell key={`status-${dateString}`} className={`p-1 text-center border ${isFridayDay ? 'bg-blue-900' : ''}`}>
+                            <TableCell
+                              key={`status-${dateString}`}
+                              className={`p-1 text-center border ${isFridayDay ? 'bg-blue-900' : ''}`}
+                            >
                               <span
-                                className={`text-[10px] font-bold ${isFridayDay
+                                className={`text-[10px] font-bold ${
+                                  isFridayDay
                                     ? 'text-blue-600'
                                     : record && record.status === 'present'
                                       ? 'text-green-600'
                                       : record && record.status === 'absent'
                                         ? 'text-red-600'
                                         : 'text-gray-600'
-                                  }`}
+                                }`}
                               >
                                 {isFridayDay
                                   ? 'F'

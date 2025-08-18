@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { withAuth, withPermission } from '@/lib/rbac/api-middleware';
 import {
+  employees as employeesTable,
   equipmentMaintenance as equipmentMaintenanceTable,
   equipment as equipmentTable,
-  employees as employeesTable,
   equipmentMaintenanceItems as maintenanceItemsTable,
 } from '@/lib/drizzle/schema';
+import { withAuth, withPermission } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, gte, inArray, lte } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 function parseNumber(value: any): number | undefined {
   if (value === undefined || value === null || value === '') return undefined;
@@ -30,8 +30,10 @@ export const GET = withAuth(async (request: NextRequest) => {
     if (mechanicId) filters.push(eq(equipmentMaintenanceTable.assignedToEmployeeId, mechanicId));
     if (status) filters.push(eq(equipmentMaintenanceTable.status, status));
     if (type) filters.push(eq(equipmentMaintenanceTable.type, type));
-    if (start) filters.push(gte(equipmentMaintenanceTable.scheduledDate, new Date(start).toISOString()));
-    if (end) filters.push(lte(equipmentMaintenanceTable.scheduledDate, new Date(end).toISOString()));
+    if (start)
+      filters.push(gte(equipmentMaintenanceTable.scheduledDate, new Date(start).toISOString()));
+    if (end)
+      filters.push(lte(equipmentMaintenanceTable.scheduledDate, new Date(end).toISOString()));
 
     const maintenanceRows = await db
       .select({
@@ -60,11 +62,14 @@ export const GET = withAuth(async (request: NextRequest) => {
       })
       .from(equipmentMaintenanceTable)
       .leftJoin(equipmentTable, eq(equipmentTable.id, equipmentMaintenanceTable.equipmentId))
-      .leftJoin(employeesTable, eq(employeesTable.id, equipmentMaintenanceTable.assignedToEmployeeId))
+      .leftJoin(
+        employeesTable,
+        eq(employeesTable.id, equipmentMaintenanceTable.assignedToEmployeeId)
+      )
       .where(filters.length ? and(...filters) : undefined)
       .orderBy(desc(equipmentMaintenanceTable.createdAt));
 
-    const maintenanceIds = maintenanceRows.map((r) => r.id);
+    const maintenanceIds = maintenanceRows.map(r => r.id);
     let itemsByMaintenanceId: Record<number, any[]> = {};
     if (maintenanceIds.length > 0) {
       const itemRows = await db
@@ -91,7 +96,7 @@ export const GET = withAuth(async (request: NextRequest) => {
       }, {});
     }
 
-    const records = maintenanceRows.map((r) => ({
+    const records = maintenanceRows.map(r => ({
       ...r,
       items: itemsByMaintenanceId[r.id] || [],
     }));
@@ -103,90 +108,110 @@ export const GET = withAuth(async (request: NextRequest) => {
   }
 });
 
-export const POST = withPermission(async (request: NextRequest) => {
-  try {
-    const body = await request.json();
-    const {
-      equipment_id,
-      assigned_to_employee_id,
-      type,
-      title,
-      description,
-      scheduled_date,
-      due_date,
-      status,
-      items = [],
-    } = body;
+export const POST = withPermission(
+  async (request: NextRequest) => {
+    try {
+      const body = await request.json();
+      const {
+        equipment_id,
+        assigned_to_employee_id,
+        type,
+        title,
+        description,
+        scheduled_date,
+        due_date,
+        status,
+        items = [],
+      } = body;
 
-    if (!equipment_id) {
-      return NextResponse.json({ success: false, message: 'equipment_id is required' }, { status: 400 });
-    }
-
-    const nowIso = new Date().toISOString();
-    const created = await db.transaction(async (tx) => {
-      const inserted = await tx
-        .insert(equipmentMaintenanceTable)
-        .values({
-          equipmentId: equipment_id,
-          assignedToEmployeeId: assigned_to_employee_id || null,
-          type: type || 'corrective',
-          title: title || 'Maintenance',
-          description: description || null,
-          scheduledDate: scheduled_date ? new Date(scheduled_date).toISOString() : null,
-          dueDate: due_date ? new Date(due_date).toISOString() : null,
-          status: status || 'open',
-          updatedAt: nowIso,
-        })
-        .returning({ id: equipmentMaintenanceTable.id, status: equipmentMaintenanceTable.status });
-      if (!inserted[0]) {
-        throw new Error('Failed to create maintenance record');
+      if (!equipment_id) {
+        return NextResponse.json(
+          { success: false, message: 'equipment_id is required' },
+          { status: 400 }
+        );
       }
-      const maintenanceId = inserted[0].id;
 
-      let totalCostNum = 0;
-      if (Array.isArray(items) && items.length) {
-        for (const item of items) {
-          const quantity = Number(item.quantity || 1);
-          const unitCost = Number(item.unit_cost || 0);
-          const totalCost = Number(item.total_cost ?? quantity * unitCost);
-          totalCostNum += totalCost;
-          await tx.insert(maintenanceItemsTable).values({
-            maintenanceId,
-            name: String(item.name || 'Item'),
-            description: item.description ? String(item.description) : null,
-            quantity: String(quantity) as any,
-            unit: item.unit ? String(item.unit) : null,
-            unitCost: String(unitCost) as any,
-            totalCost: String(totalCost) as any,
+      const nowIso = new Date().toISOString();
+      const created = await db.transaction(async tx => {
+        const inserted = await tx
+          .insert(equipmentMaintenanceTable)
+          .values({
+            equipmentId: equipment_id,
+            assignedToEmployeeId: assigned_to_employee_id || null,
+            type: type || 'corrective',
+            title: title || 'Maintenance',
+            description: description || null,
+            scheduledDate: scheduled_date ? new Date(scheduled_date).toISOString() : null,
+            dueDate: due_date ? new Date(due_date).toISOString() : null,
+            status: status || 'open',
             updatedAt: nowIso,
+          })
+          .returning({
+            id: equipmentMaintenanceTable.id,
+            status: equipmentMaintenanceTable.status,
           });
+        if (!inserted[0]) {
+          throw new Error('Failed to create maintenance record');
         }
-      }
+        const maintenanceId = inserted[0].id;
 
-      const updatedMaintenance = await tx
-        .update(equipmentMaintenanceTable)
-        .set({ cost: String(totalCostNum) as any, updatedAt: nowIso })
-        .where(eq(equipmentMaintenanceTable.id, maintenanceId))
-        .returning({ id: equipmentMaintenanceTable.id, status: equipmentMaintenanceTable.status, equipmentId: equipmentMaintenanceTable.equipmentId });
+        let totalCostNum = 0;
+        if (Array.isArray(items) && items.length) {
+          for (const item of items) {
+            const quantity = Number(item.quantity || 1);
+            const unitCost = Number(item.unit_cost || 0);
+            const totalCost = Number(item.total_cost ?? quantity * unitCost);
+            totalCostNum += totalCost;
+            await tx.insert(maintenanceItemsTable).values({
+              maintenanceId,
+              name: String(item.name || 'Item'),
+              description: item.description ? String(item.description) : null,
+              quantity: String(quantity) as any,
+              unit: item.unit ? String(item.unit) : null,
+              unitCost: String(unitCost) as any,
+              totalCost: String(totalCost) as any,
+              updatedAt: nowIso,
+            });
+          }
+        }
 
-      if (!updatedMaintenance[0]) {
-        throw new Error('Failed to update maintenance record');
-      }
+        const updatedMaintenance = await tx
+          .update(equipmentMaintenanceTable)
+          .set({ cost: String(totalCostNum) as any, updatedAt: nowIso })
+          .where(eq(equipmentMaintenanceTable.id, maintenanceId))
+          .returning({
+            id: equipmentMaintenanceTable.id,
+            status: equipmentMaintenanceTable.status,
+            equipmentId: equipmentMaintenanceTable.equipmentId,
+          });
 
-      const newStatus = updatedMaintenance[0].status === 'completed' ? 'available' : 'under_maintenance';
-      await tx
-        .update(equipmentTable)
-        .set({ status: newStatus, lastMaintenanceDate: nowIso })
-        .where(eq(equipmentTable.id, updatedMaintenance[0].equipmentId));
+        if (!updatedMaintenance[0]) {
+          throw new Error('Failed to update maintenance record');
+        }
 
-      return updatedMaintenance[0];
-    });
+        const newStatus =
+          updatedMaintenance[0].status === 'completed' ? 'available' : 'under_maintenance';
+        await tx
+          .update(equipmentTable)
+          .set({ status: newStatus, lastMaintenanceDate: nowIso })
+          .where(eq(equipmentTable.id, updatedMaintenance[0].equipmentId));
 
-    return NextResponse.json({ success: true, data: created });
-  } catch (error) {
-    console.error('POST /api/maintenance error:', error);
-    return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });
+        return updatedMaintenance[0];
+      });
+
+      return NextResponse.json({ success: true, data: created });
+    } catch (error) {
+      console.error('POST /api/maintenance error:', error);
+      return NextResponse.json(
+        { success: false, message: 'Internal server error' },
+        { status: 500 }
+      );
+    }
+  },
+  {
+    action: 'create',
+    subject: 'Maintenance',
+    fallbackAction: 'update',
+    fallbackSubject: 'Equipment',
   }
-}, { action: 'create', subject: 'Maintenance', fallbackAction: 'update', fallbackSubject: 'Equipment' });
-
-
+);

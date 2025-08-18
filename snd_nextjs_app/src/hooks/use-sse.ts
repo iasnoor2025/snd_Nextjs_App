@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-export type SSEEventType = 
+export type SSEEventType =
   | 'rental_status_updated'
   | 'payment_received'
   | 'maintenance_required'
@@ -54,7 +54,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
     onDisconnect,
     onError,
     eventTypes = [],
-    showToasts = true
+    showToasts = true,
   } = options;
 
   const [isConnected, setIsConnected] = useState(false);
@@ -86,13 +86,13 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
     // Close EventSource and remove all listeners
     if (eventSourceRef.current) {
       const eventSource = eventSourceRef.current;
-      
+
       // Remove all stored event listeners
       eventListenersRef.current.forEach((listener, eventType) => {
         eventSource.removeEventListener(eventType, listener);
       });
       eventListenersRef.current.clear();
-      
+
       eventSource.close();
       eventSourceRef.current = null;
     }
@@ -102,96 +102,102 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
   }, []);
 
   // Handle event with mount check
-  const handleEvent = useCallback((event: MessageEvent) => {
-    if (!isMountedRef.current) return;
+  const handleEvent = useCallback(
+    (event: MessageEvent) => {
+      if (!isMountedRef.current) return;
 
-    try {
-      const sseEvent: SSEEvent = JSON.parse(event.data);
-      
-      // Filter events by type if specified
-      if (eventTypes.length > 0 && !eventTypes.includes(sseEvent.type)) {
-        return;
-      }
+      try {
+        const sseEvent: SSEEvent = JSON.parse(event.data);
 
-      setLastEvent(sseEvent);
-      onEvent?.(sseEvent);
-
-      // Show toast notifications for certain events
-      if (showToasts) {
-        switch (sseEvent.type) {
-          case 'rental_status_updated':
-            toast.success(`Rental status updated: ${sseEvent.data.status}`);
-            break;
-          case 'payment_received':
-            toast.success(`Payment received: $${sseEvent.data.amount}`);
-            break;
-          case 'maintenance_required':
-            toast.warning(`Maintenance required: ${sseEvent.data.equipment_name}`);
-            break;
-          case 'rental_overdue':
-            toast.error('Rental is now overdue!');
-            break;
-          case 'payroll_processed':
-            toast.success('Payroll processed successfully');
-            break;
-          case 'timesheet_updated':
-            toast.info('Timesheet updated');
-            break;
-          case 'leave_request_updated':
-            toast.info('Leave request status updated');
-            break;
-          case 'sync_progress':
-            if (sseEvent.data.progress === 100) {
-              toast.success('Sync completed successfully');
-            } else if (sseEvent.data.progress > 0) {
-              toast.info(`Sync progress: ${sseEvent.data.progress}%`);
-            }
-            break;
+        // Filter events by type if specified
+        if (eventTypes.length > 0 && !eventTypes.includes(sseEvent.type)) {
+          return;
         }
+
+        setLastEvent(sseEvent);
+        onEvent?.(sseEvent);
+
+        // Show toast notifications for certain events
+        if (showToasts) {
+          switch (sseEvent.type) {
+            case 'rental_status_updated':
+              toast.success(`Rental status updated: ${sseEvent.data.status}`);
+              break;
+            case 'payment_received':
+              toast.success(`Payment received: $${sseEvent.data.amount}`);
+              break;
+            case 'maintenance_required':
+              toast.warning(`Maintenance required: ${sseEvent.data.equipment_name}`);
+              break;
+            case 'rental_overdue':
+              toast.error('Rental is now overdue!');
+              break;
+            case 'payroll_processed':
+              toast.success('Payroll processed successfully');
+              break;
+            case 'timesheet_updated':
+              toast.info('Timesheet updated');
+              break;
+            case 'leave_request_updated':
+              toast.info('Leave request status updated');
+              break;
+            case 'sync_progress':
+              if (sseEvent.data.progress === 100) {
+                toast.success('Sync completed successfully');
+              } else if (sseEvent.data.progress > 0) {
+                toast.info(`Sync progress: ${sseEvent.data.progress}%`);
+              }
+              break;
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing SSE event:', error);
       }
-    } catch (error) {
-      console.error('Error parsing SSE event:', error);
-    }
-  }, [onEvent, eventTypes, showToasts]);
+    },
+    [onEvent, eventTypes, showToasts]
+  );
 
   // Handle connection open with mount check
   const handleOpen = useCallback(() => {
     if (!isMountedRef.current) return;
-    
+
     setIsConnected(true);
     setIsConnecting(false);
     setError(null);
     setReconnectAttempts(0);
     onConnect?.();
-    
+
     if (showToasts) {
       toast.success('Real-time connection established');
     }
   }, [onConnect, showToasts]);
 
   // Handle connection error with mount check
-  const handleError = useCallback((event: Event) => {
-    if (!isMountedRef.current) return;
-    
-    setIsConnected(false);
-    setIsConnecting(false);
-    setError('Connection error occurred');
-    onError?.(event);
-    
-    if (showToasts) {
-      toast.error('Real-time connection lost');
-    }
+  const handleError = useCallback(
+    (event: Event) => {
+      if (!isMountedRef.current) return;
 
-    // Attempt to reconnect if enabled and under max attempts
-    if (enabled && reconnectAttempts < maxReconnectAttempts) {
-      setReconnectAttempts(prev => prev + 1);
-      reconnectTimeoutRef.current = setTimeout(() => {
-        if (isMountedRef.current) {
-          connect();
-        }
-      }, reconnectInterval);
-    }
-  }, [enabled, reconnectAttempts, maxReconnectAttempts, reconnectInterval, onError, showToasts]);
+      setIsConnected(false);
+      setIsConnecting(false);
+      setError('Connection error occurred');
+      onError?.(event);
+
+      if (showToasts) {
+        toast.error('Real-time connection lost');
+      }
+
+      // Attempt to reconnect if enabled and under max attempts
+      if (enabled && reconnectAttempts < maxReconnectAttempts) {
+        setReconnectAttempts(prev => prev + 1);
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            connect();
+          }
+        }, reconnectInterval);
+      }
+    },
+    [enabled, reconnectAttempts, maxReconnectAttempts, reconnectInterval, onError, showToasts]
+  );
 
   // Connect function with improved error handling
   const connect = useCallback(() => {
@@ -207,7 +213,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
 
       // Create EventSource
       const eventSource = new EventSource(url, {
-        withCredentials: true
+        withCredentials: true,
       });
 
       eventSourceRef.current = eventSource;
@@ -219,7 +225,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
         setError(null);
         setReconnectAttempts(0);
         onConnect?.();
-        
+
         if (showToasts) {
           toast.success('Real-time connection established');
         }
@@ -247,7 +253,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
         'payroll_processed',
         'leave_request_updated',
         'system_notification',
-        'sync_progress'
+        'sync_progress',
       ];
 
       allEventTypes.forEach(eventType => {
@@ -260,13 +266,26 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
       abortControllerRef.current.signal.addEventListener('abort', () => {
         eventSource.close();
       });
-
     } catch (error) {
       setIsConnecting(false);
       setError('Failed to establish connection');
       console.error('SSE connection error:', error);
     }
-  }, [url, isConnected, isConnecting, handleOpen, handleError, handleEvent, cleanup, enabled, reconnectAttempts, maxReconnectAttempts, reconnectInterval, onConnect, showToasts]);
+  }, [
+    url,
+    isConnected,
+    isConnecting,
+    handleOpen,
+    handleError,
+    handleEvent,
+    cleanup,
+    enabled,
+    reconnectAttempts,
+    maxReconnectAttempts,
+    reconnectInterval,
+    onConnect,
+    showToasts,
+  ]);
 
   // Disconnect function
   const disconnect = useCallback(() => {
@@ -276,7 +295,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
     setError(null);
     setReconnectAttempts(0);
     onDisconnect?.();
-    
+
     if (showToasts) {
       toast.info('Real-time connection closed');
     }
@@ -296,7 +315,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
   // Component mount/unmount tracking
   useEffect(() => {
     isMountedRef.current = true;
-    
+
     return () => {
       isMountedRef.current = false;
       cleanup();
@@ -355,6 +374,6 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
     lastEvent,
     connect,
     disconnect,
-    reconnect
+    reconnect,
   };
-} 
+}

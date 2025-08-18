@@ -1,15 +1,26 @@
 'use client';
 
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
-import { Calendar, User, MapPin, Package } from 'lucide-react';
+import { Package } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
 interface AssignmentDialogProps {
@@ -33,7 +44,7 @@ export function AssignmentDialog({
   open,
   onOpenChange,
   equipmentId,
-  onSuccess
+  onSuccess,
 }: AssignmentDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<AssignmentForm>({
@@ -43,13 +54,13 @@ export function AssignmentDialog({
     start_date: '',
     end_date: '',
     location: '',
-    notes: ''
+    notes: '',
   });
 
   const assignmentTypes = [
     { value: 'project', label: 'Project Assignment' },
     { value: 'rental', label: 'Rental Assignment' },
-    { value: 'manual', label: 'Manual Assignment' }
+    { value: 'manual', label: 'Manual Assignment' },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -101,7 +112,7 @@ export function AssignmentDialog({
   const handleInputChange = (field: keyof AssignmentForm, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -113,21 +124,22 @@ export function AssignmentDialog({
             <Package className="mr-2 h-5 w-5" />
             Assign Equipment
           </DialogTitle>
-          <DialogDescription>
-            Create a new assignment for this equipment
-          </DialogDescription>
+          <DialogDescription>Create a new assignment for this equipment</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Assignment Type */}
           <div className="space-y-2">
             <Label htmlFor="assignment_type">Assignment Type *</Label>
-            <Select value={formData.assignment_type} onValueChange={(value) => handleInputChange('assignment_type', value)}>
+            <Select
+              value={formData.assignment_type}
+              onValueChange={value => handleInputChange('assignment_type', value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select assignment type" />
               </SelectTrigger>
               <SelectContent>
-                {assignmentTypes.map((type) => (
+                {assignmentTypes.map(type => (
                   <SelectItem key={type.value} value={type.value}>
                     {type.label}
                   </SelectItem>
@@ -140,7 +152,7 @@ export function AssignmentDialog({
           <div className="space-y-2">
             <EmployeeDropdown
               value={formData.employee_id}
-              onValueChange={(value) => handleInputChange('employee_id', value)}
+              onValueChange={value => handleInputChange('employee_id', value)}
               label="Employee"
               placeholder="Select an employee"
               required={formData.assignment_type === 'manual'}
@@ -151,7 +163,10 @@ export function AssignmentDialog({
           {formData.assignment_type === 'project' && (
             <div className="space-y-2">
               <Label htmlFor="project_id">Project *</Label>
-              <Select value={formData.project_id} onValueChange={(value) => handleInputChange('project_id', value)}>
+              <Select
+                value={formData.project_id}
+                onValueChange={value => handleInputChange('project_id', value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a project" />
                 </SelectTrigger>
@@ -171,7 +186,7 @@ export function AssignmentDialog({
               <Input
                 type="date"
                 value={formData.start_date}
-                onChange={(e) => handleInputChange('start_date', e.target.value)}
+                onChange={e => handleInputChange('start_date', e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
               />
             </div>
@@ -180,7 +195,7 @@ export function AssignmentDialog({
               <Input
                 type="date"
                 value={formData.end_date}
-                onChange={(e) => handleInputChange('end_date', e.target.value)}
+                onChange={e => handleInputChange('end_date', e.target.value)}
                 min={formData.start_date || new Date().toISOString().split('T')[0]}
               />
             </div>
@@ -191,7 +206,7 @@ export function AssignmentDialog({
             <Label htmlFor="location">Location</Label>
             <Input
               value={formData.location}
-              onChange={(e) => handleInputChange('location', e.target.value)}
+              onChange={e => handleInputChange('location', e.target.value)}
               placeholder="Enter location (optional)"
             />
           </div>
@@ -201,7 +216,7 @@ export function AssignmentDialog({
             <Label htmlFor="notes">Notes</Label>
             <Textarea
               value={formData.notes}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
+              onChange={e => handleInputChange('notes', e.target.value)}
               placeholder="Additional notes about this assignment"
               rows={3}
             />
@@ -209,11 +224,7 @@ export function AssignmentDialog({
 
           {/* Submit Buttons */}
           <div className="flex justify-end space-x-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
@@ -224,4 +235,4 @@ export function AssignmentDialog({
       </DialogContent>
     </Dialog>
   );
-} 
+}

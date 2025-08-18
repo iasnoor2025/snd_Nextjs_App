@@ -1,7 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { equipmentRentalHistory, rentals, customers, projects, employees, employeeAssignments, equipment } from '@/lib/drizzle/schema';
-import { eq, and, like } from 'drizzle-orm';
+import {
+  customers,
+  employeeAssignments,
+  employees,
+  equipment,
+  equipmentRentalHistory,
+  projects,
+  rentals,
+} from '@/lib/drizzle/schema';
+import { and, eq, like } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function PUT(
   request: NextRequest,
@@ -10,12 +18,9 @@ export async function PUT(
   try {
     const { assignmentId: assignmentIdParam } = await params;
     const assignmentId = parseInt(assignmentIdParam);
-    
+
     if (isNaN(assignmentId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid assignment ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Invalid assignment ID' }, { status: 400 });
     }
 
     const body = await request.json();
@@ -29,7 +34,7 @@ export async function PUT(
       daily_rate,
       total_amount,
       notes,
-      status
+      status,
     } = body;
 
     // Check if assignment exists
@@ -40,10 +45,7 @@ export async function PUT(
       .limit(1);
 
     if (!existingAssignment.length) {
-      return NextResponse.json(
-        { success: false, error: 'Assignment not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'Assignment not found' }, { status: 404 });
     }
 
     const currentAssignment = existingAssignment[0];
@@ -53,7 +55,7 @@ export async function PUT(
         { status: 404 }
       );
     }
-    
+
     const previousEmployeeId = currentAssignment.employeeId;
     const previousAssignmentType = currentAssignment.assignmentType;
     const newEmployeeId = employee_id ? parseInt(employee_id) : currentAssignment.employeeId;
@@ -61,7 +63,7 @@ export async function PUT(
 
     // Prepare update data
     const updateData: any = {};
-    
+
     if (assignment_type !== undefined) updateData.assignmentType = assignment_type;
     if (project_id !== undefined) updateData.projectId = project_id;
     if (employee_id !== undefined) updateData.employeeId = employee_id;
@@ -69,7 +71,8 @@ export async function PUT(
     if (start_date !== undefined) updateData.startDate = new Date(start_date);
     if (end_date !== undefined) updateData.endDate = end_date ? new Date(end_date) : null;
     if (daily_rate !== undefined) updateData.dailyRate = daily_rate ? parseFloat(daily_rate) : null;
-    if (total_amount !== undefined) updateData.totalAmount = total_amount ? parseFloat(total_amount) : null;
+    if (total_amount !== undefined)
+      updateData.totalAmount = total_amount ? parseFloat(total_amount) : null;
     if (notes !== undefined) updateData.notes = notes;
     if (status !== undefined) updateData.status = status;
 
@@ -81,11 +84,10 @@ export async function PUT(
 
     // Handle employee assignment synchronization
     let employeeAssignment: any = null;
-    
+
     // Check if we need to handle employee assignment changes
-    const employeeAssignmentChanged = 
-      previousEmployeeId !== newEmployeeId || 
-      previousAssignmentType !== newAssignmentType;
+    const employeeAssignmentChanged =
+      previousEmployeeId !== newEmployeeId || previousAssignmentType !== newAssignmentType;
 
     if (employeeAssignmentChanged) {
       try {
@@ -96,14 +98,19 @@ export async function PUT(
             .set({
               status: 'inactive',
               endDate: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
+              updatedAt: new Date().toISOString(),
             })
-            .where(and(
-              eq(employeeAssignments.employeeId, previousEmployeeId),
-              eq(employeeAssignments.notes, `Manual equipment assignment: ${currentAssignment.notes || 'No additional notes'}`),
-              eq(employeeAssignments.status, 'active')
-            ));
-          
+            .where(
+              and(
+                eq(employeeAssignments.employeeId, previousEmployeeId),
+                eq(
+                  employeeAssignments.notes,
+                  `Manual equipment assignment: ${currentAssignment.notes || 'No additional notes'}`
+                ),
+                eq(employeeAssignments.status, 'active')
+              )
+            );
+
           console.log(`Ended previous employee assignment for employee ${previousEmployeeId}`);
         }
 
@@ -118,19 +125,24 @@ export async function PUT(
 
           const equipmentName = equipmentData[0]?.name || 'Unknown Equipment';
 
-          employeeAssignment = await db.insert(employeeAssignments).values({
-            employeeId: newEmployeeId,
-            name: `Equipment Assignment - ${equipmentName}`,
-            type: 'manual',
-            location: body.location || null,
-            startDate: start_date ? new Date(start_date).toISOString() : currentAssignment.startDate,
-            endDate: end_date ? new Date(end_date).toISOString() : currentAssignment.endDate,
-            status: status || currentAssignment.status,
-            notes: `Manual equipment assignment: ${notes || currentAssignment.notes || 'No additional notes'}`,
-            projectId: null,
-            rentalId: null,
-            updatedAt: new Date().toISOString()
-          }).returning();
+          employeeAssignment = await db
+            .insert(employeeAssignments)
+            .values({
+              employeeId: newEmployeeId,
+              name: `Equipment Assignment - ${equipmentName}`,
+              type: 'manual',
+              location: body.location || null,
+              startDate: start_date
+                ? new Date(start_date).toISOString()
+                : currentAssignment.startDate,
+              endDate: end_date ? new Date(end_date).toISOString() : currentAssignment.endDate,
+              status: status || currentAssignment.status,
+              notes: `Manual equipment assignment: ${notes || currentAssignment.notes || 'No additional notes'}`,
+              projectId: null,
+              rentalId: null,
+              updatedAt: new Date().toISOString(),
+            })
+            .returning();
 
           console.log('Employee assignment created/updated automatically:', employeeAssignment);
         }
@@ -164,14 +176,14 @@ export async function PUT(
             id: customers.id,
             name: customers.name,
             email: customers.email,
-            phone: customers.phone
-          }
+            phone: customers.phone,
+          },
         } as any,
         project: {
           id: projects.id,
           name: projects.name,
           description: projects.description,
-          status: projects.status
+          status: projects.status,
         },
         employee: {
           id: employees.id,
@@ -179,8 +191,8 @@ export async function PUT(
           lastName: employees.lastName,
           fileNumber: employees.fileNumber,
           email: employees.email,
-          phone: employees.phone
-        }
+          phone: employees.phone,
+        },
       })
       .from(equipmentRentalHistory)
       .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
@@ -194,7 +206,9 @@ export async function PUT(
       success: true,
       data: updatedAssignment[0],
       employeeAssignment: employeeAssignment?.[0] || null,
-      message: 'Equipment assignment updated successfully' + (employeeAssignment ? ' and employee assignment synced automatically' : '')
+      message:
+        'Equipment assignment updated successfully' +
+        (employeeAssignment ? ' and employee assignment synced automatically' : ''),
     });
   } catch (error) {
     console.error('Error updating equipment assignment:', error);
@@ -205,18 +219,13 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  { params }: { params: Promise<{ assignmentId: string }> }
-) {
+export async function DELETE({ params }: { params: Promise<{ assignmentId: string }> }) {
   try {
     const { assignmentId: assignmentIdParam } = await params;
     const assignmentId = parseInt(assignmentIdParam);
-    
+
     if (isNaN(assignmentId)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid assignment ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Invalid assignment ID' }, { status: 400 });
     }
 
     // Check if assignment exists
@@ -227,10 +236,7 @@ export async function DELETE(
       .limit(1);
 
     if (!existingAssignment.length) {
-      return NextResponse.json(
-        { success: false, error: 'Assignment not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'Assignment not found' }, { status: 404 });
     }
 
     // If this is a manual assignment with an employee, also delete the corresponding employee assignment
@@ -242,7 +248,7 @@ export async function DELETE(
         { status: 404 }
       );
     }
-    
+
     if (assignmentToDelete.assignmentType === 'manual' && assignmentToDelete.employeeId) {
       try {
         // Find and delete the corresponding employee assignment
@@ -275,17 +281,17 @@ export async function DELETE(
     }
 
     // Delete the equipment assignment
-    await db
-      .delete(equipmentRentalHistory)
-      .where(eq(equipmentRentalHistory.id, assignmentId));
+    await db.delete(equipmentRentalHistory).where(eq(equipmentRentalHistory.id, assignmentId));
 
     return NextResponse.json({
       success: true,
-      message: 'Equipment assignment deleted successfully' + (deletedEmployeeAssignment ? ' and employee assignment deleted automatically' : ''),
+      message:
+        'Equipment assignment deleted successfully' +
+        (deletedEmployeeAssignment ? ' and employee assignment deleted automatically' : ''),
       data: {
         deletedEquipmentAssignment: assignmentToDelete,
-        deletedEmployeeAssignment
-      }
+        deletedEmployeeAssignment,
+      },
     });
   } catch (error) {
     console.error('Error deleting equipment assignment:', error);
@@ -294,4 +300,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-} 
+}

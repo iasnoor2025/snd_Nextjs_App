@@ -1,19 +1,11 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Activity,
-  BarChart3,
-  Cpu,
-  HardDrive,
-  Network,
-  Server,
-  Thermometer
-} from 'lucide-react';
 import { usePerformance } from '@/hooks/use-performance';
+import { Activity, BarChart3, Cpu, HardDrive, Network, Server, Thermometer } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 export function PerformanceDashboard() {
   const { metrics, performanceScore, meetsCoreWebVitals } = usePerformance();
@@ -29,7 +21,11 @@ export function PerformanceDashboard() {
     return `${mb.toFixed(1)}MB`;
   };
 
-  const getMetricStatus = (value: number | null, threshold: number, type: 'lower' | 'higher' = 'lower') => {
+  const getMetricStatus = (
+    value: number | null,
+    threshold: number,
+    type: 'lower' | 'higher' = 'lower'
+  ) => {
     if (value === null) return 'neutral';
     if (type === 'lower') {
       return value <= threshold ? 'good' : value <= threshold * 1.5 ? 'warning' : 'poor';
@@ -73,9 +69,7 @@ export function PerformanceDashboard() {
             <Gauge className="h-5 w-5" />
             Overall Performance Score
           </CardTitle>
-          <CardDescription>
-            Based on Core Web Vitals and memory usage
-          </CardDescription>
+          <CardDescription>Based on Core Web Vitals and memory usage</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -100,9 +94,7 @@ export function PerformanceDashboard() {
             <Zap className="h-5 w-5" />
             Core Web Vitals
           </CardTitle>
-          <CardDescription>
-            Google's key metrics for web performance
-          </CardDescription>
+          <CardDescription>Google's key metrics for web performance</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -114,8 +106,11 @@ export function PerformanceDashboard() {
               </div>
               <div className="text-2xl font-bold">{formatTime(metrics.fcp)}</div>
               <Badge className={getStatusColor(getMetricStatus(metrics.fcp, 1800))}>
-                {getMetricStatus(metrics.fcp, 1800) === 'good' ? 'Good' :
-                 getMetricStatus(metrics.fcp, 1800) === 'warning' ? 'Needs Improvement' : 'Poor'}
+                {getMetricStatus(metrics.fcp, 1800) === 'good'
+                  ? 'Good'
+                  : getMetricStatus(metrics.fcp, 1800) === 'warning'
+                    ? 'Needs Improvement'
+                    : 'Poor'}
               </Badge>
             </div>
 
@@ -127,8 +122,11 @@ export function PerformanceDashboard() {
               </div>
               <div className="text-2xl font-bold">{formatTime(metrics.lcp)}</div>
               <Badge className={getStatusColor(getMetricStatus(metrics.lcp, 2500))}>
-                {getMetricStatus(metrics.lcp, 2500) === 'good' ? 'Good' :
-                 getMetricStatus(metrics.lcp, 2500) === 'warning' ? 'Needs Improvement' : 'Poor'}
+                {getMetricStatus(metrics.lcp, 2500) === 'good'
+                  ? 'Good'
+                  : getMetricStatus(metrics.lcp, 2500) === 'warning'
+                    ? 'Needs Improvement'
+                    : 'Poor'}
               </Badge>
             </div>
 
@@ -140,8 +138,11 @@ export function PerformanceDashboard() {
               </div>
               <div className="text-2xl font-bold">{formatTime(metrics.fid)}</div>
               <Badge className={getStatusColor(getMetricStatus(metrics.fid, 100))}>
-                {getMetricStatus(metrics.fid, 100) === 'good' ? 'Good' :
-                 getMetricStatus(metrics.fid, 100) === 'warning' ? 'Needs Improvement' : 'Poor'}
+                {getMetricStatus(metrics.fid, 100) === 'good'
+                  ? 'Good'
+                  : getMetricStatus(metrics.fid, 100) === 'warning'
+                    ? 'Needs Improvement'
+                    : 'Poor'}
               </Badge>
             </div>
 
@@ -153,8 +154,11 @@ export function PerformanceDashboard() {
               </div>
               <div className="text-2xl font-bold">{metrics.cls?.toFixed(3) || 'N/A'}</div>
               <Badge className={getStatusColor(getMetricStatus(metrics.cls, 0.1, 'higher'))}>
-                {getMetricStatus(metrics.cls, 0.1, 'higher') === 'good' ? 'Good' :
-                 getMetricStatus(metrics.cls, 0.1, 'higher') === 'warning' ? 'Needs Improvement' : 'Poor'}
+                {getMetricStatus(metrics.cls, 0.1, 'higher') === 'good'
+                  ? 'Good'
+                  : getMetricStatus(metrics.cls, 0.1, 'higher') === 'warning'
+                    ? 'Needs Improvement'
+                    : 'Poor'}
               </Badge>
             </div>
           </div>
@@ -168,9 +172,7 @@ export function PerformanceDashboard() {
             <TrendingUp className="h-5 w-5" />
             Additional Metrics
           </CardTitle>
-          <CardDescription>
-            Network and memory performance indicators
-          </CardDescription>
+          <CardDescription>Network and memory performance indicators</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -181,9 +183,7 @@ export function PerformanceDashboard() {
                 <span className="text-sm font-medium">Time to First Byte</span>
               </div>
               <div className="text-2xl font-bold">{formatTime(metrics.ttfb)}</div>
-              <div className="text-xs text-muted-foreground">
-                Server response time
-              </div>
+              <div className="text-xs text-muted-foreground">Server response time</div>
             </div>
 
             {/* Memory Usage */}
@@ -193,7 +193,8 @@ export function PerformanceDashboard() {
                 <span className="text-sm font-medium">Memory Usage</span>
               </div>
               <div className="text-2xl font-bold">
-                {formatMemory(metrics.memory?.used || 0)} / {formatMemory(metrics.memory?.limit || 0)}
+                {formatMemory(metrics.memory?.used || 0)} /{' '}
+                {formatMemory(metrics.memory?.limit || 0)}
               </div>
               <div className="text-xs text-muted-foreground">
                 {metrics.memory?.usage ? `${(metrics.memory.usage * 100).toFixed(1)}%` : 'N/A'}

@@ -1,18 +1,30 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Receipt } from 'lucide-react';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import apiService from '@/lib/api';
+import { format } from 'date-fns';
+import { CalendarIcon, Receipt } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface ExpenseResource {
   id?: string;
@@ -42,7 +54,7 @@ const EXPENSE_CATEGORIES = [
   { value: 'office_supplies', label: 'Office Supplies' },
   { value: 'safety', label: 'Safety' },
   { value: 'permits', label: 'Permits' },
-  { value: 'other', label: 'Other' }
+  { value: 'other', label: 'Other' },
 ];
 
 export default function ExpenseDialog({
@@ -50,7 +62,7 @@ export default function ExpenseDialog({
   onOpenChange,
   projectId,
   initialData,
-  onSuccess
+  onSuccess,
 }: ExpenseDialogProps) {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<ExpenseResource>({
@@ -61,7 +73,7 @@ export default function ExpenseDialog({
     description: '',
     expense_description: '',
     notes: '',
-    status: 'pending'
+    status: 'pending',
   });
 
   // Initialize form data when editing
@@ -80,7 +92,7 @@ export default function ExpenseDialog({
         description: '',
         expense_description: '',
         notes: '',
-        status: 'pending'
+        status: 'pending',
       });
     }
   }, [initialData]);
@@ -89,14 +101,14 @@ export default function ExpenseDialog({
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
-      total_cost: prev.amount || 0
+      total_cost: prev.amount || 0,
     }));
   }, [formData.amount]);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -127,7 +139,7 @@ export default function ExpenseDialog({
         ...formData,
         type: 'expense',
         name: `${formData.category} Expense`,
-        total_cost: formData.amount || 0
+        total_cost: formData.amount || 0,
       };
 
       // TODO: Project resource endpoints don't exist yet
@@ -159,7 +171,9 @@ export default function ExpenseDialog({
             <span>{initialData ? 'Edit Expense Resource' : 'Add Expense Resource'}</span>
           </DialogTitle>
           <DialogDescription>
-            {initialData ? 'Update the details for this expense resource.' : 'Add a new expense resource to this project.'}
+            {initialData
+              ? 'Update the details for this expense resource.'
+              : 'Add a new expense resource to this project.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -167,7 +181,9 @@ export default function ExpenseDialog({
           {/* Header Section */}
           <div className="rounded-lg bg-muted/40 p-4">
             <h3 className="text-lg font-semibold">Add New Expense</h3>
-            <p className="text-sm text-muted-foreground">Fill in the details below to add a new expense to the project.</p>
+            <p className="text-sm text-muted-foreground">
+              Fill in the details below to add a new expense to the project.
+            </p>
           </div>
 
           {/* Main Form Grid */}
@@ -180,13 +196,13 @@ export default function ExpenseDialog({
                   <Label htmlFor="category">Category</Label>
                   <Select
                     value={formData.category || ''}
-                    onValueChange={(value) => handleInputChange('category', value)}
+                    onValueChange={value => handleInputChange('category', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {EXPENSE_CATEGORIES.map((category) => (
+                      {EXPENSE_CATEGORIES.map(category => (
                         <SelectItem key={category.value} value={category.value}>
                           {category.label}
                         </SelectItem>
@@ -198,14 +214,16 @@ export default function ExpenseDialog({
                 <div className="space-y-2">
                   <Label htmlFor="amount">Amount (SAR)</Label>
                   <div className="relative">
-                    <span className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">SAR</span>
+                    <span className="absolute top-1/2 left-3 -translate-y-1/2 text-muted-foreground">
+                      SAR
+                    </span>
                     <Input
                       id="amount"
                       type="number"
                       step="0.01"
                       min="0"
                       value={formData.amount || ''}
-                      onChange={(e) => handleInputChange('amount', parseFloat(e.target.value))}
+                      onChange={e => handleInputChange('amount', parseFloat(e.target.value))}
                       placeholder="0.00"
                       className="pl-12"
                       required
@@ -232,7 +250,9 @@ export default function ExpenseDialog({
                       <Calendar
                         mode="single"
                         selected={formData.date ? new Date(formData.date) : undefined}
-                        onSelect={(date) => handleInputChange('date', date?.toISOString().split('T')[0] || '')}
+                        onSelect={date =>
+                          handleInputChange('date', date?.toISOString().split('T')[0] || '')
+                        }
                         initialFocus
                       />
                     </PopoverContent>
@@ -243,7 +263,7 @@ export default function ExpenseDialog({
                   <Label htmlFor="status">Status</Label>
                   <Select
                     value={formData.status || 'pending'}
-                    onValueChange={(value) => handleInputChange('status', value)}
+                    onValueChange={value => handleInputChange('status', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
@@ -266,7 +286,7 @@ export default function ExpenseDialog({
                 <Textarea
                   id="description"
                   value={formData.description || ''}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  onChange={e => handleInputChange('description', e.target.value)}
                   placeholder="Enter a detailed description of the expense"
                   className="min-h-[120px]"
                   required
@@ -279,7 +299,7 @@ export default function ExpenseDialog({
                 <Textarea
                   id="notes"
                   value={formData.notes || ''}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
+                  onChange={e => handleInputChange('notes', e.target.value)}
                   placeholder="Add any additional notes or comments"
                   className="min-h-[100px]"
                 />
@@ -293,7 +313,8 @@ export default function ExpenseDialog({
               <div>
                 <p className="text-sm text-muted-foreground">Category</p>
                 <p className="font-medium">
-                  {EXPENSE_CATEGORIES.find(cat => cat.value === formData.category)?.label || 'Not selected'}
+                  {EXPENSE_CATEGORIES.find(cat => cat.value === formData.category)?.label ||
+                    'Not selected'}
                 </p>
               </div>
               <div>

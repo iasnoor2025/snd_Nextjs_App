@@ -1,22 +1,22 @@
-"use client";
+'use client';
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ThemeProvider } from "next-themes";
-import { SessionProvider } from "next-auth/react";
-import { useEffect, lazy, Suspense, useMemo } from "react";
-import { RBACProvider } from "@/lib/rbac/rbac-context";
-import SSEProvider from "@/contexts/sse-context";
-import { I18nProvider } from "@/components/i18n-provider";
-import { I18nWrapper } from "@/components/i18n-wrapper";
-import { ConfirmationProvider } from "@/components/providers/confirmation-provider";
-import { NotificationProvider } from "@/contexts/notification-context";
-import { addCleanupCallback, startMemoryMonitoring } from "@/lib/memory-manager";
+import { I18nProvider } from '@/components/i18n-provider';
+import { I18nWrapper } from '@/components/i18n-wrapper';
+import { ConfirmationProvider } from '@/components/providers/confirmation-provider';
+import { NotificationProvider } from '@/contexts/notification-context';
+import SSEProvider from '@/contexts/sse-context';
 import '@/lib/i18n-client'; // Initialize i18n on client side
+import { addCleanupCallback, startMemoryMonitoring } from '@/lib/memory-manager';
+import { RBACProvider } from '@/lib/rbac/rbac-context';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SessionProvider } from 'next-auth/react';
+import { ThemeProvider } from 'next-themes';
+import { lazy, Suspense, useEffect, useMemo } from 'react';
 
 // Dynamic imports for heavy components with better chunking
-const ReactQueryDevtools = lazy(() => 
-  import("@tanstack/react-query-devtools").then(mod => ({ 
-    default: mod.ReactQueryDevtools 
+const ReactQueryDevtools = lazy(() =>
+  import('@tanstack/react-query-devtools').then(mod => ({
+    default: mod.ReactQueryDevtools,
   }))
 );
 
@@ -26,32 +26,36 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   // Memoize QueryClient to prevent unnecessary re-renders
-  const queryClient = useMemo(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 5 * 60 * 1000, // 5 minutes
-        gcTime: 10 * 60 * 1000, // 10 minutes
-        retry: (failureCount, error: any) => {
-          // Don't retry on 4xx errors
-          if (error?.status >= 400 && error?.status < 500) {
-            return false;
-          }
-          return failureCount < 2;
+  const queryClient = useMemo(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 5 * 60 * 1000, // 5 minutes
+            gcTime: 10 * 60 * 1000, // 10 minutes
+            retry: (failureCount, error: any) => {
+              // Don't retry on 4xx errors
+              if (error?.status >= 400 && error?.status < 500) {
+                return false;
+              }
+              return failureCount < 2;
+            },
+            refetchOnWindowFocus: false,
+            refetchOnReconnect: false,
+            refetchOnMount: true,
+            // Optimistic updates for better perceived performance
+            placeholderData: (previousData: any) => previousData,
+          },
+          mutations: {
+            retry: 1,
+            onError: (error: any) => {
+              console.error('Mutation error:', error);
+            },
+          },
         },
-        refetchOnWindowFocus: false,
-        refetchOnReconnect: false,
-        refetchOnMount: true,
-        // Optimistic updates for better perceived performance
-        placeholderData: (previousData: any) => previousData,
-      },
-      mutations: {
-        retry: 1,
-        onError: (error: any) => {
-          console.error('Mutation error:', error);
-        },
-      },
-    },
-  }), []);
+      }),
+    []
+  );
 
   // Optimized cleanup function with reduced frequency
   useEffect(() => {
@@ -110,19 +114,14 @@ export function Providers({ children }: ProvidersProps) {
               <I18nWrapper>
                 <I18nProvider>
                   <ConfirmationProvider>
-                    <NotificationProvider>
-                      {children}
-                    </NotificationProvider>
+                    <NotificationProvider>{children}</NotificationProvider>
                   </ConfirmationProvider>
                 </I18nProvider>
               </I18nWrapper>
               {/* Only load devtools in development */}
               {process.env.NODE_ENV === 'development' && (
                 <Suspense fallback={null}>
-                  <ReactQueryDevtools
-                    initialIsOpen={false}
-                    position="bottom-right"
-                  />
+                  <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
                 </Suspense>
               )}
             </SSEProvider>

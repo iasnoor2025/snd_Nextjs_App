@@ -1,17 +1,23 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Save, X, Plus, AlertCircle } from "lucide-react";
-import Link from "next/link";
-import { toast } from "sonner";
-import { ProtectedRoute } from "@/components/protected-route";
+import { ProtectedRoute } from '@/components/protected-route';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { AlertCircle, ArrowLeft, Plus, Save, X } from 'lucide-react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Timesheet {
   id: string;
@@ -74,31 +80,31 @@ function TimesheetEditContent() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    date: "",
-    hoursWorked: "",
-    overtimeHours: "",
-    startTime: "",
-    endTime: "",
-    description: "",
-    tasksCompleted: "",
-    notes: "",
+    date: '',
+    hoursWorked: '',
+    overtimeHours: '',
+    startTime: '',
+    endTime: '',
+    description: '',
+    tasksCompleted: '',
+    notes: '',
   });
 
   useEffect(() => {
     const fetchTimesheet = async () => {
       if (!timesheetId) return;
-      
+
       try {
         setLoading(true);
         setError(null);
         console.log('Fetching timesheet with ID:', timesheetId);
-        
+
         const response = await fetch(`/api/timesheets/${timesheetId}`, {
           credentials: 'include',
         });
 
         console.log('Response status:', response.status);
-        
+
         if (response.status === 404) {
           setError('Timesheet not found');
           setLoading(false);
@@ -107,7 +113,7 @@ function TimesheetEditContent() {
 
         if (!response.ok) {
           let errorMessage = `Failed to fetch timesheet: ${response.status} ${response.statusText}`;
-          
+
           try {
             const errorData = await response.json();
             if (errorData.error) {
@@ -120,41 +126,47 @@ function TimesheetEditContent() {
             // If we can't parse the error response, use the default message
             console.warn('Could not parse error response:', parseError);
           }
-          
+
           console.error('API Response Error:', {
             status: response.status,
             statusText: response.statusText,
-            errorMessage
+            errorMessage,
           });
-          
+
           throw new Error(errorMessage);
         }
 
         const data = await response.json();
         console.log('API Response Data:', data);
-        
+
         // Handle both wrapped and direct response formats
         const timesheetData = data.timesheet || data;
-        
+
         if (!timesheetData || !timesheetData.id) {
           console.error('API Response missing timesheet data:', data);
           throw new Error('Invalid API response format');
         }
-        
+
         setTimesheet(timesheetData);
-        
+
         // Initialize form data
         setFormData({
-          date: timesheetData.date ? timesheetData.date.split('T')[0] : new Date().toISOString().split('T')[0],
-          hoursWorked: timesheetData.hoursWorked?.toString() || "0",
-          overtimeHours: timesheetData.overtimeHours?.toString() || "0",
-          startTime: timesheetData.startTime ? new Date(timesheetData.startTime).toTimeString().slice(0, 5) : "",
-          endTime: timesheetData.endTime ? new Date(timesheetData.endTime).toTimeString().slice(0, 5) : "",
-          description: timesheetData.description || "",
-          tasksCompleted: timesheetData.tasksCompleted || timesheetData.tasks || "",
-          notes: timesheetData.notes || "",
+          date: timesheetData.date
+            ? timesheetData.date.split('T')[0]
+            : new Date().toISOString().split('T')[0],
+          hoursWorked: timesheetData.hoursWorked?.toString() || '0',
+          overtimeHours: timesheetData.overtimeHours?.toString() || '0',
+          startTime: timesheetData.startTime
+            ? new Date(timesheetData.startTime).toTimeString().slice(0, 5)
+            : '',
+          endTime: timesheetData.endTime
+            ? new Date(timesheetData.endTime).toTimeString().slice(0, 5)
+            : '',
+          description: timesheetData.description || '',
+          tasksCompleted: timesheetData.tasksCompleted || timesheetData.tasks || '',
+          notes: timesheetData.notes || '',
         });
-        
+
         console.log('Form data initialized:', formData);
       } catch (error) {
         console.error('Error fetching timesheet:', error);
@@ -172,18 +184,18 @@ function TimesheetEditContent() {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!timesheet) return;
 
     try {
       setSaving(true);
-      
+
       const response = await fetch(`/api/timesheets/${timesheetId}`, {
         method: 'PUT',
         headers: {
@@ -240,10 +252,9 @@ function TimesheetEditContent() {
             {error === 'Timesheet not found' ? 'Timesheet Not Found' : 'Error Loading Timesheet'}
           </h2>
           <p className="text-gray-600 mb-6">
-            {error === 'Timesheet not found' 
-              ? 'The timesheet you\'re looking for doesn\'t exist.'
-              : error
-            }
+            {error === 'Timesheet not found'
+              ? "The timesheet you're looking for doesn't exist."
+              : error}
           </p>
           <div className="flex gap-4 justify-center">
             <Link href="/modules/timesheet-management/create">
@@ -296,8 +307,8 @@ function TimesheetEditContent() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Cannot Edit Timesheet</h2>
           <p className="text-gray-600 mb-4">
-            This timesheet cannot be edited because it&apos;s not in draft status.
-            Current status: <span className="font-semibold">{timesheet.status}</span>
+            This timesheet cannot be edited because it&apos;s not in draft status. Current status:{' '}
+            <span className="font-semibold">{timesheet.status}</span>
           </p>
           <div className="flex gap-2 justify-center">
             <Link href={`/modules/timesheet-management/${timesheet.id}`}>
@@ -307,9 +318,7 @@ function TimesheetEditContent() {
               </Button>
             </Link>
             <Link href="/modules/timesheet-management">
-              <Button>
-                Back to Timesheets
-              </Button>
+              <Button>Back to Timesheets</Button>
             </Link>
           </div>
         </div>
@@ -330,7 +339,8 @@ function TimesheetEditContent() {
           <div>
             <h1 className="text-2xl font-bold">Edit Timesheet</h1>
             <p className="text-gray-600">
-              {timesheet.employee?.firstName} {timesheet.employee?.lastName} - {new Date(timesheet.date).toLocaleDateString()}
+              {timesheet.employee?.firstName} {timesheet.employee?.lastName} -{' '}
+              {new Date(timesheet.date).toLocaleDateString()}
             </p>
           </div>
         </div>
@@ -352,11 +362,11 @@ function TimesheetEditContent() {
                     id="date"
                     type="date"
                     value={formData.date}
-                    onChange={(e) => handleInputChange('date', e.target.value)}
+                    onChange={e => handleInputChange('date', e.target.value)}
                     required
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="hoursWorked">Regular Hours</Label>
                   <Input
@@ -366,7 +376,7 @@ function TimesheetEditContent() {
                     min="0"
                     max="24"
                     value={formData.hoursWorked}
-                    onChange={(e) => handleInputChange('hoursWorked', e.target.value)}
+                    onChange={e => handleInputChange('hoursWorked', e.target.value)}
                     required
                   />
                 </div>
@@ -382,17 +392,17 @@ function TimesheetEditContent() {
                     min="0"
                     max="24"
                     value={formData.overtimeHours}
-                    onChange={(e) => handleInputChange('overtimeHours', e.target.value)}
+                    onChange={e => handleInputChange('overtimeHours', e.target.value)}
                   />
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="startTime">Start Time</Label>
                   <Input
                     id="startTime"
                     type="time"
                     value={formData.startTime}
-                    onChange={(e) => handleInputChange('startTime', e.target.value)}
+                    onChange={e => handleInputChange('startTime', e.target.value)}
                   />
                 </div>
               </div>
@@ -403,7 +413,7 @@ function TimesheetEditContent() {
                   id="endTime"
                   type="time"
                   value={formData.endTime}
-                  onChange={(e) => handleInputChange('endTime', e.target.value)}
+                  onChange={e => handleInputChange('endTime', e.target.value)}
                 />
               </div>
             </CardContent>
@@ -422,7 +432,7 @@ function TimesheetEditContent() {
                   id="description"
                   placeholder="Describe the work performed..."
                   value={formData.description}
-                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  onChange={e => handleInputChange('description', e.target.value)}
                   rows={3}
                 />
               </div>
@@ -433,7 +443,7 @@ function TimesheetEditContent() {
                   id="tasksCompleted"
                   placeholder="List completed tasks..."
                   value={formData.tasksCompleted}
-                  onChange={(e) => handleInputChange('tasksCompleted', e.target.value)}
+                  onChange={e => handleInputChange('tasksCompleted', e.target.value)}
                   rows={3}
                 />
               </div>
@@ -444,7 +454,7 @@ function TimesheetEditContent() {
                   id="notes"
                   placeholder="Additional notes..."
                   value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
+                  onChange={e => handleInputChange('notes', e.target.value)}
                   rows={3}
                 />
               </div>

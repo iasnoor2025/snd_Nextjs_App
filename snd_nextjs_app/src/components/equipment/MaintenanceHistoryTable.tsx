@@ -1,22 +1,41 @@
-"use client";
-import { useEffect, useMemo, useState } from 'react';
-import ApiService from '@/lib/api-service';
+'use client';
 import { Button } from '@/components/ui/button';
-import { useTranslation } from 'react-i18next';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DatePicker } from '@/components/ui/date-picker';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import MaintenanceForm from './MaintenanceForm';
-import MaintenanceEditModal from './MaintenanceEditModal';
-import MaintenanceViewDialog from './MaintenanceViewDialog';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { DatePicker } from '@/components/ui/date-picker';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import ApiService from '@/lib/api-service';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import MaintenanceEditModal from './MaintenanceEditModal';
+import MaintenanceForm from './MaintenanceForm';
+import MaintenanceViewDialog from './MaintenanceViewDialog';
 
 export default function MaintenanceHistoryTable() {
   const [records, setRecords] = useState<any[]>([]);
   const [equipmentOptions, setEquipmentOptions] = useState<any[]>([]);
   const [employeeOptions, setEmployeeOptions] = useState<any[]>([]);
-  const [filters, setFilters] = useState<{ equipmentId?: number; mechanicId?: number; startDate?: Date; endDate?: Date; status?: string }>({});
+  const [filters, setFilters] = useState<{
+    equipmentId?: number;
+    mechanicId?: number;
+    startDate?: Date;
+    endDate?: Date;
+    status?: string;
+  }>({});
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -38,8 +57,8 @@ export default function MaintenanceHistoryTable() {
   }
 
   useEffect(() => {
-    ApiService.getEquipment().then((res) => setEquipmentOptions(res.data || []));
-    ApiService.getEmployees({ all: true }).then((res) => setEmployeeOptions(res.data || []));
+    ApiService.getEquipment().then(res => setEquipmentOptions(res.data || []));
+    ApiService.getEmployees({ all: true }).then(res => setEmployeeOptions(res.data || []));
   }, []);
 
   useEffect(() => {
@@ -51,41 +70,55 @@ export default function MaintenanceHistoryTable() {
       <div className="flex flex-col md:flex-row gap-2 md:items-end">
         <div className="md:w-56">
           <label className="text-sm">{t('filters.equipment')}</label>
-          <Select onValueChange={(v) => setFilters((f) => ({ ...f, equipmentId: v ? Number(v) : undefined }))}>
+          <Select
+            onValueChange={v => setFilters(f => ({ ...f, equipmentId: v ? Number(v) : undefined }))}
+          >
             <SelectTrigger>
               <SelectValue placeholder={t('filters.all')} />
             </SelectTrigger>
             <SelectContent>
               {equipmentOptions.map((e: any) => (
-                <SelectItem key={e.id} value={String(e.id)}>{e.name}</SelectItem>
+                <SelectItem key={e.id} value={String(e.id)}>
+                  {e.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="md:w-56">
           <label className="text-sm">{t('filters.mechanic')}</label>
-          <Select onValueChange={(v) => setFilters((f) => ({ ...f, mechanicId: v ? Number(v) : undefined }))}>
+          <Select
+            onValueChange={v => setFilters(f => ({ ...f, mechanicId: v ? Number(v) : undefined }))}
+          >
             <SelectTrigger>
               <SelectValue placeholder={t('filters.all')} />
             </SelectTrigger>
             <SelectContent>
               {employeeOptions.map((e: any) => (
-                <SelectItem key={e.id} value={String(e.id)}>{e.first_name} {e.last_name}</SelectItem>
+                <SelectItem key={e.id} value={String(e.id)}>
+                  {e.first_name} {e.last_name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="md:w-40">
           <label className="text-sm">{t('filters.start')}</label>
-          <DatePicker date={filters.startDate} setDate={(d) => setFilters((f) => ({ ...f, startDate: d || undefined }))} />
+          <DatePicker
+            date={filters.startDate}
+            setDate={d => setFilters(f => ({ ...f, startDate: d || undefined }))}
+          />
         </div>
         <div className="md:w-40">
           <label className="text-sm">{t('filters.end')}</label>
-          <DatePicker date={filters.endDate} setDate={(d) => setFilters((f) => ({ ...f, endDate: d || undefined }))} />
+          <DatePicker
+            date={filters.endDate}
+            setDate={d => setFilters(f => ({ ...f, endDate: d || undefined }))}
+          />
         </div>
         <div className="md:w-40">
           <label className="text-sm">{t('filters.status')}</label>
-          <Select onValueChange={(v) => setFilters((f) => ({ ...f, status: v || undefined }))}>
+          <Select onValueChange={v => setFilters(f => ({ ...f, status: v || undefined }))}>
             <SelectTrigger>
               <SelectValue placeholder={t('filters.all')} />
             </SelectTrigger>
@@ -97,7 +130,9 @@ export default function MaintenanceHistoryTable() {
           </Select>
         </div>
         <div className="md:ml-auto flex gap-2">
-          <Button variant="outline" onClick={() => setFilters({})}>{t('filters.reset')}</Button>
+          <Button variant="outline" onClick={() => setFilters({})}>
+            {t('filters.reset')}
+          </Button>
           <Button onClick={() => setOpen(true)}>{t('filters.create')}</Button>
         </div>
       </div>
@@ -116,11 +151,15 @@ export default function MaintenanceHistoryTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {records.map((r) => (
+            {records.map(r => (
               <TableRow key={r.id}>
                 <TableCell>{r.equipment?.name}</TableCell>
-                <TableCell>{r.mechanic ? `${r.mechanic.first_name} ${r.mechanic.last_name}` : '-'}</TableCell>
-                <TableCell>{r.scheduled_date ? new Date(r.scheduled_date).toLocaleDateString() : '-'}</TableCell>
+                <TableCell>
+                  {r.mechanic ? `${r.mechanic.first_name} ${r.mechanic.last_name}` : '-'}
+                </TableCell>
+                <TableCell>
+                  {r.scheduled_date ? new Date(r.scheduled_date).toLocaleDateString() : '-'}
+                </TableCell>
                 <TableCell>{r.items?.length || 0}</TableCell>
                 <TableCell>{Number(r.cost || 0).toFixed(2)}</TableCell>
                 <TableCell>{t(`status.${r.status}`, { defaultValue: r.status })}</TableCell>
@@ -135,10 +174,30 @@ export default function MaintenanceHistoryTable() {
                         load();
                       }}
                     >
-                      {r.status === 'completed' ? t('actions.completed') : t('actions.markCompleted')}
+                      {r.status === 'completed'
+                        ? t('actions.completed')
+                        : t('actions.markCompleted')}
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => { setActiveId(r.id); setEditOpen(true); }}>{t('actions.edit')}</Button>
-                    <Button size="sm" variant="outline" onClick={() => { setActiveId(r.id); setViewOpen(true); }}>{t('actions.view')}</Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setActiveId(r.id);
+                        setEditOpen(true);
+                      }}
+                    >
+                      {t('actions.edit')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setActiveId(r.id);
+                        setViewOpen(true);
+                      }}
+                    >
+                      {t('actions.view')}
+                    </Button>
                     <Button
                       size="sm"
                       variant="destructive"
@@ -158,7 +217,12 @@ export default function MaintenanceHistoryTable() {
       </div>
 
       <MaintenanceForm open={open} onOpenChange={setOpen} onCreated={load} />
-      <MaintenanceEditModal open={editOpen} onOpenChange={setEditOpen} id={activeId} onSaved={load} />
+      <MaintenanceEditModal
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        id={activeId}
+        onSaved={load}
+      />
       <MaintenanceViewDialog open={viewOpen} onOpenChange={setViewOpen} id={activeId} />
       <ConfirmationDialog
         open={confirmOpen}
@@ -187,5 +251,3 @@ export default function MaintenanceHistoryTable() {
     </div>
   );
 }
-
-

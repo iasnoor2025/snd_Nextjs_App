@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../../lib/db';
 import { departments } from '@/lib/drizzle/schema';
 import { eq, isNull } from 'drizzle-orm';
-import { withPermission, PermissionConfigs } from '../../../../lib/rbac/api-middleware';
+import { NextRequest, NextResponse } from 'next/server';
+import { db } from '../../../../lib/db';
+import { PermissionConfigs, withPermission } from '../../../../lib/rbac/api-middleware';
 
 export const GET = withPermission(
   async (_request: NextRequest, { params }: { params: { id: string } }) => {
@@ -33,10 +33,7 @@ export const GET = withPermission(
           updated_at: departments.updatedAt,
         })
         .from(departments)
-        .where(
-          eq(departments.id, departmentId) &&
-          isNull(departments.deletedAt)
-        )
+        .where(eq(departments.id, departmentId) && isNull(departments.deletedAt))
         .limit(1);
 
       console.log('GET /api/departments/[id] - Department found:', department);
@@ -61,7 +58,9 @@ export const GET = withPermission(
       return NextResponse.json(
         {
           success: false,
-          message: 'Failed to fetch department: ' + (error instanceof Error ? error.message : 'Unknown error'),
+          message:
+            'Failed to fetch department: ' +
+            (error instanceof Error ? error.message : 'Unknown error'),
         },
         { status: 500 }
       );
@@ -110,10 +109,7 @@ export const PUT = withPermission(
           name: departments.name,
         })
         .from(departments)
-        .where(
-          eq(departments.id, departmentId) &&
-          isNull(departments.deletedAt)
-        )
+        .where(eq(departments.id, departmentId) && isNull(departments.deletedAt))
         .limit(1);
 
       if (!existingDepartment || existingDepartment.length === 0) {
@@ -125,7 +121,7 @@ export const PUT = withPermission(
 
       const trimmedName = name.trim();
       const currentName = existingDepartment[0]?.name;
-      
+
       if (!currentName) {
         return NextResponse.json(
           { success: false, message: 'Department name not found' },
@@ -133,7 +129,12 @@ export const PUT = withPermission(
         );
       }
 
-      console.log('PUT /api/departments/[id] - Current name:', currentName, 'New name:', trimmedName);
+      console.log(
+        'PUT /api/departments/[id] - Current name:',
+        currentName,
+        'New name:',
+        trimmedName
+      );
 
       // If the name hasn't changed, skip duplicate check
       if (currentName === trimmedName) {
@@ -190,7 +191,10 @@ export const PUT = withPermission(
           updated_at: departments.updatedAt,
         });
 
-      console.log('PUT /api/departments/[id] - Department updated successfully:', updatedDepartment);
+      console.log(
+        'PUT /api/departments/[id] - Department updated successfully:',
+        updatedDepartment
+      );
 
       return NextResponse.json({
         success: true,
@@ -202,7 +206,9 @@ export const PUT = withPermission(
       return NextResponse.json(
         {
           success: false,
-          message: 'Failed to update department: ' + (error instanceof Error ? error.message : 'Unknown error'),
+          message:
+            'Failed to update department: ' +
+            (error instanceof Error ? error.message : 'Unknown error'),
         },
         { status: 500 }
       );
@@ -236,10 +242,7 @@ export const DELETE = withPermission(
           name: departments.name,
         })
         .from(departments)
-        .where(
-          eq(departments.id, departmentId) &&
-          isNull(departments.deletedAt)
-        )
+        .where(eq(departments.id, departmentId) && isNull(departments.deletedAt))
         .limit(1);
 
       console.log('DELETE /api/departments/[id] - Department to delete:', existingDepartment);
@@ -276,7 +279,9 @@ export const DELETE = withPermission(
       return NextResponse.json(
         {
           success: false,
-          message: 'Failed to delete department: ' + (error instanceof Error ? error.message : 'Unknown error'),
+          message:
+            'Failed to delete department: ' +
+            (error instanceof Error ? error.message : 'Unknown error'),
         },
         { status: 500 }
       );

@@ -13,9 +13,9 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   const url = `${ERPNEXT_URL}${endpoint}`;
 
   const defaultHeaders = {
-    'Authorization': `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
+    Authorization: `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
   };
 
   const response = await fetch(url, {
@@ -33,13 +33,13 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   return response.json();
 }
 
-export async function GET(
-  { params }: { params: Promise<{ name: string }> }
-) {
+export async function GET({ params }: { params: Promise<{ name: string }> }) {
   try {
     const { name } = await params;
     const employeeName = name;
-    const data = await makeERPNextRequest(`/api/resource/Employee/${encodeURIComponent(employeeName)}`);
+    const data = await makeERPNextRequest(
+      `/api/resource/Employee/${encodeURIComponent(employeeName)}`
+    );
 
     return NextResponse.json({
       success: true,
@@ -50,7 +50,7 @@ export async function GET(
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to fetch employee'
+        message: error instanceof Error ? error.message : 'Failed to fetch employee',
       },
       { status: 500 }
     );

@@ -7,12 +7,9 @@ class ApiService {
     this.baseUrl = process.env.NEXT_PUBLIC_API_URL || '/api';
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     const defaultOptions: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
@@ -28,7 +25,7 @@ class ApiService {
 
       if (!response.ok) {
         let errorMessage = `API request failed: ${response.status} ${response.statusText}`;
-        
+
         try {
           const errorData = await response.json();
           if (errorData.message) {
@@ -40,7 +37,7 @@ class ApiService {
           // If we can't parse the error response, use the default message
           console.warn('Could not parse error response:', e);
         }
-        
+
         throw new Error(errorMessage);
       }
 
@@ -48,14 +45,16 @@ class ApiService {
     } catch (error) {
       // Handle network errors and other fetch failures
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Network error: Unable to connect to the server. Please check your internet connection.');
+        throw new Error(
+          'Network error: Unable to connect to the server. Please check your internet connection.'
+        );
       }
-      
+
       // Re-throw the error if it's already an Error instance
       if (error instanceof Error) {
         throw error;
       }
-      
+
       // Handle unknown errors
       throw new Error(`Request failed: ${error}`);
     }
@@ -123,21 +122,27 @@ class ApiService {
     if (params?.per_page) queryParams.append('per_page', params.per_page.toString());
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.search) queryParams.append('search', params.search);
-    
+
     const queryString = queryParams.toString();
     const endpoint = queryString ? `/employees?${queryString}` : '/employees';
     return this.get(endpoint);
   }
 
   // Project Methods
-  async getProjects(params?: { page?: number; limit?: number; search?: string; status?: string; priority?: string }) {
+  async getProjects(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    priority?: string;
+  }) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.append('page', params.page.toString());
     if (params?.limit) queryParams.append('limit', params.limit.toString());
     if (params?.search) queryParams.append('search', params.search);
     if (params?.status) queryParams.append('status', params.status);
     if (params?.priority) queryParams.append('priority', params.priority);
-    
+
     const queryString = queryParams.toString();
     const endpoint = queryString ? `/projects?${queryString}` : '/projects';
     return this.get(endpoint);
@@ -162,4 +167,4 @@ class ApiService {
 
 // Create and export a singleton instance
 const apiService = new ApiService();
-export default apiService; 
+export default apiService;

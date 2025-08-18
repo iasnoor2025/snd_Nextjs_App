@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { customers } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest) {
   try {
@@ -30,7 +30,9 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Database connection failed: ' + (dbError instanceof Error ? dbError.message : 'Unknown error'),
+          message:
+            'Database connection failed: ' +
+            (dbError instanceof Error ? dbError.message : 'Unknown error'),
         },
         { status: 500 }
       );
@@ -50,25 +52,25 @@ export async function POST(_request: NextRequest) {
     // Process customers to create
     if (matchedData.toCreate && matchedData.toCreate.length > 0) {
       console.log(`Creating ${matchedData.toCreate.length} new customers...`);
-      
+
       for (const createItem of matchedData.toCreate) {
         try {
           const customerData = createItem.data;
           console.log('Creating customer:', customerData.name);
-          
+
           // Check if customer already exists by ERPNext ID
           if (customerData.erpnext_id) {
             const existingCustomer = await db
               .select()
               .from(customers)
               .where(eq(customers.erpnextId, customerData.erpnext_id));
-            
+
             if (existingCustomer.length > 0) {
               console.log('Customer already exists, skipping:', customerData.name);
               continue;
             }
           }
-          
+
           await db.insert(customers).values({
             name: customerData.name || 'Unknown Customer',
             companyName: customerData.company_name || customerData.name || 'Unknown Company',
@@ -90,15 +92,16 @@ export async function POST(_request: NextRequest) {
             createdAt: new Date().toISOString().split('T')[0],
             updatedAt: new Date().toISOString().split('T')[0] as string,
           });
-          
+
           createdCount++;
           processedCount++;
           console.log('Successfully created customer:', customerData.name);
-          
         } catch (error) {
           console.error('Error creating customer:', error);
           const customerName = createItem.data?.name || 'Unknown';
-          errors.push(`Failed to create ${customerName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          errors.push(
+            `Failed to create ${customerName}: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
         }
       }
     }
@@ -106,12 +109,12 @@ export async function POST(_request: NextRequest) {
     // Process customers to update
     if (matchedData.toUpdate && matchedData.toUpdate.length > 0) {
       console.log(`Updating ${matchedData.toUpdate.length} existing customers...`);
-      
+
       for (const updateItem of matchedData.toUpdate) {
         try {
           const { existingId, newData } = updateItem;
           console.log('Updating customer:', newData.name);
-          
+
           await db
             .update(customers)
             .set({
@@ -133,15 +136,16 @@ export async function POST(_request: NextRequest) {
               updatedAt: new Date().toISOString().split('T')[0] as string,
             })
             .where(eq(customers.id, existingId));
-          
+
           updatedCount++;
           processedCount++;
           console.log('Successfully updated customer:', newData.name);
-          
         } catch (error) {
           console.error('Error updating customer:', error);
           const customerName = updateItem.newData?.name || 'Unknown';
-          errors.push(`Failed to update ${customerName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          errors.push(
+            `Failed to update ${customerName}: ${error instanceof Error ? error.message : 'Unknown error'}`
+          );
         }
       }
     }
@@ -161,20 +165,17 @@ export async function POST(_request: NextRequest) {
         created: createdCount,
         updated: updatedCount,
         total: (matchedData.toCreate?.length || 0) + (matchedData.toUpdate?.length || 0),
-        errors: errors.length > 0 ? errors : undefined
-      }
+        errors: errors.length > 0 ? errors : undefined,
+      },
     });
-
   } catch (error) {
     console.error('Error in customer sync:', error);
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to sync customers from ERPNext'
+        message: error instanceof Error ? error.message : 'Failed to sync customers from ERPNext',
       },
       { status: 500 }
     );
   }
 }
-
-

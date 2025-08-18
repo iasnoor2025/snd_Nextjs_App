@@ -1,20 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { getServerSession } from 'next-auth'
-import { authConfig } from '@/lib/auth-config'
-import { timesheets } from '@/lib/drizzle/schema'
-import { eq, and } from 'drizzle-orm'
+import { authConfig } from '@/lib/auth-config';
+import { db } from '@/lib/db';
+import { timesheets } from '@/lib/drizzle/schema';
+import { and, eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest) {
   try {
     // Get the current user session
-    const session = await getServerSession(authConfig)
-    
+    const session = await getServerSession(authConfig);
+
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     // Check if user has EMPLOYEE role
@@ -22,38 +19,35 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json(
         { error: 'Access denied. Employee role required.' },
         { status: 403 }
-      )
+      );
     }
 
-    const body = await _request.json()
+    const body = await _request.json();
     // Support both field names for compatibility
-    const employee_id = body.employee_id || body.employeeId
-    const { date, hours_worked, overtime_hours, start_time, end_time, description } = body
+    const employee_id = body.employee_id || body.employeeId;
+    const { date, hours_worked, overtime_hours, start_time, end_time, description } = body;
 
     // Validate required fields
     if (!employee_id || !date || !hours_worked) {
       return NextResponse.json(
-        { error: 'Missing required fields: employee_id/employeeId, date, and hours_worked are required' },
+        {
+          error:
+            'Missing required fields: employee_id/employeeId, date, and hours_worked are required',
+        },
         { status: 400 }
-      )
+      );
     }
 
     // Validate hours
-    const regularHours = parseFloat(hours_worked)
-    const overtimeHours = parseFloat(overtime_hours || '0')
-    
+    const regularHours = parseFloat(hours_worked);
+    const overtimeHours = parseFloat(overtime_hours || '0');
+
     if (isNaN(regularHours) || regularHours < 0) {
-      return NextResponse.json(
-        { error: 'Invalid regular hours' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid regular hours' }, { status: 400 });
     }
 
     if (isNaN(overtimeHours) || overtimeHours < 0) {
-      return NextResponse.json(
-        { error: 'Invalid overtime hours' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Invalid overtime hours' }, { status: 400 });
     }
 
     // Check if timesheet already exists for this date using Drizzle
@@ -72,7 +66,7 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json(
         { error: 'Timesheet already exists for this date' },
         { status: 400 }
-      )
+      );
     }
 
     // Create timesheet using Drizzle
@@ -96,14 +90,10 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json({
       message: 'Timesheet submitted successfully',
-      timesheet
-    })
-
+      timesheet,
+    });
   } catch (error) {
-    console.error('Error creating timesheet:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    console.error('Error creating timesheet:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

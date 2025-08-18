@@ -1,23 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { db } from '@/lib/drizzle';
-import { employeeLeaves, employees, departments, designations } from '@/lib/drizzle/schema';
-import { eq } from 'drizzle-orm';
 import { authConfig } from '@/lib/auth-config';
+import { db } from '@/lib/drizzle';
+import { departments, designations, employeeLeaves, employees } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/leave-requests/[id] - Get a specific leave request
-export async function GET(
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET({ params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const session = await getServerSession(authConfig);
-    
+
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     // Get the leave request with employee details using Drizzle
@@ -64,10 +59,7 @@ export async function GET(
       .limit(1);
 
     if (!leaveRequest) {
-      return NextResponse.json(
-        { error: 'Leave request not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Leave request not found' }, { status: 404 });
     }
 
     // Transform the data for the frontend
@@ -80,7 +72,8 @@ export async function GET(
       end_date: leaveRequest.endDate.split('T')[0],
       days_requested: leaveRequest.days,
       reason: leaveRequest.reason,
-      status: leaveRequest.status.charAt(0).toUpperCase() + leaveRequest.status.slice(1).toLowerCase(),
+      status:
+        leaveRequest.status.charAt(0).toUpperCase() + leaveRequest.status.slice(1).toLowerCase(),
       submitted_date: leaveRequest.createdAt,
       approved_by: leaveRequest.approvedBy?.toString() || null,
       approved_date: leaveRequest.approvedAt || null,
@@ -97,28 +90,35 @@ export async function GET(
       attachments: [], // Not implemented in current schema
       approval_history: [
         {
-          id: "1",
-          action: leaveRequest.status === 'pending' ? 'Submitted' : 
-                  leaveRequest.status === 'approved' ? 'Approved' : 
-                  leaveRequest.status === 'rejected' ? 'Rejected' : 'Submitted',
+          id: '1',
+          action:
+            leaveRequest.status === 'pending'
+              ? 'Submitted'
+              : leaveRequest.status === 'approved'
+                ? 'Approved'
+                : leaveRequest.status === 'rejected'
+                  ? 'Rejected'
+                  : 'Submitted',
           approver: leaveRequest.employee?.firstName + ' ' + leaveRequest.employee?.lastName,
           date: leaveRequest.createdAt,
-          comments: leaveRequest.status === 'pending' ? 'Leave request submitted for approval' :
-                   leaveRequest.status === 'rejected' ? `Leave request rejected: ${leaveRequest.rejectionReason || 'No reason provided'}` :
-                   'Leave request submitted for approval'
-        }
-      ]
+          comments:
+            leaveRequest.status === 'pending'
+              ? 'Leave request submitted for approval'
+              : leaveRequest.status === 'rejected'
+                ? `Leave request rejected: ${leaveRequest.rejectionReason || 'No reason provided'}`
+                : 'Leave request submitted for approval',
+        },
+      ],
     };
 
     return NextResponse.json({
       success: true,
       data: transformedLeaveRequest,
     });
-
   } catch (error) {
     console.error('❌ Error fetching leave request:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
@@ -128,18 +128,13 @@ export async function GET(
 }
 
 // DELETE /api/leave-requests/[id] - Delete a leave request
-export async function DELETE(
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const session = await getServerSession(authConfig);
-    
+
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     // Check if user has permission to delete leave requests
@@ -160,16 +155,11 @@ export async function DELETE(
       .limit(1);
 
     if (!existingLeaveRequest) {
-      return NextResponse.json(
-        { error: 'Leave request not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Leave request not found' }, { status: 404 });
     }
 
     // Delete the leave request
-    await db
-      .delete(employeeLeaves)
-      .where(eq(employeeLeaves.id, parseInt(id)));
+    await db.delete(employeeLeaves).where(eq(employeeLeaves.id, parseInt(id)));
 
     console.log('✅ Leave request deleted:', id);
 
@@ -177,11 +167,10 @@ export async function DELETE(
       success: true,
       message: 'Leave request deleted successfully',
     });
-
   } catch (error) {
     console.error('❌ Error deleting leave request:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error',
       },
@@ -191,19 +180,13 @@ export async function DELETE(
 }
 
 // PUT /api/leave-requests/[id] - Update a leave request
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const session = await getServerSession(authConfig);
-    
+
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -211,18 +194,12 @@ export async function PUT(
 
     // Validate required fields
     if (!leave_type || !start_date || !end_date || !days || !reason || !status) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Validate dates
     if (new Date(start_date) > new Date(end_date)) {
-      return NextResponse.json(
-        { error: 'Start date cannot be after end date' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Start date cannot be after end date' }, { status: 400 });
     }
 
     // Check if leave request exists
@@ -235,7 +212,7 @@ export async function PUT(
           firstName: employees.firstName,
           lastName: employees.lastName,
           fileNumber: employees.fileNumber,
-        }
+        },
       })
       .from(employeeLeaves)
       .leftJoin(employees, eq(employeeLeaves.employeeId, employees.id))
@@ -243,10 +220,7 @@ export async function PUT(
       .limit(1);
 
     if (!existingLeave) {
-      return NextResponse.json(
-        { error: 'Leave request not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Leave request not found' }, { status: 404 });
     }
 
     // Update the leave request
@@ -275,10 +249,7 @@ export async function PUT(
       });
 
     if (!updatedLeave) {
-      return NextResponse.json(
-        { error: 'Failed to update leave request' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to update leave request' }, { status: 500 });
     }
 
     return NextResponse.json({
@@ -292,18 +263,19 @@ export async function PUT(
         reason: updatedLeave.reason,
         status: updatedLeave.status,
         employee: {
-          name: existingLeave.employee ? `${existingLeave.employee.firstName} ${existingLeave.employee.lastName}` : 'Unknown',
+          name: existingLeave.employee
+            ? `${existingLeave.employee.firstName} ${existingLeave.employee.lastName}`
+            : 'Unknown',
           employee_id: existingLeave.employee?.fileNumber || 'Unknown',
         },
         created_at: updatedLeave.createdAt,
         updated_at: updatedLeave.updatedAt,
       },
     });
-
   } catch (error) {
     console.error('❌ Error updating leave request:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : 'Unknown error',
       },

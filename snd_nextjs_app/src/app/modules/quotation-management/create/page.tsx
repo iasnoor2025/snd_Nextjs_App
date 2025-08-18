@@ -1,27 +1,40 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 import {
   ArrowLeft,
-  Plus,
-  Trash2,
-  Save,
   Calendar,
-  User,
-  Package,
   DollarSign,
-  FileText
-} from "lucide-react";
-import { toast } from "sonner";
+  FileText,
+  Package,
+  Plus,
+  Save,
+  Trash2,
+  User,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Customer {
   id: number;
@@ -85,19 +98,19 @@ interface FormData {
 export default function CreateQuotationPage() {
   const [formData, setFormData] = useState<FormData>({
     customer_id: 0,
-    quotation_number: "",
-    issue_date: "",
-    valid_until: "",
-    status: "draft",
+    quotation_number: '',
+    issue_date: '',
+    valid_until: '',
+    status: 'draft',
     subtotal: 0,
     discount_percentage: 0,
     discount_amount: 0,
     tax_percentage: 8.5,
     tax_amount: 0,
     total_amount: 0,
-    notes: "",
+    notes: '',
     terms_and_conditions: 'Standard terms and conditions apply. Payment terms: 30 days net.',
-    quotation_items: []
+    quotation_items: [],
   });
 
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -105,7 +118,7 @@ export default function CreateQuotationPage() {
   const [operators, setOperators] = useState<Employee[]>([]);
   const [drivers, setDrivers] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
-  const [nextQuotationNumber, setNextQuotationNumber] = useState("");
+  const [nextQuotationNumber, setNextQuotationNumber] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -138,7 +151,6 @@ export default function CreateQuotationPage() {
 
         // Generate next quotation number
         setNextQuotationNumber(`QUOT-2024-${Math.floor(Math.random() * 1000) + 1}`);
-
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Failed to load form data');
@@ -155,19 +167,19 @@ export default function CreateQuotationPage() {
       equipment_id: 0,
       quantity: 1,
       rate: 0,
-      rate_type: "daily",
-      total_amount: 0
+      rate_type: 'daily',
+      total_amount: 0,
     };
     setFormData(prev => ({
       ...prev,
-      quotation_items: [...prev.quotation_items, newItem]
+      quotation_items: [...prev.quotation_items, newItem],
     }));
   };
 
   const removeQuotationItem = (index: number) => {
     setFormData(prev => ({
       ...prev,
-      quotation_items: prev.quotation_items.filter((_, i) => i !== index)
+      quotation_items: prev.quotation_items.filter((_, i) => i !== index),
     }));
   };
 
@@ -197,7 +209,7 @@ export default function CreateQuotationPage() {
       subtotal,
       discount_amount: discountAmount,
       tax_amount: taxAmount,
-      total_amount: total
+      total_amount: total,
     }));
   };
 
@@ -243,7 +255,7 @@ export default function CreateQuotationPage() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'USD',
     }).format(amount);
   };
 
@@ -291,18 +303,25 @@ export default function CreateQuotationPage() {
                     <Input
                       id="quotation_number"
                       value={formData.quotation_number}
-                      onChange={(e) => setFormData(prev => ({ ...prev, quotation_number: e.target.value }))}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, quotation_number: e.target.value }))
+                      }
                       placeholder="Auto-generated"
                     />
                   </div>
                   <div>
                     <Label htmlFor="customer_id">Customer</Label>
-                    <Select value={formData.customer_id.toString()} onValueChange={(value) => setFormData(prev => ({ ...prev, customer_id: parseInt(value) }))}>
+                    <Select
+                      value={formData.customer_id.toString()}
+                      onValueChange={value =>
+                        setFormData(prev => ({ ...prev, customer_id: parseInt(value) }))
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select customer" />
                       </SelectTrigger>
                       <SelectContent>
-                        {customers.map((customer) => (
+                        {customers.map(customer => (
                           <SelectItem key={customer.id} value={customer.id.toString()}>
                             {customer.company_name}
                           </SelectItem>
@@ -316,7 +335,7 @@ export default function CreateQuotationPage() {
                       id="issue_date"
                       type="date"
                       value={formData.issue_date}
-                      onChange={(e) => setFormData(prev => ({ ...prev, issue_date: e.target.value }))}
+                      onChange={e => setFormData(prev => ({ ...prev, issue_date: e.target.value }))}
                     />
                   </div>
                   <div>
@@ -325,12 +344,17 @@ export default function CreateQuotationPage() {
                       id="valid_until"
                       type="date"
                       value={formData.valid_until}
-                      onChange={(e) => setFormData(prev => ({ ...prev, valid_until: e.target.value }))}
+                      onChange={e =>
+                        setFormData(prev => ({ ...prev, valid_until: e.target.value }))
+                      }
                     />
                   </div>
                   <div>
                     <Label htmlFor="status">Status</Label>
-                    <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}>
+                    <Select
+                      value={formData.status}
+                      onValueChange={value => setFormData(prev => ({ ...prev, status: value }))}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -362,7 +386,9 @@ export default function CreateQuotationPage() {
               </CardHeader>
               <CardContent>
                 {formData.quotation_items.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">No items added yet. Click &quot;Add Item&quot; to get started.</p>
+                  <p className="text-muted-foreground text-center py-8">
+                    No items added yet. Click &quot;Add Item&quot; to get started.
+                  </p>
                 ) : (
                   <Table>
                     <TableHeader>
@@ -380,12 +406,17 @@ export default function CreateQuotationPage() {
                       {formData.quotation_items.map((item, index) => (
                         <TableRow key={index}>
                           <TableCell>
-                            <Select value={item.equipment_id.toString()} onValueChange={(value) => updateQuotationItem(index, 'equipment_id', parseInt(value))}>
+                            <Select
+                              value={item.equipment_id.toString()}
+                              onValueChange={value =>
+                                updateQuotationItem(index, 'equipment_id', parseInt(value))
+                              }
+                            >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select equipment" />
                               </SelectTrigger>
                               <SelectContent>
-                                {equipment.map((eq) => (
+                                {equipment.map(eq => (
                                   <SelectItem key={eq.id} value={eq.id.toString()}>
                                     {eq.name} - {eq.model}
                                   </SelectItem>
@@ -394,13 +425,18 @@ export default function CreateQuotationPage() {
                             </Select>
                           </TableCell>
                           <TableCell>
-                            <Select value={item.operator_id?.toString() || ""} onValueChange={(value) => updateQuotationItem(index, 'operator_id', parseInt(value))}>
+                            <Select
+                              value={item.operator_id?.toString() || ''}
+                              onValueChange={value =>
+                                updateQuotationItem(index, 'operator_id', parseInt(value))
+                              }
+                            >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select operator" />
                               </SelectTrigger>
                               <SelectContent>
                                 <SelectItem value="">No operator</SelectItem>
-                                {operators.map((op) => (
+                                {operators.map(op => (
                                   <SelectItem key={op.id} value={op.id.toString()}>
                                     {op.name}
                                   </SelectItem>
@@ -413,7 +449,9 @@ export default function CreateQuotationPage() {
                               type="number"
                               min="1"
                               value={item.quantity}
-                              onChange={(e) => updateQuotationItem(index, 'quantity', parseInt(e.target.value))}
+                              onChange={e =>
+                                updateQuotationItem(index, 'quantity', parseInt(e.target.value))
+                              }
                             />
                           </TableCell>
                           <TableCell>
@@ -422,11 +460,18 @@ export default function CreateQuotationPage() {
                               min="0"
                               step="0.01"
                               value={item.rate}
-                              onChange={(e) => updateQuotationItem(index, 'rate', parseFloat(e.target.value))}
+                              onChange={e =>
+                                updateQuotationItem(index, 'rate', parseFloat(e.target.value))
+                              }
                             />
                           </TableCell>
                           <TableCell>
-                            <Select value={item.rate_type} onValueChange={(value) => updateQuotationItem(index, 'rate_type', value)}>
+                            <Select
+                              value={item.rate_type}
+                              onValueChange={value =>
+                                updateQuotationItem(index, 'rate_type', value)
+                              }
+                            >
                               <SelectTrigger>
                                 <SelectValue />
                               </SelectTrigger>
@@ -439,7 +484,9 @@ export default function CreateQuotationPage() {
                             </Select>
                           </TableCell>
                           <TableCell>
-                            <span className="font-semibold">{formatCurrency(item.total_amount)}</span>
+                            <span className="font-semibold">
+                              {formatCurrency(item.total_amount)}
+                            </span>
                           </TableCell>
                           <TableCell>
                             <Button
@@ -470,7 +517,7 @@ export default function CreateQuotationPage() {
                   <Textarea
                     id="notes"
                     value={formData.notes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                     placeholder="Additional notes for the quotation..."
                     rows={3}
                   />
@@ -480,7 +527,9 @@ export default function CreateQuotationPage() {
                   <Textarea
                     id="terms_and_conditions"
                     value={formData.terms_and_conditions}
-                    onChange={(e) => setFormData(prev => ({ ...prev, terms_and_conditions: e.target.value }))}
+                    onChange={e =>
+                      setFormData(prev => ({ ...prev, terms_and_conditions: e.target.value }))
+                    }
                     placeholder="Terms and conditions..."
                     rows={6}
                   />
@@ -503,13 +552,17 @@ export default function CreateQuotationPage() {
                 <div className="grid grid-cols-1 gap-4">
                   <div className="bg-green-50 p-4 rounded-lg">
                     <p className="text-sm text-gray-600">Subtotal</p>
-                    <p className="text-2xl font-bold text-green-600">{formatCurrency(formData.subtotal)}</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {formatCurrency(formData.subtotal)}
+                    </p>
                   </div>
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600">Discount</p>
-                        <p className="text-lg font-semibold text-blue-600">{formData.discount_percentage}%</p>
+                        <p className="text-lg font-semibold text-blue-600">
+                          {formData.discount_percentage}%
+                        </p>
                       </div>
                       <Input
                         type="number"
@@ -517,17 +570,26 @@ export default function CreateQuotationPage() {
                         max="100"
                         step="0.1"
                         value={formData.discount_percentage}
-                        onChange={(e) => setFormData(prev => ({ ...prev, discount_percentage: parseFloat(e.target.value) }))}
+                        onChange={e =>
+                          setFormData(prev => ({
+                            ...prev,
+                            discount_percentage: parseFloat(e.target.value),
+                          }))
+                        }
                         className="w-20"
                       />
                     </div>
-                    <p className="text-sm text-blue-600">{formatCurrency(formData.discount_amount)}</p>
+                    <p className="text-sm text-blue-600">
+                      {formatCurrency(formData.discount_amount)}
+                    </p>
                   </div>
                   <div className="bg-yellow-50 p-4 rounded-lg">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm text-gray-600">Tax</p>
-                        <p className="text-lg font-semibold text-yellow-600">{formData.tax_percentage}%</p>
+                        <p className="text-lg font-semibold text-yellow-600">
+                          {formData.tax_percentage}%
+                        </p>
                       </div>
                       <Input
                         type="number"
@@ -535,7 +597,12 @@ export default function CreateQuotationPage() {
                         max="100"
                         step="0.1"
                         value={formData.tax_percentage}
-                        onChange={(e) => setFormData(prev => ({ ...prev, tax_percentage: parseFloat(e.target.value) }))}
+                        onChange={e =>
+                          setFormData(prev => ({
+                            ...prev,
+                            tax_percentage: parseFloat(e.target.value),
+                          }))
+                        }
                         className="w-20"
                       />
                     </div>
@@ -543,7 +610,9 @@ export default function CreateQuotationPage() {
                   </div>
                   <div className="bg-purple-50 p-4 rounded-lg">
                     <p className="text-sm text-gray-600">Total</p>
-                    <p className="text-2xl font-bold text-purple-600">{formatCurrency(formData.total_amount)}</p>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {formatCurrency(formData.total_amount)}
+                    </p>
                   </div>
                 </div>
               </CardContent>

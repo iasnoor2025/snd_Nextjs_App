@@ -1,29 +1,52 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import { ProtectedRoute } from '@/components/protected-route';
-import { PermissionContent } from '@/lib/rbac/rbac-components';
-import { useRBAC } from '@/lib/rbac/rbac-context';
-import { useI18n } from '@/hooks/use-i18n';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Search, Plus, Download, Upload, Eye, Edit, Trash2 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useI18n } from '@/hooks/use-i18n';
+import { PermissionContent } from '@/lib/rbac/rbac-components';
+import { useRBAC } from '@/lib/rbac/rbac-context';
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Download,
+  Edit,
+  Eye,
+  Plus,
+  Search,
+  Trash2,
+  Upload,
+} from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-
-
-import { 
-  convertToArabicNumerals, 
-  getTranslatedName, 
-  batchTranslateNames 
+import {
+  batchTranslateNames,
+  convertToArabicNumerals,
+  getTranslatedName,
 } from '@/lib/translation-utils';
-import { useDeleteConfirmations } from "@/lib/utils/confirmation-utils";
+import { useDeleteConfirmations } from '@/lib/utils/confirmation-utils';
 
 interface Employee {
   id: number;
@@ -70,9 +93,8 @@ interface Employee {
 export default function EmployeeManagementPage() {
   const { t } = useTranslation(['common', 'employee']);
   const { isRTL } = useI18n();
-  const { user, getAllowedActions } = useRBAC();
+  const { user } = useRBAC();
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [filteredEmployees, setFilteredEmployees] = useState<Employee[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
@@ -83,40 +105,16 @@ export default function EmployeeManagementPage() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  
-  // Edit form state
-  const [editFormData, setEditFormData] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-    department: '',
-    designation: '',
-    status: '',
-    hire_date: '',
-    basic_salary: '',
-    hourly_rate: '',
-    overtime_rate_multiplier: '1.5',
-    overtime_fixed_rate: '',
-    nationality: ''
-  });
-  
+
   // Statistics state
   const [statistics, setStatistics] = useState({
     totalEmployees: 0,
     currentlyAssigned: 0,
     projectAssignments: 0,
-    rentalAssignments: 0
+    rentalAssignments: 0,
   });
 
-  // Get allowed actions for employee management
-  const allowedActions = getAllowedActions('Employee');
-  
   // Helper function to check if Iqama is expired
   const isIqamaExpired = (expiryDate: string | null | undefined): boolean => {
     if (!expiryDate) return false;
@@ -133,7 +131,7 @@ export default function EmployeeManagementPage() {
       return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
       });
     } catch (error) {
       return t('common.na');
@@ -150,43 +148,46 @@ export default function EmployeeManagementPage() {
       batchTranslateNames(names, isRTL, setTranslatedNames);
     }
   }, [employees, isRTL]);
-  
+
   // Debug function for assignment data
   const debugAssignments = () => {
     console.log('=== Assignment Debug Info ===');
     console.log('Total employees:', employees.length);
     console.log('Filtered employees:', filteredAndSortedEmployees.length);
     console.log('Current assignment filter:', assignmentFilter);
-    
-    const employeesWithAssignments = employees.filter(emp => emp.current_assignment && emp.current_assignment.id);
-    const employeesWithoutAssignments = employees.filter(emp => !emp.current_assignment || !emp.current_assignment.id);
-    
+
+    const employeesWithAssignments = employees.filter(
+      emp => emp.current_assignment && emp.current_assignment.id
+    );
+    const employeesWithoutAssignments = employees.filter(
+      emp => !emp.current_assignment || !emp.current_assignment.id
+    );
+
     console.log('Employees with assignments:', employeesWithAssignments.length);
     console.log('Employees without assignments:', employeesWithoutAssignments.length);
-    
+
     // Show first few employees with assignments
     console.log('Sample employees with assignments:');
     employeesWithAssignments.slice(0, 3).forEach(emp => {
       console.log(`- ${emp.file_number}: ${emp.full_name}`, emp.current_assignment);
     });
-    
+
     // Show first few employees without assignments
     console.log('Sample employees without assignments:');
     employeesWithoutAssignments.slice(0, 3).forEach(emp => {
       console.log(`- ${emp.file_number}: ${emp.full_name}`, emp.current_assignment);
     });
   };
-  
+
   // Make debug function available globally
   if (typeof window !== 'undefined') {
     (window as any).debugAssignments = debugAssignments;
   }
-  
 
   useEffect(() => {
     const loadData = async () => {
       const isEmployeeUser = user?.role === 'EMPLOYEE';
-      
+
       if (isEmployeeUser) {
         // For employee users, fetch employees first, then calculate statistics
         await fetchEmployees();
@@ -204,38 +205,37 @@ export default function EmployeeManagementPage() {
     try {
       // Check if user is an employee role - they should only see their own record
       const isEmployeeUser = user?.role === 'EMPLOYEE';
-      
+
       // For employee users, don't use the 'all=true' parameter to get filtered data
-      const url = isEmployeeUser 
+      const url = isEmployeeUser
         ? `/api/employees?_t=${Date.now()}`
         : `/api/employees?all=true&_t=${Date.now()}`;
-      
+
       console.log('Fetching employees with URL:', url);
       console.log('User role:', user?.role);
       console.log('Is employee user:', isEmployeeUser);
-      
+
       const response = await fetch(url);
       if (response.ok) {
-        const result = await response.json() as { success: boolean; data?: Employee[] };
+        const result = (await response.json()) as { success: boolean; data?: Employee[] };
         if (result.success && Array.isArray(result.data)) {
           console.log('Fetched employees:', result.data.length);
-          console.log('Sample employee with assignment:', result.data.find(emp => emp.current_assignment));
-          
+          console.log(
+            'Sample employee with assignment:',
+            result.data.find(emp => emp.current_assignment)
+          );
+
           setEmployees(result.data);
-          setFilteredEmployees(result.data);
         } else {
           setEmployees([]);
-          setFilteredEmployees([]);
           toast.error(t('employee:messages.fetchError'));
         }
       } else {
         setEmployees([]);
-        setFilteredEmployees([]);
         toast.error(t('employee:messages.fetchError'));
       }
     } catch (_error) {
       setEmployees([]);
-      setFilteredEmployees([]);
       toast.error(t('employee:messages.fetchError'));
     } finally {
       setIsLoading(false);
@@ -246,7 +246,7 @@ export default function EmployeeManagementPage() {
     try {
       // Check if user is an employee role - they should only see their own statistics
       const isEmployeeUser = user?.role === 'EMPLOYEE';
-      
+
       if (isEmployeeUser) {
         // For employee users, calculate statistics from their own employee data
         // This will be called after fetchEmployees, so employees array will be populated
@@ -256,21 +256,21 @@ export default function EmployeeManagementPage() {
             totalEmployees: 1,
             currentlyAssigned: ownEmployee.current_assignment ? 1 : 0,
             projectAssignments: ownEmployee.current_assignment?.type === 'project' ? 1 : 0,
-            rentalAssignments: ownEmployee.current_assignment?.type === 'rental' ? 1 : 0
+            rentalAssignments: ownEmployee.current_assignment?.type === 'rental' ? 1 : 0,
           });
         } else {
           setStatistics({
             totalEmployees: 0,
             currentlyAssigned: 0,
             projectAssignments: 0,
-            rentalAssignments: 0
+            rentalAssignments: 0,
           });
         }
       } else {
         // For admin/manager users, fetch statistics from API
         const response = await fetch('/api/employees/statistics');
         if (response.ok) {
-          const result = await response.json() as { success: boolean; data?: any };
+          const result = (await response.json()) as { success: boolean; data?: any };
           if (result.success && result.data) {
             setStatistics(result.data);
           }
@@ -280,8 +280,10 @@ export default function EmployeeManagementPage() {
           setStatistics({
             totalEmployees: employees.length,
             currentlyAssigned: employees.filter(emp => emp.current_assignment).length,
-            projectAssignments: employees.filter(emp => emp.current_assignment?.type === 'project').length,
-            rentalAssignments: employees.filter(emp => emp.current_assignment?.type === 'rental').length
+            projectAssignments: employees.filter(emp => emp.current_assignment?.type === 'project')
+              .length,
+            rentalAssignments: employees.filter(emp => emp.current_assignment?.type === 'rental')
+              .length,
           });
         }
       }
@@ -291,8 +293,10 @@ export default function EmployeeManagementPage() {
       setStatistics({
         totalEmployees: employees.length,
         currentlyAssigned: employees.filter(emp => emp.current_assignment).length,
-        projectAssignments: employees.filter(emp => emp.current_assignment?.type === 'project').length,
-        rentalAssignments: employees.filter(emp => emp.current_assignment?.type === 'rental').length
+        projectAssignments: employees.filter(emp => emp.current_assignment?.type === 'project')
+          .length,
+        rentalAssignments: employees.filter(emp => emp.current_assignment?.type === 'rental')
+          .length,
       });
     }
   };
@@ -305,7 +309,6 @@ export default function EmployeeManagementPage() {
       });
 
       if (response.ok) {
-        const result = await response.json();
         toast.success(t('employee:messages.syncSuccess'));
 
         await fetchEmployees(); // Refresh the list
@@ -318,10 +321,6 @@ export default function EmployeeManagementPage() {
       setIsSyncing(false);
     }
   };
-
-
-
-
 
   const { confirmDeleteEmployee } = useDeleteConfirmations();
 
@@ -374,68 +373,6 @@ export default function EmployeeManagementPage() {
     }
   };
 
-  const handleUpdateEmployee = async () => {
-    if (!selectedEmployee) return;
-
-    try {
-      const formData = {
-        first_name: editFormData.first_name,
-        last_name: editFormData.last_name,
-        email: editFormData.email,
-        phone: editFormData.phone,
-        department: editFormData.department,
-        designation: editFormData.designation,
-        status: editFormData.status,
-        hire_date: editFormData.hire_date,
-        basic_salary: parseFloat(editFormData.basic_salary || '0'),
-        hourly_rate: parseFloat(editFormData.hourly_rate || '0'),
-        overtime_rate_multiplier: parseFloat(editFormData.overtime_rate_multiplier || '1.5'),
-        overtime_fixed_rate: parseFloat(editFormData.overtime_fixed_rate || '0') || null,
-        nationality: editFormData.nationality,
-      };
-
-      const response = await fetch(`/api/employees/${selectedEmployee.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        toast.success(t('employee:messages.saveSuccess'));
-        setIsEditModalOpen(false);
-        fetchEmployees();
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || t('employee:messages.saveError'));
-      }
-    } catch (error) {
-      console.error('Update error:', error);
-      toast.error(t('employee:messages.saveError'));
-    }
-  };
-
-  const handleEditModalOpen = (employee: Employee) => {
-    setSelectedEmployee(employee);
-    setEditFormData({
-      first_name: employee.first_name || '',
-      last_name: employee.last_name || '',
-      email: employee.email || '',
-      phone: employee.phone || '',
-      department: employee.department || '',
-      designation: employee.designation || '',
-      status: employee.status || '',
-      hire_date: employee.hire_date || '',
-      basic_salary: employee.basic_salary?.toString() || '',
-      hourly_rate: employee.hourly_rate?.toString() || '',
-      overtime_rate_multiplier: employee.overtime_rate_multiplier?.toString() || '1.5',
-      overtime_fixed_rate: employee.overtime_fixed_rate?.toString() || '',
-      nationality: employee.nationality || ''
-    });
-    setIsEditModalOpen(true);
-  };
-
   const handleSort = (field: string) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -448,7 +385,11 @@ export default function EmployeeManagementPage() {
 
   const getSortIcon = (field: string) => {
     if (sortField !== field) return null;
-    return sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
+    return sortDirection === 'asc' ? (
+      <ChevronUp className="h-4 w-4" />
+    ) : (
+      <ChevronDown className="h-4 w-4" />
+    );
   };
 
   const naturalSort = (a: string, b: string) => {
@@ -479,8 +420,6 @@ export default function EmployeeManagementPage() {
       return [];
     }
 
-
-
     const filtered = employees.filter(employee => {
       const matchesSearch =
         (employee.file_number?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
@@ -488,10 +427,20 @@ export default function EmployeeManagementPage() {
         (employee.email?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
       const matchesStatus = statusFilter === 'all' || employee.status === statusFilter;
-      const matchesDepartment = departmentFilter === 'all' || employee.department === departmentFilter;
-      const matchesAssignment = assignmentFilter === 'all' || 
-        (assignmentFilter === 'assigned' && employee.current_assignment && employee.current_assignment.id && employee.current_assignment.status === 'active' && employee.current_assignment.name) ||
-        (assignmentFilter === 'unassigned' && (!employee.current_assignment || !employee.current_assignment.id || employee.current_assignment.status !== 'active' || !employee.current_assignment.name));
+      const matchesDepartment =
+        departmentFilter === 'all' || employee.department === departmentFilter;
+      const matchesAssignment =
+        assignmentFilter === 'all' ||
+        (assignmentFilter === 'assigned' &&
+          employee.current_assignment &&
+          employee.current_assignment.id &&
+          employee.current_assignment.status === 'active' &&
+          employee.current_assignment.name) ||
+        (assignmentFilter === 'unassigned' &&
+          (!employee.current_assignment ||
+            !employee.current_assignment.id ||
+            employee.current_assignment.status !== 'active' ||
+            !employee.current_assignment.name));
 
       return matchesSearch && matchesStatus && matchesDepartment && matchesAssignment;
     });
@@ -524,13 +473,19 @@ export default function EmployeeManagementPage() {
       // Fallback for mixed types
       const aStr = String(aValue);
       const bStr = String(bValue);
-      return sortDirection === 'asc'
-        ? aStr.localeCompare(bStr)
-        : bStr.localeCompare(aStr);
+      return sortDirection === 'asc' ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr);
     });
 
     return filtered;
-  }, [employees, searchTerm, statusFilter, departmentFilter, assignmentFilter, sortField, sortDirection]);
+  }, [
+    employees,
+    searchTerm,
+    statusFilter,
+    departmentFilter,
+    assignmentFilter,
+    sortField,
+    sortDirection,
+  ]);
 
   // Pagination logic
   const totalItems = filteredAndSortedEmployees.length;
@@ -542,16 +497,24 @@ export default function EmployeeManagementPage() {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, departmentFilter, assignmentFilter, sortField, sortDirection, itemsPerPage]);
+  }, [
+    searchTerm,
+    statusFilter,
+    departmentFilter,
+    assignmentFilter,
+    sortField,
+    sortDirection,
+    itemsPerPage,
+  ]);
 
   if (isLoading) {
     return (
       <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Employee' }}>
         <div className="flex items-center justify-center h-64">
-                  <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">{t('employee:messages.loading')}</p>
-        </div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">{t('employee:messages.loading')}</p>
+          </div>
         </div>
       </ProtectedRoute>
     );
@@ -563,13 +526,14 @@ export default function EmployeeManagementPage() {
         <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : ''}`}>
           <div className={isRTL ? 'text-right' : 'text-left'}>
             <h1 className="text-3xl font-bold">
-              {user?.role === 'EMPLOYEE' ? t('employee:title') + ' - My Profile' : t('employee:title')}
+              {user?.role === 'EMPLOYEE'
+                ? t('employee:title') + ' - My Profile'
+                : t('employee:title')}
             </h1>
             <p className="text-muted-foreground">
-              {user?.role === 'EMPLOYEE' 
+              {user?.role === 'EMPLOYEE'
                 ? t('employee:subtitle') + ' - You are viewing your own employee record'
-                : t('employee:subtitle')
-              }
+                : t('employee:subtitle')}
             </p>
           </div>
 
@@ -585,8 +549,6 @@ export default function EmployeeManagementPage() {
                 {isSyncing ? t('employee:sync.syncing') : t('employee:sync.button')}
               </Button>
             </PermissionContent>
-
-
 
             <PermissionContent action="create" subject="Employee">
               <Link href="/modules/employee-management/create">
@@ -612,7 +574,9 @@ export default function EmployeeManagementPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('employee:statistics.totalEmployees')}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('employee:statistics.totalEmployees')}
+                  </p>
                   <p className="text-2xl font-bold">{statistics.totalEmployees}</p>
                 </div>
                 <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
@@ -621,12 +585,14 @@ export default function EmployeeManagementPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('employee:statistics.currentlyAssigned')}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('employee:statistics.currentlyAssigned')}
+                  </p>
                   <p className="text-2xl font-bold">{statistics.currentlyAssigned}</p>
                 </div>
                 <div className="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -635,12 +601,14 @@ export default function EmployeeManagementPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('employee:statistics.projectAssignments')}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('employee:statistics.projectAssignments')}
+                  </p>
                   <p className="text-2xl font-bold">{statistics.projectAssignments}</p>
                 </div>
                 <div className="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center">
@@ -649,12 +617,14 @@ export default function EmployeeManagementPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('employee:statistics.rentalAssignments')}</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    {t('employee:statistics.rentalAssignments')}
+                  </p>
                   <p className="text-2xl font-bold">{statistics.rentalAssignments}</p>
                 </div>
                 <div className="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center">
@@ -669,99 +639,113 @@ export default function EmployeeManagementPage() {
           <CardHeader>
             <CardTitle>{t('employee:title')}</CardTitle>
             <CardDescription>
-              {t('employee:pagination.showing', { 
-                start: startIndex + 1, 
-                end: Math.min(endIndex, totalItems), 
-                total: totalItems 
+              {t('employee:pagination.showing', {
+                start: startIndex + 1,
+                end: Math.min(endIndex, totalItems),
+                total: totalItems,
               })}
             </CardDescription>
           </CardHeader>
           <CardContent>
-                          <div className={`flex items-center gap-4 mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4`} />
-                    <Input
-                      placeholder={t('employee:actions.search')}
-                      value={searchTerm}
-                      onChange={(e) => {
-                        setSearchTerm(e.target.value);
-                        setCurrentPage(1); // Reset to first page when searching
-                      }}
-                      className={isRTL ? 'pr-10' : 'pl-10'}
-                    />
-                  </div>
+            <div className={`flex items-center gap-4 mb-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+              <div className="flex-1">
+                <div className="relative">
+                  <Search
+                    className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4`}
+                  />
+                  <Input
+                    placeholder={t('employee:actions.search')}
+                    value={searchTerm}
+                    onChange={e => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1); // Reset to first page when searching
+                    }}
+                    className={isRTL ? 'pr-10' : 'pl-10'}
+                  />
                 </div>
-
-                <Select value={statusFilter} onValueChange={(value) => {
-                  setStatusFilter(value);
-                  setCurrentPage(1); // Reset to first page when filtering
-                }}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder={t('employee:filters.status')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('employee:filters.all')}</SelectItem>
-                    <SelectItem value="active">{t('employee:status.active')}</SelectItem>
-                    <SelectItem value="inactive">{t('employee:status.inactive')}</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={departmentFilter} onValueChange={(value) => {
-                  setDepartmentFilter(value);
-                  setCurrentPage(1); // Reset to first page when filtering
-                }}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder={t('employee:filters.department')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t('employee:filters.all')}</SelectItem>
-                    <SelectItem value="HR">{t('employee:departments.hr')}</SelectItem>
-                    <SelectItem value="IT">{t('employee:departments.it')}</SelectItem>
-                    <SelectItem value="Finance">{t('employee:departments.finance')}</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={assignmentFilter} onValueChange={(value) => {
-                  setAssignmentFilter(value);
-                  setCurrentPage(1); // Reset to first page when filtering
-                }}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Assignment Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Assignments</SelectItem>
-                    <SelectItem value="assigned">Currently Assigned</SelectItem>
-                    <SelectItem value="unassigned">Not Assigned</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
 
-              {/* Search Results Summary */}
-              {(searchTerm || statusFilter !== 'all' || departmentFilter !== 'all' || assignmentFilter !== 'all') && (
-                <div className="mb-4 p-3 bg-muted/50 rounded-md">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {filteredAndSortedEmployees.length} of {employees.length} employees
-                    {searchTerm && ` matching "${searchTerm}"`}
-                    {statusFilter !== 'all' && ` with status "${statusFilter}"`}
-                    {departmentFilter !== 'all' && ` in department "${departmentFilter}"`}
-                    {assignmentFilter !== 'all' && (
-                      assignmentFilter === 'assigned' 
-                        ? ` who are currently assigned` 
-                        : ` who are not currently assigned`
-                    )}
-                  </div>
-                </div>
-              )}
+              <Select
+                value={statusFilter}
+                onValueChange={value => {
+                  setStatusFilter(value);
+                  setCurrentPage(1); // Reset to first page when filtering
+                }}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder={t('employee:filters.status')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('employee:filters.all')}</SelectItem>
+                  <SelectItem value="active">{t('employee:status.active')}</SelectItem>
+                  <SelectItem value="inactive">{t('employee:status.inactive')}</SelectItem>
+                </SelectContent>
+              </Select>
 
-              {/* Employee User Notice */}
-              {user?.role === 'EMPLOYEE' && (
-                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
-                  <div className="text-sm text-blue-700 dark:text-blue-300">
-                    <strong>Note:</strong> You are viewing your own employee record. As an employee user, you can only see and manage your own information.
-                  </div>
+              <Select
+                value={departmentFilter}
+                onValueChange={value => {
+                  setDepartmentFilter(value);
+                  setCurrentPage(1); // Reset to first page when filtering
+                }}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder={t('employee:filters.department')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('employee:filters.all')}</SelectItem>
+                  <SelectItem value="HR">{t('employee:departments.hr')}</SelectItem>
+                  <SelectItem value="IT">{t('employee:departments.it')}</SelectItem>
+                  <SelectItem value="Finance">{t('employee:departments.finance')}</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={assignmentFilter}
+                onValueChange={value => {
+                  setAssignmentFilter(value);
+                  setCurrentPage(1); // Reset to first page when filtering
+                }}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Assignment Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Assignments</SelectItem>
+                  <SelectItem value="assigned">Currently Assigned</SelectItem>
+                  <SelectItem value="unassigned">Not Assigned</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Search Results Summary */}
+            {(searchTerm ||
+              statusFilter !== 'all' ||
+              departmentFilter !== 'all' ||
+              assignmentFilter !== 'all') && (
+              <div className="mb-4 p-3 bg-muted/50 rounded-md">
+                <div className="text-sm text-muted-foreground">
+                  Showing {filteredAndSortedEmployees.length} of {employees.length} employees
+                  {searchTerm && ` matching "${searchTerm}"`}
+                  {statusFilter !== 'all' && ` with status "${statusFilter}"`}
+                  {departmentFilter !== 'all' && ` in department "${departmentFilter}"`}
+                  {assignmentFilter !== 'all' &&
+                    (assignmentFilter === 'assigned'
+                      ? ` who are currently assigned`
+                      : ` who are not currently assigned`)}
                 </div>
-              )}
+              </div>
+            )}
+
+            {/* Employee User Notice */}
+            {user?.role === 'EMPLOYEE' && (
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
+                <div className="text-sm text-blue-700 dark:text-blue-300">
+                  <strong>Note:</strong> You are viewing your own employee record. As an employee
+                  user, you can only see and manage your own information.
+                </div>
+              </div>
+            )}
 
             <div className="rounded-md border">
               <Table>
@@ -844,7 +828,9 @@ export default function EmployeeManagementPage() {
                         {getSortIcon('hireDate')}
                       </div>
                     </TableHead>
-                    <TableHead className={isRTL ? 'text-left' : 'text-right'}>{t('employee:table.headers.actions')}</TableHead>
+                    <TableHead className={isRTL ? 'text-left' : 'text-right'}>
+                      {t('employee:table.headers.actions')}
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -852,29 +838,41 @@ export default function EmployeeManagementPage() {
                     <TableRow>
                       <TableCell colSpan={10} className="text-center py-8">
                         <div className="text-muted-foreground">
-                          {user?.role === 'EMPLOYEE' 
-                            ? "No employee record found for your account. Please contact your administrator."
-                            : searchTerm || statusFilter !== 'all' || departmentFilter !== 'all' || assignmentFilter !== 'all'
+                          {user?.role === 'EMPLOYEE'
+                            ? 'No employee record found for your account. Please contact your administrator.'
+                            : searchTerm ||
+                                statusFilter !== 'all' ||
+                                departmentFilter !== 'all' ||
+                                assignmentFilter !== 'all'
                               ? t('employee:messages.noEmployeesFilter')
-                              : t('employee:messages.noEmployees')
-                          }
+                              : t('employee:messages.noEmployees')}
                         </div>
                       </TableCell>
                     </TableRow>
                   ) : (
-                    currentEmployees.map((employee) => (
+                    currentEmployees.map(employee => (
                       <TableRow key={employee.id}>
-                        <TableCell className={`font-mono ${isRTL ? 'text-right' : 'text-left'}`}>{convertToArabicNumerals(employee.file_number, isRTL) || t('common.na')}</TableCell>
+                        <TableCell className={`font-mono ${isRTL ? 'text-right' : 'text-left'}`}>
+                          {convertToArabicNumerals(employee.file_number, isRTL) || t('common.na')}
+                        </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           <div>
                             <div className="font-medium flex items-center gap-2">
-                              {getTranslatedName(employee.full_name, isRTL, translatedNames, setTranslatedNames) || t('common.na')}
+                              {getTranslatedName(
+                                employee.full_name,
+                                isRTL,
+                                translatedNames,
+                                setTranslatedNames
+                              ) || t('common.na')}
                               {employee.current_assignment && (
                                 <Badge variant="outline" className="text-xs">
-                                  {employee.current_assignment.type === 'project' ? `📋 ${t('employee:assignment.project')}` : 
-                                   employee.current_assignment.type === 'rental' ? `🚛 ${t('employee:assignment.rental')}` : 
-                                   employee.current_assignment.type === 'manual' ? `🔧 ${t('employee:assignment.manual')}` : 
-                                   `📋 ${t('employee:assignment.assigned')}`}
+                                  {employee.current_assignment.type === 'project'
+                                    ? `📋 ${t('employee:assignment.project')}`
+                                    : employee.current_assignment.type === 'rental'
+                                      ? `🚛 ${t('employee:assignment.rental')}`
+                                      : employee.current_assignment.type === 'manual'
+                                        ? `🔧 ${t('employee:assignment.manual')}`
+                                        : `📋 ${t('employee:assignment.assigned')}`}
                                 </Badge>
                               )}
                             </div>
@@ -883,26 +881,42 @@ export default function EmployeeManagementPage() {
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{employee.email || t('common.na')}</TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
-                          {employee.department ? 
-                            (employee.department.toLowerCase() === 'general' ? t('employee:departments.general') :
-                             employee.department.toLowerCase() === 'hr' ? t('employee:departments.hr') :
-                             employee.department.toLowerCase() === 'it' ? t('employee:departments.it') :
-                             employee.department.toLowerCase() === 'finance' ? t('employee:departments.finance') :
-                             employee.department.toLowerCase() === 'operations' ? t('employee:departments.operations') :
-                             employee.department.toLowerCase() === 'sales' ? t('employee:departments.sales') :
-                             employee.department.toLowerCase() === 'marketing' ? t('employee:departments.marketing') :
-                             employee.department.toLowerCase() === 'engineering' ? t('employee:departments.engineering') :
-                             employee.department.toLowerCase() === 'maintenance' ? t('employee:departments.maintenance') :
-                             employee.department) : t('common.na')}
+                          {employee.email || t('common.na')}
+                        </TableCell>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                          {employee.department
+                            ? employee.department.toLowerCase() === 'general'
+                              ? t('employee:departments.general')
+                              : employee.department.toLowerCase() === 'hr'
+                                ? t('employee:departments.hr')
+                                : employee.department.toLowerCase() === 'it'
+                                  ? t('employee:departments.it')
+                                  : employee.department.toLowerCase() === 'finance'
+                                    ? t('employee:departments.finance')
+                                    : employee.department.toLowerCase() === 'operations'
+                                      ? t('employee:departments.operations')
+                                      : employee.department.toLowerCase() === 'sales'
+                                        ? t('employee:departments.sales')
+                                        : employee.department.toLowerCase() === 'marketing'
+                                          ? t('employee:departments.marketing')
+                                          : employee.department.toLowerCase() === 'engineering'
+                                            ? t('employee:departments.engineering')
+                                            : employee.department.toLowerCase() === 'maintenance'
+                                              ? t('employee:departments.maintenance')
+                                              : employee.department
+                            : t('common.na')}
                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           {employee.iqama_number ? (
                             <div>
-                              <div className="font-medium">{convertToArabicNumerals(employee.iqama_number, isRTL)}</div>
+                              <div className="font-medium">
+                                {convertToArabicNumerals(employee.iqama_number, isRTL)}
+                              </div>
                               {employee.iqama_expiry && isIqamaExpired(employee.iqama_expiry) && (
-                                <div className="text-sm text-red-500">({t('employee:iqama.expired')})</div>
+                                <div className="text-sm text-red-500">
+                                  ({t('employee:iqama.expired')})
+                                </div>
                               )}
                             </div>
                           ) : (
@@ -911,7 +925,9 @@ export default function EmployeeManagementPage() {
                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
                           {employee.iqama_expiry ? (
-                            <div className={`${isIqamaExpired(employee.iqama_expiry) ? 'text-red-600 font-medium' : ''}`}>
+                            <div
+                              className={`${isIqamaExpired(employee.iqama_expiry) ? 'text-red-600 font-medium' : ''}`}
+                            >
                               {formatDate(employee.iqama_expiry)}
                               {isIqamaExpired(employee.iqama_expiry) && (
                                 <div className="text-xs text-red-500">(Expired)</div>
@@ -926,37 +942,52 @@ export default function EmployeeManagementPage() {
                             <div>
                               <div className="font-medium">{employee.current_assignment.name}</div>
                               <div className="text-sm text-muted-foreground">
-                                {employee.current_assignment.type === 'project' ? t('employee:assignment.project') :
-                                 employee.current_assignment.type === 'rental' ? t('employee:assignment.rental') :
-                                 employee.current_assignment.type === 'manual' ? t('employee:assignment.manual') :
-                                 t('employee:assignment.assigned')}
+                                {employee.current_assignment.type === 'project'
+                                  ? t('employee:assignment.project')
+                                  : employee.current_assignment.type === 'rental'
+                                    ? t('employee:assignment.rental')
+                                    : employee.current_assignment.type === 'manual'
+                                      ? t('employee:assignment.manual')
+                                      : t('employee:assignment.assigned')}
                               </div>
                             </div>
                           ) : (
-                            <span className="text-muted-foreground">{t('employee:assignment.noAssignment')}</span>
+                            <span className="text-muted-foreground">
+                              {t('employee:assignment.noAssignment')}
+                            </span>
                           )}
                         </TableCell>
                         <TableCell className={isRTL ? 'text-right' : 'text-left'}>
-                          <Badge 
+                          <Badge
                             variant={
-                              employee.status === 'active' ? 'default' : 
-                              employee.status === 'on_leave' ? 'secondary' :
-                              employee.status === 'inactive' ? 'destructive' :
-                              'secondary'
+                              employee.status === 'active'
+                                ? 'default'
+                                : employee.status === 'on_leave'
+                                  ? 'secondary'
+                                  : employee.status === 'inactive'
+                                    ? 'destructive'
+                                    : 'secondary'
                             }
                             className={
                               employee.status === 'on_leave' ? 'bg-yellow-100 text-yellow-800' : ''
                             }
                           >
-                            {employee.status === 'active' ? t('employee:status.active') :
-                             employee.status === 'inactive' ? t('employee:status.inactive') :
-                             employee.status === 'on_leave' ? 'On Leave' :
-                             employee.status || t('common.na')}
+                            {employee.status === 'active'
+                              ? t('employee:status.active')
+                              : employee.status === 'inactive'
+                                ? t('employee:status.inactive')
+                                : employee.status === 'on_leave'
+                                  ? 'On Leave'
+                                  : employee.status || t('common.na')}
                           </Badge>
                         </TableCell>
-                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>{formatDate(employee.hire_date)}</TableCell>
+                        <TableCell className={isRTL ? 'text-right' : 'text-left'}>
+                          {formatDate(employee.hire_date)}
+                        </TableCell>
                         <TableCell className={isRTL ? 'text-left' : 'text-right'}>
-                          <div className={`flex items-center gap-2 ${isRTL ? 'justify-start' : 'justify-end'}`}>
+                          <div
+                            className={`flex items-center gap-2 ${isRTL ? 'justify-start' : 'justify-end'}`}
+                          >
                             <PermissionContent action="read" subject="Employee">
                               <Link href={`/modules/employee-management/${employee.id}`}>
                                 <Button variant="ghost" size="sm" title="View Details">
@@ -977,11 +1008,7 @@ export default function EmployeeManagementPage() {
 
                             <PermissionContent action="update" subject="Employee">
                               <Link href={`/modules/employee-management/${employee.id}/edit`}>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  title="Edit Employee"
-                                >
+                                <Button variant="ghost" size="sm" title="Edit Employee">
                                   <Edit className="h-4 w-4" />
                                 </Button>
                               </Link>
@@ -1009,25 +1036,33 @@ export default function EmployeeManagementPage() {
             </div>
 
             {/* Pagination */}
-            <div className={`flex items-center justify-between mt-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
+            <div
+              className={`flex items-center justify-between mt-4 ${isRTL ? 'flex-row-reverse' : ''}`}
+            >
               <div className={`flex items-center gap-4 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                <div className={`text-sm text-muted-foreground ${isRTL ? 'text-right' : 'text-left'}`}>
-                  {totalPages > 1 
-                    ? t('employee:pagination.showing', { 
-                        start: startIndex + 1, 
-                        end: Math.min(endIndex, totalItems), 
-                        total: totalItems 
+                <div
+                  className={`text-sm text-muted-foreground ${isRTL ? 'text-right' : 'text-left'}`}
+                >
+                  {totalPages > 1
+                    ? t('employee:pagination.showing', {
+                        start: startIndex + 1,
+                        end: Math.min(endIndex, totalItems),
+                        total: totalItems,
                       })
-                    : t('employee:pagination.showing', { 
-                        start: totalItems, 
-                        end: totalItems, 
-                        total: totalItems 
-                      })
-                  }
+                    : t('employee:pagination.showing', {
+                        start: totalItems,
+                        end: totalItems,
+                        total: totalItems,
+                      })}
                 </div>
                 <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-                  <span className="text-sm text-muted-foreground">{t('employee:pagination.show')}:</span>
-                  <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(Number(value))}>
+                  <span className="text-sm text-muted-foreground">
+                    {t('employee:pagination.show')}:
+                  </span>
+                  <Select
+                    value={itemsPerPage.toString()}
+                    onValueChange={value => setItemsPerPage(Number(value))}
+                  >
                     <SelectTrigger className="w-20">
                       <SelectValue />
                     </SelectTrigger>
@@ -1039,7 +1074,9 @@ export default function EmployeeManagementPage() {
                       <SelectItem value="100">100</SelectItem>
                     </SelectContent>
                   </Select>
-                  <span className="text-sm text-muted-foreground">{t('employee:pagination.perPage')}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {t('employee:pagination.perPage')}
+                  </span>
                 </div>
               </div>
               {totalPages > 1 && (
@@ -1075,15 +1112,13 @@ export default function EmployeeManagementPage() {
                         >
                           1
                         </Button>
-                        {currentPage > 3 && (
-                          <span className="px-2 text-muted-foreground">...</span>
-                        )}
+                        {currentPage > 3 && <span className="px-2 text-muted-foreground">...</span>}
                       </>
                     )}
 
                     {/* Current page and surrounding pages */}
                     {(() => {
-                    const pages: number[] = [];
+                      const pages: number[] = [];
                       const startPage = Math.max(1, currentPage - 1);
                       const endPage = Math.min(totalPages, currentPage + 1);
 
@@ -1091,10 +1126,10 @@ export default function EmployeeManagementPage() {
                         pages.push(page);
                       }
 
-                      return pages.map((page) => (
+                      return pages.map(page => (
                         <Button
                           key={page}
-                          variant={currentPage === page ? "default" : "outline"}
+                          variant={currentPage === page ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => setCurrentPage(page)}
                           className="w-8 h-8 p-0"

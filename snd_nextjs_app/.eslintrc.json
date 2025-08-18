@@ -1,0 +1,15 @@
+{
+  "root": true,
+  "extends": ["next", "next/core-web-vitals", "plugin:@typescript-eslint/recommended", "prettier"],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "ignorePatterns": ["*.config.*", "**/node_modules/**", "**/.next/**", "**/public/**"],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { "args": "after-used", "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+    ]
+  }
+}
+
+

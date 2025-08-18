@@ -2,9 +2,9 @@ import { ApprovalNotificationHelper } from './approval-notification-helper';
 
 /**
  * Example of how to integrate approval notifications into your existing timesheet approval workflow
- * 
+ *
  * This file shows the key points where you should add notification calls in your existing API routes.
- * 
+ *
  * IMPORTANT: This is just an example - don't copy this file directly.
  * Instead, use the patterns shown here to modify your existing API routes.
  */
@@ -22,21 +22,21 @@ export class TimesheetApprovalExample {
     try {
       // Get the next approval stage
       const nextStage = this.getNextApprovalStage(stage);
-      
+
       // Update timesheet approval status
       // This would typically update the database
       console.log(`Timesheet ${timesheetId} approved at stage ${stage} by ${approverId}`);
-      
+
       return {
         success: true,
         message: `Timesheet approved at ${stage} stage`,
-        nextStage
+        nextStage,
       };
     } catch (error) {
       console.error('Error approving timesheet:', error);
       return {
         success: false,
-        message: 'Failed to approve timesheet'
+        message: 'Failed to approve timesheet',
       };
     }
   }
@@ -79,7 +79,7 @@ export class TimesheetApprovalExample {
     // Example:
     // const approver = await getUserByRole(stage);
     // return approver?.email || null;
-    
+
     console.log(`Getting next approver for stage: ${stage}`);
     return null; // Placeholder
   }
@@ -87,27 +87,27 @@ export class TimesheetApprovalExample {
 
 /**
  * INTEGRATION GUIDE FOR YOUR EXISTING API ROUTES:
- * 
+ *
  * 1. In your timesheet submission API route (/api/timesheets/submit):
  *    - After successfully saving the timesheet
  *    - Call: TimesheetApprovalExample.onTimesheetSubmitted(timesheetId, employeeName, week, managerEmail)
- * 
+ *
  * 2. In your timesheet approval API route (/api/timesheets/approve):
  *    - After successfully updating the timesheet status
  *    - Call: TimesheetApprovalExample.onTimesheetApproved(timesheetId, employeeName, week, approvalStage, employeeEmail)
- * 
+ *
  * 3. In your timesheet rejection API route (/api/timesheets/reject):
  *    - After successfully rejecting the timesheet
  *    - Call: TimesheetApprovalExample.onTimesheetRejected(timesheetId, employeeName, week, reason, employeeEmail)
- * 
+ *
  * 4. For bulk operations (/api/timesheets/bulk-approve):
  *    - After processing multiple timesheets
  *    - Call: ApprovalNotificationHelper.notifyBulkApproval(managerEmail, 'timesheets', count, '/modules/timesheet-management')
- * 
+ *
  * EXAMPLE MODIFICATION TO YOUR EXISTING ROUTE:
- * 
+ *
  * // In your existing approve route, add this after the timesheet update:
- * 
+ *
  * // Send approval notification
  * await TimesheetApprovalExample.onTimesheetApproved(
  *   timesheetId,
@@ -116,7 +116,7 @@ export class TimesheetApprovalExample {
  *   approvalStage,
  *   updatedTimesheet.employee.user.email
  * );
- * 
+ *
  * // If there's a next approval stage, notify the next approver
  * if (approvalStage !== 'manager') {
  *   const nextStage = TimesheetApprovalExample.getNextApprovalStage(approvalStage);

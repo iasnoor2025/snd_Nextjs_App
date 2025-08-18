@@ -1,25 +1,31 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  Search, 
-  FileText, 
-  Download, 
-    Eye,
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { format } from 'date-fns';
+import {
+  Download,
+  Eye,
   FileDown,
+  FileImage,
+  FileText,
   RefreshCw,
-  User,
+  Search,
   Settings,
-  FileImage
-} from "lucide-react";
-import { toast } from "sonner";
-import { format } from "date-fns";
+  User,
+} from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Document {
   id: number;
@@ -61,8 +67,8 @@ interface CountsInfo {
 export default function DocumentManagementPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [documentType, setDocumentType] = useState("all");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [documentType, setDocumentType] = useState('all');
   const [selectedDocuments, setSelectedDocuments] = useState<Set<number>>(new Set());
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
@@ -70,45 +76,48 @@ export default function DocumentManagementPage() {
     total: 0,
     totalPages: 0,
     hasNext: false,
-    hasPrev: false
+    hasPrev: false,
   });
   const [counts, setCounts] = useState<CountsInfo>({
     employee: 0,
     equipment: 0,
-    total: 0
+    total: 0,
   });
   const [combining, setCombining] = useState(false);
 
-  const fetchDocuments = useCallback(async (page = 1, search = "", type = "all") => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: pagination.limit.toString(),
-        search,
-        type
-      });
+  const fetchDocuments = useCallback(
+    async (page = 1, search = '', type = 'all') => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({
+          page: page.toString(),
+          limit: pagination.limit.toString(),
+          search,
+          type,
+        });
 
-      const response = await fetch(`/api/documents/all?${params}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setDocuments(data.data.documents);
-          setPagination(data.data.pagination);
-          setCounts(data.data.counts);
+        const response = await fetch(`/api/documents/all?${params}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setDocuments(data.data.documents);
+            setPagination(data.data.pagination);
+            setCounts(data.data.counts);
+          } else {
+            toast.error('Failed to fetch documents');
+          }
         } else {
-          toast.error("Failed to fetch documents");
+          toast.error('Failed to fetch documents');
         }
-      } else {
-        toast.error("Failed to fetch documents");
+      } catch (error) {
+        console.error('Error fetching documents:', error);
+        toast.error('Failed to fetch documents');
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching documents:", error);
-      toast.error("Failed to fetch documents");
-    } finally {
-      setLoading(false);
-    }
-  }, [pagination.limit]);
+    },
+    [pagination.limit]
+  );
 
   useEffect(() => {
     fetchDocuments(1, searchTerm, documentType);
@@ -150,7 +159,8 @@ export default function DocumentManagementPage() {
 
   const getFileIcon = (mimeType: string) => {
     if (mimeType.includes('pdf')) return <FileText className="h-5 w-5 text-red-500" />;
-    if (mimeType.includes('word') || mimeType.includes('document')) return <FileText className="h-5 w-5 text-blue-500" />;
+    if (mimeType.includes('word') || mimeType.includes('document'))
+      return <FileText className="h-5 w-5 text-blue-500" />;
     if (mimeType.includes('image')) return <FileImage className="h-5 w-5 text-green-500" />;
     return <FileText className="h-5 w-5 text-gray-500" />;
   };
@@ -176,26 +186,26 @@ export default function DocumentManagementPage() {
         a.click();
         window.URL.revokeObjectURL(url);
         window.document.body.removeChild(a);
-        toast.success("Document downloaded successfully");
+        toast.success('Document downloaded successfully');
       } else {
-        toast.error("Failed to download document");
+        toast.error('Failed to download document');
       }
     } catch (error) {
-      console.error("Error downloading document:", error);
-      toast.error("Failed to download document");
+      console.error('Error downloading document:', error);
+      toast.error('Failed to download document');
     }
   };
 
   const combineDocumentsToPDF = async () => {
     if (selectedDocuments.size === 0) {
-      toast.error("Please select documents to combine");
+      toast.error('Please select documents to combine');
       return;
     }
 
     setCombining(true);
     try {
       const selectedDocIds = Array.from(selectedDocuments);
-      
+
       const response = await fetch('/api/documents/combine-pdf', {
         method: 'POST',
         headers: {
@@ -203,53 +213,53 @@ export default function DocumentManagementPage() {
         },
         body: JSON.stringify({
           documentIds: selectedDocIds,
-          type: documentType
+          type: documentType,
         }),
       });
 
-                     if (response.ok) {
-          // Get the PDF blob directly from the response
-          const pdfBlob = await response.blob();
-          
-          // Get filename from Content-Disposition header
-          const contentDisposition = response.headers.get('Content-Disposition');
-          let filename = `combined_documents_${Date.now()}.pdf`;
-          
-          if (contentDisposition) {
-            const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-            if (filenameMatch && filenameMatch[1]) {
-              filename = filenameMatch[1];
-            }
+      if (response.ok) {
+        // Get the PDF blob directly from the response
+        const pdfBlob = await response.blob();
+
+        // Get filename from Content-Disposition header
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `combined_documents_${Date.now()}.pdf`;
+
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (filenameMatch && filenameMatch[1]) {
+            filename = filenameMatch[1];
           }
-          
-          // Create download link
-          const downloadUrl = window.URL.createObjectURL(pdfBlob);
-          const a = window.document.createElement('a');
-          a.href = downloadUrl;
-          a.download = filename;
-          window.document.body.appendChild(a);
-          a.click();
-          window.document.body.removeChild(a);
-          
-          // Clean up the blob URL
-          window.URL.revokeObjectURL(downloadUrl);
-           
-         toast.success("Documents combined and downloaded successfully");
-         
-         // Clear selection after successful combination
-         setSelectedDocuments(new Set());
-       } else {
-         // Try to get error message from response
-         try {
-           const errorData = await response.json();
-           toast.error(errorData.message || "Failed to combine documents");
-         } catch {
-           toast.error("Failed to combine documents");
-         }
-       }
+        }
+
+        // Create download link
+        const downloadUrl = window.URL.createObjectURL(pdfBlob);
+        const a = window.document.createElement('a');
+        a.href = downloadUrl;
+        a.download = filename;
+        window.document.body.appendChild(a);
+        a.click();
+        window.document.body.removeChild(a);
+
+        // Clean up the blob URL
+        window.URL.revokeObjectURL(downloadUrl);
+
+        toast.success('Documents combined and downloaded successfully');
+
+        // Clear selection after successful combination
+        setSelectedDocuments(new Set());
+      } else {
+        // Try to get error message from response
+        try {
+          const errorData = await response.json();
+          toast.error(errorData.message || 'Failed to combine documents');
+        } catch {
+          toast.error('Failed to combine documents');
+        }
+      }
     } catch (error) {
-      console.error("Error combining documents:", error);
-      toast.error("Failed to combine documents");
+      console.error('Error combining documents:', error);
+      toast.error('Failed to combine documents');
     } finally {
       setCombining(false);
     }
@@ -328,7 +338,7 @@ export default function DocumentManagementPage() {
                 <Input
                   placeholder="Search documents, employees, or equipment..."
                   value={searchTerm}
-                  onChange={(e) => handleSearch(e.target.value)}
+                  onChange={e => handleSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -360,19 +370,19 @@ export default function DocumentManagementPage() {
                   Clear Selection
                 </Button>
               </div>
-                             <div className="flex gap-2">
-                 <Button
-                   onClick={combineDocumentsToPDF}
-                   disabled={combining}
-                   className="bg-primary hover:bg-primary/90"
-                 >
-                   <FileDown className="h-4 w-4 mr-2" />
-                   {combining ? "Combining Documents..." : "Combine Documents to PDF"}
-                 </Button>
-               </div>
-               <div className="text-xs text-muted-foreground mt-2">
-                 This will create a PDF containing all selected documents (images, PDFs, etc.)
-               </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={combineDocumentsToPDF}
+                  disabled={combining}
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  {combining ? 'Combining Documents...' : 'Combine Documents to PDF'}
+                </Button>
+              </div>
+              <div className="text-xs text-muted-foreground mt-2">
+                This will create a PDF containing all selected documents (images, PDFs, etc.)
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -406,23 +416,21 @@ export default function DocumentManagementPage() {
               <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
           ) : documents.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No documents found
-            </div>
+            <div className="text-center py-8 text-muted-foreground">No documents found</div>
           ) : (
             <div className="space-y-4">
-              {documents.map((document) => (
+              {documents.map(document => (
                 <div
                   key={document.id}
                   className="flex items-center gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                 >
                   <Checkbox
                     checked={selectedDocuments.has(document.id)}
-                    onCheckedChange={(checked) => 
+                    onCheckedChange={checked =>
                       handleDocumentSelect(document.id, checked as boolean)
                     }
                   />
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       {getFileIcon(document.mimeType)}
@@ -436,15 +444,14 @@ export default function DocumentManagementPage() {
                         </Badge>
                       )}
                     </div>
-                    
+
                     <div className="flex flex-col sm:flex-row gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
                         <span className="font-medium">Owner:</span>
                         <span>
-                          {document.type === 'employee' 
+                          {document.type === 'employee'
                             ? `${document.employeeName || 'Unknown'} (${document.employeeFileNumber || 'No File #'})`
-                            : `${document.equipmentName || 'Unknown'} ${document.equipmentModel ? `(${document.equipmentModel})` : ''}`
-                          }
+                            : `${document.equipmentName || 'Unknown'} ${document.equipmentModel ? `(${document.equipmentModel})` : ''}`}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -457,7 +464,7 @@ export default function DocumentManagementPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -466,11 +473,7 @@ export default function DocumentManagementPage() {
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => downloadDocument(document)}
-                    >
+                    <Button variant="outline" size="sm" onClick={() => downloadDocument(document)}>
                       <Download className="h-4 w-4" />
                     </Button>
                   </div>

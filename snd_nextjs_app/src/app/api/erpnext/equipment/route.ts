@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { equipment } from '@/lib/drizzle/schema';
 import { eq, or } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 // ERPNext configuration
 const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
@@ -16,9 +16,9 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   const url = `${ERPNEXT_URL}${endpoint}`;
 
   const defaultHeaders = {
-    'Authorization': `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
+    Authorization: `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept: 'application/json',
   };
 
   const response = await fetch(url, {
@@ -55,14 +55,14 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: data.data || [],
-      count: data.data?.length || 0
+      count: data.data?.length || 0,
     });
   } catch (error) {
     console.error('Error fetching ERPNext equipment:', error);
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to fetch equipment'
+        message: error instanceof Error ? error.message : 'Failed to fetch equipment',
       },
       { status: 500 }
     );
@@ -81,7 +81,7 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: 'Invalid action specified'
+        message: 'Invalid action specified',
       },
       { status: 400 }
     );
@@ -90,7 +90,7 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to process request'
+        message: error instanceof Error ? error.message : 'Failed to process request',
       },
       { status: 500 }
     );
@@ -102,7 +102,7 @@ async function syncEquipmentFromERPNext() {
     console.log('Starting ERPNext equipment sync...');
 
     // Fetch equipment from ERPNext
-    const filters = encodeURIComponent(JSON.stringify([["item_group", "=", "Equipment"]]));
+    const filters = encodeURIComponent(JSON.stringify([['item_group', '=', 'Equipment']]));
     const endpoint = `/api/resource/Item?filters=${filters}&limit_page_length=1000&fields=["name","item_code","item_name","description","item_group","stock_uom","disabled","standard_rate","last_purchase_rate","valuation_rate","stock_qty","model","serial_no","manufacturer"]`;
 
     const erpData = await makeERPNextRequest(endpoint);
@@ -143,10 +143,7 @@ async function syncEquipmentFromERPNext() {
           })
           .from(equipment)
           .where(
-            or(
-              eq(equipment.erpnextId, item.item_code),
-              eq(equipment.serialNumber, item.serial_no)
-            )
+            or(eq(equipment.erpnextId, item.item_code), eq(equipment.serialNumber, item.serial_no))
           )
           .limit(1);
 
@@ -170,9 +167,7 @@ async function syncEquipmentFromERPNext() {
           updatedCount++;
         } else {
           // Create new equipment using Drizzle
-          await db
-            .insert(equipment)
-            .values(equipmentData);
+          await db.insert(equipment).values(equipmentData);
           createdCount++;
         }
       } catch (error) {
@@ -181,7 +176,9 @@ async function syncEquipmentFromERPNext() {
       }
     }
 
-    console.log(`ERPNext equipment sync completed: ${createdCount} created, ${updatedCount} updated, ${errorCount} errors`);
+    console.log(
+      `ERPNext equipment sync completed: ${createdCount} created, ${updatedCount} updated, ${errorCount} errors`
+    );
 
     return NextResponse.json({
       success: true,
@@ -190,18 +187,17 @@ async function syncEquipmentFromERPNext() {
         total_processed: equipmentItems.length,
         created: createdCount,
         updated: updatedCount,
-        errors: errorCount
-      }
+        errors: errorCount,
+      },
     });
-
   } catch (error) {
     console.error('Error syncing equipment from ERPNext:', error);
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to sync equipment from ERPNext'
+        message: error instanceof Error ? error.message : 'Failed to sync equipment from ERPNext',
       },
       { status: 500 }
     );
   }
-} 
+}

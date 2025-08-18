@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { employees, timesheets, payrolls, payrollItems, payrollRuns } from '@/lib/drizzle/schema';
-import { eq, and, gte, lt } from 'drizzle-orm';
+import { employees, payrollItems, payrollRuns, payrolls, timesheets } from '@/lib/drizzle/schema';
+import { and, eq, gte, lt } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest) {
   try {
@@ -16,7 +16,9 @@ export async function POST(_request: NextRequest) {
 
     const now = new Date();
     const startDate = new Date(start_month + '-01');
-    const endDate = end_month ? new Date(end_month + '-01') : new Date(now.getFullYear(), now.getMonth(), 1);
+    const endDate = end_month
+      ? new Date(end_month + '-01')
+      : new Date(now.getFullYear(), now.getMonth(), 1);
 
     const processedEmployees: string[] = [];
     const generatedPayrolls: string[] = [];
@@ -85,12 +87,16 @@ export async function POST(_request: NextRequest) {
 
           // Calculate payroll based on timesheets
           const totalHours = timesheetsData.reduce((sum, ts) => sum + Number(ts.hoursWorked), 0);
-          const totalOvertimeHours = timesheetsData.reduce((sum, ts) => sum + Number(ts.overtimeHours), 0);
+          const totalOvertimeHours = timesheetsData.reduce(
+            (sum, ts) => sum + Number(ts.overtimeHours),
+            0
+          );
 
           const overtimeAmount = totalOvertimeHours * (Number(employee.basicSalary) / 160) * 1.5;
           const bonusAmount = 0; // Manual setting only
           const deductionAmount = 0; // Manual setting only
-          const finalAmount = Number(employee.basicSalary) + overtimeAmount + bonusAmount - deductionAmount;
+          const finalAmount =
+            Number(employee.basicSalary) + overtimeAmount + bonusAmount - deductionAmount;
 
           // Create payroll
           const insertedPayrolls = await db
@@ -116,38 +122,36 @@ export async function POST(_request: NextRequest) {
             .returning();
 
           const payroll = insertedPayrolls[0];
-          
+
           if (!payroll) {
             throw new Error('Failed to create payroll record');
           }
 
           // Create payroll items
-          await db
-            .insert(payrollItems)
-            .values([
-              {
-                payrollId: payroll.id,
-                type: 'earnings',
-                description: 'Basic Salary',
-                amount: Number(employee.basicSalary).toString(),
-                isTaxable: true,
-                taxRate: '15',
-                order: 1,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              },
-              {
-                payrollId: payroll.id,
-                type: 'overtime',
-                description: 'Overtime Pay',
-                amount: overtimeAmount.toString(),
-                isTaxable: true,
-                taxRate: '15',
-                order: 2,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              }
-            ]);
+          await db.insert(payrollItems).values([
+            {
+              payrollId: payroll.id,
+              type: 'earnings',
+              description: 'Basic Salary',
+              amount: Number(employee.basicSalary).toString(),
+              isTaxable: true,
+              taxRate: '15',
+              order: 1,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+            {
+              payrollId: payroll.id,
+              type: 'overtime',
+              description: 'Overtime Pay',
+              amount: overtimeAmount.toString(),
+              isTaxable: true,
+              taxRate: '15',
+              order: 2,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            },
+          ]);
 
           generatedPayrolls.push(payroll.id.toString());
           totalGenerated++;
@@ -176,12 +180,13 @@ export async function POST(_request: NextRequest) {
       .returning();
 
     const payrollRun = insertedPayrollRuns[0];
-    
+
     if (!payrollRun) {
       throw new Error('Failed to create payroll run record');
     }
 
-    let message = `Payroll generation completed successfully.\n` +
+    let message =
+      `Payroll generation completed successfully.\n` +
       `Generated: ${totalGenerated} payrolls\n` +
       `Skipped: ${totalSkipped} months (already exists or no approved timesheets)\n` +
       `Errors: ${errors.length}`;
@@ -205,15 +210,15 @@ export async function POST(_request: NextRequest) {
         total_skipped: totalSkipped,
         total_errors: errors.length,
         processed_employees: processedEmployees,
-        errors: errors
+        errors: errors,
       },
-      payroll_run_id: payrollRun.id
+      payroll_run_id: payrollRun.id,
     });
   } catch (error) {
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to generate payroll for all months: ' + (error as Error).message
+        message: 'Failed to generate payroll for all months: ' + (error as Error).message,
       },
       { status: 500 }
     );

@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
-import { users, roles, modelHasRoles } from '@/lib/drizzle/schema';
+import { modelHasRoles, roles, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -22,7 +22,6 @@ export async function GET(_request: NextRequest) {
 
         roleId: roles.id,
         roleName: roles.name,
-
       })
       .from(users)
       .leftJoin(modelHasRoles, eq(users.id, modelHasRoles.userId))
@@ -40,15 +39,16 @@ export async function GET(_request: NextRequest) {
         email: session.user.email,
         role: session.user.role,
       },
-      databaseInfo: userRole ? {
-        userId: userRole.userId,
-        userName: userRole.userName,
-        userEmail: userRole.userEmail,
+      databaseInfo: userRole
+        ? {
+            userId: userRole.userId,
+            userName: userRole.userName,
+            userEmail: userRole.userEmail,
 
-        roleId: userRole.roleId,
-        roleName: userRole.roleName,
-
-      } : null,
+            roleId: userRole.roleId,
+            roleName: userRole.roleName,
+          }
+        : null,
       sessionData: {
         user: session.user,
         expires: session.expires,
@@ -56,9 +56,12 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Error testing permissions:', error);
-    return NextResponse.json({ 
-      error: 'Internal server error', 
-      details: error instanceof Error ? error.message : 'Unknown error' 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
 }

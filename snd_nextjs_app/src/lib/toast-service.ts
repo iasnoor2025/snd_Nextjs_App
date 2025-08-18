@@ -87,8 +87,6 @@ export class ToastService {
     return this.error('Access forbidden', options);
   }
 
-
-
   static networkError(options?: ToastOptions) {
     return this.error('Network error. Please check your connection.', options);
   }
@@ -275,7 +273,9 @@ export class ToastService {
   // ========================================
 
   static syncSuccess(subject: string, count?: number, options?: ToastOptions) {
-    const message = count ? `${subject} synced (${count} records)` : `${subject} synced successfully`;
+    const message = count
+      ? `${subject} synced (${count} records)`
+      : `${subject} synced successfully`;
     return this.success(message, options);
   }
 
@@ -360,4 +360,4 @@ export class ToastService {
 }
 
 // Export default instance for convenience
-export default ToastService; 
+export default ToastService;

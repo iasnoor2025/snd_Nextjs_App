@@ -1,186 +1,198 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
 import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Building,
-  Shield,
-  Bell,
-  Palette,
-  Languages,
-  Key,
-  Trash2,
-  Edit,
-  Camera,
-  Check,
-  X,
-  Database,
-  Link,
-  Info,
-  Image,
-  Download,
-  Eye,
-  FileText,
-  IdCard,
-  Calendar,
-  Flag,
-  Briefcase,
-  Home,
-  Globe,
-  Clock,
-  Star,
-  Settings,
-  Lock,
-  EyeOff,
-  QrCode,
-  Fingerprint,
-  Smartphone,
-  Laptop,
-  Moon,
-  Sun,
-  Monitor,
-  RotateCcw,
-  Car,
-  Wrench,
   AlertTriangle,
-  Plane,
-  MessageSquare,
+  Bell,
+  Briefcase,
+  Building,
+  Calendar,
+  Camera,
+  Car,
+  Check,
+  Clock,
+  Database,
+  Download,
+  Edit,
+  Eye,
+  EyeOff,
+  FileText,
+  Fingerprint,
+  Flag,
+  Globe,
+  Home,
+  IdCard,
+  Image,
+  Info,
+  Key,
+  Languages,
+  Laptop,
+  Link,
   Loader2,
+  Lock,
+  Mail,
+  MapPin,
+  MessageSquare,
+  Monitor,
+  Moon,
+  Palette,
+  Phone,
+  Plane,
+  QrCode,
+  RotateCcw,
   Save,
-  Upload
-} from "lucide-react"
+  Settings,
+  Shield,
+  Smartphone,
+  Star,
+  Sun,
+  Trash2,
+  Upload,
+  User,
+  Wrench,
+  X,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { toast } from "sonner"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Progress } from "@/components/ui/progress"
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 
 // i18n refactor: All user-facing strings now use useTranslation('profile')
 import { useTranslation } from 'react-i18next';
 
 interface MatchedEmployee {
-  id: number
-  firstName: string
-  middleName?: string
-  lastName: string
-  fileNumber: string
-  phone?: string
-  email?: string
-  address?: string
-  city?: string
-  state?: string
-  country?: string
-  nationality?: string
-  dateOfBirth?: string
-  hireDate?: string
-  iqamaNumber?: string
-  iqamaExpiry?: string
-  passportNumber?: string
-  passportExpiry?: string
-  drivingLicenseNumber?: string
-  drivingLicenseExpiry?: string
-  operatorLicenseNumber?: string
-  operatorLicenseExpiry?: string
-  designationId?: number
-  departmentId?: number
-  userId?: number
-  designation?: string
-  department?: string
+  id: number;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  fileNumber: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  nationality?: string;
+  dateOfBirth?: string;
+  hireDate?: string;
+  iqamaNumber?: string;
+  iqamaExpiry?: string;
+  passportNumber?: string;
+  passportExpiry?: string;
+  drivingLicenseNumber?: string;
+  drivingLicenseExpiry?: string;
+  operatorLicenseNumber?: string;
+  operatorLicenseExpiry?: string;
+  designationId?: number;
+  departmentId?: number;
+  userId?: number;
+  designation?: string;
+  department?: string;
 }
 
 interface UserProfile {
-  id: string
-  name: string
-  email: string
-  phone: string
-  avatar: string
-  role: string
-  department: string
-  location: string
-  bio: string
-  joinDate: string
-  lastLogin: string
-  status: "active" | "inactive"
-  firstName?: string
-  middleName?: string
-  lastName?: string
-  designation?: string
-  address?: string
-  city?: string
-  state?: string
-  country?: string
-  nationalId?: string
-  matchedEmployee?: MatchedEmployee
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  avatar: string;
+  role: string;
+  department: string;
+  location: string;
+  bio: string;
+  joinDate: string;
+  lastLogin: string;
+  status: 'active' | 'inactive';
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  designation?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  nationalId?: string;
+  matchedEmployee?: MatchedEmployee;
 }
 
 interface ProfileStats {
-  profileCompletion: number
-  documentsCount: number
-  lastActivity: string
-  securityScore: number
+  profileCompletion: number;
+  documentsCount: number;
+  lastActivity: string;
+  securityScore: number;
 }
 
 interface NotificationSettings {
-  emailNotifications: boolean
-  pushNotifications: boolean
-  smsNotifications: boolean
-  marketingEmails: boolean
-  securityAlerts: boolean
-  weeklyReports: boolean
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  smsNotifications: boolean;
+  marketingEmails: boolean;
+  securityAlerts: boolean;
+  weeklyReports: boolean;
 }
 
 interface AppearanceSettings {
-  theme: "light" | "dark" | "system"
-  language: string
-  timezone: string
-  dateFormat: string
+  theme: 'light' | 'dark' | 'system';
+  language: string;
+  timezone: string;
+  dateFormat: string;
 }
 
 export default function ProfilePage() {
   const { t } = useTranslation('profile');
   const [profile, setProfile] = useState<UserProfile>({
-    id: "",
-    name: "",
-    email: "",
-    phone: "",
-    avatar: "",
-    role: "",
-    department: "",
-    location: "",
-    bio: "",
-    joinDate: "",
-    lastLogin: "",
-    status: "inactive"
-  })
+    id: '',
+    name: '',
+    email: '',
+    phone: '',
+    avatar: '',
+    role: '',
+    department: '',
+    location: '',
+    bio: '',
+    joinDate: '',
+    lastLogin: '',
+    status: 'inactive',
+  });
 
   const [profileStats, setProfileStats] = useState<ProfileStats>({
     profileCompletion: 0,
     documentsCount: 0,
-    lastActivity: "",
-    securityScore: 85
-  })
+    lastActivity: '',
+    securityScore: 85,
+  });
 
-
-
-  const [isLoading, setIsLoading] = useState(true)
-  const [isEditing, setIsEditing] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
+  const [isLoading, setIsLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const [notifications, setNotifications] = useState<NotificationSettings>({
     emailNotifications: true,
@@ -188,28 +200,40 @@ export default function ProfilePage() {
     smsNotifications: false,
     marketingEmails: false,
     securityAlerts: true,
-    weeklyReports: true
-  })
+    weeklyReports: true,
+  });
 
   const [appearance, setAppearance] = useState<AppearanceSettings>({
-    theme: "system",
-    language: "en",
-    timezone: "America/New_York",
-    dateFormat: "MM/DD/YYYY"
-  })
+    theme: 'system',
+    language: 'en',
+    timezone: 'America/New_York',
+    dateFormat: 'MM/DD/YYYY',
+  });
 
   // Calculate profile completion percentage
   const calculateProfileCompletion = (profileData: UserProfile) => {
     const fields = [
-      'name', 'email', 'phone', 'firstName', 'lastName',
-      'address', 'city', 'state', 'country', 'bio',
-      'role', 'department', 'nationalId'
+      'name',
+      'email',
+      'phone',
+      'firstName',
+      'lastName',
+      'address',
+      'city',
+      'state',
+      'country',
+      'bio',
+      'role',
+      'department',
+      'nationalId',
     ];
 
     let completedFields = 0;
     fields.forEach(field => {
-      if (profileData[field as keyof UserProfile] &&
-        profileData[field as keyof UserProfile] !== '') {
+      if (
+        profileData[field as keyof UserProfile] &&
+        profileData[field as keyof UserProfile] !== ''
+      ) {
         completedFields++;
       }
     });
@@ -223,26 +247,26 @@ export default function ProfilePage() {
       const completion = calculateProfileCompletion(profile);
       setProfileStats(prev => ({
         ...prev,
-        profileCompletion: completion
+        profileCompletion: completion,
       }));
     }
   }, [profile]);
 
   // Fetch profile data on component mount
   useEffect(() => {
-    fetchProfile()
-  }, [])
+    fetchProfile();
+  }, []);
 
   // Add retry functionality
   const retryFetch = () => {
-    setIsLoading(true)
-    fetchProfile()
-  }
+    setIsLoading(true);
+    fetchProfile();
+  };
 
   const fetchProfile = async () => {
     try {
-      console.log('🔄 Fetching profile data from API...')
-      const response = await fetch('/api/profile')
+      console.log('🔄 Fetching profile data from API...');
+      const response = await fetch('/api/profile');
 
       console.log('📊 Response status:', response.status);
       console.log('📊 Response headers:', Object.fromEntries(response.headers.entries()));
@@ -267,9 +291,9 @@ export default function ProfilePage() {
           return;
         }
 
-        console.log('✅ Profile data received:', data)
-        console.log('✅ Matched employee data:', data.matchedEmployee)
-        setProfile(data)
+        console.log('✅ Profile data received:', data);
+        console.log('✅ Matched employee data:', data.matchedEmployee);
+        setProfile(data);
       } else {
         const responseText = await response.text();
         console.log('❌ Error response text:', responseText);
@@ -282,19 +306,19 @@ export default function ProfilePage() {
           errorData = { error: 'Unknown error', details: responseText };
         }
 
-        console.error('❌ Profile fetch error:', errorData)
-        toast.error(errorData.error || 'Failed to load profile')
+        console.error('❌ Profile fetch error:', errorData);
+        toast.error(errorData.error || 'Failed to load profile');
       }
     } catch (error) {
-      console.error('❌ Network error fetching profile:', error)
-      toast.error('Network error - check console for details')
+      console.error('❌ Network error fetching profile:', error);
+      toast.error('Network error - check console for details');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleSaveProfile = async () => {
-    setIsSaving(true)
+    setIsSaving(true);
     try {
       const response = await fetch('/api/profile', {
         method: 'PUT',
@@ -316,27 +340,27 @@ export default function ProfilePage() {
           department: profile.department,
           nationalId: profile.nationalId,
         }),
-      })
+      });
 
       if (response.ok) {
-        const updatedProfile = await response.json()
-        setProfile(updatedProfile)
-        toast.success(t('updateSuccess'))
-        setIsEditing(false)
+        const updatedProfile = await response.json();
+        setProfile(updatedProfile);
+        toast.success(t('updateSuccess'));
+        setIsEditing(false);
       } else {
-        const error = await response.json()
-        toast.error(error.error || "Failed to update profile")
+        const error = await response.json();
+        toast.error(error.error || 'Failed to update profile');
       }
     } catch (error) {
-      console.error('Error updating profile:', error)
-      toast.error("Failed to update profile")
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   const handleSaveNotifications = async () => {
-    setIsSaving(true)
+    setIsSaving(true);
     try {
       const response = await fetch('/api/profile/settings', {
         method: 'PUT',
@@ -347,24 +371,24 @@ export default function ProfilePage() {
           type: 'notifications',
           settings: notifications,
         }),
-      })
+      });
 
       if (response.ok) {
-        toast.success(t('notificationSettingsUpdated'))
+        toast.success(t('notificationSettingsUpdated'));
       } else {
-        const error = await response.json()
-        toast.error(error.error || "Failed to update notification settings")
+        const error = await response.json();
+        toast.error(error.error || 'Failed to update notification settings');
       }
     } catch (error) {
-      console.error('Error updating notifications:', error)
-      toast.error("Failed to update notification settings")
+      console.error('Error updating notifications:', error);
+      toast.error('Failed to update notification settings');
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   const handleSaveAppearance = async () => {
-    setIsSaving(true)
+    setIsSaving(true);
     try {
       const response = await fetch('/api/profile/settings', {
         method: 'PUT',
@@ -375,49 +399,49 @@ export default function ProfilePage() {
           type: 'appearance',
           settings: appearance,
         }),
-      })
+      });
 
       if (response.ok) {
-        toast.success(t('appearanceSettingsUpdated'))
+        toast.success(t('appearanceSettingsUpdated'));
       } else {
-        const error = await response.json()
-        toast.error(error.error || "Failed to update appearance settings")
+        const error = await response.json();
+        toast.error(error.error || 'Failed to update appearance settings');
       }
     } catch (error) {
-      console.error('Error updating appearance:', error)
-      toast.error("Failed to update appearance settings")
+      console.error('Error updating appearance:', error);
+      toast.error('Failed to update appearance settings');
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   const handleDeleteAccount = async () => {
-    setIsSaving(true)
+    setIsSaving(true);
     try {
       // In a real app, you would call the delete account API
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      toast.success(t('accountDeletionInitiated'))
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      toast.success(t('accountDeletionInitiated'));
     } catch (error) {
-      toast.error("Failed to delete account")
+      toast.error('Failed to delete account');
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   // Helper function to format dates
   const formatDate = (dateString: string | undefined) => {
-    if (!dateString) return 'Not specified'
+    if (!dateString) return 'Not specified';
     try {
-      return new Date(dateString).toLocaleDateString()
+      return new Date(dateString).toLocaleDateString();
     } catch {
-      return 'Invalid date'
+      return 'Invalid date';
     }
-  }
+  };
 
   // Helper function to check if we have real employee data
   const hasRealEmployeeData = () => {
-    return profile.firstName || profile.matchedEmployee
-  }
+    return profile.firstName || profile.matchedEmployee;
+  };
 
   // Handle profile picture upload
   const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -430,7 +454,8 @@ export default function ProfilePage() {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+    if (file.size > 5 * 1024 * 1024) {
+      // 5MB limit
       toast.error('File size must be less than 5MB');
       return;
     }
@@ -513,23 +538,23 @@ export default function ProfilePage() {
         state: profile.state,
         country: profile.country,
         bio: profile.bio,
-        nationalId: profile.nationalId
+        nationalId: profile.nationalId,
       },
       workInfo: {
         role: profile.role,
         department: profile.department,
         location: profile.location,
-        joinDate: profile.joinDate
+        joinDate: profile.joinDate,
       },
       settings: {
         notifications,
-        appearance
+        appearance,
       },
-      exportDate: new Date().toISOString()
+      exportDate: new Date().toISOString(),
     };
 
     const blob = new Blob([JSON.stringify(profileData, null, 2)], {
-      type: 'application/json'
+      type: 'application/json',
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -557,12 +582,7 @@ export default function ProfilePage() {
                 <h2 className="text-xl font-semibold text-foreground">Loading Your Profile</h2>
                 <p className="text-muted-foreground">Preparing your personalized dashboard...</p>
               </div>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={retryFetch}
-                className="mt-4"
-              >
+              <Button variant="outline" size="lg" onClick={retryFetch} className="mt-4">
                 <RotateCcw className="h-4 w-4 mr-2" />
                 Retry
               </Button>
@@ -570,7 +590,7 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -586,7 +606,10 @@ export default function ProfilePage() {
                   <Avatar className="h-24 w-24 ring-4 ring-background shadow-xl">
                     <AvatarImage src={profile.avatar} alt={profile.name} />
                     <AvatarFallback className="text-3xl font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground">
-                      {profile.name.split(' ').map(n => n[0]).join('')}
+                      {profile.name
+                        .split(' ')
+                        .map(n => n[0])
+                        .join('')}
                     </AvatarFallback>
                   </Avatar>
                   <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1 ring-2 ring-background">
@@ -598,14 +621,16 @@ export default function ProfilePage() {
                     {profile.name || 'Your Profile'}
                   </h1>
                   <p className="text-xl text-muted-foreground">
-                    {profile.role && profile.department ? `${profile.role} • ${profile.department}` : 'Employee Profile'}
+                    {profile.role && profile.department
+                      ? `${profile.role} • ${profile.department}`
+                      : 'Employee Profile'}
                   </p>
                   <div className="flex items-center gap-4">
                     <Badge variant="secondary" className="px-3 py-1">
                       <IdCard className="h-3 w-3 mr-1" />
                       {profile.nationalId || 'No National ID'}
                     </Badge>
-                    <Badge variant={profile.status === "active" ? "default" : "secondary"}>
+                    <Badge variant={profile.status === 'active' ? 'default' : 'secondary'}>
                       <Check className="h-3 w-3 mr-1" />
                       {profile.status}
                     </Badge>
@@ -614,14 +639,14 @@ export default function ProfilePage() {
               </div>
               <div className="flex gap-3">
                 <Button
-                  variant={isEditing ? "outline" : "default"}
+                  variant={isEditing ? 'outline' : 'default'}
                   size="lg"
                   onClick={() => setIsEditing(!isEditing)}
                   disabled={isSaving}
                   className="shadow-lg"
                 >
                   {isEditing ? <X className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
-                  {isEditing ? "Cancel" : "Edit Profile"}
+                  {isEditing ? 'Cancel' : 'Edit Profile'}
                 </Button>
                 <Button variant="outline" size="lg" className="shadow-lg">
                   <Settings className="h-4 w-4 mr-2" />
@@ -639,7 +664,9 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-blue-600">Profile Completion</p>
-                  <p className="text-2xl font-bold text-blue-900">{profileStats.profileCompletion}%</p>
+                  <p className="text-2xl font-bold text-blue-900">
+                    {profileStats.profileCompletion}%
+                  </p>
                 </div>
                 <div className="bg-blue-100 p-3 rounded-full">
                   <User className="h-6 w-6 text-blue-600" />
@@ -690,7 +717,9 @@ export default function ProfilePage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-purple-600">Security Score</p>
-                  <p className="text-2xl font-bold text-purple-900">{profileStats.securityScore}%</p>
+                  <p className="text-2xl font-bold text-purple-900">
+                    {profileStats.securityScore}%
+                  </p>
                 </div>
                 <div className="bg-purple-100 p-3 rounded-full">
                   <Shield className="h-6 w-6 text-purple-600" />
@@ -768,11 +797,7 @@ export default function ProfilePage() {
                   <Camera className="h-4 w-4 mr-2" />
                   Change Photo
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExportProfile}
-                >
+                <Button variant="outline" size="sm" onClick={handleExportProfile}>
                   <Download className="h-4 w-4 mr-2" />
                   Export Data
                 </Button>
@@ -813,7 +838,8 @@ export default function ProfilePage() {
           <Alert className="border-primary/20 bg-primary/5">
             <Database className="h-4 w-4 text-primary" />
             <AlertDescription className="text-primary">
-              <strong>Database Connected:</strong> Your profile is displaying real employee information from the database.
+              <strong>Database Connected:</strong> Your profile is displaying real employee
+              information from the database.
               {profile.matchedEmployee && (
                 <span className="ml-2">
                   <Link className="h-4 w-4 inline mr-1" />
@@ -826,19 +852,31 @@ export default function ProfilePage() {
 
         <Tabs defaultValue="profile" className="space-y-8">
           <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/50">
-            <TabsTrigger value="profile" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsTrigger
+              value="profile"
+              className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
               <User className="h-4 w-4 mr-2" />
               Profile
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsTrigger
+              value="notifications"
+              className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
               <Bell className="h-4 w-4 mr-2" />
               Notifications
             </TabsTrigger>
-            <TabsTrigger value="appearance" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsTrigger
+              value="appearance"
+              className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
               <Palette className="h-4 w-4 mr-2" />
               Appearance
             </TabsTrigger>
-            <TabsTrigger value="security" className="data-[state=active]:bg-background data-[state=active]:shadow-sm">
+            <TabsTrigger
+              value="security"
+              className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
+            >
               <Shield className="h-4 w-4 mr-2" />
               Security
             </TabsTrigger>
@@ -872,14 +910,18 @@ export default function ProfilePage() {
                       </Button>
                     )}
                     <Button
-                      variant={isEditing ? "default" : "outline"}
+                      variant={isEditing ? 'default' : 'outline'}
                       size="lg"
                       onClick={() => setIsEditing(!isEditing)}
                       disabled={isSaving}
                       className="shadow-md"
                     >
-                      {isEditing ? <Check className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
-                      {isEditing ? "Save Changes" : "Edit Profile"}
+                      {isEditing ? (
+                        <Check className="h-4 w-4 mr-2" />
+                      ) : (
+                        <Edit className="h-4 w-4 mr-2" />
+                      )}
+                      {isEditing ? 'Save Changes' : 'Edit Profile'}
                     </Button>
                   </div>
                 </div>
@@ -891,7 +933,10 @@ export default function ProfilePage() {
                     <Avatar className="h-32 w-32 ring-4 ring-primary/20 shadow-xl">
                       <AvatarImage src={profile.avatar} alt={profile.name} />
                       <AvatarFallback className="text-4xl font-bold bg-gradient-to-br from-primary to-primary/60 text-primary-foreground">
-                        {profile.name.split(' ').map(n => n[0]).join('')}
+                        {profile.name
+                          .split(' ')
+                          .map(n => n[0])
+                          .join('')}
                       </AvatarFallback>
                     </Avatar>
                     {isEditing && (
@@ -914,21 +959,27 @@ export default function ProfilePage() {
                   <div className="flex-1 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-3">
-                        <Label htmlFor="name" className="text-sm font-semibold text-muted-foreground">
+                        <Label
+                          htmlFor="name"
+                          className="text-sm font-semibold text-muted-foreground"
+                        >
                           <User className="h-4 w-4 inline mr-2" />
                           Full Name
                         </Label>
                         <Input
                           id="name"
                           value={profile.name}
-                          onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                          onChange={e => setProfile({ ...profile, name: e.target.value })}
                           disabled={!isEditing}
                           className="h-12 text-base border-2 focus:border-primary/50"
                           placeholder="Enter your full name"
                         />
                       </div>
                       <div className="space-y-3">
-                        <Label htmlFor="email" className="text-sm font-semibold text-muted-foreground">
+                        <Label
+                          htmlFor="email"
+                          className="text-sm font-semibold text-muted-foreground"
+                        >
                           <Mail className="h-4 w-4 inline mr-2" />
                           Email Address
                         </Label>
@@ -936,35 +987,41 @@ export default function ProfilePage() {
                           id="email"
                           type="email"
                           value={profile.email}
-                          onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                          onChange={e => setProfile({ ...profile, email: e.target.value })}
                           disabled={!isEditing}
                           className="h-12 text-base border-2 focus:border-primary/50"
                           placeholder="Enter your email"
                         />
                       </div>
                       <div className="space-y-3">
-                        <Label htmlFor="phone" className="text-sm font-semibold text-muted-foreground">
+                        <Label
+                          htmlFor="phone"
+                          className="text-sm font-semibold text-muted-foreground"
+                        >
                           <Phone className="h-4 w-4 inline mr-2" />
                           Phone Number
                         </Label>
                         <Input
                           id="phone"
                           value={profile.phone}
-                          onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                          onChange={e => setProfile({ ...profile, phone: e.target.value })}
                           disabled={!isEditing}
                           className="h-12 text-base border-2 focus:border-primary/50"
                           placeholder="Enter your phone number"
                         />
                       </div>
                       <div className="space-y-3">
-                        <Label htmlFor="nationalId" className="text-sm font-semibold text-muted-foreground">
+                        <Label
+                          htmlFor="nationalId"
+                          className="text-sm font-semibold text-muted-foreground"
+                        >
                           <IdCard className="h-4 w-4 inline mr-2" />
                           National ID (Iqama)
                         </Label>
                         <Input
                           id="nationalId"
                           value={profile.nationalId || ''}
-                          onChange={(e) => setProfile({ ...profile, nationalId: e.target.value })}
+                          onChange={e => setProfile({ ...profile, nationalId: e.target.value })}
                           disabled={!isEditing}
                           className="h-12 text-base border-2 focus:border-primary/50"
                           placeholder="Enter your National ID"
@@ -985,41 +1042,58 @@ export default function ProfilePage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-3">
-                      <Label htmlFor="firstName" className="text-sm font-semibold text-muted-foreground">First Name</Label>
+                      <Label
+                        htmlFor="firstName"
+                        className="text-sm font-semibold text-muted-foreground"
+                      >
+                        First Name
+                      </Label>
                       <Input
                         id="firstName"
                         value={profile.firstName || ''}
-                        onChange={(e) => setProfile({ ...profile, firstName: e.target.value })}
+                        onChange={e => setProfile({ ...profile, firstName: e.target.value })}
                         disabled={!isEditing}
                         className="h-11 border-2 focus:border-primary/50"
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="lastName" className="text-sm font-semibold text-muted-foreground">Last Name</Label>
+                      <Label
+                        htmlFor="lastName"
+                        className="text-sm font-semibold text-muted-foreground"
+                      >
+                        Last Name
+                      </Label>
                       <Input
                         id="lastName"
                         value={profile.lastName || ''}
-                        onChange={(e) => setProfile({ ...profile, lastName: e.target.value })}
+                        onChange={e => setProfile({ ...profile, lastName: e.target.value })}
                         disabled={!isEditing}
                         className="h-11 border-2 focus:border-primary/50"
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="role" className="text-sm font-semibold text-muted-foreground">Job Role</Label>
+                      <Label htmlFor="role" className="text-sm font-semibold text-muted-foreground">
+                        Job Role
+                      </Label>
                       <Input
                         id="role"
                         value={profile.role}
-                        onChange={(e) => setProfile({ ...profile, role: e.target.value })}
+                        onChange={e => setProfile({ ...profile, role: e.target.value })}
                         disabled={!isEditing}
                         className="h-11 border-2 focus:border-primary/50"
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="department" className="text-sm font-semibold text-muted-foreground">Department</Label>
+                      <Label
+                        htmlFor="department"
+                        className="text-sm font-semibold text-muted-foreground"
+                      >
+                        Department
+                      </Label>
                       <Input
                         id="department"
                         value={profile.department}
-                        onChange={(e) => setProfile({ ...profile, department: e.target.value })}
+                        onChange={e => setProfile({ ...profile, department: e.target.value })}
                         disabled={!isEditing}
                         className="h-11 border-2 focus:border-primary/50"
                       />
@@ -1028,14 +1102,17 @@ export default function ProfilePage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-3">
-                      <Label htmlFor="address" className="text-sm font-semibold text-muted-foreground">
+                      <Label
+                        htmlFor="address"
+                        className="text-sm font-semibold text-muted-foreground"
+                      >
                         <Home className="h-4 w-4 inline mr-2" />
                         Address
                       </Label>
                       <Input
                         id="address"
                         value={profile.address || ''}
-                        onChange={(e) => setProfile({ ...profile, address: e.target.value })}
+                        onChange={e => setProfile({ ...profile, address: e.target.value })}
                         disabled={!isEditing}
                         className="h-11 border-2 focus:border-primary/50"
                       />
@@ -1048,33 +1125,39 @@ export default function ProfilePage() {
                       <Input
                         id="city"
                         value={profile.city || ''}
-                        onChange={(e) => setProfile({ ...profile, city: e.target.value })}
+                        onChange={e => setProfile({ ...profile, city: e.target.value })}
                         disabled={!isEditing}
                         className="h-11 border-2 focus:border-primary/50"
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="state" className="text-sm font-semibold text-muted-foreground">
+                      <Label
+                        htmlFor="state"
+                        className="text-sm font-semibold text-muted-foreground"
+                      >
                         <MapPin className="h-4 w-4 inline mr-2" />
                         State/Province
                       </Label>
                       <Input
                         id="state"
                         value={profile.state || ''}
-                        onChange={(e) => setProfile({ ...profile, state: e.target.value })}
+                        onChange={e => setProfile({ ...profile, state: e.target.value })}
                         disabled={!isEditing}
                         className="h-11 border-2 focus:border-primary/50"
                       />
                     </div>
                     <div className="space-y-3">
-                      <Label htmlFor="country" className="text-sm font-semibold text-muted-foreground">
+                      <Label
+                        htmlFor="country"
+                        className="text-sm font-semibold text-muted-foreground"
+                      >
                         <Globe className="h-4 w-4 inline mr-2" />
                         Country
                       </Label>
                       <Input
                         id="country"
                         value={profile.country || ''}
-                        onChange={(e) => setProfile({ ...profile, country: e.target.value })}
+                        onChange={e => setProfile({ ...profile, country: e.target.value })}
                         disabled={!isEditing}
                         className="h-11 border-2 focus:border-primary/50"
                       />
@@ -1082,11 +1165,13 @@ export default function ProfilePage() {
                   </div>
 
                   <div className="space-y-3">
-                    <Label htmlFor="bio" className="text-sm font-semibold text-muted-foreground">Bio</Label>
+                    <Label htmlFor="bio" className="text-sm font-semibold text-muted-foreground">
+                      Bio
+                    </Label>
                     <Textarea
                       id="bio"
                       value={profile.bio}
-                      onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                      onChange={e => setProfile({ ...profile, bio: e.target.value })}
                       disabled={!isEditing}
                       rows={4}
                       className="border-2 focus:border-primary/50 resize-none"
@@ -1128,7 +1213,8 @@ export default function ProfilePage() {
                           New avatar uploaded successfully
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(Date.now() - 86400000).toLocaleDateString()} at {new Date(Date.now() - 86400000).toLocaleTimeString()}
+                          {new Date(Date.now() - 86400000).toLocaleDateString()} at{' '}
+                          {new Date(Date.now() - 86400000).toLocaleTimeString()}
                         </p>
                       </div>
                     </div>
@@ -1143,7 +1229,8 @@ export default function ProfilePage() {
                           New document added to profile
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(Date.now() - 172800000).toLocaleDateString()} at {new Date(Date.now() - 172800000).toLocaleTimeString()}
+                          {new Date(Date.now() - 172800000).toLocaleDateString()} at{' '}
+                          {new Date(Date.now() - 172800000).toLocaleTimeString()}
                         </p>
                       </div>
                     </div>
@@ -1199,12 +1286,19 @@ export default function ProfilePage() {
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">User ID</span>
+                      <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">
+                        User ID
+                      </span>
                       <p className="text-sm font-semibold text-blue-900 font-mono">{profile.id}</p>
                     </div>
                     <div className="space-y-2">
-                      <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">Status</span>
-                      <Badge variant={profile.status === "active" ? "default" : "secondary"} className="w-fit">
+                      <span className="text-xs font-medium text-blue-600 uppercase tracking-wide">
+                        Status
+                      </span>
+                      <Badge
+                        variant={profile.status === 'active' ? 'default' : 'secondary'}
+                        className="w-fit"
+                      >
                         <Check className="h-3 w-3 mr-1" />
                         {profile.status}
                       </Badge>
@@ -1256,7 +1350,10 @@ export default function ProfilePage() {
                         <Briefcase className="h-6 w-6 text-green-600" />
                       </div>
                       Employee Information
-                      <Badge variant="outline" className="ml-2 bg-green-100 text-green-700 border-green-300">
+                      <Badge
+                        variant="outline"
+                        className="ml-2 bg-green-100 text-green-700 border-green-300"
+                      >
                         <Database className="h-3 w-3 mr-1" />
                         Database
                       </Badge>
@@ -1265,13 +1362,17 @@ export default function ProfilePage() {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <span className="text-xs font-medium text-green-600 uppercase tracking-wide">Full Name</span>
+                        <span className="text-xs font-medium text-green-600 uppercase tracking-wide">
+                          Full Name
+                        </span>
                         <p className="text-sm font-semibold text-green-900">
                           {profile.firstName} {profile.middleName} {profile.lastName}
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <span className="text-xs font-medium text-green-600 uppercase tracking-wide">Phone</span>
+                        <span className="text-xs font-medium text-green-600 uppercase tracking-wide">
+                          Phone
+                        </span>
                         <p className="text-sm font-semibold text-green-900">{profile.phone}</p>
                       </div>
                     </div>
@@ -1305,7 +1406,9 @@ export default function ProfilePage() {
                           <span className="text-sm text-green-700">Location</span>
                         </div>
                         <span className="text-sm font-medium text-green-900">
-                          {profile.city && profile.state ? `${profile.city}, ${profile.state}` : profile.country || 'Not specified'}
+                          {profile.city && profile.state
+                            ? `${profile.city}, ${profile.state}`
+                            : profile.country || 'Not specified'}
                         </span>
                       </div>
                     </div>
@@ -1322,31 +1425,46 @@ export default function ProfilePage() {
                         <Link className="h-6 w-6 text-purple-600" />
                       </div>
                       Matched Employee Details
-                      <Badge variant="outline" className="ml-2 bg-purple-100 text-purple-700 border-purple-300">
+                      <Badge
+                        variant="outline"
+                        className="ml-2 bg-purple-100 text-purple-700 border-purple-300"
+                      >
                         <Check className="h-3 w-3 mr-1" />
                         Auto-Matched
                       </Badge>
                     </CardTitle>
                     <CardDescription className="text-purple-700">
-                      Employee information automatically matched with your National ID (Iqama Number)
+                      Employee information automatically matched with your National ID (Iqama
+                      Number)
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     {/* Basic Information Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <span className="text-xs font-medium text-purple-600 uppercase tracking-wide">Employee ID</span>
-                        <p className="text-sm font-semibold text-purple-900 font-mono">{profile.matchedEmployee.fileNumber}</p>
-                      </div>
-                      <div className="space-y-2">
-                        <span className="text-xs font-medium text-purple-600 uppercase tracking-wide">Full Name</span>
-                        <p className="text-sm font-semibold text-purple-900">
-                          {profile.matchedEmployee.firstName} {profile.matchedEmployee.middleName} {profile.matchedEmployee.lastName}
+                        <span className="text-xs font-medium text-purple-600 uppercase tracking-wide">
+                          Employee ID
+                        </span>
+                        <p className="text-sm font-semibold text-purple-900 font-mono">
+                          {profile.matchedEmployee.fileNumber}
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <span className="text-xs font-medium text-purple-600 uppercase tracking-wide">Nationality</span>
-                        <p className="text-sm font-semibold text-purple-900">{profile.matchedEmployee.nationality || 'Not specified'}</p>
+                        <span className="text-xs font-medium text-purple-600 uppercase tracking-wide">
+                          Full Name
+                        </span>
+                        <p className="text-sm font-semibold text-purple-900">
+                          {profile.matchedEmployee.firstName} {profile.matchedEmployee.middleName}{' '}
+                          {profile.matchedEmployee.lastName}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <span className="text-xs font-medium text-purple-600 uppercase tracking-wide">
+                          Nationality
+                        </span>
+                        <p className="text-sm font-semibold text-purple-900">
+                          {profile.matchedEmployee.nationality || 'Not specified'}
+                        </p>
                       </div>
                     </div>
 
@@ -1449,7 +1567,9 @@ export default function ProfilePage() {
                           <div className="space-y-2">
                             <div className="flex justify-between text-sm">
                               <span className="text-blue-700">Number:</span>
-                              <span className="font-medium text-blue-900">{profile.matchedEmployee.iqamaNumber}</span>
+                              <span className="font-medium text-blue-900">
+                                {profile.matchedEmployee.iqamaNumber}
+                              </span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-blue-700">Expires:</span>
@@ -1475,7 +1595,9 @@ export default function ProfilePage() {
                             <div className="space-y-2">
                               <div className="flex justify-between text-sm">
                                 <span className="text-green-700">Number:</span>
-                                <span className="font-medium text-green-900">{profile.matchedEmployee.passportNumber}</span>
+                                <span className="font-medium text-green-900">
+                                  {profile.matchedEmployee.passportNumber}
+                                </span>
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-green-700">Expires:</span>
@@ -1489,7 +1611,8 @@ export default function ProfilePage() {
                       </div>
 
                       {/* Additional Licenses */}
-                      {(profile.matchedEmployee.drivingLicenseNumber || profile.matchedEmployee.operatorLicenseNumber) && (
+                      {(profile.matchedEmployee.drivingLicenseNumber ||
+                        profile.matchedEmployee.operatorLicenseNumber) && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           {profile.matchedEmployee.drivingLicenseNumber && (
                             <div className="p-4 bg-gradient-to-r from-orange-50 to-orange-100/50 rounded-lg border border-orange-200/50">
@@ -1505,7 +1628,9 @@ export default function ProfilePage() {
                               <div className="space-y-2">
                                 <div className="flex justify-between text-sm">
                                   <span className="text-orange-700">Number:</span>
-                                  <span className="font-medium text-orange-900">{profile.matchedEmployee.drivingLicenseNumber}</span>
+                                  <span className="font-medium text-orange-900">
+                                    {profile.matchedEmployee.drivingLicenseNumber}
+                                  </span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                   <span className="text-orange-700">Expires:</span>
@@ -1524,14 +1649,18 @@ export default function ProfilePage() {
                                   <Wrench className="h-5 w-5 text-purple-600" />
                                 </div>
                                 <div>
-                                  <h5 className="font-semibold text-purple-900">Operator License</h5>
+                                  <h5 className="font-semibold text-purple-900">
+                                    Operator License
+                                  </h5>
                                   <p className="text-xs text-purple-600">Equipment Operation</p>
                                 </div>
                               </div>
                               <div className="space-y-2">
                                 <div className="flex justify-between text-sm">
                                   <span className="text-purple-700">Number:</span>
-                                  <span className="font-medium text-purple-900">{profile.matchedEmployee.operatorLicenseNumber}</span>
+                                  <span className="font-medium text-purple-900">
+                                    {profile.matchedEmployee.operatorLicenseNumber}
+                                  </span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                   <span className="text-purple-700">Expires:</span>
@@ -1557,7 +1686,10 @@ export default function ProfilePage() {
                       <FileText className="h-6 w-6 text-indigo-600" />
                     </div>
                     Employee Documents
-                    <Badge variant="outline" className="ml-2 bg-indigo-100 text-indigo-700 border-indigo-300">
+                    <Badge
+                      variant="outline"
+                      className="ml-2 bg-indigo-100 text-indigo-700 border-indigo-300"
+                    >
                       <Database className="h-3 w-3 mr-1" />
                       {profileStats.documentsCount} Files
                     </Badge>
@@ -1586,7 +1718,9 @@ export default function ProfilePage() {
                     <div className="p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <Building className="h-4 w-4 text-amber-600" />
-                        <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">Company</span>
+                        <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">
+                          Company
+                        </span>
                       </div>
                       <p className="text-sm font-semibold text-amber-900">SND Rental Management</p>
                     </div>
@@ -1594,25 +1728,37 @@ export default function ProfilePage() {
                     <div className="p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <Briefcase className="h-4 w-4 text-amber-600" />
-                        <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">Department</span>
+                        <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">
+                          Department
+                        </span>
                       </div>
-                      <p className="text-sm font-semibold text-amber-900">{profile.department || 'Not assigned'}</p>
+                      <p className="text-sm font-semibold text-amber-900">
+                        {profile.department || 'Not assigned'}
+                      </p>
                     </div>
 
                     <div className="p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <Star className="h-4 w-4 text-amber-600" />
-                        <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">Role</span>
+                        <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">
+                          Role
+                        </span>
                       </div>
-                      <p className="text-sm font-semibold text-amber-900">{profile.role || 'Not assigned'}</p>
+                      <p className="text-sm font-semibold text-amber-900">
+                        {profile.role || 'Not assigned'}
+                      </p>
                     </div>
 
                     <div className="p-3 bg-white/50 rounded-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <MapPin className="h-4 w-4 text-amber-600" />
-                        <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">Location</span>
+                        <span className="text-xs font-medium text-amber-600 uppercase tracking-wide">
+                          Location
+                        </span>
                       </div>
-                      <p className="text-sm font-semibold text-amber-900">{profile.location || 'Not specified'}</p>
+                      <p className="text-sm font-semibold text-amber-900">
+                        {profile.location || 'Not specified'}
+                      </p>
                     </div>
                   </div>
                 </CardContent>
@@ -1646,13 +1792,15 @@ export default function ProfilePage() {
                     <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="email-news" className="text-sm font-medium text-blue-900">Company News</Label>
+                          <Label htmlFor="email-news" className="text-sm font-medium text-blue-900">
+                            Company News
+                          </Label>
                           <p className="text-xs text-blue-600">Company announcements and updates</p>
                         </div>
                         <Switch
                           id="email-news"
                           checked={notifications.emailNotifications}
-                          onCheckedChange={(checked) =>
+                          onCheckedChange={checked =>
                             setNotifications({ ...notifications, emailNotifications: checked })
                           }
                         />
@@ -1666,13 +1814,18 @@ export default function ProfilePage() {
                     <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="email-updates" className="text-sm font-medium text-blue-900">System Updates</Label>
+                          <Label
+                            htmlFor="email-updates"
+                            className="text-sm font-medium text-blue-900"
+                          >
+                            System Updates
+                          </Label>
                           <p className="text-xs text-blue-600">Maintenance and system changes</p>
                         </div>
                         <Switch
                           id="email-updates"
                           checked={notifications.securityAlerts}
-                          onCheckedChange={(checked) =>
+                          onCheckedChange={checked =>
                             setNotifications({ ...notifications, securityAlerts: checked })
                           }
                         />
@@ -1686,13 +1839,18 @@ export default function ProfilePage() {
                     <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="email-security" className="text-sm font-medium text-blue-900">Security Alerts</Label>
+                          <Label
+                            htmlFor="email-security"
+                            className="text-sm font-medium text-blue-900"
+                          >
+                            Security Alerts
+                          </Label>
                           <p className="text-xs text-blue-600">Critical security notifications</p>
                         </div>
                         <Switch
                           id="email-security"
                           checked={notifications.securityAlerts}
-                          onCheckedChange={(checked) =>
+                          onCheckedChange={checked =>
                             setNotifications({ ...notifications, securityAlerts: checked })
                           }
                         />
@@ -1706,13 +1864,18 @@ export default function ProfilePage() {
                     <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="email-timesheet" className="text-sm font-medium text-blue-900">Weekly Reports</Label>
+                          <Label
+                            htmlFor="email-timesheet"
+                            className="text-sm font-medium text-blue-900"
+                          >
+                            Weekly Reports
+                          </Label>
                           <p className="text-xs text-blue-600">Weekly submission reminders</p>
                         </div>
                         <Switch
                           id="email-timesheet"
                           checked={notifications.weeklyReports}
-                          onCheckedChange={(checked) =>
+                          onCheckedChange={checked =>
                             setNotifications({ ...notifications, weeklyReports: checked })
                           }
                         />
@@ -1739,13 +1902,18 @@ export default function ProfilePage() {
                     <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="push-reminders" className="text-sm font-medium text-blue-900">Daily Reminders</Label>
+                          <Label
+                            htmlFor="push-reminders"
+                            className="text-sm font-medium text-blue-900"
+                          >
+                            Daily Reminders
+                          </Label>
                           <p className="text-xs text-blue-600">Task and schedule reminders</p>
                         </div>
                         <Switch
                           id="push-reminders"
                           checked={notifications.pushNotifications}
-                          onCheckedChange={(checked) =>
+                          onCheckedChange={checked =>
                             setNotifications({ ...notifications, pushNotifications: checked })
                           }
                         />
@@ -1759,13 +1927,18 @@ export default function ProfilePage() {
                     <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="push-approvals" className="text-sm font-medium text-blue-900">Approval Requests</Label>
+                          <Label
+                            htmlFor="push-approvals"
+                            className="text-sm font-medium text-blue-900"
+                          >
+                            Approval Requests
+                          </Label>
                           <p className="text-xs text-blue-600">When approval is needed</p>
                         </div>
                         <Switch
                           id="push-approvals"
                           checked={notifications.pushNotifications}
-                          onCheckedChange={(checked) =>
+                          onCheckedChange={checked =>
                             setNotifications({ ...notifications, pushNotifications: checked })
                           }
                         />
@@ -1779,13 +1952,15 @@ export default function ProfilePage() {
                     <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="push-leave" className="text-sm font-medium text-blue-900">Leave Updates</Label>
+                          <Label htmlFor="push-leave" className="text-sm font-medium text-blue-900">
+                            Leave Updates
+                          </Label>
                           <p className="text-xs text-blue-600">Leave request status changes</p>
                         </div>
                         <Switch
                           id="push-leave"
                           checked={notifications.pushNotifications}
-                          onCheckedChange={(checked) =>
+                          onCheckedChange={checked =>
                             setNotifications({ ...notifications, pushNotifications: checked })
                           }
                         />
@@ -1799,13 +1974,20 @@ export default function ProfilePage() {
                     <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="push-equipment" className="text-sm font-medium text-blue-900">Equipment Alerts</Label>
-                          <p className="text-xs text-blue-600">Maintenance and assignment updates</p>
+                          <Label
+                            htmlFor="push-equipment"
+                            className="text-sm font-medium text-blue-900"
+                          >
+                            Equipment Alerts
+                          </Label>
+                          <p className="text-xs text-blue-600">
+                            Maintenance and assignment updates
+                          </p>
                         </div>
                         <Switch
                           id="push-equipment"
                           checked={notifications.pushNotifications}
-                          onCheckedChange={(checked) =>
+                          onCheckedChange={checked =>
                             setNotifications({ ...notifications, pushNotifications: checked })
                           }
                         />
@@ -1824,19 +2006,26 @@ export default function ProfilePage() {
                     <div className="bg-blue-100 p-2 rounded-lg">
                       <MessageSquare className="h-5 w-5 text-blue-600" />
                     </div>
-                    <h4 className="text-lg font-semibold text-blue-900">Additional Notifications</h4>
+                    <h4 className="text-lg font-semibold text-blue-900">
+                      Additional Notifications
+                    </h4>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="sms-notifications" className="text-sm font-medium text-blue-900">SMS Notifications</Label>
+                          <Label
+                            htmlFor="sms-notifications"
+                            className="text-sm font-medium text-blue-900"
+                          >
+                            SMS Notifications
+                          </Label>
                           <p className="text-xs text-blue-600">Text message alerts</p>
                         </div>
                         <Switch
                           id="sms-notifications"
                           checked={notifications.smsNotifications}
-                          onCheckedChange={(checked) =>
+                          onCheckedChange={checked =>
                             setNotifications({ ...notifications, smsNotifications: checked })
                           }
                         />
@@ -1850,13 +2039,18 @@ export default function ProfilePage() {
                     <div className="p-4 bg-white/50 rounded-lg border border-blue-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="marketing-emails" className="text-sm font-medium text-blue-900">Marketing Emails</Label>
+                          <Label
+                            htmlFor="marketing-emails"
+                            className="text-sm font-medium text-blue-900"
+                          >
+                            Marketing Emails
+                          </Label>
                           <p className="text-xs text-blue-600">Promotional content</p>
                         </div>
                         <Switch
                           id="marketing-emails"
                           checked={notifications.marketingEmails}
-                          onCheckedChange={(checked) =>
+                          onCheckedChange={checked =>
                             setNotifications({ ...notifications, marketingEmails: checked })
                           }
                         />
@@ -1876,8 +2070,9 @@ export default function ProfilePage() {
                     <div>
                       <p className="text-sm font-medium text-blue-900">Notification Summary</p>
                       <p className="text-xs text-blue-600">
-                        You'll receive notifications through email and push notifications based on your preferences above.
-                        Critical alerts will always be sent regardless of settings.
+                        You'll receive notifications through email and push notifications based on
+                        your preferences above. Critical alerts will always be sent regardless of
+                        settings.
                       </p>
                     </div>
                   </div>
@@ -1932,11 +2127,16 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-4 bg-white/50 rounded-lg border border-purple-200/50">
                       <div className="space-y-3">
-                        <Label htmlFor="theme" className="text-sm font-medium text-purple-900">Theme Mode</Label>
+                        <Label htmlFor="theme" className="text-sm font-medium text-purple-900">
+                          Theme Mode
+                        </Label>
                         <Select
                           value={appearance.theme}
-                          onValueChange={(value) =>
-                            setAppearance({ ...appearance, theme: value as "light" | "dark" | "system" })
+                          onValueChange={value =>
+                            setAppearance({
+                              ...appearance,
+                              theme: value as 'light' | 'dark' | 'system',
+                            })
                           }
                         >
                           <SelectTrigger className="bg-white/70 border-purple-200">
@@ -1963,18 +2163,20 @@ export default function ProfilePage() {
                             </SelectItem>
                           </SelectContent>
                         </Select>
-                        <p className="text-xs text-purple-600">Choose your preferred color scheme</p>
+                        <p className="text-xs text-purple-600">
+                          Choose your preferred color scheme
+                        </p>
                       </div>
                     </div>
 
                     <div className="p-4 bg-white/50 rounded-lg border border-purple-200/50">
                       <div className="space-y-3">
-                        <Label htmlFor="language" className="text-sm font-medium text-purple-900">Language</Label>
+                        <Label htmlFor="language" className="text-sm font-medium text-purple-900">
+                          Language
+                        </Label>
                         <Select
                           value={appearance.language}
-                          onValueChange={(value) =>
-                            setAppearance({ ...appearance, language: value })
-                          }
+                          onValueChange={value => setAppearance({ ...appearance, language: value })}
                         >
                           <SelectTrigger className="bg-white/70 border-purple-200">
                             <SelectValue />
@@ -2031,12 +2233,12 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="p-4 bg-white/50 rounded-lg border border-purple-200/50">
                       <div className="space-y-3">
-                        <Label htmlFor="timezone" className="text-sm font-medium text-purple-900">Timezone</Label>
+                        <Label htmlFor="timezone" className="text-sm font-medium text-purple-900">
+                          Timezone
+                        </Label>
                         <Select
                           value={appearance.timezone}
-                          onValueChange={(value) =>
-                            setAppearance({ ...appearance, timezone: value })
-                          }
+                          onValueChange={value => setAppearance({ ...appearance, timezone: value })}
                         >
                           <SelectTrigger className="bg-white/70 border-purple-200">
                             <SelectValue />
@@ -2058,10 +2260,12 @@ export default function ProfilePage() {
 
                     <div className="p-4 bg-white/50 rounded-lg border border-purple-200/50">
                       <div className="space-y-3">
-                        <Label htmlFor="dateFormat" className="text-sm font-medium text-purple-900">Date Format</Label>
+                        <Label htmlFor="dateFormat" className="text-sm font-medium text-purple-900">
+                          Date Format
+                        </Label>
                         <Select
                           value={appearance.dateFormat}
-                          onValueChange={(value) =>
+                          onValueChange={value =>
                             setAppearance({ ...appearance, dateFormat: value })
                           }
                         >
@@ -2093,7 +2297,9 @@ export default function ProfilePage() {
                     </div>
                     <div className="text-center p-3 bg-purple-50 rounded-lg">
                       <p className="text-sm font-medium text-purple-900">Language</p>
-                      <p className="text-xs text-purple-600">{appearance.language === 'en' ? 'English' : appearance.language}</p>
+                      <p className="text-xs text-purple-600">
+                        {appearance.language === 'en' ? 'English' : appearance.language}
+                      </p>
                     </div>
                     <div className="text-center p-3 bg-purple-50 rounded-lg">
                       <p className="text-sm font-medium text-purple-900">Date Format</p>
@@ -2153,7 +2359,12 @@ export default function ProfilePage() {
                     <div className="p-4 bg-white/50 rounded-lg border border-red-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="change-password" className="text-sm font-medium text-red-900">Change Password</Label>
+                          <Label
+                            htmlFor="change-password"
+                            className="text-sm font-medium text-red-900"
+                          >
+                            Change Password
+                          </Label>
                           <p className="text-xs text-red-600">Update your login password</p>
                         </div>
                         <Button variant="outline" size="sm">
@@ -2163,14 +2374,21 @@ export default function ProfilePage() {
                       </div>
                       <div className="flex items-center gap-2 text-xs text-red-600">
                         <Clock className="h-3 w-3" />
-                        <span>Last changed: {new Date(Date.now() - 2592000000).toLocaleDateString()}</span>
+                        <span>
+                          Last changed: {new Date(Date.now() - 2592000000).toLocaleDateString()}
+                        </span>
                       </div>
                     </div>
 
                     <div className="p-4 bg-white/50 rounded-lg border border-red-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="password-strength" className="text-sm font-medium text-red-900">Password Strength</Label>
+                          <Label
+                            htmlFor="password-strength"
+                            className="text-sm font-medium text-red-900"
+                          >
+                            Password Strength
+                          </Label>
                           <p className="text-xs text-red-600">Current password security level</p>
                         </div>
                         <Badge variant="default" className="bg-green-600">
@@ -2179,7 +2397,10 @@ export default function ProfilePage() {
                         </Badge>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-green-600 h-2 rounded-full" style={{ width: '85%' }}></div>
+                        <div
+                          className="bg-green-600 h-2 rounded-full"
+                          style={{ width: '85%' }}
+                        ></div>
                       </div>
                     </div>
                   </div>
@@ -2193,14 +2414,18 @@ export default function ProfilePage() {
                     <div className="bg-red-100 p-2 rounded-lg">
                       <Shield className="h-5 w-5 text-red-600" />
                     </div>
-                    <h4 className="text-lg font-semibold text-red-900">Two-Factor Authentication</h4>
+                    <h4 className="text-lg font-semibold text-red-900">
+                      Two-Factor Authentication
+                    </h4>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="p-4 bg-white/50 rounded-lg border border-red-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="2fa-status" className="text-sm font-medium text-red-900">2FA Status</Label>
+                          <Label htmlFor="2fa-status" className="text-sm font-medium text-red-900">
+                            2FA Status
+                          </Label>
                           <p className="text-xs text-red-600">Additional security layer</p>
                         </div>
                         <Badge variant="secondary">
@@ -2217,7 +2442,12 @@ export default function ProfilePage() {
                     <div className="p-4 bg-white/50 rounded-lg border border-red-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="backup-codes" className="text-sm font-medium text-red-900">Backup Codes</Label>
+                          <Label
+                            htmlFor="backup-codes"
+                            className="text-sm font-medium text-red-900"
+                          >
+                            Backup Codes
+                          </Label>
                           <p className="text-xs text-red-600">Emergency access codes</p>
                         </div>
                         <Button variant="outline" size="sm">
@@ -2248,7 +2478,12 @@ export default function ProfilePage() {
                     <div className="p-4 bg-white/50 rounded-lg border border-red-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="active-sessions" className="text-sm font-medium text-red-900">Active Sessions</Label>
+                          <Label
+                            htmlFor="active-sessions"
+                            className="text-sm font-medium text-red-900"
+                          >
+                            Active Sessions
+                          </Label>
                           <p className="text-xs text-red-600">Currently logged in devices</p>
                         </div>
                         <Button variant="outline" size="sm">
@@ -2265,7 +2500,12 @@ export default function ProfilePage() {
                     <div className="p-4 bg-white/50 rounded-lg border border-red-200/50">
                       <div className="flex items-center justify-between mb-3">
                         <div className="space-y-1">
-                          <Label htmlFor="login-history" className="text-sm font-medium text-red-900">Login History</Label>
+                          <Label
+                            htmlFor="login-history"
+                            className="text-sm font-medium text-red-900"
+                          >
+                            Login History
+                          </Label>
                           <p className="text-xs text-red-600">Recent login attempts</p>
                         </div>
                         <Button variant="outline" size="sm">
@@ -2291,9 +2531,18 @@ export default function ProfilePage() {
                   </div>
                   <Progress value={profileStats.securityScore} className="w-full" />
                   <div className="mt-2 text-xs text-red-600">
-                    <p>Your account security is {profileStats.securityScore >= 80 ? 'excellent' : profileStats.securityScore >= 60 ? 'good' : 'needs improvement'}</p>
+                    <p>
+                      Your account security is{' '}
+                      {profileStats.securityScore >= 80
+                        ? 'excellent'
+                        : profileStats.securityScore >= 60
+                          ? 'good'
+                          : 'needs improvement'}
+                    </p>
                     {profileStats.securityScore < 80 && (
-                      <p className="mt-1">Consider enabling 2FA and updating your password regularly</p>
+                      <p className="mt-1">
+                        Consider enabling 2FA and updating your password regularly
+                      </p>
                     )}
                   </div>
                 </div>
@@ -2317,9 +2566,7 @@ export default function ProfilePage() {
                       <DialogContent>
                         <DialogHeader>
                           <DialogTitle>{t('deleteAccountTitle')}</DialogTitle>
-                          <DialogDescription>
-                            {t('deleteAccountConfirmation')}
-                          </DialogDescription>
+                          <DialogDescription>{t('deleteAccountConfirmation')}</DialogDescription>
                         </DialogHeader>
                         <DialogFooter>
                           <Button variant="outline">{t('cancel')}</Button>
@@ -2328,7 +2575,7 @@ export default function ProfilePage() {
                             onClick={handleDeleteAccount}
                             disabled={isSaving}
                           >
-                            {isSaving ? "Deleting..." : "Delete Account"}
+                            {isSaving ? 'Deleting...' : 'Delete Account'}
                           </Button>
                         </DialogFooter>
                       </DialogContent>
@@ -2341,7 +2588,7 @@ export default function ProfilePage() {
         </Tabs>
       </div>
     </div>
-  )
+  );
 }
 
 // Employee Documents Display Component
@@ -2359,14 +2606,20 @@ function EmployeeDocumentsDisplay() {
       console.log('🔄 EmployeeDocumentsDisplay: Starting to fetch documents...');
       const response = await fetch('/api/profile/documents');
       console.log('📊 EmployeeDocumentsDisplay: Response status:', response.status);
-      console.log('📊 EmployeeDocumentsDisplay: Response headers:', response.headers.get('content-type'));
+      console.log(
+        '📊 EmployeeDocumentsDisplay: Response headers:',
+        response.headers.get('content-type')
+      );
 
       if (response.ok) {
         const data = await response.json();
         console.log('✅ EmployeeDocumentsDisplay: Documents data received:', data);
         console.log('✅ EmployeeDocumentsDisplay: Data type:', typeof data);
         console.log('✅ EmployeeDocumentsDisplay: Is array?', Array.isArray(data));
-        console.log('✅ EmployeeDocumentsDisplay: Data length:', Array.isArray(data) ? data.length : 'Not an array');
+        console.log(
+          '✅ EmployeeDocumentsDisplay: Data length:',
+          Array.isArray(data) ? data.length : 'Not an array'
+        );
 
         if (Array.isArray(data)) {
           // Check specifically for Iqama documents
@@ -2438,12 +2691,7 @@ function EmployeeDocumentsDisplay() {
     return (
       <div className="text-center py-8">
         <p className="text-sm text-muted-foreground">{error}</p>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchDocuments}
-          className="mt-2"
-        >
+        <Button variant="outline" size="sm" onClick={fetchDocuments} className="mt-2">
           Retry
         </Button>
       </div>
@@ -2465,74 +2713,79 @@ function EmployeeDocumentsDisplay() {
   return (
     <div className="space-y-4">
       {/* Iqama Document - Special Display */}
-      {documents.filter(doc => doc.document_type === 'iqama').map((iqamaDoc) => (
-        <div key={iqamaDoc.id} className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-indigo-50">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className="bg-blue-100 p-2 rounded-lg">
-                <FileText className="h-6 w-6 text-blue-600" />
+      {documents
+        .filter(doc => doc.document_type === 'iqama')
+        .map(iqamaDoc => (
+          <div
+            key={iqamaDoc.id}
+            className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-indigo-50"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-100 p-2 rounded-lg">
+                  <FileText className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-blue-900">Iqama Document</h4>
+                  <p className="text-sm text-blue-700">ID Card Size</p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold text-blue-900">Iqama Document</h4>
-                <p className="text-sm text-blue-700">ID Card Size</p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePreview(iqamaDoc)}
+                  className="h-8 px-3"
+                >
+                  <Eye className="h-4 w-4 mr-1" />
+                  View
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownload(iqamaDoc)}
+                  className="h-8 px-3"
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  Download
+                </Button>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handlePreview(iqamaDoc)}
-                className="h-8 px-3"
-              >
-                <Eye className="h-4 w-4 mr-1" />
-                View
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleDownload(iqamaDoc)}
-                className="h-8 px-3"
-              >
-                <Download className="h-4 w-4 mr-1" />
-                Download
-              </Button>
-            </div>
-          </div>
 
-          {/* Document Preview - ID Card Size */}
-          <div className="bg-white rounded-lg border-2 border-dashed border-blue-200 p-4">
-            <div className="flex items-center justify-center">
-              {iqamaDoc.mime_type?.startsWith('image/') ? (
-                <div className="relative group">
-                  <img
-                    src={iqamaDoc.url}
-                    alt="Iqama Document"
-                    className="w-32 h-20 object-cover rounded border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => handlePreview(iqamaDoc)}
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded flex items-center justify-center">
-                    <Eye className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+            {/* Document Preview - ID Card Size */}
+            <div className="bg-white rounded-lg border-2 border-dashed border-blue-200 p-4">
+              <div className="flex items-center justify-center">
+                {iqamaDoc.mime_type?.startsWith('image/') ? (
+                  <div className="relative group">
+                    <img
+                      src={iqamaDoc.url}
+                      alt="Iqama Document"
+                      className="w-32 h-20 object-cover rounded border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => handlePreview(iqamaDoc)}
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all rounded flex items-center justify-center">
+                      <Eye className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="w-32 h-20 bg-gray-100 rounded border flex items-center justify-center">
-                  <FileText className="h-8 w-8 text-gray-400" />
-                </div>
+                ) : (
+                  <div className="w-32 h-20 bg-gray-100 rounded border flex items-center justify-center">
+                    <FileText className="h-8 w-8 text-gray-400" />
+                  </div>
+                )}
+              </div>
+              <div className="text-center mt-2">
+                <p className="text-xs text-gray-600">Click to view full size</p>
+              </div>
+            </div>
+
+            <div className="mt-3 text-xs text-blue-600">
+              <span>Uploaded: {new Date(iqamaDoc.created_at).toLocaleDateString()}</span>
+              {iqamaDoc.file_size && (
+                <span className="ml-3">Size: {formatFileSize(iqamaDoc.file_size)}</span>
               )}
             </div>
-            <div className="text-center mt-2">
-              <p className="text-xs text-gray-600">Click to view full size</p>
-            </div>
           </div>
-
-          <div className="mt-3 text-xs text-blue-600">
-            <span>Uploaded: {new Date(iqamaDoc.created_at).toLocaleDateString()}</span>
-            {iqamaDoc.file_size && (
-              <span className="ml-3">Size: {formatFileSize(iqamaDoc.file_size)}</span>
-            )}
-          </div>
-        </div>
-      ))}
+        ))}
 
       {/* Other Documents */}
       {documents.filter(doc => doc.document_type !== 'iqama').length > 0 && (
@@ -2542,8 +2795,11 @@ function EmployeeDocumentsDisplay() {
           <div className="grid gap-3">
             {documents
               .filter(doc => doc.document_type !== 'iqama')
-              .map((document) => (
-                <div key={document.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+              .map(document => (
+                <div
+                  key={document.id}
+                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                >
                   <div className="flex items-center gap-3">
                     {getDocumentIcon(document.mime_type)}
                     <div>

@@ -1,30 +1,24 @@
-"use client";
+'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Bell, Plus, Check, Trash2, ExternalLink } from "lucide-react";
-import { useTranslation } from 'react-i18next';
-import { useNotificationContext } from '@/contexts/notification-context';
-import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNow } from 'date-fns';
 import { NotificationDemo } from '@/components/notification-demo';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useNotificationContext } from '@/contexts/notification-context';
+import { formatDistanceToNow } from 'date-fns';
+import { Bell, Check, ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export default function NotificationsPage() {
   const { t } = useTranslation('notifications');
-  const {
-    notifications,
-    unreadCount,
-    markAsRead,
-    markAllAsRead,
-    clearAll,
-    loading,
-  } = useNotificationContext();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearAll, loading } =
+    useNotificationContext();
 
   const handleNotificationClick = async (notification: any) => {
     if (!notification.read) {
       await markAsRead(notification.id);
     }
-    
+
     if (notification.action_url) {
       window.location.href = notification.action_url;
     }
@@ -62,12 +56,8 @@ export default function NotificationsPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {t('title')}
-              </h1>
-              <p className="text-gray-600">
-                {t('description')}
-              </p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{t('title')}</h1>
+              <p className="text-gray-600">{t('description')}</p>
             </div>
             <Button className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
@@ -83,9 +73,7 @@ export default function NotificationsPage() {
                 <Bell className="h-6 w-6 text-blue-600" />
                 <div>
                   <CardTitle>{t('notificationsTitle')}</CardTitle>
-                  <CardDescription>
-                    {t('notificationsDescription')}
-                  </CardDescription>
+                  <CardDescription>{t('notificationsDescription')}</CardDescription>
                 </div>
               </div>
               <div className="flex gap-2">
@@ -121,16 +109,12 @@ export default function NotificationsPage() {
             ) : notifications.length === 0 ? (
               <div className="text-center py-12">
                 <Bell className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  {t('noNotifications')}
-                </h3>
-                <p className="text-gray-600">
-                  {t('noNotificationsDescription')}
-                </p>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noNotifications')}</h3>
+                <p className="text-gray-600">{t('noNotificationsDescription')}</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {notifications.map((notification) => (
+                {notifications.map(notification => (
                   <div
                     key={notification.id}
                     className={`p-4 border rounded-lg cursor-pointer transition-colors ${
@@ -140,7 +124,7 @@ export default function NotificationsPage() {
                   >
                     <div className="flex items-start gap-3">
                       <span className="text-lg">{getNotificationIcon(notification.type)}</span>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <h4 className="text-sm font-medium text-gray-900">
@@ -156,16 +140,16 @@ export default function NotificationsPage() {
                             <div className="w-2 h-2 bg-blue-600 rounded-full" />
                           )}
                         </div>
-                        
-                        <p className="text-sm text-gray-600 mb-2">
-                          {notification.message}
-                        </p>
-                        
+
+                        <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
+
                         <div className="flex items-center justify-between text-xs text-gray-500">
                           <span>
-                            {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
+                            {formatDistanceToNow(new Date(notification.timestamp), {
+                              addSuffix: true,
+                            })}
                           </span>
-                          
+
                           {notification.action_url && (
                             <div className="flex items-center gap-1 text-blue-600">
                               <ExternalLink className="h-3 w-3" />
@@ -174,12 +158,12 @@ export default function NotificationsPage() {
                           )}
                         </div>
                       </div>
-                      
+
                       {!notification.read && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             markAsRead(notification.id);
                           }}
@@ -195,7 +179,7 @@ export default function NotificationsPage() {
             )}
           </CardContent>
         </Card>
-        
+
         {/* Notification Demo */}
         <NotificationDemo />
       </div>

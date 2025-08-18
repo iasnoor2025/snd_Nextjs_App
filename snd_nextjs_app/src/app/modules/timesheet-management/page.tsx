@@ -1,47 +1,11 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo, useRef } from "react";
-import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
-import { useRBAC } from '@/lib/rbac/rbac-context';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Eye,
-  Calendar,
-  RefreshCw,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  FileText,
-  Download,
-  Upload,
-  Settings,
-  Clock,
-  Users,
-  ChevronLeft,
-  ChevronRight,
-  Loader2
-} from "lucide-react";
-import { toast } from "sonner";
-import Link from "next/link";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { ProtectedRoute } from '@/components/protected-route';
+import AutoGenerateButton from '@/components/timesheet/AutoGenerateButton';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -50,18 +14,67 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import AutoGenerateButton from "@/components/timesheet/AutoGenerateButton";
-import { ProtectedRoute } from "@/components/protected-route";
-import { useTranslation } from 'react-i18next';
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/hooks/use-i18n';
-import { 
-  convertToArabicNumerals, 
-  getTranslatedName, 
-  batchTranslateNames 
+import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
+import { useRBAC } from '@/lib/rbac/rbac-context';
+import {
+  batchTranslateNames,
+  convertToArabicNumerals,
+  getTranslatedName,
 } from '@/lib/translation-utils';
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Download,
+  Edit,
+  Eye,
+  FileText,
+  Loader2,
+  Plus,
+  RefreshCw,
+  Search,
+  Settings,
+  Trash2,
+  Upload,
+  Users,
+  XCircle,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 interface Timesheet {
   id: string;
@@ -145,7 +158,7 @@ export default function TimesheetManagementPage() {
   }>({
     open: false,
     action: null,
-    notes: ''
+    notes: '',
   });
 
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -155,7 +168,7 @@ export default function TimesheetManagementPage() {
   }>({
     open: false,
     timesheetId: null,
-    timesheetData: null
+    timesheetData: null,
   });
 
   const [bulkDeleteDialog, setBulkDeleteDialog] = useState<{
@@ -163,7 +176,7 @@ export default function TimesheetManagementPage() {
     timesheets: Timesheet[];
   }>({
     open: false,
-    timesheets: []
+    timesheets: [],
   });
 
   const [monthSelectOpen, setMonthSelectOpen] = useState(false);
@@ -179,12 +192,12 @@ export default function TimesheetManagementPage() {
       const lastAutoGeneration = localStorage.getItem('lastAutoGeneration');
       const now = Date.now();
       const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
-      
-      if (lastAutoGeneration && (now - parseInt(lastAutoGeneration)) < oneHour) {
+
+      if (lastAutoGeneration && now - parseInt(lastAutoGeneration) < oneHour) {
         console.log('Auto-generation was recently executed, skipping...');
         return;
       }
-      
+
       setAutoGenerating(true);
       try {
         const response = await fetch('/api/timesheets/auto-generate', {
@@ -257,14 +270,14 @@ export default function TimesheetManagementPage() {
       const response = await fetch(`/api/timesheets?${params}`, {
         credentials: 'include',
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch timesheets');
       }
 
       const data = await response.json();
       setTimesheets(data);
-      
+
       // Show success message if this was a manual refresh (not from auto-generation)
       if (data.total !== undefined) {
         console.log(`Refreshed timesheets: ${data.total} total timesheets`);
@@ -284,9 +297,9 @@ export default function TimesheetManagementPage() {
   // Trigger batch translation when timesheets data changes
   useEffect(() => {
     if (timesheets?.data && timesheets.data.length > 0 && isRTL) {
-      const names = timesheets.data.map(timesheet => 
-        `${timesheet.employee.firstName} ${timesheet.employee.lastName}`
-      ).filter(Boolean) as string[];
+      const names = timesheets.data
+        .map(timesheet => `${timesheet.employee.firstName} ${timesheet.employee.lastName}`)
+        .filter(Boolean) as string[];
       batchTranslateNames(names, isRTL, setTranslatedNames);
     }
   }, [timesheets, isRTL]);
@@ -311,7 +324,7 @@ export default function TimesheetManagementPage() {
       setTimeout(() => {
         currentMonthRef.current?.scrollIntoView({
           behavior: 'smooth',
-          block: 'center'
+          block: 'center',
         });
       }, 150);
     }
@@ -328,23 +341,25 @@ export default function TimesheetManagementPage() {
 
         if (selectContent) {
           // Try different attribute selectors
-          currentMonthElement = selectContent.querySelector(`[data-value="${month}"]`) ||
+          currentMonthElement =
+            selectContent.querySelector(`[data-value="${month}"]`) ||
             selectContent.querySelector(`[value="${month}"]`) ||
             selectContent.querySelector(`[data-state="checked"]`);
 
           if (currentMonthElement) {
             currentMonthElement.scrollIntoView({
               behavior: 'smooth',
-              block: 'center'
+              block: 'center',
             });
           } else {
             // Fallback: scroll to the middle of the list where current month should be
             const allItems = selectContent.querySelectorAll('[role="option"]');
             const currentMonthIndex = monthOptions.findIndex(option => option.value === month);
-            if (currentMonthIndex > 0 && allItems[currentMonthIndex + 1]) { // +1 for "All Months"
+            if (currentMonthIndex > 0 && allItems[currentMonthIndex + 1]) {
+              // +1 for "All Months"
               allItems[currentMonthIndex + 1].scrollIntoView({
                 behavior: 'smooth',
-                block: 'center'
+                block: 'center',
               });
             }
           }
@@ -363,7 +378,7 @@ export default function TimesheetManagementPage() {
     setDeleteDialog({
       open: true,
       timesheetId: timesheet.id,
-      timesheetData: timesheet
+      timesheetData: timesheet,
     });
   };
 
@@ -397,12 +412,22 @@ export default function TimesheetManagementPage() {
     const selectedTimesheetsData = timesheets?.data.filter(t => selectedTimesheets.has(t.id)) || [];
 
     // Only admin can delete non-draft timesheets
-    if (selectedTimesheetsData.filter(t => t.status !== 'draft').length > 0 && userRole !== 'ADMIN') {
-      toast.error(t('cannot_delete_timesheets_only_draft_can_be_deleted_by_non_admin_users', { count: selectedTimesheetsData.filter(t => t.status !== 'draft').length }));
+    if (
+      selectedTimesheetsData.filter(t => t.status !== 'draft').length > 0 &&
+      userRole !== 'ADMIN'
+    ) {
+      toast.error(
+        t('cannot_delete_timesheets_only_draft_can_be_deleted_by_non_admin_users', {
+          count: selectedTimesheetsData.filter(t => t.status !== 'draft').length,
+        })
+      );
       return;
     }
 
-    if (selectedTimesheetsData.filter(t => t.status === 'draft').length === 0 && userRole !== 'ADMIN') {
+    if (
+      selectedTimesheetsData.filter(t => t.status === 'draft').length === 0 &&
+      userRole !== 'ADMIN'
+    ) {
       toast.error(t('no_draft_timesheets_selected_for_deletion'));
       return;
     }
@@ -414,7 +439,7 @@ export default function TimesheetManagementPage() {
 
     setBulkDeleteDialog({
       open: true,
-      timesheets: selectedTimesheetsData
+      timesheets: selectedTimesheetsData,
     });
   };
 
@@ -428,7 +453,7 @@ export default function TimesheetManagementPage() {
         },
         credentials: 'include',
         body: JSON.stringify({
-          timesheetIds: bulkDeleteDialog.timesheets.map(t => t.id)
+          timesheetIds: bulkDeleteDialog.timesheets.map(t => t.id),
         }),
       });
 
@@ -457,8 +482,6 @@ export default function TimesheetManagementPage() {
     toast.info(t('individual_reject_functionality_to_be_implemented'));
   };
 
-
-
   const handleBulkAction = async (action: 'approve' | 'reject') => {
     if (selectedTimesheets.size === 0) {
       toast.error(t('please_select_timesheets_to_process'));
@@ -468,14 +491,21 @@ export default function TimesheetManagementPage() {
     setBulkActionDialog({
       open: true,
       action,
-      notes: ''
+      notes: '',
     });
   };
 
   const handleAllPendingAction = async (action: 'approve' | 'reject') => {
     // Get all pending timesheets from the current server data
     const pendingTimesheets = currentTimesheets.filter(timesheet => {
-      const canProcess = ['pending', 'draft', 'submitted', 'foreman_approved', 'incharge_approved', 'checking_approved'].includes(timesheet.status);
+      const canProcess = [
+        'pending',
+        'draft',
+        'submitted',
+        'foreman_approved',
+        'incharge_approved',
+        'checking_approved',
+      ].includes(timesheet.status);
       return canProcess;
     });
 
@@ -495,7 +525,7 @@ export default function TimesheetManagementPage() {
         body: JSON.stringify({
           timesheetIds: pendingTimesheets.map(t => t.id),
           action: action,
-          notes: `${t('bulk_action_notes', { action: action.charAt(0).toUpperCase() + action.slice(1) })} ${t('all_pending_timesheets')}`
+          notes: `${t('bulk_action_notes', { action: action.charAt(0).toUpperCase() + action.slice(1) })} ${t('all_pending_timesheets')}`,
         }),
       });
 
@@ -518,8 +548,6 @@ export default function TimesheetManagementPage() {
 
   const executeBulkAction = async () => {
     if (!bulkActionDialog.action || selectedTimesheets.size === 0) return;
-    
-
 
     setBulkActionLoading(true);
     try {
@@ -532,12 +560,11 @@ export default function TimesheetManagementPage() {
         body: JSON.stringify({
           timesheetIds: Array.from(selectedTimesheets),
           action: bulkActionDialog.action,
-          notes: bulkActionDialog.notes
+          notes: bulkActionDialog.notes,
         }),
       });
 
       const data = await response.json();
-
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to process timesheets');
@@ -574,9 +601,15 @@ export default function TimesheetManagementPage() {
   const canApproveTimesheet = (timesheet: Timesheet) => {
     // Check if timesheet is in a state that can be approved
     // Include 'pending' status which is the default in database
-    const canProcess = ['pending', 'draft', 'submitted', 'foreman_approved', 'incharge_approved', 'checking_approved'].includes(timesheet.status);
+    const canProcess = [
+      'pending',
+      'draft',
+      'submitted',
+      'foreman_approved',
+      'incharge_approved',
+      'checking_approved',
+    ].includes(timesheet.status);
     if (!canProcess) {
-
       return false;
     }
 
@@ -594,12 +627,11 @@ export default function TimesheetManagementPage() {
       submitted: ['FOREMAN', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
       foreman_approved: ['INCHARGE', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
       incharge_approved: ['CHECKING', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
-      checking_approved: ['MANAGER', 'ADMIN', 'SUPER_ADMIN']
+      checking_approved: ['MANAGER', 'ADMIN', 'SUPER_ADMIN'],
     };
 
     const allowedRoles = approvalWorkflow[timesheet.status as keyof typeof approvalWorkflow];
     if (!allowedRoles) {
-
       return false;
     }
 
@@ -611,7 +643,13 @@ export default function TimesheetManagementPage() {
   const canRejectTimesheet = (timesheet: Timesheet) => {
     // Check if timesheet is in a state that can be rejected
     // Include 'pending' status which is the default in database
-    const canProcess = ['pending', 'submitted', 'foreman_approved', 'incharge_approved', 'checking_approved'].includes(timesheet.status);
+    const canProcess = [
+      'pending',
+      'submitted',
+      'foreman_approved',
+      'incharge_approved',
+      'checking_approved',
+    ].includes(timesheet.status);
     if (!canProcess) return false;
 
     // Any role that can approve can also reject
@@ -620,7 +658,7 @@ export default function TimesheetManagementPage() {
       submitted: ['FOREMAN', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
       foreman_approved: ['INCHARGE', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
       incharge_approved: ['INCHARGE', 'MANAGER', 'ADMIN', 'SUPER_ADMIN'],
-      checking_approved: ['MANAGER', 'ADMIN', 'SUPER_ADMIN']
+      checking_approved: ['MANAGER', 'ADMIN', 'SUPER_ADMIN'],
     };
 
     const allowedRoles = approvalWorkflow[timesheet.status as keyof typeof approvalWorkflow];
@@ -636,7 +674,7 @@ export default function TimesheetManagementPage() {
       foreman_approved: t('incharge_approval'),
       incharge_approved: t('checking_approval'),
       checking_approved: t('manager_approval'),
-      manager_approved: t('completed')
+      manager_approved: t('completed'),
     };
 
     return stageProgression[currentStatus as keyof typeof stageProgression] || 'Unknown';
@@ -675,9 +713,9 @@ export default function TimesheetManagementPage() {
         const yearMonth = `${year}-${monthStr}`;
         const monthName = new Date(year, month - 1).toLocaleDateString('en-US', {
           month: 'long',
-          year: 'numeric'
+          year: 'numeric',
         });
-        options.push({ value: yearMonth, label: monthName }); 
+        options.push({ value: yearMonth, label: monthName });
       }
     }
 
@@ -694,19 +732,19 @@ export default function TimesheetManagementPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "draft":
+      case 'draft':
         return <Badge variant="secondary">{t('draft')}</Badge>;
-      case "submitted":
+      case 'submitted':
         return <Badge variant="default">{t('submitted')}</Badge>;
-      case "foreman_approved":
+      case 'foreman_approved':
         return <Badge className="bg-blue-100 text-blue-800">{t('foreman_approved')}</Badge>;
-      case "incharge_approved":
+      case 'incharge_approved':
         return <Badge className="bg-purple-100 text-purple-800">{t('incharge_approved')}</Badge>;
-      case "checking_approved":
+      case 'checking_approved':
         return <Badge className="bg-orange-100 text-orange-800">{t('checking_approved')}</Badge>;
-      case "manager_approved":
+      case 'manager_approved':
         return <Badge className="bg-green-100 text-green-800">{t('manager_approved')}</Badge>;
-      case "rejected":
+      case 'rejected':
         return <Badge className="bg-red-100 text-red-800">{t('rejected')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
@@ -727,775 +765,858 @@ export default function TimesheetManagementPage() {
   return (
     <ProtectedRoute requiredPermission={{ action: 'read', subject: 'Timesheet' }}>
       <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold">{t('timesheet_management')}</h1>
-          {autoGenerating && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Auto-generating timesheets...</span>
-              {autoGenerationProgress && (
-                <span className="text-xs">
-                  ({autoGenerationProgress.current}/{autoGenerationProgress.total} - {autoGenerationProgress.percentage}%)
-                </span>
-              )}
-            </div>
-          )}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">{t('timesheet_management')}</h1>
+            {autoGenerating && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Auto-generating timesheets...</span>
+                {autoGenerationProgress && (
+                  <span className="text-xs">
+                    ({autoGenerationProgress.current}/{autoGenerationProgress.total} -{' '}
+                    {autoGenerationProgress.percentage}%)
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          <div className="flex space-x-2">
+            <PermissionContent action="export" subject="Timesheet">
+              <Button variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                {t('export')}
+              </Button>
+            </PermissionContent>
+
+            <PermissionContent action="sync" subject="Timesheet">
+              <Button variant="outline" size="sm" onClick={fetchTimesheets} disabled={loading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Refreshing...' : t('sync_timesheets')}
+              </Button>
+            </PermissionContent>
+
+            <PermissionContent action="create" subject="Timesheet">
+              <AutoGenerateButton
+                isAutoGenerating={autoGenerating}
+                onAutoGenerateComplete={fetchTimesheets}
+              />
+            </PermissionContent>
+
+            <PermissionContent action="create" subject="Timesheet">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/init-cron', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                      toast.success('Cron service initialized successfully!');
+                    } else {
+                      toast.error('Failed to initialize cron service: ' + result.error);
+                    }
+                  } catch (error) {
+                    toast.error('Failed to initialize cron service');
+                  }
+                }}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Init Cron
+              </Button>
+            </PermissionContent>
+
+            <PermissionContent action="create" subject="Timesheet">
+              <Link href="/modules/timesheet-management/create">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t('create_timesheet')}
+                </Button>
+              </Link>
+            </PermissionContent>
+
+            <PermissionContent action="read" subject="Timesheet">
+              <Link href="/modules/timesheet-management/monthly">
+                <Button variant="outline">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  {t('monthly_report')}
+                </Button>
+              </Link>
+            </PermissionContent>
+          </div>
         </div>
-        <div className="flex space-x-2">
-          <PermissionContent action="export" subject="Timesheet">
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              {t('export')}
-            </Button>
-          </PermissionContent>
 
-          <PermissionContent action="sync" subject="Timesheet">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={fetchTimesheets}
-              disabled={loading}
+        {/* Bulk Actions */}
+        {selectedTimesheets.size > 0 && (
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <span className="text-sm font-medium">
+                    {selectedTimesheets.size}{' '}
+                    {t('timesheet_selected', { count: selectedTimesheets.size })}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedTimesheets(new Set())}
+                  >
+                    {t('clear_selection')}
+                  </Button>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {canApproveSelected && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleBulkAction('approve')}
+                      className="text-green-600 border-green-200 hover:bg-green-50"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      {t('bulk_approve')}
+                    </Button>
+                  )}
+                  {canRejectSelected && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleBulkAction('reject')}
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      {t('bulk_reject')}
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t('bulk_delete')}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="grid gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder={t('search_timesheets')}
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder={t('filter_by_status')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('all_status')}</SelectItem>
+                <SelectItem value="draft">{t('draft')}</SelectItem>
+                <SelectItem value="submitted">{t('submitted')}</SelectItem>
+                <SelectItem value="foreman_approved">{t('foreman_approved')}</SelectItem>
+                <SelectItem value="incharge_approved">{t('incharge_approved')}</SelectItem>
+                <SelectItem value="checking_approved">{t('checking_approved')}</SelectItem>
+                <SelectItem value="manager_approved">{t('manager_approved')}</SelectItem>
+                <SelectItem value="rejected">{t('rejected')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder={t('filter_by_assignment')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t('all_assignments')}</SelectItem>
+                {assignments.map(assignment => (
+                  <SelectItem key={assignment} value={assignment}>
+                    {assignment}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={month}
+              onValueChange={setMonth}
+              open={monthSelectOpen}
+              onOpenChange={handleMonthSelectOpen}
             >
-              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-              {loading ? 'Refreshing...' : t('sync_timesheets')}
-            </Button>
-          </PermissionContent>
-
-          <PermissionContent action="create" subject="Timesheet">
-            <AutoGenerateButton 
-              isAutoGenerating={autoGenerating} 
-              onAutoGenerateComplete={fetchTimesheets}
-            />
-          </PermissionContent>
-
-          <PermissionContent action="create" subject="Timesheet">
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder={t('filter_by_month')} />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                <SelectItem value="all">{t('all_months')}</SelectItem>
+                {monthOptions.map(option => (
+                  <SelectItem
+                    key={option.value}
+                    value={option.value}
+                    className={option.value === currentMonth ? 'bg-blue-50 font-medium' : ''}
+                    ref={option.value === currentMonth ? currentMonthRef : null}
+                  >
+                    {option.label}
+                    {option.value === currentMonth && ` (${t('current_month')})`}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button
               variant="outline"
               size="sm"
-              onClick={async () => {
-                try {
-                  const response = await fetch('/api/init-cron', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                    },
-                  });
-
-                  const result = await response.json();
-                  if (result.success) {
-                    toast.success('Cron service initialized successfully!');
-                  } else {
-                    toast.error('Failed to initialize cron service: ' + result.error);
-                  }
-                } catch (error) {
-                  toast.error('Failed to initialize cron service');
-                }
-              }}
+              onClick={() => setMonth(currentMonth)}
+              title={t('filter_by_current_month')}
             >
-              <Settings className="h-4 w-4 mr-2" />
-              Init Cron
+              {t('current_month')}
             </Button>
-          </PermissionContent>
-
-          <PermissionContent action="create" subject="Timesheet">
-            <Link href="/modules/timesheet-management/create">
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                {t('create_timesheet')}
-              </Button>
-            </Link>
-          </PermissionContent>
-
-          <PermissionContent action="read" subject="Timesheet">
-            <Link href="/modules/timesheet-management/monthly">
-              <Button variant="outline">
-                <Calendar className="h-4 w-4 mr-2" />
-                {t('monthly_report')}
-              </Button>
-            </Link>
-          </PermissionContent>
+            <Select
+              value={pageSize.toString()}
+              onValueChange={value => handlePageSizeChange(parseInt(value))}
+            >
+              <SelectTrigger className="w-full sm:w-32">
+                <SelectValue placeholder={t('page_size')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">{t('5_per_page')}</SelectItem>
+                <SelectItem value="10">{t('10_per_page')}</SelectItem>
+                <SelectItem value="20">{t('20_per_page')}</SelectItem>
+                <SelectItem value="50">{t('50_per_page')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      </div>
 
-      {/* Bulk Actions */}
-      {selectedTimesheets.size > 0 && (
-        <Card className="mb-6">
-          <CardContent className="pt-6">
+        <Card>
+          <CardHeader>
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium">
-                  {selectedTimesheets.size} {t('timesheet_selected', { count: selectedTimesheets.size })}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedTimesheets(new Set())}
-                >
-                  {t('clear_selection')}
-                </Button>
+              <div>
+                <CardTitle>{t('timesheets')}</CardTitle>
+                <CardDescription>{t('manage_employee_timesheets_and_approvals')}</CardDescription>
               </div>
               <div className="flex items-center space-x-2">
-                {canApproveSelected && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleBulkAction('approve')}
-                    className="text-green-600 border-green-200 hover:bg-green-50"
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    {t('bulk_approve')}
-                  </Button>
+                <span className="text-sm text-gray-500">
+                  {timesheets?.total || 0} {t('timesheets', { count: timesheets?.total || 0 })}
+                </span>
+                {totalPages > 1 && (
+                  <span className="text-sm text-gray-500">
+                    {t('page')} {currentPage} {t('of')} {totalPages}
+                  </span>
                 )}
-                {canRejectSelected && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleBulkAction('reject')}
-                    className="text-red-600 border-red-200 hover:bg-red-50"
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    {t('bulk_reject')}
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleBulkDelete}
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {t('bulk_delete')}
-                </Button>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid gap-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder={t('search_timesheets')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder={t('filter_by_status')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('all_status')}</SelectItem>
-              <SelectItem value="draft">{t('draft')}</SelectItem>
-              <SelectItem value="submitted">{t('submitted')}</SelectItem>
-              <SelectItem value="foreman_approved">{t('foreman_approved')}</SelectItem>
-              <SelectItem value="incharge_approved">{t('incharge_approved')}</SelectItem>
-              <SelectItem value="checking_approved">{t('checking_approved')}</SelectItem>
-              <SelectItem value="manager_approved">{t('manager_approved')}</SelectItem>
-              <SelectItem value="rejected">{t('rejected')}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={assignmentFilter} onValueChange={setAssignmentFilter}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder={t('filter_by_assignment')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('all_assignments')}</SelectItem>
-              {assignments.map(assignment => (
-                <SelectItem key={assignment} value={assignment}>{assignment}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select
-            value={month}
-            onValueChange={setMonth}
-            open={monthSelectOpen}
-            onOpenChange={handleMonthSelectOpen}
-          >
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder={t('filter_by_month')} />
-            </SelectTrigger>
-            <SelectContent className="max-h-60">
-              <SelectItem value="all">{t('all_months')}</SelectItem>
-              {monthOptions.map(option => (
-                <SelectItem
-                  key={option.value}
-                  value={option.value}
-                  className={option.value === currentMonth ? "bg-blue-50 font-medium" : ""}
-                  ref={option.value === currentMonth ? currentMonthRef : null}
-                >
-                  {option.label}
-                  {option.value === currentMonth && ` (${t('current_month')})`}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setMonth(currentMonth)}
-            title={t('filter_by_current_month')}
-          >
-            {t('current_month')}
-          </Button>
-          <Select value={pageSize.toString()} onValueChange={(value) => handlePageSizeChange(parseInt(value))}>
-            <SelectTrigger className="w-full sm:w-32">
-              <SelectValue placeholder={t('page_size')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="5">{t('5_per_page')}</SelectItem>
-              <SelectItem value="10">{t('10_per_page')}</SelectItem>
-              <SelectItem value="20">{t('20_per_page')}</SelectItem>
-              <SelectItem value="50">{t('50_per_page')}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>{t('timesheets')}</CardTitle>
-              <CardDescription>
-                {t('manage_employee_timesheets_and_approvals')}
-              </CardDescription>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-500">
-                {timesheets?.total || 0} {t('timesheets', { count: timesheets?.total || 0 })}
-              </span>
-              {totalPages > 1 && (
-                <span className="text-sm text-gray-500">
-                  {t('page')} {currentPage} {t('of')} {totalPages}
-                </span>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={selectedTimesheets.size === timesheets?.data.length && timesheets.data.length > 0}
-                    onCheckedChange={handleSelectAll}
-                  />
-                </TableHead>
-                <TableHead>{t('employee')}</TableHead>
-                <TableHead>{t('assignment')}</TableHead>
-                <TableHead>{t('date')}</TableHead>
-                <TableHead>{t('hours')}</TableHead>
-                <TableHead>{t('status')}</TableHead>
-                <TableHead>{t('submitted')}</TableHead>
-                <TableHead>{t('approved_by')}</TableHead>
-                <TableHead className="text-right">{t('actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentTimesheets.length > 0 ? (
-                currentTimesheets.map((timesheet) => (
-                  <TableRow key={timesheet.id}>
-                    <TableCell>
-                      <Checkbox
-                        checked={selectedTimesheets.has(timesheet.id)}
-                        onCheckedChange={(checked) => handleSelectTimesheet(timesheet.id, checked as boolean)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <div className="flex-shrink-0">
-                          <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
-                            <span className="text-sm font-medium text-gray-600">
-                              {getTranslatedName(`${timesheet.employee.firstName} ${timesheet.employee.lastName}`, isRTL, translatedNames, setTranslatedNames).charAt(0).toUpperCase()}
-                            </span>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={
+                        selectedTimesheets.size === timesheets?.data.length &&
+                        timesheets.data.length > 0
+                      }
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
+                  <TableHead>{t('employee')}</TableHead>
+                  <TableHead>{t('assignment')}</TableHead>
+                  <TableHead>{t('date')}</TableHead>
+                  <TableHead>{t('hours')}</TableHead>
+                  <TableHead>{t('status')}</TableHead>
+                  <TableHead>{t('submitted')}</TableHead>
+                  <TableHead>{t('approved_by')}</TableHead>
+                  <TableHead className="text-right">{t('actions')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {currentTimesheets.length > 0 ? (
+                  currentTimesheets.map(timesheet => (
+                    <TableRow key={timesheet.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedTimesheets.has(timesheet.id)}
+                          onCheckedChange={checked =>
+                            handleSelectTimesheet(timesheet.id, checked as boolean)
+                          }
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-shrink-0">
+                            <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-medium text-gray-600">
+                                {getTranslatedName(
+                                  `${timesheet.employee.firstName} ${timesheet.employee.lastName}`,
+                                  isRTL,
+                                  translatedNames,
+                                  setTranslatedNames
+                                )
+                                  .charAt(0)
+                                  .toUpperCase()}
+                              </span>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="font-medium">
+                              {getTranslatedName(
+                                `${timesheet.employee.firstName} ${timesheet.employee.lastName}`,
+                                isRTL,
+                                translatedNames,
+                                setTranslatedNames
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {timesheet.employee.employeeId}
+                            </div>
                           </div>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {timesheet.assignment ? (
+                          <div className="text-sm">
+                            <div className="font-medium capitalize">
+                              {timesheet.assignment.type}
+                            </div>
+                            <div className="text-muted-foreground">
+                              {timesheet.assignment.name ||
+                                (timesheet.project
+                                  ? timesheet.project.name
+                                  : timesheet.rental
+                                    ? timesheet.rental.rentalNumber
+                                    : t('no_name'))}
+                            </div>
+                          </div>
+                        ) : timesheet.project ? (
+                          <div className="text-sm">
+                            <div className="font-medium">{t('project')}</div>
+                            <div className="text-muted-foreground">{timesheet.project.name}</div>
+                          </div>
+                        ) : timesheet.rental ? (
+                          <div className="text-sm">
+                            <div className="font-medium">{t('rental')}</div>
+                            <div className="text-muted-foreground">
+                              {timesheet.rental.rentalNumber}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-3 w-3" />
+                          <span>{new Date(timesheet.date).toLocaleDateString()}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
                         <div>
-                          <div className="font-medium">
-                            {getTranslatedName(`${timesheet.employee.firstName} ${timesheet.employee.lastName}`, isRTL, translatedNames, setTranslatedNames)}
+                          <div>
+                            {convertToArabicNumerals(timesheet.hoursWorked.toString(), isRTL)}h
                           </div>
-                          <div className="text-sm text-gray-500">{timesheet.employee.employeeId}</div>
+                          {timesheet.overtimeHours > 0 && (
+                            <div className="text-sm text-orange-600">
+                              +{convertToArabicNumerals(timesheet.overtimeHours.toString(), isRTL)}h{' '}
+                              {t('overtime')}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {timesheet.assignment ? (
-                        <div className="text-sm">
-                          <div className="font-medium capitalize">{timesheet.assignment.type}</div>
-                          <div className="text-muted-foreground">
-                            {timesheet.assignment.name ||
-                              (timesheet.project ? timesheet.project.name :
-                                timesheet.rental ? timesheet.rental.rentalNumber : t('no_name'))}
-                          </div>
-                        </div>
-                      ) : timesheet.project ? (
-                        <div className="text-sm">
-                          <div className="font-medium">{t('project')}</div>
-                          <div className="text-muted-foreground">{timesheet.project.name}</div>
-                        </div>
-                      ) : timesheet.rental ? (
-                        <div className="text-sm">
-                          <div className="font-medium">{t('rental')}</div>
-                          <div className="text-muted-foreground">{timesheet.rental.rentalNumber}</div>
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-3 w-3" />
-                        <span>{new Date(timesheet.date).toLocaleDateString()}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div>{convertToArabicNumerals(timesheet.hoursWorked.toString(), isRTL)}h</div>
-                        {timesheet.overtimeHours > 0 && (
-                          <div className="text-sm text-orange-600">
-                            +{convertToArabicNumerals(timesheet.overtimeHours.toString(), isRTL)}h {t('overtime')}
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(timesheet.status)}</TableCell>
-                    <TableCell>
-                      {timesheet.submittedAt ? new Date(timesheet.submittedAt).toLocaleDateString() : t('not_submitted')}
-                    </TableCell>
-                    <TableCell>{timesheet.approvedBy || t('not_approved')}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end space-x-2">
-                        <Link href={`/modules/timesheet-management/${timesheet.id}`}>
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </Link>
-                        <Link href={`/modules/timesheet-management/${timesheet.id}/edit`}>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </Link>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(timesheet.status)}</TableCell>
+                      <TableCell>
+                        {timesheet.submittedAt
+                          ? new Date(timesheet.submittedAt).toLocaleDateString()
+                          : t('not_submitted')}
+                      </TableCell>
+                      <TableCell>{timesheet.approvedBy || t('not_approved')}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end space-x-2">
+                          <Link href={`/modules/timesheet-management/${timesheet.id}`}>
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                          <Link href={`/modules/timesheet-management/${timesheet.id}/edit`}>
+                            <Button variant="ghost" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </Link>
 
-                        {timesheet.status === "pending" && (
-                          <>
-                            <Button variant="ghost" size="sm" onClick={handleApprove}>
-                              <Badge className="bg-green-100 text-green-800">{t('approve')}</Badge>
-                            </Button>
-                            <Button variant="ghost" size="sm" onClick={handleReject}>
-                              <Badge className="bg-red-100 text-red-800">{t('reject')}</Badge>
-                            </Button>
-                          </>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(timesheet)}
-                          disabled={timesheet.status !== 'draft' && userRole !== 'ADMIN'}
-                          title={timesheet.status !== 'draft' && userRole !== 'ADMIN' ? t('only_draft_timesheets_can_be_deleted_by_non_admin_users') : t('delete_timesheet')}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                          {timesheet.status === 'pending' && (
+                            <>
+                              <Button variant="ghost" size="sm" onClick={handleApprove}>
+                                <Badge className="bg-green-100 text-green-800">
+                                  {t('approve')}
+                                </Badge>
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={handleReject}>
+                                <Badge className="bg-red-100 text-red-800">{t('reject')}</Badge>
+                              </Button>
+                            </>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(timesheet)}
+                            disabled={timesheet.status !== 'draft' && userRole !== 'ADMIN'}
+                            title={
+                              timesheet.status !== 'draft' && userRole !== 'ADMIN'
+                                ? t('only_draft_timesheets_can_be_deleted_by_non_admin_users')
+                                : t('delete_timesheet')
+                            }
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center py-8">
+                      <div className="text-gray-500">{t('no_timesheets_found')}</div>
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8">
-                    <div className="text-gray-500">
-                      {t('no_timesheets_found')}
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Bulk Action Dialog */}
+        <Dialog
+          open={bulkActionDialog.open}
+          onOpenChange={open => setBulkActionDialog(prev => ({ ...prev, open }))}
+        >
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>
+                {bulkActionDialog.action === 'approve'
+                  ? t('bulk_approve_timesheets')
+                  : t('bulk_reject_timesheets')}
+              </DialogTitle>
+              <DialogDescription>
+                {bulkActionDialog.action === 'approve'
+                  ? t('bulk_approve_description')
+                  : t('bulk_reject_description')}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="notes">{t('notes_optional')}</Label>
+                <Textarea
+                  id="notes"
+                  placeholder={t('add_any_notes_about_this_action')}
+                  value={bulkActionDialog.notes}
+                  onChange={e => setBulkActionDialog(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+
+              {/* Approval Workflow Information */}
+              {bulkActionDialog.action === 'approve' && (
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="flex items-center space-x-2 text-blue-800 mb-3">
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="font-medium">{t('automatic_approval_workflow')}</span>
+                  </div>
+                  <div className="text-sm text-blue-700 space-y-2">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="font-medium">{t('current_status_next_stage')}</p>
+                        <div className="space-y-1 mt-1">
+                          <p>
+                            • {t('draft')} → {t('foreman_approval')}
+                          </p>
+                          <p>
+                            • {t('submitted')} → {t('foreman_approval')}
+                          </p>
+                          <p>
+                            • {t('foreman_approved')} → {t('incharge_approval')}
+                          </p>
+                          <p>
+                            • {t('incharge_approved')} → {t('checking_approval')}
+                          </p>
+                          <p>
+                            • {t('checking_approved')} → {t('manager_approval')}
+                          </p>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="font-medium">{t('system_behavior')}</p>
+                        <div className="space-y-1 mt-1">
+                          <p>• {t('automatically_determines_next_stage')}</p>
+                          <p>• {t('moves_to_next_approval_level')}</p>
+                          <p>• {t('no_manual_stage_selection_needed')}</p>
+                        </div>
+                      </div>
                     </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Bulk Action Dialog */}
-      <Dialog open={bulkActionDialog.open} onOpenChange={(open) => setBulkActionDialog(prev => ({ ...prev, open }))}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {bulkActionDialog.action === 'approve' ? t('bulk_approve_timesheets') : t('bulk_reject_timesheets')}
-            </DialogTitle>
-            <DialogDescription>
-              {bulkActionDialog.action === 'approve'
-                ? t('bulk_approve_description')
-                : t('bulk_reject_description')
-              }
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="notes">{t('notes_optional')}</Label>
-              <Textarea
-                id="notes"
-                placeholder={t('add_any_notes_about_this_action')}
-                value={bulkActionDialog.notes}
-                onChange={(e) => setBulkActionDialog(prev => ({ ...prev, notes: e.target.value }))}
-                rows={3}
-              />
-            </div>
-
-
-
-            {/* Approval Workflow Information */}
-            {bulkActionDialog.action === 'approve' && (
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="flex items-center space-x-2 text-blue-800 mb-3">
-                  <AlertCircle className="h-4 w-4" />
-                  <span className="font-medium">{t('automatic_approval_workflow')}</span>
+                  </div>
                 </div>
-                <div className="text-sm text-blue-700 space-y-2">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="font-medium">{t('current_status_next_stage')}</p>
-                      <div className="space-y-1 mt-1">
-                        <p>• {t('draft')} → {t('foreman_approval')}</p>
-                        <p>• {t('submitted')} → {t('foreman_approval')}</p>
-                        <p>• {t('foreman_approved')} → {t('incharge_approval')}</p>
-                        <p>• {t('incharge_approved')} → {t('checking_approval')}</p>
-                        <p>• {t('checking_approved')} → {t('manager_approval')}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="font-medium">{t('system_behavior')}</p>
-                      <div className="space-y-1 mt-1">
-                        <p>• {t('automatically_determines_next_stage')}</p>
-                        <p>• {t('moves_to_next_approval_level')}</p>
-                        <p>• {t('no_manual_stage_selection_needed')}</p>
-                      </div>
-                    </div>
+              )}
+
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-center space-x-2 text-gray-800 mb-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="font-medium">{t('summary')}</span>
+                </div>
+                <div className="text-sm text-gray-700 space-y-1">
+                  <p>
+                    • {selectedTimesheets.size}{' '}
+                    {t('timesheet_selected', { count: selectedTimesheets.size })}
+                  </p>
+                  <p>
+                    • {t('action')}:{' '}
+                    {bulkActionDialog.action === 'approve' ? t('approve') : t('reject')}
+                  </p>
+                  {bulkActionDialog.action === 'approve' && (
+                    <p>
+                      • {t('approval_workflow')}: {t('automatic_stage_determination')}
+                    </p>
+                  )}
+                  <p>• {t('employees')}:</p>
+                  <ul className="ml-4 space-y-1">
+                    {selectedTimesheetsData.slice(0, 3).map(timesheet => (
+                      <li key={timesheet.id} className="text-xs">
+                        {getTranslatedName(
+                          `${timesheet.employee.firstName} ${timesheet.employee.lastName}`,
+                          isRTL,
+                          translatedNames,
+                          setTranslatedNames
+                        )}{' '}
+                        - {new Date(timesheet.date).toLocaleDateString()} -{' '}
+                        {convertToArabicNumerals(timesheet.hoursWorked.toString(), isRTL)}h
+                      </li>
+                    ))}
+                    {selectedTimesheetsData.length > 3 && (
+                      <li className="text-xs text-gray-500">
+                        ... and {selectedTimesheetsData.length - 3} more
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setBulkActionDialog({ open: false, action: null, notes: '' })}
+              >
+                {t('cancel')}
+              </Button>
+              <Button
+                onClick={executeBulkAction}
+                disabled={bulkActionLoading}
+                className={
+                  bulkActionDialog.action === 'approve'
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : 'bg-red-600 hover:bg-red-700'
+                }
+              >
+                {bulkActionLoading ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    {t('processing')}...
+                  </>
+                ) : (
+                  <>
+                    {bulkActionDialog.action === 'approve' ? (
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                    ) : (
+                      <XCircle className="h-4 w-4 mr-2" />
+                    )}
+                    {bulkActionDialog.action === 'approve' ? t('approve') : t('reject')} {t('all')}
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={deleteDialog.open}
+          onOpenChange={open => setDeleteDialog(prev => ({ ...prev, open }))}
+        >
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{t('delete_timesheet')}</DialogTitle>
+              <DialogDescription>
+                {t('are_you_sure_you_want_to_delete_this_timesheet')}
+              </DialogDescription>
+            </DialogHeader>
+            {deleteDialog.timesheetData && (
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="space-y-2">
+                  <div>
+                    <span className="font-medium">{t('employee')}:</span>{' '}
+                    {deleteDialog.timesheetData.employee.firstName}{' '}
+                    {deleteDialog.timesheetData.employee.lastName}
+                  </div>
+                  <div>
+                    <span className="font-medium">{t('date')}:</span>{' '}
+                    {new Date(deleteDialog.timesheetData.date).toLocaleDateString()}
+                  </div>
+                  <div>
+                    <span className="font-medium">{t('hours')}:</span>{' '}
+                    {deleteDialog.timesheetData.hoursWorked}h
+                    {deleteDialog.timesheetData.overtimeHours > 0 &&
+                      ` + ${deleteDialog.timesheetData.overtimeHours}h {t('ot')}`}
+                  </div>
+                  <div>
+                    <span className="font-medium">{t('status')}:</span>{' '}
+                    {getStatusBadge(deleteDialog.timesheetData.status)}
                   </div>
                 </div>
               </div>
             )}
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  setDeleteDialog({ open: false, timesheetId: null, timesheetData: null })
+                }
+              >
+                {t('cancel')}
+              </Button>
+              <Button variant="destructive" onClick={executeDelete}>
+                {t('delete_timesheet')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="flex items-center space-x-2 text-gray-800 mb-2">
-                <AlertCircle className="h-4 w-4" />
-                <span className="font-medium">{t('summary')}</span>
-              </div>
-              <div className="text-sm text-gray-700 space-y-1">
-                <p>• {selectedTimesheets.size} {t('timesheet_selected', { count: selectedTimesheets.size })}</p>
-                <p>• {t('action')}: {bulkActionDialog.action === 'approve' ? t('approve') : t('reject')}</p>
-                {bulkActionDialog.action === 'approve' && (
-                  <p>• {t('approval_workflow')}: {t('automatic_stage_determination')}</p>
-                )}
-                <p>• {t('employees')}:</p>
-                <ul className="ml-4 space-y-1">
-                  {selectedTimesheetsData.slice(0, 3).map(timesheet => (
-                    <li key={timesheet.id} className="text-xs">
-                      {getTranslatedName(`${timesheet.employee.firstName} ${timesheet.employee.lastName}`, isRTL, translatedNames, setTranslatedNames)} - {new Date(timesheet.date).toLocaleDateString()} - {convertToArabicNumerals(timesheet.hoursWorked.toString(), isRTL)}h
-                    </li>
-                  ))}
-                  {selectedTimesheetsData.length > 3 && (
-                    <li className="text-xs text-gray-500">
-                      ... and {selectedTimesheetsData.length - 3} more
-                    </li>
-                  )}
-                </ul>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setBulkActionDialog({ open: false, action: null, notes: '' })}
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              onClick={executeBulkAction}
-              disabled={bulkActionLoading}
-              className={bulkActionDialog.action === 'approve'
-                ? 'bg-green-600 hover:bg-green-700'
-                : 'bg-red-600 hover:bg-red-700'
-              }
-            >
-              {bulkActionLoading ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  {t('processing')}...
-                </>
-              ) : (
-                <>
-                  {bulkActionDialog.action === 'approve' ? (
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                  ) : (
-                    <XCircle className="h-4 w-4 mr-2" />
-                  )}
-                  {bulkActionDialog.action === 'approve' ? t('approve') : t('reject')} {t('all')}
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog(prev => ({ ...prev, open }))}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t('delete_timesheet')}</DialogTitle>
-            <DialogDescription>
-              {t('are_you_sure_you_want_to_delete_this_timesheet')}
-            </DialogDescription>
-          </DialogHeader>
-          {deleteDialog.timesheetData && (
+        {/* Bulk Delete Confirmation Dialog */}
+        <Dialog
+          open={bulkDeleteDialog.open}
+          onOpenChange={open => setBulkDeleteDialog(prev => ({ ...prev, open }))}
+        >
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{t('delete_multiple_timesheets')}</DialogTitle>
+              <DialogDescription>
+                {t('are_you_sure_you_want_to_delete', {
+                  count: bulkDeleteDialog.timesheets.length,
+                })}
+              </DialogDescription>
+            </DialogHeader>
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="space-y-2">
-                <div>
-                  <span className="font-medium">{t('employee')}:</span> {deleteDialog.timesheetData.employee.firstName} {deleteDialog.timesheetData.employee.lastName}
-                </div>
-                <div>
-                  <span className="font-medium">{t('date')}:</span> {new Date(deleteDialog.timesheetData.date).toLocaleDateString()}
-                </div>
-                <div>
-                  <span className="font-medium">{t('hours')}:</span> {deleteDialog.timesheetData.hoursWorked}h
-                  {deleteDialog.timesheetData.overtimeHours > 0 && ` + ${deleteDialog.timesheetData.overtimeHours}h {t('ot')}`}
-                </div>
-                <div>
-                  <span className="font-medium">{t('status')}:</span> {getStatusBadge(deleteDialog.timesheetData.status)}
+                <div className="font-medium">{t('timesheets_to_be_deleted')}:</div>
+                <div className="max-h-40 overflow-y-auto space-y-2">
+                  {bulkDeleteDialog.timesheets.map(timesheet => (
+                    <div
+                      key={timesheet.id}
+                      className="flex items-center justify-between p-2 bg-white rounded border"
+                    >
+                      <div>
+                        <div className="font-medium">
+                          {timesheet.employee.firstName} {timesheet.employee.lastName}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {new Date(timesheet.date).toLocaleDateString()} - {timesheet.hoursWorked}h
+                          {timesheet.overtimeHours > 0 &&
+                            ` + ${timesheet.overtimeHours}h {t('ot')}`}
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {timesheet.project?.name ||
+                          timesheet.rental?.rentalNumber ||
+                          t('no_project_rental')}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
-          )}
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialog({ open: false, timesheetId: null, timesheetData: null })}
-            >
-              {t('cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={executeDelete}
-            >
-              {t('delete_timesheet')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setBulkDeleteDialog({ open: false, timesheets: [] })}
+              >
+                {t('cancel')}
+              </Button>
+              <Button variant="destructive" onClick={executeBulkDelete}>
+                {t('delete', { count: bulkDeleteDialog.timesheets.length })} {t('timesheet_s')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-      {/* Bulk Delete Confirmation Dialog */}
-      <Dialog open={bulkDeleteDialog.open} onOpenChange={(open) => setBulkDeleteDialog(prev => ({ ...prev, open }))}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{t('delete_multiple_timesheets')}</DialogTitle>
-            <DialogDescription>
-              {t('are_you_sure_you_want_to_delete', { count: bulkDeleteDialog.timesheets.length })}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <div className="space-y-2">
-              <div className="font-medium">{t('timesheets_to_be_deleted')}:</div>
-              <div className="max-h-40 overflow-y-auto space-y-2">
-                {bulkDeleteDialog.timesheets.map((timesheet) => (
-                  <div key={timesheet.id} className="flex items-center justify-between p-2 bg-white rounded border">
-                    <div>
-                      <div className="font-medium">
-                        {timesheet.employee.firstName} {timesheet.employee.lastName}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {new Date(timesheet.date).toLocaleDateString()} - {timesheet.hoursWorked}h
-                        {timesheet.overtimeHours > 0 && ` + ${timesheet.overtimeHours}h {t('ot')}`}
-                      </div>
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {timesheet.project?.name || timesheet.rental?.rentalNumber || t('no_project_rental')}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* Pagination */}
+        <div className="mt-6 flex items-center justify-between">
+          {/* Left side - Showing results info */}
+          <div className="text-sm text-gray-600">
+            {t('showing_results', {
+              start: (currentPage - 1) * pageSize + 1,
+              end: Math.min(currentPage * pageSize, totalItems),
+              total: totalItems,
+            })}
           </div>
-          <DialogFooter>
+
+          {/* Right side - Pagination controls */}
+          <div className="flex items-center space-x-1">
             <Button
               variant="outline"
-              onClick={() => setBulkDeleteDialog({ open: false, timesheets: [] })}
+              size="sm"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+              className="h-8 px-3"
             >
-              {t('cancel')}
+              &lt; {t('previous')}
             </Button>
-            <Button
-              variant="destructive"
-              onClick={executeBulkDelete}
-            >
-              {t('delete', { count: bulkDeleteDialog.timesheets.length })} {t('timesheet_s')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      {/* Pagination */}
-      <div className="mt-6 flex items-center justify-between">
-        {/* Left side - Showing results info */}
-        <div className="text-sm text-gray-600">
-          {t('showing_results', { start: (currentPage - 1) * pageSize + 1, end: Math.min(currentPage * pageSize, totalItems), total: totalItems })}
-        </div>
+            {/* Page numbers */}
+            {(() => {
+              const pages: JSX.Element[] = [];
+              const maxVisiblePages = 5;
+              let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+              let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
-        {/* Right side - Pagination controls */}
-        <div className="flex items-center space-x-1">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-            className="h-8 px-3"
-          >
-            &lt; {t('previous')}
-          </Button>
+              // Adjust start page if we're near the end
+              if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+              }
 
-          {/* Page numbers */}
-          {(() => {
-            const pages: JSX.Element[] = [];
-            const maxVisiblePages = 5;
-            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-
-            // Adjust start page if we're near the end
-            if (endPage - startPage + 1 < maxVisiblePages) {
-              startPage = Math.max(1, endPage - maxVisiblePages + 1);
-            }
-
-            // First page
-            if (startPage > 1) {
-              pages.push(
-                <Button
-                  key={1}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(1)}
-                  className="h-8 w-8 p-0"
-                >
-                  1
-                </Button>
-              );
-
-              // Ellipsis after first page
-              if (startPage > 2) {
+              // First page
+              if (startPage > 1) {
                 pages.push(
-                  <span key="ellipsis1" className="px-2 text-gray-500">
+                  <Button
+                    key={1}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(1)}
+                    className="h-8 w-8 p-0"
+                  >
+                    1
+                  </Button>
+                );
+
+                // Ellipsis after first page
+                if (startPage > 2) {
+                  pages.push(
+                    <span key="ellipsis1" className="px-2 text-gray-500">
+                      ...
+                    </span>
+                  );
+                }
+              }
+
+              // Visible pages
+              for (let page = startPage; page <= endPage; page++) {
+                pages.push(
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setCurrentPage(page)}
+                    className="h-8 w-8 p-0"
+                  >
+                    {page}
+                  </Button>
+                );
+              }
+
+              // Ellipsis before last page
+              if (endPage < totalPages - 1) {
+                pages.push(
+                  <span key="ellipsis2" className="px-2 text-gray-500">
                     ...
                   </span>
                 );
               }
-            }
 
-            // Visible pages
-            for (let page = startPage; page <= endPage; page++) {
-              pages.push(
+              // Last page
+              if (endPage < totalPages) {
+                pages.push(
+                  <Button
+                    key={totalPages}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(totalPages)}
+                    className="h-8 w-8 p-0"
+                  >
+                    {totalPages}
+                  </Button>
+                );
+              }
+
+              return pages;
+            })()}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              disabled={currentPage === totalPages}
+              className="h-8 px-3"
+            >
+              {t('next')} &gt;
+            </Button>
+          </div>
+        </div>
+        {/* Role-based content example */}
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('timesheet_administration')}</CardTitle>
+              <CardDescription>
+                {t('advanced_timesheet_management_features_for_supervisors_and_managers')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2">
                 <Button
-                  key={page}
-                  variant={currentPage === page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setCurrentPage(page)}
-                  className="h-8 w-8 p-0"
-                >
-                  {page}
-                </Button>
-              );
-            }
-
-            // Ellipsis before last page
-            if (endPage < totalPages - 1) {
-              pages.push(
-                <span key="ellipsis2" className="px-2 text-gray-500">
-                  ...
-                </span>
-              );
-            }
-
-            // Last page
-            if (endPage < totalPages) {
-              pages.push(
-                <Button
-                  key={totalPages}
                   variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(totalPages)}
-                  className="h-8 w-8 p-0"
+                  onClick={() => handleAllPendingAction('approve')}
+                  disabled={bulkActionLoading}
                 >
-                  {totalPages}
+                  {bulkActionLoading ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                  )}
+                  {t('approve_all_pending')}
                 </Button>
-              );
-            }
 
-            return pages;
-          })()}
+                <Button
+                  variant="outline"
+                  onClick={() => handleAllPendingAction('reject')}
+                  disabled={bulkActionLoading}
+                >
+                  {bulkActionLoading ? (
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <XCircle className="h-4 w-4 mr-2" />
+                  )}
+                  {t('reject_all_pending')}
+                </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-            disabled={currentPage === totalPages}
-            className="h-8 px-3"
-          >
-            {t('next')} &gt;
-          </Button>
+                <Button variant="outline">
+                  <Settings className="h-4 w-4 mr-2" />
+                  {t('timesheet_settings')}
+                </Button>
+
+                <Button variant="outline">
+                  <FileText className="h-4 w-4 mr-2" />
+                  {t('generate_reports')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
-      {/* Role-based content example */}
-      <div>
-        <Card>
-          <CardHeader>
-            <CardTitle>{t('timesheet_administration')}</CardTitle>
-            <CardDescription>
-              {t('advanced_timesheet_management_features_for_supervisors_and_managers')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline"
-                onClick={() => handleAllPendingAction('approve')}
-                disabled={bulkActionLoading}
-              >
-                {bulkActionLoading ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <CheckCircle className="h-4 w-4 mr-2" />
-                )}
-                {t('approve_all_pending')}
-              </Button>
-
-              <Button 
-                variant="outline"
-                onClick={() => handleAllPendingAction('reject')}
-                disabled={bulkActionLoading}
-              >
-                {bulkActionLoading ? (
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <XCircle className="h-4 w-4 mr-2" />
-                )}
-                {t('reject_all_pending')}
-              </Button>
-
-              <Button variant="outline">
-                <Settings className="h-4 w-4 mr-2" />
-                {t('timesheet_settings')}
-              </Button>
-
-              <Button variant="outline">
-                <FileText className="h-4 w-4 mr-2" />
-                {t('generate_reports')}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
     </ProtectedRoute>
   );
 }

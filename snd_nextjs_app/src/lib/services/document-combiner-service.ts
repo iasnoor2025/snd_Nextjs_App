@@ -1,7 +1,7 @@
-import { PDFDocument } from 'pdf-lib';
-import sharp from 'sharp';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+import { PDFDocument } from 'pdf-lib';
+import sharp from 'sharp';
 
 export interface DocumentToCombine {
   id: number;
@@ -22,7 +22,7 @@ export class DocumentCombinerService {
    */
   static async combineDocuments(documents: DocumentToCombine[]): Promise<Uint8Array> {
     const pdfDoc = await PDFDocument.create();
-    
+
     // Process each document directly - no title page, no reports
     for (const document of documents) {
       try {
@@ -46,17 +46,20 @@ export class DocumentCombinerService {
         });
       }
     }
-    
+
     return await pdfDoc.save();
   }
-  
+
   /**
    * Adds a single document to the PDF
    */
-  private static async addDocumentToPDF(pdfDoc: PDFDocument, document: DocumentToCombine): Promise<void> {
+  private static async addDocumentToPDF(
+    pdfDoc: PDFDocument,
+    document: DocumentToCombine
+  ): Promise<void> {
     // Construct the correct file path based on document type
     let filePath: string;
-    
+
     if (document.type === 'equipment') {
       // Equipment documents are stored in public/uploads/documents/
       filePath = join(process.cwd(), 'public', 'uploads', 'documents', document.filePath);
@@ -64,14 +67,14 @@ export class DocumentCombinerService {
       // Employee documents use the filePath directly
       filePath = join(process.cwd(), 'public', document.filePath);
     }
-    
+
     console.log(`🔍 Trying to read file: ${filePath}`);
     console.log(`🔍 Document type: ${document.type}, MIME: ${document.mimeType}`);
-    
+
     try {
       const fileBuffer = await readFile(filePath);
       console.log(`🔍 Successfully read file: ${filePath}, size: ${fileBuffer.length} bytes`);
-      
+
       if (document.mimeType.includes('pdf')) {
         await this.addPDFToDocument(pdfDoc, fileBuffer);
       } else if (document.mimeType.includes('image')) {
@@ -85,7 +88,7 @@ export class DocumentCombinerService {
       await this.addInfoPage(pdfDoc, document);
     }
   }
-  
+
   /**
    * Adds a PDF document to the main PDF
    */
@@ -99,24 +102,30 @@ export class DocumentCombinerService {
       throw error;
     }
   }
-  
+
   /**
    * Adds an image to the PDF
    */
-  private static async addImageToDocument(pdfDoc: PDFDocument, imageBuffer: Buffer, document: DocumentToCombine): Promise<void> {
+  private static async addImageToDocument(
+    pdfDoc: PDFDocument,
+    imageBuffer: Buffer,
+    document: DocumentToCombine
+  ): Promise<void> {
     try {
       console.log(`🔍 Processing image: ${document.fileName}, size: ${imageBuffer.length} bytes`);
-      
+
       // Process image with sharp - support multiple formats
       let processedImage: Buffer;
       let imageFormat: 'jpeg' | 'png' | 'webp';
-      
+
       // Detect image format and process accordingly
       const sharpInstance = sharp(imageBuffer);
       const metadata = await sharpInstance.metadata();
-      
-      console.log(`🔍 Image metadata: format=${metadata.format}, width=${metadata.width}, height=${metadata.height}`);
-      
+
+      console.log(
+        `🔍 Image metadata: format=${metadata.format}, width=${metadata.width}, height=${metadata.height}`
+      );
+
       if (metadata.format === 'png') {
         processedImage = await sharpInstance
           .resize(500, 700, { fit: 'inside', withoutEnlargement: true })
@@ -137,12 +146,12 @@ export class DocumentCombinerService {
           .toBuffer();
         imageFormat = 'jpeg';
       }
-      
+
       console.log(`🔍 Processed image: format=${imageFormat}, size=${processedImage.length} bytes`);
-      
+
       // Convert to PDF page
       const imagePage = pdfDoc.addPage([595, 842]);
-      
+
       // Embed and draw the image based on format
       let image;
       if (imageFormat === 'png') {
@@ -152,18 +161,18 @@ export class DocumentCombinerService {
         image = await pdfDoc.embedJpg(processedImage);
         console.log(`🔍 JPEG image embedded successfully`);
       }
-      
+
       const { width, height } = image.scale(1);
       console.log(`🔍 Image dimensions: ${width}x${height}`);
-      
+
       // Calculate position to center the image on the page
       const pageWidth = 595;
       const pageHeight = 842;
       const x = (pageWidth - width) / 2;
       const y = (pageHeight - height) / 2; // Center vertically
-      
+
       console.log(`🔍 Drawing image at position: x=${x}, y=${y}`);
-      
+
       // Draw the image centered on the page
       imagePage.drawImage(image, {
         x,
@@ -171,23 +180,25 @@ export class DocumentCombinerService {
         width,
         height,
       });
-      
+
       console.log(`🔍 Image successfully added to PDF`);
-      
     } catch (error) {
       console.error('❌ Error processing image:', error);
       throw error;
     }
   }
-  
+
   /**
    * Adds an info page for documents that can't be embedded
    */
-  private static async addInfoPage(pdfDoc: PDFDocument, document: DocumentToCombine): Promise<void> {
+  private static async addInfoPage(
+    pdfDoc: PDFDocument,
+    document: DocumentToCombine
+  ): Promise<void> {
     const infoPage = pdfDoc.addPage([595, 842]);
     const normalFont = await pdfDoc.embedFont('Helvetica');
     const titleFont = await pdfDoc.embedFont('Helvetica-Bold');
-    
+
     // Title
     infoPage.drawText('Document Information', {
       x: 50,
@@ -195,22 +206,23 @@ export class DocumentCombinerService {
       size: 18,
       font: titleFont,
     });
-    
+
     // Document details
     let yPosition = 700;
     const details = [
       `File Name: ${document.fileName}`,
       `Type: ${document.type.toUpperCase()}`,
       `MIME Type: ${document.mimeType}`,
-      `Owner: ${document.type === 'employee' 
-        ? `${document.employeeName || 'Unknown'} (${document.employeeFileNumber || 'No File #'})`
-        : `${document.equipmentName || 'Unknown'} ${document.equipmentModel ? `(${document.equipmentModel})` : ''}`
+      `Owner: ${
+        document.type === 'employee'
+          ? `${document.employeeName || 'Unknown'} (${document.employeeFileNumber || 'No File #'})`
+          : `${document.equipmentName || 'Unknown'} ${document.equipmentModel ? `(${document.equipmentModel})` : ''}`
       }`,
       `File Path: ${document.filePath}`,
       `Note: This document could not be embedded in the PDF.`,
-      `Please refer to the original file for the actual content.`
+      `Please refer to the original file for the actual content.`,
     ];
-    
+
     details.forEach(detail => {
       infoPage.drawText(detail, {
         x: 50,

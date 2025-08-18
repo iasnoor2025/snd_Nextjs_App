@@ -1,18 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
-import { salaryIncrementService, type SalaryIncrement } from '@/lib/services/salary-increment-service';
 import ApiService from '@/lib/api-service';
+import {
+  salaryIncrementService,
+  type SalaryIncrement,
+} from '@/lib/services/salary-increment-service';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export default function EditSalaryIncrementPage() {
   const router = useRouter();
@@ -38,12 +47,12 @@ export default function EditSalaryIncrementPage() {
 
   useEffect(() => {
     if (status === 'loading') return;
-    
+
     if (!session) {
       router.push('/login');
       return;
     }
-    
+
     loadIncrement();
   }, [session, status, router]);
 
@@ -53,7 +62,7 @@ export default function EditSalaryIncrementPage() {
       const incrementId = params.id as string;
       const response = await ApiService.get(`/salary-increments/${incrementId}`);
       const incrementData = response.data;
-      
+
       if (!incrementData) {
         toast.error('Salary increment not found');
         router.push('/modules/salary-increments');
@@ -63,15 +72,29 @@ export default function EditSalaryIncrementPage() {
       setIncrement(incrementData);
       setFormData({
         increment_type: incrementData.increment_type,
-        increment_percentage: incrementData.increment_percentage ? parseFloat(String(incrementData.increment_percentage)) : undefined,
-        increment_amount: incrementData.increment_amount ? parseFloat(String(incrementData.increment_amount)) : undefined,
+        increment_percentage: incrementData.increment_percentage
+          ? parseFloat(String(incrementData.increment_percentage))
+          : undefined,
+        increment_amount: incrementData.increment_amount
+          ? parseFloat(String(incrementData.increment_amount))
+          : undefined,
         reason: incrementData.reason || '',
-        effective_date: incrementData.effective_date ? new Date(incrementData.effective_date).toISOString().split('T')[0] : '',
+        effective_date: incrementData.effective_date
+          ? new Date(incrementData.effective_date).toISOString().split('T')[0]
+          : '',
         notes: incrementData.notes || '',
-        new_base_salary: incrementData.new_base_salary ? parseFloat(String(incrementData.new_base_salary)) : undefined,
-        new_food_allowance: incrementData.new_food_allowance ? parseFloat(String(incrementData.new_food_allowance)) : undefined,
-        new_housing_allowance: incrementData.new_housing_allowance ? parseFloat(String(incrementData.new_housing_allowance)) : undefined,
-        new_transport_allowance: incrementData.new_transport_allowance ? parseFloat(String(incrementData.new_transport_allowance)) : undefined,
+        new_base_salary: incrementData.new_base_salary
+          ? parseFloat(String(incrementData.new_base_salary))
+          : undefined,
+        new_food_allowance: incrementData.new_food_allowance
+          ? parseFloat(String(incrementData.new_food_allowance))
+          : undefined,
+        new_housing_allowance: incrementData.new_housing_allowance
+          ? parseFloat(String(incrementData.new_housing_allowance))
+          : undefined,
+        new_transport_allowance: incrementData.new_transport_allowance
+          ? parseFloat(String(incrementData.new_transport_allowance))
+          : undefined,
         apply_to_allowances: incrementData.apply_to_allowances || false,
       });
     } catch (error) {
@@ -85,12 +108,12 @@ export default function EditSalaryIncrementPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!increment) return;
 
     try {
       setSaving(true);
-      
+
       const dataToSend = {
         ...formData,
         increment_percentage: formData.increment_percentage || undefined,
@@ -147,10 +170,7 @@ export default function EditSalaryIncrementPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center space-x-4">
-        <Button
-          variant="ghost"
-          onClick={() => router.push('/modules/salary-increments')}
-        >
+        <Button variant="ghost" onClick={() => router.push('/modules/salary-increments')}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
@@ -178,7 +198,7 @@ export default function EditSalaryIncrementPage() {
                 <Label htmlFor="increment_type">Increment Type</Label>
                 <Select
                   value={formData.increment_type}
-                  onValueChange={(value) => handleInputChange('increment_type', value)}
+                  onValueChange={value => handleInputChange('increment_type', value)}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select increment type" />
@@ -202,7 +222,12 @@ export default function EditSalaryIncrementPage() {
                     type="number"
                     step="0.01"
                     value={formData.increment_percentage || ''}
-                    onChange={(e) => handleInputChange('increment_percentage', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    onChange={e =>
+                      handleInputChange(
+                        'increment_percentage',
+                        e.target.value ? parseFloat(e.target.value) : undefined
+                      )
+                    }
                     placeholder="Enter percentage"
                   />
                 </div>
@@ -216,14 +241,21 @@ export default function EditSalaryIncrementPage() {
                     type="number"
                     step="0.01"
                     value={formData.increment_amount || ''}
-                    onChange={(e) => handleInputChange('increment_amount', e.target.value ? parseFloat(e.target.value) : undefined)}
+                    onChange={e =>
+                      handleInputChange(
+                        'increment_amount',
+                        e.target.value ? parseFloat(e.target.value) : undefined
+                      )
+                    }
                     placeholder="Enter amount"
                   />
                 </div>
               )}
 
-              {(formData.increment_type === 'promotion' || formData.increment_type === 'annual_review' || 
-                formData.increment_type === 'performance' || formData.increment_type === 'market_adjustment') && (
+              {(formData.increment_type === 'promotion' ||
+                formData.increment_type === 'annual_review' ||
+                formData.increment_type === 'performance' ||
+                formData.increment_type === 'market_adjustment') && (
                 <>
                   <div>
                     <Label htmlFor="new_base_salary">New Base Salary (SAR)</Label>
@@ -232,7 +264,12 @@ export default function EditSalaryIncrementPage() {
                       type="number"
                       step="0.01"
                       value={formData.new_base_salary || ''}
-                      onChange={(e) => handleInputChange('new_base_salary', e.target.value ? parseFloat(e.target.value) : undefined)}
+                      onChange={e =>
+                        handleInputChange(
+                          'new_base_salary',
+                          e.target.value ? parseFloat(e.target.value) : undefined
+                        )
+                      }
                       placeholder="Enter new base salary"
                     />
                   </div>
@@ -244,7 +281,12 @@ export default function EditSalaryIncrementPage() {
                       type="number"
                       step="0.01"
                       value={formData.new_food_allowance || ''}
-                      onChange={(e) => handleInputChange('new_food_allowance', e.target.value ? parseFloat(e.target.value) : undefined)}
+                      onChange={e =>
+                        handleInputChange(
+                          'new_food_allowance',
+                          e.target.value ? parseFloat(e.target.value) : undefined
+                        )
+                      }
                       placeholder="Enter new food allowance"
                     />
                   </div>
@@ -256,7 +298,12 @@ export default function EditSalaryIncrementPage() {
                       type="number"
                       step="0.01"
                       value={formData.new_housing_allowance || ''}
-                      onChange={(e) => handleInputChange('new_housing_allowance', e.target.value ? parseFloat(e.target.value) : undefined)}
+                      onChange={e =>
+                        handleInputChange(
+                          'new_housing_allowance',
+                          e.target.value ? parseFloat(e.target.value) : undefined
+                        )
+                      }
                       placeholder="Enter new housing allowance"
                     />
                   </div>
@@ -268,7 +315,12 @@ export default function EditSalaryIncrementPage() {
                       type="number"
                       step="0.01"
                       value={formData.new_transport_allowance || ''}
-                      onChange={(e) => handleInputChange('new_transport_allowance', e.target.value ? parseFloat(e.target.value) : undefined)}
+                      onChange={e =>
+                        handleInputChange(
+                          'new_transport_allowance',
+                          e.target.value ? parseFloat(e.target.value) : undefined
+                        )
+                      }
                       placeholder="Enter new transport allowance"
                     />
                   </div>
@@ -281,7 +333,7 @@ export default function EditSalaryIncrementPage() {
                   id="effective_date"
                   type="date"
                   value={formData.effective_date}
-                  onChange={(e) => handleInputChange('effective_date', e.target.value)}
+                  onChange={e => handleInputChange('effective_date', e.target.value)}
                   required
                 />
               </div>
@@ -291,7 +343,7 @@ export default function EditSalaryIncrementPage() {
                 <Textarea
                   id="reason"
                   value={formData.reason}
-                  onChange={(e) => handleInputChange('reason', e.target.value)}
+                  onChange={e => handleInputChange('reason', e.target.value)}
                   placeholder="Enter reason for salary increment"
                   required
                 />
@@ -302,7 +354,7 @@ export default function EditSalaryIncrementPage() {
                 <Textarea
                   id="notes"
                   value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
+                  onChange={e => handleInputChange('notes', e.target.value)}
                   placeholder="Additional notes (optional)"
                 />
               </div>
@@ -313,7 +365,7 @@ export default function EditSalaryIncrementPage() {
                     type="checkbox"
                     id="apply_to_allowances"
                     checked={formData.apply_to_allowances}
-                    onChange={(e) => handleInputChange('apply_to_allowances', e.target.checked)}
+                    onChange={e => handleInputChange('apply_to_allowances', e.target.checked)}
                   />
                   <Label htmlFor="apply_to_allowances">Apply percentage to allowances</Label>
                 </div>

@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-
-
-import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
 
 // GET /api/profile/settings - Get user settings
 export async function GET(_request: NextRequest) {
@@ -12,10 +10,7 @@ export async function GET(_request: NextRequest) {
     const session = await getServerSession(authConfig);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     // const userId = session.user.id;
@@ -50,10 +45,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(defaultSettings);
   } catch (error) {
     console.error('Error fetching settings:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch settings' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
   }
 }
 
@@ -64,20 +56,14 @@ export async function PUT(_request: NextRequest) {
     const session = await getServerSession(authConfig);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     const body = await _request.json();
     const { type, settings } = body;
 
     if (!type || !settings) {
-      return NextResponse.json(
-        { error: 'Type and settings are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Type and settings are required' }, { status: 400 });
     }
 
     // const userId = session.user.id;
@@ -88,13 +74,10 @@ export async function PUT(_request: NextRequest) {
 
     return NextResponse.json({
       message: `${type} settings updated successfully`,
-      settings
+      settings,
     });
   } catch (error) {
     console.error('Error updating settings:', error);
-    return NextResponse.json(
-      { error: 'Failed to update settings' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
   }
 }

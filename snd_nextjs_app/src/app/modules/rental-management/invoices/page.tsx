@@ -1,53 +1,66 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Eye,
-  Calendar,
-  RefreshCw,
-  Download,
-  Printer,
-  Filter,
-  MoreHorizontal,
-  FileText,
-  DollarSign,
-  CheckCircle,
-  XCircle,
-  Mail,
-  Clock,
-  AlertCircle,
-  CreditCard,
-  Banknote,
-  ChevronLeft,
-  ChevronRight
-} from "lucide-react";
-import { toast } from "sonner";
-import Link from "next/link";
-import { usePrint } from "@/hooks/use-print";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import {
   Pagination,
   PaginationContent,
   PaginationItem,
   PaginationLink,
   PaginationNext,
-  PaginationPrevious
-} from "@/components/ui/pagination";
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { usePrint } from '@/hooks/use-print';
+import {
+  AlertCircle,
+  Banknote,
+  Calendar,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  CreditCard,
+  DollarSign,
+  Download,
+  Edit,
+  Eye,
+  FileText,
+  Filter,
+  Mail,
+  MoreHorizontal,
+  Plus,
+  Printer,
+  RefreshCw,
+  Search,
+  Trash2,
+  XCircle,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Customer {
   id: number;
@@ -104,18 +117,18 @@ interface PaginatedResponse {
 export default function InvoicesPage() {
   const [invoices, setInvoices] = useState<PaginatedResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const { printRef, handlePrint } = usePrint({
-    documentTitle: "Rental-Invoices-List",
+    documentTitle: 'Rental-Invoices-List',
     waitForImages: true,
-    onPrintError: (error) => {
+    onPrintError: error => {
       console.error('Print error details:', error);
       // Continue with print even if there are image errors
-    }
+    },
   });
   const [showFilters, setShowFilters] = useState(false);
 
@@ -138,112 +151,119 @@ export default function InvoicesPage() {
     fetchInvoices();
   }, [search, status, startDate, endDate, currentPage]);
 
-    const getMockInvoicesData = (search: string = '', status: string = 'all', startDate: string = '', endDate: string = '', page: number = 1): PaginatedResponse => {
+  const getMockInvoicesData = (
+    search: string = '',
+    status: string = 'all',
+    startDate: string = '',
+    endDate: string = '',
+    page: number = 1
+  ): PaginatedResponse => {
     const mockInvoices = [
       {
         id: 1,
-        invoice_number: "INV-2024-001",
+        invoice_number: 'INV-2024-001',
         rental: {
           id: 1,
-          rental_number: "RENT-2024-001",
+          rental_number: 'RENT-2024-001',
           customer: {
             id: 1,
-            name: "ABC Construction Ltd",
-            company_name: "ABC Construction Ltd",
-            contact_person: "John Smith",
-            email: "john@abcconstruction.com",
-            phone: "+1-555-0123"
-          }
+            name: 'ABC Construction Ltd',
+            company_name: 'ABC Construction Ltd',
+            contact_person: 'John Smith',
+            email: 'john@abcconstruction.com',
+            phone: '+1-555-0123',
+          },
         },
-        amount: 15000.00,
-        status: "partially_paid",
-        due_date: "2024-02-14",
+        amount: 15000.0,
+        status: 'partially_paid',
+        due_date: '2024-02-14',
         is_overdue: false,
         is_paid: false,
-        paid_amount: 5000.00,
-        outstanding_amount: 10000.00,
+        paid_amount: 5000.0,
+        outstanding_amount: 10000.0,
         payment_terms_days: 30,
         tax_amount: 1214.29,
-        discount_amount: 500.00,
+        discount_amount: 500.0,
         subtotal: 14285.71,
-        notes: "Invoice for equipment rental",
-        created_at: "2024-01-15T10:00:00Z",
-        updated_at: "2024-01-20T15:30:00Z",
-        nextPossibleStates: ["send-reminder", "mark-paid", "extend-due-date"]
+        notes: 'Invoice for equipment rental',
+        created_at: '2024-01-15T10:00:00Z',
+        updated_at: '2024-01-20T15:30:00Z',
+        nextPossibleStates: ['send-reminder', 'mark-paid', 'extend-due-date'],
       },
       {
         id: 2,
-        invoice_number: "INV-2024-002",
+        invoice_number: 'INV-2024-002',
         rental: {
           id: 2,
-          rental_number: "RENT-2024-002",
+          rental_number: 'RENT-2024-002',
           customer: {
             id: 2,
-            name: "XYZ Developers",
-            company_name: "XYZ Developers",
-            contact_person: "Jane Doe",
-            email: "jane@xyzdevelopers.com",
-            phone: "+1-555-0456"
-          }
+            name: 'XYZ Developers',
+            company_name: 'XYZ Developers',
+            contact_person: 'Jane Doe',
+            email: 'jane@xyzdevelopers.com',
+            phone: '+1-555-0456',
+          },
         },
-        amount: 12400.00,
-        status: "paid",
-        due_date: "2024-01-31",
+        amount: 12400.0,
+        status: 'paid',
+        due_date: '2024-01-31',
         is_overdue: false,
         is_paid: true,
-        paid_amount: 12400.00,
+        paid_amount: 12400.0,
         outstanding_amount: 0,
         payment_terms_days: 30,
         tax_amount: 971.43,
         discount_amount: 0,
         subtotal: 11428.57,
-        notes: "Completed rental invoice",
-        created_at: "2024-01-31T10:00:00Z",
-        updated_at: "2024-02-01T14:20:00Z",
-        nextPossibleStates: []
+        notes: 'Completed rental invoice',
+        created_at: '2024-01-31T10:00:00Z',
+        updated_at: '2024-02-01T14:20:00Z',
+        nextPossibleStates: [],
       },
       {
         id: 3,
-        invoice_number: "INV-2024-003",
+        invoice_number: 'INV-2024-003',
         rental: {
           id: 3,
-          rental_number: "RENT-2024-003",
+          rental_number: 'RENT-2024-003',
           customer: {
             id: 3,
-            name: "City Projects Ltd",
-            company_name: "City Projects Ltd",
-            contact_person: "Bob Wilson",
-            email: "bob@cityprojects.com",
-            phone: "+1-555-0789"
-          }
+            name: 'City Projects Ltd',
+            company_name: 'City Projects Ltd',
+            contact_person: 'Bob Wilson',
+            email: 'bob@cityprojects.com',
+            phone: '+1-555-0789',
+          },
         },
-        amount: 24800.00,
-        status: "overdue",
-        due_date: "2024-02-01",
+        amount: 24800.0,
+        status: 'overdue',
+        due_date: '2024-02-01',
         is_overdue: true,
         is_paid: false,
         paid_amount: 0,
-        outstanding_amount: 24800.00,
+        outstanding_amount: 24800.0,
         payment_terms_days: 30,
         tax_amount: 1942.86,
         discount_amount: 0,
         subtotal: 22857.14,
-        notes: "Overdue invoice - requires immediate attention",
-        created_at: "2024-02-01T10:00:00Z",
-        updated_at: "2024-02-01T10:00:00Z",
-        nextPossibleStates: ["send-reminder", "mark-paid", "extend-due-date", "send-collection"]
-      }
+        notes: 'Overdue invoice - requires immediate attention',
+        created_at: '2024-02-01T10:00:00Z',
+        updated_at: '2024-02-01T10:00:00Z',
+        nextPossibleStates: ['send-reminder', 'mark-paid', 'extend-due-date', 'send-collection'],
+      },
     ];
 
     // Filter invoices based on search and status
     let filteredInvoices = mockInvoices;
 
     if (search) {
-      filteredInvoices = filteredInvoices.filter(invoice =>
-        invoice.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
-        invoice.rental.rental_number.toLowerCase().includes(search.toLowerCase()) ||
-        invoice.rental.customer.company_name.toLowerCase().includes(search.toLowerCase()) ||
-        invoice.rental.customer.name.toLowerCase().includes(search.toLowerCase())
+      filteredInvoices = filteredInvoices.filter(
+        invoice =>
+          invoice.invoice_number.toLowerCase().includes(search.toLowerCase()) ||
+          invoice.rental.rental_number.toLowerCase().includes(search.toLowerCase()) ||
+          invoice.rental.customer.company_name.toLowerCase().includes(search.toLowerCase()) ||
+          invoice.rental.customer.name.toLowerCase().includes(search.toLowerCase())
       );
     }
 
@@ -277,10 +297,10 @@ export default function InvoicesPage() {
       to,
       next_page_url: page < lastPage ? `?page=${page + 1}` : null,
       prev_page_url: page > 1 ? `?page=${page - 1}` : null,
-      first_page_url: "?page=1",
+      first_page_url: '?page=1',
       last_page_url: `?page=${lastPage}`,
-      path: "/modules/rental-management/invoices",
-      links: []
+      path: '/modules/rental-management/invoices',
+      links: [],
     };
   };
 
@@ -300,17 +320,17 @@ export default function InvoicesPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "draft":
+      case 'draft':
         return <Badge className="bg-gray-100 text-gray-800">Draft</Badge>;
-      case "sent":
+      case 'sent':
         return <Badge className="bg-blue-100 text-blue-800">Sent</Badge>;
-      case "partially_paid":
+      case 'partially_paid':
         return <Badge className="bg-yellow-100 text-yellow-800">Partially Paid</Badge>;
-      case "paid":
+      case 'paid':
         return <Badge className="bg-green-100 text-green-800">Paid</Badge>;
-      case "overdue":
+      case 'overdue':
         return <Badge className="bg-red-100 text-red-800">Overdue</Badge>;
-      case "cancelled":
+      case 'cancelled':
         return <Badge className="bg-gray-100 text-gray-800">Cancelled</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
@@ -362,9 +382,7 @@ export default function InvoicesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Invoices</h1>
-          <p className="text-muted-foreground">
-            Manage rental invoices and payment tracking
-          </p>
+          <p className="text-muted-foreground">Manage rental invoices and payment tracking</p>
         </div>
         <div className="flex space-x-2">
           <Button variant="outline" onClick={handleRefresh}>
@@ -396,11 +414,7 @@ export default function InvoicesPage() {
               <Filter className="h-5 w-5" />
               <span>Filters</span>
             </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)}>
               {showFilters ? <XCircle className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
             </Button>
           </div>
@@ -413,7 +427,7 @@ export default function InvoicesPage() {
                 <Input
                   placeholder="Search invoices..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={e => setSearch(e.target.value)}
                 />
               </div>
               <div>
@@ -435,19 +449,11 @@ export default function InvoicesPage() {
               </div>
               <div>
                 <label className="text-sm font-medium">From Date</label>
-                <Input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
+                <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
               </div>
               <div>
                 <label className="text-sm font-medium">To Date</label>
-                <Input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
+                <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
               </div>
             </div>
           </CardContent>
@@ -478,13 +484,14 @@ export default function InvoicesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {invoices?.data.map((invoice) => (
+              {invoices?.data.map(invoice => (
                 <TableRow key={invoice.id}>
-                  <TableCell className="font-medium">
-                    {invoice.invoice_number}
-                  </TableCell>
+                  <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
                   <TableCell>
-                    <Link href={`/modules/rental-management/${invoice.rental.id}`} className="text-blue-600 hover:underline">
+                    <Link
+                      href={`/modules/rental-management/${invoice.rental.id}`}
+                      className="text-blue-600 hover:underline"
+                    >
                       {invoice.rental.rental_number}
                     </Link>
                   </TableCell>
@@ -496,21 +503,23 @@ export default function InvoicesPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="font-medium">
-                    {formatCurrency(invoice.amount)}
-                  </TableCell>
+                  <TableCell className="font-medium">{formatCurrency(invoice.amount)}</TableCell>
                   <TableCell>
-                    <span className={invoice.paid_amount > 0 ? "text-green-600" : "text-gray-500"}>
+                    <span className={invoice.paid_amount > 0 ? 'text-green-600' : 'text-gray-500'}>
                       {formatCurrency(invoice.paid_amount)}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className={invoice.outstanding_amount > 0 ? "text-red-600" : "text-green-600"}>
+                    <span
+                      className={invoice.outstanding_amount > 0 ? 'text-red-600' : 'text-green-600'}
+                    >
                       {formatCurrency(invoice.outstanding_amount)}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <div className={`flex items-center space-x-1 ${invoice.is_overdue ? 'text-red-600' : ''}`}>
+                    <div
+                      className={`flex items-center space-x-1 ${invoice.is_overdue ? 'text-red-600' : ''}`}
+                    >
                       <span>{formatDate(invoice.due_date)}</span>
                       {invoice.is_overdue && <AlertCircle className="h-4 w-4" />}
                     </div>
@@ -549,25 +558,33 @@ export default function InvoicesPage() {
                           Send Email
                         </DropdownMenuItem>
                         {invoice.nextPossibleStates?.includes('mark-paid') && (
-                          <DropdownMenuItem onClick={() => handleWorkflowAction(invoice.id, 'mark-paid')}>
+                          <DropdownMenuItem
+                            onClick={() => handleWorkflowAction(invoice.id, 'mark-paid')}
+                          >
                             <CheckCircle className="h-4 w-4 mr-2" />
                             Mark as Paid
                           </DropdownMenuItem>
                         )}
                         {invoice.nextPossibleStates?.includes('send-reminder') && (
-                          <DropdownMenuItem onClick={() => handleWorkflowAction(invoice.id, 'send-reminder')}>
+                          <DropdownMenuItem
+                            onClick={() => handleWorkflowAction(invoice.id, 'send-reminder')}
+                          >
                             <Mail className="h-4 w-4 mr-2" />
                             Send Reminder
                           </DropdownMenuItem>
                         )}
                         {invoice.nextPossibleStates?.includes('extend-due-date') && (
-                          <DropdownMenuItem onClick={() => handleWorkflowAction(invoice.id, 'extend-due-date')}>
+                          <DropdownMenuItem
+                            onClick={() => handleWorkflowAction(invoice.id, 'extend-due-date')}
+                          >
                             <Calendar className="h-4 w-4 mr-2" />
                             Extend Due Date
                           </DropdownMenuItem>
                         )}
                         {invoice.nextPossibleStates?.includes('send-collection') && (
-                          <DropdownMenuItem onClick={() => handleWorkflowAction(invoice.id, 'send-collection')}>
+                          <DropdownMenuItem
+                            onClick={() => handleWorkflowAction(invoice.id, 'send-collection')}
+                          >
                             <AlertCircle className="h-4 w-4 mr-2" />
                             Send to Collection
                           </DropdownMenuItem>
@@ -592,9 +609,9 @@ export default function InvoicesPage() {
             <div className="mt-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-500">
-                  Showing {((currentPage - 1) * invoices.per_page) + 1} to{" "}
-                  {Math.min(currentPage * invoices.per_page, invoices.total)} of{" "}
-                  {invoices.total} results
+                  Showing {(currentPage - 1) * invoices.per_page + 1} to{' '}
+                  {Math.min(currentPage * invoices.per_page, invoices.total)} of {invoices.total}{' '}
+                  results
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
@@ -619,15 +636,13 @@ export default function InvoicesPage() {
                         >
                           1
                         </Button>
-                        {currentPage > 3 && (
-                          <span className="px-2 text-muted-foreground">...</span>
-                        )}
+                        {currentPage > 3 && <span className="px-2 text-muted-foreground">...</span>}
                       </>
                     )}
 
                     {/* Current page and surrounding pages */}
                     {(() => {
-                  const pages: number[] = [];
+                      const pages: number[] = [];
                       const startPage = Math.max(1, currentPage - 1);
                       const endPage = Math.min(invoices.last_page, currentPage + 1);
 
@@ -635,10 +650,10 @@ export default function InvoicesPage() {
                         pages.push(page);
                       }
 
-                      return pages.map((page) => (
+                      return pages.map(page => (
                         <Button
                           key={page}
-                          variant={currentPage === page ? "default" : "outline"}
+                          variant={currentPage === page ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => setCurrentPage(page)}
                           className="w-8 h-8 p-0"

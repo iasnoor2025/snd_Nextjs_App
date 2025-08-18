@@ -1,29 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
+import { db } from '@/lib/db';
 import { employeeDocuments, employees } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/profile/documents - Get current user's documents
 export async function GET(_request: NextRequest) {
   try {
     console.log('🔍 Documents API: Starting request...');
-    
+
     // Get the current user session
     const session = await getServerSession(authConfig);
-    
+
     console.log('🔍 Documents API: Session data:', session);
     console.log('🔍 Documents API: Session user:', session?.user);
     console.log('🔍 Documents API: User ID:', session?.user?.id);
     console.log('🔍 Documents API: National ID:', session?.user?.national_id);
-    
+
     if (!session?.user?.id) {
       console.log('❌ Documents API: No session or user ID found');
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     const userId = parseInt(session.user.id);
@@ -41,7 +38,10 @@ export async function GET(_request: NextRequest) {
 
     // If not found, try to find by national_id (Iqama number)
     if (employee.length === 0 && session.user.national_id) {
-      console.log('🔍 Documents API: Searching for employee by national_id:', session.user.national_id);
+      console.log(
+        '🔍 Documents API: Searching for employee by national_id:',
+        session.user.national_id
+      );
       employee = await db
         .select({ id: employees.id })
         .from(employees)
@@ -57,10 +57,7 @@ export async function GET(_request: NextRequest) {
 
     const employeeId = employee[0]?.id;
     if (!employeeId) {
-      return NextResponse.json(
-        { success: false, message: 'Employee not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: 'Employee not found' }, { status: 404 });
     }
     console.log('✅ Documents API: Found employee ID:', employeeId);
 
@@ -87,14 +84,22 @@ export async function GET(_request: NextRequest) {
     // Format documents to match the expected structure
     const formattedDocuments = documentsRows.map(doc => ({
       id: doc.id,
-      name: doc.documentType === 'iqama' ? 'Iqama Document' : 
-            doc.documentType === 'passport' ? 'Passport' :
-            doc.documentType === 'driving_license' ? 'Driving License' :
-            doc.documentType === 'operator_license' ? 'Operator License' :
-            doc.documentType === 'contract' ? 'Employment Contract' :
-            doc.documentType === 'medical' ? 'Medical Certificate' :
-            doc.documentType === 'general' ? 'General Document' :
-            doc.documentType,
+      name:
+        doc.documentType === 'iqama'
+          ? 'Iqama Document'
+          : doc.documentType === 'passport'
+            ? 'Passport'
+            : doc.documentType === 'driving_license'
+              ? 'Driving License'
+              : doc.documentType === 'operator_license'
+                ? 'Operator License'
+                : doc.documentType === 'contract'
+                  ? 'Employment Contract'
+                  : doc.documentType === 'medical'
+                    ? 'Medical Certificate'
+                    : doc.documentType === 'general'
+                      ? 'General Document'
+                      : doc.documentType,
       file_name: doc.fileName,
       file_size: doc.fileSize,
       mime_type: doc.mimeType,
@@ -102,12 +107,12 @@ export async function GET(_request: NextRequest) {
       url: doc.filePath,
       description: doc.description,
       created_at: doc.createdAt,
-      updated_at: doc.updatedAt
+      updated_at: doc.updatedAt,
     }));
 
     console.log('✅ Documents API: Formatted documents:', formattedDocuments);
     console.log('✅ Documents API: Total documents found:', formattedDocuments.length);
-    
+
     // Check specifically for Iqama documents
     const iqamaDocs = formattedDocuments.filter(doc => doc.document_type === 'iqama');
     console.log('🔍 Documents API: Iqama documents found:', iqamaDocs.length);
@@ -115,10 +120,10 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(formattedDocuments);
   } catch (error) {
     console.error('❌ Documents API: Error fetching profile documents:', error);
-    console.error('❌ Documents API: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    return NextResponse.json(
-      { error: 'Failed to fetch documents' },
-      { status: 500 }
+    console.error(
+      '❌ Documents API: Error stack:',
+      error instanceof Error ? error.stack : 'No stack trace'
     );
+    return NextResponse.json({ error: 'Failed to fetch documents' }, { status: 500 });
   }
 }

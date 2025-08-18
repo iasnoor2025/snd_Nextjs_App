@@ -1,26 +1,19 @@
 'use client';
 
-import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  Edit,
-  MoreHorizontal,
-  Trash2,
-} from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { toast } from 'sonner';
+import { Progress } from '@/components/ui/progress';
 import apiService from '@/lib/api';
+import { formatDistanceToNow } from 'date-fns';
+import { AlertCircle, CheckCircle2, Clock, Edit, MoreHorizontal, Trash2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { toast } from 'sonner';
 
 export interface ProjectTask {
   id: string;
@@ -151,7 +144,7 @@ export default function TaskList({
 
   return (
     <div className="space-y-4">
-      {tasks.map((task) => (
+      {tasks.map(task => (
         <div key={task.id} className="rounded-md border p-4 transition-shadow hover:shadow-sm">
           <div className="flex items-start justify-between">
             <div className="flex-1 space-y-1">
@@ -164,7 +157,9 @@ export default function TaskList({
                 )}
               </div>
 
-              <p className="line-clamp-2 text-sm text-gray-500">{task.description || 'No description'}</p>
+              <p className="line-clamp-2 text-sm text-gray-500">
+                {task.description || 'No description'}
+              </p>
 
               <div className="mt-2 flex flex-wrap gap-2">
                 {getStatusBadge(task.status)}
@@ -182,7 +177,10 @@ export default function TaskList({
                   </Badge>
                 )}
                 {task.assigned_to && (
-                  <Badge variant="outline" className="border-purple-200 bg-purple-100 text-purple-800">
+                  <Badge
+                    variant="outline"
+                    className="border-purple-200 bg-purple-100 text-purple-800"
+                  >
                     {task.assigned_to.name}
                   </Badge>
                 )}
@@ -191,8 +189,11 @@ export default function TaskList({
               <div className="mt-2">
                 <span className="text-xs text-gray-500">Depends on: </span>
                 {dependencies[task.id] && dependencies[task.id].length > 0 ? (
-                  dependencies[task.id].map((dep) => (
-                    <span key={dep.id} className="mr-1 inline-block rounded bg-slate-200 px-2 py-0.5 text-xs">
+                  dependencies[task.id].map(dep => (
+                    <span
+                      key={dep.id}
+                      className="mr-1 inline-block rounded bg-slate-200 px-2 py-0.5 text-xs"
+                    >
                       {dep.title}
                       {onRemoveDependency && (
                         <button
@@ -213,12 +214,18 @@ export default function TaskList({
                     <select
                       className="rounded border px-2 py-1 text-xs"
                       value={selectedDependency[task.id] || ''}
-                      onChange={(e) => setSelectedDependency({ ...selectedDependency, [task.id]: e.target.value })}
+                      onChange={e =>
+                        setSelectedDependency({ ...selectedDependency, [task.id]: e.target.value })
+                      }
                     >
                       <option value="">Add dependency...</option>
                       {tasks
-                        .filter((t) => t.id !== task.id && !(dependencies[task.id] || []).some((dep) => dep.id === t.id))
-                        .map((t) => (
+                        .filter(
+                          t =>
+                            t.id !== task.id &&
+                            !(dependencies[task.id] || []).some(dep => dep.id === t.id)
+                        )
+                        .map(t => (
                           <option key={t.id} value={t.id}>
                             {t.title}
                           </option>
@@ -291,7 +298,9 @@ export default function TaskList({
                       variant="outline"
                       size="sm"
                       className="h-6 px-2 py-0 text-xs"
-                      onClick={() => handleCompletionChange(task, Math.min(100, task.completion_percentage + 10))}
+                      onClick={() =>
+                        handleCompletionChange(task, Math.min(100, task.completion_percentage + 10))
+                      }
                     >
                       +10%
                     </Button>

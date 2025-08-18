@@ -1,9 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
-import { users as usersTable, employees as employeesTable, departments as departmentsTable, designations as designationsTable } from '@/lib/drizzle/schema';
+import { db } from '@/lib/db';
+import {
+  departments as departmentsTable,
+  designations as designationsTable,
+  employees as employeesTable,
+  users as usersTable,
+} from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/user/first-login-check - Check if this is first login and establish employee relationship
 export async function GET(_request: NextRequest) {
@@ -16,7 +21,7 @@ export async function POST(_request: NextRequest) {
 
     if (!session?.user?.id) {
       return NextResponse.json(
-        { 
+        {
           error: 'Not authenticated',
           hasNationId: false,
           nationId: null,
@@ -24,21 +29,21 @@ export async function POST(_request: NextRequest) {
           userName: null,
           userEmail: null,
           matchedEmployee: null,
-          isFirstLogin: false
+          isFirstLogin: false,
         },
-        { 
+        {
           status: 401,
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
         }
       );
     }
 
     const userId = parseInt(session.user.id);
-    
+
     // Get user data
     const userRows = await db
       .select({
@@ -57,7 +62,7 @@ export async function POST(_request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { 
+        {
           error: 'User not found',
           hasNationId: false,
           nationId: null,
@@ -65,15 +70,15 @@ export async function POST(_request: NextRequest) {
           userName: null,
           userEmail: null,
           matchedEmployee: null,
-          isFirstLogin: false
+          isFirstLogin: false,
         },
-        { 
+        {
           status: 404,
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
         }
       );
     }
@@ -116,11 +121,11 @@ export async function POST(_request: NextRequest) {
 
         if (employeeRows[0]) {
           const employee = employeeRows[0];
-          
+
           // Get designation and department names
           let designationName: string | null = null;
           let departmentName: string | null = null;
-          
+
           if (employee.designation_id) {
             const designationRows = await db
               .select({ name: designationsTable.name })
@@ -129,7 +134,7 @@ export async function POST(_request: NextRequest) {
               .limit(1);
             designationName = designationRows[0]?.name || null;
           }
-          
+
           if (employee.department_id) {
             const departmentRows = await db
               .select({ name: departmentsTable.name })
@@ -142,7 +147,7 @@ export async function POST(_request: NextRequest) {
           matchedEmployee = {
             ...employee,
             designation: { name: designationName },
-            department: { name: departmentName }
+            department: { name: departmentName },
           };
         }
       } catch (employeeError) {
@@ -156,7 +161,7 @@ export async function POST(_request: NextRequest) {
         userName: user.name,
         userEmail: user.email,
         matchedEmployee: matchedEmployee,
-        isFirstLogin: false
+        isFirstLogin: false,
       });
     }
 
@@ -200,11 +205,11 @@ export async function POST(_request: NextRequest) {
 
         if (employeeRows[0]) {
           const employee = employeeRows[0];
-          
+
           // Get designation and department names
           let designationName: string | null = null;
           let departmentName: string | null = null;
-          
+
           if (employee.designation_id) {
             const designationRows = await db
               .select({ name: designationsTable.name })
@@ -213,7 +218,7 @@ export async function POST(_request: NextRequest) {
               .limit(1);
             designationName = designationRows[0]?.name || null;
           }
-          
+
           if (employee.department_id) {
             const departmentRows = await db
               .select({ name: departmentsTable.name })
@@ -226,7 +231,7 @@ export async function POST(_request: NextRequest) {
           matchedEmployee = {
             ...employee,
             designation: { name: designationName },
-            department: { name: departmentName }
+            department: { name: departmentName },
           };
 
           // If found by email, update employee email to match user email and set national_id
@@ -269,21 +274,20 @@ export async function POST(_request: NextRequest) {
     };
 
     return NextResponse.json(result);
-    
   } catch (error) {
     console.error('❌ Error checking first login:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to check first login',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
-      { 
+      {
         status: 500,
         headers: {
           'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
       }
     );
   }

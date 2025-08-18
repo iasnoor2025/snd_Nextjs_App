@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React, { createContext, useContext } from 'react';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { useConfirmation } from "@/hooks/use-confirmation";
+import { useConfirmation } from '@/hooks/use-confirmation';
+import React, { createContext, useContext } from 'react';
 
 interface ConfirmationContextType {
   confirm: (options: {
@@ -10,7 +10,7 @@ interface ConfirmationContextType {
     description: string;
     confirmText?: string;
     cancelText?: string;
-    variant?: "default" | "destructive";
+    variant?: 'default' | 'destructive';
   }) => Promise<boolean>;
 }
 
@@ -19,7 +19,7 @@ const ConfirmationContext = createContext<ConfirmationContextType | null>(null);
 export function useConfirmationDialog() {
   const context = useContext(ConfirmationContext);
   if (!context) {
-    throw new Error("useConfirmationDialog must be used within ConfirmationProvider");
+    throw new Error('useConfirmationDialog must be used within ConfirmationProvider');
   }
   return context;
 }
@@ -45,4 +45,4 @@ export function ConfirmationProvider({ children }: { children: React.ReactNode }
       )}
     </ConfirmationContext.Provider>
   );
-} 
+}

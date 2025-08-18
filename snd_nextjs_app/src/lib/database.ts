@@ -1,64 +1,65 @@
 // Legacy database file - use @/lib/drizzle instead
-import { eq, desc, asc, ilike, or, and, sql } from 'drizzle-orm'
-import { db } from '@/lib/drizzle'
-import { customers } from '@/lib/drizzle/schema'
-import { equipment } from '@/lib/drizzle/schema'
-import { rentals } from '@/lib/drizzle/schema'
-import { users } from '@/lib/drizzle/schema'
-import { rentalItems } from '@/lib/drizzle/schema'
+import { db } from '@/lib/drizzle';
+import { customers, equipment, rentalItems, rentals, users } from '@/lib/drizzle/schema';
+import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
 
 export class DatabaseService {
   // Customer operations
   static async getCustomers(options?: {
-    page?: number
-    limit?: number
-    search?: string
-    status?: string
-    sortBy?: string
-    sortOrder?: 'asc' | 'desc'
+    page?: number;
+    limit?: number;
+    search?: string;
+    status?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   }) {
-    const page = options?.page || 1
-    const limit = options?.limit || 10
-    const skip = (page - 1) * limit
+    const page = options?.page || 1;
+    const limit = options?.limit || 10;
+    const skip = (page - 1) * limit;
 
     // Build filters (Drizzle)
-    const filters: any[] = []
+    const filters: any[] = [];
     if (options?.search) {
-      const s = `%${options.search}%`
+      const s = `%${options.search}%`;
       filters.push(
         or(
           ilike(customers.name, s),
           ilike(customers.companyName, s),
           ilike(customers.contactPerson, s),
           ilike(customers.email, s),
-          ilike(customers.phone, s),
+          ilike(customers.phone, s)
         )
-      )
+      );
     }
     if (options?.status) {
-      filters.push(eq(customers.status, options.status))
+      filters.push(eq(customers.status, options.status));
     }
-    const whereExpr = filters.length ? and(...filters) : undefined
+    const whereExpr = filters.length ? and(...filters) : undefined;
 
     // Order by mapping
-    const sortBy = options?.sortBy || 'created_at'
-    const sortOrder = options?.sortOrder || 'desc'
+    const sortBy = options?.sortBy || 'created_at';
+    const sortOrder = options?.sortOrder || 'desc';
     const orderCol = (() => {
       switch (sortBy) {
-        case 'name': return customers.name
-        case 'company_name': return customers.companyName
-        case 'email': return customers.email
-        case 'status': return customers.status
+        case 'name':
+          return customers.name;
+        case 'company_name':
+          return customers.companyName;
+        case 'email':
+          return customers.email;
+        case 'status':
+          return customers.status;
         case 'created_at':
-        default: return customers.createdAt
+        default:
+          return customers.createdAt;
       }
-    })()
+    })();
 
     const totalRow = await db
       .select({ count: sql<number>`count(*)` })
       .from(customers)
-      .where(whereExpr as any)
-    const totalCount = Number((totalRow as any)[0]?.count ?? 0)
+      .where(whereExpr as any);
+    const totalCount = Number((totalRow as any)[0]?.count ?? 0);
 
     const rows = await db
       .select({
@@ -88,7 +89,7 @@ export class DatabaseService {
       .where(whereExpr as any)
       .orderBy((sortOrder === 'asc' ? asc : desc)(orderCol))
       .offset(skip)
-      .limit(limit)
+      .limit(limit);
 
     return {
       customers: rows,
@@ -98,43 +99,39 @@ export class DatabaseService {
         total: totalCount,
         totalPages: Math.ceil(totalCount / limit),
         hasNext: page < Math.ceil(totalCount / limit),
-        hasPrev: page > 1
-      }
-    }
+        hasPrev: page > 1,
+      },
+    };
   }
 
   static async getCustomerById(id: number) {
-    const customerRows = await db
-      .select()
-      .from(customers)
-      .where(eq(customers.id, id))
-      .limit(1)
-    
-    return customerRows[0] || null
+    const customerRows = await db.select().from(customers).where(eq(customers.id, id)).limit(1);
+
+    return customerRows[0] || null;
   }
 
   static async createCustomer(data: {
-    name: string
-    email?: string
-    phone?: string
-    address?: string
-    company_name?: string
-    contact_person?: string
-    city?: string
-    state?: string
-    postal_code?: string
-    country?: string
-    website?: string
-    tax_number?: string
-    credit_limit?: number
-    payment_terms?: string
-    notes?: string
-    is_active?: boolean
-    erpnext_id?: string
+    name: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    company_name?: string;
+    contact_person?: string;
+    city?: string;
+    state?: string;
+    postal_code?: string;
+    country?: string;
+    website?: string;
+    tax_number?: string;
+    credit_limit?: number;
+    payment_terms?: string;
+    notes?: string;
+    is_active?: boolean;
+    erpnext_id?: string;
   }) {
     const inserted = await db
       .insert(customers)
-      .values({  
+      .values({
         name: data.name,
         email: data.email ?? null,
         phone: data.phone ?? null,
@@ -155,29 +152,32 @@ export class DatabaseService {
         status: 'active',
         updatedAt: new Date().toISOString().split('T')[0],
       })
-      .returning()
-    return inserted[0]
+      .returning();
+    return inserted[0];
   }
 
-  static async updateCustomer(id: number, data: {
-    name?: string
-    email?: string
-    phone?: string
-    address?: string
-    company_name?: string
-    contact_person?: string
-    city?: string
-    state?: string
-    postal_code?: string
-    country?: string
-    website?: string
-    tax_number?: string
-    credit_limit?: number
-    payment_terms?: string
-    notes?: string
-    is_active?: boolean
-    erpnext_id?: string
-  }) {
+  static async updateCustomer(
+    id: number,
+    data: {
+      name?: string;
+      email?: string;
+      phone?: string;
+      address?: string;
+      company_name?: string;
+      contact_person?: string;
+      city?: string;
+      state?: string;
+      postal_code?: string;
+      country?: string;
+      website?: string;
+      tax_number?: string;
+      credit_limit?: number;
+      payment_terms?: string;
+      notes?: string;
+      is_active?: boolean;
+      erpnext_id?: string;
+    }
+  ) {
     const updated = await db
       .update(customers)
       .set({
@@ -201,43 +201,52 @@ export class DatabaseService {
         updatedAt: new Date().toISOString().split('T')[0],
       })
       .where(eq(customers.id, id))
-      .returning()
-    return updated[0]
+      .returning();
+    return updated[0];
   }
 
   static async deleteCustomer(id: number) {
-    await db.delete(customers).where(eq(customers.id, id))
-    return true
+    await db.delete(customers).where(eq(customers.id, id));
+    return true;
   }
 
   static async getCustomerStatistics() {
     const [totalRow, activeRow, syncedRow, localOnlyRow] = await Promise.all([
       db.select({ count: sql<number>`count(*)` }).from(customers),
-      db.select({ count: sql<number>`count(*)` }).from(customers).where(eq(customers.isActive, true as any)),
-      db.select({ count: sql<number>`count(*)` }).from(customers).where(sql`erpnext_id is not null` as any),
-      db.select({ count: sql<number>`count(*)` }).from(customers).where(sql`erpnext_id is null` as any),
-    ])
-    const totalCustomers = Number((totalRow as any)[0]?.count ?? 0)
-    const activeCustomers = Number((activeRow as any)[0]?.count ?? 0)
-    const erpnextSyncedCustomers = Number((syncedRow as any)[0]?.count ?? 0)
-    const localOnlyCustomers = Number((localOnlyRow as any)[0]?.count ?? 0)
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(customers)
+        .where(eq(customers.isActive, true as any)),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(customers)
+        .where(sql`erpnext_id is not null` as any),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(customers)
+        .where(sql`erpnext_id is null` as any),
+    ]);
+    const totalCustomers = Number((totalRow as any)[0]?.count ?? 0);
+    const activeCustomers = Number((activeRow as any)[0]?.count ?? 0);
+    const erpnextSyncedCustomers = Number((syncedRow as any)[0]?.count ?? 0);
+    const localOnlyCustomers = Number((localOnlyRow as any)[0]?.count ?? 0);
 
-    return { totalCustomers, activeCustomers, erpnextSyncedCustomers, localOnlyCustomers }
+    return { totalCustomers, activeCustomers, erpnextSyncedCustomers, localOnlyCustomers };
   }
 
-      // Note: The following methods were using Prisma and have been implemented with Drizzle
+  // Note: The following methods were using Prisma and have been implemented with Drizzle
   // For now, they return null to indicate they need proper implementation
-  
+
   static async syncCustomerFromERPNext(erpnextId: string, customerData: any) {
     // TODO: Implement with Drizzle
-    console.warn('syncCustomerFromERPNext not yet implemented with Drizzle')
-    return null
+    console.warn('syncCustomerFromERPNext not yet implemented with Drizzle');
+    return null;
   }
 
   static async getCustomerByERPNextId(erpnextId: string) {
     // TODO: Implement with Drizzle
-    console.warn('getCustomerByERPNextId not yet implemented with Drizzle')
-    return null
+    console.warn('getCustomerByERPNextId not yet implemented with Drizzle');
+    return null;
   }
 
   // Equipment operations - Implemented with Drizzle
@@ -248,7 +257,7 @@ export class DatabaseService {
         .from(equipment)
         .where(eq(equipment.isActive, true))
         .orderBy(desc(equipment.createdAt));
-      
+
       return equipmentRows;
     } catch (error) {
       console.error('Error fetching equipment:', error);
@@ -258,12 +267,8 @@ export class DatabaseService {
 
   static async getEquipmentById(id: number) {
     try {
-      const equipmentRows = await db
-        .select()
-        .from(equipment)
-        .where(eq(equipment.id, id))
-        .limit(1);
-      
+      const equipmentRows = await db.select().from(equipment).where(eq(equipment.id, id)).limit(1);
+
       return equipmentRows[0] || null;
     } catch (error) {
       console.error('Error fetching equipment by ID:', error);
@@ -272,10 +277,10 @@ export class DatabaseService {
   }
 
   static async createEquipment(data: {
-    name: string
-    description?: string
-    category: string
-    dailyRate: number
+    name: string;
+    description?: string;
+    category: string;
+    dailyRate: number;
   }) {
     try {
       const equipmentRows = await db
@@ -290,7 +295,7 @@ export class DatabaseService {
           updatedAt: new Date().toISOString().split('T')[0],
         })
         .returning();
-      
+
       return equipmentRows[0] || null;
     } catch (error) {
       console.error('Error creating equipment:', error);
@@ -298,21 +303,24 @@ export class DatabaseService {
     }
   }
 
-  static async updateEquipment(id: number, data: {
-    name?: string
-    description?: string
-    category?: string
-    status?: 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'RETIRED'
-    dailyRate?: number
-  }) {
+  static async updateEquipment(
+    id: number,
+    data: {
+      name?: string;
+      description?: string;
+      category?: string;
+      status?: 'AVAILABLE' | 'RENTED' | 'MAINTENANCE' | 'RETIRED';
+      dailyRate?: number;
+    }
+  ) {
     try {
       const updateData: any = {};
-      
+
       if (data.name !== undefined) updateData.name = data.name;
       if (data.description !== undefined) updateData.description = data.description;
       if (data.status !== undefined) updateData.status = data.status;
       if (data.dailyRate !== undefined) updateData.dailyRate = data.dailyRate.toString();
-      
+
       updateData.updatedAt = new Date().toISOString().split('T')[0];
 
       const equipmentRows = await db
@@ -320,7 +328,7 @@ export class DatabaseService {
         .set(updateData)
         .where(eq(equipment.id, id))
         .returning();
-      
+
       return equipmentRows[0] || null;
     } catch (error) {
       console.error('Error updating equipment:', error);
@@ -330,11 +338,8 @@ export class DatabaseService {
 
   static async deleteEquipment(id: number) {
     try {
-      await db
-        .update(equipment)
-        .set({ isActive: false })
-        .where(eq(equipment.id, id));
-      
+      await db.update(equipment).set({ isActive: false }).where(eq(equipment.id, id));
+
       return true;
     } catch (error) {
       console.error('Error deleting equipment:', error);
@@ -344,23 +349,20 @@ export class DatabaseService {
 
   // Rental operations - Implemented with Drizzle
   static async getRentals(filters?: {
-    search?: string
-    status?: string
-    customerId?: string
-    paymentStatus?: string
-    startDate?: string
-    endDate?: string
+    search?: string;
+    status?: string;
+    customerId?: string;
+    paymentStatus?: string;
+    startDate?: string;
+    endDate?: string;
   }) {
     try {
       // TODO: Implement rental filtering with Drizzle
       // This would require proper joins with customers and rental_items tables
       console.warn('getRentals filtering not yet fully implemented with Drizzle');
-      
-      const rentalRows = await db
-        .select()
-        .from(rentals)
-        .orderBy(desc(rentals.createdAt));
-      
+
+      const rentalRows = await db.select().from(rentals).orderBy(desc(rentals.createdAt));
+
       return rentalRows;
     } catch (error) {
       console.error('Error fetching rentals:', error);
@@ -370,12 +372,8 @@ export class DatabaseService {
 
   static async getRental(id: number) {
     try {
-      const rentalRows = await db
-        .select()
-        .from(rentals)
-        .where(eq(rentals.id, id))
-        .limit(1);
-      
+      const rentalRows = await db.select().from(rentals).where(eq(rentals.id, id)).limit(1);
+
       return rentalRows[0] || null;
     } catch (error) {
       console.error('Error fetching rental by ID:', error);
@@ -384,33 +382,33 @@ export class DatabaseService {
   }
 
   static async createRental(data: {
-    customerId: number
-    rentalNumber: string
-    startDate: Date
-    expectedEndDate?: Date
-    actualEndDate?: Date
-    status?: string
-    paymentStatus?: 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE'
-    subtotal?: number
-    taxAmount?: number
-    totalAmount: number
-    discount?: number
-    tax?: number
-    finalAmount?: number
-    depositAmount?: number
-    paymentTermsDays?: number
-    hasTimesheet?: boolean
-    hasOperators?: boolean
-    notes?: string
-    rentalItems?: any[]
+    customerId: number;
+    rentalNumber: string;
+    startDate: Date;
+    expectedEndDate?: Date;
+    actualEndDate?: Date;
+    status?: string;
+    paymentStatus?: 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE';
+    subtotal?: number;
+    taxAmount?: number;
+    totalAmount: number;
+    discount?: number;
+    tax?: number;
+    finalAmount?: number;
+    depositAmount?: number;
+    paymentTermsDays?: number;
+    hasTimesheet?: boolean;
+    hasOperators?: boolean;
+    notes?: string;
+    rentalItems?: any[];
   }) {
     try {
       // TODO: Implement rental creation with items
       // This would require transaction handling for rental + rental items
       console.warn('createRental with items not yet fully implemented with Drizzle');
-      
+
       const { rentalItems, ...rentalData } = data;
-      
+
       const rentalRows = await db
         .insert(rentals)
         .values({
@@ -436,7 +434,7 @@ export class DatabaseService {
           updatedAt: new Date().toISOString().split('T')[0],
         })
         .returning();
-      
+
       return rentalRows[0] || null;
     } catch (error) {
       console.error('Error creating rental:', error);
@@ -444,42 +442,48 @@ export class DatabaseService {
     }
   }
 
-  static async updateRental(id: number, data: {
-    customerId?: number
-    rentalNumber?: string
-    startDate?: Date
-    expectedEndDate?: Date | null
-    actualEndDate?: Date | null
-    status?: string
-    paymentStatus?: string
-    subtotal?: number
-    taxAmount?: number
-    totalAmount?: number
-    discount?: number
-    tax?: number
-    finalAmount?: number
-    depositAmount?: number
-    paymentTermsDays?: number
-    hasTimesheet?: boolean
-    hasOperators?: boolean
-    notes?: string
-    rentalItems?: any[]
-    approvedAt?: string
-    mobilizationDate?: string
-    completedAt?: string
-    invoiceDate?: string
-  }) {
+  static async updateRental(
+    id: number,
+    data: {
+      customerId?: number;
+      rentalNumber?: string;
+      startDate?: Date;
+      expectedEndDate?: Date | null;
+      actualEndDate?: Date | null;
+      status?: string;
+      paymentStatus?: string;
+      subtotal?: number;
+      taxAmount?: number;
+      totalAmount?: number;
+      discount?: number;
+      tax?: number;
+      finalAmount?: number;
+      depositAmount?: number;
+      paymentTermsDays?: number;
+      hasTimesheet?: boolean;
+      hasOperators?: boolean;
+      notes?: string;
+      rentalItems?: any[];
+      approvedAt?: string;
+      mobilizationDate?: string;
+      completedAt?: string;
+      invoiceDate?: string;
+    }
+  ) {
     try {
       // TODO: Implement rental update with items
       console.warn('updateRental with items not yet fully implemented with Drizzle');
-      
+
       const updateData: any = {};
-      
+
       if (data.customerId !== undefined) updateData.customerId = data.customerId;
       if (data.rentalNumber !== undefined) updateData.rentalNumber = data.rentalNumber;
-      if (data.startDate !== undefined) updateData.startDate = data.startDate.toISOString().split('T')[0];
-      if (data.expectedEndDate !== undefined) updateData.expectedEndDate = data.expectedEndDate?.toISOString().split('T')[0] || null;
-      if (data.actualEndDate !== undefined) updateData.actualEndDate = data.actualEndDate?.toISOString().split('T')[0] || null;
+      if (data.startDate !== undefined)
+        updateData.startDate = data.startDate.toISOString().split('T')[0];
+      if (data.expectedEndDate !== undefined)
+        updateData.expectedEndDate = data.expectedEndDate?.toISOString().split('T')[0] || null;
+      if (data.actualEndDate !== undefined)
+        updateData.actualEndDate = data.actualEndDate?.toISOString().split('T')[0] || null;
       if (data.status !== undefined) updateData.status = data.status;
       if (data.paymentStatus !== undefined) updateData.paymentStatus = data.paymentStatus;
       if (data.subtotal !== undefined) updateData.subtotal = data.subtotal;
@@ -493,7 +497,7 @@ export class DatabaseService {
       if (data.hasTimesheet !== undefined) updateData.hasTimesheet = data.hasTimesheet;
       if (data.hasOperators !== undefined) updateData.hasOperators = data.hasOperators;
       if (data.notes !== undefined) updateData.notes = data.notes;
-      
+
       updateData.updatedAt = new Date().toISOString().split('T')[0];
 
       const rentalRows = await db
@@ -501,7 +505,7 @@ export class DatabaseService {
         .set(updateData)
         .where(eq(rentals.id, id))
         .returning();
-      
+
       return rentalRows[0] || null;
     } catch (error) {
       console.error('Error updating rental:', error);
@@ -511,11 +515,8 @@ export class DatabaseService {
 
   static async deleteRental(id: number) {
     try {
-      await db
-        .update(rentals)
-        .set({ isActive: false })
-        .where(eq(rentals.id, id));
-      
+      await db.update(rentals).set({ isActive: false }).where(eq(rentals.id, id));
+
       return true;
     } catch (error) {
       console.error('Error deleting rental:', error);
@@ -531,7 +532,7 @@ export class DatabaseService {
         .from(users)
         .where(eq(users.isActive, true))
         .orderBy(desc(users.createdAt));
-      
+
       return userRows;
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -541,12 +542,8 @@ export class DatabaseService {
 
   static async getUserById(id: number) {
     try {
-      const userRows = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, id))
-        .limit(1);
-      
+      const userRows = await db.select().from(users).where(eq(users.id, id)).limit(1);
+
       return userRows[0] || null;
     } catch (error) {
       console.error('Error fetching user by ID:', error);
@@ -556,12 +553,8 @@ export class DatabaseService {
 
   static async getUserByEmail(email: string) {
     try {
-      const userRows = await db
-        .select()
-        .from(users)
-        .where(eq(users.email, email))
-        .limit(1);
-      
+      const userRows = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
       return userRows[0] || null;
     } catch (error) {
       console.error('Error fetching user by email:', error);
@@ -570,15 +563,15 @@ export class DatabaseService {
   }
 
   static async createUser(data: {
-    email: string
-    name?: string
-    role?: 'ADMIN' | 'USER' | 'MANAGER' | 'SUPER_ADMIN'
-    password: string
+    email: string;
+    name?: string;
+    role?: 'ADMIN' | 'USER' | 'MANAGER' | 'SUPER_ADMIN';
+    password: string;
   }) {
     try {
       // TODO: Implement password hashing
       console.warn('createUser password hashing not yet implemented');
-      
+
       const userRows = await db
         .insert(users)
         .values({
@@ -591,7 +584,7 @@ export class DatabaseService {
           updatedAt: new Date().toISOString().split('T')[0],
         })
         .returning();
-      
+
       return userRows[0] || null;
     } catch (error) {
       console.error('Error creating user:', error);
@@ -599,26 +592,25 @@ export class DatabaseService {
     }
   }
 
-  static async updateUser(id: number, data: {
-    email?: string
-    name?: string
-    role?: 'ADMIN' | 'USER' | 'MANAGER' | 'SUPER_ADMIN'
-  }) {
+  static async updateUser(
+    id: number,
+    data: {
+      email?: string;
+      name?: string;
+      role?: 'ADMIN' | 'USER' | 'MANAGER' | 'SUPER_ADMIN';
+    }
+  ) {
     try {
       const updateData: any = {};
-      
+
       if (data.email !== undefined) updateData.email = data.email;
       if (data.name !== undefined) updateData.name = data.name;
       if (data.role !== undefined) updateData.roleId = data.role;
-      
+
       updateData.updatedAt = new Date().toISOString().split('T')[0];
 
-      const userRows = await db
-        .update(users)
-        .set(updateData)
-        .where(eq(users.id, id))
-        .returning();
-      
+      const userRows = await db.update(users).set(updateData).where(eq(users.id, id)).returning();
+
       return userRows[0] || null;
     } catch (error) {
       console.error('Error updating user:', error);
@@ -628,11 +620,8 @@ export class DatabaseService {
 
   static async deleteUser(id: number) {
     try {
-      await db
-        .update(users)
-        .set({ isActive: false })
-        .where(eq(users.id, id));
-      
+      await db.update(users).set({ isActive: false }).where(eq(users.id, id));
+
       return true;
     } catch (error) {
       console.error('Error deleting user:', error);
@@ -642,17 +631,17 @@ export class DatabaseService {
 
   // Rental Item operations - Implemented with Drizzle
   static async addRentalItem(data: {
-    rentalId: number
-    equipmentId?: number | null
-    equipmentName: string
-    quantity: number
-    unitPrice: number
-    totalPrice: number
-    days?: number
-    rateType?: string
-    operatorId?: number | null
-    status?: string
-    notes?: string
+    rentalId: number;
+    equipmentId?: number | null;
+    equipmentName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    days?: number;
+    rateType?: string;
+    operatorId?: number | null;
+    status?: string;
+    notes?: string;
   }) {
     try {
       const rentalItemRows = await db
@@ -672,7 +661,7 @@ export class DatabaseService {
           updatedAt: new Date().toISOString().split('T')[0],
         })
         .returning();
-      
+
       return rentalItemRows[0] || null;
     } catch (error) {
       console.error('Error adding rental item:', error);
@@ -687,7 +676,7 @@ export class DatabaseService {
         .from(rentalItems)
         .where(eq(rentalItems.rentalId, rentalId))
         .orderBy(desc(rentalItems.createdAt));
-      
+
       return rentalItemRows;
     } catch (error) {
       console.error('Error fetching rental items:', error);
@@ -702,7 +691,7 @@ export class DatabaseService {
         .from(rentalItems)
         .where(eq(rentalItems.id, id))
         .limit(1);
-      
+
       return rentalItemRows[0] || null;
     } catch (error) {
       console.error('Error fetching rental item by ID:', error);
@@ -710,21 +699,24 @@ export class DatabaseService {
     }
   }
 
-  static async updateRentalItem(id: number, data: {
-    equipmentId?: number | null
-    equipmentName?: string
-    quantity?: number
-    unitPrice?: number
-    totalPrice?: number
-    days?: number
-    rateType?: string
-    operatorId?: number | null
-    status?: string
-    notes?: string
-  }) {
+  static async updateRentalItem(
+    id: number,
+    data: {
+      equipmentId?: number | null;
+      equipmentName?: string;
+      quantity?: number;
+      unitPrice?: number;
+      totalPrice?: number;
+      days?: number;
+      rateType?: string;
+      operatorId?: number | null;
+      status?: string;
+      notes?: string;
+    }
+  ) {
     try {
       const updateData: any = {};
-      
+
       if (data.equipmentId !== undefined) updateData.equipmentId = data.equipmentId;
       if (data.equipmentName !== undefined) updateData.equipmentName = data.equipmentName;
       if (data.quantity !== undefined) updateData.quantity = data.quantity;
@@ -735,7 +727,7 @@ export class DatabaseService {
       if (data.operatorId !== undefined) updateData.operatorId = data.operatorId;
       if (data.status !== undefined) updateData.status = data.status;
       if (data.notes !== undefined) updateData.notes = data.notes;
-      
+
       updateData.updatedAt = new Date().toISOString().split('T')[0];
 
       const rentalItemRows = await db
@@ -743,7 +735,7 @@ export class DatabaseService {
         .set(updateData)
         .where(eq(rentalItems.id, id))
         .returning();
-      
+
       return rentalItemRows[0] || null;
     } catch (error) {
       console.error('Error updating rental item:', error);
@@ -753,11 +745,8 @@ export class DatabaseService {
 
   static async deleteRentalItem(id: number) {
     try {
-      await db
-        .update(rentalItems)
-        .set({ status: 'deleted' })
-        .where(eq(rentalItems.id, id));
-      
+      await db.update(rentalItems).set({ status: 'deleted' }).where(eq(rentalItems.id, id));
+
       return true;
     } catch (error) {
       console.error('Error deleting rental item:', error);

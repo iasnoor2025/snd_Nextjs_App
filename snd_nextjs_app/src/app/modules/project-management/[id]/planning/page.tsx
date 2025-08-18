@@ -1,38 +1,58 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
 import {
-  CalendarIcon,
-  Plus,
-  Edit,
-  Trash2,
-  Target,
-  Users,
-  DollarSign,
-  BarChart3,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  TrendingUp,
-  TrendingDown
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { format } from 'date-fns';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
 import apiService from '@/lib/api';
+import { format } from 'date-fns';
+import {
+  AlertCircle,
+  BarChart3,
+  CalendarIcon,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  Edit,
+  Plus,
+  Target,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  Users,
+} from 'lucide-react';
+import { useParams } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Project {
   id: string;
@@ -108,11 +128,11 @@ export default function ProjectPlanningPage() {
   const fetchProjectData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch project details
       const projectRes = await apiService.get<{ data: Project }>(`/projects/${projectId}`);
       setProject(projectRes.data);
-      
+
       // TODO: These endpoints don't exist yet, so we'll set empty arrays
       // Implement these when the endpoints become available
       setMilestones([]);
@@ -243,9 +263,7 @@ export default function ProjectPlanningPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ${Math.abs(budgetVariance).toLocaleString()}
-            </div>
+            <div className="text-2xl font-bold">${Math.abs(budgetVariance).toLocaleString()}</div>
             <div className="flex items-center text-xs text-muted-foreground mt-1">
               {budgetVariance >= 0 ? (
                 <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
@@ -307,12 +325,16 @@ export default function ProjectPlanningPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {tasks.slice(0, 5).map((task) => (
-                    <div key={task.id} className="flex items-center justify-between p-3 border rounded">
+                  {tasks.slice(0, 5).map(task => (
+                    <div
+                      key={task.id}
+                      className="flex items-center justify-between p-3 border rounded"
+                    >
                       <div className="flex-1">
                         <div className="font-medium">{task.name}</div>
                         <div className="text-sm text-muted-foreground">
-                          {format(new Date(task.start_date), 'MMM dd')} - {format(new Date(task.end_date), 'MMM dd')}
+                          {format(new Date(task.start_date), 'MMM dd')} -{' '}
+                          {format(new Date(task.end_date), 'MMM dd')}
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
@@ -339,8 +361,11 @@ export default function ProjectPlanningPage() {
                     .filter(m => m.status !== 'completed')
                     .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
                     .slice(0, 5)
-                    .map((milestone) => (
-                      <div key={milestone.id} className="flex items-center justify-between p-3 border rounded">
+                    .map(milestone => (
+                      <div
+                        key={milestone.id}
+                        className="flex items-center justify-between p-3 border rounded"
+                      >
                         <div className="flex-1">
                           <div className="font-medium">{milestone.name}</div>
                           <div className="text-sm text-muted-foreground">
@@ -351,7 +376,9 @@ export default function ProjectPlanningPage() {
                           <Badge className={getStatusColor(milestone.status)}>
                             {milestone.status.replace('_', ' ')}
                           </Badge>
-                          <div className="text-sm font-medium">{milestone.completion_percentage}%</div>
+                          <div className="text-sm font-medium">
+                            {milestone.completion_percentage}%
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -366,18 +393,22 @@ export default function ProjectPlanningPage() {
           <Card>
             <CardHeader>
               <CardTitle>Project Timeline</CardTitle>
-              <CardDescription>Visual representation of project tasks and dependencies</CardDescription>
+              <CardDescription>
+                Visual representation of project tasks and dependencies
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {tasks.map((task) => {
+                {tasks.map(task => {
                   const startDate = new Date(task.start_date);
                   const endDate = new Date(task.end_date);
                   const projectStart = new Date(project.start_date);
                   const projectEnd = project.end_date ? new Date(project.end_date) : new Date();
-                  const totalDays = (projectEnd.getTime() - projectStart.getTime()) / (1000 * 60 * 60 * 24);
-                  const taskStartOffset = (startDate.getTime() - projectStart.getTime()) / (1000 * 60 * 60 * 24);
-                  const taskWidth = task.duration / totalDays * 100;
+                  const totalDays =
+                    (projectEnd.getTime() - projectStart.getTime()) / (1000 * 60 * 60 * 24);
+                  const taskStartOffset =
+                    (startDate.getTime() - projectStart.getTime()) / (1000 * 60 * 60 * 24);
+                  const taskWidth = (task.duration / totalDays) * 100;
                   const taskLeft = (taskStartOffset / totalDays) * 100;
 
                   return (
@@ -386,13 +417,12 @@ export default function ProjectPlanningPage() {
                         <div className="flex-1">
                           <div className="font-medium">{task.name}</div>
                           <div className="text-sm text-muted-foreground">
-                            {format(startDate, 'MMM dd')} - {format(endDate, 'MMM dd')} ({task.duration} days)
+                            {format(startDate, 'MMM dd')} - {format(endDate, 'MMM dd')} (
+                            {task.duration} days)
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Badge className={getPriorityColor(task.priority)}>
-                            {task.priority}
-                          </Badge>
+                          <Badge className={getPriorityColor(task.priority)}>{task.priority}</Badge>
                           <Badge className={getStatusColor(task.status)}>
                             {task.status.replace('_', ' ')}
                           </Badge>
@@ -445,12 +475,14 @@ export default function ProjectPlanningPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {milestones.map((milestone) => (
+                  {milestones.map(milestone => (
                     <TableRow key={milestone.id}>
                       <TableCell>
                         <div>
                           <div className="font-medium">{milestone.name}</div>
-                          <div className="text-sm text-muted-foreground">{milestone.description}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {milestone.description}
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell>{format(new Date(milestone.due_date), 'MMM dd, yyyy')}</TableCell>
@@ -511,7 +543,7 @@ export default function ProjectPlanningPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {resources.map((resource) => (
+                  {resources.map(resource => (
                     <TableRow key={resource.id}>
                       <TableCell>
                         <div className="font-medium">{resource.name}</div>
@@ -528,7 +560,7 @@ export default function ProjectPlanningPage() {
                             value={resource.availability}
                             className="w-20"
                             style={{
-                              backgroundColor: resource.availability < 100 ? '#fef3c7' : '#dcfce7'
+                              backgroundColor: resource.availability < 100 ? '#fef3c7' : '#dcfce7',
                             }}
                           />
                           <span className="text-sm">{resource.availability}%</span>
@@ -582,7 +614,7 @@ export default function ProjectPlanningPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {budgetItems.map((item) => (
+                  {budgetItems.map(item => (
                     <TableRow key={item.id}>
                       <TableCell>
                         <div className="font-medium">{item.category}</div>
@@ -591,7 +623,9 @@ export default function ProjectPlanningPage() {
                       <TableCell>${item.planned_amount.toLocaleString()}</TableCell>
                       <TableCell>${item.actual_amount.toLocaleString()}</TableCell>
                       <TableCell>
-                        <div className={`flex items-center ${item.variance >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        <div
+                          className={`flex items-center ${item.variance >= 0 ? 'text-red-600' : 'text-green-600'}`}
+                        >
                           {item.variance >= 0 ? '+' : ''}${item.variance.toLocaleString()}
                         </div>
                       </TableCell>

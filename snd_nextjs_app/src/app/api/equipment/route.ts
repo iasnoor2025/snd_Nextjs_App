@@ -1,14 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { withPermission, PermissionConfigs, withReadPermission } from '@/lib/rbac/api-middleware';
-import { equipment as equipmentTable, equipmentRentalHistory, projects, rentals, employees } from '@/lib/drizzle/schema';
+import {
+  employees,
+  equipmentRentalHistory,
+  equipment as equipmentTable,
+  projects,
+  rentals,
+} from '@/lib/drizzle/schema';
+import { PermissionConfigs, withPermission, withReadPermission } from '@/lib/rbac/api-middleware';
 import { asc, eq, inArray } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
-export const GET = withReadPermission(
-  async (_request: NextRequest) => {
+export const GET = withReadPermission(async (_request: NextRequest) => {
   try {
     console.log('Fetching equipment from database...');
-    
+
     const equipment = await db
       .select({
         id: equipmentTable.id,
@@ -28,13 +33,13 @@ export const GET = withReadPermission(
       })
       .from(equipmentTable)
       .orderBy(asc(equipmentTable.name));
-    
+
     console.log(`Found ${equipment.length} equipment items`);
-    
+
     // Get current active assignments for equipment
     console.log('=== FETCHING ASSIGNMENTS ===');
     let currentAssignments: any[] = [];
-    
+
     try {
       // Get all active assignments with related data
       currentAssignments = await db
@@ -48,19 +53,19 @@ export const GET = withReadPermission(
           employee_id: equipmentRentalHistory.employeeId,
           start_date: equipmentRentalHistory.startDate,
           end_date: equipmentRentalHistory.endDate,
-          notes: equipmentRentalHistory.notes
+          notes: equipmentRentalHistory.notes,
         })
         .from(equipmentRentalHistory)
         .where(eq(equipmentRentalHistory.status, 'active'));
-      
+
       console.log(`Found ${currentAssignments.length} active assignments`);
-      
+
       // Fetch additional details for projects, rentals, and employees if needed
       if (currentAssignments.length > 0) {
         const projectIds = currentAssignments.filter(a => a.project_id).map(a => a.project_id);
         const rentalIds = currentAssignments.filter(a => a.rental_id).map(a => a.rental_id);
         const employeeIds = currentAssignments.filter(a => a.employee_id).map(a => a.employee_id);
-        
+
         // Fetch project names
         if (projectIds.length > 0) {
           try {
@@ -68,7 +73,7 @@ export const GET = withReadPermission(
               .select({ id: projects.id, name: projects.name })
               .from(projects)
               .where(inArray(projects.id, projectIds));
-            
+
             const projectMap = new Map(projectNames.map(p => [p.id, p.name]));
             currentAssignments.forEach(assignment => {
               if (assignment.project_id) {
@@ -79,15 +84,19 @@ export const GET = withReadPermission(
             console.error('Error fetching project names:', error);
           }
         }
-        
+
         // Fetch rental information
         if (rentalIds.length > 0) {
           try {
             const rentalInfo = await db
-              .select({ id: rentals.id, rental_number: rentals.rentalNumber, project_id: rentals.projectId })
+              .select({
+                id: rentals.id,
+                rental_number: rentals.rentalNumber,
+                project_id: rentals.projectId,
+              })
               .from(rentals)
               .where(inArray(rentals.id, rentalIds));
-            
+
             const rentalMap = new Map(rentalInfo.map(r => [r.id, r]));
             currentAssignments.forEach(assignment => {
               if (assignment.rental_id) {
@@ -98,7 +107,7 @@ export const GET = withReadPermission(
             console.error('Error fetching rental information:', error);
           }
         }
-        
+
         // Fetch employee names
         if (employeeIds.length > 0) {
           try {
@@ -111,7 +120,7 @@ export const GET = withReadPermission(
               })
               .from(employees)
               .where(inArray(employees.id, employeeIds));
-            
+
             const employeeMap = new Map(employeeNames.map(e => [e.id, e]));
             currentAssignments.forEach(assignment => {
               if (assignment.employee_id) {
@@ -123,29 +132,28 @@ export const GET = withReadPermission(
           }
         }
       }
-      
     } catch (error) {
       console.error('Error fetching assignments:', error);
       currentAssignments = [];
     }
-    
+
     console.log('=== END ASSIGNMENT FETCH ===');
-    
+
     // Create a map of equipment_id to assignment info
     const assignmentMap = new Map();
     currentAssignments.forEach(assignment => {
       assignmentMap.set(assignment.equipment_id, assignment);
     });
-    
+
     console.log(`Assignment map size: ${assignmentMap.size}`);
-    
+
     // Add assignment info to equipment
     const equipmentWithAssignments = equipment.map(item => {
       const assignment = assignmentMap.get(item.id);
-      
+
       let assignmentName = '';
       let assignmentDetails: any = null;
-      
+
       if (assignment) {
         // Create meaningful assignment name
         if (assignment.assignment_type === 'project' && assignment.project_id) {
@@ -157,7 +165,7 @@ export const GET = withReadPermission(
         } else {
           assignmentName = `${assignment.assignment_type} Assignment ${assignment.id}`;
         }
-        
+
         assignmentDetails = {
           id: assignment.id,
           type: assignment.assignment_type,
@@ -167,28 +175,39 @@ export const GET = withReadPermission(
           start_date: assignment.start_date,
           end_date: assignment.end_date,
           location: null, // Will be populated if needed
-          project: assignment.project_id ? { 
-            id: assignment.project_id, 
-            name: assignment.project_name || `Project ${assignment.project_id}`, 
-            location: null 
-          } : null,
-          rental: assignment.rental_id ? { 
-            id: assignment.rental_id, 
-            rental_number: assignment.rental_info?.rental_number || `Rental ${assignment.rental_id}`, 
-            project: assignment.rental_info?.project_id ? { 
-              id: assignment.rental_info.project_id, 
-              name: assignment.project_name || `Project ${assignment.rental_info.project_id}` 
-            } : null 
-          } : null,
-          employee: assignment.employee_id ? { 
-            id: assignment.employee_id, 
-            name: assignment.employee_info?.name || `Employee ${assignment.employee_id}`, 
-            file_number: assignment.employee_info?.file_number || `EMP${assignment.employee_id}`, 
-            full_name: assignment.employee_info?.name || `Employee ${assignment.employee_id}` 
-          } : null
+          project: assignment.project_id
+            ? {
+                id: assignment.project_id,
+                name: assignment.project_name || `Project ${assignment.project_id}`,
+                location: null,
+              }
+            : null,
+          rental: assignment.rental_id
+            ? {
+                id: assignment.rental_id,
+                rental_number:
+                  assignment.rental_info?.rental_number || `Rental ${assignment.rental_id}`,
+                project: assignment.rental_info?.project_id
+                  ? {
+                      id: assignment.rental_info.project_id,
+                      name:
+                        assignment.project_name || `Project ${assignment.rental_info.project_id}`,
+                    }
+                  : null,
+              }
+            : null,
+          employee: assignment.employee_id
+            ? {
+                id: assignment.employee_id,
+                name: assignment.employee_info?.name || `Employee ${assignment.employee_id}`,
+                file_number:
+                  assignment.employee_info?.file_number || `EMP${assignment.employee_id}`,
+                full_name: assignment.employee_info?.name || `Employee ${assignment.employee_id}`,
+              }
+            : null,
         };
       }
-      
+
       // Determine the effective status - prioritize assignment status over equipment status
       let effectiveStatus = item.status;
       if (assignment && assignment.status === 'active') {
@@ -199,37 +218,34 @@ export const GET = withReadPermission(
         // If no assignment exists, force status to 'available'
         effectiveStatus = 'available';
       }
-      
+
       return {
         ...item,
         status: effectiveStatus,
-        current_assignment: assignmentDetails
+        current_assignment: assignmentDetails,
       };
     });
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       data: equipmentWithAssignments,
       source: 'local',
-      count: equipmentWithAssignments.length
+      count: equipmentWithAssignments.length,
     });
   } catch (error) {
     console.error('Error fetching equipment:', error);
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: 'Failed to fetch equipment',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
   }
-  },
-  PermissionConfigs.equipment.read
-);
+}, PermissionConfigs.equipment.read);
 
-export const POST = withPermission(
-  async (request: NextRequest) => {
+export const POST = withPermission(async (request: NextRequest) => {
   try {
     const body = await request.json();
 
@@ -249,7 +265,9 @@ export const POST = withPermission(
         weeklyRate: body.weeklyRate ? String(parseFloat(body.weeklyRate)) : null,
         monthlyRate: body.monthlyRate ? String(parseFloat(body.monthlyRate)) : null,
         istimara: body.istimara ?? null,
-        istimaraExpiryDate: body.istimara_expiry_date ? new Date(body.istimara_expiry_date).toISOString() : null,
+        istimaraExpiryDate: body.istimara_expiry_date
+          ? new Date(body.istimara_expiry_date).toISOString()
+          : null,
         isActive: true as any,
         updatedAt: new Date().toISOString(),
       })
@@ -260,20 +278,17 @@ export const POST = withPermission(
   } catch (error) {
     console.error('Error creating equipment:', error);
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: 'Failed to create equipment' 
+        error: 'Failed to create equipment',
       },
       { status: 500 }
     );
   }
-  },
-  PermissionConfigs.equipment.create
-);
+}, PermissionConfigs.equipment.create);
 
-export const PUT = withPermission(
-  async (request: NextRequest) => {
-    try {
+export const PUT = withPermission(async (request: NextRequest) => {
+  try {
     const body = await request.json();
     const {
       id,
@@ -313,31 +328,30 @@ export const PUT = withPermission(
         weeklyRate: weeklyRate ? String(parseFloat(weeklyRate)) : null,
         monthlyRate: monthlyRate ? String(parseFloat(monthlyRate)) : null,
         istimara: istimara ?? null,
-        istimaraExpiryDate: istimara_expiry_date ? new Date(istimara_expiry_date).toISOString() : null,
+        istimaraExpiryDate: istimara_expiry_date
+          ? new Date(istimara_expiry_date).toISOString()
+          : null,
         updatedAt: new Date().toISOString(),
       })
       .where(eq(equipmentTable.id, id))
       .returning();
     const equipment = updated[0];
 
-        return NextResponse.json({ success: true, data: equipment });
+    return NextResponse.json({ success: true, data: equipment });
   } catch (error) {
     console.error('Error updating equipment:', error);
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: 'Failed to update equipment' 
+        error: 'Failed to update equipment',
       },
       { status: 500 }
     );
   }
-  },
-  PermissionConfigs.equipment.update
-);
+}, PermissionConfigs.equipment.update);
 
-export const DELETE = withPermission(
-  async (request: NextRequest) => {
-    try {
+export const DELETE = withPermission(async (request: NextRequest) => {
+  try {
     const body = await request.json();
     const { id } = body;
 
@@ -347,13 +361,11 @@ export const DELETE = withPermission(
   } catch (error) {
     console.error('Error deleting equipment:', error);
     return NextResponse.json(
-      { 
+      {
         success: false,
-        error: 'Failed to delete equipment' 
+        error: 'Failed to delete equipment',
       },
       { status: 500 }
     );
   }
-  },
-  PermissionConfigs.equipment.delete
-);
+}, PermissionConfigs.equipment.delete);

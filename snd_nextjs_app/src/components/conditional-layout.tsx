@@ -1,18 +1,14 @@
-"use client";
+'use client';
 
-import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@/components/ui/sidebar";
-import { useI18n } from "@/hooks/use-i18n";
-import { useNationIdCheck } from "@/hooks/use-nation-id-check";
-import { NationIdModal } from "@/components/nation-id-modal";
-import { NationIdRequired } from "@/components/nation-id-required";
-
+import { AppSidebar } from '@/components/app-sidebar';
+import { NationIdModal } from '@/components/nation-id-modal';
+import { NationIdRequired } from '@/components/nation-id-required';
+import { SiteHeader } from '@/components/site-header';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { useI18n } from '@/hooks/use-i18n';
+import { useNationIdCheck } from '@/hooks/use-nation-id-check';
+import { useSession } from 'next-auth/react';
+import { usePathname } from 'next/navigation';
 
 interface ConditionalLayoutProps {
   children: React.ReactNode;
@@ -22,18 +18,14 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const pathname = usePathname();
   const { isRTL } = useI18n();
   const { data: session, status } = useSession();
-  const isLoginPage = pathname === "/login";
+  const isLoginPage = pathname === '/login';
   const { isModalOpen, closeModal, nationIdData, isChecking, refreshCheck } = useNationIdCheck();
-  
+
   // Check if user is an employee
   const isEmployee = session?.user?.role === 'EMPLOYEE';
 
   if (isLoginPage) {
-    return (
-      <div className="min-h-screen bg-background">
-        {children}
-      </div>
-    );
+    return <div className="min-h-screen bg-background">{children}</div>;
   }
 
   // Show loading state only on first login verification
@@ -52,8 +44,8 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   if (nationIdData?.isFirstLogin && nationIdData && !nationIdData.hasNationId) {
     return (
       <NationIdRequired
-        userName={nationIdData.userName || ""}
-        userEmail={nationIdData.userEmail || ""}
+        userName={nationIdData.userName || ''}
+        userEmail={nationIdData.userEmail || ''}
         onNationIdSet={refreshCheck}
       />
     );
@@ -66,19 +58,17 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
         <div className={`min-h-screen bg-background ${isRTL ? 'rtl' : ''}`}>
           <SiteHeader />
           <main className="flex-1 overflow-auto p-6 transition-all duration-200 ease-linear main-content">
-            <div className="w-full h-full max-w-none content-wrapper">
-              {children}
-            </div>
+            <div className="w-full h-full max-w-none content-wrapper">{children}</div>
           </main>
         </div>
-        
+
         {/* Nation ID Modal - Only show if user doesn't have Nation ID on first login */}
         {nationIdData?.isFirstLogin && nationIdData && !nationIdData.hasNationId && (
           <NationIdModal
             isOpen={isModalOpen}
             onClose={closeModal}
-            userName={nationIdData.userName || ""}
-            userEmail={nationIdData.userEmail || ""}
+            userName={nationIdData.userName || ''}
+            userEmail={nationIdData.userEmail || ''}
             matchedEmployee={nationIdData.matchedEmployee}
           />
         )}
@@ -93,8 +83,8 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
         defaultOpen={true}
         style={
           {
-            "--sidebar-width": "16rem",
-            "--header-height": "4rem",
+            '--sidebar-width': '16rem',
+            '--header-height': '4rem',
           } as React.CSSProperties
         }
       >
@@ -103,24 +93,22 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
           <SidebarInset className="flex-1 flex flex-col min-w-0 overflow-hidden peer">
             <SiteHeader />
             <main className="flex-1 overflow-auto p-6 transition-all duration-200 ease-linear main-content">
-              <div className="w-full h-full max-w-none content-wrapper">
-                {children}
-              </div>
+              <div className="w-full h-full max-w-none content-wrapper">{children}</div>
             </main>
           </SidebarInset>
         </div>
       </SidebarProvider>
-      
+
       {/* Nation ID Modal - Only show if user doesn't have Nation ID on first login */}
       {nationIdData?.isFirstLogin && nationIdData && !nationIdData.hasNationId && (
         <NationIdModal
           isOpen={isModalOpen}
           onClose={closeModal}
-          userName={nationIdData.userName || ""}
-          userEmail={nationIdData.userEmail || ""}
+          userName={nationIdData.userName || ''}
+          userEmail={nationIdData.userEmail || ''}
           matchedEmployee={nationIdData.matchedEmployee}
         />
       )}
     </>
   );
-} 
+}

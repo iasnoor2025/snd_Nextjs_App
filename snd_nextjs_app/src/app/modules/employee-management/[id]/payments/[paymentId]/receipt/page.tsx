@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Printer, Download, ArrowLeft } from "lucide-react";
-import Link from "next/link";
-import { usePrint } from "@/hooks/use-print";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { usePrint } from '@/hooks/use-print';
+import { ArrowLeft, Download, Printer } from 'lucide-react';
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 interface ReceiptData {
   payment: {
@@ -50,10 +50,10 @@ export default function ReceiptPage() {
   const { printRef, handlePrint } = usePrint({
     documentTitle: `Payment-Receipt-${employeeId}-${paymentId}`,
     waitForImages: true,
-    onPrintError: (error) => {
+    onPrintError: error => {
       console.error('Print error details:', error);
       // Continue with print even if there are image errors
-    }
+    },
   });
 
   useEffect(() => {
@@ -65,10 +65,10 @@ export default function ReceiptPage() {
           setReceiptData(data.receipt);
         } else {
           const errorData = await response.json();
-          setError(errorData.error || "Failed to load receipt");
+          setError(errorData.error || 'Failed to load receipt');
         }
       } catch (error) {
-        setError("Failed to load receipt");
+        setError('Failed to load receipt');
       } finally {
         setLoading(false);
       }
@@ -79,11 +79,9 @@ export default function ReceiptPage() {
     }
   }, [employeeId, paymentId]);
 
-
-
   const handleDownload = () => {
     // TODO: Implement PDF download functionality
-    console.log("Download receipt as PDF");
+    console.log('Download receipt as PDF');
   };
 
   if (loading) {
@@ -103,7 +101,7 @@ export default function ReceiptPage() {
         <Card className="w-full max-w-md">
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-semibold mb-2">Error</h2>
-            <p className="text-muted-foreground mb-4">{error || "Receipt not found"}</p>
+            <p className="text-muted-foreground mb-4">{error || 'Receipt not found'}</p>
             <Link href={`/modules/employee-management/${employeeId}?tab=advances`}>
               <Button>
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -146,7 +144,9 @@ export default function ReceiptPage() {
             <div className="text-center mb-8 border-b pb-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">{receiptData.company.name}</h1>
               <p className="text-gray-600">{receiptData.company.address}</p>
-              <p className="text-gray-600">Phone: {receiptData.company.phone} | Email: {receiptData.company.email}</p>
+              <p className="text-gray-600">
+                Phone: {receiptData.company.phone} | Email: {receiptData.company.email}
+              </p>
             </div>
 
             {/* Receipt Title */}
@@ -160,17 +160,35 @@ export default function ReceiptPage() {
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-gray-900">Employee Information</h3>
                 <div className="space-y-2">
-                  <p><span className="font-medium">Name:</span> {receiptData.employee.name}</p>
-                  <p><span className="font-medium">Employee ID:</span> {receiptData.employee.employee_id}</p>
-                  <p><span className="font-medium">Position:</span> {receiptData.employee.position}</p>
+                  <p>
+                    <span className="font-medium">Name:</span> {receiptData.employee.name}
+                  </p>
+                  <p>
+                    <span className="font-medium">Employee ID:</span>{' '}
+                    {receiptData.employee.employee_id}
+                  </p>
+                  <p>
+                    <span className="font-medium">Position:</span> {receiptData.employee.position}
+                  </p>
                 </div>
               </div>
               <div>
                 <h3 className="text-lg font-semibold mb-3 text-gray-900">Payment Details</h3>
                 <div className="space-y-2">
-                  <p><span className="font-medium">Payment Date:</span> {new Date(receiptData.payment.payment_date).toLocaleDateString()}</p>
-                  <p><span className="font-medium">Amount:</span> <span className="font-bold text-green-600">SAR {Number(receiptData.payment.amount).toFixed(2)}</span></p>
-                  <p><span className="font-medium">Recorded By:</span> {receiptData.payment.recorded_by}</p>
+                  <p>
+                    <span className="font-medium">Payment Date:</span>{' '}
+                    {new Date(receiptData.payment.payment_date).toLocaleDateString()}
+                  </p>
+                  <p>
+                    <span className="font-medium">Amount:</span>{' '}
+                    <span className="font-bold text-green-600">
+                      SAR {Number(receiptData.payment.amount).toFixed(2)}
+                    </span>
+                  </p>
+                  <p>
+                    <span className="font-medium">Recorded By:</span>{' '}
+                    {receiptData.payment.recorded_by}
+                  </p>
                 </div>
               </div>
             </div>
@@ -181,15 +199,31 @@ export default function ReceiptPage() {
                 <h3 className="text-lg font-semibold mb-3 text-gray-900">Advance Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <p><span className="font-medium">Advance ID:</span> #{receiptData.advance.id}</p>
-                    <p><span className="font-medium">Advance Amount:</span> SAR {Number(receiptData.advance.amount).toFixed(2)}</p>
-                    <p><span className="font-medium">Reason:</span> {receiptData.advance.reason}</p>
+                    <p>
+                      <span className="font-medium">Advance ID:</span> #{receiptData.advance.id}
+                    </p>
+                    <p>
+                      <span className="font-medium">Advance Amount:</span> SAR{' '}
+                      {Number(receiptData.advance.amount).toFixed(2)}
+                    </p>
+                    <p>
+                      <span className="font-medium">Reason:</span> {receiptData.advance.reason}
+                    </p>
                   </div>
                   <div>
-                    <p><span className="font-medium">Total Repaid:</span> SAR {Number(receiptData.advance.repaid_amount).toFixed(2)}</p>
-                    <p><span className="font-medium">Remaining Balance:</span> SAR {Number(receiptData.advance.balance).toFixed(2)}</p>
+                    <p>
+                      <span className="font-medium">Total Repaid:</span> SAR{' '}
+                      {Number(receiptData.advance.repaid_amount).toFixed(2)}
+                    </p>
+                    <p>
+                      <span className="font-medium">Remaining Balance:</span> SAR{' '}
+                      {Number(receiptData.advance.balance).toFixed(2)}
+                    </p>
                     {receiptData.advance.payment_date && (
-                      <p><span className="font-medium">Advance Date:</span> {new Date(receiptData.advance.payment_date).toLocaleDateString()}</p>
+                      <p>
+                        <span className="font-medium">Advance Date:</span>{' '}
+                        {new Date(receiptData.advance.payment_date).toLocaleDateString()}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -200,7 +234,9 @@ export default function ReceiptPage() {
             {receiptData.payment.notes && (
               <div className="mb-8">
                 <h3 className="text-lg font-semibold mb-3 text-gray-900">Notes</h3>
-                <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">{receiptData.payment.notes}</p>
+                <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
+                  {receiptData.payment.notes}
+                </p>
               </div>
             )}
 
@@ -208,7 +244,10 @@ export default function ReceiptPage() {
             <div className="border-t pt-6 mt-8">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
                 <div>
-                  <p><span className="font-medium">Receipt Generated:</span> {new Date(receiptData.payment.created_at).toLocaleString()}</p>
+                  <p>
+                    <span className="font-medium">Receipt Generated:</span>{' '}
+                    {new Date(receiptData.payment.created_at).toLocaleString()}
+                  </p>
                 </div>
                 <div className="text-right">
                   <p>This is an official payment receipt</p>
@@ -221,4 +260,4 @@ export default function ReceiptPage() {
       </div>
     </div>
   );
-} 
+}

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/db';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 // TODO: This route still uses ORM-like aggregations; for now, disable DB updates to prevent crashes.
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
 
@@ -43,10 +43,7 @@ export async function POST(_request: NextRequest) {
         reportData = await generateTimesheetSummaryReport(parameters);
         break;
       default:
-        return NextResponse.json(
-          { error: 'Invalid report type' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Invalid report type' }, { status: 400 });
     }
 
     // Update the report's last_generated timestamp
@@ -59,10 +56,7 @@ export async function POST(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Error generating report:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 

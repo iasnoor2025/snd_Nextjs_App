@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import React from "react"
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -8,8 +8,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
+} from '@/components/ui/dialog';
+import React from 'react';
 
 interface ConfirmationDialogProps {
   open: boolean;
@@ -18,7 +18,7 @@ interface ConfirmationDialogProps {
   description: string;
   confirmText?: string;
   cancelText?: string;
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
   onConfirm: () => void;
   onCancel?: () => void;
 }
@@ -28,9 +28,9 @@ export function ConfirmationDialog({
   onOpenChange,
   title,
   description,
-  confirmText = "Confirm",
-  cancelText = "Cancel",
-  variant = "default",
+  confirmText = 'Confirm',
+  cancelText = 'Cancel',
+  variant = 'default',
   onConfirm,
   onCancel,
 }: ConfirmationDialogProps) {
@@ -45,8 +45,8 @@ export function ConfirmationDialog({
           <Button
             variant="outline"
             onClick={() => {
-              onOpenChange(false)
-              onCancel?.()
+              onOpenChange(false);
+              onCancel?.();
             }}
           >
             {cancelText}
@@ -54,8 +54,8 @@ export function ConfirmationDialog({
           <Button
             variant={variant}
             onClick={() => {
-              onConfirm()
-              onOpenChange(false)
+              onConfirm();
+              onOpenChange(false);
             }}
           >
             {confirmText}
@@ -63,5 +63,5 @@ export function ConfirmationDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

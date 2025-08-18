@@ -2,7 +2,7 @@
   "title": "إدارة الإيجارات",
   "subtitle": "إدارة إيجارات المعدات والعقود",
   "description": "تتبع وإدارة اتفاقيات الإيجار وتخصيص المعدات وعقود العملاء",
-  
+
   "rentalManagement": "إدارة الإيجارات",
   "manageEquipmentRentals": "إدارة إيجارات المعدات والعقود",
   "newRental": "إيجار جديد",
@@ -55,7 +55,7 @@
   "approveRentals": "الموافقة على الإيجارات",
   "rejectRentals": "رفض الإيجارات",
   "rentalSettings": "إعدادات الإيجار",
-  
+
   "actions": {
     "add": "إيجار جديد",
     "edit": "تعديل الإيجار",
@@ -73,7 +73,7 @@
     "reject": "رفض الإيجارات",
     "manage": "إعدادات الإيجار"
   },
-  
+
   "fields": {
     "rentalNumber": "رقم الإيجار",
     "customerId": "العميل",
@@ -96,7 +96,7 @@
     "rateType": "نوع السعر",
     "operatorId": "المشغل"
   },
-  
+
   "status": {
     "pending": "قيد الانتظار",
     "active": "نشط",
@@ -104,21 +104,21 @@
     "cancelled": "ملغي",
     "overdue": "متأخر"
   },
-  
+
   "paymentStatus": {
     "pending": "قيد الانتظار",
     "partial": "جزئي",
     "paid": "مدفوع",
     "overdue": "متأخر"
   },
-  
+
   "rateTypes": {
     "daily": "يومي",
     "weekly": "أسبوعي",
     "monthly": "شهري",
     "hourly": "ساعي"
   },
-  
+
   "messages": {
     "loading": "جاري تحميل الإيجارات...",
     "noRentals": "لم يتم العثور على إيجارات.",
@@ -134,13 +134,13 @@
     "exportSuccess": "تم تصدير الإيجارات بنجاح",
     "exportError": "فشل في تصدير الإيجارات"
   },
-  
+
   "pagination": {
     "showing": "عرض {start}-{end} من {total} إيجار",
     "page": "الصفحة {current} من {total}",
     "itemsPerPage": "العناصر في الصفحة"
   },
-  
+
   "filterOptions": {
     "all": "الكل",
     "status": "الحالة",
@@ -149,7 +149,7 @@
     "dateRange": "نطاق التاريخ",
     "clear": "مسح الفلاتر"
   },
-  
+
   "table": {
     "headers": {
       "rentalNumber": "رقم الإيجار",
@@ -162,7 +162,7 @@
       "actions": "الإجراءات"
     }
   },
-  
+
   "form": {
     "addTitle": "إنشاء إيجار جديد",
     "editTitle": "تعديل الإيجار",
@@ -172,7 +172,7 @@
     "invalidAmount": "يرجى إدخال مبلغ صحيح",
     "invalidQuantity": "يرجى إدخال كمية صحيحة"
   },
-  
+
   "administration": {
     "title": "إدارة الإيجارات",
     "subtitle": "ميزات إدارة الإيجارات المتقدمة للمديرين",

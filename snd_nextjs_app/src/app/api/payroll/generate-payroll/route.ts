@@ -1,28 +1,31 @@
-import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { employees, timesheets, payrolls, payrollItems, payrollRuns } from '@/lib/drizzle/schema';
-import { eq, and, inArray, sql } from 'drizzle-orm';
+import { employees, payrollItems, payrollRuns, payrolls, timesheets } from '@/lib/drizzle/schema';
+import { and, eq, inArray, sql } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
 
 export async function POST() {
   try {
     console.log('Starting payroll generation for approved timesheets...');
-    
+
     // Test basic connection first
     try {
       // Test connection by running a simple query
-      await db.select({ count: sql`1` }).from(employees).limit(1);
+      await db
+        .select({ count: sql`1` })
+        .from(employees)
+        .limit(1);
       console.log('✅ Database connection successful');
     } catch (connectionError) {
       console.error('❌ Database connection failed:', connectionError);
       return NextResponse.json(
         {
           success: false,
-          message: 'Database connection failed: ' + (connectionError as Error).message
+          message: 'Database connection failed: ' + (connectionError as Error).message,
         },
         { status: 500 }
       );
     }
-    
+
     // Get employees with approved timesheets (status can be 'approved' or 'manager_approved')
     const employeesWithApprovedTimesheets = await db
       .select({
@@ -38,7 +41,7 @@ export async function POST() {
       .from(employees)
       .where(
         and(
-          eq(employees.status, 'active'),
+          eq(employees.status, 'active')
           // We'll get timesheets separately to avoid complex joins
         )
       );
@@ -61,9 +64,9 @@ export async function POST() {
           contract_days_per_month: employee.contractDaysPerMonth,
           contract_hours_per_day: employee.contractHoursPerDay,
           overtime_rate_multiplier: employee.overtimeRateMultiplier,
-          overtime_fixed_rate: employee.overtimeFixedRate
+          overtime_fixed_rate: employee.overtimeFixedRate,
         });
-        
+
         // Get approved timesheets for this employee
         const approvedTimesheets = await db
           .select({
@@ -81,19 +84,23 @@ export async function POST() {
           );
 
         if (approvedTimesheets.length === 0) {
-          console.log(`No approved timesheets found for ${employee.firstName} ${employee.lastName}`);
+          console.log(
+            `No approved timesheets found for ${employee.firstName} ${employee.lastName}`
+          );
           continue;
         }
 
-        console.log(`Found ${approvedTimesheets.length} approved timesheets for ${employee.firstName} ${employee.lastName}`);
-        
+        console.log(
+          `Found ${approvedTimesheets.length} approved timesheets for ${employee.firstName} ${employee.lastName}`
+        );
+
         // Group timesheets by month/year
         const timesheetsByMonth = new Map<string, any[]>();
-        
+
         approvedTimesheets.forEach(timesheet => {
           const date = new Date(timesheet.date);
           const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          
+
           if (!timesheetsByMonth.has(monthKey)) {
             timesheetsByMonth.set(monthKey, []);
           }
@@ -103,12 +110,12 @@ export async function POST() {
         // Process each month that has approved timesheets
         for (const [monthKey, monthTimesheets] of timesheetsByMonth) {
           const [year, month] = monthKey.split('-').map(Number);
-          
+
           if (!year || !month) {
             console.log(`Invalid month key format: ${monthKey}`);
             continue;
           }
-          
+
           // Check if payroll already exists for this month
           const existingPayroll = await db
             .select({ id: payrolls.id })
@@ -123,43 +130,51 @@ export async function POST() {
             .limit(1);
 
           if (existingPayroll.length > 0) {
-            console.log(`Payroll already exists for ${employee.firstName} ${employee.lastName} - ${month}/${year}`);
+            console.log(
+              `Payroll already exists for ${employee.firstName} ${employee.lastName} - ${month}/${year}`
+            );
             totalSkipped++;
             continue;
           }
 
           // Calculate payroll based on timesheets for this month
           const totalHours = monthTimesheets.reduce((sum, ts) => sum + Number(ts.hoursWorked), 0);
-          const totalOvertimeHours = monthTimesheets.reduce((sum, ts) => sum + Number(ts.overtimeHours), 0);
+          const totalOvertimeHours = monthTimesheets.reduce(
+            (sum, ts) => sum + Number(ts.overtimeHours),
+            0
+          );
 
           // Calculate absent days by checking ALL days in the month (including Fridays with smart logic)
           const daysInMonth = new Date(year, month, 0).getDate();
           let absentDays = 0;
-          
+
           // Create a map of timesheet dates for easier lookup
           const timesheetMap = new Map();
           monthTimesheets.forEach(ts => {
             // Convert date to YYYY-MM-DD format - handle both Date objects and strings
             const dateKey = String(ts.date).split('T')[0];
             timesheetMap.set(dateKey, ts);
-            
+
             // Debug: log the date type and value
-            console.log(`Timesheet date debug - Type: ${typeof ts.date}, Value: ${ts.date}, Parsed: ${dateKey}`);
+            console.log(
+              `Timesheet date debug - Type: ${typeof ts.date}, Value: ${ts.date}, Parsed: ${dateKey}`
+            );
           });
-          
+
           // Loop through all days in the month
           for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month - 1, day);
             const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
             const isFriday = dayName === 'Fri';
-            
+
             // Create date string to check against timesheet data
             const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
             const dayData = timesheetMap.get(dateString);
-            
+
             // Check if this day has hours worked
-            const hasHoursWorked = dayData && (Number(dayData.hoursWorked) > 0 || Number(dayData.overtimeHours) > 0);
-            
+            const hasHoursWorked =
+              dayData && (Number(dayData.hoursWorked) > 0 || Number(dayData.overtimeHours) > 0);
+
             if (isFriday) {
               // Special logic for Fridays
               if (hasHoursWorked) {
@@ -169,17 +184,23 @@ export async function POST() {
                 // Friday has no hours - check if it should be counted as absent
                 const thursdayDate = new Date(year, month - 1, day - 1);
                 const saturdayDate = new Date(year, month - 1, day + 1);
-                
+
                 // Check if Thursday and Saturday are also absent (within month bounds)
                 const thursdayString = `${year}-${String(month).padStart(2, '0')}-${String(thursdayDate.getDate()).padStart(2, '0')}`;
                 const saturdayString = `${year}-${String(month).padStart(2, '0')}-${String(saturdayDate.getDate()).padStart(2, '0')}`;
-                
+
                 const thursdayData = timesheetMap.get(thursdayString);
                 const saturdayData = timesheetMap.get(saturdayString);
-                
-                const thursdayAbsent = !thursdayData || (Number(thursdayData.hoursWorked) === 0 && Number(thursdayData.overtimeHours) === 0);
-                const saturdayAbsent = !saturdayData || (Number(saturdayData.hoursWorked) === 0 && Number(saturdayData.overtimeHours) === 0);
-                
+
+                const thursdayAbsent =
+                  !thursdayData ||
+                  (Number(thursdayData.hoursWorked) === 0 &&
+                    Number(thursdayData.overtimeHours) === 0);
+                const saturdayAbsent =
+                  !saturdayData ||
+                  (Number(saturdayData.hoursWorked) === 0 &&
+                    Number(saturdayData.overtimeHours) === 0);
+
                 // Count Friday as absent only if Thursday and Saturday are also absent
                 if (thursdayAbsent && saturdayAbsent) {
                   absentDays++;
@@ -218,25 +239,26 @@ export async function POST() {
               overtimeAmount = totalOvertimeHours * (hourlyRate * overtimeMultiplier);
               console.log(`- Using multiplier: ${overtimeMultiplier}x (basic/30/8 formula)`);
             }
-            
+
             console.log(`- Final overtime amount: ${overtimeAmount}`);
           }
 
           // Calculate absent deduction: (Basic Salary / Total Days in Month) * Absent Days
           const basicSalary = Number(employee.basicSalary);
           const absentDeduction = absentDays > 0 ? (basicSalary / daysInMonth) * absentDays : 0;
-          
+
           console.log(`Absent calculation for ${employee.firstName} ${employee.lastName}:`, {
             totalDaysInMonth: daysInMonth,
             absentDays,
             basicSalary,
             absentDeduction,
-            calculation: `(${basicSalary} / ${daysInMonth}) * ${absentDays} = ${absentDeduction}`
+            calculation: `(${basicSalary} / ${daysInMonth}) * ${absentDays} = ${absentDeduction}`,
           });
 
           const bonusAmount = 0; // Manual setting only
           const deductionAmount = absentDeduction; // Include absent deduction
-          const finalAmount = Number(employee.basicSalary) + overtimeAmount + bonusAmount - deductionAmount;
+          const finalAmount =
+            Number(employee.basicSalary) + overtimeAmount + bonusAmount - deductionAmount;
 
           // Create payroll
           const insertedPayrolls = await db
@@ -262,7 +284,7 @@ export async function POST() {
             .returning();
 
           const payroll = insertedPayrolls[0];
-          
+
           if (!payroll) {
             throw new Error('Failed to create payroll record');
           }
@@ -279,7 +301,7 @@ export async function POST() {
               order: 1,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
-            }
+            },
           ];
 
           // Add overtime item if there are overtime hours
@@ -305,16 +327,15 @@ export async function POST() {
             });
           }
 
-          await db
-            .insert(payrollItems)
-            .values(payrollItemsData);
+          await db.insert(payrollItems).values(payrollItemsData);
 
-          console.log(`Generated payroll for ${employee.firstName} ${employee.lastName} - ${month}/${year}`);
+          console.log(
+            `Generated payroll for ${employee.firstName} ${employee.lastName} - ${month}/${year}`
+          );
           processedEmployees.push(`${employee.firstName} ${employee.lastName} (${month}/${year})`);
           generatedPayrolls.push(payroll.id.toString());
           totalGenerated++;
         }
-
       } catch (error) {
         const errorMsg = `Error processing ${employee.firstName} ${employee.lastName}: ${error}`;
         console.error(errorMsg);
@@ -338,12 +359,13 @@ export async function POST() {
       .returning();
 
     const payrollRun = insertedPayrollRuns[0];
-    
+
     if (!payrollRun) {
       throw new Error('Failed to create payroll run record');
     }
 
-    let message = `Payroll generation completed successfully.\n` +
+    let message =
+      `Payroll generation completed successfully.\n` +
       `Generated: ${totalGenerated} payrolls\n` +
       `Processed employees: ${processedEmployees.length}\n` +
       `Skipped employees: ${totalSkipped}\n` +
@@ -369,18 +391,17 @@ export async function POST() {
         total_skipped_employees: totalSkipped,
         total_errors: errors.length,
         processed_employees: processedEmployees,
-        errors: errors
+        errors: errors,
       },
-      payroll_run_id: payrollRun.id
+      payroll_run_id: payrollRun.id,
     });
-    
   } catch (error) {
     console.error('Payroll generation error:', error);
     return NextResponse.json(
       {
         success: false,
         message: 'Failed to generate payroll: ' + (error as Error).message,
-        error: error
+        error: error,
       },
       { status: 500 }
     );

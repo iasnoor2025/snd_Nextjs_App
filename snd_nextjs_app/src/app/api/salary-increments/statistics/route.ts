@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { salaryIncrements } from '@/lib/drizzle/schema';
-import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { NextRequest, NextResponse } from 'next/server';
 // import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
 
 export async function GET(_request: NextRequest) {
@@ -25,11 +25,11 @@ export async function GET(_request: NextRequest) {
 
     // Build where conditions for date filtering
     const whereConditions: any[] = [];
-    
+
     if (fromDate) {
       whereConditions.push(gte(salaryIncrements.effectiveDate, fromDate));
     }
-    
+
     if (toDate) {
       whereConditions.push(lte(salaryIncrements.effectiveDate, toDate));
     }
@@ -52,7 +52,11 @@ export async function GET(_request: NextRequest) {
         total: sql<number>`COALESCE(SUM(COALESCE(increment_amount, 0)), 0)`,
       })
       .from(salaryIncrements)
-      .where(whereClause ? and(whereClause, eq(salaryIncrements.status, 'applied')) : eq(salaryIncrements.status, 'applied'));
+      .where(
+        whereClause
+          ? and(whereClause, eq(salaryIncrements.status, 'applied'))
+          : eq(salaryIncrements.status, 'applied')
+      );
 
     // Get average increment percentage
     const avgPercentageResult = await db
@@ -60,7 +64,11 @@ export async function GET(_request: NextRequest) {
         avg: sql<number>`COALESCE(AVG(COALESCE(increment_percentage, 0)), 0)`,
       })
       .from(salaryIncrements)
-      .where(whereClause ? and(whereClause, eq(salaryIncrements.status, 'applied')) : eq(salaryIncrements.status, 'applied'));
+      .where(
+        whereClause
+          ? and(whereClause, eq(salaryIncrements.status, 'applied'))
+          : eq(salaryIncrements.status, 'applied')
+      );
 
     // Get counts by increment type
     const typeCounts = await db
@@ -74,19 +82,25 @@ export async function GET(_request: NextRequest) {
       .groupBy(salaryIncrements.incrementType);
 
     // Transform status counts into a more usable format
-    const statusCountsMap = statusCounts.reduce((acc, item) => {
-      acc[item.status] = item.count;
-      return acc;
-    }, {} as Record<string, number>);
+    const statusCountsMap = statusCounts.reduce(
+      (acc, item) => {
+        acc[item.status] = item.count;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     // Transform type counts into the expected format
-    const byType = typeCounts.reduce((acc, item) => {
-      acc[item.increment_type] = {
-        count: item.count,
-        avg_percentage: Number(item.avg_percentage),
-      };
-      return acc;
-    }, {} as Record<string, { count: number; avg_percentage: number }>);
+    const byType = typeCounts.reduce(
+      (acc, item) => {
+        acc[item.increment_type] = {
+          count: item.count,
+          avg_percentage: Number(item.avg_percentage),
+        };
+        return acc;
+      },
+      {} as Record<string, { count: number; avg_percentage: number }>
+    );
 
     const statistics = {
       total_increments: statusCounts.reduce((sum, item) => sum + item.count, 0),
@@ -105,9 +119,6 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching salary increment statistics:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,5 +1,4 @@
-import React from 'react'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,11 +6,12 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { LogOut, User } from "lucide-react"
-import { useAuth } from '@/hooks/use-auth'
-import { signOut } from 'next-auth/react'
-import Link from 'next/link'
+} from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/hooks/use-auth';
+import { LogOut, User } from 'lucide-react';
+import { signOut } from 'next-auth/react';
+import Link from 'next/link';
+import React from 'react';
 
 export function NavUser() {
   const { session, status } = useAuth();
@@ -31,7 +31,13 @@ export function NavUser() {
 
   const user = session.user;
 
-  const userInitials = user.name ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase() : 'U';
+  const userInitials = user.name
+    ? user.name
+        .split(' ')
+        .map((n: string) => n[0])
+        .join('')
+        .toUpperCase()
+    : 'U';
 
   const handleSignOut = () => {
     signOut({ callbackUrl: '/auth/signin' });
@@ -46,18 +52,14 @@ export function NavUser() {
               {userInitials}
             </AvatarFallback>
           </Avatar>
-          <span className="text-sm font-medium text-gray-700 hidden md:block">
-            {user.name}
-          </span>
+          <span className="text-sm font-medium text-gray-700 hidden md:block">{user.name}</span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{user.name}</p>
-            <p className="text-xs leading-none text-muted-foreground">
-              {user.email}
-            </p>
+            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

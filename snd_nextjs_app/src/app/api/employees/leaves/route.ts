@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { db } from '@/lib/db';
-import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
+import { db } from '@/lib/db';
 import { employeeLeaves, employees as employeesTable } from '@/lib/drizzle/schema';
+import { withAuth } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, ilike, sql } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/employees/leaves - Get leave requests for the current employee
 const getLeavesHandler = async (request: NextRequest) => {
@@ -23,7 +23,7 @@ const getLeavesHandler = async (request: NextRequest) => {
     // Get session to check user role
     const session = await getServerSession(authConfig);
     const user = session?.user;
-    
+
     // For employee users, only show their own leave requests
     if (user?.role === 'EMPLOYEE' && user.national_id) {
       const ownRows = await db
@@ -46,9 +46,7 @@ const getLeavesHandler = async (request: NextRequest) => {
     // Add search functionality
     if (search) {
       const s = `%${search}%`;
-      filters.push(
-        ilike(employeesTable.firstName, s) as any,
-      );
+      filters.push(ilike(employeesTable.firstName, s) as any);
     }
 
     const whereExpr = filters.length ? and(...filters) : undefined;
@@ -86,8 +84,12 @@ const getLeavesHandler = async (request: NextRequest) => {
     const formattedLeaves = leaves.map(leave => ({
       id: leave.id,
       leave_type: leave.leave_type,
-      start_date: leave.start_date ? new Date(leave.start_date as unknown as string).toISOString().split('T')[0] : '',
-      end_date: leave.end_date ? new Date(leave.end_date as unknown as string).toISOString().split('T')[0] : '',
+      start_date: leave.start_date
+        ? new Date(leave.start_date as unknown as string).toISOString().split('T')[0]
+        : '',
+      end_date: leave.end_date
+        ? new Date(leave.end_date as unknown as string).toISOString().split('T')[0]
+        : '',
       days: leave.days,
       status: leave.status,
       reason: leave.reason,
@@ -96,8 +98,12 @@ const getLeavesHandler = async (request: NextRequest) => {
         name: `${leave.emp_first ?? ''} ${leave.emp_last ?? ''}`.trim(),
         employee_id: leave.emp_employee_id,
       },
-      created_at: leave.created_at ? new Date(leave.created_at as unknown as string).toISOString() : '',
-      updated_at: leave.updated_at ? new Date(leave.updated_at as unknown as string).toISOString() : '',
+      created_at: leave.created_at
+        ? new Date(leave.created_at as unknown as string).toISOString()
+        : '',
+      updated_at: leave.updated_at
+        ? new Date(leave.updated_at as unknown as string).toISOString()
+        : '',
     }));
 
     return NextResponse.json({
@@ -106,14 +112,14 @@ const getLeavesHandler = async (request: NextRequest) => {
       total,
       page,
       limit,
-      message: 'Leave requests retrieved successfully'
+      message: 'Leave requests retrieved successfully',
     });
   } catch (error) {
     console.error('Error in GET /api/employees/leaves:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to fetch leave requests: ' + (error as Error).message
+        message: 'Failed to fetch leave requests: ' + (error as Error).message,
       },
       { status: 500 }
     );
@@ -128,7 +134,7 @@ const createLeaveHandler = async (request: NextRequest) => {
     // Get session to check user role
     const session = await getServerSession(authConfig);
     const user = session?.user;
-    
+
     // For employee users, ensure they can only create leave requests for themselves
     if (user?.role === 'EMPLOYEE' && user.national_id) {
       const ownRows = await db
@@ -159,14 +165,14 @@ const createLeaveHandler = async (request: NextRequest) => {
     return NextResponse.json({
       success: true,
       leave: leaveRequest,
-      message: 'Leave request created successfully'
+      message: 'Leave request created successfully',
     });
   } catch (error) {
     console.error('Error in POST /api/employees/leaves:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to create leave request: ' + (error as Error).message
+        message: 'Failed to create leave request: ' + (error as Error).message,
       },
       { status: 500 }
     );
@@ -175,4 +181,4 @@ const createLeaveHandler = async (request: NextRequest) => {
 
 // Export the wrapped handlers
 export const GET = withAuth(getLeavesHandler);
-export const POST = withAuth(createLeaveHandler); 
+export const POST = withAuth(createLeaveHandler);

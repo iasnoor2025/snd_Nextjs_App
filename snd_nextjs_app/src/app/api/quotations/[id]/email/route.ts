@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await request.json();
@@ -27,13 +24,10 @@ export async function POST(
         status: 'sent',
         sent_at: new Date().toISOString(),
         recipient_email: body.recipient_email || null,
-        message: body.message || null
-      }
+        message: body.message || null,
+      },
     });
   } catch {
-    return NextResponse.json(
-      { error: 'Failed to send quotation email' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to send quotation email' }, { status: 500 });
   }
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useI18n } from '@/hooks/use-i18n';
+import { useEffect, useState } from 'react';
 
 interface I18nProviderProps {
   children: React.ReactNode;
@@ -22,7 +22,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
       try {
         document.documentElement.lang = currentLanguage;
         document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
-        
+
         if (isRTL) {
           document.documentElement.classList.add('rtl');
         } else {
@@ -35,4 +35,4 @@ export function I18nProvider({ children }: I18nProviderProps) {
   }, [currentLanguage, isRTL, mounted]);
 
   return <>{children}</>;
-} 
+}

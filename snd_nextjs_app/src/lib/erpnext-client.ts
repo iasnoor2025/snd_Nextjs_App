@@ -14,9 +14,9 @@ export class ERPNextClient {
   private async makeRequest(endpoint: string, options: RequestInit = {}) {
     const url = `${this.baseUrl}${endpoint}`;
     const headers = {
-      'Authorization': `token ${this.apiKey}:${this.apiSecret}`,
+      Authorization: `token ${this.apiKey}:${this.apiSecret}`,
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      Accept: 'application/json',
       ...options.headers,
     };
 
@@ -39,7 +39,9 @@ export class ERPNextClient {
     if (data.data) {
       for (const item of data.data) {
         if (item.name) {
-          const detailData = await this.makeRequest(`/api/resource/Employee/${encodeURIComponent(item.name)}`);
+          const detailData = await this.makeRequest(
+            `/api/resource/Employee/${encodeURIComponent(item.name)}`
+          );
           if (detailData.data) {
             employees.push(detailData.data);
           }
@@ -51,7 +53,7 @@ export class ERPNextClient {
   }
 
   async fetchEmployeeByName(name: string): Promise<any | null> {
-    const filters = encodeURIComponent(JSON.stringify([["name", "=", name]]));
+    const filters = encodeURIComponent(JSON.stringify([['name', '=', name]]));
     const data = await this.makeRequest(`/api/resource/Employee?filters=${filters}`);
     return data.data?.[0] || null;
   }
@@ -195,7 +197,8 @@ export class ERPNextClient {
           first_name: employee.firstName,
           middle_name: employee.middleName,
           last_name: employee.lastName,
-          employee_name: `${employee.firstName} ${employee.middleName || ''} ${employee.lastName}`.trim(),
+          employee_name:
+            `${employee.firstName} ${employee.middleName || ''} ${employee.lastName}`.trim(),
           employee_number: employee.fileNumber,
           ctc: employee.basicSalary,
           cell_number: employee.phone,
@@ -232,11 +235,11 @@ export class ERPNextClient {
 
       // Map local status to ERPNext expected values
       const statusMap: { [key: string]: string } = {
-        'active': 'Active',
-        'inactive': 'Inactive',
-        'on_leave': 'Suspended',
-        'terminated': 'Left',
-        'exit': 'Left',
+        active: 'Active',
+        inactive: 'Inactive',
+        on_leave: 'Suspended',
+        terminated: 'Left',
+        exit: 'Left',
       };
       const localStatus = employee.status?.toLowerCase() || 'active';
       const erpStatus = statusMap[localStatus] || 'Active';
@@ -245,7 +248,8 @@ export class ERPNextClient {
         first_name: employee.firstName,
         middle_name: employee.middleName,
         last_name: employee.lastName,
-        employee_name: `${employee.firstName} ${employee.middleName || ''} ${employee.lastName}`.trim(),
+        employee_name:
+          `${employee.firstName} ${employee.middleName || ''} ${employee.lastName}`.trim(),
         employee_number: employee.fileNumber,
         ctc: employee.basicSalary,
         cell_number: employee.phone,
@@ -319,7 +323,8 @@ export class ERPNextClient {
         first_name: employee.firstName,
         middle_name: employee.middleName,
         last_name: employee.lastName,
-        employee_name: `${employee.firstName} ${employee.middleName || ''} ${employee.lastName}`.trim(),
+        employee_name:
+          `${employee.firstName} ${employee.middleName || ''} ${employee.lastName}`.trim(),
         employee_number: employee.fileNumber,
         ctc: employee.basicSalary,
         cell_number: employee.phone,

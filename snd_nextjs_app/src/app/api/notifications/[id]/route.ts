@@ -1,27 +1,19 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { NextResponse } from 'next/server';
 
-export async function DELETE(
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
 
     if (!id) {
-      return NextResponse.json(
-        { error: 'Notification ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Notification ID is required' }, { status: 400 });
     }
 
     // In a real application, you would delete the notification from the database
@@ -38,9 +30,6 @@ export async function DELETE(
     });
   } catch (error) {
     console.error('Error deleting notification:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete notification' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete notification' }, { status: 500 });
   }
-} 
+}

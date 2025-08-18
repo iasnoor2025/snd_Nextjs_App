@@ -1,32 +1,30 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import EquipmentDocumentUpload from '@/components/equipment/EquipmentDocumentUpload';
+import EquipmentAssignmentHistory from '@/components/equipment/EquipmentRentalHistory';
+import ExpiryDateDisplay from '@/components/shared/ExpiryDateDisplay';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import ApiService from '@/lib/api-service';
+import { useDeleteConfirmations } from '@/lib/utils/confirmation-utils';
 import {
-  ArrowLeft,
-  Edit,
-  Trash2,
-  Database,
-  Package,
-  Calendar,
-  DollarSign,
-  Hash,
-  FileText,
-  Loader2,
   AlertCircle,
-  Plus,
-} from "lucide-react";
-import { toast } from "sonner";
-import ApiService from "@/lib/api-service";
-import { Label } from "@/components/ui/label";
-import EquipmentAssignmentHistory from "@/components/equipment/EquipmentRentalHistory";
-import EquipmentDocumentUpload from "@/components/equipment/EquipmentDocumentUpload";
-import { useDeleteConfirmations } from "@/lib/utils/confirmation-utils";
-import ExpiryDateDisplay from "@/components/shared/ExpiryDateDisplay";
+  ArrowLeft,
+  Calendar,
+  Database,
+  DollarSign,
+  Edit,
+  Hash,
+  Loader2,
+  Package,
+  Trash2,
+} from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Equipment {
   id: number;
@@ -87,7 +85,7 @@ export default function EquipmentShowPage() {
 
   const handleDelete = async () => {
     if (!equipment) return;
-    
+
     const confirmed = await confirmDeleteEquipment(equipment.name);
     if (confirmed) {
       setDeleting(true);
@@ -109,31 +107,31 @@ export default function EquipmentShowPage() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      available: { 
-        className: "bg-green-100 text-green-800 border-green-200 hover:bg-green-200", 
-        label: 'Available' 
+      available: {
+        className: 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200',
+        label: 'Available',
       },
-      assigned: { 
-        className: "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200", 
-        label: 'Assigned' 
+      assigned: {
+        className: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200',
+        label: 'Assigned',
       },
-      rented: { 
-        className: "bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200", 
-        label: 'Rented' 
+      rented: {
+        className: 'bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200',
+        label: 'Rented',
       },
-      maintenance: { 
-        className: "bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200", 
-        label: 'Maintenance' 
+      maintenance: {
+        className: 'bg-orange-100 text-orange-800 border-orange-200 hover:bg-orange-200',
+        label: 'Maintenance',
       },
-      out_of_service: { 
-        className: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200", 
-        label: 'Out of Service' 
+      out_of_service: {
+        className: 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200',
+        label: 'Out of Service',
       },
     };
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || { 
-      className: "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200", 
-      label: status 
+
+    const config = statusConfig[status as keyof typeof statusConfig] || {
+      className: 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200',
+      label: status,
     };
     return <Badge className={config.className}>{config.label}</Badge>;
   };
@@ -165,10 +163,7 @@ export default function EquipmentShowPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            onClick={() => router.push('/modules/equipment-management')}
-          >
+          <Button variant="ghost" onClick={() => router.push('/modules/equipment-management')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Equipment
           </Button>
@@ -215,9 +210,9 @@ export default function EquipmentShowPage() {
                 <div className="mt-1">{getStatusBadge(equipment.status)}</div>
               </div>
             </div>
-            
+
             <Separator />
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Model Number</Label>
@@ -228,16 +223,16 @@ export default function EquipmentShowPage() {
                 <p className="text-sm">{equipment.manufacturer || 'Not specified'}</p>
               </div>
             </div>
-            
+
             <Separator />
-            
+
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Serial Number</Label>
               <p className="text-sm font-mono">{equipment.serial_number || 'Not specified'}</p>
             </div>
-            
+
             <Separator />
-            
+
             <div>
               <Label className="text-sm font-medium text-muted-foreground">Description</Label>
               <p className="text-sm">{equipment.description || 'No description available'}</p>
@@ -319,7 +314,7 @@ export default function EquipmentShowPage() {
               </div>
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Expiry Date</Label>
-                <ExpiryDateDisplay 
+                <ExpiryDateDisplay
                   date={equipment.istimara_expiry_date}
                   showIcon={true}
                   showPrefix={true}
@@ -342,25 +337,29 @@ export default function EquipmentShowPage() {
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Created At</Label>
                 <p className="text-sm">
-                  {equipment.created_at ? new Date(equipment.created_at).toLocaleString() : 'Not available'}
+                  {equipment.created_at
+                    ? new Date(equipment.created_at).toLocaleString()
+                    : 'Not available'}
                 </p>
               </div>
               <div>
                 <Label className="text-sm font-medium text-muted-foreground">Last Updated</Label>
                 <p className="text-sm">
-                  {equipment.updated_at ? new Date(equipment.updated_at).toLocaleString() : 'Not available'}
+                  {equipment.updated_at
+                    ? new Date(equipment.updated_at).toLocaleString()
+                    : 'Not available'}
                 </p>
               </div>
             </div>
           </CardContent>
-                 </Card>
-       </div>
+        </Card>
+      </div>
 
-               {/* Assignment History */}
-        <EquipmentAssignmentHistory equipmentId={equipment.id} />
+      {/* Assignment History */}
+      <EquipmentAssignmentHistory equipmentId={equipment.id} />
 
-        {/* Documents */}
-        <EquipmentDocumentUpload equipmentId={equipment.id} />
-     </div>
-   );
- } 
+      {/* Documents */}
+      <EquipmentDocumentUpload equipmentId={equipment.id} />
+    </div>
+  );
+}

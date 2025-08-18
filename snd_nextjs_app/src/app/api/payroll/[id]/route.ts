@@ -1,20 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { payrolls, employees, payrollItems, departments, designations } from '@/lib/drizzle/schema';
+import { departments, designations, employees, payrollItems, payrolls } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET({ params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: idParam } = await params;
     const id = parseInt(idParam);
 
     if (isNaN(id)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid payroll ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Invalid payroll ID' }, { status: 400 });
     }
 
     const payrollData = await db
@@ -61,7 +56,7 @@ export async function GET(
         designation: {
           id: designations.id,
           name: designations.name,
-        }
+        },
       })
       .from(payrolls)
       .leftJoin(employees, eq(payrolls.employeeId, employees.id))
@@ -71,19 +66,13 @@ export async function GET(
       .limit(1);
 
     if (!payrollData || payrollData.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'Payroll not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'Payroll not found' }, { status: 404 });
     }
 
     const payroll = payrollData[0];
-    
+
     if (!payroll) {
-      return NextResponse.json(
-        { success: false, error: 'Payroll not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'Payroll not found' }, { status: 404 });
     }
 
     // Get payroll items
@@ -134,12 +123,14 @@ export async function GET(
         id: payroll.employee?.id || 0,
         first_name: payroll.employee?.firstName || '',
         last_name: payroll.employee?.lastName || '',
-        full_name: payroll.employee ? `${payroll.employee.firstName} ${payroll.employee.lastName}` : '',
+        full_name: payroll.employee
+          ? `${payroll.employee.firstName} ${payroll.employee.lastName}`
+          : '',
         file_number: payroll.employee?.fileNumber || '',
         basic_salary: Number(payroll.employee?.basicSalary || 0),
         department: payroll.department?.name || '',
         designation: payroll.designation?.name || '',
-        status: 'active' // Default status
+        status: 'active', // Default status
       },
       items: payrollItemsData.map(item => ({
         id: item.id,
@@ -152,36 +143,26 @@ export async function GET(
         order: item.order,
         created_at: item.createdAt,
         updated_at: item.updatedAt,
-      }))
+      })),
     };
 
     return NextResponse.json({
       success: true,
-      data: transformedPayroll
+      data: transformedPayroll,
     });
-
   } catch (error) {
     console.error('Error fetching payroll:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: idParam } = await params;
     const id = parseInt(idParam);
-    
+
     if (isNaN(id)) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid payroll ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: 'Invalid payroll ID' }, { status: 400 });
     }
 
     const body = await request.json();
@@ -194,10 +175,7 @@ export async function PUT(
       .limit(1);
 
     if (existingPayroll.length === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Payroll not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: 'Payroll not found' }, { status: 404 });
     }
 
     // Calculate final amount
@@ -206,18 +184,26 @@ export async function PUT(
     const bonusAmount = Number(body.bonusAmount) || 0;
     const deductionAmount = Number(body.deductionAmount) || 0;
     const advanceDeduction = Number(body.advanceDeduction) || 0;
-    
+
     // If absent days are provided, calculate absent deduction
     let absentDeduction = 0;
     if (body.absentDays && body.month && body.year) {
       const daysInMonth = new Date(body.year, body.month, 0).getDate();
-      
+
       // Use simple formula: (Basic Salary / Total Days in Month) * Absent Days
       absentDeduction = (baseSalary / daysInMonth) * Number(body.absentDays);
-      console.log(`Absent calculation: (${baseSalary} / ${daysInMonth}) * ${body.absentDays} = ${absentDeduction}`);
+      console.log(
+        `Absent calculation: (${baseSalary} / ${daysInMonth}) * ${body.absentDays} = ${absentDeduction}`
+      );
     }
-    
-    const finalAmount = baseSalary + overtimeAmount + bonusAmount - deductionAmount - absentDeduction - advanceDeduction;
+
+    const finalAmount =
+      baseSalary +
+      overtimeAmount +
+      bonusAmount -
+      deductionAmount -
+      absentDeduction -
+      advanceDeduction;
 
     // Update payroll
     const updatedPayrolls = await db
@@ -243,9 +229,7 @@ export async function PUT(
     // Update payroll items if provided
     if (body.items && Array.isArray(body.items)) {
       // Delete existing items
-      await db
-        .delete(payrollItems)
-        .where(eq(payrollItems.payrollId, id));
+      await db.delete(payrollItems).where(eq(payrollItems.payrollId, id));
 
       // Create new items
       const payrollItemsData = body.items.map((item: any, index: number) => ({
@@ -260,17 +244,14 @@ export async function PUT(
         updatedAt: new Date().toISOString(),
       }));
 
-      await db
-        .insert(payrollItems)
-        .values(payrollItemsData);
+      await db.insert(payrollItems).values(payrollItemsData);
     }
 
     return NextResponse.json({
       success: true,
       message: 'Payroll updated successfully',
-      data: updatedPayroll
+      data: updatedPayroll,
     });
-
   } catch (error) {
     console.error('Error updating payroll:', error);
     return NextResponse.json(
@@ -280,18 +261,13 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
   try {
     const { id: idParam } = await params;
     const id = parseInt(idParam);
-    
+
     if (isNaN(id)) {
-      return NextResponse.json(
-        { success: false, message: 'Invalid payroll ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, message: 'Invalid payroll ID' }, { status: 400 });
     }
 
     // Check if payroll exists
@@ -302,27 +278,19 @@ export async function DELETE(
       .limit(1);
 
     if (existingPayroll.length === 0) {
-      return NextResponse.json(
-        { success: false, message: 'Payroll not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, message: 'Payroll not found' }, { status: 404 });
     }
 
     // Delete payroll items first
-    await db
-      .delete(payrollItems)
-      .where(eq(payrollItems.payrollId, id));
+    await db.delete(payrollItems).where(eq(payrollItems.payrollId, id));
 
     // Delete payroll
-    await db
-      .delete(payrolls)
-      .where(eq(payrolls.id, id));
+    await db.delete(payrolls).where(eq(payrolls.id, id));
 
     return NextResponse.json({
       success: true,
-      message: 'Payroll deleted successfully'
+      message: 'Payroll deleted successfully',
     });
-
   } catch (error) {
     console.error('Error deleting payroll:', error);
     return NextResponse.json(

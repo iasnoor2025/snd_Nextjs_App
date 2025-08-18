@@ -1,14 +1,20 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { use, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface Customer {
@@ -33,7 +39,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
   const router = useRouter();
   // Unwrap params Promise immediately - this must be called unconditionally
   const { id } = use(params);
-  
+
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,13 +56,13 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
     postalCode: '',
     country: '',
     companyName: '',
-    notes: ''
+    notes: '',
   });
 
   useEffect(() => {
     const fetchCustomer = async () => {
       if (!id) return;
-      
+
       try {
         const response = await fetch(`/api/customers/${id}`);
         if (response.ok) {
@@ -76,7 +82,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
               postalCode: data.customer.postalCode || '',
               country: data.customer.country || '',
               companyName: data.customer.companyName || '',
-              notes: data.customer.notes || ''
+              notes: data.customer.notes || '',
             });
           } else {
             toast.error('Failed to fetch customer');
@@ -101,14 +107,14 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id) return;
-    
+
     setSaving(true);
 
     try {
@@ -119,7 +125,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
         },
         body: JSON.stringify({
           id: parseInt(id),
-          ...formData
+          ...formData,
         }),
       });
 
@@ -197,7 +203,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    onChange={e => handleInputChange('name', e.target.value)}
                     required
                   />
                 </div>
@@ -208,7 +214,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    onChange={e => handleInputChange('email', e.target.value)}
                   />
                 </div>
 
@@ -217,7 +223,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                   <Input
                     id="phone"
                     value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    onChange={e => handleInputChange('phone', e.target.value)}
                   />
                 </div>
 
@@ -226,7 +232,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                   <Input
                     id="companyName"
                     value={formData.companyName}
-                    onChange={(e) => handleInputChange('companyName', e.target.value)}
+                    onChange={e => handleInputChange('companyName', e.target.value)}
                   />
                 </div>
 
@@ -235,7 +241,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                   <Input
                     id="contactPerson"
                     value={formData.contactPerson}
-                    onChange={(e) => handleInputChange('contactPerson', e.target.value)}
+                    onChange={e => handleInputChange('contactPerson', e.target.value)}
                   />
                 </div>
               </div>
@@ -247,7 +253,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                   <Textarea
                     id="address"
                     value={formData.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    onChange={e => handleInputChange('address', e.target.value)}
                     rows={3}
                   />
                 </div>
@@ -258,7 +264,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                     <Input
                       id="city"
                       value={formData.city}
-                      onChange={(e) => handleInputChange('city', e.target.value)}
+                      onChange={e => handleInputChange('city', e.target.value)}
                     />
                   </div>
 
@@ -267,7 +273,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                     <Input
                       id="state"
                       value={formData.state}
-                      onChange={(e) => handleInputChange('state', e.target.value)}
+                      onChange={e => handleInputChange('state', e.target.value)}
                     />
                   </div>
                 </div>
@@ -278,7 +284,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                     <Input
                       id="postalCode"
                       value={formData.postalCode}
-                      onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                      onChange={e => handleInputChange('postalCode', e.target.value)}
                     />
                   </div>
 
@@ -287,7 +293,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                     <Input
                       id="country"
                       value={formData.country}
-                      onChange={(e) => handleInputChange('country', e.target.value)}
+                      onChange={e => handleInputChange('country', e.target.value)}
                     />
                   </div>
                 </div>
@@ -301,7 +307,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                   <Label htmlFor="status">Status</Label>
                   <Select
                     value={formData.status}
-                    onValueChange={(value) => handleInputChange('status', value)}
+                    onValueChange={value => handleInputChange('status', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
@@ -319,7 +325,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                     type="checkbox"
                     id="isActive"
                     checked={formData.isActive}
-                    onChange={(e) => handleInputChange('isActive', e.target.checked)}
+                    onChange={e => handleInputChange('isActive', e.target.checked)}
                     className="rounded border-gray-300"
                   />
                   <Label htmlFor="isActive">Active Customer</Label>
@@ -331,7 +337,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 <Textarea
                   id="notes"
                   value={formData.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
+                  onChange={e => handleInputChange('notes', e.target.value)}
                   rows={4}
                   placeholder="Additional notes about the customer..."
                 />

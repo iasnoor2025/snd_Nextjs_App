@@ -1,15 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
-import { salaryIncrements, employees, users } from '@/lib/drizzle/schema';
+import { employees, salaryIncrements, users } from '@/lib/drizzle/schema';
+import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
-import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -90,24 +87,32 @@ export async function GET(
     // Transform the data to match the expected interface
     const transformedData = {
       ...item!,
-      employee: item!.employee ? {
-        id: item!.employee.id,
-        first_name: item!.employee.first_name,
-        last_name: item!.employee.last_name,
-        employee_id: item!.employee.employee_id,
-      } : undefined,
-      requested_by_user: item!.requested_by_user ? {
-        id: item!.requested_by_user.id,
-        name: item!.requested_by_user.name,
-      } : undefined,
-      approved_by_user: item!.approved_by_user ? {
-        id: item!.approved_by_user.id,
-        name: item!.approved_by_user.name,
-      } : undefined,
-      rejected_by_user: item!.rejected_by_user ? {
-        id: item!.rejected_by_user.id,
-        name: item!.rejected_by_user.name,
-      } : undefined,
+      employee: item!.employee
+        ? {
+            id: item!.employee.id,
+            first_name: item!.employee.first_name,
+            last_name: item!.employee.last_name,
+            employee_id: item!.employee.employee_id,
+          }
+        : undefined,
+      requested_by_user: item!.requested_by_user
+        ? {
+            id: item!.requested_by_user.id,
+            name: item!.requested_by_user.name,
+          }
+        : undefined,
+      approved_by_user: item!.approved_by_user
+        ? {
+            id: item!.approved_by_user.id,
+            name: item!.approved_by_user.name,
+          }
+        : undefined,
+      rejected_by_user: item!.rejected_by_user
+        ? {
+            id: item!.rejected_by_user.id,
+            name: item!.rejected_by_user.name,
+          }
+        : undefined,
     };
 
     return NextResponse.json({
@@ -116,17 +121,11 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching salary increment:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -191,7 +190,8 @@ export async function PUT(
     if (new_base_salary !== undefined) updateData.newBaseSalary = new_base_salary;
     if (new_food_allowance !== undefined) updateData.newFoodAllowance = new_food_allowance;
     if (new_housing_allowance !== undefined) updateData.newHousingAllowance = new_housing_allowance;
-    if (new_transport_allowance !== undefined) updateData.newTransportAllowance = new_transport_allowance;
+    if (new_transport_allowance !== undefined)
+      updateData.newTransportAllowance = new_transport_allowance;
 
     // Update the salary increment
     const [updatedIncrement] = await db
@@ -219,10 +219,7 @@ export async function PUT(
     });
   } catch (error) {
     console.error('Error updating salary increment:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -278,9 +275,6 @@ export async function DELETE(
     });
   } catch (error) {
     console.error('Error deleting salary increment:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

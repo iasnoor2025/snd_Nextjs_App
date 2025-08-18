@@ -12,17 +12,17 @@ export class LogoLoader {
     try {
       // For client-side usage in Next.js, we need to use the public URL
       const logoUrl = '/snd-logo.png';
-      
+
       // Fetch the logo from the public directory
       const response = await fetch(logoUrl);
       if (!response.ok) {
         throw new Error(`Failed to fetch logo: ${response.statusText}`);
       }
-      
+
       const blob = await response.blob();
-      
+
       // Convert blob to base64
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64 = reader.result as string;
@@ -44,11 +44,11 @@ export class LogoLoader {
     try {
       // This would work in a browser environment
       // For server-side PDF generation, you'd need a different approach
-      
+
       const response = await fetch(logoUrl);
       const blob = await response.blob();
-      
-      return new Promise((resolve) => {
+
+      return new Promise(resolve => {
         const reader = new FileReader();
         reader.onloadend = () => {
           const base64 = reader.result as string;

@@ -2,21 +2,21 @@ import { NotificationService } from './notification-service';
 
 /**
  * Helper functions to integrate approval notifications into your existing approval workflows
- * 
+ *
  * Usage examples:
- * 
+ *
  * 1. When a timesheet is submitted for approval:
  *    await notifyTimesheetApproval(managerEmail, employeeName, week, timesheetId);
- * 
+ *
  * 2. When a leave request is submitted:
  *    await notifyLeaveApproval(managerEmail, employeeName, leaveType, startDate, leaveRequestId);
- * 
+ *
  * 3. When an advance request is submitted:
  *    await notifyAdvanceApproval(managerEmail, employeeName, amount, reason, advanceRequestId);
- * 
+ *
  * 4. When equipment is requested:
  *    await notifyEquipmentApproval(managerEmail, employeeName, equipmentType, equipmentRequestId);
- * 
+ *
  * 5. When there are bulk items needing approval:
  *    await notifyBulkApproval(managerEmail, 'timesheets', 5, '/super-admin-approvals');
  */
@@ -44,7 +44,7 @@ export class ApprovalNotificationHelper {
       NotificationService.info({
         title: 'Timesheet Approval Required',
         message: `${employeeName}'s timesheet for ${week} needs your approval`,
-        actionUrl: '/modules/timesheet-management'
+        actionUrl: '/modules/timesheet-management',
       });
 
       console.log(`Timesheet approval notification sent to ${managerEmail}`);
@@ -77,7 +77,7 @@ export class ApprovalNotificationHelper {
       NotificationService.info({
         title: 'Leave Request Approval',
         message: `${employeeName} requested ${leaveType} leave starting ${startDate}`,
-        actionUrl: '/modules/leave-management'
+        actionUrl: '/modules/leave-management',
       });
 
       console.log(`Leave approval notification sent to ${managerEmail}`);
@@ -110,7 +110,7 @@ export class ApprovalNotificationHelper {
       NotificationService.info({
         title: 'Advance Request Approval',
         message: `${employeeName} requested $${amount} advance for ${reason}`,
-        actionUrl: '/modules/payroll-management'
+        actionUrl: '/modules/payroll-management',
       });
 
       console.log(`Advance approval notification sent to ${managerEmail}`);
@@ -141,7 +141,7 @@ export class ApprovalNotificationHelper {
       NotificationService.info({
         title: 'Equipment Request Approval',
         message: `${employeeName} requested ${equipmentType}`,
-        actionUrl: '/modules/equipment-management'
+        actionUrl: '/modules/equipment-management',
       });
 
       console.log(`Equipment approval notification sent to ${managerEmail}`);
@@ -172,7 +172,7 @@ export class ApprovalNotificationHelper {
       NotificationService.warning({
         title: 'Bulk Approval Required',
         message: `You have ${count} ${itemType} items waiting for approval`,
-        actionUrl
+        actionUrl,
       });
 
       console.log(`Bulk approval notification sent to ${managerEmail}`);
@@ -184,16 +184,12 @@ export class ApprovalNotificationHelper {
   /**
    * Notify employee when their request is approved
    */
-  static async notifyApprovalGranted(
-    employeeEmail: string,
-    itemType: string,
-    itemName: string
-  ) {
+  static async notifyApprovalGranted(employeeEmail: string, itemType: string, itemName: string) {
     try {
       // Show success toast
       NotificationService.success({
         title: 'Approval Granted',
-        message: `Your ${itemType} "${itemName}" has been approved!`
+        message: `Your ${itemType} "${itemName}" has been approved!`,
       });
 
       console.log(`Approval granted notification sent to ${employeeEmail}`);
@@ -215,9 +211,9 @@ export class ApprovalNotificationHelper {
       // Show error toast
       NotificationService.error({
         title: 'Approval Rejected',
-        message: reason 
+        message: reason
           ? `Your ${itemType} "${itemName}" was rejected: ${reason}`
-          : `Your ${itemType} "${itemName}" was rejected`
+          : `Your ${itemType} "${itemName}" was rejected`,
       });
 
       console.log(`Approval rejected notification sent to ${employeeEmail}`);

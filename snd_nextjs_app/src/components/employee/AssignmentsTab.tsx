@@ -1,19 +1,50 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Plus, Edit, Trash2, RefreshCw, Briefcase, MapPin, Calendar, CheckCircle, XCircle } from "lucide-react";
-import { toast } from "sonner";
-import { format } from "date-fns";
-import { useRBAC } from "@/lib/rbac/rbac-context";
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import { useRBAC } from '@/lib/rbac/rbac-context';
+import { format } from 'date-fns';
+import {
+  Briefcase,
+  Calendar,
+  CheckCircle,
+  Edit,
+  FileText,
+  MapPin,
+  Plus,
+  RefreshCw,
+  Trash2,
+  XCircle,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Assignment {
   id: number;
@@ -150,9 +181,9 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         formData: {
           ...formData,
           id: selectedAssignment.id,
-        }
+        },
       });
-      
+
       const response = await fetch(`/api/employees/${employeeId}/assignments`, {
         method: 'PUT',
         headers: {
@@ -190,9 +221,12 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
     setDeletingId(selectedAssignment.id);
     try {
-      const response = await fetch(`/api/employees/${employeeId}/assignments?assignmentId=${selectedAssignment.id}`, {
-        method: 'DELETE',
-      });
+      const response = await fetch(
+        `/api/employees/${employeeId}/assignments?assignmentId=${selectedAssignment.id}`,
+        {
+          method: 'DELETE',
+        }
+      );
 
       if (response.ok) {
         toast.success('Assignment deleted successfully');
@@ -232,10 +266,10 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
   const getStatusBadge = (status: string) => {
     const statusColors: { [key: string]: string } = {
-      'active': 'bg-green-100 text-green-800',
-      'completed': 'bg-blue-100 text-blue-800',
-      'cancelled': 'bg-red-100 text-red-800',
-      'pending': 'bg-yellow-100 text-yellow-800',
+      active: 'bg-green-100 text-green-800',
+      completed: 'bg-blue-100 text-blue-800',
+      cancelled: 'bg-red-100 text-red-800',
+      pending: 'bg-yellow-100 text-yellow-800',
     };
 
     return (
@@ -247,10 +281,10 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
   const getTypeBadge = (type: string) => {
     const typeColors: { [key: string]: string } = {
-      'manual': 'bg-gray-100 text-gray-800',
-      'project': 'bg-blue-100 text-blue-800',
-      'rental': 'bg-purple-100 text-purple-800',
-      'rental_item': 'bg-purple-100 text-purple-800',
+      manual: 'bg-gray-100 text-gray-800',
+      project: 'bg-blue-100 text-blue-800',
+      rental: 'bg-purple-100 text-purple-800',
+      rental_item: 'bg-purple-100 text-purple-800',
     };
 
     return (
@@ -262,41 +296,41 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
   const getAssignmentDetails = (assignment: Assignment) => {
     const details: string[] = [];
-    
+
     if (assignment.project) {
       details.push(`Project: ${assignment.project.name}`);
     }
-    
+
     if (assignment.rental) {
       details.push(`Rental: ${assignment.rental.rental_number}`);
       if (assignment.rental.project_name) {
         details.push(`Customer: ${assignment.rental.project_name}`);
       }
     }
-    
+
     return details.join(' • ');
   };
 
   const getCurrentAssignment = () => {
     if (assignments.length === 0) return null;
-    
+
     // Sort assignments by start_date (newest first)
     const sortedAssignments = [...assignments].sort((a, b) => {
       const aDate = a.start_date ? new Date(a.start_date) : new Date(0);
       const bDate = b.start_date ? new Date(b.start_date) : new Date(0);
       return bDate.getTime() - aDate.getTime();
     });
-    
+
     // Return the assignment with the latest start_date
     return sortedAssignments[0] || null;
   };
 
   const getAssignmentHistory = () => {
     const currentAssignment = getCurrentAssignment();
-    
+
     // All assignments except the current one go to history
     const history = assignments.filter(a => !currentAssignment || a.id !== currentAssignment.id);
-    
+
     return history;
   };
 
@@ -338,123 +372,124 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
             Manage and view employee project and rental assignments
           </p>
         </div>
-                 {!currentAssignment && hasPermission('create', 'employee-assignment') && (
-                   <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-                     <DialogTrigger asChild>
-                       <Button onClick={() => resetForm()}>
-                         <Plus className="mr-2 h-4 w-4" />
-                         Add Assignment
-                       </Button>
-                     </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add New Assignment</DialogTitle>
-              <DialogDescription>
-                Create a new assignment for this employee
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Assignment Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Enter assignment name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="type">Assignment Type</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select assignment type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="manual">Manual</SelectItem>
-                    <SelectItem value="project">Project</SelectItem>
-                    <SelectItem value="rental">Rental</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="location">Location</Label>
-                <Input
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  placeholder="Enter location"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+        {!currentAssignment && hasPermission('create', 'employee-assignment') && (
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <DialogTrigger asChild>
+              <Button onClick={() => resetForm()}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Assignment
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add New Assignment</DialogTitle>
+                <DialogDescription>Create a new assignment for this employee</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
                 <div>
-                  <Label htmlFor="start_date">Start Date *</Label>
+                  <Label htmlFor="name">Assignment Name *</Label>
                   <Input
-                    id="start_date"
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
+                    id="name"
+                    value={formData.name}
+                    onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Enter assignment name"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="end_date">End Date</Label>
+                  <Label htmlFor="type">Assignment Type</Label>
+                  <Select
+                    value={formData.type}
+                    onValueChange={value => setFormData(prev => ({ ...prev, type: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select assignment type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manual">Manual</SelectItem>
+                      <SelectItem value="project">Project</SelectItem>
+                      <SelectItem value="rental">Rental</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="location">Location</Label>
                   <Input
-                    id="end_date"
-                    type="date"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
+                    id="location"
+                    value={formData.location}
+                    onChange={e => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                    placeholder="Enter location"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="start_date">Start Date *</Label>
+                    <Input
+                      id="start_date"
+                      type="date"
+                      value={formData.start_date}
+                      onChange={e => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="end_date">End Date</Label>
+                    <Input
+                      id="end_date"
+                      type="date"
+                      value={formData.end_date}
+                      onChange={e => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={value => setFormData(prev => ({ ...prev, status: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Active</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="notes">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Enter notes (optional)"
                   />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleCreate}
+                  disabled={submitting || !formData.name || !formData.start_date}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                  </SelectContent>
-                </Select>
+                  {submitting ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create
+                    </>
+                  )}
+                </Button>
               </div>
-              <div>
-                <Label htmlFor="notes">Notes</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Enter notes (optional)"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreate} disabled={submitting || !formData.name || !formData.start_date}>
-                {submitting ? (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create
-                  </>
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
 
@@ -490,9 +525,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                 )}
               </div>
             </CardTitle>
-            <CardDescription>
-              {currentAssignment.name}
-            </CardDescription>
+            <CardDescription>{currentAssignment.name}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -506,8 +539,10 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>Period:</strong> {format(new Date(currentAssignment.start_date), 'MMM d, yyyy')}
-                    {currentAssignment.end_date && ` - ${format(new Date(currentAssignment.end_date), 'MMM d, yyyy')}`}
+                    <strong>Period:</strong>{' '}
+                    {format(new Date(currentAssignment.start_date), 'MMM d, yyyy')}
+                    {currentAssignment.end_date &&
+                      ` - ${format(new Date(currentAssignment.end_date), 'MMM d, yyyy')}`}
                   </span>
                 </div>
                 {getAssignmentDetails(currentAssignment) && (
@@ -523,7 +558,9 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                 {getTypeBadge(currentAssignment.type)}
                 <Badge
                   className={
-                    currentAssignment.status === 'active' ? 'bg-green-500 text-white' : 'bg-gray-400 text-white'
+                    currentAssignment.status === 'active'
+                      ? 'bg-green-500 text-white'
+                      : 'bg-gray-400 text-white'
                   }
                 >
                   {currentAssignment.status || 'active'}
@@ -566,31 +603,23 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {assignmentHistory.map((assignment) => (
+                {assignmentHistory.map(assignment => (
                   <TableRow key={assignment.id}>
-                    <TableCell className="font-medium">
-                      {assignment.name}
-                    </TableCell>
-                    <TableCell>
-                      {getTypeBadge(assignment.type)}
-                    </TableCell>
+                    <TableCell className="font-medium">{assignment.name}</TableCell>
+                    <TableCell>{getTypeBadge(assignment.type)}</TableCell>
                     <TableCell>
                       <div className="text-sm text-muted-foreground">
                         {getAssignmentDetails(assignment) || '-'}
                       </div>
                     </TableCell>
+                    <TableCell>{assignment.location || '-'}</TableCell>
+                    <TableCell>{format(new Date(assignment.start_date), 'MMM d, yyyy')}</TableCell>
                     <TableCell>
-                      {assignment.location || '-'}
+                      {assignment.end_date
+                        ? format(new Date(assignment.end_date), 'MMM d, yyyy')
+                        : '-'}
                     </TableCell>
-                    <TableCell>
-                      {format(new Date(assignment.start_date), 'MMM d, yyyy')}
-                    </TableCell>
-                    <TableCell>
-                      {assignment.end_date ? format(new Date(assignment.end_date), 'MMM d, yyyy') : '-'}
-                    </TableCell>
-                    <TableCell>
-                      {getStatusBadge(assignment.status)}
-                    </TableCell>
+                    <TableCell>{getStatusBadge(assignment.status)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         {hasPermission('update', 'employee-assignment') && (
@@ -626,9 +655,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Assignment</DialogTitle>
-            <DialogDescription>
-              Update assignment details
-            </DialogDescription>
+            <DialogDescription>Update assignment details</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -636,7 +663,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
               <Input
                 id="edit-name"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
                 placeholder="Enter assignment name"
               />
             </div>
@@ -644,7 +671,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
               <Label htmlFor="edit-type">Assignment Type</Label>
               <Select
                 value={formData.type}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}
+                onValueChange={value => setFormData(prev => ({ ...prev, type: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select assignment type" />
@@ -661,7 +688,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
               <Input
                 id="edit-location"
                 value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                onChange={e => setFormData(prev => ({ ...prev, location: e.target.value }))}
                 placeholder="Enter location"
               />
             </div>
@@ -672,7 +699,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                   id="edit-start-date"
                   type="date"
                   value={formData.start_date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
+                  onChange={e => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
                 />
               </div>
               <div>
@@ -681,7 +708,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
                   id="edit-end-date"
                   type="date"
                   value={formData.end_date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
+                  onChange={e => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
                 />
               </div>
             </div>
@@ -689,7 +716,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
               <Label htmlFor="edit-status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                onValueChange={value => setFormData(prev => ({ ...prev, status: value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
@@ -707,7 +734,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
               <Textarea
                 id="edit-notes"
                 value={formData.notes}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Enter notes (optional)"
               />
             </div>
@@ -716,7 +743,10 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleEdit} disabled={submitting || !formData.name || !formData.start_date}>
+            <Button
+              onClick={handleEdit}
+              disabled={submitting || !formData.name || !formData.start_date}
+            >
               {submitting ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -746,11 +776,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deletingId !== null}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={deletingId !== null}>
               {deletingId !== null ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -768,4 +794,4 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
       </Dialog>
     </div>
   );
-} 
+}

@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { projects as projectsTable } from '@/lib/drizzle/schema';
-import { and, or, ilike, eq, desc } from 'drizzle-orm';
-import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
-export const GET = withPermission(
-  async (request: NextRequest) => {
+import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
+import { and, desc, eq, ilike, or } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
+export const GET = withPermission(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -34,7 +33,12 @@ export const GET = withPermission(
 
     const filters: any[] = [];
     if (search) {
-      filters.push(or(ilike(projectsTable.name, `%${search}%`), ilike(projectsTable.description, `%${search}%`)));
+      filters.push(
+        or(
+          ilike(projectsTable.name, `%${search}%`),
+          ilike(projectsTable.description, `%${search}%`)
+        )
+      );
     }
     if (status && status !== 'all') {
       filters.push(eq(projectsTable.status, status));
@@ -56,7 +60,10 @@ export const GET = withPermission(
       .orderBy(desc(projectsTable.createdAt))
       .offset(skip)
       .limit(limit);
-    const countRows = await db.select({ id: projectsTable.id }).from(projectsTable).where(whereExpr as any);
+    const countRows = await db
+      .select({ id: projectsTable.id })
+      .from(projectsTable)
+      .where(whereExpr as any);
     const total = countRows.length;
 
     // Transform the data to match the frontend expectations
@@ -85,17 +92,11 @@ export const GET = withPermission(
     });
   } catch (error) {
     console.error('Error fetching projects:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch projects' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 });
   }
-  },
-  PermissionConfigs.project.read
-);
+}, PermissionConfigs.project.read);
 
-export const POST = withPermission(
-  async (request: NextRequest) => {
+export const POST = withPermission(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const {
@@ -145,41 +146,56 @@ export const POST = withPermission(
         status: status || 'planning',
         budget: budget ? String(parseFloat(budget)) : null,
         notes:
-          (notes || objectives || scope || deliverables || constraints || assumptions || risks || quality_standards || communication_plan || stakeholder_management || change_management || procurement_plan || resource_plan || schedule_plan || cost_plan || quality_plan || risk_plan || communication_plan_detailed || stakeholder_plan || change_plan || procurement_plan_detailed || resource_plan_detailed || schedule_plan_detailed || cost_plan_detailed || quality_plan_detailed || risk_plan_detailed) ?? null,
-          updatedAt: new Date().toISOString(),
+          (notes ||
+            objectives ||
+            scope ||
+            deliverables ||
+            constraints ||
+            assumptions ||
+            risks ||
+            quality_standards ||
+            communication_plan ||
+            stakeholder_management ||
+            change_management ||
+            procurement_plan ||
+            resource_plan ||
+            schedule_plan ||
+            cost_plan ||
+            quality_plan ||
+            risk_plan ||
+            communication_plan_detailed ||
+            stakeholder_plan ||
+            change_plan ||
+            procurement_plan_detailed ||
+            resource_plan_detailed ||
+            schedule_plan_detailed ||
+            cost_plan_detailed ||
+            quality_plan_detailed ||
+            risk_plan_detailed) ??
+          null,
+        updatedAt: new Date().toISOString(),
       })
       .returning();
     const project = inserted[0];
 
-    return NextResponse.json({
-      success: true,
-      data: project,
-      message: 'Project created successfully'
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        success: true,
+        data: project,
+        message: 'Project created successfully',
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error creating project:', error);
-    return NextResponse.json(
-      { error: 'Failed to create project' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
   }
-  },
-  PermissionConfigs.project.create
-);
+}, PermissionConfigs.project.create);
 
-export const PUT = withPermission(
-  async (request: NextRequest) => {
+export const PUT = withPermission(async (request: NextRequest) => {
   try {
     const body = await request.json();
-    const {
-      id,
-      name,
-      description,
-      status,
-      start_date,
-      end_date,
-      budget,
-    } = body;
+    const { id, name, description, status, start_date, end_date, budget } = body;
 
     const updated = await db
       .update(projectsTable)
@@ -199,17 +215,11 @@ export const PUT = withPermission(
     return NextResponse.json(project);
   } catch (error) {
     console.error('Error updating project:', error);
-    return NextResponse.json(
-      { error: 'Failed to update project' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update project' }, { status: 500 });
   }
-  },
-  PermissionConfigs.project.update
-);
+}, PermissionConfigs.project.update);
 
-export const DELETE = withPermission(
-  async (request: NextRequest) => {
+export const DELETE = withPermission(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { id } = body;
@@ -219,11 +229,6 @@ export const DELETE = withPermission(
     return NextResponse.json({ message: 'Project deleted successfully' });
   } catch (error) {
     console.error('Error deleting project:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete project' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete project' }, { status: 500 });
   }
-  },
-  PermissionConfigs.project.delete
-);
+}, PermissionConfigs.project.delete);

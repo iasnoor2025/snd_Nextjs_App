@@ -1,38 +1,38 @@
-import { NextResponse } from 'next/server';
+import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { employeeDocuments } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth-config";
+import { getServerSession } from 'next-auth';
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
     console.log('Testing employee documents API...');
-    
+
     // Test 1: Check authentication
     console.log('Testing authentication...');
     const session = await getServerSession(authOptions);
     console.log('Session:', session ? 'exists' : 'none');
     console.log('User:', session?.user?.email);
     console.log('Role:', session?.user?.role);
-    
+
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     // Test 2: Check database connection
     console.log('Testing database connection...');
     const testQuery = await db
       .select({ count: employeeDocuments.id })
       .from(employeeDocuments)
       .limit(1);
-    
+
     console.log('Database test result:', testQuery);
-    
+
     // Test 3: Check if we can query by employee ID
     console.log('Testing employee ID query...');
     const employeeId = 284; // Use a known employee ID
-    
+
     const documentsRows = await db
       .select({
         id: employeeDocuments.id,
@@ -51,7 +51,7 @@ export async function GET() {
 
     console.log('Query successful, found:', documentsRows.length, 'documents');
     console.log('Sample document:', documentsRows[0]);
-    
+
     // Test 4: Format response
     const formattedDocuments = documentsRows.map(doc => ({
       id: doc.id,
@@ -74,39 +74,38 @@ export async function GET() {
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
     }));
-    
+
     console.log('Formatted documents:', formattedDocuments);
-    
+
     return NextResponse.json({
       success: true,
       session: {
         user: session.user.email,
         role: session.user.role,
-        id: session.user.id
+        id: session.user.id,
       },
       documents: formattedDocuments,
       count: documentsRows.length,
-      message: 'Test completed successfully'
+      message: 'Test completed successfully',
     });
-    
   } catch (error) {
     console.error('Error in test employee documents API:', error);
-    
+
     let errorMessage = 'Internal server error';
     let errorDetails = '';
-    
+
     if (error instanceof Error) {
       errorMessage = error.message;
       errorDetails = error.stack || '';
     }
-    
+
     console.error('Error details:', { message: errorMessage, stack: errorDetails });
-    
+
     return NextResponse.json(
-      { 
+      {
         error: errorMessage,
         details: errorDetails,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       { status: 500 }
     );

@@ -1,12 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { timesheets, employees, users, projects as projectsTable, rentals, employeeAssignments } from '@/lib/drizzle/schema';
-import { eq, and, gte, lte, asc } from 'drizzle-orm';
+import {
+  employeeAssignments,
+  employees,
+  projects as projectsTable,
+  rentals,
+  timesheets,
+  users,
+} from '@/lib/drizzle/schema';
 import { withAuth } from '@/lib/rbac/api-middleware';
+import { and, asc, eq, gte, lte } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export const GET = withAuth(async (request: NextRequest) => {
   try {
-
     const { searchParams } = new URL(request.url);
     const month = searchParams.get('month') || new Date().toISOString().slice(0, 7); // YYYY-MM format
     const employeeId = searchParams.get('employeeId') || '';
@@ -34,7 +40,7 @@ export const GET = withAuth(async (request: NextRequest) => {
     }
 
     // Get timesheets for the month
-    const timesheetsData = await db
+    const timesheetsData = (await db
       .select({
         id: timesheets.id,
         employeeId: timesheets.employeeId,
@@ -69,23 +75,27 @@ export const GET = withAuth(async (request: NextRequest) => {
       .leftJoin(rentals, eq(timesheets.rentalId, rentals.id))
       .leftJoin(employeeAssignments, eq(timesheets.assignmentId, employeeAssignments.id))
       .where(and(...whereConditions))
-      .orderBy(asc(timesheets.date)) as any[];
-
-
+      .orderBy(asc(timesheets.date))) as any[];
 
     // Create calendar data
     const calendar: { [key: string]: any } = {};
     const daysInMonth = new Date(parseInt(year), parseInt(monthNum), 0).getDate();
-    
-
 
     // Fill all days in the month with default values
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${year}-${monthNum.padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
       const date = new Date(dateStr);
       const dayOfWeek = date.getDay();
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      
+      const dayNames = [
+        'Sunday',
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+      ];
+
       calendar[dateStr] = {
         date: dateStr,
         day_of_week: dayOfWeek,
@@ -114,18 +124,30 @@ export const GET = withAuth(async (request: NextRequest) => {
           dateStr = dateString;
         }
       }
-      
+
       if (calendar[dateStr]) {
-        const regularHours = typeof timesheet.hoursWorked === 'string' ? parseFloat(timesheet.hoursWorked) : Number(timesheet.hoursWorked) || 0;
-        const overtimeHours = typeof timesheet.overtimeHours === 'string' ? parseFloat(timesheet.overtimeHours) : Number(timesheet.overtimeHours) || 0;
+        const regularHours =
+          typeof timesheet.hoursWorked === 'string'
+            ? parseFloat(timesheet.hoursWorked)
+            : Number(timesheet.hoursWorked) || 0;
+        const overtimeHours =
+          typeof timesheet.overtimeHours === 'string'
+            ? parseFloat(timesheet.overtimeHours)
+            : Number(timesheet.overtimeHours) || 0;
         calendar[dateStr].regular_hours += regularHours;
         calendar[dateStr].overtime_hours += overtimeHours;
         calendar[dateStr].timesheets.push({
           id: timesheet.id.toString(),
           employeeId: timesheet.employeeId.toString(),
           date: dateStr,
-          hoursWorked: typeof timesheet.hoursWorked === 'string' ? parseFloat(timesheet.hoursWorked) : Number(timesheet.hoursWorked) || 0,
-          overtimeHours: typeof timesheet.overtimeHours === 'string' ? parseFloat(timesheet.overtimeHours) : Number(timesheet.overtimeHours) || 0,
+          hoursWorked:
+            typeof timesheet.hoursWorked === 'string'
+              ? parseFloat(timesheet.hoursWorked)
+              : Number(timesheet.hoursWorked) || 0,
+          overtimeHours:
+            typeof timesheet.overtimeHours === 'string'
+              ? parseFloat(timesheet.overtimeHours)
+              : Number(timesheet.overtimeHours) || 0,
           status: timesheet.status || 'pending',
           projectId: timesheet.projectId?.toString() || '',
           rentalId: timesheet.rentalId?.toString() || '',
@@ -137,65 +159,84 @@ export const GET = withAuth(async (request: NextRequest) => {
             firstName: timesheet.employeeFirstName,
             lastName: timesheet.employeeLastName,
             fileNumber: timesheet.employeeFileNumber,
-            user: timesheet.userName ? {
-              name: timesheet.userName,
-              email: timesheet.userEmail,
-            } : undefined,
+            user: timesheet.userName
+              ? {
+                  name: timesheet.userName,
+                  email: timesheet.userEmail,
+                }
+              : undefined,
           },
-          project: timesheet.projectId ? {
-            id: timesheet.projectId.toString(),
-            name: timesheet.projectName,
-          } : undefined,
-          rental: timesheet.rentalId ? {
-            id: timesheet.rentalId.toString(),
-            rentalNumber: timesheet.rentalNumber,
-          } : undefined,
-          assignment: timesheet.assignmentId ? {
-            id: timesheet.assignmentId.toString(),
-            name: timesheet.assignmentName || '',
-            type: timesheet.assignmentType,
-          } : undefined,
+          project: timesheet.projectId
+            ? {
+                id: timesheet.projectId.toString(),
+                name: timesheet.projectName,
+              }
+            : undefined,
+          rental: timesheet.rentalId
+            ? {
+                id: timesheet.rentalId.toString(),
+                rentalNumber: timesheet.rentalNumber,
+              }
+            : undefined,
+          assignment: timesheet.assignmentId
+            ? {
+                id: timesheet.assignmentId.toString(),
+                name: timesheet.assignmentName || '',
+                type: timesheet.assignmentType,
+              }
+            : undefined,
         });
       }
     });
 
     // Calculate summary - properly handle Decimal types
     const totalRegularHours = timesheetsData.reduce((sum, t) => {
-      const hours = typeof t.hoursWorked === 'string' ? parseFloat(t.hoursWorked) : Number(t.hoursWorked) || 0;
+      const hours =
+        typeof t.hoursWorked === 'string' ? parseFloat(t.hoursWorked) : Number(t.hoursWorked) || 0;
       return sum + hours;
     }, 0);
     const totalOvertimeHours = timesheetsData.reduce((sum, t) => {
-      const hours = typeof t.overtimeHours === 'string' ? parseFloat(t.overtimeHours) : Number(t.overtimeHours) || 0;
+      const hours =
+        typeof t.overtimeHours === 'string'
+          ? parseFloat(t.overtimeHours)
+          : Number(t.overtimeHours) || 0;
       return sum + hours;
     }, 0);
     const totalHours = totalRegularHours + totalOvertimeHours;
     const totalDays = timesheetsData.length;
 
-
-
     // Group by projects
-    const projectsSummary = timesheetsData.reduce((acc, timesheet) => {
-      const projectId = timesheet.projectId?.toString() || 'no-project';
-      const projectName = timesheet.projectName || 'No Project';
-      
-      if (!acc[projectId]) {
-        acc[projectId] = {
-          id: projectId,
-          name: projectName,
-          hours: 0,
-          overtime: 0,
-          days: 0,
-        };
-      }
-      
-      const regularHours = typeof timesheet.hoursWorked === 'string' ? parseFloat(timesheet.hoursWorked) : Number(timesheet.hoursWorked) || 0;
-      const overtimeHours = typeof timesheet.overtimeHours === 'string' ? parseFloat(timesheet.overtimeHours) : Number(timesheet.overtimeHours) || 0;
-      acc[projectId].hours += regularHours;
-      acc[projectId].overtime += overtimeHours;
-      acc[projectId].days += 1;
-      
-      return acc;
-    }, {} as { [key: string]: any });
+    const projectsSummary = timesheetsData.reduce(
+      (acc, timesheet) => {
+        const projectId = timesheet.projectId?.toString() || 'no-project';
+        const projectName = timesheet.projectName || 'No Project';
+
+        if (!acc[projectId]) {
+          acc[projectId] = {
+            id: projectId,
+            name: projectName,
+            hours: 0,
+            overtime: 0,
+            days: 0,
+          };
+        }
+
+        const regularHours =
+          typeof timesheet.hoursWorked === 'string'
+            ? parseFloat(timesheet.hoursWorked)
+            : Number(timesheet.hoursWorked) || 0;
+        const overtimeHours =
+          typeof timesheet.overtimeHours === 'string'
+            ? parseFloat(timesheet.overtimeHours)
+            : Number(timesheet.overtimeHours) || 0;
+        acc[projectId].hours += regularHours;
+        acc[projectId].overtime += overtimeHours;
+        acc[projectId].days += 1;
+
+        return acc;
+      },
+      {} as { [key: string]: any }
+    );
 
     const summary = {
       regularHours: Number(totalRegularHours) || 0,
@@ -204,10 +245,11 @@ export const GET = withAuth(async (request: NextRequest) => {
       totalDays: Number(totalDays) || 0,
       projects: Object.values(projectsSummary),
       // Use the month parameters directly to avoid timezone issues
-      month: new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      month: new Date(parseInt(year), parseInt(monthNum) - 1).toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+      }),
     };
-
-
 
     return NextResponse.json({
       calendar,
@@ -220,7 +262,10 @@ export const GET = withAuth(async (request: NextRequest) => {
   } catch (error) {
     console.error('Error fetching monthly timesheets:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch monthly timesheets', details: error instanceof Error ? error.message : 'Unknown error' },
+      {
+        error: 'Failed to fetch monthly timesheets',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }

@@ -1,11 +1,11 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { TrendingUp, TrendingDown, DollarSign, AlertTriangle, RefreshCw } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useI18n } from "@/hooks/use-i18n"
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useI18n } from '@/hooks/use-i18n';
+import { AlertTriangle, DollarSign, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface FinancialMetrics {
   totalMoneyReceived: number;
@@ -26,48 +26,48 @@ interface InvoiceSummary {
 }
 
 export function FinancialMetricsSection() {
-  const { t } = useI18n()
-  const [financialMetrics, setFinancialMetrics] = useState<FinancialMetrics | null>(null)
-  const [invoiceSummary, setInvoiceSummary] = useState<InvoiceSummary | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { t } = useI18n();
+  const [financialMetrics, setFinancialMetrics] = useState<FinancialMetrics | null>(null);
+  const [invoiceSummary, setInvoiceSummary] = useState<InvoiceSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchFinancialData = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      setLoading(true);
+      setError(null);
 
       // Fetch financial metrics
-      const metricsResponse = await fetch('/api/erpnext/financial?type=metrics')
+      const metricsResponse = await fetch('/api/erpnext/financial?type=metrics');
       if (metricsResponse.ok) {
-        const metricsData = await metricsResponse.json()
-        setFinancialMetrics(metricsData.data)
+        const metricsData = await metricsResponse.json();
+        setFinancialMetrics(metricsData.data);
       }
 
       // Fetch invoice summary
-      const summaryResponse = await fetch('/api/erpnext/financial?type=summary')
+      const summaryResponse = await fetch('/api/erpnext/financial?type=summary');
       if (summaryResponse.ok) {
-        const summaryData = await summaryResponse.json()
-        setInvoiceSummary(summaryData.data)
+        const summaryData = await summaryResponse.json();
+        setInvoiceSummary(summaryData.data);
       }
     } catch (err) {
-      setError(t('financial.failedToFetch'))
-      console.error('Error fetching financial data:', err)
+      setError(t('financial.failedToFetch'));
+      console.error('Error fetching financial data:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleRefresh = async () => {
-    setRefreshing(true)
-    await fetchFinancialData()
-    setRefreshing(false)
-  }
+    setRefreshing(true);
+    await fetchFinancialData();
+    setRefreshing(false);
+  };
 
   useEffect(() => {
-    fetchFinancialData()
-  }, [])
+    fetchFinancialData();
+  }, []);
 
   if (loading) {
     return (
@@ -84,7 +84,7 @@ export function FinancialMetricsSection() {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (error) {
@@ -106,7 +106,7 @@ export function FinancialMetricsSection() {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -114,10 +114,10 @@ export function FinancialMetricsSection() {
       {/* Header with refresh button */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('financial.overview')}</h2>
-          <p className="text-gray-600 dark:text-gray-400">
-            {t('financial.description')}
-          </p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {t('financial.overview')}
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">{t('financial.description')}</p>
         </div>
         <Button onClick={handleRefresh} disabled={refreshing} variant="outline" size="sm">
           <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
@@ -140,7 +140,8 @@ export function FinancialMetricsSection() {
                 <TrendingUp className="h-8 w-8 text-green-600" />
                 <div>
                   <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-                    {financialMetrics.currency} {financialMetrics.totalMoneyReceived.toLocaleString()}
+                    {financialMetrics.currency}{' '}
+                    {financialMetrics.totalMoneyReceived.toLocaleString()}
                   </div>
                   <p className="text-xs text-green-600 dark:text-green-400">
                     {t('financial.allTime')}
@@ -164,9 +165,7 @@ export function FinancialMetricsSection() {
                   <div className="text-2xl font-bold text-red-700 dark:text-red-300">
                     {financialMetrics.currency} {financialMetrics.totalMoneyLost.toLocaleString()}
                   </div>
-                  <p className="text-xs text-red-600 dark:text-red-400">
-                    {t('financial.allTime')}
-                  </p>
+                  <p className="text-xs text-red-600 dark:text-red-400">{t('financial.allTime')}</p>
                 </div>
               </div>
             </CardContent>
@@ -184,7 +183,8 @@ export function FinancialMetricsSection() {
                 <TrendingUp className="h-8 w-8 text-blue-600" />
                 <div>
                   <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
-                    {financialMetrics.currency} {financialMetrics.monthlyMoneyReceived.toLocaleString()}
+                    {financialMetrics.currency}{' '}
+                    {financialMetrics.monthlyMoneyReceived.toLocaleString()}
                   </div>
                   <p className="text-xs text-blue-600 dark:text-blue-400">
                     {t('financial.currentMonth')}
@@ -195,17 +195,21 @@ export function FinancialMetricsSection() {
           </Card>
 
           {/* Net Profit */}
-          <Card className={`border-2 ${
-            financialMetrics.netProfit >= 0 
-              ? 'border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800' 
-              : 'border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800'
-          }`}>
+          <Card
+            className={`border-2 ${
+              financialMetrics.netProfit >= 0
+                ? 'border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800'
+                : 'border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800'
+            }`}
+          >
             <CardHeader className="pb-3">
-              <CardTitle className={`text-sm font-medium ${
-                financialMetrics.netProfit >= 0 
-                  ? 'text-green-700 dark:text-green-300' 
-                  : 'text-red-700 dark:text-red-300'
-              }`}>
+              <CardTitle
+                className={`text-sm font-medium ${
+                  financialMetrics.netProfit >= 0
+                    ? 'text-green-700 dark:text-green-300'
+                    : 'text-red-700 dark:text-red-300'
+                }`}
+              >
                 {t('financial.netProfit')}
               </CardTitle>
             </CardHeader>
@@ -217,18 +221,22 @@ export function FinancialMetricsSection() {
                   <TrendingDown className="h-8 w-8 text-red-600" />
                 )}
                 <div>
-                  <div className={`text-2xl font-bold ${
-                    financialMetrics.netProfit >= 0 
-                      ? 'text-green-700 dark:text-green-300' 
-                      : 'text-red-700 dark:text-red-300'
-                  }`}>
+                  <div
+                    className={`text-2xl font-bold ${
+                      financialMetrics.netProfit >= 0
+                        ? 'text-green-700 dark:text-green-300'
+                        : 'text-red-700 dark:text-red-300'
+                    }`}
+                  >
                     {financialMetrics.currency} {financialMetrics.netProfit.toLocaleString()}
                   </div>
-                  <p className={`text-xs ${
-                    financialMetrics.netProfit >= 0 
-                      ? 'text-green-600 dark:text-green-400' 
-                      : 'text-red-600 dark:text-red-400'
-                  }`}>
+                  <p
+                    className={`text-xs ${
+                      financialMetrics.netProfit >= 0
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-red-600 dark:text-red-400'
+                    }`}
+                  >
                     {financialMetrics.netProfit >= 0 ? t('financial.profit') : t('financial.loss')}
                   </p>
                 </div>
@@ -246,9 +254,7 @@ export function FinancialMetricsSection() {
               <DollarSign className="h-5 w-5" />
               {t('financial.invoiceSummary')}
             </CardTitle>
-            <CardDescription>
-              {t('financial.invoiceSummaryDescription')}
-            </CardDescription>
+            <CardDescription>{t('financial.invoiceSummaryDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -256,28 +262,36 @@ export function FinancialMetricsSection() {
                 <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {invoiceSummary.count}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">{t('financial.totalInvoices')}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  {t('financial.totalInvoices')}
+                </div>
               </div>
-              
+
               <div className="text-center p-4 rounded-lg bg-green-50 dark:bg-green-950">
                 <div className="text-2xl font-bold text-green-700 dark:text-green-300">
                   {financialMetrics?.currency} {invoiceSummary.paidAmount.toLocaleString()}
                 </div>
-                <div className="text-sm text-green-600 dark:text-green-400">{t('financial.paidAmount')}</div>
+                <div className="text-sm text-green-600 dark:text-green-400">
+                  {t('financial.paidAmount')}
+                </div>
               </div>
-              
+
               <div className="text-center p-4 rounded-lg bg-yellow-50 dark:bg-yellow-950">
                 <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
                   {financialMetrics?.currency} {invoiceSummary.outstandingAmount.toLocaleString()}
                 </div>
-                <div className="text-sm text-yellow-600 dark:text-yellow-400">{t('financial.outstanding')}</div>
+                <div className="text-sm text-yellow-600 dark:text-yellow-400">
+                  {t('financial.outstanding')}
+                </div>
               </div>
-              
+
               <div className="text-center p-4 rounded-lg bg-red-50 dark:bg-red-950">
                 <div className="text-2xl font-bold text-red-700 dark:text-red-300">
                   {financialMetrics?.currency} {invoiceSummary.overdueAmount.toLocaleString()}
                 </div>
-                <div className="text-sm text-red-600 dark:text-red-400">{t('financial.overdue')}</div>
+                <div className="text-sm text-red-600 dark:text-red-400">
+                  {t('financial.overdue')}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -291,5 +305,5 @@ export function FinancialMetricsSection() {
         </div>
       )}
     </div>
-  )
+  );
 }

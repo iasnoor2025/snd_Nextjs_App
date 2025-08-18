@@ -91,11 +91,11 @@ export class ApiService {
       return data;
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Request failed';
-      
+
       if (showToast) {
         ToastService.error(errorMessage || message);
       }
-      
+
       throw error;
     }
   }
@@ -166,17 +166,19 @@ export class ApiService {
   // EMPLOYEE MANAGEMENT
   // ========================================
 
-  static async getEmployees(params: {
-    page?: number;
-    per_page?: number;
-    limit?: number;
-    search?: string;
-    status?: string;
-    department?: string;
-    sort_by?: string;
-    sort_order?: 'asc' | 'desc';
-    all?: boolean;
-  } = {}) {
+  static async getEmployees(
+    params: {
+      page?: number;
+      per_page?: number;
+      limit?: number;
+      search?: string;
+      status?: string;
+      department?: string;
+      sort_by?: string;
+      sort_order?: 'asc' | 'desc';
+      all?: boolean;
+    } = {}
+  ) {
     return this.get('/employees', params, {
       toastMessage: 'Employees loaded successfully',
       errorMessage: 'Failed to load employees',
@@ -359,36 +361,42 @@ export class ApiService {
     });
   }
 
-  static async createEquipmentAssignment(id: number, data: {
-    assignment_type: 'rental' | 'project' | 'manual';
-    project_id?: number;
-    employee_id?: number;
-    rental_id?: number;
-    start_date: string;
-    end_date?: string;
-    daily_rate?: number;
-    total_amount?: number;
-    notes?: string;
-    status?: string;
-  }) {
+  static async createEquipmentAssignment(
+    id: number,
+    data: {
+      assignment_type: 'rental' | 'project' | 'manual';
+      project_id?: number;
+      employee_id?: number;
+      rental_id?: number;
+      start_date: string;
+      end_date?: string;
+      daily_rate?: number;
+      total_amount?: number;
+      notes?: string;
+      status?: string;
+    }
+  ) {
     return this.post(`/equipment/${id}/rentals`, data, {
       toastMessage: 'Equipment assignment created successfully',
       errorMessage: 'Failed to create equipment assignment',
     });
   }
 
-  static async updateEquipmentAssignment(assignmentId: number, data: {
-    assignment_type?: 'rental' | 'project' | 'manual';
-    project_id?: number;
-    employee_id?: number;
-    rental_id?: number;
-    start_date?: string;
-    end_date?: string;
-    daily_rate?: number;
-    total_amount?: number;
-    notes?: string;
-    status?: string;
-  }) {
+  static async updateEquipmentAssignment(
+    assignmentId: number,
+    data: {
+      assignment_type?: 'rental' | 'project' | 'manual';
+      project_id?: number;
+      employee_id?: number;
+      rental_id?: number;
+      start_date?: string;
+      end_date?: string;
+      daily_rate?: number;
+      total_amount?: number;
+      notes?: string;
+      status?: string;
+    }
+  ) {
     return this.put(`/equipment/assignments/${assignmentId}`, data, {
       toastMessage: 'Equipment assignment updated successfully',
       errorMessage: 'Failed to update equipment assignment',
@@ -417,10 +425,14 @@ export class ApiService {
   }
 
   static async syncEquipmentFromERPNext() {
-    return this.post('/equipment/sync', {}, {
-      toastMessage: 'Equipment synced from ERPNext successfully',
-      errorMessage: 'Failed to sync equipment from ERPNext',
-    });
+    return this.post(
+      '/equipment/sync',
+      {},
+      {
+        toastMessage: 'Equipment synced from ERPNext successfully',
+        errorMessage: 'Failed to sync equipment from ERPNext',
+      }
+    );
   }
 
   static async getERPNextEquipmentDirect() {
@@ -539,10 +551,14 @@ export class ApiService {
   }
 
   static async rejectTimesheet(id: number, reason?: string) {
-    return this.post(`/timesheets/${id}/reject`, { reason }, {
-      toastMessage: 'Timesheet rejected successfully',
-      errorMessage: 'Failed to reject timesheet',
-    });
+    return this.post(
+      `/timesheets/${id}/reject`,
+      { reason },
+      {
+        toastMessage: 'Timesheet rejected successfully',
+        errorMessage: 'Failed to reject timesheet',
+      }
+    );
   }
 
   // ========================================
@@ -650,7 +666,7 @@ export class ApiService {
     return this.post(`/projects/${projectId}/resources`, data, {
       showToast: true,
       toastMessage: 'Resource added successfully',
-      errorMessage: 'Failed to add resource'
+      errorMessage: 'Failed to add resource',
     });
   }
 
@@ -658,7 +674,7 @@ export class ApiService {
     return this.put(`/projects/${projectId}/resources/${resourceId}`, data, {
       showToast: true,
       toastMessage: 'Resource updated successfully',
-      errorMessage: 'Failed to update resource'
+      errorMessage: 'Failed to update resource',
     });
   }
 
@@ -666,7 +682,7 @@ export class ApiService {
     return this.delete(`/projects/${projectId}/resources/${resourceId}`, {
       showToast: true,
       toastMessage: 'Resource deleted successfully',
-      errorMessage: 'Failed to delete resource'
+      errorMessage: 'Failed to delete resource',
     });
   }
 
@@ -682,7 +698,7 @@ export class ApiService {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      
+
       if (additionalData) {
         Object.entries(additionalData).forEach(([key, value]) => {
           formData.append(key, String(value));
@@ -709,11 +725,7 @@ export class ApiService {
     }
   }
 
-  static async uploadEmployeeDocument(
-    employeeId: number,
-    file: File,
-    documentType: string
-  ) {
+  static async uploadEmployeeDocument(employeeId: number, file: File, documentType: string) {
     return this.uploadFile(file, '/employees/documents', {
       employee_id: employeeId,
       document_type: documentType,
@@ -762,7 +774,7 @@ export class ApiService {
       const response = await fetch(`${this.baseUrl}${endpoint}?${searchParams}`, {
         method: 'GET',
         headers: {
-          'Accept': 'application/octet-stream',
+          Accept: 'application/octet-stream',
         },
       });
 
@@ -924,27 +936,34 @@ export class ApiService {
     return this.get(`/employees/${employeeId}/assignments`);
   }
 
-  static async createEmployeeAssignment(employeeId: number, data: {
-    project_id: number;
-    start_date: string;
-    end_date?: string;
-    role?: string;
-    daily_rate?: number;
-    notes?: string;
-    status?: string;
-  }) {
+  static async createEmployeeAssignment(
+    employeeId: number,
+    data: {
+      project_id: number;
+      start_date: string;
+      end_date?: string;
+      role?: string;
+      daily_rate?: number;
+      notes?: string;
+      status?: string;
+    }
+  ) {
     return this.post(`/employees/${employeeId}/assignments`, data);
   }
 
-  static async updateEmployeeAssignment(employeeId: number, assignmentId: number, data: {
-    project_id?: number;
-    start_date?: string;
-    end_date?: string;
-    role?: string;
-    daily_rate?: number;
-    notes?: string;
-    status?: string;
-  }) {
+  static async updateEmployeeAssignment(
+    employeeId: number,
+    assignmentId: number,
+    data: {
+      project_id?: number;
+      start_date?: string;
+      end_date?: string;
+      role?: string;
+      daily_rate?: number;
+      notes?: string;
+      status?: string;
+    }
+  ) {
     return this.put(`/employees/${employeeId}/assignments/${assignmentId}`, data);
   }
 
@@ -955,4 +974,4 @@ export class ApiService {
   // Equipment Assignment Methods
 }
 
-export default ApiService; 
+export default ApiService;

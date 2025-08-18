@@ -1,29 +1,29 @@
-"use client"
+'use client';
 
-import { GalleryVerticalEnd } from "lucide-react"
-import { useSession } from "next-auth/react"
-import { useRouter } from "next/navigation"
-import { useEffect } from "react"
-import { LoginForm } from "@/components/login-form"
+import { LoginForm } from '@/components/login-form';
+import { GalleryVerticalEnd } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 // i18n refactor: All user-facing strings now use useTranslation('auth')
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from 'react-i18next';
 
 export default function LoginPage() {
   const { t } = useTranslation('auth');
-  const { data: session, status } = useSession()
-  const router = useRouter()
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
   // Redirect to home if already authenticated
   useEffect(() => {
-    if (status === "loading") return
+    if (status === 'loading') return;
 
     if (session) {
       // Let the conditional layout handle the Nation ID check
-      router.push("/dashboard")
+      router.push('/dashboard');
     }
-  }, [session, status, router])
+  }, [session, status, router]);
 
-  if (status === "loading") {
+  if (status === 'loading') {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
         <div className="text-center">
@@ -31,11 +31,11 @@ export default function LoginPage() {
           <p className="text-muted-foreground">{t('loading')}</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (session) {
-    return null // Will redirect
+    return null; // Will redirect
   }
 
   return (
@@ -50,5 +50,5 @@ export default function LoginPage() {
         <LoginForm />
       </div>
     </div>
-  )
+  );
 }

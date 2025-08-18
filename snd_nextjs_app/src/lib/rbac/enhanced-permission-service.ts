@@ -1,6 +1,13 @@
 import { db } from '@/lib/drizzle';
-import { users, roles, permissions, roleHasPermissions, modelHasPermissions, modelHasRoles } from '@/lib/drizzle/schema';
-import { eq, and } from 'drizzle-orm';
+import {
+  modelHasPermissions,
+  modelHasRoles,
+  permissions,
+  roleHasPermissions,
+  roles,
+  users,
+} from '@/lib/drizzle/schema';
+import { and, eq } from 'drizzle-orm';
 
 export interface PermissionGrant {
   resource: string;
@@ -55,7 +62,7 @@ export class EnhancedPermissionService {
       }
 
       const user = userRows[0];
-      
+
       if (!user.isActive) {
         return false;
       }
@@ -67,7 +74,7 @@ export class EnhancedPermissionService {
       // Check if user has the specific permission by name
       // Format: action.resource (e.g., "read.users", "create.posts")
       const permissionName = `${action}.${resource}`;
-      
+
       const permissionRows = await db
         .select({
           id: permissions.id,
@@ -76,10 +83,7 @@ export class EnhancedPermissionService {
         .from(permissions)
         .leftJoin(roleHasPermissions, eq(permissions.id, roleHasPermissions.permissionId))
         .where(
-          and(
-            eq(roleHasPermissions.roleId, user.roleId),
-            eq(permissions.name, permissionName)
-          )
+          and(eq(roleHasPermissions.roleId, user.roleId), eq(permissions.name, permissionName))
         )
         .limit(1);
 
@@ -88,7 +92,7 @@ export class EnhancedPermissionService {
       }
 
       const permission = permissionRows[0];
-      
+
       if (!permission || !permission.id) {
         return false;
       }
@@ -132,7 +136,7 @@ export class EnhancedPermissionService {
    */
   async grant(roleName: string, resource: string, action: string): Promise<void> {
     const permissionName = `${action}.${resource}`;
-    
+
     // Create permission if it doesn't exist
     const permissionResult = await db
       .insert(permissions)
@@ -149,7 +153,7 @@ export class EnhancedPermissionService {
         },
       })
       .returning();
-    
+
     const permission = permissionResult[0];
 
     // Get role
@@ -189,7 +193,7 @@ export class EnhancedPermissionService {
    */
   async revoke(roleName: string, resource: string, action: string): Promise<void> {
     const permissionName = `${action}.${resource}`;
-    
+
     const permissionResult = await db
       .select({
         id: permissions.id,
@@ -238,7 +242,7 @@ export class EnhancedPermissionService {
    */
   async getUserPermissions(userId: string): Promise<string[]> {
     const userIdInt = parseInt(userId);
-    
+
     const userResult = await db
       .select({
         id: users.id,
@@ -256,7 +260,7 @@ export class EnhancedPermissionService {
     if (!user) {
       return [];
     }
-    
+
     const userPermissionsSet = new Set<string>();
 
     // Add role permissions
@@ -293,7 +297,7 @@ export class EnhancedPermissionService {
    */
   async getUserRoles(userId: string): Promise<string[]> {
     const userIdInt = parseInt(userId);
-    
+
     const userResult = await db
       .select({
         id: users.id,
@@ -369,10 +373,14 @@ export class EnhancedPermissionService {
   /**
    * Private method to check specific permission
    */
-  private async checkPermission(userId: string, action: string, resource: string): Promise<boolean> {
+  private async checkPermission(
+    userId: string,
+    action: string,
+    resource: string
+  ): Promise<boolean> {
     try {
       const userIdInt = parseInt(userId);
-      
+
       // Get user with role
       const user = await db
         .select({
@@ -458,6 +466,11 @@ export class EnhancedPermissionService {
 export const enhancedPermissionService = EnhancedPermissionService.getInstance();
 
 // Export a public checkPermission function for easy use in API routes
-export async function checkPermission(userId: string, resource: string, action: string, attributes?: string[]): Promise<boolean> {
+export async function checkPermission(
+  userId: string,
+  resource: string,
+  action: string,
+  attributes?: string[]
+): Promise<boolean> {
   return enhancedPermissionService.can(parseInt(userId), action, resource);
-} 
+}

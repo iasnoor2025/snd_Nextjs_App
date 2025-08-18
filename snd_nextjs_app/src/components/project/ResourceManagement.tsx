@@ -1,18 +1,31 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, Users, FileText, Clock, DollarSign, Plus, Edit, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
 import ApiService from '@/lib/api-service';
+import { Building2, Clock, DollarSign, Edit, FileText, Plus, Trash2, Users } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface ProjectResource {
   id: string;
@@ -92,7 +105,6 @@ export default function ResourceManagement({
       // Fetch employees for dropdown
       const employeesResponse = await ApiService.getEmployees();
       setEmployees(employeesResponse.data || []);
-
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load resources');
@@ -108,7 +120,7 @@ export default function ResourceManagement({
       const resourceData = {
         ...formData,
         type: selectedType,
-        project_id: projectId
+        project_id: projectId,
       };
 
       await ApiService.createProjectResource(Number(projectId), resourceData);
@@ -144,12 +156,12 @@ export default function ResourceManagement({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="equipment_id">Equipment</Label>
-          <Select onValueChange={(value) => setFormData({...formData, equipment_id: value})}>
+          <Select onValueChange={value => setFormData({ ...formData, equipment_id: value })}>
             <SelectTrigger>
               <SelectValue placeholder="Select equipment" />
             </SelectTrigger>
             <SelectContent>
-              {equipment.map((eq) => (
+              {equipment.map(eq => (
                 <SelectItem key={eq.id} value={eq.id}>
                   {eq.name} - {eq.modelNumber}
                 </SelectItem>
@@ -163,7 +175,7 @@ export default function ResourceManagement({
             id="equipment_type"
             placeholder="e.g., Excavator, Crane"
             value={formData.equipment_type || ''}
-            onChange={(e) => setFormData({...formData, equipment_type: e.target.value})}
+            onChange={e => setFormData({ ...formData, equipment_type: e.target.value })}
           />
         </div>
       </div>
@@ -174,7 +186,7 @@ export default function ResourceManagement({
             id="operator_name"
             placeholder="Operator name"
             value={formData.operator_name || ''}
-            onChange={(e) => setFormData({...formData, operator_name: e.target.value})}
+            onChange={e => setFormData({ ...formData, operator_name: e.target.value })}
           />
         </div>
         <div>
@@ -184,7 +196,7 @@ export default function ResourceManagement({
             type="number"
             placeholder="Hours used"
             value={formData.usage_hours || ''}
-            onChange={(e) => setFormData({...formData, usage_hours: parseFloat(e.target.value)})}
+            onChange={e => setFormData({ ...formData, usage_hours: parseFloat(e.target.value) })}
           />
         </div>
       </div>
@@ -196,7 +208,7 @@ export default function ResourceManagement({
             type="number"
             placeholder="Cost per hour"
             value={formData.unit_cost || ''}
-            onChange={(e) => setFormData({...formData, unit_cost: parseFloat(e.target.value)})}
+            onChange={e => setFormData({ ...formData, unit_cost: parseFloat(e.target.value) })}
           />
         </div>
         <div>
@@ -206,7 +218,9 @@ export default function ResourceManagement({
             type="number"
             placeholder="Maintenance cost"
             value={formData.maintenance_cost || ''}
-            onChange={(e) => setFormData({...formData, maintenance_cost: parseFloat(e.target.value)})}
+            onChange={e =>
+              setFormData({ ...formData, maintenance_cost: parseFloat(e.target.value) })
+            }
           />
         </div>
       </div>
@@ -218,12 +232,12 @@ export default function ResourceManagement({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="employee_id">Employee</Label>
-          <Select onValueChange={(value) => setFormData({...formData, employee_id: value})}>
+          <Select onValueChange={value => setFormData({ ...formData, employee_id: value })}>
             <SelectTrigger>
               <SelectValue placeholder="Select employee" />
             </SelectTrigger>
             <SelectContent>
-              {employees.map((emp) => (
+              {employees.map(emp => (
                 <SelectItem key={emp.id} value={emp.id}>
                   {emp.firstName} {emp.lastName}
                 </SelectItem>
@@ -237,7 +251,7 @@ export default function ResourceManagement({
             id="worker_name"
             placeholder="Worker name"
             value={formData.worker_name || ''}
-            onChange={(e) => setFormData({...formData, worker_name: e.target.value})}
+            onChange={e => setFormData({ ...formData, worker_name: e.target.value })}
           />
         </div>
       </div>
@@ -248,7 +262,7 @@ export default function ResourceManagement({
             id="position"
             placeholder="e.g., Skilled Worker, Foreman"
             value={formData.position || ''}
-            onChange={(e) => setFormData({...formData, position: e.target.value})}
+            onChange={e => setFormData({ ...formData, position: e.target.value })}
           />
         </div>
         <div>
@@ -258,7 +272,7 @@ export default function ResourceManagement({
             type="number"
             placeholder="Daily rate"
             value={formData.daily_rate || ''}
-            onChange={(e) => setFormData({...formData, daily_rate: parseFloat(e.target.value)})}
+            onChange={e => setFormData({ ...formData, daily_rate: parseFloat(e.target.value) })}
           />
         </div>
       </div>
@@ -269,7 +283,7 @@ export default function ResourceManagement({
           type="number"
           placeholder="Number of days"
           value={formData.days_worked || ''}
-          onChange={(e) => setFormData({...formData, days_worked: parseInt(e.target.value)})}
+          onChange={e => setFormData({ ...formData, days_worked: parseInt(e.target.value) })}
         />
       </div>
     </div>
@@ -283,7 +297,7 @@ export default function ResourceManagement({
           id="material_name"
           placeholder="e.g., Steel Beams, Concrete"
           value={formData.material_name || ''}
-          onChange={(e) => setFormData({...formData, material_name: e.target.value})}
+          onChange={e => setFormData({ ...formData, material_name: e.target.value })}
         />
       </div>
       <div className="grid grid-cols-3 gap-4">
@@ -294,7 +308,7 @@ export default function ResourceManagement({
             type="number"
             placeholder="Quantity"
             value={formData.quantity || ''}
-            onChange={(e) => setFormData({...formData, quantity: parseFloat(e.target.value)})}
+            onChange={e => setFormData({ ...formData, quantity: parseFloat(e.target.value) })}
           />
         </div>
         <div>
@@ -303,7 +317,7 @@ export default function ResourceManagement({
             id="unit"
             placeholder="e.g., pieces, kg, m³"
             value={formData.unit || ''}
-            onChange={(e) => setFormData({...formData, unit: e.target.value})}
+            onChange={e => setFormData({ ...formData, unit: e.target.value })}
           />
         </div>
         <div>
@@ -313,7 +327,7 @@ export default function ResourceManagement({
             type="number"
             placeholder="Cost per unit"
             value={formData.unit_cost || ''}
-            onChange={(e) => setFormData({...formData, unit_cost: parseFloat(e.target.value)})}
+            onChange={e => setFormData({ ...formData, unit_cost: parseFloat(e.target.value) })}
           />
         </div>
       </div>
@@ -325,7 +339,7 @@ export default function ResourceManagement({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="fuel_type">Fuel Type</Label>
-          <Select onValueChange={(value) => setFormData({...formData, fuel_type: value})}>
+          <Select onValueChange={value => setFormData({ ...formData, fuel_type: value })}>
             <SelectTrigger>
               <SelectValue placeholder="Select fuel type" />
             </SelectTrigger>
@@ -344,7 +358,7 @@ export default function ResourceManagement({
             type="number"
             placeholder="Liters consumed"
             value={formData.liters || ''}
-            onChange={(e) => setFormData({...formData, liters: parseFloat(e.target.value)})}
+            onChange={e => setFormData({ ...formData, liters: parseFloat(e.target.value) })}
           />
         </div>
       </div>
@@ -355,7 +369,7 @@ export default function ResourceManagement({
           type="number"
           placeholder="Price per liter"
           value={formData.price_per_liter || ''}
-          onChange={(e) => setFormData({...formData, price_per_liter: parseFloat(e.target.value)})}
+          onChange={e => setFormData({ ...formData, price_per_liter: parseFloat(e.target.value) })}
         />
       </div>
     </div>
@@ -365,7 +379,7 @@ export default function ResourceManagement({
     <div className="space-y-4">
       <div>
         <Label htmlFor="category">Category</Label>
-        <Select onValueChange={(value) => setFormData({...formData, category: value})}>
+        <Select onValueChange={value => setFormData({ ...formData, category: value })}>
           <SelectTrigger>
             <SelectValue placeholder="Select category" />
           </SelectTrigger>
@@ -384,7 +398,7 @@ export default function ResourceManagement({
           id="expense_description"
           placeholder="Expense description"
           value={formData.expense_description || ''}
-          onChange={(e) => setFormData({...formData, expense_description: e.target.value})}
+          onChange={e => setFormData({ ...formData, expense_description: e.target.value })}
         />
       </div>
       <div>
@@ -394,7 +408,7 @@ export default function ResourceManagement({
           type="number"
           placeholder="Expense amount"
           value={formData.unit_cost || ''}
-          onChange={(e) => setFormData({...formData, unit_cost: parseFloat(e.target.value)})}
+          onChange={e => setFormData({ ...formData, unit_cost: parseFloat(e.target.value) })}
         />
       </div>
     </div>
@@ -449,7 +463,8 @@ export default function ResourceManagement({
               <DialogHeader>
                 <DialogTitle>Add New Resource</DialogTitle>
                 <DialogDescription>
-                  Add a new resource to the project. Select the resource type and fill in the details.
+                  Add a new resource to the project. Select the resource type and fill in the
+                  details.
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-6">
@@ -475,7 +490,7 @@ export default function ResourceManagement({
                     id="name"
                     placeholder="Resource name"
                     value={formData.name || ''}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
                     required
                   />
                 </div>
@@ -486,7 +501,7 @@ export default function ResourceManagement({
                     id="description"
                     placeholder="Resource description"
                     value={formData.description || ''}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})}
+                    onChange={e => setFormData({ ...formData, description: e.target.value })}
                   />
                 </div>
 
@@ -498,7 +513,7 @@ export default function ResourceManagement({
                     id="date"
                     type="date"
                     value={formData.date || ''}
-                    onChange={(e) => setFormData({...formData, date: e.target.value})}
+                    onChange={e => setFormData({ ...formData, date: e.target.value })}
                     required
                   />
                 </div>
@@ -509,7 +524,7 @@ export default function ResourceManagement({
                     id="notes"
                     placeholder="Additional notes"
                     value={formData.notes || ''}
-                    onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                    onChange={e => setFormData({ ...formData, notes: e.target.value })}
                   />
                 </div>
 
@@ -517,9 +532,7 @@ export default function ResourceManagement({
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit">
-                    Add Resource
-                  </Button>
+                  <Button type="submit">Add Resource</Button>
                 </div>
               </form>
             </DialogContent>
@@ -550,8 +563,11 @@ export default function ResourceManagement({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {filterResourcesByType('equipment').map((resource) => (
-                  <div key={resource.id} className="flex items-center justify-between p-4 border rounded-lg">
+                {filterResourcesByType('equipment').map(resource => (
+                  <div
+                    key={resource.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
                         <h4 className="font-medium">{resource.name}</h4>
@@ -565,12 +581,16 @@ export default function ResourceManagement({
                         <p className="text-sm text-gray-600 mb-2">{resource.description}</p>
                       )}
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        {resource.equipment_name && <span>Equipment: {resource.equipment_name}</span>}
+                        {resource.equipment_name && (
+                          <span>Equipment: {resource.equipment_name}</span>
+                        )}
                         {resource.operator_name && <span>Operator: {resource.operator_name}</span>}
                         {resource.usage_hours && <span>Hours: {resource.usage_hours}</span>}
                         {resource.unit_cost && <span>Rate: ${resource.unit_cost}/hr</span>}
                         {resource.total_cost && <span>Total: ${resource.total_cost}</span>}
-                        {resource.date && <span>Date: {new Date(resource.date).toLocaleDateString()}</span>}
+                        {resource.date && (
+                          <span>Date: {new Date(resource.date).toLocaleDateString()}</span>
+                        )}
                       </div>
                     </div>
                     <div className="flex space-x-2">
@@ -604,8 +624,11 @@ export default function ResourceManagement({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {filterResourcesByType('manpower').map((resource) => (
-                  <div key={resource.id} className="flex items-center justify-between p-4 border rounded-lg">
+                {filterResourcesByType('manpower').map(resource => (
+                  <div
+                    key={resource.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
                         <h4 className="font-medium">{resource.name}</h4>
@@ -624,7 +647,9 @@ export default function ResourceManagement({
                         {resource.daily_rate && <span>Rate: ${resource.daily_rate}/day</span>}
                         {resource.days_worked && <span>Days: {resource.days_worked}</span>}
                         {resource.total_cost && <span>Total: ${resource.total_cost}</span>}
-                        {resource.date && <span>Date: {new Date(resource.date).toLocaleDateString()}</span>}
+                        {resource.date && (
+                          <span>Date: {new Date(resource.date).toLocaleDateString()}</span>
+                        )}
                       </div>
                     </div>
                     <div className="flex space-x-2">
@@ -658,8 +683,11 @@ export default function ResourceManagement({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {filterResourcesByType('material').map((resource) => (
-                  <div key={resource.id} className="flex items-center justify-between p-4 border rounded-lg">
+                {filterResourcesByType('material').map(resource => (
+                  <div
+                    key={resource.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
                         <h4 className="font-medium">{resource.name}</h4>
@@ -678,7 +706,9 @@ export default function ResourceManagement({
                         {resource.unit && <span>Unit: {resource.unit}</span>}
                         {resource.unit_cost && <span>Rate: ${resource.unit_cost}/unit</span>}
                         {resource.total_cost && <span>Total: ${resource.total_cost}</span>}
-                        {resource.date && <span>Date: {new Date(resource.date).toLocaleDateString()}</span>}
+                        {resource.date && (
+                          <span>Date: {new Date(resource.date).toLocaleDateString()}</span>
+                        )}
                       </div>
                     </div>
                     <div className="flex space-x-2">
@@ -712,8 +742,11 @@ export default function ResourceManagement({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {filterResourcesByType('fuel').map((resource) => (
-                  <div key={resource.id} className="flex items-center justify-between p-4 border rounded-lg">
+                {filterResourcesByType('fuel').map(resource => (
+                  <div
+                    key={resource.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
                         <h4 className="font-medium">{resource.name}</h4>
@@ -729,9 +762,13 @@ export default function ResourceManagement({
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
                         {resource.fuel_type && <span>Type: {resource.fuel_type}</span>}
                         {resource.liters && <span>Liters: {resource.liters}</span>}
-                        {resource.price_per_liter && <span>Price: ${resource.price_per_liter}/L</span>}
+                        {resource.price_per_liter && (
+                          <span>Price: ${resource.price_per_liter}/L</span>
+                        )}
                         {resource.total_cost && <span>Total: ${resource.total_cost}</span>}
-                        {resource.date && <span>Date: {new Date(resource.date).toLocaleDateString()}</span>}
+                        {resource.date && (
+                          <span>Date: {new Date(resource.date).toLocaleDateString()}</span>
+                        )}
                       </div>
                     </div>
                     <div className="flex space-x-2">
@@ -765,8 +802,11 @@ export default function ResourceManagement({
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {filterResourcesByType('expense').map((resource) => (
-                  <div key={resource.id} className="flex items-center justify-between p-4 border rounded-lg">
+                {filterResourcesByType('expense').map(resource => (
+                  <div
+                    key={resource.id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
                         <h4 className="font-medium">{resource.name}</h4>
@@ -781,9 +821,13 @@ export default function ResourceManagement({
                       )}
                       <div className="flex items-center space-x-4 text-sm text-gray-500">
                         {resource.category && <span>Category: {resource.category}</span>}
-                        {resource.expense_description && <span>Description: {resource.expense_description}</span>}
+                        {resource.expense_description && (
+                          <span>Description: {resource.expense_description}</span>
+                        )}
                         {resource.unit_cost && <span>Amount: ${resource.unit_cost}</span>}
-                        {resource.date && <span>Date: {new Date(resource.date).toLocaleDateString()}</span>}
+                        {resource.date && (
+                          <span>Date: {new Date(resource.date).toLocaleDateString()}</span>
+                        )}
                       </div>
                     </div>
                     <div className="flex space-x-2">

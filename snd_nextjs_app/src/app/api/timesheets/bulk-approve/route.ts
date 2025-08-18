@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/db';
 import { timesheets } from '@/lib/drizzle/schema';
 import { withPermission } from '@/lib/rbac/api-middleware';
 import { checkUserPermission } from '@/lib/rbac/permission-service';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/lib/auth-config';
 import { eq, inArray } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // Multi-stage approval workflow stages
 const APPROVAL_STAGES = ['foreman', 'incharge', 'checking', 'manager'] as const;
-type ApprovalStage = typeof APPROVAL_STAGES[number];
+type ApprovalStage = (typeof APPROVAL_STAGES)[number];
 
 // Helper function to get the next approval stage
 function getNextApprovalStage(currentStatus: string): ApprovalStage | null {
@@ -50,7 +50,7 @@ function getApprovalStatusForStage(stage: ApprovalStage): string {
 // Helper function to check if user can approve at specific stage
 async function checkStageApprovalPermission(userId: string, stage: ApprovalStage) {
   console.log('🔍 CHECK STAGE APPROVAL - Checking permission for stage:', stage, 'user:', userId);
-  
+
   // Check if user has specific stage approval permission
   const stageResult = await checkUserPermission(userId, 'approve', 'Timesheet');
   if (stageResult.hasPermission) {
@@ -70,7 +70,7 @@ async function checkStageApprovalPermission(userId: string, stage: ApprovalStage
   console.log('🔍 CHECK STAGE APPROVAL - No permission for stage:', stage);
   return {
     allowed: false,
-    reason: `You don't have permission to approve timesheets at ${stage} stage`
+    reason: `You don't have permission to approve timesheets at ${stage} stage`,
   };
 }
 
@@ -84,7 +84,7 @@ async function checkRejectionPermission(userId: string) {
 
   return {
     allowed: false,
-    reason: `You don't have permission to reject timesheets`
+    reason: `You don't have permission to reject timesheets`,
   };
 }
 
@@ -93,11 +93,16 @@ export const POST = withPermission(
   async (request: NextRequest) => {
     try {
       console.log('🔍 BULK APPROVE - Starting request');
-      
+
       const body = await request.json();
       console.log('🔍 BULK APPROVE - Raw request body:', body);
       const { timesheetIds, action, notes, approvalStage } = body;
-      console.log('🔍 BULK APPROVE - Parsed request data:', { timesheetIds, action, notes, approvalStage });
+      console.log('🔍 BULK APPROVE - Parsed request data:', {
+        timesheetIds,
+        action,
+        notes,
+        approvalStage,
+      });
 
       if (!Array.isArray(timesheetIds) || timesheetIds.length === 0) {
         return NextResponse.json(
@@ -130,7 +135,7 @@ export const POST = withPermission(
       } = {
         approved: [],
         rejected: [],
-        errors: []
+        errors: [],
       };
 
       // Get all timesheets that need to be processed
@@ -141,7 +146,12 @@ export const POST = withPermission(
           employeeId: timesheets.employeeId,
         })
         .from(timesheets)
-        .where(inArray(timesheets.id, timesheetIds.map(id => parseInt(id))));
+        .where(
+          inArray(
+            timesheets.id,
+            timesheetIds.map(id => parseInt(id))
+          )
+        );
 
       console.log('🔍 BULK APPROVE - Found timesheets to process:', timesheetsToProcess.length);
 
@@ -151,18 +161,20 @@ export const POST = withPermission(
             id: timesheet.id,
             status: timesheet.status,
             employeeId: timesheet.employeeId,
-            requestedStage: approvalStage
+            requestedStage: approvalStage,
           });
 
           if (action === 'approve') {
             // Automatically determine the next approval stage based on current status
             const nextStage = getNextApprovalStage(timesheet.status);
-            
+
             if (!nextStage) {
-              console.log(`🔍 BULK APPROVE - Timesheet ${timesheet.id} cannot be approved further. Current status: ${timesheet.status}`);
+              console.log(
+                `🔍 BULK APPROVE - Timesheet ${timesheet.id} cannot be approved further. Current status: ${timesheet.status}`
+              );
               results.errors.push({
                 timesheetId: timesheet.id.toString(),
-                error: `Timesheet cannot be approved further. Current status: ${timesheet.status}`
+                error: `Timesheet cannot be approved further. Current status: ${timesheet.status}`,
               });
               continue;
             }
@@ -170,10 +182,12 @@ export const POST = withPermission(
             // Check if user can approve at this stage
             const canApprove = await checkStageApprovalPermission(userId, nextStage);
             if (!canApprove.allowed) {
-              console.log(`🔍 BULK APPROVE - Stage approval permission denied: ${canApprove.reason}`);
+              console.log(
+                `🔍 BULK APPROVE - Stage approval permission denied: ${canApprove.reason}`
+              );
               results.errors.push({
                 timesheetId: timesheet.id.toString(),
-                error: canApprove.reason || 'Unknown error'
+                error: canApprove.reason || 'Unknown error',
               });
               continue;
             }
@@ -186,28 +200,38 @@ export const POST = withPermission(
                 .set({
                   status: newStatus,
                   notes: notes || undefined,
-                  updatedAt: new Date().toISOString()
+                  updatedAt: new Date().toISOString(),
                 })
                 .where(eq(timesheets.id, timesheet.id))
                 .returning();
 
-              console.log(`🔍 BULK APPROVE - Timesheet approved to ${nextStage} stage successfully: ${timesheet.id} -> ${newStatus}`);
+              console.log(
+                `🔍 BULK APPROVE - Timesheet approved to ${nextStage} stage successfully: ${timesheet.id} -> ${newStatus}`
+              );
               results.approved.push(updatedTimesheet[0]);
             } catch (error) {
-              console.error(`🔍 BULK APPROVE - Error approving timesheet ${timesheet.id} to ${nextStage} stage:`, error);
+              console.error(
+                `🔍 BULK APPROVE - Error approving timesheet ${timesheet.id} to ${nextStage} stage:`,
+                error
+              );
               results.errors.push({
                 timesheetId: timesheet.id.toString(),
-                error: `Failed to approve timesheet to ${nextStage} stage: ${error instanceof Error ? error.message : 'Unknown error'}`
+                error: `Failed to approve timesheet to ${nextStage} stage: ${error instanceof Error ? error.message : 'Unknown error'}`,
               });
             }
           } else if (action === 'reject') {
             // Check if timesheet can be rejected
-            const canProcess = ['submitted', 'foreman_approved', 'incharge_approved', 'checking_approved'].includes(timesheet.status);
+            const canProcess = [
+              'submitted',
+              'foreman_approved',
+              'incharge_approved',
+              'checking_approved',
+            ].includes(timesheet.status);
 
             if (!canProcess) {
               results.errors.push({
                 timesheetId: timesheet.id.toString(),
-                error: `Timesheet cannot be rejected. Current status: ${timesheet.status}`
+                error: `Timesheet cannot be rejected. Current status: ${timesheet.status}`,
               });
               continue;
             }
@@ -217,7 +241,7 @@ export const POST = withPermission(
             if (!canReject.allowed) {
               results.errors.push({
                 timesheetId: timesheet.id.toString(),
-                error: canReject.reason || 'Unknown error'
+                error: canReject.reason || 'Unknown error',
               });
               continue;
             }
@@ -229,7 +253,7 @@ export const POST = withPermission(
                 .set({
                   status: 'rejected',
                   rejectionReason: notes || undefined,
-                  updatedAt: new Date().toISOString()
+                  updatedAt: new Date().toISOString(),
                 })
                 .where(eq(timesheets.id, timesheet.id))
                 .returning();
@@ -239,7 +263,7 @@ export const POST = withPermission(
               console.error(`🔍 BULK APPROVE - Error rejecting timesheet ${timesheet.id}:`, error);
               results.errors.push({
                 timesheetId: timesheet.id.toString(),
-                error: `Failed to reject timesheet: ${error instanceof Error ? error.message : 'Unknown error'}`
+                error: `Failed to reject timesheet: ${error instanceof Error ? error.message : 'Unknown error'}`,
               });
             }
           }
@@ -247,7 +271,7 @@ export const POST = withPermission(
           console.error(`Error processing timesheet ${timesheet.id}:`, error);
           results.errors.push({
             timesheetId: timesheet.id.toString(),
-            error: 'Failed to process timesheet'
+            error: 'Failed to process timesheet',
           });
         }
       }
@@ -257,27 +281,21 @@ export const POST = withPermission(
         totalProcessed: timesheetIds.length,
         approved: results.approved.length,
         rejected: results.rejected.length,
-        errors: results.errors.length
+        errors: results.errors.length,
       });
 
       return NextResponse.json({
         success: true,
         message: `Successfully ${action}d ${action === 'approve' ? results.approved.length : results.rejected.length} timesheets`,
-        results
+        results,
       });
-
     } catch (error) {
       console.error('Error in bulk approval:', error);
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
   },
   {
     action: 'approve',
-    subject: 'Timesheet'
+    subject: 'Timesheet',
   }
 );
-
-  

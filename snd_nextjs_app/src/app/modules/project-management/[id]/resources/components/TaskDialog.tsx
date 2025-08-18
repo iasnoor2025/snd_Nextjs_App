@@ -1,19 +1,31 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Progress } from '@/components/ui/progress';
-import { CalendarIcon, Target } from 'lucide-react';
-import { format } from 'date-fns';
-import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import apiService from '@/lib/api';
+import { format } from 'date-fns';
+import { CalendarIcon, Target } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Employee {
   id: string;
@@ -51,13 +63,13 @@ const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
   { value: 'in_progress', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' }
+  { value: 'cancelled', label: 'Cancelled' },
 ];
 
 const PRIORITY_OPTIONS = [
   { value: 'low', label: 'Low' },
   { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' }
+  { value: 'high', label: 'High' },
 ];
 
 export default function TaskDialog({
@@ -65,7 +77,7 @@ export default function TaskDialog({
   onOpenChange,
   projectId,
   initialData,
-  onSuccess
+  onSuccess,
 }: TaskDialogProps) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(false);
@@ -77,7 +89,7 @@ export default function TaskDialog({
     due_date: '',
     completion_percentage: 0,
     assigned_to_id: 'none',
-    notes: ''
+    notes: '',
   });
 
   // Load employees when dialog opens
@@ -92,7 +104,9 @@ export default function TaskDialog({
     if (initialData) {
       setFormData({
         ...initialData,
-        due_date: initialData.due_date ? new Date(initialData.due_date).toISOString().split('T')[0] : '',
+        due_date: initialData.due_date
+          ? new Date(initialData.due_date).toISOString().split('T')[0]
+          : '',
       });
     } else {
       setFormData({
@@ -103,7 +117,7 @@ export default function TaskDialog({
         due_date: '',
         completion_percentage: 0,
         assigned_to_id: 'none',
-        notes: ''
+        notes: '',
       });
     }
   }, [initialData]);
@@ -121,7 +135,7 @@ export default function TaskDialog({
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -143,7 +157,11 @@ export default function TaskDialog({
         toast.error('Please select a priority');
         return;
       }
-      if (formData.completion_percentage === undefined || formData.completion_percentage < 0 || formData.completion_percentage > 100) {
+      if (
+        formData.completion_percentage === undefined ||
+        formData.completion_percentage < 0 ||
+        formData.completion_percentage > 100
+      ) {
         toast.error('Completion percentage must be between 0 and 100');
         return;
       }
@@ -159,7 +177,7 @@ export default function TaskDialog({
         completion_percentage: finalCompletionPercentage,
         assigned_to_id: formData.assigned_to_id === 'none' ? null : formData.assigned_to_id,
         type: 'tasks',
-        name: formData.title || 'Task'
+        name: formData.title || 'Task',
       };
 
       // TODO: Project resource endpoints don't exist yet
@@ -202,7 +220,7 @@ export default function TaskDialog({
             <Input
               id="title"
               value={formData.title || ''}
-              onChange={(e) => handleInputChange('title', e.target.value)}
+              onChange={e => handleInputChange('title', e.target.value)}
               placeholder="Enter task title"
               required
             />
@@ -214,7 +232,7 @@ export default function TaskDialog({
             <Textarea
               id="description"
               value={formData.description || ''}
-              onChange={(e) => handleInputChange('description', e.target.value)}
+              onChange={e => handleInputChange('description', e.target.value)}
               placeholder="Enter task description"
               rows={3}
             />
@@ -226,13 +244,13 @@ export default function TaskDialog({
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status || 'pending'}
-                onValueChange={(value) => handleInputChange('status', value)}
+                onValueChange={value => handleInputChange('status', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUS_OPTIONS.map((status) => (
+                  {STATUS_OPTIONS.map(status => (
                     <SelectItem key={status.value} value={status.value}>
                       {status.label}
                     </SelectItem>
@@ -245,13 +263,13 @@ export default function TaskDialog({
               <Label htmlFor="priority">Priority</Label>
               <Select
                 value={formData.priority || 'medium'}
-                onValueChange={(value) => handleInputChange('priority', value)}
+                onValueChange={value => handleInputChange('priority', value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select priority" />
                 </SelectTrigger>
                 <SelectContent>
-                  {PRIORITY_OPTIONS.map((priority) => (
+                  {PRIORITY_OPTIONS.map(priority => (
                     <SelectItem key={priority.value} value={priority.value}>
                       {priority.label}
                     </SelectItem>
@@ -267,10 +285,7 @@ export default function TaskDialog({
               <Label htmlFor="due_date">Due Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {formData.due_date ? format(new Date(formData.due_date), 'PPP') : 'Pick a date'}
                   </Button>
@@ -279,7 +294,9 @@ export default function TaskDialog({
                   <Calendar
                     mode="single"
                     selected={formData.due_date ? new Date(formData.due_date) : undefined}
-                    onSelect={(date) => handleInputChange('due_date', date?.toISOString().split('T')[0] || '')}
+                    onSelect={date =>
+                      handleInputChange('due_date', date?.toISOString().split('T')[0] || '')
+                    }
                     initialFocus
                   />
                 </PopoverContent>
@@ -293,7 +310,9 @@ export default function TaskDialog({
                   id="completion_percentage"
                   type="number"
                   value={formData.completion_percentage || 0}
-                  onChange={(e) => handleInputChange('completion_percentage', parseInt(e.target.value))}
+                  onChange={e =>
+                    handleInputChange('completion_percentage', parseInt(e.target.value))
+                  }
                   min="0"
                   max="100"
                   className="w-20"
@@ -309,14 +328,14 @@ export default function TaskDialog({
             <Label htmlFor="assigned_to_id">Assign To</Label>
             <Select
               value={formData.assigned_to_id || 'none'}
-              onValueChange={(value) => handleInputChange('assigned_to_id', value)}
+              onValueChange={value => handleInputChange('assigned_to_id', value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select employee" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Not Assigned</SelectItem>
-                {employees.map((employee) => (
+                {employees.map(employee => (
                   <SelectItem key={employee.id} value={employee.id}>
                     {employee.first_name} {employee.last_name} - {employee.position}
                   </SelectItem>
@@ -331,7 +350,7 @@ export default function TaskDialog({
             <Textarea
               id="notes"
               value={formData.notes || ''}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
+              onChange={e => handleInputChange('notes', e.target.value)}
               placeholder="Enter any additional notes"
               rows={3}
             />

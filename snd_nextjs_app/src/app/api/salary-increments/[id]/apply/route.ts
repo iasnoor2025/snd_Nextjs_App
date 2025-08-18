@@ -1,15 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
-import { salaryIncrements, employees } from '@/lib/drizzle/schema';
+import { employees, salaryIncrements } from '@/lib/drizzle/schema';
+import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
-import { checkPermission } from '@/lib/rbac/enhanced-permission-service';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -29,8 +26,8 @@ export async function POST(
 
     // Check if salary increment exists and can be applied
     const existingIncrement = await db
-      .select({ 
-        id: salaryIncrements.id, 
+      .select({
+        id: salaryIncrements.id,
         status: salaryIncrements.status,
         employee_id: salaryIncrements.employeeId,
         effective_date: salaryIncrements.effectiveDate,
@@ -68,7 +65,7 @@ export async function POST(
     }
 
     // Start a transaction to update both salary increment and employee
-    const result = await db.transaction(async (tx) => {
+    const result = await db.transaction(async tx => {
       // Update the salary increment status to applied
       const [appliedIncrement] = await tx
         .update(salaryIncrements)
@@ -121,9 +118,6 @@ export async function POST(
     });
   } catch (error) {
     console.error('Error applying salary increment:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { payrolls, payrollItems } from '@/lib/drizzle/schema';
-import { eq, inArray } from 'drizzle-orm';
-import { and } from 'drizzle-orm';
+import { payrollItems, payrolls } from '@/lib/drizzle/schema';
+import { and, eq, inArray } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest) {
   try {
@@ -18,7 +17,7 @@ export async function POST(_request: NextRequest) {
 
     // Validate that all IDs are numbers
     const validIds = ids.filter(id => !isNaN(Number(id)));
-    
+
     if (validIds.length !== ids.length) {
       return NextResponse.json(
         { success: false, message: 'Some payroll IDs are invalid' },
@@ -30,28 +29,21 @@ export async function POST(_request: NextRequest) {
     const paidPayrolls = await db
       .select({ id: payrolls.id, status: payrolls.status })
       .from(payrolls)
-      .where(
-        and(
-          inArray(payrolls.id, validIds),
-          eq(payrolls.status, 'paid')
-        )
-      );
+      .where(and(inArray(payrolls.id, validIds), eq(payrolls.status, 'paid')));
 
     if (paidPayrolls.length > 0) {
       const paidIds = paidPayrolls.map(p => p.id);
       return NextResponse.json(
-        { 
-          success: false, 
-          message: `Cannot delete paid payrolls. Paid payroll IDs: ${paidIds.join(', ')}` 
+        {
+          success: false,
+          message: `Cannot delete paid payrolls. Paid payroll IDs: ${paidIds.join(', ')}`,
         },
         { status: 400 }
       );
     }
 
     // Delete payroll items first
-    await db
-      .delete(payrollItems)
-      .where(inArray(payrollItems.payrollId, validIds));
+    await db.delete(payrollItems).where(inArray(payrollItems.payrollId, validIds));
 
     // Delete payrolls
     const deletedPayrolls = await db
@@ -64,10 +56,9 @@ export async function POST(_request: NextRequest) {
       message: `Successfully deleted ${deletedPayrolls.length} payroll(s)`,
       data: {
         deletedCount: deletedPayrolls.length,
-        deletedIds: deletedPayrolls.map(p => p.id)
-      }
+        deletedIds: deletedPayrolls.map(p => p.id),
+      },
     });
-
   } catch (error) {
     console.error('Error in bulk delete:', error);
     return NextResponse.json(

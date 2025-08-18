@@ -1,7 +1,14 @@
 import { db } from '@/lib/drizzle';
-import { users, modelHasRoles, roles, roleHasPermissions, permissions as permissionsTable, modelHasPermissions } from '@/lib/drizzle/schema';
+import {
+  modelHasPermissions,
+  modelHasRoles,
+  permissions as permissionsTable,
+  roleHasPermissions,
+  roles,
+  users,
+} from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { User, Action, Subject } from './custom-rbac';
+import { Action, Subject, User } from './custom-rbac';
 
 export interface PermissionCheck {
   hasPermission: boolean;
@@ -70,12 +77,12 @@ export async function checkUserPermission(
 
     // Check direct user permissions first (these override role permissions)
     // directPermissions already computed
-    
+
     // Check for wildcard permissions
     if (directPermissions.includes('*') || directPermissions.includes('manage.all')) {
       return {
         hasPermission: true,
-        userRole: roleName, 
+        userRole: roleName,
       };
     }
 
@@ -95,7 +102,7 @@ export async function checkUserPermission(
       .leftJoin(permissionsTable, eq(permissionsTable.id, roleHasPermissions.permissionId))
       .where(eq(roleHasPermissions.roleId, roleId));
     const rolePermissions = rolePermRows.map(r => r.name!).filter(Boolean);
-    
+
     // Check for wildcard permissions in role
     if (rolePermissions.includes('*') || rolePermissions.includes('manage.all')) {
       return {
@@ -202,9 +209,9 @@ export async function assignPermissionsToRole(
     // Remove existing and assign permissions via Drizzle
     await db.delete(roleHasPermissions).where(eq(roleHasPermissions.roleId, roleId));
     if (permissionIds.length > 0) {
-      await db.insert(roleHasPermissions).values(
-        permissionIds.map(pid => ({ roleId, permissionId: pid }))
-      );
+      await db
+        .insert(roleHasPermissions)
+        .values(permissionIds.map(pid => ({ roleId, permissionId: pid })));
     }
 
     return { success: true, message: 'Permissions assigned successfully' };
@@ -225,9 +232,9 @@ export async function assignPermissionsToUser(
     // Assign direct permissions via Drizzle
     await db.delete(modelHasPermissions).where(eq(modelHasPermissions.userId, parseInt(userId)));
     if (permissionIds.length > 0) {
-      await db.insert(modelHasPermissions).values(
-        permissionIds.map(pid => ({ userId: parseInt(userId), permissionId: pid }))
-      );
+      await db
+        .insert(modelHasPermissions)
+        .values(permissionIds.map(pid => ({ userId: parseInt(userId), permissionId: pid })));
     }
 
     return { success: true, message: 'Permissions assigned successfully' };
@@ -296,14 +303,17 @@ export async function getPermissions(filters?: {
     const permissions = permRows.filter(p => {
       if (!search) return true;
       const s = search.toLowerCase();
-      return (p.name?.toLowerCase().includes(s) || p.guardName?.toLowerCase().includes(s));
+      return p.name?.toLowerCase().includes(s) || p.guardName?.toLowerCase().includes(s);
     });
     const total = permissions.length;
 
     // Filter by role if specified
     let filteredPermissions = permissions;
     if (roleId) {
-      const rolePerms = await db.select().from(roleHasPermissions).where(eq(roleHasPermissions.roleId, roleId));
+      const rolePerms = await db
+        .select()
+        .from(roleHasPermissions)
+        .where(eq(roleHasPermissions.roleId, roleId));
       const allowedIds = new Set(rolePerms.map(rp => rp.permissionId));
       filteredPermissions = permissions.filter(p => allowedIds.has(p.id));
     }
@@ -321,4 +331,4 @@ export async function getPermissions(filters?: {
     console.error('Error getting permissions:', error);
     throw error;
   }
-} 
+}

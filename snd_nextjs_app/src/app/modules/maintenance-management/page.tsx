@@ -1,4 +1,4 @@
-"use client";
+'use client';
 import MaintenanceHistoryTable from '@/components/equipment/MaintenanceHistoryTable';
 import { useTranslation } from 'react-i18next';
 
@@ -14,5 +14,3 @@ export default function MaintenanceManagementPage() {
     </div>
   );
 }
-
-

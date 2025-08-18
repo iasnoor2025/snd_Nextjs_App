@@ -1,15 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { analyticsReports } from '@/lib/drizzle/schema';
-import { eq } from 'drizzle-orm';
-import { authOptions } from '@/lib/auth-config';
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
+import { eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
@@ -36,17 +33,11 @@ export async function GET(
     return NextResponse.json(reportRows[0]);
   } catch (error) {
     console.error('Error fetching report:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const session = await getServerSession(authOptions);
@@ -84,10 +75,7 @@ export async function PUT(
     return NextResponse.json(reportRows[0]);
   } catch (error) {
     console.error('Error updating report:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
@@ -116,9 +104,6 @@ export async function DELETE(
     return NextResponse.json({ message: 'Report deleted successfully' });
   } catch (error) {
     console.error('Error deleting report:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

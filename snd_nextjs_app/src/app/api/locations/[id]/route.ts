@@ -1,20 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { locations } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {
     const locationId = parseInt(id);
-    
+
     if (isNaN(locationId)) {
-      return NextResponse.json(
-        { error: 'Invalid location ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid location ID' }, { status: 400 });
     }
 
     const locationRows = await db
@@ -24,43 +19,31 @@ export async function GET(
       .limit(1);
 
     if (locationRows.length === 0) {
-      return NextResponse.json(
-        { error: 'Location not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Location not found' }, { status: 404 });
     }
 
     const location = locationRows[0];
     return NextResponse.json({
       success: true,
-      data: location
+      data: location,
     });
   } catch (error) {
     console.error('Error fetching location:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch location' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch location' }, { status: 500 });
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {
     const locationId = parseInt(id);
-    
+
     if (isNaN(locationId)) {
-      return NextResponse.json(
-        { error: 'Invalid location ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid location ID' }, { status: 400 });
     }
 
     const body = await request.json();
-    
+
     const locationRows = await db
       .update(locations)
       .set({
@@ -84,44 +67,31 @@ export async function PUT(
     return NextResponse.json({
       success: true,
       data: location,
-      message: 'Location updated successfully'
+      message: 'Location updated successfully',
     });
   } catch (error) {
     console.error('Error updating location:', error);
-    return NextResponse.json(
-      { error: 'Failed to update location' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update location' }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {
     const locationId = parseInt(id);
-    
+
     if (isNaN(locationId)) {
-      return NextResponse.json(
-        { error: 'Invalid location ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid location ID' }, { status: 400 });
     }
 
-    await db
-      .delete(locations)
-      .where(eq(locations.id, locationId));
+    await db.delete(locations).where(eq(locations.id, locationId));
 
     return NextResponse.json({
       success: true,
-      message: 'Location deleted successfully'
+      message: 'Location deleted successfully',
     });
   } catch (error) {
     console.error('Error deleting location:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete location' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete location' }, { status: 500 });
   }
-} 
+}

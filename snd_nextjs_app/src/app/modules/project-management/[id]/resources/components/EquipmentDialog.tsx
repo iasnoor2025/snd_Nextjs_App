@@ -1,16 +1,21 @@
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
-import { Wrench } from 'lucide-react';
-import { toast } from 'sonner';
+import { Textarea } from '@/components/ui/textarea';
 import apiService from '@/lib/api';
+import { Wrench } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Equipment {
   id: string;
@@ -50,7 +55,7 @@ export default function EquipmentDialog({
   onOpenChange,
   projectId,
   initialData,
-  onSuccess
+  onSuccess,
 }: EquipmentDialogProps) {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [manpowerResources, setManpowerResources] = useState<any[]>([]);
@@ -68,7 +73,7 @@ export default function EquipmentDialog({
     maintenance_cost: 0,
     total_cost: 0,
     notes: '',
-    status: 'pending'
+    status: 'pending',
   });
 
   // Load equipment when dialog opens
@@ -84,8 +89,12 @@ export default function EquipmentDialog({
     if (initialData) {
       setFormData({
         ...initialData,
-        start_date: initialData.start_date ? new Date(initialData.start_date).toISOString().split('T')[0] : '',
-        end_date: initialData.end_date ? new Date(initialData.end_date).toISOString().split('T')[0] : '',
+        start_date: initialData.start_date
+          ? new Date(initialData.start_date).toISOString().split('T')[0]
+          : '',
+        end_date: initialData.end_date
+          ? new Date(initialData.end_date).toISOString().split('T')[0]
+          : '',
       });
     } else {
       setFormData({
@@ -101,7 +110,7 @@ export default function EquipmentDialog({
         maintenance_cost: 0,
         total_cost: 0,
         notes: '',
-        status: 'pending'
+        status: 'pending',
       });
     }
   }, [initialData]);
@@ -115,9 +124,21 @@ export default function EquipmentDialog({
       console.error('Error loading equipment:', error);
       // Use mock data if API fails
       const mockEquipment = [
-        { id: '1', name: 'Excavator', model_number: 'CAT-320', daily_rate: 800, status: 'available' },
-        { id: '2', name: 'Bulldozer', model_number: 'CAT-D6', daily_rate: 600, status: 'available' },
-        { id: '3', name: 'Crane', model_number: 'LTM-1100', daily_rate: 1200, status: 'available' }
+        {
+          id: '1',
+          name: 'Excavator',
+          model_number: 'CAT-320',
+          daily_rate: 800,
+          status: 'available',
+        },
+        {
+          id: '2',
+          name: 'Bulldozer',
+          model_number: 'CAT-D6',
+          daily_rate: 600,
+          status: 'available',
+        },
+        { id: '3', name: 'Crane', model_number: 'LTM-1100', daily_rate: 1200, status: 'available' },
       ];
       setEquipment(mockEquipment);
     }
@@ -126,7 +147,9 @@ export default function EquipmentDialog({
   const loadManpowerResources = async () => {
     try {
       // Load manpower resources from the current project
-      const response = await apiService.get<{ success: boolean; data: any[] }>(`/projects/${projectId}/resources`);
+      const response = await apiService.get<{ success: boolean; data: any[] }>(
+        `/projects/${projectId}/resources`
+      );
       if (response.success) {
         const manpowerData = response.data.filter((resource: any) => resource.type === 'manpower');
         setManpowerResources(manpowerData || []);
@@ -135,15 +158,31 @@ export default function EquipmentDialog({
       console.error('Error loading manpower resources:', error);
       // Use mock data if API fails
       const mockManpower = [
-        { id: '1', employee_name: 'John Doe', worker_name: '', job_title: 'Operator', name: 'John Doe' },
-        { id: '2', employee_name: '', worker_name: 'Mike Smith', job_title: 'Driver', name: 'Mike Smith' },
-        { id: '3', employee_name: 'Sarah Johnson', worker_name: '', job_title: 'Technician', name: 'Sarah Johnson' }
+        {
+          id: '1',
+          employee_name: 'John Doe',
+          worker_name: '',
+          job_title: 'Operator',
+          name: 'John Doe',
+        },
+        {
+          id: '2',
+          employee_name: '',
+          worker_name: 'Mike Smith',
+          job_title: 'Driver',
+          name: 'Mike Smith',
+        },
+        {
+          id: '3',
+          employee_name: 'Sarah Johnson',
+          worker_name: '',
+          job_title: 'Technician',
+          name: 'Sarah Johnson',
+        },
       ];
       setManpowerResources(mockManpower);
     }
   };
-
-
 
   // Calculate usage hours when start/end dates change
   useEffect(() => {
@@ -157,7 +196,7 @@ export default function EquipmentDialog({
       setFormData(prev => ({
         ...prev,
         usage_hours: usageHours,
-        total_cost: ((prev.hourly_rate || 0) * usageHours) + (prev.maintenance_cost || 0)
+        total_cost: (prev.hourly_rate || 0) * usageHours + (prev.maintenance_cost || 0),
       }));
     }
   }, [formData.start_date, formData.end_date, formData.hourly_rate, formData.maintenance_cost]);
@@ -192,7 +231,10 @@ export default function EquipmentDialog({
           const selectedOperator = manpowerResources.find(op => op.id === value);
           if (selectedOperator) {
             newData.operator_id = value;
-            newData.operator_name = selectedOperator.employee_name || selectedOperator.worker_name || selectedOperator.name;
+            newData.operator_name =
+              selectedOperator.employee_name ||
+              selectedOperator.worker_name ||
+              selectedOperator.name;
           }
         } else {
           newData.operator_id = '';
@@ -205,7 +247,7 @@ export default function EquipmentDialog({
         const hourlyRate = field === 'hourly_rate' ? value : newData.hourly_rate;
         const usageHours = field === 'usage_hours' ? value : newData.usage_hours;
         const maintenanceCost = field === 'maintenance_cost' ? value : newData.maintenance_cost;
-        newData.total_cost = (hourlyRate * usageHours) + (maintenanceCost || 0);
+        newData.total_cost = hourlyRate * usageHours + (maintenanceCost || 0);
       }
 
       return newData;
@@ -237,12 +279,17 @@ export default function EquipmentDialog({
 
       const submitData = {
         type: 'equipment',
-        name: formData.name || formData.equipment_name || (formData.equipment_id ? equipment.find(eq => eq.id === formData.equipment_id)?.name : ''),
+        name:
+          formData.name ||
+          formData.equipment_name ||
+          (formData.equipment_id
+            ? equipment.find(eq => eq.id === formData.equipment_id)?.name
+            : ''),
         description: formData.notes,
         total_cost: (formData.hourly_rate || 0) * (formData.usage_hours || 0),
         status: formData.status || 'pending',
         notes: formData.notes,
-        
+
         // Equipment specific fields
         equipment_id: formData.equipment_id,
         equipment_name: formData.equipment_name,
@@ -250,15 +297,15 @@ export default function EquipmentDialog({
         hourly_rate: formData.hourly_rate,
         usage_hours: formData.usage_hours,
         maintenance_cost: formData.maintenance_cost,
-        
+
         // Date fields
         start_date: formData.start_date,
         end_date: formData.end_date,
-        
+
         // Additional fields
         date: formData.start_date,
         quantity: 1, // Equipment resources typically have quantity 1
-        unit_cost: formData.hourly_rate
+        unit_cost: formData.hourly_rate,
       };
 
       // Make the actual API call
@@ -274,7 +321,7 @@ export default function EquipmentDialog({
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error saving equipment resource:', error);
-      
+
       // Show more specific error messages
       if (error.response?.data?.error) {
         toast.error(`API Error: ${error.response.data.error}`);
@@ -297,7 +344,9 @@ export default function EquipmentDialog({
             <span>{initialData ? 'Edit Equipment Resource' : 'Add Equipment Resource'}</span>
           </DialogTitle>
           <DialogDescription>
-            {initialData ? 'Update the details for this equipment resource.' : 'Add a new equipment resource to this project.'}
+            {initialData
+              ? 'Update the details for this equipment resource.'
+              : 'Add a new equipment resource to this project.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -307,33 +356,36 @@ export default function EquipmentDialog({
             <Label htmlFor="equipment_id">Select Equipment</Label>
             <Select
               value={formData.equipment_id || ''}
-              onValueChange={(value) => handleInputChange('equipment_id', value)}
+              onValueChange={value => handleInputChange('equipment_id', value)}
             >
               <SelectTrigger className="w-full">
-                {formData.equipment_name || <span className="text-muted-foreground">Select equipment</span>}
+                {formData.equipment_name || (
+                  <span className="text-muted-foreground">Select equipment</span>
+                )}
               </SelectTrigger>
               <SelectContent>
-                {equipment.map((eq) => (
+                {equipment.map(eq => (
                   <SelectItem key={eq.id} value={eq.id}>
                     {eq.name} {eq.model_number && `(${eq.model_number})`}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            
+
             {/* Show selected equipment details */}
             {formData.equipment_id && (
               <div className="rounded bg-gray-100 p-3 mt-2">
                 <div className="text-sm font-medium text-gray-700">Selected Equipment</div>
                 <div className="text-sm text-gray-600 mt-1">
                   {formData.equipment_name}
-                  {formData.equipment_name && equipment.find(eq => eq.id === formData.equipment_id)?.model_number && 
-                    ` (${equipment.find(eq => eq.id === formData.equipment_id)?.model_number})`
-                  }
+                  {formData.equipment_name &&
+                    equipment.find(eq => eq.id === formData.equipment_id)?.model_number &&
+                    ` (${equipment.find(eq => eq.id === formData.equipment_id)?.model_number})`}
                 </div>
                 {equipment.find(eq => eq.id === formData.equipment_id)?.daily_rate && (
                   <div className="text-sm text-gray-600 mt-1">
-                    Daily Rate: SAR {equipment.find(eq => eq.id === formData.equipment_id)?.daily_rate}
+                    Daily Rate: SAR{' '}
+                    {equipment.find(eq => eq.id === formData.equipment_id)?.daily_rate}
                   </div>
                 )}
               </div>
@@ -345,13 +397,17 @@ export default function EquipmentDialog({
             <Label htmlFor="operator_id">Select Operator</Label>
             <Select
               value={formData.operator_id || ''}
-              onValueChange={(value) => handleInputChange('operator_id', value)}
+              onValueChange={value => handleInputChange('operator_id', value)}
             >
               <SelectTrigger className="w-full">
-                {formData.operator_name || <span className="text-muted-foreground">Select operator from manpower resources</span>}
+                {formData.operator_name || (
+                  <span className="text-muted-foreground">
+                    Select operator from manpower resources
+                  </span>
+                )}
               </SelectTrigger>
               <SelectContent>
-                {manpowerResources.map((resource) => (
+                {manpowerResources.map(resource => (
                   <SelectItem key={resource.id} value={resource.id}>
                     {resource.employee_name || resource.worker_name || resource.name}
                     {resource.job_title && ` - ${resource.job_title}`}
@@ -359,14 +415,12 @@ export default function EquipmentDialog({
                 ))}
               </SelectContent>
             </Select>
-            
+
             {/* Show selected operator details */}
             {formData.operator_id && (
               <div className="rounded bg-blue-100 p-3 mt-2">
                 <div className="text-sm font-medium text-blue-700">Selected Operator</div>
-                <div className="text-sm text-blue-600 mt-1">
-                  {formData.operator_name}
-                </div>
+                <div className="text-sm text-blue-600 mt-1">{formData.operator_name}</div>
                 {manpowerResources.find(op => op.id === formData.operator_id)?.job_title && (
                   <div className="text-sm text-blue-600 mt-1">
                     Job: {manpowerResources.find(op => op.id === formData.operator_id)?.job_title}
@@ -376,8 +430,6 @@ export default function EquipmentDialog({
             )}
           </div>
 
-
-
           {/* Date Range - Third priority */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -386,7 +438,7 @@ export default function EquipmentDialog({
                 id="start_date"
                 type="date"
                 value={formData.start_date || ''}
-                onChange={(e) => handleInputChange('start_date', e.target.value)}
+                onChange={e => handleInputChange('start_date', e.target.value)}
                 required
               />
             </div>
@@ -396,7 +448,7 @@ export default function EquipmentDialog({
                 id="end_date"
                 type="date"
                 value={formData.end_date || ''}
-                onChange={(e) => handleInputChange('end_date', e.target.value)}
+                onChange={e => handleInputChange('end_date', e.target.value)}
                 min={formData.start_date}
               />
             </div>
@@ -410,7 +462,7 @@ export default function EquipmentDialog({
                 id="hourly_rate"
                 type="number"
                 value={formData.hourly_rate || ''}
-                onChange={(e) => handleInputChange('hourly_rate', parseFloat(e.target.value))}
+                onChange={e => handleInputChange('hourly_rate', parseFloat(e.target.value))}
                 placeholder="0.00"
                 step="0.01"
                 min="0"
@@ -422,7 +474,7 @@ export default function EquipmentDialog({
                 id="usage_hours"
                 type="number"
                 value={formData.usage_hours || ''}
-                onChange={(e) => handleInputChange('usage_hours', parseFloat(e.target.value))}
+                onChange={e => handleInputChange('usage_hours', parseFloat(e.target.value))}
                 placeholder="0"
                 min="0"
                 step="0.5"
@@ -434,7 +486,7 @@ export default function EquipmentDialog({
                 id="maintenance_cost"
                 type="number"
                 value={formData.maintenance_cost || ''}
-                onChange={(e) => handleInputChange('maintenance_cost', parseFloat(e.target.value))}
+                onChange={e => handleInputChange('maintenance_cost', parseFloat(e.target.value))}
                 placeholder="0.00"
                 step="0.01"
                 min="0"
@@ -460,7 +512,7 @@ export default function EquipmentDialog({
             <Textarea
               id="notes"
               value={formData.notes || ''}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
+              onChange={e => handleInputChange('notes', e.target.value)}
               placeholder="Enter any additional notes"
               rows={3}
             />

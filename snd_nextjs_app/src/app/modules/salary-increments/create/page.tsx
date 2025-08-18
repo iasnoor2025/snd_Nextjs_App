@@ -1,19 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
-import { salaryIncrementService, type CreateSalaryIncrementData } from '@/lib/services/salary-increment-service';
 import ApiService from '@/lib/api-service';
+import {
+  salaryIncrementService,
+  type CreateSalaryIncrementData,
+} from '@/lib/services/salary-increment-service';
 import { ArrowLeft, Calculator, Save } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Employee {
   id: number;
@@ -79,7 +88,7 @@ export default function CreateSalaryIncrementPage() {
 
   useEffect(() => {
     if (status === 'loading') return;
-    
+
     if (!session) {
       router.push('/login');
       return;
@@ -90,7 +99,13 @@ export default function CreateSalaryIncrementPage() {
     if (selectedEmployee) {
       calculateNewSalary();
     }
-  }, [selectedEmployee, formData.increment_percentage, formData.increment_amount, formData.increment_type, calculationMethod]);
+  }, [
+    selectedEmployee,
+    formData.increment_percentage,
+    formData.increment_amount,
+    formData.increment_type,
+    calculationMethod,
+  ]);
 
   const calculateNewSalary = () => {
     if (!selectedEmployee) return;
@@ -110,7 +125,7 @@ export default function CreateSalaryIncrementPage() {
       transportAllowance,
       calculationMethod,
       incrementPercentage: formData.increment_percentage,
-      incrementAmount: formData.increment_amount
+      incrementAmount: formData.increment_amount,
     });
 
     const currentTotal = baseSalary + foodAllowance + housingAllowance + transportAllowance;
@@ -131,7 +146,7 @@ export default function CreateSalaryIncrementPage() {
       increasePercentage = parseFloat(String(formData.increment_percentage));
     } else if (calculationMethod === 'fixed' && formData.increment_amount) {
       const incrementAmount = parseFloat(String(formData.increment_amount));
-      
+
       // Distribute fixed amount proportionally across all components
       if (currentTotal > 0) {
         const baseRatio = baseSalary / currentTotal;
@@ -139,10 +154,10 @@ export default function CreateSalaryIncrementPage() {
         const housingRatio = housingAllowance / currentTotal;
         const transportRatio = transportAllowance / currentTotal;
 
-        newBase = baseSalary + (incrementAmount * baseRatio);
-        newFood = foodAllowance + (incrementAmount * foodRatio);
-        newHousing = housingAllowance + (incrementAmount * housingRatio);
-        newTransport = transportAllowance + (incrementAmount * transportRatio);
+        newBase = baseSalary + incrementAmount * baseRatio;
+        newFood = foodAllowance + incrementAmount * foodRatio;
+        newHousing = housingAllowance + incrementAmount * housingRatio;
+        newTransport = transportAllowance + incrementAmount * transportRatio;
         increasePercentage = (incrementAmount / currentTotal) * 100;
       } else {
         // If current total is 0, add the full amount to base salary
@@ -163,7 +178,7 @@ export default function CreateSalaryIncrementPage() {
       newBase,
       newFood,
       newHousing,
-      newTransport
+      newTransport,
     });
 
     setCalculatedSalary({
@@ -193,7 +208,7 @@ export default function CreateSalaryIncrementPage() {
 
   const handleEmployeeChange = async (employeeId: string) => {
     console.log('Employee selected:', employeeId);
-    
+
     if (!employeeId) {
       setSelectedEmployee(null);
       setFormData(prev => ({ ...prev, employee_id: 0 }));
@@ -201,12 +216,12 @@ export default function CreateSalaryIncrementPage() {
     }
 
     setFormData(prev => ({ ...prev, employee_id: parseInt(employeeId) }));
-    
+
     try {
       // Fetch full employee details including salary information
       const response = await ApiService.get(`/employees/${employeeId}`);
       console.log('Employee details response:', response);
-      
+
       if (response.data) {
         setSelectedEmployee(response.data);
         console.log('Employee set:', response.data);
@@ -224,7 +239,7 @@ export default function CreateSalaryIncrementPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.employee_id) {
       toast.error('Please select an employee');
       return;
@@ -254,16 +269,28 @@ export default function CreateSalaryIncrementPage() {
     const dataToSend = {
       ...formData,
       // Map calculation method to correct increment type
-      increment_type: (calculationMethod === 'percentage' ? 'percentage' : 'amount') as 'percentage' | 'amount' | 'promotion' | 'annual_review' | 'performance' | 'market_adjustment',
+      increment_type: (calculationMethod === 'percentage' ? 'percentage' : 'amount') as
+        | 'percentage'
+        | 'amount'
+        | 'promotion'
+        | 'annual_review'
+        | 'performance'
+        | 'market_adjustment',
       // Ensure numeric fields are properly set
-      increment_percentage: calculationMethod === 'percentage' ? formData.increment_percentage : undefined,
+      increment_percentage:
+        calculationMethod === 'percentage' ? formData.increment_percentage : undefined,
       increment_amount: calculationMethod === 'fixed' ? formData.increment_amount : undefined,
       // Set apply_to_allowances based on calculation method
       apply_to_allowances: calculationMethod === 'percentage',
     };
 
     console.log('Sending data to API:', dataToSend);
-    console.log('Effective date:', formData.effective_date, 'Type:', typeof formData.effective_date);
+    console.log(
+      'Effective date:',
+      formData.effective_date,
+      'Type:',
+      typeof formData.effective_date
+    );
 
     try {
       setLoading(true);
@@ -291,7 +318,7 @@ export default function CreateSalaryIncrementPage() {
     const foodAllowance = parseFloat(String(employee.food_allowance || 0));
     const housingAllowance = parseFloat(String(employee.housing_allowance || 0));
     const transportAllowance = parseFloat(String(employee.transport_allowance || 0));
-    return (baseSalary + foodAllowance + housingAllowance + transportAllowance) > 0;
+    return baseSalary + foodAllowance + housingAllowance + transportAllowance > 0;
   };
 
   // Show loading while checking authentication
@@ -319,7 +346,9 @@ export default function CreateSalaryIncrementPage() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back
         </Button>
-        <h2 className="text-xl leading-tight font-semibold text-gray-800">Create Salary Increment</h2>
+        <h2 className="text-xl leading-tight font-semibold text-gray-800">
+          Create Salary Increment
+        </h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -369,11 +398,15 @@ export default function CreateSalaryIncrementPage() {
                   </div>
                   <div>
                     <span className="text-gray-600">Department:</span>
-                    <span className="ml-2 font-medium">{selectedEmployee.department?.name || 'No Department'}</span>
+                    <span className="ml-2 font-medium">
+                      {selectedEmployee.department?.name || 'No Department'}
+                    </span>
                   </div>
                   <div>
                     <span className="text-gray-600">Position:</span>
-                    <span className="ml-2 font-medium">{selectedEmployee.position?.title || 'No Position'}</span>
+                    <span className="ml-2 font-medium">
+                      {selectedEmployee.position?.title || 'No Position'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -388,12 +421,15 @@ export default function CreateSalaryIncrementPage() {
             <CardDescription>Specify the increment type and amount</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <fieldset disabled={!selectedEmployee} className={!selectedEmployee ? 'opacity-50 pointer-events-none' : ''}>
+            <fieldset
+              disabled={!selectedEmployee}
+              className={!selectedEmployee ? 'opacity-50 pointer-events-none' : ''}
+            >
               <div>
                 <Label htmlFor="increment_type">Increment Type</Label>
                 <Select
                   value={formData.increment_type}
-                  onValueChange={(value) => {
+                  onValueChange={value => {
                     setFormData(prev => ({ ...prev, increment_type: value as any }));
                     if (value === 'amount') {
                       setCalculationMethod('fixed');
@@ -458,7 +494,12 @@ export default function CreateSalaryIncrementPage() {
                     min="0"
                     max="100"
                     value={formData.increment_percentage || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, increment_percentage: parseFloat(e.target.value) || 0 }))}
+                    onChange={e =>
+                      setFormData(prev => ({
+                        ...prev,
+                        increment_percentage: parseFloat(e.target.value) || 0,
+                      }))
+                    }
                     placeholder="Enter percentage (e.g., 10.5 for 10.5%)"
                   />
                 </div>
@@ -471,7 +512,12 @@ export default function CreateSalaryIncrementPage() {
                     step="0.01"
                     min="0"
                     value={formData.increment_amount || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, increment_amount: parseFloat(e.target.value) || 0 }))}
+                    onChange={e =>
+                      setFormData(prev => ({
+                        ...prev,
+                        increment_amount: parseFloat(e.target.value) || 0,
+                      }))
+                    }
                     placeholder="Enter fixed amount (e.g., 5000)"
                   />
                 </div>
@@ -483,7 +529,7 @@ export default function CreateSalaryIncrementPage() {
                   id="effective_date"
                   type="date"
                   value={formData.effective_date}
-                  onChange={(e) => setFormData(prev => ({ ...prev, effective_date: e.target.value }))}
+                  onChange={e => setFormData(prev => ({ ...prev, effective_date: e.target.value }))}
                   min={new Date().toISOString().split('T')[0]}
                 />
               </div>
@@ -504,7 +550,8 @@ export default function CreateSalaryIncrementPage() {
             <CardContent>
               {!hasSalaryData(selectedEmployee) && (
                 <div className="mb-4 text-sm text-red-600 font-medium">
-                  Warning: This employee has no salary or allowance data set. Calculation will always be zero.
+                  Warning: This employee has no salary or allowance data set. Calculation will
+                  always be zero.
                 </div>
               )}
               <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
@@ -605,7 +652,9 @@ export default function CreateSalaryIncrementPage() {
         <Card>
           <CardHeader>
             <CardTitle>Justification</CardTitle>
-            <CardDescription>Provide reason and additional notes for this increment</CardDescription>
+            <CardDescription>
+              Provide reason and additional notes for this increment
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
@@ -613,7 +662,7 @@ export default function CreateSalaryIncrementPage() {
               <Textarea
                 id="reason"
                 value={formData.reason}
-                onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
+                onChange={e => setFormData(prev => ({ ...prev, reason: e.target.value }))}
                 placeholder="Explain the reason for this salary increment"
                 rows={3}
               />
@@ -624,7 +673,7 @@ export default function CreateSalaryIncrementPage() {
               <Textarea
                 id="notes"
                 value={formData.notes || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                onChange={e => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                 placeholder="Any additional notes or comments"
                 rows={2}
               />

@@ -1,18 +1,23 @@
 import { db } from '@/lib/db';
-import { rentals, rentalItems, customers, equipment } from '@/lib/drizzle/schema';
-import { eq, and, or, ilike, gte, lte, desc } from 'drizzle-orm';
-import { sql } from 'drizzle-orm';
-import { equipmentRentalHistory, employeeAssignments } from '@/lib/drizzle/schema';
+import {
+  customers,
+  employeeAssignments,
+  equipment,
+  equipmentRentalHistory,
+  rentalItems,
+  rentals,
+} from '@/lib/drizzle/schema';
+import { and, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm';
 
 export class RentalService {
   // Get all rentals with filters
   static async getRentals(filters?: {
-    search?: string
-    status?: string
-    customerId?: string
-    paymentStatus?: string
-    startDate?: string
-    endDate?: string
+    search?: string;
+    status?: string;
+    customerId?: string;
+    paymentStatus?: string;
+    startDate?: string;
+    endDate?: string;
   }) {
     const conditions: any[] = [];
 
@@ -103,7 +108,7 @@ export class RentalService {
 
     // Get rental items for each rental
     const rentalsWithItems = await Promise.all(
-      results.map(async (rental) => {
+      results.map(async rental => {
         try {
           console.log(`Fetching rental items for rental ${rental.id}...`);
           const items = await this.getRentalItems(rental.id);
@@ -112,12 +117,14 @@ export class RentalService {
             ...rental,
             rental_items: items || [],
             rentalItems: items || [], // Add camelCase version for frontend compatibility
-            customer: rental.customerName ? {
-              id: rental.customerId,
-              name: rental.customerName,
-              email: rental.customerEmail,
-              phone: rental.customerPhone,
-            } : null,
+            customer: rental.customerName
+              ? {
+                  id: rental.customerId,
+                  name: rental.customerName,
+                  email: rental.customerEmail,
+                  phone: rental.customerPhone,
+                }
+              : null,
           };
         } catch (error) {
           console.error(`Error getting rental items for rental ${rental.id}:`, error);
@@ -128,12 +135,14 @@ export class RentalService {
             ...rental,
             rental_items: [],
             rentalItems: [], // Add camelCase version for frontend compatibility
-            customer: rental.customerName ? {
-              id: rental.customerId,
-              name: rental.customerName,
-              email: rental.customerEmail,
-              phone: rental.customerPhone,
-            } : null,
+            customer: rental.customerName
+              ? {
+                  id: rental.customerId,
+                  name: rental.customerName,
+                  email: rental.customerEmail,
+                  phone: rental.customerPhone,
+                }
+              : null,
           };
         }
       })
@@ -203,7 +212,7 @@ export class RentalService {
     }
 
     const rental = result[0];
-    
+
     if (!rental) {
       throw new Error('Rental not found');
     }
@@ -229,51 +238,53 @@ export class RentalService {
       ...rental,
       rental_items: items,
       rentalItems: items, // Add camelCase version for frontend compatibility
-      customer: customer ? {
-        id: customer.id,
-        name: customer.name || 'Unknown Customer',
-        email: customer.email || '',
-        phone: customer.phone || '',
-        company: customer.company || '',
-        address: customer.address || '',
-        vat: customer.vat || '',
-      } : {
-        id: rental.customerId,
-        name: 'Unknown Customer',
-        email: '',
-        phone: '',
-        company: '',
-        address: '',
-        vat: '',
-      },
+      customer: customer
+        ? {
+            id: customer.id,
+            name: customer.name || 'Unknown Customer',
+            email: customer.email || '',
+            phone: customer.phone || '',
+            company: customer.company || '',
+            address: customer.address || '',
+            vat: customer.vat || '',
+          }
+        : {
+            id: rental.customerId,
+            name: 'Unknown Customer',
+            email: '',
+            phone: '',
+            company: '',
+            address: '',
+            vat: '',
+          },
     };
   }
 
   // Create new rental
   static async createRental(data: {
-    customerId: number
-    rentalNumber: string
-    startDate: Date
-    expectedEndDate?: Date
-    actualEndDate?: Date
-    status?: string
-    paymentStatus?: 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE'
-    subtotal?: number
-    taxAmount?: number
-    totalAmount: number
-    discount?: number
-    tax?: number
-    finalAmount?: number
-    depositAmount?: number
-    paymentTermsDays?: number
-    hasTimesheet?: boolean
-    hasOperators?: boolean
-    notes?: string
-    rentalItems?: any[]
+    customerId: number;
+    rentalNumber: string;
+    startDate: Date;
+    expectedEndDate?: Date;
+    actualEndDate?: Date;
+    status?: string;
+    paymentStatus?: 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE';
+    subtotal?: number;
+    taxAmount?: number;
+    totalAmount: number;
+    discount?: number;
+    tax?: number;
+    finalAmount?: number;
+    depositAmount?: number;
+    paymentTermsDays?: number;
+    hasTimesheet?: boolean;
+    hasOperators?: boolean;
+    notes?: string;
+    rentalItems?: any[];
   }) {
     const { rentalItems: itemsToCreate, ...rentalData } = data;
 
-    const [rental] = await (db
+    const [rental] = await db
       .insert(rentals)
       .values({
         customerId: rentalData.customerId || null,
@@ -296,7 +307,7 @@ export class RentalService {
         notes: rentalData.notes || '',
         updatedAt: new Date().toISOString().split('T')[0],
       } as any)
-      .returning());
+      .returning();
 
     // Create rental items if provided
     if (itemsToCreate && itemsToCreate.length > 0) {
@@ -327,31 +338,34 @@ export class RentalService {
   }
 
   // Update rental
-  static async updateRental(id: number, data: {
-    customerId?: number
-    rentalNumber?: string
-    startDate?: Date
-    expectedEndDate?: Date | null
-    actualEndDate?: Date | null
-    status?: string
-    paymentStatus?: string
-    subtotal?: number
-    taxAmount?: number
-    totalAmount?: number
-    discount?: number
-    tax?: number
-    finalAmount?: number
-    depositAmount?: number
-    paymentTermsDays?: number
-    hasTimesheet?: boolean
-    hasOperators?: boolean
-    notes?: string
-    rentalItems?: any[]
-    approvedAt?: string
-    mobilizationDate?: string
-    completedAt?: string
-    invoiceDate?: string
-  }) {
+  static async updateRental(
+    id: number,
+    data: {
+      customerId?: number;
+      rentalNumber?: string;
+      startDate?: Date;
+      expectedEndDate?: Date | null;
+      actualEndDate?: Date | null;
+      status?: string;
+      paymentStatus?: string;
+      subtotal?: number;
+      taxAmount?: number;
+      totalAmount?: number;
+      discount?: number;
+      tax?: number;
+      finalAmount?: number;
+      depositAmount?: number;
+      paymentTermsDays?: number;
+      hasTimesheet?: boolean;
+      hasOperators?: boolean;
+      notes?: string;
+      rentalItems?: any[];
+      approvedAt?: string;
+      mobilizationDate?: string;
+      completedAt?: string;
+      invoiceDate?: string;
+    }
+  ) {
     const { rentalItems: itemsToUpdate, ...rentalData } = data;
 
     // Handle null values for dates
@@ -382,20 +396,17 @@ export class RentalService {
 
     // Check if status is changing to active/approved
     const currentRental = await this.getRental(id);
-    const isStatusChangingToActive = (rentalData.status === 'active' || rentalData.status === 'approved') && 
-                                   currentRental?.status !== 'active' && currentRental?.status !== 'approved';
+    const isStatusChangingToActive =
+      (rentalData.status === 'active' || rentalData.status === 'approved') &&
+      currentRental?.status !== 'active' &&
+      currentRental?.status !== 'approved';
 
-    await db
-      .update(rentals)
-      .set(updateData)
-      .where(eq(rentals.id, id));
+    await db.update(rentals).set(updateData).where(eq(rentals.id, id));
 
     // Handle rental items if provided
     if (itemsToUpdate) {
       // Delete existing items
-      await db
-        .delete(rentalItems)
-        .where(eq(rentalItems.rentalId, id));
+      await db.delete(rentalItems).where(eq(rentalItems.rentalId, id));
 
       // Create new items
       if (itemsToUpdate.length > 0) {
@@ -430,14 +441,10 @@ export class RentalService {
   static async deleteRental(id: number) {
     try {
       // Delete rental items first
-      await db
-        .delete(rentalItems)
-        .where(eq(rentalItems.rentalId, id));
+      await db.delete(rentalItems).where(eq(rentalItems.rentalId, id));
 
       // Delete rental
-      await db
-        .delete(rentals)
-        .where(eq(rentals.id, id));
+      await db.delete(rentals).where(eq(rentals.id, id));
 
       return true;
     } catch (error) {
@@ -448,17 +455,17 @@ export class RentalService {
 
   // Add rental item
   static async addRentalItem(data: {
-    rentalId: number
-    equipmentId?: number | null
-    equipmentName: string
-    unitPrice: number
-    totalPrice: number
-    rateType?: string
-    operatorId?: number | null
-    status?: string
-    notes?: string
+    rentalId: number;
+    equipmentId?: number | null;
+    equipmentName: string;
+    unitPrice: number;
+    totalPrice: number;
+    rateType?: string;
+    operatorId?: number | null;
+    status?: string;
+    notes?: string;
   }) {
-    const [result] = await (db
+    const [result] = await db
       .insert(rentalItems)
       .values({
         rentalId: data.rentalId,
@@ -472,7 +479,7 @@ export class RentalService {
         notes: data.notes || '',
         updatedAt: new Date().toISOString().split('T')[0],
       } as any)
-      .returning());
+      .returning();
 
     return this.getRentalItem(result.id);
   }
@@ -531,23 +538,23 @@ export class RentalService {
   }
 
   // Update rental item
-  static async updateRentalItem(id: number, data: {
-    equipmentId?: number | null
-    equipmentName?: string
-    unitPrice?: number
-    totalPrice?: number
-    rateType?: string
-    operatorId?: number | null
-    status?: string
-    notes?: string
-  }) {
+  static async updateRentalItem(
+    id: number,
+    data: {
+      equipmentId?: number | null;
+      equipmentName?: string;
+      unitPrice?: number;
+      totalPrice?: number;
+      rateType?: string;
+      operatorId?: number | null;
+      status?: string;
+      notes?: string;
+    }
+  ) {
     const updateData: any = { ...data };
     updateData.updatedAt = new Date().toISOString().split('T')[0];
 
-    await db
-      .update(rentalItems)
-      .set(updateData)
-      .where(eq(rentalItems.id, id));
+    await db.update(rentalItems).set(updateData).where(eq(rentalItems.id, id));
 
     return this.getRentalItem(id);
   }
@@ -555,9 +562,7 @@ export class RentalService {
   // Delete rental item
   static async deleteRentalItem(id: number) {
     try {
-      await db
-        .delete(rentalItems)
-        .where(eq(rentalItems.id, id));
+      await db.delete(rentalItems).where(eq(rentalItems.id, id));
       return true;
     } catch (error) {
       console.error('Error deleting rental item:', error);
@@ -592,11 +597,13 @@ export class RentalService {
           const existingEquipmentAssignment = await db
             .select()
             .from(equipmentRentalHistory)
-            .where(and(
-              eq(equipmentRentalHistory.equipmentId, item.equipmentId),
-              eq(equipmentRentalHistory.rentalId, rentalId),
-              eq(equipmentRentalHistory.status, 'active')
-            ));
+            .where(
+              and(
+                eq(equipmentRentalHistory.equipmentId, item.equipmentId),
+                eq(equipmentRentalHistory.rentalId, rentalId),
+                eq(equipmentRentalHistory.status, 'active')
+              )
+            );
 
           if (existingEquipmentAssignment.length === 0) {
             // Create new equipment assignment
@@ -613,7 +620,9 @@ export class RentalService {
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             });
-            console.log(`Created equipment assignment for equipment ${item.equipmentId} in rental ${rentalId}`);
+            console.log(
+              `Created equipment assignment for equipment ${item.equipmentId} in rental ${rentalId}`
+            );
           }
         }
 
@@ -622,11 +631,13 @@ export class RentalService {
           const existingEmployeeAssignment = await db
             .select()
             .from(employeeAssignments)
-            .where(and(
-              eq(employeeAssignments.employeeId, item.operatorId),
-              eq(employeeAssignments.rentalId, rentalId),
-              eq(employeeAssignments.status, 'active')
-            ));
+            .where(
+              and(
+                eq(employeeAssignments.employeeId, item.operatorId),
+                eq(employeeAssignments.rentalId, rentalId),
+                eq(employeeAssignments.status, 'active')
+              )
+            );
 
           if (existingEmployeeAssignment.length === 0) {
             // Create new employee assignment
@@ -641,7 +652,9 @@ export class RentalService {
               createdAt: new Date().toISOString().split('T')[0],
               updatedAt: new Date().toISOString().split('T')[0],
             });
-            console.log(`Created employee assignment for employee ${item.operatorId} in rental ${rentalId}`);
+            console.log(
+              `Created employee assignment for employee ${item.operatorId} in rental ${rentalId}`
+            );
           }
         }
       }
@@ -656,11 +669,11 @@ export class RentalService {
   static async updateAssignmentStatuses(rentalId: number, newStatus: string) {
     try {
       const statusMap: { [key: string]: string } = {
-        'active': 'active',
-        'approved': 'active',
-        'completed': 'completed',
-        'cancelled': 'cancelled',
-        'suspended': 'suspended'
+        active: 'active',
+        approved: 'active',
+        completed: 'completed',
+        cancelled: 'cancelled',
+        suspended: 'suspended',
       };
 
       const assignmentStatus = statusMap[newStatus] || 'active';
@@ -670,7 +683,7 @@ export class RentalService {
         .update(equipmentRentalHistory)
         .set({
           status: assignmentStatus,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(equipmentRentalHistory.rentalId, rentalId));
 
@@ -679,7 +692,7 @@ export class RentalService {
         .update(employeeAssignments)
         .set({
           status: assignmentStatus,
-          updatedAt: new Date().toISOString().split('T')[0]
+          updatedAt: new Date().toISOString().split('T')[0],
         })
         .where(eq(employeeAssignments.rentalId, rentalId));
 

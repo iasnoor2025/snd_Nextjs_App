@@ -1,12 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Edit, Trash2, Eye } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Edit, Eye, Plus, Search, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface Customer {
@@ -33,9 +40,11 @@ export default function CustomerManagementPage() {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await fetch(`/api/customers?page=${currentPage}&limit=10&sortBy=created_at&sortOrder=desc`);
-      
+
+      const response = await fetch(
+        `/api/customers?page=${currentPage}&limit=10&sortBy=created_at&sortOrder=desc`
+      );
+
       if (!response.ok) {
         if (response.status === 403) {
           setError('Access denied. You do not have permission to view customers.');
@@ -65,9 +74,10 @@ export default function CustomerManagementPage() {
     fetchCustomers();
   }, [currentPage]);
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    customer.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCustomers = customers.filter(
+    customer =>
+      customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSearch = (e: React.FormEvent) => {
@@ -79,18 +89,18 @@ export default function CustomerManagementPage() {
     console.log('Sync from ERPNext clicked');
     setSyncing(true);
     toast.info('Starting sync from ERPNext...');
-    
+
     try {
       // First fetch customers from ERPNext
       console.log('Fetching customers from ERPNext...');
       const response = await fetch('/api/erpnext/customers');
       const result = await response.json();
-      
+
       console.log('ERPNext response:', result);
 
       if (result.success && result.data && result.data.length > 0) {
         console.log(`Found ${result.data.length} customers in ERPNext`);
-        
+
         // Now call the sync endpoint to save the data
         console.log('Calling sync endpoint...');
         const syncResponse = await fetch('/api/customers/sync', {
@@ -119,15 +129,15 @@ export default function CustomerManagementPage() {
                     notes: customer.notes || '',
                     is_active: !customer.disabled,
                     erpnext_id: customer.name || '',
-                  }
+                  },
                 };
                 console.log('Mapped customer data:', mappedData);
                 return mappedData;
               }),
               toUpdate: [],
-              toSkip: []
-            }
-          })
+              toSkip: [],
+            },
+          }),
         });
 
         const syncResult = await syncResponse.json();
@@ -137,7 +147,7 @@ export default function CustomerManagementPage() {
           const message = `Successfully synced ${syncResult.data.processed} customers from ERPNext!`;
           console.log(message);
           toast.success(message);
-          
+
           // Refresh the customer list
           fetchCustomers();
         } else {
@@ -146,9 +156,10 @@ export default function CustomerManagementPage() {
           toast.error(errorMessage);
         }
       } else {
-        const errorMessage = result.data && result.data.length === 0 
-          ? 'No customers found in ERPNext' 
-          : 'Failed to fetch customers from ERPNext';
+        const errorMessage =
+          result.data && result.data.length === 0
+            ? 'No customers found in ERPNext'
+            : 'Failed to fetch customers from ERPNext';
         console.error(errorMessage);
         toast.error(errorMessage);
       }
@@ -276,7 +287,7 @@ export default function CustomerManagementPage() {
               <Input
                 placeholder="Search by name or email..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
               />
             </div>
             <Button type="submit" variant="outline">
@@ -304,7 +315,7 @@ export default function CustomerManagementPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCustomers.map((customer) => (
+              {filteredCustomers.map(customer => (
                 <TableRow key={customer.id}>
                   <TableCell className="font-medium">{customer.name}</TableCell>
                   <TableCell>{customer.email}</TableCell>
@@ -313,13 +324,26 @@ export default function CustomerManagementPage() {
                   <TableCell>{new Date(customer.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => handleViewCustomer(customer)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleViewCustomer(customer)}
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => handleEditCustomer(customer)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEditCustomer(customer)}
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="outline" className="text-red-600" onClick={() => handleDeleteCustomer(customer)}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600"
+                        onClick={() => handleDeleteCustomer(customer)}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

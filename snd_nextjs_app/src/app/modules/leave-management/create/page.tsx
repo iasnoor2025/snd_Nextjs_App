@@ -1,17 +1,23 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { ProtectedRoute } from '@/components/protected-route';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { ArrowLeft, Calendar, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { toast } from 'sonner';
-import { ProtectedRoute } from '@/components/protected-route';
 
 interface LeaveRequestForm {
   employee_id: string;
@@ -37,7 +43,7 @@ function CreateLeaveRequestContent() {
     leave_type: '',
     start_date: '',
     end_date: '',
-    reason: ''
+    reason: '',
   });
 
   const leaveTypes = [
@@ -46,7 +52,7 @@ function CreateLeaveRequestContent() {
     'Personal Leave',
     'Maternity Leave',
     'Study Leave',
-    'Other'
+    'Other',
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,7 +85,8 @@ function CreateLeaveRequestContent() {
       // Calculate days requested
       const startDate = new Date(formData.start_date);
       const endDate = new Date(formData.end_date);
-      const daysRequested = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const daysRequested =
+        Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
       if (daysRequested < 1) {
         toast.error('End date must be after start date');
@@ -121,7 +128,7 @@ function CreateLeaveRequestContent() {
   const handleInputChange = (field: keyof LeaveRequestForm, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -130,18 +137,13 @@ function CreateLeaveRequestContent() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            onClick={() => router.push('/modules/leave-management')}
-          >
+          <Button variant="ghost" onClick={() => router.push('/modules/leave-management')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Leave Management
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Request Leave</h1>
-            <p className="text-muted-foreground">
-              Submit a new leave request
-            </p>
+            <p className="text-muted-foreground">Submit a new leave request</p>
           </div>
         </div>
       </div>
@@ -154,14 +156,12 @@ function CreateLeaveRequestContent() {
               <User className="mr-2 h-5 w-5" />
               Employee Selection
             </CardTitle>
-            <CardDescription>
-              Select the employee requesting leave
-            </CardDescription>
+            <CardDescription>Select the employee requesting leave</CardDescription>
           </CardHeader>
           <CardContent>
             <EmployeeDropdown
               value={formData.employee_id}
-              onValueChange={(value) => handleInputChange('employee_id', value)}
+              onValueChange={value => handleInputChange('employee_id', value)}
               label="Employee"
               placeholder="Select an employee"
               required={true}
@@ -176,20 +176,21 @@ function CreateLeaveRequestContent() {
               <Calendar className="mr-2 h-5 w-5" />
               Leave Details
             </CardTitle>
-            <CardDescription>
-              Provide leave request details
-            </CardDescription>
+            <CardDescription>Provide leave request details</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Leave Type */}
             <div className="space-y-2">
               <Label htmlFor="leave_type">Leave Type *</Label>
-              <Select value={formData.leave_type} onValueChange={(value) => handleInputChange('leave_type', value)}>
+              <Select
+                value={formData.leave_type}
+                onValueChange={value => handleInputChange('leave_type', value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select leave type" />
                 </SelectTrigger>
                 <SelectContent>
-                  {leaveTypes.map((type) => (
+                  {leaveTypes.map(type => (
                     <SelectItem key={type} value={type}>
                       {type}
                     </SelectItem>
@@ -205,7 +206,7 @@ function CreateLeaveRequestContent() {
                 <Input
                   type="date"
                   value={formData.start_date}
-                  onChange={(e) => handleInputChange('start_date', e.target.value)}
+                  onChange={e => handleInputChange('start_date', e.target.value)}
                   min={new Date().toISOString().split('T')[0]}
                 />
               </div>
@@ -214,7 +215,7 @@ function CreateLeaveRequestContent() {
                 <Input
                   type="date"
                   value={formData.end_date}
-                  onChange={(e) => handleInputChange('end_date', e.target.value)}
+                  onChange={e => handleInputChange('end_date', e.target.value)}
                   min={formData.start_date || new Date().toISOString().split('T')[0]}
                 />
               </div>
@@ -225,7 +226,7 @@ function CreateLeaveRequestContent() {
               <Label htmlFor="reason">Reason for Leave *</Label>
               <Textarea
                 value={formData.reason}
-                onChange={(e) => handleInputChange('reason', e.target.value)}
+                onChange={e => handleInputChange('reason', e.target.value)}
                 placeholder="Please provide a detailed reason for your leave request"
                 rows={4}
               />
@@ -249,4 +250,4 @@ function CreateLeaveRequestContent() {
       </form>
     </div>
   );
-} 
+}

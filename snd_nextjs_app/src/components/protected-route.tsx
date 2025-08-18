@@ -1,12 +1,12 @@
 'use client';
 
+import { Action, Subject, UserRole } from '@/lib/rbac/custom-rbac';
+import { AccessDenied, RBACLoading } from '@/lib/rbac/rbac-components';
+import { useRBAC } from '@/lib/rbac/rbac-context';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
-import { useRBAC } from '@/lib/rbac/rbac-context';
-import { AccessDenied, RBACLoading } from '@/lib/rbac/rbac-components';
-import { UserRole, Action, Subject } from '@/lib/rbac/custom-rbac';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -21,9 +21,8 @@ export function ProtectedRoute({
   requiredRole,
   requiredPermission,
   requiredRoute,
-  fallback
+  fallback,
 }: ProtectedRouteProps) {
-  
   const { user, isLoading, hasPermission, canAccessRoute } = useRBAC();
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -54,13 +53,13 @@ export function ProtectedRoute({
 
     // Define role hierarchy
     const roleHierarchy = {
-      'SUPER_ADMIN': 1,
-      'ADMIN': 2,
-      'MANAGER': 3,
-      'SUPERVISOR': 4,
-      'OPERATOR': 5,
-      'EMPLOYEE': 6,
-      'USER': 7,
+      SUPER_ADMIN: 1,
+      ADMIN: 2,
+      MANAGER: 3,
+      SUPERVISOR: 4,
+      OPERATOR: 5,
+      EMPLOYEE: 6,
+      USER: 7,
     };
 
     const userRoleLevel = roleHierarchy[userRole as keyof typeof roleHierarchy] || 7;
@@ -89,11 +88,7 @@ export function ProtectedRoute({
   // Check route-based access
   if (requiredRoute && user) {
     if (!canAccessRoute(requiredRoute)) {
-      return (
-        <AccessDenied
-          message={`You don't have permission to access this route.`}
-        />
-      );
+      return <AccessDenied message={`You don't have permission to access this route.`} />;
     }
   }
 

@@ -1,18 +1,25 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
 import { ProtectedRoute } from '@/components/protected-route';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { PermissionContent } from '@/lib/rbac/rbac-components';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Download, RefreshCw, Edit, Trash2 } from "lucide-react";
-import { toast } from "sonner";
-import Link from "next/link";
+import { ArrowLeft, Download, Edit, RefreshCw, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Label } from "@/components/ui/label";
+import { toast } from 'sonner';
 
 interface Report {
   id: string;
@@ -68,7 +75,7 @@ export default function ViewReportPage() {
   const handleGenerate = async () => {
     try {
       setGenerating(true);
-      
+
       const response = await fetch('/modules/reporting/api/reports/generate', {
         method: 'POST',
         headers: {
@@ -104,7 +111,7 @@ export default function ViewReportPage() {
 
     try {
       toast.loading(t('deleting_report'));
-      
+
       const response = await fetch(`/modules/reporting/api/reports/${params.id}`, {
         method: 'DELETE',
       });
@@ -123,11 +130,11 @@ export default function ViewReportPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "active":
+      case 'active':
         return <Badge className="bg-green-100 text-green-800">{t('active')}</Badge>;
-      case "draft":
+      case 'draft':
         return <Badge className="bg-gray-100 text-gray-800">{t('draft')}</Badge>;
-      case "archived":
+      case 'archived':
         return <Badge className="bg-red-100 text-red-800">{t('archived')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
@@ -136,17 +143,17 @@ export default function ViewReportPage() {
 
   const getTypeBadge = (type: string) => {
     switch (type) {
-      case "employee_summary":
+      case 'employee_summary':
         return <Badge className="bg-orange-100 text-orange-800">{t('employee_summary')}</Badge>;
-      case "payroll_summary":
+      case 'payroll_summary':
         return <Badge className="bg-indigo-100 text-indigo-800">{t('payroll_summary')}</Badge>;
-      case "equipment_utilization":
+      case 'equipment_utilization':
         return <Badge className="bg-teal-100 text-teal-800">{t('equipment_utilization')}</Badge>;
-      case "project_progress":
+      case 'project_progress':
         return <Badge className="bg-cyan-100 text-cyan-800">{t('project_progress')}</Badge>;
-      case "rental_summary":
+      case 'rental_summary':
         return <Badge className="bg-pink-100 text-pink-800">{t('rental_summary')}</Badge>;
-      case "timesheet_summary":
+      case 'timesheet_summary':
         return <Badge className="bg-yellow-100 text-yellow-800">{t('timesheet_summary')}</Badge>;
       default:
         return <Badge className="bg-gray-100 text-gray-800">{type}</Badge>;
@@ -182,7 +189,7 @@ export default function ViewReportPage() {
                 </CardContent>
               </Card>
             </div>
-            
+
             {data.employees && data.employees.length > 0 && (
               <Card>
                 <CardHeader>
@@ -205,7 +212,13 @@ export default function ViewReportPage() {
                           <TableCell>{employee.department?.name || '-'}</TableCell>
                           <TableCell>{employee.designation?.name || '-'}</TableCell>
                           <TableCell>
-                            <Badge className={employee.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                            <Badge
+                              className={
+                                employee.status === 'active'
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }
+                            >
                               {employee.status}
                             </Badge>
                           </TableCell>
@@ -254,7 +267,7 @@ export default function ViewReportPage() {
                 <div className="text-sm text-gray-500">{t('total_equipment')}</div>
               </CardContent>
             </Card>
-            
+
             {data.utilization_stats && data.utilization_stats.length > 0 && (
               <Card>
                 <CardHeader>
@@ -291,9 +304,7 @@ export default function ViewReportPage() {
         return (
           <Card>
             <CardContent className="p-4">
-              <pre className="text-sm overflow-auto">
-                {JSON.stringify(data, null, 2)}
-              </pre>
+              <pre className="text-sm overflow-auto">{JSON.stringify(data, null, 2)}</pre>
             </CardContent>
           </Card>
         );
@@ -384,7 +395,9 @@ export default function ViewReportPage() {
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">{t('schedule')}</Label>
-                  <p className="text-lg">{report.schedule ? t(`schedule_${report.schedule}`) : '-'}</p>
+                  <p className="text-lg">
+                    {report.schedule ? t(`schedule_${report.schedule}`) : '-'}
+                  </p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-gray-500">{t('created_by')}</Label>
@@ -396,8 +409,12 @@ export default function ViewReportPage() {
                 </div>
                 {report.last_generated && (
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">{t('last_generated')}</Label>
-                    <p className="text-lg">{new Date(report.last_generated).toLocaleDateString()}</p>
+                    <Label className="text-sm font-medium text-gray-500">
+                      {t('last_generated')}
+                    </Label>
+                    <p className="text-lg">
+                      {new Date(report.last_generated).toLocaleDateString()}
+                    </p>
                   </div>
                 )}
                 {report.description && (
@@ -418,9 +435,7 @@ export default function ViewReportPage() {
                   {t('generated_at')}: {new Date(reportData.generated_at).toLocaleString()}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                {renderReportData()}
-              </CardContent>
+              <CardContent>{renderReportData()}</CardContent>
             </Card>
           )}
         </div>

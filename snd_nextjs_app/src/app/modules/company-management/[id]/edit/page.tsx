@@ -1,36 +1,34 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Save, Building2 } from "lucide-react";
-import { toast } from "sonner";
-
-
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, Building2, Save } from 'lucide-react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 export default function EditCompanyPage() {
   const params = useParams();
   const router = useRouter();
   const { id } = params;
-  
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    address: "",
-    email: "",
-    phone: "",
+    name: '',
+    address: '',
+    email: '',
+    phone: '',
   });
 
   useEffect(() => {
     const fetchCompany = async () => {
       if (!id) return;
-      
+
       try {
         setLoading(true);
         const response = await fetch(`/api/companies/${id}`);
@@ -40,9 +38,9 @@ export default function EditCompanyPage() {
           const company = result.data;
           setFormData({
             name: company.name,
-            address: company.address || "",
-            email: company.email || "",
-            phone: company.phone || "",
+            address: company.address || '',
+            email: company.email || '',
+            phone: company.phone || '',
           });
         } else {
           toast.error(result.message || 'Failed to fetch company');
@@ -62,7 +60,7 @@ export default function EditCompanyPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name.trim()) {
       toast.error('Company name is required');
       return;
@@ -99,7 +97,7 @@ export default function EditCompanyPage() {
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -144,7 +142,7 @@ export default function EditCompanyPage() {
                   <Input
                     id="name"
                     value={formData.name}
-                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    onChange={e => handleInputChange('name', e.target.value)}
                     required
                   />
                 </div>
@@ -155,7 +153,7 @@ export default function EditCompanyPage() {
                     id="email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    onChange={e => handleInputChange('email', e.target.value)}
                   />
                 </div>
               </div>
@@ -166,7 +164,7 @@ export default function EditCompanyPage() {
                   <Input
                     id="phone"
                     value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    onChange={e => handleInputChange('phone', e.target.value)}
                   />
                 </div>
 
@@ -175,7 +173,7 @@ export default function EditCompanyPage() {
                   <Textarea
                     id="address"
                     value={formData.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    onChange={e => handleInputChange('address', e.target.value)}
                     rows={3}
                   />
                 </div>
@@ -208,4 +206,4 @@ export default function EditCompanyPage() {
       </Card>
     </div>
   );
-} 
+}

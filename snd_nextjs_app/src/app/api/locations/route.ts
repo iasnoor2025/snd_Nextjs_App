@@ -1,14 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { locations as locationsTable } from '@/lib/drizzle/schema';
-import { and, or, ilike, eq, asc } from 'drizzle-orm';
-import { withPermission, PermissionConfigs } from '@/lib/rbac/api-middleware';
+import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
+import { and, asc, eq, ilike, or } from 'drizzle-orm';
+import { NextRequest, NextResponse } from 'next/server';
 
-export const GET = withPermission(
-  async (request: NextRequest) => {
+export const GET = withPermission(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
-    
+
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || undefined;
@@ -60,25 +59,19 @@ export const GET = withPermission(
         total: totalCount,
         totalPages: Math.ceil(totalCount / limit),
         hasNext: page < Math.ceil(totalCount / limit),
-        hasPrev: page > 1
-      }
+        hasPrev: page > 1,
+      },
     });
   } catch (error) {
     console.error('Error fetching locations:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch locations' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch locations' }, { status: 500 });
   }
-  },
-  PermissionConfigs.location.read
-);
+}, PermissionConfigs.location.read);
 
-export const POST = withPermission(
-  async (request: NextRequest) => {
+export const POST = withPermission(async (request: NextRequest) => {
   try {
     const body = await request.json();
-    
+
     const inserted = await db
       .insert(locationsTable)
       .values({
@@ -92,23 +85,21 @@ export const POST = withPermission(
         latitude: body.latitude ?? null,
         longitude: body.longitude ?? null,
         isActive: body.is_active !== undefined ? body.is_active : true,
-          updatedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .returning();
     const location = inserted[0];
 
-    return NextResponse.json({
-      success: true,
-      data: location,
-      message: 'Location created successfully'
-    }, { status: 201     });
+    return NextResponse.json(
+      {
+        success: true,
+        data: location,
+        message: 'Location created successfully',
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error('Error creating location:', error);
-    return NextResponse.json(
-      { error: 'Failed to create location' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create location' }, { status: 500 });
   }
-  },
-  PermissionConfigs.location.create
-); 
+}, PermissionConfigs.location.create);

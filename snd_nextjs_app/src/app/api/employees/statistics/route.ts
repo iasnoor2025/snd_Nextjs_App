@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { db } from '@/lib/db';
-import { employees, employeeAssignments } from '@/lib/drizzle/schema';
-import { and, eq, inArray, sql } from 'drizzle-orm';
-import { withAuth } from '@/lib/rbac/api-middleware';
 import { authConfig } from '@/lib/auth-config';
+import { db } from '@/lib/db';
+import { employeeAssignments, employees } from '@/lib/drizzle/schema';
+import { withAuth } from '@/lib/rbac/api-middleware';
+import { and, eq, inArray, sql } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextResponse } from 'next/server';
 
 const getEmployeeStatisticsHandler = async () => {
   try {
@@ -15,7 +15,7 @@ const getEmployeeStatisticsHandler = async () => {
     // Get session to check user role
     const session = await getServerSession(authConfig);
     const user = session?.user;
-    
+
     // For employee users, only show statistics for their own record
     let ownEmployeeFileNumber: string | null = null;
     if (user?.role === 'EMPLOYEE' && user.national_id) {
@@ -33,7 +33,10 @@ const getEmployeeStatisticsHandler = async () => {
 
     // Get total employee count (filtered for employee users)
     const totalEmployeesRows = ownEmployeeFileNumber
-      ? await db.select({ count: sql<number>`count(*)` }).from(employees).where(eq(employees.fileNumber, ownEmployeeFileNumber))
+      ? await db
+          .select({ count: sql<number>`count(*)` })
+          .from(employees)
+          .where(eq(employees.fileNumber, ownEmployeeFileNumber))
       : await db.select({ count: sql<number>`count(*)` }).from(employees);
     const totalEmployees = Number((totalEmployeesRows as any)[0]?.count ?? 0);
     console.log('Total employees:', totalEmployees);
@@ -46,7 +49,12 @@ const getEmployeeStatisticsHandler = async () => {
         .select({ count: sql<number>`count(*)` })
         .from(employeeAssignments)
         .innerJoin(employees, eq(employees.id, employeeAssignments.employeeId))
-        .where(and(eq(employees.fileNumber, ownEmployeeFileNumber), eq(employeeAssignments.status, 'active')));
+        .where(
+          and(
+            eq(employees.fileNumber, ownEmployeeFileNumber),
+            eq(employeeAssignments.status, 'active')
+          )
+        );
       currentlyAssigned = Number((rows as any)[0]?.count ?? 0) > 0 ? 1 : 0;
     } else {
       const rows = await db
@@ -64,13 +72,21 @@ const getEmployeeStatisticsHandler = async () => {
         .select({ count: sql<number>`count(*)` })
         .from(employeeAssignments)
         .innerJoin(employees, eq(employees.id, employeeAssignments.employeeId))
-        .where(and(eq(employees.fileNumber, ownEmployeeFileNumber), eq(employeeAssignments.status, 'active'), eq(employeeAssignments.type, 'project')));
+        .where(
+          and(
+            eq(employees.fileNumber, ownEmployeeFileNumber),
+            eq(employeeAssignments.status, 'active'),
+            eq(employeeAssignments.type, 'project')
+          )
+        );
       projectAssignments = Number((rows as any)[0]?.count ?? 0) > 0 ? 1 : 0;
     } else {
       const rows = await db
         .select({ count: sql<number>`count(distinct ${employeeAssignments.employeeId})` })
         .from(employeeAssignments)
-        .where(and(eq(employeeAssignments.status, 'active'), eq(employeeAssignments.type, 'project')));
+        .where(
+          and(eq(employeeAssignments.status, 'active'), eq(employeeAssignments.type, 'project'))
+        );
       projectAssignments = Number((rows as any)[0]?.count ?? 0);
     }
     console.log('Project assignments:', projectAssignments);
@@ -83,13 +99,24 @@ const getEmployeeStatisticsHandler = async () => {
         .select({ count: sql<number>`count(*)` })
         .from(employeeAssignments)
         .innerJoin(employees, eq(employees.id, employeeAssignments.employeeId))
-        .where(and(eq(employees.fileNumber, ownEmployeeFileNumber), eq(employeeAssignments.status, 'active'), inArray(employeeAssignments.type, rentalTypes as unknown as string[])));
+        .where(
+          and(
+            eq(employees.fileNumber, ownEmployeeFileNumber),
+            eq(employeeAssignments.status, 'active'),
+            inArray(employeeAssignments.type, rentalTypes as unknown as string[])
+          )
+        );
       rentalAssignments = Number((rows as any)[0]?.count ?? 0) > 0 ? 1 : 0;
     } else {
       const rows = await db
         .select({ count: sql<number>`count(distinct ${employeeAssignments.employeeId})` })
         .from(employeeAssignments)
-        .where(and(eq(employeeAssignments.status, 'active'), inArray(employeeAssignments.type, rentalTypes as unknown as string[])));
+        .where(
+          and(
+            eq(employeeAssignments.status, 'active'),
+            inArray(employeeAssignments.type, rentalTypes as unknown as string[])
+          )
+        );
       rentalAssignments = Number((rows as any)[0]?.count ?? 0);
     }
     console.log('Rental assignments:', rentalAssignments);
@@ -100,26 +127,26 @@ const getEmployeeStatisticsHandler = async () => {
         totalEmployees,
         currentlyAssigned,
         projectAssignments,
-        rentalAssignments
+        rentalAssignments,
       },
-      message: 'Employee statistics retrieved successfully'
+      message: 'Employee statistics retrieved successfully',
     });
   } catch (error) {
     console.error('Error in GET /api/employees/statistics:', error);
     console.error('Error details:', {
       name: error instanceof Error ? error.name : 'Unknown',
       message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : 'No stack trace'
+      stack: error instanceof Error ? error.stack : 'No stack trace',
     });
-    
+
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to fetch employee statistics. Please try refreshing the page.'
+        message: 'Failed to fetch employee statistics. Please try refreshing the page.',
       },
       { status: 500 }
     );
   }
 };
 
-export const GET = withAuth(getEmployeeStatisticsHandler); 
+export const GET = withAuth(getEmployeeStatisticsHandler);

@@ -1,17 +1,27 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import { routePermissions, hasRequiredRole, createUserFromSession } from './lib/rbac/custom-rbac';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import { createUserFromSession, hasRequiredRole, routePermissions } from './lib/rbac/custom-rbac';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip middleware for public routes and static assets
-  const publicRoutes = ['/login', '/auth', '/api/auth', '/_next', '/favicon.ico', '/access-denied', '/uploads'];
+  const publicRoutes = [
+    '/login',
+    '/auth',
+    '/api/auth',
+    '/_next',
+    '/favicon.ico',
+    '/access-denied',
+    '/uploads',
+  ];
   const staticAssets = ['/api/auth/refresh-session', '/api/auth/session'];
-  
-  if (publicRoutes.some(route => pathname.startsWith(route)) || 
-      staticAssets.some(route => pathname.startsWith(route))) {
+
+  if (
+    publicRoutes.some(route => pathname.startsWith(route)) ||
+    staticAssets.some(route => pathname.startsWith(route))
+  ) {
     return NextResponse.next();
   }
 
@@ -25,7 +35,7 @@ export async function middleware(request: NextRequest) {
     // Get JWT token
     const token = await getToken({
       req: request,
-      secret: process.env.NEXTAUTH_SECRET || 'fallback-secret'
+      secret: process.env.NEXTAUTH_SECRET || 'fallback-secret',
     });
 
     if (!token) {
@@ -60,7 +70,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   } catch (error) {
     console.error('Middleware error:', error);
-    
+
     // Try to redirect to login, but fallback to next() if that fails
     try {
       return NextResponse.redirect(new URL('/login', request.url));

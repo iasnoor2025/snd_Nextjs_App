@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useRBAC, usePermission, useRouteAccess } from './rbac-context';
 import { Action, Subject } from './custom-rbac';
+import { usePermission, useRBAC, useRouteAccess } from './rbac-context';
 
 // Component that shows content only if user has permission
 interface PermissionContentProps {
@@ -14,7 +14,7 @@ interface PermissionContentProps {
 
 export function PermissionContent({ children, action, subject, fallback }: PermissionContentProps) {
   const { hasPermission } = usePermission();
-  
+
   if (hasPermission(action, subject)) {
     return <>{children}</>;
   }
@@ -31,7 +31,7 @@ interface RouteContentProps {
 
 export function RouteContent({ children, route, fallback }: RouteContentProps) {
   const { canAccessRoute } = useRouteAccess();
-  
+
   if (canAccessRoute(route)) {
     return <>{children}</>;
   }
@@ -48,7 +48,7 @@ interface RoleContentProps {
 
 export function RoleContent({ children, role, fallback }: RoleContentProps) {
   const { user } = useRBAC();
-  
+
   if (user?.role === role) {
     return <>{children}</>;
   }
@@ -65,7 +65,7 @@ interface RoleBasedProps {
 
 export function RoleBased({ children, roles, fallback }: RoleBasedProps) {
   const { user } = useRBAC();
-  
+
   if (user?.role && roles.includes(user.role)) {
     return <>{children}</>;
   }
@@ -76,27 +76,23 @@ export function RoleBased({ children, roles, fallback }: RoleBasedProps) {
 // Component that shows access denied message
 export function AccessDenied({
   message = "You don't have permission to access this resource.",
-  className = "text-center p-4"
+  className = 'text-center p-4',
 }: {
   message?: string;
   className?: string;
 }) {
   return (
     <div className={className}>
-      <h3 className="text-lg font-semibold text-destructive mb-2">
-        Access Denied
-      </h3>
-      <p className="text-muted-foreground">
-        {message}
-      </p>
+      <h3 className="text-lg font-semibold text-destructive mb-2">Access Denied</h3>
+      <p className="text-muted-foreground">{message}</p>
     </div>
   );
 }
 
 // Component that shows loading state
 export function RBACLoading({
-  message = "Checking permissions...",
-  className = "text-center p-4"
+  message = 'Checking permissions...',
+  className = 'text-center p-4',
 }: {
   message?: string;
   className?: string;

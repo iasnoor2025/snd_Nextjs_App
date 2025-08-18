@@ -1,12 +1,12 @@
-import { NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { employees, salaryIncrements, employeeDocuments } from '@/lib/drizzle/schema';
+import { employeeDocuments, employees, salaryIncrements } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
     console.log('Testing Drizzle functionality...');
-    
+
     // Test 1: Basic employees query
     console.log('Testing employees query...');
     let employeesResult;
@@ -20,7 +20,7 @@ export async function GET() {
       console.log('Employees query failed:', error);
       employeesResult = { error: error instanceof Error ? error.message : String(error) };
     }
-    
+
     // Test 2: Basic salary increments query
     console.log('Testing salary increments query...');
     let salaryResult;
@@ -34,7 +34,7 @@ export async function GET() {
       console.log('Salary increments query failed:', error);
       salaryResult = { error: error instanceof Error ? error.message : String(error) };
     }
-    
+
     // Test 3: Test specific salary increment fields that might be causing issues
     console.log('Testing specific salary increment fields...');
     let salaryFieldsResult;
@@ -58,7 +58,7 @@ export async function GET() {
       console.log('Salary fields query failed:', error);
       salaryFieldsResult = { error: error instanceof Error ? error.message : String(error) };
     }
-    
+
     // Test 4: Basic documents query
     console.log('Testing documents query...');
     let documentsResult;
@@ -72,7 +72,7 @@ export async function GET() {
       console.log('Documents query failed:', error);
       documentsResult = { error: error instanceof Error ? error.message : String(error) };
     }
-    
+
     // Test 5: Test documents with join
     console.log('Testing documents with join...');
     let documentsJoinResult;
@@ -93,7 +93,7 @@ export async function GET() {
       console.log('Documents join query failed:', error);
       documentsJoinResult = { error: error instanceof Error ? error.message : String(error) };
     }
-    
+
     return NextResponse.json({
       success: true,
       message: 'Drizzle test completed',
@@ -102,17 +102,16 @@ export async function GET() {
         salaryIncrements: salaryResult,
         salaryFields: salaryFieldsResult,
         documents: documentsResult,
-        documentsJoin: documentsJoinResult
-      }
+        documentsJoin: documentsJoinResult,
+      },
     });
-    
   } catch (error) {
     console.error('Drizzle test failed:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: 'Drizzle test failed', 
-        details: error instanceof Error ? error.message : String(error)
+      {
+        success: false,
+        error: 'Drizzle test failed',
+        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 }
     );

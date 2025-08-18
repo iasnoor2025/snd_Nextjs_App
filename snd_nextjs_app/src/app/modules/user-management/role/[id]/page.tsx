@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ArrowLeft, Calendar, CheckCircle, Edit, Lock, Shield, Users, XCircle } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowLeft, Edit, Calendar, Shield, CheckCircle, XCircle, Users, Lock } from 'lucide-react';
 
 interface Role {
   id: string;
@@ -72,14 +72,18 @@ export default function RoleDetailPage() {
     return 'Other';
   };
 
-  const groupedPermissions = role?.permissions.reduce((acc, permission) => {
-    const category = getPermissionCategory(permission);
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(permission);
-    return acc;
-  }, {} as Record<string, string[]>) || {};
+  const groupedPermissions =
+    role?.permissions.reduce(
+      (acc, permission) => {
+        const category = getPermissionCategory(permission);
+        if (!acc[category]) {
+          acc[category] = [];
+        }
+        acc[category].push(permission);
+        return acc;
+      },
+      {} as Record<string, string[]>
+    ) || {};
 
   if (loading) {
     return (
@@ -221,7 +225,7 @@ export default function RoleDetailPage() {
               <div key={category}>
                 <h4 className="font-semibold mb-3 text-lg">{category}</h4>
                 <div className="flex flex-wrap gap-2">
-                  {permissions.map((permission) => (
+                  {permissions.map(permission => (
                     <Badge key={permission} variant="outline" className="text-sm">
                       {permission}
                     </Badge>
@@ -261,9 +265,7 @@ export default function RoleDetailPage() {
               <div className="text-sm text-muted-foreground">Total Permissions</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold">
-                {role.isActive ? 'Active' : 'Inactive'}
-              </div>
+              <div className="text-2xl font-bold">{role.isActive ? 'Active' : 'Inactive'}</div>
               <div className="text-sm text-muted-foreground">Status</div>
             </div>
           </div>

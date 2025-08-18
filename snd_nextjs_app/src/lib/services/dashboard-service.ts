@@ -1,18 +1,18 @@
 import { db } from '@/lib/drizzle';
-import { 
-  employees, 
-  timesheets, 
-  employeeAssignments, 
-  rentals, 
-  projects, 
+import {
   customers,
-  equipment,
-  employeeLeaves,
-  employeeDocuments,
   departments,
-  designations
+  designations,
+  employeeAssignments,
+  employeeDocuments,
+  employeeLeaves,
+  employees,
+  equipment,
+  projects,
+  rentals,
+  timesheets,
 } from '@/lib/drizzle/schema';
-import { eq, and, gte, lte, isNotNull, count, sql, desc } from 'drizzle-orm';
+import { and, count, desc, eq, gte, isNotNull, lte, sql } from 'drizzle-orm';
 
 export interface DashboardStats {
   totalEmployees: number;
@@ -138,8 +138,8 @@ export class DashboardService {
   static async getDashboardStats(): Promise<DashboardStats> {
     try {
       const today = new Date();
-              // const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        // const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      // const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      // const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
       // Get total employees
       let totalEmployeesResult = { count: 0 };
@@ -185,12 +185,7 @@ export class DashboardService {
           const result = await db
             .select({ count: count() })
             .from(timesheets)
-            .where(
-              and(
-                eq(timesheets.date, todayStr),
-                eq(timesheets.status, 'pending')
-              )
-            );
+            .where(and(eq(timesheets.date, todayStr), eq(timesheets.status, 'pending')));
           todayTimesheetsResult = result[0] || { count: 0 };
         }
       } catch (error) {
@@ -204,10 +199,7 @@ export class DashboardService {
           .select({ count: count() })
           .from(employees)
           .where(
-            and(
-              isNotNull(employees.iqamaExpiry),
-              lte(employees.iqamaExpiry, today.toISOString())
-            )
+            and(isNotNull(employees.iqamaExpiry), lte(employees.iqamaExpiry, today.toISOString()))
           );
         expiredDocumentsResult = result[0] || { count: 0 };
       } catch (error) {
@@ -283,13 +275,14 @@ export class DashboardService {
         monthlyMoneyReceived: 0,
         monthlyMoneyLost: 0,
         netProfit: 0,
-        currency: 'SAR'
+        currency: 'SAR',
       };
 
       try {
         const { ERPNextFinancialService } = await import('./erpnext-financial-service');
         financialMetrics = await ERPNextFinancialService.getFinancialMetrics();
-        financialMetrics.netProfit = financialMetrics.totalMoneyReceived - financialMetrics.totalMoneyLost;
+        financialMetrics.netProfit =
+          financialMetrics.totalMoneyReceived - financialMetrics.totalMoneyLost;
       } catch (error) {
         console.error('Error fetching financial metrics from ERPNext:', error);
         // Use default values if ERPNext is not available
@@ -396,11 +389,11 @@ export class DashboardService {
 
       console.log('🔍 Getting equipment data...');
       console.log('🔍 Database connection test...');
-      
+
       // Test basic database connection first
       const testQuery = await db.select().from(equipment).limit(1);
       console.log('🔍 Basic connection test result:', testQuery.length);
-      
+
       const equipmentData = await db
         .select({
           id: equipment.id,
@@ -455,7 +448,7 @@ export class DashboardService {
         available: result.filter(item => item.status === 'available').length,
         expired: result.filter(item => item.status === 'expired').length,
         expiring: result.filter(item => item.status === 'expiring').length,
-        missing: result.filter(item => item.status === 'missing').length
+        missing: result.filter(item => item.status === 'missing').length,
       });
 
       return result;
@@ -617,7 +610,7 @@ export class DashboardService {
     try {
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0];
-      
+
       const leaveData = await db
         .select({
           id: employeeLeaves.id,
@@ -722,7 +715,7 @@ export class DashboardService {
           const start = new Date(project.startDate);
           const end = new Date(project.endDate);
           const today = new Date();
-          
+
           if (today >= start && today <= end) {
             const totalDuration = end.getTime() - start.getTime();
             const elapsed = today.getTime() - start.getTime();

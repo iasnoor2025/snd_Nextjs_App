@@ -1,29 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/drizzle';
-import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
-import { users, employees, designations, departments } from '@/lib/drizzle/schema';
+import { db } from '@/lib/drizzle';
+import { departments, designations, employees, users } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/profile - Get current user profile
 export async function GET(_request: NextRequest) {
   // Get the current user session
   const session = await getServerSession(authConfig);
-  
+
   console.log('🔍 Profile API: Session data:', session);
   console.log('🔍 Profile API: Session user:', session?.user);
 
   if (!session?.user?.id) {
     console.log('❌ Profile API: No session or user ID found');
-    return NextResponse.json(
-      { error: 'Not authenticated' },
-      { status: 401 }
-    );
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
   try {
     console.log('🔍 Profile API: Starting request...');
-    
+
     const userId = session.user.id;
     console.log('✅ Profile API: Current user ID from session:', userId);
 
@@ -49,20 +46,14 @@ export async function GET(_request: NextRequest) {
 
     if (userRows.length === 0) {
       console.log('❌ Profile API: User not found in database');
-      return NextResponse.json(
-        { error: 'User not found in database' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
     }
 
     const user = userRows[0];
 
     if (!user) {
       console.log('❌ Profile API: User not found in database');
-      return NextResponse.json(
-        { error: 'User not found in database' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'User not found in database' }, { status: 404 });
     }
 
     console.log('✅ Profile API: Found user:', user);
@@ -106,7 +97,10 @@ export async function GET(_request: NextRequest) {
     // Check if user's national ID matches any employee's Iqama number
     let matchedEmployee: any = null;
     if (user.nationalId) {
-      console.log('🔍 Profile API: Checking for National ID match with employee Iqama number:', user.nationalId);
+      console.log(
+        '🔍 Profile API: Checking for National ID match with employee Iqama number:',
+        user.nationalId
+      );
       const matchedEmployeeRows = await db
         .select({
           id: employees.id,
@@ -146,10 +140,15 @@ export async function GET(_request: NextRequest) {
       if (matchedEmployeeRows.length > 0) {
         matchedEmployee = matchedEmployeeRows[0];
         console.log('✅ Profile API: Found employee with matching Iqama number:', matchedEmployee);
-        
+
         // Step 3: Auto-update employee email if it doesn't match user's email
         if (matchedEmployee.email !== user.email) {
-          console.log('🔄 Profile API: Auto-updating employee email from', matchedEmployee.email, 'to', user.email);
+          console.log(
+            '🔄 Profile API: Auto-updating employee email from',
+            matchedEmployee.email,
+            'to',
+            user.email
+          );
           try {
             await db
               .update(employees)
@@ -162,10 +161,12 @@ export async function GET(_request: NextRequest) {
             console.error('❌ Profile API: Error updating employee email:', updateError);
           }
         }
-        
+
         // Step 4: Establish relationship by updating employee's userId field
         if (!matchedEmployee.userId || matchedEmployee.userId !== parseInt(user.id.toString())) {
-          console.log('🔗 Profile API: Establishing user-employee relationship by updating userId field');
+          console.log(
+            '🔗 Profile API: Establishing user-employee relationship by updating userId field'
+          );
           try {
             await db
               .update(employees)
@@ -181,10 +182,15 @@ export async function GET(_request: NextRequest) {
           console.log('✅ Profile API: User-employee relationship already established');
         }
       } else {
-        console.log('❌ Profile API: No employee found with matching Iqama number:', user.nationalId);
+        console.log(
+          '❌ Profile API: No employee found with matching Iqama number:',
+          user.nationalId
+        );
       }
     } else {
-      console.log('⚠️ Profile API: User has no national_id, cannot match with employee Iqama number');
+      console.log(
+        '⚠️ Profile API: User has no national_id, cannot match with employee Iqama number'
+      );
     }
 
     // If no direct employee record, try to find by email match
@@ -226,9 +232,12 @@ export async function GET(_request: NextRequest) {
       if (emailMatchedEmployeeRows.length > 0) {
         emailMatchedEmployee = emailMatchedEmployeeRows[0];
         console.log('✅ Profile API: Found employee with matching email:', emailMatchedEmployee);
-        
+
         // Establish relationship by updating employee's userId field if not already set
-        if (!emailMatchedEmployee.userId || emailMatchedEmployee.userId !== parseInt(user.id.toString())) {
+        if (
+          !emailMatchedEmployee.userId ||
+          emailMatchedEmployee.userId !== parseInt(user.id.toString())
+        ) {
           console.log('🔗 Profile API: Establishing user-employee relationship via email match');
           try {
             await db
@@ -261,11 +270,12 @@ export async function GET(_request: NextRequest) {
       avatar: user.avatar || '',
       role: user.roleId,
       department: bestEmployee?.department?.name || 'General',
-      location: bestEmployee?.city && bestEmployee?.state
-        ? `${bestEmployee.city}, ${bestEmployee.state}`
-        : bestEmployee?.country || '',
+      location:
+        bestEmployee?.city && bestEmployee?.state
+          ? `${bestEmployee.city}, ${bestEmployee.state}`
+          : bestEmployee?.country || '',
       bio: '', // Could be added to user model later
-            joinDate: user.createdAt,
+      joinDate: user.createdAt,
       lastLogin: user.lastLoginAt || user.createdAt,
       status: user.isActive ? 'active' : 'inactive',
       nationalId: user.nationalId || '',
@@ -288,31 +298,36 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(profile);
   } catch (error) {
     console.error('❌ Profile API: Error fetching profile:', error);
-    console.error('❌ Profile API: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error(
+      '❌ Profile API: Error stack:',
+      error instanceof Error ? error.stack : 'No stack trace'
+    );
 
     // Return session user data on any error
     const sessionProfile = {
-      id: session?.user?.id || "error-user",  
-      name: session?.user?.name || "Authenticated User",
-      email: session?.user?.email || "",
-      phone: "",
-      avatar: "",
-      role: session?.user?.role || "USER",
-      department: "General",
-      location: "",
-      bio: "This is your profile from session data. Database error occurred: " + (error instanceof Error ? error.message : 'Unknown error'),
+      id: session?.user?.id || 'error-user',
+      name: session?.user?.name || 'Authenticated User',
+      email: session?.user?.email || '',
+      phone: '',
+      avatar: '',
+      role: session?.user?.role || 'USER',
+      department: 'General',
+      location: '',
+      bio:
+        'This is your profile from session data. Database error occurred: ' +
+        (error instanceof Error ? error.message : 'Unknown error'),
       joinDate: new Date().toISOString(),
       lastLogin: new Date().toISOString(),
-      status: session?.user?.isActive ? "active" : "inactive",
-      nationalId: "",
-      firstName: "",
-      middleName: "",
-      lastName: "",
-      designation: "",
-      address: "",
-      city: "",
-      state: "",
-      country: "",
+      status: session?.user?.isActive ? 'active' : 'inactive',
+      nationalId: '',
+      firstName: '',
+      middleName: '',
+      lastName: '',
+      designation: '',
+      address: '',
+      city: '',
+      state: '',
+      country: '',
     };
 
     console.log('✅ Profile API: Returning session profile due to error');
@@ -327,10 +342,7 @@ export async function POST(_request: NextRequest) {
     const session = await getServerSession(authConfig);
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Not authenticated' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
     const body = await _request.json();
@@ -347,7 +359,7 @@ export async function POST(_request: NextRequest) {
       country,
       // designation,
       // department,
-      nationalId
+      nationalId,
     } = body;
 
     const userId = session.user.id;
@@ -372,10 +384,7 @@ export async function POST(_request: NextRequest) {
       .limit(1);
 
     if (existingUserRows.length === 0) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     const existingUser = existingUserRows[0]!;
@@ -389,10 +398,7 @@ export async function POST(_request: NextRequest) {
         .limit(1);
 
       if (emailExistsRows.length > 0) {
-        return NextResponse.json(
-          { error: 'Email already exists' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Email already exists' }, { status: 400 });
       }
     }
 
@@ -448,7 +454,7 @@ export async function POST(_request: NextRequest) {
         })
         .where(eq(employees.id, existingEmployee.id))
         .returning();
-      
+
       employee = updatedEmployeeRows[0]!;
       console.log('Updated employee:', employee);
     } else {
@@ -464,10 +470,11 @@ export async function POST(_request: NextRequest) {
       phone: employee?.phone || '',
       avatar: updatedUser.avatar || '',
       role: updatedUser.roleId,
-      department: 'General', // Could be enhanced to get from designation/department 
-      location: employee?.city && employee?.state
-        ? `${employee.city}, ${employee.state}`
-        : employee?.country || '',
+      department: 'General', // Could be enhanced to get from designation/department
+      location:
+        employee?.city && employee?.state
+          ? `${employee.city}, ${employee.state}`
+          : employee?.country || '',
       bio: '',
       joinDate: updatedUser.createdAt,
       lastLogin: updatedUser.lastLoginAt || updatedUser.createdAt,
@@ -487,7 +494,10 @@ export async function POST(_request: NextRequest) {
   } catch (error) {
     console.error('Error updating profile:', error);
     return NextResponse.json(
-      { error: 'Failed to update profile: ' + (error instanceof Error ? error.message : 'Unknown error') },
+      {
+        error:
+          'Failed to update profile: ' + (error instanceof Error ? error.message : 'Unknown error'),
+      },
       { status: 500 }
     );
   }

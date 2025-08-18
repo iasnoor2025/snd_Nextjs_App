@@ -2,7 +2,7 @@
   "title": "Rental Management",
   "subtitle": "Manage equipment rentals and contracts",
   "description": "Track and manage rental agreements, equipment assignments, and customer contracts",
-  
+
   "rentalManagement": "Rental Management",
   "manageEquipmentRentals": "Manage equipment rentals and contracts",
   "newRental": "New Rental",
@@ -56,7 +56,7 @@
   "approveRentals": "Approve Rentals",
   "rejectRentals": "Reject Rentals",
   "rentalSettings": "Rental Settings",
-  
+
   "actions": {
     "add": "New Rental",
     "edit": "Edit Rental",
@@ -74,7 +74,7 @@
     "reject": "Reject Rentals",
     "manage": "Rental Settings"
   },
-  
+
   "fields": {
     "rentalNumber": "Rental Number",
     "customerId": "Customer",
@@ -97,7 +97,7 @@
     "rateType": "Rate Type",
     "operatorId": "Operator"
   },
-  
+
   "status": {
     "pending": "Pending",
     "active": "Active",
@@ -105,21 +105,21 @@
     "cancelled": "Cancelled",
     "overdue": "Overdue"
   },
-  
+
   "paymentStatus": {
     "pending": "Pending",
     "partial": "Partial",
     "paid": "Paid",
     "overdue": "Overdue"
   },
-  
+
   "rateTypes": {
     "daily": "Daily",
     "weekly": "Weekly",
     "monthly": "Monthly",
     "hourly": "Hourly"
   },
-  
+
   "messages": {
     "loading": "Loading rentals...",
     "noRentals": "No rentals found.",
@@ -135,13 +135,13 @@
     "exportSuccess": "Rentals exported successfully",
     "exportError": "Failed to export rentals"
   },
-  
+
   "pagination": {
     "showing": "Showing {start}-{end} of {total} rentals",
     "page": "Page {current} of {total}",
     "itemsPerPage": "Items per page"
   },
-  
+
   "filterOptions": {
     "all": "All",
     "status": "Status",
@@ -150,7 +150,7 @@
     "dateRange": "Date Range",
     "clear": "Clear Filters"
   },
-  
+
   "table": {
     "headers": {
       "rentalNumber": "Rental #",
@@ -163,7 +163,7 @@
       "actions": "Actions"
     }
   },
-  
+
   "form": {
     "addTitle": "Create New Rental",
     "editTitle": "Edit Rental",
@@ -173,7 +173,7 @@
     "invalidAmount": "Please enter a valid amount",
     "invalidQuantity": "Please enter a valid quantity"
   },
-  
+
   "administration": {
     "title": "Rental Administration",
     "subtitle": "Advanced rental management features for administrators",

@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, CheckCircle, Save, Shield } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowLeft, Save, Shield, CheckCircle } from 'lucide-react';
 
 interface Role {
   id: string;
@@ -76,13 +76,23 @@ const availablePermissions = [
 const permissionCategories = {
   'User Management': ['users.read', 'users.create', 'users.update', 'users.delete'],
   'Role Management': ['roles.read', 'roles.create', 'roles.update', 'roles.delete'],
-  'Equipment Management': ['equipment.read', 'equipment.create', 'equipment.update', 'equipment.delete'],
+  'Equipment Management': [
+    'equipment.read',
+    'equipment.create',
+    'equipment.update',
+    'equipment.delete',
+  ],
   'Rental Management': ['rentals.read', 'rentals.create', 'rentals.update', 'rentals.delete'],
-  'Employee Management': ['employees.read', 'employees.create', 'employees.update', 'employees.delete'],
+  'Employee Management': [
+    'employees.read',
+    'employees.create',
+    'employees.update',
+    'employees.delete',
+  ],
   'Project Management': ['projects.read', 'projects.create', 'projects.update', 'projects.delete'],
-  'Reporting': ['reports.read', 'reports.create', 'reports.export'],
-  'Settings': ['settings.read', 'settings.update'],
-  'Analytics': ['analytics.read', 'analytics.export'],
+  Reporting: ['reports.read', 'reports.create', 'reports.export'],
+  Settings: ['settings.read', 'settings.update'],
+  Analytics: ['analytics.read', 'analytics.export'],
 };
 
 export default function EditRolePage() {
@@ -241,9 +251,7 @@ export default function EditRolePage() {
               <Shield className="h-5 w-5" />
               <span>Role Information</span>
             </CardTitle>
-            <CardDescription>
-              Update role details and status
-            </CardDescription>
+            <CardDescription>Update role details and status</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
@@ -251,7 +259,7 @@ export default function EditRolePage() {
               <Input
                 id="name"
                 value={role.name}
-                onChange={(e) => setRole({ ...role, name: e.target.value })}
+                onChange={e => setRole({ ...role, name: e.target.value })}
                 placeholder="Enter role name"
               />
             </div>
@@ -261,7 +269,7 @@ export default function EditRolePage() {
               <Textarea
                 id="description"
                 value={role.description}
-                onChange={(e) => setRole({ ...role, description: e.target.value })}
+                onChange={e => setRole({ ...role, description: e.target.value })}
                 placeholder="Enter role description"
                 rows={3}
               />
@@ -273,11 +281,9 @@ export default function EditRolePage() {
                 <Switch
                   id="status"
                   checked={role.isActive}
-                  onCheckedChange={(checked) => setRole({ ...role, isActive: checked })}
+                  onCheckedChange={checked => setRole({ ...role, isActive: checked })}
                 />
-                <Label htmlFor="status">
-                  {role.isActive ? 'Active' : 'Inactive'}
-                </Label>
+                <Label htmlFor="status">{role.isActive ? 'Active' : 'Inactive'}</Label>
               </div>
             </div>
 
@@ -297,9 +303,7 @@ export default function EditRolePage() {
               <CheckCircle className="h-5 w-5" />
               <span>Permissions</span>
             </CardTitle>
-            <CardDescription>
-              Select permissions for this role
-            </CardDescription>
+            <CardDescription>Select permissions for this role</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {Object.entries(permissionCategories).map(([category, permissions]) => (
@@ -311,11 +315,13 @@ export default function EditRolePage() {
                     size="sm"
                     onClick={() => toggleAllPermissions(category)}
                   >
-                    {permissions.every(p => role.permissions.includes(p)) ? 'Deselect All' : 'Select All'}
+                    {permissions.every(p => role.permissions.includes(p))
+                      ? 'Deselect All'
+                      : 'Select All'}
                   </Button>
                 </div>
                 <div className="grid grid-cols-1 gap-2">
-                  {permissions.map((permission) => (
+                  {permissions.map(permission => (
                     <div key={permission} className="flex items-center space-x-2">
                       <Checkbox
                         id={permission}

@@ -1,25 +1,31 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Calendar,
-  Users,
-  Package,
-  BarChart3,
-  PieChart,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Activity,
-  Clock,
   AlertCircle,
+  BarChart3,
+  Calendar,
   CheckCircle,
-  XCircle
-} from "lucide-react";
-import { toast } from "sonner";
+  Clock,
+  DollarSign,
+  Package,
+  PieChart,
+  TrendingDown,
+  TrendingUp,
+  Users,
+  XCircle,
+} from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 interface Metric {
   label: string;
@@ -56,7 +62,7 @@ interface RentalStats {
 }
 
 export default function AnalyticsPage() {
-  const [timeRange, setTimeRange] = useState("30");
+  const [timeRange, setTimeRange] = useState('30');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<RentalStats | null>(null);
 
@@ -79,7 +85,7 @@ export default function AnalyticsPage() {
           equipmentUtilization: 78.5,
           overdueInvoices: 3,
           totalCustomers: 45,
-          totalEquipment: 67
+          totalEquipment: 67,
         };
 
         setStats(mockStats);
@@ -110,33 +116,33 @@ export default function AnalyticsPage() {
 
     return [
       {
-        label: "Total Revenue",
+        label: 'Total Revenue',
         value: formatCurrency(stats.totalRevenue),
         change: 12.5,
         changeType: 'increase',
-        icon: DollarSign
+        icon: DollarSign,
       },
       {
-        label: "Active Rentals",
+        label: 'Active Rentals',
         value: stats.activeRentals,
         change: 8.2,
         changeType: 'increase',
-        icon: Calendar
+        icon: Calendar,
       },
       {
-        label: "Equipment Utilization",
+        label: 'Equipment Utilization',
         value: `${stats.equipmentUtilization}%`,
         change: -2.1,
         changeType: 'decrease',
-        icon: Package
+        icon: Package,
       },
       {
-        label: "Customer Satisfaction",
+        label: 'Customer Satisfaction',
         value: `${stats.customerSatisfaction}/5`,
         change: 0.3,
         changeType: 'increase',
-        icon: Users
-      }
+        icon: Users,
+      },
     ];
   };
 
@@ -189,9 +195,7 @@ export default function AnalyticsPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">
-                      {metric.label}
-                    </p>
+                    <p className="text-sm font-medium text-muted-foreground">{metric.label}</p>
                     <p className="text-2xl font-bold">{metric.value}</p>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -204,11 +208,17 @@ export default function AnalyticsPage() {
                       ) : (
                         <Activity className="h-4 w-4 text-gray-600" />
                       )}
-                      <span className={`text-sm ${
-                        metric.changeType === 'increase' ? 'text-green-600' :
-                        metric.changeType === 'decrease' ? 'text-red-600' : 'text-gray-600'
-                      }`}>
-                        {metric.change > 0 ? '+' : ''}{metric.change}%
+                      <span
+                        className={`text-sm ${
+                          metric.changeType === 'increase'
+                            ? 'text-green-600'
+                            : metric.changeType === 'decrease'
+                              ? 'text-red-600'
+                              : 'text-gray-600'
+                        }`}
+                      >
+                        {metric.change > 0 ? '+' : ''}
+                        {metric.change}%
                       </span>
                     </div>
                   </div>
@@ -228,9 +238,7 @@ export default function AnalyticsPage() {
               <Calendar className="h-5 w-5" />
               <span>Rental Overview</span>
             </CardTitle>
-            <CardDescription>
-              Current rental status and performance
-            </CardDescription>
+            <CardDescription>Current rental status and performance</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -267,15 +275,15 @@ export default function AnalyticsPage() {
               <DollarSign className="h-5 w-5" />
               <span>Financial Overview</span>
             </CardTitle>
-            <CardDescription>
-              Revenue and payment tracking
-            </CardDescription>
+            <CardDescription>Revenue and payment tracking</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Total Revenue</span>
-                <span className="font-bold text-green-600">{formatCurrency(stats.totalRevenue)}</span>
+                <span className="font-bold text-green-600">
+                  {formatCurrency(stats.totalRevenue)}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Monthly Revenue</span>
@@ -285,7 +293,9 @@ export default function AnalyticsPage() {
                 <span className="text-sm text-muted-foreground">Overdue Invoices</span>
                 <div className="flex items-center space-x-2">
                   <span className="font-medium">{stats.overdueInvoices}</span>
-                  <Badge variant="destructive" className="text-xs">Requires Attention</Badge>
+                  <Badge variant="destructive" className="text-xs">
+                    Requires Attention
+                  </Badge>
                 </div>
               </div>
             </div>
@@ -326,7 +336,7 @@ export default function AnalyticsPage() {
                 <div className="flex items-center space-x-2">
                   <span className="font-medium">{stats.customerSatisfaction}/5</span>
                   <div className="flex space-x-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
+                    {[1, 2, 3, 4, 5].map(star => (
                       <CheckCircle
                         key={star}
                         className={`h-4 w-4 ${
@@ -377,9 +387,7 @@ export default function AnalyticsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>
-              Common tasks and shortcuts
-            </CardDescription>
+            <CardDescription>Common tasks and shortcuts</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -406,7 +414,9 @@ export default function AnalyticsPage() {
                   <AlertCircle className="h-6 w-6 text-red-600" />
                   <div>
                     <div className="font-medium">Overdue Alerts</div>
-                    <div className="text-sm text-muted-foreground">{stats.overdueInvoices} items need attention</div>
+                    <div className="text-sm text-muted-foreground">
+                      {stats.overdueInvoices} items need attention
+                    </div>
                   </div>
                 </div>
               </div>
