@@ -121,8 +121,8 @@ const getAdvancesHandler = async (request: NextRequest & { employeeAccess?: { ow
       reason: row.reason,
       status: row.status,
       notes: row.notes,
-      created_at: row.createdAt,
-      updated_at: row.updatedAt,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
       employee: row.employee ? {
         id: row.employee.id,
         first_name: row.employee.firstName,
@@ -221,8 +221,8 @@ const createAdvanceHandler = async (request: NextRequest & { employeeAccess?: { 
       reason: advance.reason,
       status: advance.status,
       notes: advance.notes,
-      created_at: advance.createdAt,
-      updated_at: advance.updatedAt,
+              createdAt: advance.createdAt,
+        updatedAt: advance.updatedAt,
       employee: employee ? {
         id: employee.id,
         first_name: employee.firstName,
@@ -305,8 +305,8 @@ export const PUT = withEmployeeListPermission(
         reason: advance.reason,
         status: advance.status,
         notes: advance.notes,
-        created_at: advance.createdAt,
-        updated_at: advance.updatedAt,
+        createdAt: advance.createdAt,
+        updatedAt: advance.updatedAt,
         employee: employee ? {
           id: employee.id,
           first_name: employee.firstName,

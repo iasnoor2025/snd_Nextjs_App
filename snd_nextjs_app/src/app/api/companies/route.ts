@@ -14,8 +14,8 @@ function formatCompanyForFrontend(company: Record<string, any>) {
     phone: company.phone,
     logo: company.logo,
     legal_document: company.legalDocument,
-    created_at: company.createdAt?.toISOString().split('T')[0] || null,
-    updated_at: company.updatedAt?.toISOString().split('T')[0] || null,
+            createdAt: company.createdAt?.toISOString().split('T')[0] || null,
+        updatedAt: company.updatedAt?.toISOString().split('T')[0] || null,
   };
 }
 

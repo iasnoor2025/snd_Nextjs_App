@@ -5,7 +5,6 @@ import { eq, desc } from 'drizzle-orm';
 import { users } from '@/lib/drizzle/schema';
 
 export async function GET(
-  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {

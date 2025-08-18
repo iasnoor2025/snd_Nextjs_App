@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-// import { prisma } from '@/lib/db';
+import { db } from '@/lib/drizzle';
+import { users } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
 

@@ -248,22 +248,22 @@ export async function POST() {
           let departmentId = null;
           let designationId = null;
 
-          if (designationName) {
+          if (designationName && designationName.trim()) {
             let designation: any = await db.select().from(designationsTable).where(
-              sql`name = ${designationName}`
+              sql`name = ${designationName.trim()}`
             );
 
             if (designation.length === 0) {
               const newDesignation = await db.insert(designationsTable).values({
-                name: designationName,
-                description: designationName,
+                name: designationName.trim(),
+                description: designationName.trim(),
                 isActive: true,
                 updatedAt: new Date().toISOString().split('T')[0]
               }).returning();
               designation = newDesignation;
             } else {
               const updatedDesignation = await db.update(designationsTable).set({
-                description: designationName,
+                description: designationName.trim(),
                 isActive: true,
                 updatedAt: new Date().toISOString().split('T')[0]
               }).where(sql`id = ${designation[0].id}`).returning();
@@ -272,21 +272,21 @@ export async function POST() {
             designationId = designation[0].id;
           }
 
-          if (departmentName) {
+          if (departmentName && departmentName.trim()) {
             let department: any[] = await db.select().from(departmentsTable).where(
-              sql`name = ${departmentName}`
+              sql`name = ${departmentName.trim()}`
             );
             if (department.length === 0) {
               const newDepartment = await db.insert(departmentsTable).values({
-                name: departmentName,
-                description: departmentName,
+                name: departmentName.trim(),
+                description: departmentName.trim(),
                 active: true,
                 updatedAt: new Date().toISOString().split('T')[0]
               }).returning();
               department = newDepartment;
             } else {
               const updatedDepartment = await db.update(departmentsTable).set({
-                description: departmentName,
+                description: departmentName.trim(),
                 active: true,
                 updatedAt: new Date().toISOString().split('T')[0]
               }).where(sql`id = ${department[0].id}`).returning();
@@ -306,8 +306,8 @@ export async function POST() {
             status: status.toLowerCase(),
             email: email,
             phone: cellNumber,
-            hireDate: dateOfJoining ? new Date(dateOfJoining).toISOString().split('T')[0] : null,
-            dateOfBirth: dateOfBirth ? new Date(dateOfBirth).toISOString().split('T')[0] : null,
+            hireDate: dateOfJoining ? (typeof dateOfJoining === 'string' ? new Date(dateOfJoining).toISOString().split('T')[0] : dateOfJoining) : null,
+            dateOfBirth: dateOfBirth ? (typeof dateOfBirth === 'string' ? new Date(dateOfBirth).toISOString().split('T')[0] : dateOfBirth) : null,
             departmentId: departmentId,
             designationId: designationId,
             // Additional fields from ERPNext

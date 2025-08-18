@@ -48,7 +48,7 @@ export function DashboardHeader({ stats, equipmentCount, refreshing, onRefresh, 
 
         {/* Quick Stats Overview */}
         {stats && (
-          <div className="mt-8 grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
+          <div className="mt-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-9 gap-4">
             <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
               <Users className="h-6 w-6 mx-auto mb-2 opacity-80" />
               <div className="text-2xl font-bold">{stats.totalEmployees || 0}</div>
@@ -61,8 +61,13 @@ export function DashboardHeader({ stats, equipmentCount, refreshing, onRefresh, 
             </div>
             <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
               <TrendingUp className="h-6 w-6 mx-auto mb-2 opacity-80" />
-              <div className="text-2xl font-bold">{stats.monthlyRevenue || 0}</div>
-              <div className="text-xs text-blue-100">Revenue</div>
+              <div className="text-2xl font-bold">{stats.monthlyMoneyReceived || 0}</div>
+              <div className="text-xs text-blue-100">Money Received</div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+              <TrendingUp className="h-6 w-6 mx-auto mb-2 opacity-80" style={{ transform: 'rotate(180deg)' }} />
+              <div className="text-2xl font-bold">{stats.monthlyMoneyLost || 0}</div>
+              <div className="text-xs text-blue-100">Money Lost</div>
             </div>
             <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
               <AlertTriangle className="h-6 w-6 mx-auto mb-2 opacity-80" />

@@ -25,7 +25,6 @@ export async function GET() {
       'employee_assignments',
       'locations',
       'project_resources',
-      'prisma_migrations',
       'salary_increments',
       'equipment_maintenance',
       'equipment_maintenance_items',
@@ -73,10 +72,10 @@ export async function GET() {
       'time_off_requests',
       'timesheet_approvals',
       'weekly_timesheets',
+      'advance_payments',
       'model_has_roles',
       'role_has_permissions',
-      'model_has_permissions',
-      'advance_payments'
+      'model_has_permissions'
     ];
     
     // Find missing and extra tables

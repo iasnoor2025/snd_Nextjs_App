@@ -224,7 +224,7 @@ export class ERPNextClient {
 
         if (result.data?.name) {
           employee.erpnextId = result.data.name;
-          // Note: Field update handled separately to avoid Prisma field mapping issues
+          // Note: Field update handled separately to avoid field mapping issues
         } else {
           throw new Error('Failed to create ERPNext employee: no name returned');
         }

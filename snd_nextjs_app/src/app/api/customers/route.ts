@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
       status: body.status || 'active',
       isActive: body.isActive !== undefined ? body.isActive : true,
       createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString().split('T')[0] as string,
     };
 
     const newCustomer = await db.insert(customers).values(insertData).returning();

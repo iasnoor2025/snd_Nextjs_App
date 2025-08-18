@@ -16,7 +16,7 @@ export const GET = withPermission(
         email: usersTable.email,
         role_id: usersTable.roleId,
         isActive: usersTable.isActive,
-        created_at: usersTable.createdAt,
+        createdAt: usersTable.createdAt,
         last_login_at: usersTable.lastLoginAt,
       })
       .from(usersTable)
@@ -96,7 +96,7 @@ export const GET = withPermission(
         role: role,
         role_id: user.role_id,
         isActive: user.isActive,
-        createdAt: user.created_at,
+        createdAt: user.createdAt,
         lastLoginAt: user.last_login_at,
       };
     });
@@ -173,7 +173,7 @@ export const POST = withPermission(
         email: usersTable.email,
         role_id: usersTable.roleId,
         isActive: usersTable.isActive,
-        created_at: usersTable.createdAt,
+        createdAt: usersTable.createdAt,
       });
     const user = inserted[0];
 
@@ -279,7 +279,7 @@ export const PUT = withPermission(
         email: usersTable.email,
         role_id: usersTable.roleId,
         isActive: usersTable.isActive,
-        created_at: usersTable.createdAt,
+        createdAt: usersTable.createdAt,
       });
     const user = updated[0];
 

@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/lib/auth-config';
 import { getUserPermissions } from '@/lib/rbac/permission-service';
 import { db } from '@/lib/drizzle';
-import { users, roles, modelHasRoles, permissions, roleHasPermissions } from '@/lib/drizzle/schema';
+import { users, roles, permissions, roleHasPermissions } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET() {
@@ -40,6 +40,13 @@ export async function GET() {
     }
 
     const user = userInfo[0];
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found in database' },
+        { status: 404 }
+      );
+    }
 
     // Get user's role
     const userRole = await db

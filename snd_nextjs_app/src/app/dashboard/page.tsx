@@ -7,6 +7,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader"
 import { IqamaSection } from "@/components/dashboard/IqamaSection"
 import { EquipmentSection } from "@/components/dashboard/EquipmentSection"
 import { TimesheetsSection } from "@/components/dashboard/TimesheetsSection"
+import { FinancialMetricsSection } from "@/components/dashboard/FinancialMetricsSection"
 import { QuickActions } from "@/components/dashboard/QuickActions"
 import { RecentActivity } from "@/components/dashboard/RecentActivity"
 import { DashboardModals } from "@/components/dashboard/DashboardModals"
@@ -428,6 +429,9 @@ export default function DashboardPage() {
           equipmentData={equipmentData}
           onUpdateEquipment={handleOpenEquipmentUpdateModal}
         />
+
+        {/* Financial Metrics Section */}
+        <FinancialMetricsSection />
 
         {/* Timesheets Section */}
         <TimesheetsSection

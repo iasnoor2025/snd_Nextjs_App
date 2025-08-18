@@ -27,6 +27,13 @@ export interface DashboardStats {
   expiredDocuments: number;
   expiringDocuments: number;
   employeesOnLeave: number;
+  // Financial metrics from ERPNext
+  totalMoneyReceived: number;
+  totalMoneyLost: number;
+  monthlyMoneyReceived: number;
+  monthlyMoneyLost: number;
+  netProfit: number;
+  currency: string;
 }
 
 export interface IqamaData {
@@ -269,6 +276,25 @@ export class DashboardService {
       // Calculate equipment utilization (placeholder)
       const equipmentUtilization = 0;
 
+      // Get financial metrics from ERPNext
+      let financialMetrics = {
+        totalMoneyReceived: 0,
+        totalMoneyLost: 0,
+        monthlyMoneyReceived: 0,
+        monthlyMoneyLost: 0,
+        netProfit: 0,
+        currency: 'SAR'
+      };
+
+      try {
+        const { ERPNextFinancialService } = await import('./erpnext-financial-service');
+        financialMetrics = await ERPNextFinancialService.getFinancialMetrics();
+        financialMetrics.netProfit = financialMetrics.totalMoneyReceived - financialMetrics.totalMoneyLost;
+      } catch (error) {
+        console.error('Error fetching financial metrics from ERPNext:', error);
+        // Use default values if ERPNext is not available
+      }
+
       // Get employees currently on leave
       let employeesCurrentlyOnLeave: any[] = [];
       try {
@@ -291,6 +317,13 @@ export class DashboardService {
         expiredDocuments: expiredDocumentsResult.count,
         expiringDocuments: expiringDocumentsResult.count,
         employeesOnLeave: employeesCurrentlyOnLeave.length,
+        // Financial metrics
+        totalMoneyReceived: financialMetrics.totalMoneyReceived,
+        totalMoneyLost: financialMetrics.totalMoneyLost,
+        monthlyMoneyReceived: financialMetrics.monthlyMoneyReceived,
+        monthlyMoneyLost: financialMetrics.monthlyMoneyLost,
+        netProfit: financialMetrics.netProfit,
+        currency: financialMetrics.currency,
       };
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);

@@ -16,8 +16,8 @@ export const GET = withPermission(
           description: designations.description,
           is_active: designations.isActive,
           department_id: designations.departmentId,
-          created_at: designations.createdAt,
-          updated_at: designations.updatedAt,
+          createdAt: designations.createdAt,
+          updatedAt: designations.updatedAt,
         })
         .from(designations)
         .where(isNull(designations.deletedAt))
@@ -132,8 +132,8 @@ export const POST = withPermission(
           description: designations.description,
           is_active: designations.isActive,
           department_id: designations.departmentId,
-          created_at: designations.createdAt,
-          updated_at: designations.updatedAt,
+          createdAt: designations.createdAt,
+          updatedAt: designations.updatedAt,
         });
 
       if (!newDesignation) {

@@ -16,8 +16,8 @@ export const GET = withPermission(
           code: departments.code,
           description: departments.description,
           active: departments.active,
-          created_at: departments.createdAt,
-          updated_at: departments.updatedAt,
+          createdAt: departments.createdAt,
+          updatedAt: departments.updatedAt,
         })
         .from(departments)
         .where(isNull(departments.deletedAt))
@@ -110,8 +110,8 @@ export const POST = withPermission(
           code: departments.code,
           description: departments.description,
           active: departments.active,
-          created_at: departments.createdAt,
-          updated_at: departments.updatedAt,
+          createdAt: departments.createdAt,
+          updatedAt: departments.updatedAt,
         });
 
       console.log('POST /api/departments - Department created successfully:', newDepartment);

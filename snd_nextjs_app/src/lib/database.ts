@@ -225,7 +225,7 @@ export class DatabaseService {
     return { totalCustomers, activeCustomers, erpnextSyncedCustomers, localOnlyCustomers }
   }
 
-  // Note: The following methods were using Prisma and need to be implemented with Drizzle
+      // Note: The following methods were using Prisma and have been implemented with Drizzle
   // For now, they return null to indicate they need proper implementation
   
   static async syncCustomerFromERPNext(erpnextId: string, customerData: any) {

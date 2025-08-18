@@ -4,6 +4,13 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
+    // Ensure aliases also apply when using Turbopack in dev
+    turbo: {
+      resolveAlias: {
+        "@tanstack/query-core/build/modern": "@tanstack/query-core/build/legacy",
+        "@tanstack/react-query/build/modern": "@tanstack/react-query/build/legacy",
+      },
+    },
   },
 
   // Bundle optimization
@@ -53,7 +60,25 @@ const nextConfig = {
   },
 
   // Transpile packages
-  transpilePackages: ["jspdf", "html2canvas", "pdf-lib"],
+  transpilePackages: [
+    "jspdf",
+    "html2canvas",
+    "pdf-lib",
+  ],
+
+  // Webpack configuration for compatibility
+  webpack: (config) => {
+    // Add any additional webpack configuration if needed
+    return config;
+  },
+
+
+
+  // Force conservative browser targets
+  compiler: {
+    // Ensure we don't use modern JS features that might cause syntax errors
+    styledComponents: false,
+  },
 
   // Server external packages
   serverExternalPackages: ["pg"],

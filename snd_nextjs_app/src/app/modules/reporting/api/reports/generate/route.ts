@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/db';
-// TODO: This route still uses ORM-like aggregations; for now, disable DB updates to prevent crashes after Prisma removal.
+// TODO: This route still uses ORM-like aggregations; for now, disable DB updates to prevent crashes.
 import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
 
 export async function POST(_request: NextRequest) {

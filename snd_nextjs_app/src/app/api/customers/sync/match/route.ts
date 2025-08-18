@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { customers } from '@/lib/drizzle/schema';
-import { eq } from 'drizzle-orm';
 /**
  * Map ERPNext customer fields to local fields
  */

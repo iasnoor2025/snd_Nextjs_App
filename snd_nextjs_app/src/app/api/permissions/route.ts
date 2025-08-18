@@ -59,8 +59,8 @@ export async function GET(_request: NextRequest) {
         id: permissionsTable.id,
         name: permissionsTable.name,
         guard_name: permissionsTable.guardName,
-        created_at: permissionsTable.createdAt,
-        updated_at: permissionsTable.updatedAt,
+        createdAt: permissionsTable.createdAt,
+        updatedAt: permissionsTable.updatedAt,
       })
       .from(permissionsTable)
       .where(whereExpr as any)
@@ -169,7 +169,7 @@ export async function POST(_request: NextRequest) {
         id: permissionsTable.id,
         name: permissionsTable.name,
         guard_name: permissionsTable.guardName,
-        created_at: permissionsTable.createdAt,
+        createdAt: permissionsTable.createdAt,
       });
     const permission = inserted[0];
 
