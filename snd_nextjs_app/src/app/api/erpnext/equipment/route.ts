@@ -3,17 +3,30 @@ import { equipment } from '@/lib/drizzle/schema';
 import { eq, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
-// ERPNext configuration
-const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
-const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY;
-const ERPNEXT_API_SECRET = process.env.NEXT_PUBLIC_ERPNEXT_API_SECRET;
+// ERPNext configuration - check both NEXT_PUBLIC_ and non-NEXT_PUBLIC_ versions
+const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL || process.env.ERPNEXT_URL;
+const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY || process.env.ERPNEXT_API_KEY;
+const ERPNEXT_API_SECRET = process.env.NEXT_PUBLIC_ERPNEXT_API_SECRET || process.env.ERPNEXT_API_SECRET;
 
 async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
+  // Enhanced logging for production debugging
+  console.log('🔧 ERPNext Equipment API Environment Check:');
+  console.log('  - ERPNEXT_URL:', ERPNEXT_URL ? '✅ Set' : '❌ Missing');
+  console.log('  - ERPNEXT_API_KEY:', ERPNEXT_API_KEY ? '✅ Set' : '❌ Missing');
+  console.log('  - ERPNEXT_API_SECRET:', ERPNEXT_API_SECRET ? '✅ Set' : '❌ Missing');
+
   if (!ERPNEXT_URL || !ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {
-    throw new Error('ERPNext configuration is missing. Please check your environment variables.');
+    const missingVars: string[] = [];
+    if (!ERPNEXT_URL) missingVars.push('ERPNEXT_URL (or NEXT_PUBLIC_ERPNEXT_URL)');
+    if (!ERPNEXT_API_KEY) missingVars.push('ERPNEXT_API_KEY (or NEXT_PUBLIC_ERPNEXT_API_KEY)');
+    if (!ERPNEXT_API_SECRET) missingVars.push('ERPNEXT_API_SECRET (or NEXT_PUBLIC_ERPNEXT_API_SECRET)');
+
+    console.error('❌ ERPNext configuration missing:', missingVars);
+    throw new Error(`ERPNext configuration is missing: ${missingVars.join(', ')}. Please check your environment variables.`);
   }
 
   const url = `${ERPNEXT_URL}${endpoint}`;
+  console.log('🌐 Making ERPNext request to:', url);
 
   const defaultHeaders = {
     Authorization: `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
@@ -30,6 +43,13 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   });
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('❌ ERPNext API error:', {
+      status: response.status,
+      statusText: response.statusText,
+      errorText,
+      url
+    });
     throw new Error(`ERPNext API error: ${response.status} ${response.statusText}`);
   }
 

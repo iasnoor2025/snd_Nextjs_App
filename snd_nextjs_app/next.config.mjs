@@ -60,9 +60,13 @@ const nextConfig = {
     ];
   },
 
-  // Environment variables
+  // Environment variables - ensure ERPNext variables are available in production
   env: {
     NEXT_TELEMETRY_DISABLED: "1",
+    // Ensure these are available at build time and runtime
+    NEXT_PUBLIC_ERPNEXT_URL: process.env.NEXT_PUBLIC_ERPNEXT_URL,
+    NEXT_PUBLIC_ERPNEXT_API_KEY: process.env.NEXT_PUBLIC_ERPNEXT_API_KEY,
+    NEXT_PUBLIC_ERPNEXT_API_SECRET: process.env.NEXT_PUBLIC_ERPNEXT_API_SECRET,
   },
 
   // Transpile packages

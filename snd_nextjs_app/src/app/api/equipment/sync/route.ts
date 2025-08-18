@@ -5,16 +5,35 @@ import { NextResponse } from 'next/server';
 
 export async function POST() {
   try {
-    // Validate environment variables
-    const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
-    const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY;
-    const ERPNEXT_API_SECRET = process.env.NEXT_PUBLIC_ERPNEXT_API_SECRET;
+    // Validate environment variables - check both NEXT_PUBLIC_ and non-NEXT_PUBLIC_ versions
+    const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL || process.env.ERPNEXT_URL;
+    const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY || process.env.ERPNEXT_API_KEY;
+    const ERPNEXT_API_SECRET = process.env.NEXT_PUBLIC_ERPNEXT_API_SECRET || process.env.ERPNEXT_API_SECRET;
+
+    // Enhanced logging for production debugging
+    console.log('🔧 Equipment Sync Environment Check:');
+    console.log('  - ERPNEXT_URL:', ERPNEXT_URL ? '✅ Set' : '❌ Missing');
+    console.log('  - ERPNEXT_API_KEY:', ERPNEXT_API_KEY ? '✅ Set' : '❌ Missing');
+    console.log('  - ERPNEXT_API_SECRET:', ERPNEXT_API_SECRET ? '✅ Set' : '❌ Missing');
+    console.log('  - NODE_ENV:', process.env.NODE_ENV || 'Not set');
+    console.log('  - Available env vars:', Object.keys(process.env).filter(key => key.includes('ERPNEXT')));
 
     if (!ERPNEXT_URL || !ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {
+      const missingVars: string[] = [];
+      if (!ERPNEXT_URL) missingVars.push('ERPNEXT_URL (or NEXT_PUBLIC_ERPNEXT_URL)');
+      if (!ERPNEXT_API_KEY) missingVars.push('ERPNEXT_API_KEY (or NEXT_PUBLIC_ERPNEXT_API_KEY)');
+      if (!ERPNEXT_API_SECRET) missingVars.push('ERPNEXT_API_SECRET (or NEXT_PUBLIC_ERPNEXT_API_SECRET)');
+
+      console.error('❌ ERPNext configuration missing:', missingVars);
       return NextResponse.json(
         {
           success: false,
-          message: 'ERPNext configuration is missing. Please check your environment variables.',
+          message: `ERPNext configuration is missing: ${missingVars.join(', ')}. Please check your environment variables.`,
+          debug: {
+            nodeEnv: process.env.NODE_ENV,
+            availableVars: Object.keys(process.env).filter(key => key.includes('ERPNEXT')),
+            missingVars
+          }
         },
         { status: 500 }
       );
@@ -24,9 +43,9 @@ export async function POST() {
     try {
       // Test with a simple query
       await db.select({ count: count() }).from(equipment).limit(1);
-      console.log('Database connection successful');
+      console.log('✅ Database connection successful');
     } catch (dbError) {
-      console.error('Database connection failed:', dbError);
+      console.error('❌ Database connection failed:', dbError);
       return NextResponse.json(
         {
           success: false,
@@ -41,10 +60,12 @@ export async function POST() {
     // Check if database has existing equipment
     const existingEquipmentResult = await db.select({ count: count() }).from(equipment);
     const existingEquipmentCount = existingEquipmentResult[0]?.count || 0;
-    console.log(`Database has ${existingEquipmentCount} existing equipment`);
+    console.log(`📊 Database has ${existingEquipmentCount} existing equipment`);
 
     // Fetch all items from ERPNext (using only working fields)
-    console.log('Fetching items from ERPNext...');
+    console.log('🌐 Fetching items from ERPNext...');
+    console.log('🔗 ERPNext URL:', ERPNEXT_URL);
+    
     const erpnextResponse = await fetch(
       `${ERPNEXT_URL}/api/resource/Item?limit_page_length=1000&fields=["name","item_code","item_name","description","item_group","stock_uom","disabled","standard_rate","last_purchase_rate","valuation_rate"]`,
       {
@@ -58,14 +79,24 @@ export async function POST() {
 
     if (!erpnextResponse.ok) {
       const errorText = await erpnextResponse.text();
-      console.error('ERPNext API Error Response:', errorText);
+      console.error('❌ ERPNext API Error Response:', {
+        status: erpnextResponse.status,
+        statusText: erpnextResponse.statusText,
+        errorText,
+        url: `${ERPNEXT_URL}/api/resource/Item`,
+        headers: {
+          Authorization: `token ${ERPNEXT_API_KEY}:***`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        }
+      });
       throw new Error(
         `ERPNext API error: ${erpnextResponse.status} ${erpnextResponse.statusText} - ${errorText}`
       );
     }
 
     const erpnextData = await erpnextResponse.json();
-    console.log(`Found ${erpnextData.data?.length || 0} total items in ERPNext`);
+    console.log(`✅ Found ${erpnextData.data?.length || 0} total items in ERPNext`);
 
     if (!erpnextData.data || erpnextData.data.length === 0) {
       return NextResponse.json({
