@@ -108,5 +108,21 @@
     "hoursWorked": "ساعات العمل",
     "overtimeHours": "ساعات العمل الإضافي",
     "updateHours": "تحديث الساعات"
-  }
+  },
+  "quickActions": "الإجراءات السريعة",
+  "dashboardSections": "أقسام لوحة التحكم",
+  "sectionsVisible": "{{visible}} من {{total}} قسم مرئي",
+  "showAll": "إظهار الكل",
+  "hideAll": "إخفاء الكل",
+  "hiddenSections": "الأقسام المخفية",
+  "showIqamaSection": "إظهار قسم الإقامة",
+  "showEquipmentSection": "إظهار قسم المعدات",
+  "showFinancialSection": "إظهار القسم المالي",
+  "showTimesheetsSection": "إظهار قسم سجلات الوقت",
+  "showQuickActions": "إظهار الإجراءات السريعة",
+  "showRecentActivity": "إظهار النشاط الأخير",
+  "hideSection": "إخفاء القسم",
+  "showSection": "إظهار القسم",
+  "resetToDefault": "إعادة تعيين إلى الافتراضي",
+  "loadingSections": "جاري تحميل الأقسام..."
 }

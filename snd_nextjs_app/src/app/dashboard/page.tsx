@@ -12,6 +12,7 @@ import { QuickActions } from "@/components/dashboard/QuickActions"
 import { RecentActivity } from "@/components/dashboard/RecentActivity"
 import { DashboardModals } from "@/components/dashboard/DashboardModals"
 import { useI18n } from "@/hooks/use-i18n"
+import { Button } from "@/components/ui/button"
 
 interface IqamaData {
   id: number
@@ -105,6 +106,17 @@ export default function DashboardPage() {
 
   // Current time for display
   const [currentTime, setCurrentTime] = useState(new Date())
+
+  // State for section visibility
+  const [sectionVisibility, setSectionVisibility] = useState({
+    iqama: true,
+    equipment: true,
+    financial: true,
+    timesheets: true,
+    quickActions: true,
+    recentActivity: true
+  })
+  const [sectionsLoaded, setSectionsLoaded] = useState(false)
 
   // Check authentication
   useEffect(() => {
@@ -231,6 +243,22 @@ export default function DashboardPage() {
       fetchDashboardData()
     }
   }, [session])
+
+  // Load section visibility from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dashboard-section-visibility')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          setSectionVisibility(parsed)
+        } catch (e) {
+          console.warn('Failed to parse saved section visibility:', e)
+        }
+      }
+      setSectionsLoaded(true)
+    }
+  }, [])
 
   // Monitor equipment data state changes
   useEffect(() => {
@@ -448,6 +476,25 @@ export default function DashboardPage() {
     setIsEquipmentUpdateModalOpen(true)
   }
 
+  // Save section visibility to localStorage
+  const saveSectionVisibility = (newVisibility: typeof sectionVisibility) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('dashboard-section-visibility', JSON.stringify(newVisibility))
+    }
+  }
+
+  // Handle section visibility toggle
+  const toggleSection = (section: keyof typeof sectionVisibility) => {
+    setSectionVisibility(prev => {
+      const newVisibility = {
+        ...prev,
+        [section]: !prev[section]
+      }
+      saveSectionVisibility(newVisibility)
+      return newVisibility
+    })
+  }
+
   // Show loading state
   if (loading) {
     return (
@@ -478,43 +525,309 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <div className="px-6 py-8 space-y-8">
-        {/* Iqama Section */}
-        <IqamaSection
-          iqamaData={iqamaData}
-          onUpdateIqama={handleOpenIqamaModal}
-        />
+        {/* Section Controls */}
+        <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/50">
+          <div>
+            <h3 className="text-lg font-semibold">{t('dashboard.dashboardSections')}</h3>
+            <p className="text-sm text-muted-foreground">
+              {!sectionsLoaded ? (
+                <span className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                  {t('dashboard.loadingSections')}
+                </span>
+              ) : (
+                t('dashboard.sectionsVisible', { 
+                  visible: Object.values(sectionVisibility).filter(visible => visible).length, 
+                  total: Object.keys(sectionVisibility).length 
+                })
+              )}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const newVisibility = {
+                  iqama: true,
+                  equipment: true,
+                  financial: true,
+                  timesheets: true,
+                  quickActions: true,
+                  recentActivity: true
+                }
+                setSectionVisibility(newVisibility)
+                saveSectionVisibility(newVisibility)
+              }}
+            >
+              {t('dashboard.showAll')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const newVisibility = {
+                  iqama: false,
+                  equipment: false,
+                  financial: false,
+                  timesheets: false,
+                  quickActions: false,
+                  recentActivity: false
+                }
+                setSectionVisibility(newVisibility)
+                saveSectionVisibility(newVisibility)
+              }}
+            >
+              {t('dashboard.hideAll')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const defaultVisibility = {
+                  iqama: true,
+                  equipment: true,
+                  financial: true,
+                  timesheets: true,
+                  quickActions: true,
+                  recentActivity: true
+                }
+                setSectionVisibility(defaultVisibility)
+                saveSectionVisibility(defaultVisibility)
+              }}
+            >
+              {t('dashboard.resetToDefault')}
+            </Button>
+          </div>
+        </div>
+                {/* Iqama Section */}
+        {sectionVisibility.iqama && (
+          <>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {t('employee.iqama.management')}
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => toggleSection('iqama')}
+                className="flex items-center gap-2"
+              >
+                {t('dashboard.hideSection')}
+              </Button>
+            </div>
+            <IqamaSection
+              iqamaData={iqamaData}
+              onUpdateIqama={handleOpenIqamaModal}
+            />
+          </>
+        )}
 
         {/* Equipment Section */}
-        <EquipmentSection
-          equipmentData={equipmentData}
-          onUpdateEquipment={handleOpenEquipmentUpdateModal}
-        />
+        {sectionVisibility.equipment && (
+          <>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {t('equipment.istimara.title')}
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => toggleSection('equipment')}
+                className="flex items-center gap-2"
+              >
+                {t('dashboard.hideSection')}
+              </Button>
+            </div>
+            <EquipmentSection
+              equipmentData={equipmentData}
+              onUpdateEquipment={handleOpenEquipmentUpdateModal}
+            />
+          </>
+        )}
 
         {/* Financial Overview Section */}
-        <FinancialOverviewSection />
+        {sectionVisibility.financial && (
+          <>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {t('financial.comprehensiveOverview') || 'Financial Overview'}
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => toggleSection('financial')}
+                className="flex items-center gap-2"
+              >
+                {t('dashboard.hideSection')}
+              </Button>
+            </div>
+            <FinancialOverviewSection />
+          </>
+        )}
 
         {/* Timesheets Section */}
-        <TimesheetsSection
-          timesheetData={timesheetData}
-          currentTime={currentTime}
-          session={session}
-          onApproveTimesheet={handleApproveTimesheet}
-          onRejectTimesheet={handleRejectTimesheet}
-          onMarkAbsent={handleMarkAbsent}
-          onEditHours={handleEditHours}
-          approvalSuccess={approvalSuccess}
-          approvingTimesheet={approvingTimesheet}
-          rejectingTimesheet={rejectingTimesheet}
-          markingAbsent={markingAbsent}
-          isRefreshing={refreshingTimesheets}
-        />
+        {sectionVisibility.timesheets && (
+          <>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {t('timesheet.todaysAttendance')}
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => toggleSection('timesheets')}
+                className="flex items-center gap-2"
+              >
+                {t('dashboard.hideSection')}
+              </Button>
+            </div>
+            <TimesheetsSection
+              timesheetData={timesheetData}
+              currentTime={currentTime}
+              session={session}
+              onApproveTimesheet={handleApproveTimesheet}
+              onRejectTimesheet={handleRejectTimesheet}
+              onMarkAbsent={handleMarkAbsent}
+              onEditHours={handleEditHours}
+              approvalSuccess={approvalSuccess}
+              approvingTimesheet={approvingTimesheet}
+              rejectingTimesheet={rejectingTimesheet}
+              markingAbsent={markingAbsent}
+              isRefreshing={refreshingTimesheets}
+            />
+          </>
+        )}
 
-            {/* Quick Actions */}
-        <QuickActions />
+        {/* Quick Actions */}
+        {sectionVisibility.quickActions && (
+          <>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {t('dashboard.quickActions') || 'Quick Actions'}
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => toggleSection('quickActions')}
+                className="flex items-center gap-2"
+              >
+                {t('dashboard.hideSection')}
+              </Button>
+            </div>
+            <QuickActions />
+          </>
+        )}
 
-            {/* Recent Activity */}
-        <RecentActivity activities={activities} />
-                    </div>
+        {/* Recent Activity */}
+        {sectionVisibility.recentActivity && (
+          <>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                {t('dashboard.recentActivity')}
+              </h2>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => toggleSection('recentActivity')}
+                className="flex items-center gap-2"
+              >
+                {t('dashboard.hideSection')}
+              </Button>
+            </div>
+            <RecentActivity activities={activities} />
+          </>
+        )}
+
+        {/* Hidden Sections Summary */}
+        {Object.values(sectionVisibility).some(visible => !visible) && (
+          <div className="p-4 rounded-lg border bg-muted/50">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold">{t('dashboard.hiddenSections')}</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newVisibility = {
+                    iqama: true,
+                    equipment: true,
+                    financial: true,
+                    timesheets: true,
+                    quickActions: true,
+                    recentActivity: true
+                  }
+                  setSectionVisibility(newVisibility)
+                  saveSectionVisibility(newVisibility)
+                }}
+              >
+                {t('dashboard.showAll')}
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {!sectionVisibility.iqama && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleSection('iqama')}
+                  className="flex items-center gap-2"
+                >
+                  {t('dashboard.showIqamaSection')}
+                </Button>
+              )}
+              {!sectionVisibility.equipment && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleSection('equipment')}
+                  className="flex items-center gap-2"
+                >
+                  {t('dashboard.showEquipmentSection')}
+                </Button>
+              )}
+              {!sectionVisibility.financial && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleSection('financial')}
+                  className="flex items-center gap-2"
+                >
+                  {t('dashboard.showFinancialSection')}
+                </Button>
+              )}
+              {!sectionVisibility.timesheets && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleSection('timesheets')}
+                  className="flex items-center gap-2"
+                >
+                  {t('dashboard.showTimesheetsSection')}
+                </Button>
+              )}
+              {!sectionVisibility.quickActions && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleSection('quickActions')}
+                  className="flex items-center gap-2"
+                >
+                  {t('dashboard.showQuickActions')}
+                </Button>
+              )}
+              {!sectionVisibility.recentActivity && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleSection('recentActivity')}
+                  className="flex items-center gap-2"
+                >
+                  {t('dashboard.showRecentActivity')}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
                     
       {/* Modals */}
               <DashboardModals
