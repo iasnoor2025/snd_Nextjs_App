@@ -85,6 +85,13 @@ export function SiteHeader() {
                     <span>Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <a href="/profile" className="flex items-center">
+                      <User className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
+                      <span>Profile</span>
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/login' })}>
                     <LogOut className={`${isRTL ? 'ml-2' : 'mr-2'} h-4 w-4`} />
                     <span>Log out</span>

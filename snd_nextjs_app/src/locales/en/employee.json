@@ -54,7 +54,8 @@
     "confirm": "Confirm",
     "search": "Search employees...",
     "filter": "Filter",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "clear": "Clear"
   },
   
   "fields": {
@@ -153,7 +154,8 @@
     "show": "Show",
     "perPage": "per page",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "page": "Page {current} of {total}"
   },
   
   "filters": {
@@ -173,7 +175,8 @@
       "currentAssignment": "Current Assignment",
       "status": "Status",
       "hireDate": "Hire Date",
-      "actions": "Actions"
+      "actions": "Actions",
+      "company": "Company"
     }
   },
   
@@ -192,7 +195,24 @@
   },
   
   "iqama": {
-    "expired": "Expired"
+    "expired": "Expired",
+    "management": "Iqama Management",
+    "description": "Track and manage employee Iqama expiry dates",
+    "manage": "Manage Iqama",
+    "searchPlaceholder": "Search by name, file number, nationality, or position...",
+    "allStatuses": "All Statuses",
+    "expiringSoon": "Expiring Soon",
+    "missing": "Missing",
+    "active": "Active",
+    "days": "Days",
+    "noExpiryDate": "No expiry date",
+    "daysOverdue": "{{days}} days overdue",
+    "daysRemaining": "{{days}} days remaining",
+    "notApplicable": "N/A",
+    "updateExpiryDate": "Update Iqama expiry date",
+    "noRecordsFound": "No Iqama records found",
+    "tryAdjustingSearch": "Try adjusting your search or filters",
+    "allRecordsActive": "All Iqama records are currently active"
   },
   
   "assignment": {

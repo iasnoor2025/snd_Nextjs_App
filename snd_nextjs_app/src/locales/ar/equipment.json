@@ -61,7 +61,8 @@
     "location": "الموقع",
     "dailyRate": "المعدل اليومي",
     "weeklyRate": "المعدل الأسبوعي",
-    "monthlyRate": "المعدل الشهري"
+    "monthlyRate": "المعدل الشهري",
+    "department": "القسم"
   },
   "status": {
     "available": "متاح",
@@ -75,7 +76,9 @@
     "editEquipment": "تعديل المعدة",
     "deleteEquipment": "حذف المعدة",
     "viewDetails": "عرض التفاصيل",
-    "assignToProject": "تعيين للمشروع"
+    "assignToProject": "تعيين للمشروع",
+    "manageEquipment": "إدارة المعدات",
+    "actions": "الإجراءات"
   },
   "messages": {
     "equipmentCreated": "تم إنشاء المعدة بنجاح",
@@ -88,5 +91,35 @@
     "available": "متاح",
     "inUse": "قيد الاستخدام",
     "maintenance": "تحت الصيانة"
+  },
+  "pagination": {
+    "show": "عرض",
+    "perPage": "في الصفحة",
+    "previous": "السابق",
+    "next": "التالي",
+    "page": "الصفحة {current} من {total}"
+  },
+  "istimara": {
+    "title": "انتهاء صلاحية إستمارة المعدات",
+    "description": "تتبع وإدارة انتهاء صلاحية إستمارة المعدات",
+    "searchPlaceholder": "البحث باسم المعدة أو الرقم أو الشركة المصنعة أو الموديل...",
+    "allStatuses": "جميع الحالات",
+    "expired": "منتهي الصلاحية",
+    "expiringSoon": "ينتهي قريباً",
+    "missing": "مفقود",
+    "available": "متاح",
+    "clear": "مسح",
+    "requiringAttention": "المعدات التي تحتاج إلى اهتمام",
+    "attentionDescription": "منتهية الصلاحية أو تنتهي قريباً أو مفقودة تواريخ انتهاء صلاحية الإستمارة",
+    "expiry": "انتهاء الصلاحية",
+    "notApplicable": "غير متاح",
+    "daysOverdue": "{{days}} يوم متأخر",
+    "daysRemaining": "{{days}} يوم متبقي",
+    "noExpiryDate": "لا يوجد تاريخ انتهاء صلاحية",
+    "addExpiryDate": "إضافة تاريخ انتهاء صلاحية الإستمارة",
+    "updateExpiryDate": "تحديث تاريخ انتهاء صلاحية الإستمارة",
+    "noRecordsFound": "لم يتم العثور على سجلات معدات",
+    "tryAdjustingSearch": "حاول تعديل البحث أو الفلاتر",
+    "allRecordsValid": "جميع سجلات إستمارة المعدات صالحة حالياً"
   }
 }

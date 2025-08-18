@@ -61,7 +61,8 @@
     "location": "Location",
     "dailyRate": "Daily Rate",
     "weeklyRate": "Weekly Rate",
-    "monthlyRate": "Monthly Rate"
+    "monthlyRate": "Monthly Rate",
+    "department": "Department"
   },
   "status": {
     "available": "Available",
@@ -75,7 +76,9 @@
     "editEquipment": "Edit Equipment",
     "deleteEquipment": "Delete Equipment",
     "viewDetails": "View Details",
-    "assignToProject": "Assign to Project"
+    "assignToProject": "Assign to Project",
+    "manageEquipment": "Manage Equipment",
+    "actions": "Actions"
   },
   "messages": {
     "equipmentCreated": "Equipment created successfully",
@@ -88,5 +91,35 @@
     "available": "Available",
     "inUse": "In Use",
     "maintenance": "Under Maintenance"
+  },
+  "pagination": {
+    "show": "Show",
+    "perPage": "per page",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {current} of {total}"
+  },
+  "istimara": {
+    "title": "Equipment Istimara Expiry",
+    "description": "Equipment Istimara expiry tracking and management",
+    "searchPlaceholder": "Search by equipment name, number, manufacturer, or model...",
+    "allStatuses": "All Statuses",
+    "expired": "Expired",
+    "expiringSoon": "Expiring Soon",
+    "missing": "Missing",
+    "available": "Available",
+    "clear": "Clear",
+    "requiringAttention": "Equipment Requiring Attention",
+    "attentionDescription": "Expired, expiring soon, or missing Istimara expiry dates",
+    "expiry": "Expiry",
+    "notApplicable": "N/A",
+    "daysOverdue": "{{days}} days overdue",
+    "daysRemaining": "{{days}} days remaining",
+    "noExpiryDate": "No expiry date",
+    "addExpiryDate": "Add Istimara expiry date",
+    "updateExpiryDate": "Update Istimara expiry date",
+    "noRecordsFound": "No equipment records found",
+    "tryAdjustingSearch": "Try adjusting your search or filters",
+    "allRecordsValid": "All equipment Istimara records are currently valid"
   }
 }

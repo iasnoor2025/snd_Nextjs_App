@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog"
+import { useI18n } from "@/hooks/use-i18n"
 
 interface IqamaData {
   id: number
@@ -105,21 +106,23 @@ export function DashboardModals({
   updatingHours,
   onUpdateHours
 }: DashboardModalsProps) {
+  const { t } = useI18n()
+  
   return (
     <>
       {/* Iqama Update Modal */}
       <Dialog open={isIqamaModalOpen} onOpenChange={setIsIqamaModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Update Iqama Expiry Date</DialogTitle>
+            <DialogTitle>{t('dashboard.modals.updateIqamaExpiry')}</DialogTitle>
             <DialogDescription>
-              Update the Iqama expiry date for {selectedIqama?.employeeName}
+              {t('dashboard.modals.updateIqamaExpiryDescription', { name: selectedIqama?.employeeName })}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="iqamaExpiryDate" className="text-right">
-                Expiry Date
+                {t('dashboard.modals.expiryDate')}
               </Label>
               <Input
                 id="iqamaExpiryDate"
@@ -137,14 +140,14 @@ export function DashboardModals({
               onClick={() => setIsIqamaModalOpen(false)}
               disabled={updatingIqama}
             >
-              Cancel
+              {t('dashboard.modals.cancel')}
             </Button>
             <Button
               type="button"
               onClick={onUpdateIqama}
               disabled={!newExpiryDate || updatingIqama}
             >
-              {updatingIqama ? 'Updating...' : 'Update'}
+              {updatingIqama ? t('dashboard.modals.updating') : t('dashboard.modals.update')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -155,36 +158,36 @@ export function DashboardModals({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {selectedEquipment?.status === 'missing' ? 'Add Istimara Expiry Date' : 'Update Istimara Expiry Date'}
+              {selectedEquipment?.status === 'missing' ? t('dashboard.modals.addIstimaraExpiry') : t('dashboard.modals.updateIstimaraExpiry')}
             </DialogTitle>
             <DialogDescription>
               {selectedEquipment?.status === 'missing' 
-                ? `Add Istimara expiry date for ${selectedEquipment?.equipmentName}`
-                : `Update the Istimara expiry date for ${selectedEquipment?.equipmentName}`
+                ? t('dashboard.modals.addIstimaraExpiryDescription', { name: selectedEquipment?.equipmentName })
+                : t('dashboard.modals.updateIstimaraExpiryDescription', { name: selectedEquipment?.equipmentName })
               }
             </DialogDescription>
             {selectedEquipment?.istimara ? (
               <div className="mt-2 text-sm text-muted-foreground">
-                ℹ️ Istimara number already exists and cannot be modified
+                ℹ️ {t('dashboard.modals.istimaraExists')}
               </div>
             ) : (
               <div className="mt-2 text-sm text-muted-foreground">
-                ℹ️ You can add an Istimara number if available
+                ℹ️ {t('dashboard.modals.istimaraCanAdd')}
               </div>
             )}
           </DialogHeader>
           {/* Equipment Summary */}
           <div className="p-3 rounded-lg bg-muted/50 border">
             <div className="text-sm space-y-1">
-              <div><span className="font-medium">Equipment:</span> {selectedEquipment?.equipmentName}</div>
+              <div><span className="font-medium">{t('dashboard.modals.equipment')}:</span> {selectedEquipment?.equipmentName}</div>
               {selectedEquipment?.equipmentNumber && (
-                <div><span className="font-medium">Number:</span> #{selectedEquipment.equipmentNumber}</div>
+                <div><span className="font-medium">{t('dashboard.modals.number')}:</span> #{selectedEquipment.equipmentNumber}</div>
               )}
               {selectedEquipment?.manufacturer && (
-                <div><span className="font-medium">Manufacturer:</span> {selectedEquipment.manufacturer}</div>
+                <div><span className="font-medium">{t('dashboard.modals.manufacturer')}:</span> {selectedEquipment.manufacturer}</div>
               )}
               {selectedEquipment?.modelNumber && (
-                <div><span className="font-medium">Model:</span> {selectedEquipment.modelNumber}</div>
+                <div><span className="font-medium">{t('dashboard.modals.model')}:</span> {selectedEquipment.modelNumber}</div>
               )}
             </div>
           </div>
@@ -192,7 +195,7 @@ export function DashboardModals({
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="equipmentIstimara" className="text-right">
-                Istimara #
+                {t('dashboard.modals.istimaraNumber')}
               </Label>
               <Input
                 id="equipmentIstimara"
@@ -200,7 +203,7 @@ export function DashboardModals({
                 value={selectedEquipment?.istimara || newEquipmentIstimara}
                 disabled={!!selectedEquipment?.istimara}
                 className={`col-span-3 ${selectedEquipment?.istimara ? 'bg-muted' : ''}`}
-                placeholder={selectedEquipment?.istimara ? "Istimara number (read-only)" : "Enter Istimara number"}
+                placeholder={selectedEquipment?.istimara ? t('dashboard.modals.istimaraReadOnly') : t('dashboard.modals.istimaraEnter')}
                 onChange={(e) => {
                   // Only allow changes if no existing istimara
                   if (!selectedEquipment?.istimara) {
@@ -211,7 +214,7 @@ export function DashboardModals({
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="equipmentExpiryDate" className="text-right">
-                Expiry Date
+                {t('dashboard.modals.expiryDate')}
               </Label>
               <Input
                 id="equipmentExpiryDate"
@@ -230,15 +233,15 @@ export function DashboardModals({
               onClick={() => setIsEquipmentUpdateModalOpen(false)}
               disabled={updatingEquipment}
             >
-              Cancel
+              {t('dashboard.modals.cancel')}
             </Button>
             <Button
               type="button"
               onClick={onUpdateEquipment}
               disabled={!newEquipmentExpiryDate || updatingEquipment}
             >
-              {updatingEquipment ? 'Updating...' :
-                selectedEquipment?.status === 'missing' ? 'Add Istimara & Expiry' : 'Update Expiry'}
+              {updatingEquipment ? t('dashboard.modals.updating') :
+                selectedEquipment?.status === 'missing' ? t('dashboard.modals.addIstimaraExpiry') : t('dashboard.modals.updateExpiry')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -248,15 +251,15 @@ export function DashboardModals({
       <Dialog open={isEditHoursModalOpen} onOpenChange={setIsEditHoursModalOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Timesheet Hours</DialogTitle>
+            <DialogTitle>{t('dashboard.modals.editTimesheetHours')}</DialogTitle>
             <DialogDescription>
-              Update hours and overtime for {selectedTimesheetForEdit?.employeeName}'s timesheet.
+              {t('dashboard.modals.editTimesheetHoursDescription', { name: selectedTimesheetForEdit?.employeeName })}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="hoursWorked" className="text-right">
-                Hours Worked
+                {t('dashboard.modals.hoursWorked')}
               </Label>
               <Input
                 id="hoursWorked"
@@ -272,7 +275,7 @@ export function DashboardModals({
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="overtimeHours" className="text-right">
-                Overtime Hours
+                {t('dashboard.modals.overtimeHours')}
               </Label>
               <Input
                 id="overtimeHours"
@@ -294,14 +297,14 @@ export function DashboardModals({
               onClick={() => setIsEditHoursModalOpen(false)}
               disabled={updatingHours}
             >
-              Cancel
+              {t('dashboard.modals.cancel')}
             </Button>
             <Button
               type="button"
               onClick={onUpdateHours}
               disabled={!editHours || updatingHours}
             >
-              {updatingHours ? 'Updating...' : 'Update Hours'}
+              {updatingHours ? t('dashboard.modals.updating') : t('dashboard.modals.updateHours')}
             </Button>
           </DialogFooter>
         </DialogContent>

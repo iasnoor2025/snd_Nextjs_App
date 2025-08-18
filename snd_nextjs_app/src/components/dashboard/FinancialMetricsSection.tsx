@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { TrendingUp, TrendingDown, DollarSign, AlertTriangle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useI18n } from "@/hooks/use-i18n"
 
 interface FinancialMetrics {
   totalMoneyReceived: number;
@@ -25,6 +26,7 @@ interface InvoiceSummary {
 }
 
 export function FinancialMetricsSection() {
+  const { t } = useI18n()
   const [financialMetrics, setFinancialMetrics] = useState<FinancialMetrics | null>(null)
   const [invoiceSummary, setInvoiceSummary] = useState<InvoiceSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -50,7 +52,7 @@ export function FinancialMetricsSection() {
         setInvoiceSummary(summaryData.data)
       }
     } catch (err) {
-      setError('Failed to fetch financial data')
+      setError(t('financial.failedToFetch'))
       console.error('Error fetching financial data:', err)
     } finally {
       setLoading(false)
@@ -73,7 +75,7 @@ export function FinancialMetricsSection() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
-            Financial Metrics
+            {t('financial.metrics')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -91,7 +93,7 @@ export function FinancialMetricsSection() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
-            Financial Metrics
+            {t('financial.metrics')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -99,7 +101,7 @@ export function FinancialMetricsSection() {
             <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
             <p className="text-red-600 mb-4">{error}</p>
             <Button onClick={fetchFinancialData} variant="outline">
-              Try Again
+              {t('financial.tryAgain')}
             </Button>
           </div>
         </CardContent>
@@ -112,14 +114,14 @@ export function FinancialMetricsSection() {
       {/* Header with refresh button */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Financial Overview</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t('financial.overview')}</h2>
           <p className="text-gray-600 dark:text-gray-400">
-            Money received and lost from ERPNext
+            {t('financial.description')}
           </p>
         </div>
         <Button onClick={handleRefresh} disabled={refreshing} variant="outline" size="sm">
           <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-          {refreshing ? 'Refreshing...' : 'Refresh'}
+          {refreshing ? t('financial.refreshing') : t('financial.refresh')}
         </Button>
       </div>
 
@@ -130,7 +132,7 @@ export function FinancialMetricsSection() {
           <Card className="border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300">
-                Total Money Received
+                {t('financial.totalMoneyReceived')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -141,7 +143,7 @@ export function FinancialMetricsSection() {
                     {financialMetrics.currency} {financialMetrics.totalMoneyReceived.toLocaleString()}
                   </div>
                   <p className="text-xs text-green-600 dark:text-green-400">
-                    All time
+                    {t('financial.allTime')}
                   </p>
                 </div>
               </div>
@@ -152,7 +154,7 @@ export function FinancialMetricsSection() {
           <Card className="border-red-200 bg-red-50 dark:bg-red-950 dark:border-red-800">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-red-700 dark:text-red-300">
-                Total Money Lost
+                {t('financial.totalMoneyLost')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -163,7 +165,7 @@ export function FinancialMetricsSection() {
                     {financialMetrics.currency} {financialMetrics.totalMoneyLost.toLocaleString()}
                   </div>
                   <p className="text-xs text-red-600 dark:text-red-400">
-                    All time
+                    {t('financial.allTime')}
                   </p>
                 </div>
               </div>
@@ -174,7 +176,7 @@ export function FinancialMetricsSection() {
           <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300">
-                This Month Received
+                {t('financial.thisMonthReceived')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -185,7 +187,7 @@ export function FinancialMetricsSection() {
                     {financialMetrics.currency} {financialMetrics.monthlyMoneyReceived.toLocaleString()}
                   </div>
                   <p className="text-xs text-blue-600 dark:text-blue-400">
-                    Current month
+                    {t('financial.currentMonth')}
                   </p>
                 </div>
               </div>
@@ -204,7 +206,7 @@ export function FinancialMetricsSection() {
                   ? 'text-green-700 dark:text-green-300' 
                   : 'text-red-700 dark:text-red-300'
               }`}>
-                Net Profit
+                {t('financial.netProfit')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -227,7 +229,7 @@ export function FinancialMetricsSection() {
                       ? 'text-green-600 dark:text-green-400' 
                       : 'text-red-600 dark:text-red-400'
                   }`}>
-                    {financialMetrics.netProfit >= 0 ? 'Profit' : 'Loss'}
+                    {financialMetrics.netProfit >= 0 ? t('financial.profit') : t('financial.loss')}
                   </p>
                 </div>
               </div>
@@ -242,10 +244,10 @@ export function FinancialMetricsSection() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              Invoice Summary
+              {t('financial.invoiceSummary')}
             </CardTitle>
             <CardDescription>
-              Overview of sales invoices and outstanding amounts
+              {t('financial.invoiceSummaryDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -254,28 +256,28 @@ export function FinancialMetricsSection() {
                 <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                   {invoiceSummary.count}
                 </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Total Invoices</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">{t('financial.totalInvoices')}</div>
               </div>
               
               <div className="text-center p-4 rounded-lg bg-green-50 dark:bg-green-950">
                 <div className="text-2xl font-bold text-green-700 dark:text-green-300">
                   {financialMetrics?.currency} {invoiceSummary.paidAmount.toLocaleString()}
                 </div>
-                <div className="text-sm text-green-600 dark:text-green-400">Paid Amount</div>
+                <div className="text-sm text-green-600 dark:text-green-400">{t('financial.paidAmount')}</div>
               </div>
               
               <div className="text-center p-4 rounded-lg bg-yellow-50 dark:bg-yellow-950">
                 <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
                   {financialMetrics?.currency} {invoiceSummary.outstandingAmount.toLocaleString()}
                 </div>
-                <div className="text-sm text-yellow-600 dark:text-yellow-400">Outstanding</div>
+                <div className="text-sm text-yellow-600 dark:text-yellow-400">{t('financial.outstanding')}</div>
               </div>
               
               <div className="text-center p-4 rounded-lg bg-red-50 dark:bg-red-950">
                 <div className="text-2xl font-bold text-red-700 dark:text-red-300">
                   {financialMetrics?.currency} {invoiceSummary.overdueAmount.toLocaleString()}
                 </div>
-                <div className="text-sm text-red-600 dark:text-red-400">Overdue</div>
+                <div className="text-sm text-red-600 dark:text-red-400">{t('financial.overdue')}</div>
               </div>
             </div>
           </CardContent>
@@ -285,7 +287,7 @@ export function FinancialMetricsSection() {
       {/* Last Updated */}
       {financialMetrics && (
         <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-          Last updated: {new Date(financialMetrics.lastUpdated).toLocaleString()}
+          {t('financial.lastUpdated')}: {new Date(financialMetrics.lastUpdated).toLocaleString()}
         </div>
       )}
     </div>

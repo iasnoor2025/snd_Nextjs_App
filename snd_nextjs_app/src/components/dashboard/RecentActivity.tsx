@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Activity, Clock, User, FileText, AlertCircle, CheckCircle, Info } from "lucide-react"
+import { useI18n } from "@/hooks/use-i18n"
 
 interface ActivityItem {
   id: number
@@ -19,6 +20,8 @@ interface RecentActivityProps {
 }
 
 export function RecentActivity({ activities }: RecentActivityProps) {
+  const { t } = useI18n()
+  
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'success':
@@ -52,14 +55,14 @@ export function RecentActivity({ activities }: RecentActivityProps) {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Activity className="h-5 w-5" />
-              Recent Activity
+              {t('dashboard.recentActivity')}
             </CardTitle>
             <CardDescription>
-              Latest system notifications and user actions
+              {t('dashboard.recentActivityDescription')}
             </CardDescription>
           </div>
           <Button variant="outline" size="sm">
-            View All
+            {t('dashboard.viewAll')}
           </Button>
         </div>
       </CardHeader>
@@ -107,8 +110,8 @@ export function RecentActivity({ activities }: RecentActivityProps) {
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="font-medium">No recent activity</p>
-            <p className="text-sm opacity-80">System activity will appear here</p>
+            <p className="font-medium">{t('dashboard.noRecentActivity')}</p>
+            <p className="text-sm opacity-80">{t('dashboard.noRecentActivityDescription')}</p>
           </div>
         )}
 
@@ -117,28 +120,28 @@ export function RecentActivity({ activities }: RecentActivityProps) {
           <div className="pt-4 border-t">
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-4">
-                <span className="font-medium">Activity Summary:</span>
+                <span className="font-medium">{t('dashboard.activitySummary')}:</span>
                 <div className="flex items-center gap-2">
                   <span className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    Success: {activities.filter(a => a.type === 'success').length}
+                    {t('dashboard.success')}: {activities.filter(a => a.type === 'success').length}
                   </span>
                   <span className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                    Warning: {activities.filter(a => a.type === 'warning').length}
+                    {t('dashboard.warning')}: {activities.filter(a => a.type === 'warning').length}
                   </span>
                   <span className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                    Error: {activities.filter(a => a.type === 'error').length}
+                    {t('dashboard.error')}: {activities.filter(a => a.type === 'error').length}
                   </span>
                   <span className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    Info: {activities.filter(a => a.type === 'info').length}
+                    {t('dashboard.info')}: {activities.filter(a => a.type === 'info').length}
                   </span>
                 </div>
               </div>
               <div className="text-muted-foreground">
-                Last 24 hours
+                {t('dashboard.last24Hours')}
               </div>
             </div>
           </div>

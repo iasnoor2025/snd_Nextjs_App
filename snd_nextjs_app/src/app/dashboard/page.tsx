@@ -11,6 +11,7 @@ import { FinancialMetricsSection } from "@/components/dashboard/FinancialMetrics
 import { QuickActions } from "@/components/dashboard/QuickActions"
 import { RecentActivity } from "@/components/dashboard/RecentActivity"
 import { DashboardModals } from "@/components/dashboard/DashboardModals"
+import { useI18n } from "@/hooks/use-i18n"
 
 interface IqamaData {
   id: number
@@ -60,6 +61,7 @@ interface ActivityItem {
 export default function DashboardPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { t } = useI18n()
 
   // State for dashboard data
   const [stats, setStats] = useState<any>(null)
@@ -394,7 +396,7 @@ export default function DashboardPage() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Loading dashboard...</p>
+          <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">{t('dashboard.loading')}</p>
         </div>
       </div>
     )

@@ -26,6 +26,7 @@ import enNotifications from '@/locales/en/notifications.json';
 import enAdmin from '@/locales/en/admin.json';
 import enSidebar from '@/locales/en/sidebar.json';
 import enTimesheet from '@/locales/en/timesheet.json';
+import enFinancial from '@/locales/en/financial.json';
   
 import arCommon from '@/locales/ar/common.json';
 import arAuth from '@/locales/ar/auth.json';
@@ -50,6 +51,7 @@ import arNotifications from '@/locales/ar/notifications.json';
 import arAdmin from '@/locales/ar/admin.json';
 import arSidebar from '@/locales/ar/sidebar.json';
 import arTimesheet from '@/locales/ar/timesheet.json';
+import arFinancial from '@/locales/ar/financial.json';
 
 const resources = {
   en: {
@@ -76,6 +78,7 @@ const resources = {
     admin: enAdmin,
     sidebar: enSidebar,
     timesheet: enTimesheet,
+    financial: enFinancial,
   },
   ar: {
     common: arCommon,
@@ -101,6 +104,7 @@ const resources = {
     admin: arAdmin,
     sidebar: arSidebar,
     timesheet: arTimesheet,
+    financial: arFinancial,
   },
 };
 
@@ -122,7 +126,7 @@ i18n
     },
 
     defaultNS: 'common',
-    ns: ['common', 'auth', 'dashboard', 'equipment', 'employee', 'rental', 'settings', 'reporting', 'analytics', 'project', 'quotation', 'payroll', 'customer', 'company', 'leave', 'safety', 'location', 'user', 'profile', 'notifications', 'admin', 'sidebar', 'timesheet'],
+    ns: ['common', 'auth', 'dashboard', 'equipment', 'employee', 'rental', 'settings', 'reporting', 'analytics', 'project', 'quotation', 'payroll', 'customer', 'company', 'leave', 'safety', 'location', 'user', 'profile', 'notifications', 'admin', 'sidebar', 'timesheet', 'financial'],
 
     react: {
       useSuspense: false,

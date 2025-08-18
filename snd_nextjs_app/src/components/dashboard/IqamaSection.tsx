@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useRouter } from "next/navigation"
 import { Search, Filter, Calendar, AlertTriangle, User, FileText, Building2, MapPin, Globe, Briefcase, Edit } from "lucide-react"
 import { RoleBased } from "@/components/RoleBased"
+import { useI18n } from "@/hooks/use-i18n"
 
 interface IqamaData {
   id: number
@@ -30,6 +31,7 @@ interface IqamaSectionProps {
 
 export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
   const router = useRouter()
+  const { t } = useI18n()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
@@ -58,10 +60,10 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
           <div>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
-              Iqama Management
+              {t('employee.iqama.management')}
             </CardTitle>
             <CardDescription>
-              Track and manage employee Iqama expiry dates
+              {t('employee.iqama.description')}
             </CardDescription>
           </div>
           <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
@@ -72,7 +74,7 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
               className="flex items-center gap-2"
             >
               <Edit className="h-4 w-4" />
-              Manage Iqama
+              {t('employee.iqama.manage')}
             </Button>
           </RoleBased>
         </div>
@@ -84,7 +86,7 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by name, file number, nationality, or position..."
+                placeholder={t('employee.iqama.searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -97,10 +99,10 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="h-10 px-3 text-sm border border-input rounded-md bg-background"
             >
-              <option value="all">All Statuses</option>
-              <option value="expired">Expired</option>
-              <option value="expiring">Expiring Soon</option>
-              <option value="missing">Missing</option>
+              <option value="all">{t('employee.iqama.allStatuses')}</option>
+              <option value="expired">{t('employee.iqama.expired')}</option>
+              <option value="expiring">{t('employee.iqama.expiringSoon')}</option>
+              <option value="missing">{t('employee.iqama.missing')}</option>
             </select>
             {(search || statusFilter !== 'all') && (
               <Button
@@ -112,7 +114,7 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
                 }}
                 className="h-10"
               >
-                Clear
+                {t('employee.actions.clear')}
               </Button>
             )}
           </div>
@@ -124,25 +126,25 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
             <div className="text-2xl font-bold text-red-600">
               {iqamaData.filter(item => item.status === 'expired').length}
             </div>
-            <div className="text-sm text-muted-foreground">Expired</div>
+            <div className="text-sm text-muted-foreground">{t('employee.iqama.expired')}</div>
           </div>
           <div className="text-center p-3 rounded-lg border bg-card">
             <div className="text-2xl font-bold text-yellow-600">
               {iqamaData.filter(item => item.status === 'expiring').length}
             </div>
-            <div className="text-sm text-muted-foreground">Expiring Soon</div>
+            <div className="text-sm text-muted-foreground">{t('employee.iqama.expiringSoon')}</div>
           </div>
           <div className="text-center p-3 rounded-lg border bg-card">
             <div className="text-2xl font-bold text-blue-600">
               {iqamaData.filter(item => item.status === 'active').length}
             </div>
-            <div className="text-sm text-muted-foreground">Active</div>
+            <div className="text-sm text-muted-foreground">{t('employee.iqama.active')}</div>
           </div>
           <div className="text-center p-3 rounded-lg border bg-card">
             <div className="text-2xl font-bold text-gray-600">
               {iqamaData.filter(item => item.status === 'missing').length}
             </div>
-            <div className="text-sm text-muted-foreground">Missing</div>
+            <div className="text-sm text-muted-foreground">{t('employee.iqama.missing')}</div>
           </div>
         </div>
 
@@ -151,13 +153,13 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>File Number</TableHead>
-                <TableHead>Company</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Expiry</TableHead>
-                <TableHead>Days</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>{t('employee.table.headers.name')}</TableHead>
+                <TableHead>{t('employee.fields.fileNumber')}</TableHead>
+                <TableHead>{t('employee.table.headers.company')}</TableHead>
+                <TableHead>{t('employee.table.headers.status')}</TableHead>
+                <TableHead>{t('employee.fields.iqamaExpiry')}</TableHead>
+                <TableHead>{t('employee.iqama.days')}</TableHead>
+                <TableHead>{t('employee.table.headers.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -182,7 +184,10 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
                                item.status === 'expiring' ? 'secondary' : 
                                item.status === 'missing' ? 'outline' : 'default'}
                     >
-                      {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                      {item.status === 'expired' ? t('employee.iqama.expired') :
+                       item.status === 'expiring' ? t('employee.iqama.expiringSoon') :
+                       item.status === 'missing' ? t('employee.iqama.missing') :
+                       t('employee.iqama.active')}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">
@@ -192,7 +197,7 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
                         {new Date(item.expiryDate).toLocaleDateString()}
                       </div>
                     ) : (
-                      <span className="text-red-600 font-medium">No expiry date</span>
+                      <span className="text-red-600 font-medium">{t('employee.iqama.noExpiryDate')}</span>
                     )}
                   </TableCell>
                   <TableCell className="text-sm">
@@ -204,12 +209,12 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
                       }`}>
                         <AlertTriangle className="h-3 w-3" />
                         {item.daysRemaining < 0 
-                          ? `${Math.abs(item.daysRemaining)} days overdue`
-                          : `${item.daysRemaining} days remaining`
+                          ? t('employee.iqama.daysOverdue', { days: Math.abs(item.daysRemaining) })
+                          : t('employee.iqama.daysRemaining', { days: item.daysRemaining })
                         }
                       </div>
                     ) : (
-                      <span className="text-muted-foreground">N/A</span>
+                      <span className="text-muted-foreground">{t('employee.iqama.notApplicable')}</span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -219,7 +224,7 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
                         size="sm"
                         onClick={() => onUpdateIqama(item)}
                         className="h-8 w-8 p-0"
-                        title="Update Iqama expiry date"
+                        title={t('employee.iqama.updateExpiryDate')}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -235,7 +240,7 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
         {filteredData.length > 0 && (
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Show</span>
+              <span className="text-sm text-muted-foreground">{t('employee.pagination.show')}</span>
               <select
                 value={pageSize}
                 onChange={(e) => {
@@ -249,7 +254,7 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
                 <option value={50}>50</option>
                 <option value={100}>100</option>
               </select>
-              <span className="text-sm text-muted-foreground">per page</span>
+              <span className="text-sm text-muted-foreground">{t('employee.pagination.perPage')}</span>
             </div>
             
             <div className="flex items-center gap-2">
@@ -259,7 +264,7 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
                 onClick={() => setCurrentPage(currentPage - 1)}
                 disabled={currentPage === 1}
               >
-                Previous
+                {t('employee.pagination.previous')}
               </Button>
               
               <div className="flex items-center gap-1">
@@ -285,12 +290,12 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
                 onClick={() => setCurrentPage(currentPage + 1)}
                 disabled={currentPage === totalPages}
               >
-                Next
+                {t('employee.pagination.next')}
               </Button>
             </div>
             
             <div className="text-sm text-muted-foreground">
-              Page {currentPage} of {totalPages}
+              {t('employee.pagination.page', { current: currentPage, total: totalPages })}
             </div>
           </div>
         )}
@@ -298,11 +303,11 @@ export function IqamaSection({ iqamaData, onUpdateIqama }: IqamaSectionProps) {
         {filteredData.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="font-medium">No Iqama records found</p>
+            <p className="font-medium">{t('employee.iqama.noRecordsFound')}</p>
             <p className="text-sm opacity-80">
               {search || statusFilter !== 'all' 
-                ? 'Try adjusting your search or filters'
-                : 'All Iqama records are currently active'
+                ? t('employee.iqama.tryAdjustingSearch')
+                : t('employee.iqama.allRecordsActive')
               }
             </p>
           </div>

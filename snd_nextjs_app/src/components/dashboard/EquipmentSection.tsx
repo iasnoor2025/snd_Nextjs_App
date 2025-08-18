@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useRouter } from "next/navigation"
 import { Wrench, Plus, Edit, Eye, AlertTriangle, Calendar, Search } from "lucide-react"
 import { RoleBased } from "@/components/RoleBased"
+import { useI18n } from "@/hooks/use-i18n"
 
 interface EquipmentData {
   id: number
@@ -31,6 +32,7 @@ interface EquipmentSectionProps {
 
 export function EquipmentSection({ equipmentData, onUpdateEquipment }: EquipmentSectionProps) {
   const router = useRouter()
+  const { t } = useI18n()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
@@ -59,10 +61,10 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
           <div>
             <CardTitle className="flex items-center gap-2">
               <Wrench className="h-5 w-5" />
-              Equipment Istimara Expiry
+              {t('equipment.istimara.title')}
             </CardTitle>
             <CardDescription>
-              Equipment Istimara expiry tracking and management
+              {t('equipment.istimara.description')}
             </CardDescription>
           </div>
           <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
@@ -73,7 +75,7 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
-              Manage Equipment
+              {t('equipment.actions.manageEquipment')}
             </Button>
           </RoleBased>
         </div>
@@ -85,7 +87,7 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by equipment name, number, manufacturer, or model..."
+                placeholder={t('equipment.istimara.searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10"
@@ -98,10 +100,10 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
               onChange={(e) => setStatusFilter(e.target.value)}
               className="h-10 px-3 text-sm border border-input rounded-md bg-background"
             >
-              <option value="all">All Statuses</option>
-              <option value="expired">Expired</option>
-              <option value="expiring">Expiring Soon</option>
-              <option value="missing">Missing</option>
+              <option value="all">{t('equipment.istimara.allStatuses')}</option>
+              <option value="expired">{t('equipment.istimara.expired')}</option>
+              <option value="expiring">{t('equipment.istimara.expiringSoon')}</option>
+              <option value="missing">{t('equipment.istimara.missing')}</option>
             </select>
             {(search || statusFilter !== 'all') && (
               <Button
@@ -113,7 +115,7 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
                 }}
                 className="h-10"
               >
-                Clear
+                {t('equipment.istimara.clear')}
               </Button>
             )}
           </div>
@@ -125,29 +127,27 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
             <div className="text-2xl font-bold text-red-600">
               {equipmentData.filter(item => item.status === 'expired').length}
             </div>
-            <div className="text-sm text-muted-foreground">Expired</div>
+            <div className="text-sm text-muted-foreground">{t('equipment.istimara.expired')}</div>
           </div>
           <div className="text-center p-3 rounded-lg border bg-card">
             <div className="text-2xl font-bold text-yellow-600">
               {equipmentData.filter(item => item.status === 'expiring').length}
             </div>
-            <div className="text-sm text-muted-foreground">Expiring Soon</div>
+            <div className="text-sm text-muted-foreground">{t('equipment.istimara.expiringSoon')}</div>
           </div>
           <div className="text-center p-3 rounded-lg border bg-card">
             <div className="text-2xl font-bold text-blue-600">
               {equipmentData.filter(item => item.status === 'available').length}
             </div>
-            <div className="text-sm text-muted-foreground">Available</div>
+            <div className="text-sm text-muted-foreground">{t('equipment.istimara.available')}</div>
           </div>
           <div className="text-center p-3 rounded-lg border bg-card">
             <div className="text-2xl font-bold text-gray-600">
               {equipmentData.filter(item => item.status === 'missing').length}
             </div>
-            <div className="text-sm text-muted-foreground">Missing</div>
+            <div className="text-sm text-muted-foreground">{t('equipment.istimara.missing')}</div>
           </div>
         </div>
-
-
 
         {/* Equipment Table */}
         <div className="space-y-4">
@@ -155,17 +155,17 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
           {(equipmentData.filter(item => item.status !== 'available').length > 0) && (
             <div className="rounded-lg border">
               <div className="p-4 border-b bg-muted/50">
-                <h4 className="font-medium text-sm">Equipment Requiring Attention</h4>
-                <p className="text-xs text-muted-foreground">Expired, expiring soon, or missing Istimara expiry dates</p>
+                <h4 className="font-medium text-sm">{t('equipment.istimara.requiringAttention')}</h4>
+                <p className="text-xs text-muted-foreground">{t('equipment.istimara.attentionDescription')}</p>
               </div>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Equipment</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Expiry</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t('equipment.fields.name')}</TableHead>
+                    <TableHead>{t('equipment.fields.department')}</TableHead>
+                    <TableHead>{t('equipment.fields.status')}</TableHead>
+                    <TableHead>{t('equipment.istimara.expiry')}</TableHead>
+                    <TableHead>{t('equipment.actions.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -181,7 +181,7 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm">{item.department || 'N/A'}</TableCell>
+                      <TableCell className="text-sm">{item.department || t('equipment.istimara.notApplicable')}</TableCell>
                       <TableCell>
                         <Badge
                           variant={
@@ -195,9 +195,9 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
                             'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800'
                           }`}
                         >
-                          {item.status === 'expired' ? 'Expired' :
-                           item.status === 'expiring' ? 'Expiring Soon' :
-                           'Missing'}
+                          {item.status === 'expired' ? t('equipment.istimara.expired') :
+                           item.status === 'expiring' ? t('equipment.istimara.expiringSoon') :
+                           t('equipment.istimara.missing')}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm">
@@ -211,14 +211,14 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
                                 'text-muted-foreground'
                               }`}>
                                 {item.daysRemaining < 0 
-                                  ? `${Math.abs(item.daysRemaining)} days overdue`
-                                  : `${item.daysRemaining} days remaining`
+                                  ? t('equipment.istimara.daysOverdue', { days: Math.abs(item.daysRemaining) })
+                                  : t('equipment.istimara.daysRemaining', { days: item.daysRemaining })
                                 }
                               </div>
                             )}
                           </div>
                         ) : (
-                          <span className="text-red-600 font-medium">No expiry date</span>
+                          <span className="text-red-600 font-medium">{t('equipment.istimara.noExpiryDate')}</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -227,7 +227,7 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
                           size="sm"
                           onClick={() => onUpdateEquipment(item)}
                           className="h-8 w-8 p-0"
-                          title={item.status === 'missing' ? 'Add Istimara expiry date' : 'Update Istimara expiry date'}
+                          title={item.status === 'missing' ? t('equipment.istimara.addExpiryDate') : t('equipment.istimara.updateExpiryDate')}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -243,7 +243,7 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
           {filteredData.length > 0 && (
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Show</span>
+                <span className="text-sm text-muted-foreground">{t('equipment.pagination.show')}</span>
                 <select
                   value={pageSize}
                   onChange={(e) => {
@@ -257,7 +257,7 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
                   <option value={50}>50</option>
                   <option value={100}>100</option>
                 </select>
-                <span className="text-sm text-muted-foreground">per page</span>
+                <span className="text-sm text-muted-foreground">{t('equipment.pagination.perPage')}</span>
               </div>
               
               <div className="flex items-center gap-2">
@@ -267,7 +267,7 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
                   onClick={() => setCurrentPage(currentPage - 1)}
                   disabled={currentPage === 1}
                 >
-                  Previous
+                  {t('equipment.pagination.previous')}
                 </Button>
                 
                 <div className="flex items-center gap-1">
@@ -293,28 +293,25 @@ export function EquipmentSection({ equipmentData, onUpdateEquipment }: Equipment
                   onClick={() => setCurrentPage(currentPage + 1)}
                   disabled={currentPage === totalPages}
                 >
-                  Next
+                  {t('equipment.pagination.next')}
                 </Button>
               </div>
               
               <div className="text-sm text-muted-foreground">
-                Page {currentPage} of {totalPages}
+                {t('equipment.pagination.page', { current: currentPage, total: totalPages })}
               </div>
             </div>
           )}
-
         </div>
-
-
 
         {filteredData.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <Wrench className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="font-medium">No equipment records found</p>
+            <p className="font-medium">{t('equipment.istimara.noRecordsFound')}</p>
             <p className="text-sm opacity-80">
               {search || statusFilter !== 'all' 
-                ? 'Try adjusting your search or filters'
-                : 'All equipment Istimara records are currently valid'
+                ? t('equipment.istimara.tryAdjustingSearch')
+                : t('equipment.istimara.allRecordsValid')
               }
             </p>
           </div>

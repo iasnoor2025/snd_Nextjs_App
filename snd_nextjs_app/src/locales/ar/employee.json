@@ -54,7 +54,8 @@
     "confirm": "تأكيد",
     "search": "البحث في الموظفين...",
     "filter": "تصفية",
-    "refresh": "تحديث"
+    "refresh": "تحديث",
+    "clear": "مسح"
   },
   
   "fields": {
@@ -66,7 +67,6 @@
     "email": "البريد الإلكتروني",
     "phone": "الهاتف",
     "department": "القسم",
-    "designation": "المنصب",
     "status": "الحالة",
     "hireDate": "تاريخ التعيين",
     "basicSalary": "الراتب الأساسي",
@@ -150,8 +150,11 @@
   
   "pagination": {
     "showing": "عرض {start}-{end} من {total} موظف",
-    "page": "الصفحة {current} من {total}",
-    "itemsPerPage": "العناصر في الصفحة"
+    "show": "عرض",
+    "perPage": "في الصفحة",
+    "previous": "السابق",
+    "next": "التالي",
+    "page": "الصفحة {current} من {total}"
   },
   
   "filters": {
@@ -169,7 +172,8 @@
       "department": "القسم",
       "status": "الحالة",
       "hireDate": "تاريخ التعيين",
-      "actions": "الإجراءات"
+      "actions": "الإجراءات",
+      "company": "الشركة"
     }
   },
   
@@ -188,7 +192,24 @@
   },
   
   "iqama": {
-    "expired": "منتهي الصلاحية"
+    "expired": "منتهي الصلاحية",
+    "management": "إدارة الإقامة",
+    "description": "تتبع وإدارة تواريخ انتهاء صلاحية إقامة الموظفين",
+    "manage": "إدارة الإقامة",
+    "searchPlaceholder": "البحث بالاسم أو رقم الملف أو الجنسية أو المنصب...",
+    "allStatuses": "جميع الحالات",
+    "expiringSoon": "ينتهي قريباً",
+    "missing": "مفقود",
+    "active": "نشط",
+    "days": "الأيام",
+    "noExpiryDate": "لا يوجد تاريخ انتهاء صلاحية",
+    "daysOverdue": "{{days}} يوم متأخر",
+    "daysRemaining": "{{days}} يوم متبقي",
+    "notApplicable": "غير متاح",
+    "updateExpiryDate": "تحديث تاريخ انتهاء صلاحية الإقامة",
+    "noRecordsFound": "لم يتم العثور على سجلات إقامة",
+    "tryAdjustingSearch": "حاول تعديل البحث أو الفلاتر",
+    "allRecordsActive": "جميع سجلات الإقامة نشطة حالياً"
   },
   
   "assignment": {
@@ -210,27 +231,5 @@
   "sync": {
     "button": "مزامنة مع ERPNext",
     "syncing": "جاري المزامنة..."
-  },
-  
-  "table": {
-    "headers": {
-      "fileNumber": "رقم الملف",
-      "name": "الاسم",
-      "email": "البريد الإلكتروني",
-      "department": "القسم",
-      "iqamaNumber": "رقم الإقامة",
-      "currentAssignment": "التخصيص الحالي",
-      "status": "الحالة",
-      "hireDate": "تاريخ التعيين",
-      "actions": "الإجراءات"
-    }
-  },
-  
-  "pagination": {
-    "showing": "عرض {start}-{end} من {total} موظف",
-    "show": "عرض",
-    "perPage": "في الصفحة",
-    "previous": "السابق",
-    "next": "التالي"
   }
 }
