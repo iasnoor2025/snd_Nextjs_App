@@ -281,51 +281,41 @@ export async function POST(_request: NextRequest) {
     }
 
     // Create the salary increment record
-    /*
-    const [newSalaryIncrement] = await db
-      .insert(salaryIncrements)
-      .values({
-        employeeId: employee_id,
-        incrementType: increment_type,
-        effectiveDate: new Date(effective_date),
-        reason,
-        notes,
-        status: 'pending',
-        currentBaseSalary: currentSalary.currentBaseSalary,
-        currentFoodAllowance: currentSalary.currentFoodAllowance,
-        currentHousingAllowance: currentSalary.currentHousingAllowance,
-        currentTransportAllowance: currentSalary.currentTransportAllowance,
-        newBaseSalary: calculatedNewBaseSalary || currentSalary.currentBaseSalary,
-        newFoodAllowance: calculatedNewFoodAllowance || currentSalary.currentFoodAllowance,
-        newHousingAllowance: calculatedNewHousingAllowance || currentSalary.currentHousingAllowance,
-        newTransportAllowance: calculatedNewTransportAllowance || currentSalary.currentTransportAllowance,
-        incrementAmount: increment_amount,
-        incrementPercentage: increment_percentage,
-        requestedBy: session.user.id,
-        requestedAt: new Date(),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
-    */
-
-    // Temporary mock response for testing
-    const newSalaryIncrement = {
-      id: 1,
+    const insertData = {
       employeeId: employee_id,
       incrementType: increment_type,
-      effectiveDate: new Date(effective_date),
+      effectiveDate: new Date(effective_date).toISOString().split('T')[0],
       reason,
+      notes: body.notes || '',
       status: 'pending',
       currentBaseSalary: currentSalary.currentBaseSalary,
+      currentFoodAllowance: currentSalary.currentFoodAllowance,
+      currentHousingAllowance: currentSalary.currentHousingAllowance,
+      currentTransportAllowance: currentSalary.currentTransportAllowance,
       newBaseSalary: calculatedNewBaseSalary || currentSalary.currentBaseSalary,
+      newFoodAllowance: body.new_food_allowance || currentSalary.currentFoodAllowance,
+      newHousingAllowance: body.new_housing_allowance || currentSalary.currentHousingAllowance,
+      newTransportAllowance: body.new_transport_allowance || currentSalary.currentTransportAllowance,
       incrementAmount: increment_amount,
       incrementPercentage: increment_percentage,
       requestedBy: session.user.id,
-      requestedAt: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      requestedAt: new Date().toISOString().split('T')[0],
+      createdAt: new Date().toISOString().split('T')[0],
+      updatedAt: new Date().toISOString().split('T')[0],
     };
+
+    console.log('Inserting salary increment with data:', insertData);
+
+    const [newSalaryIncrement] = await db
+      .insert(salaryIncrements)
+      .values(insertData)
+      .returning();
+
+    if (!newSalaryIncrement) {
+      throw new Error('Failed to create salary increment');
+    }
+
+    console.log('Successfully created salary increment:', newSalaryIncrement);
 
     return NextResponse.json({
       success: true,

@@ -14,7 +14,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     // Check permission to reject salary increments
-    const canReject = await checkPermission(session.user.id, 'SalaryIncrement', 'reject');
+    const canReject = await checkPermission(session.user.id, 'SalaryIncrement', 'update');
     if (!canReject) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }

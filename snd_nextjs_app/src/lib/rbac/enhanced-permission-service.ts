@@ -28,7 +28,7 @@ export class EnhancedPermissionService {
   private static instance: EnhancedPermissionService;
   private permissionCache: Map<string, any> = new Map();
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): EnhancedPermissionService {
     if (!EnhancedPermissionService.instance) {

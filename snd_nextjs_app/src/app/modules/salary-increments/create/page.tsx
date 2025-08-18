@@ -57,15 +57,9 @@ export default function CreateSalaryIncrementPage() {
   const [formData, setFormData] = useState<CreateSalaryIncrementData>({
     employee_id: 0,
     increment_type: 'percentage',
-    increment_percentage: undefined,
-    increment_amount: undefined,
     reason: '',
     effective_date: '',
     notes: '',
-    new_base_salary: undefined,
-    new_food_allowance: undefined,
-    new_housing_allowance: undefined,
-    new_transport_allowance: undefined,
     apply_to_allowances: false,
   });
   const [calculatedSalary, setCalculatedSalary] = useState({
@@ -220,13 +214,21 @@ export default function CreateSalaryIncrementPage() {
     try {
       // Fetch full employee details including salary information
       const response = await ApiService.get(`/employees/${employeeId}`);
-      console.log('Employee details response:', response);
 
-      if (response.data) {
-        setSelectedEmployee(response.data);
-        console.log('Employee set:', response.data);
+
+      // The employee API returns data in response.employee, not response.data
+      const employeeData = (response as any)?.employee || response?.data;
+      
+
+      
+      if (employeeData) {
+
+        setSelectedEmployee(employeeData);
+
       } else {
-        console.error('No employee data in response');
+        console.error('ERROR: No employee data in response');
+        console.error('Full response:', response);
+        console.error('Response keys:', Object.keys(response || {}));
         toast.error('Failed to load employee details');
         setSelectedEmployee(null);
       }
@@ -266,7 +268,7 @@ export default function CreateSalaryIncrementPage() {
     }
 
     // Prepare the data to send
-    const dataToSend = {
+    const dataToSend: CreateSalaryIncrementData = {
       ...formData,
       // Map calculation method to correct increment type
       increment_type: (calculationMethod === 'percentage' ? 'percentage' : 'amount') as
@@ -276,23 +278,18 @@ export default function CreateSalaryIncrementPage() {
         | 'annual_review'
         | 'performance'
         | 'market_adjustment',
-      // Ensure numeric fields are properly set
-      increment_percentage:
-        calculationMethod === 'percentage' ? formData.increment_percentage : undefined,
-      increment_amount: calculationMethod === 'fixed' ? formData.increment_amount : undefined,
       // Set apply_to_allowances based on calculation method
       apply_to_allowances: calculationMethod === 'percentage',
     };
 
-    console.log('Sending data to API:', dataToSend);
-    console.log(
-      'Effective date:',
-      formData.effective_date,
-      'Type:',
-      typeof formData.effective_date
-    );
-
-    try {
+    // Only include the relevant increment field based on calculation method
+    if (calculationMethod === 'percentage' && formData.increment_percentage) {
+      dataToSend.increment_percentage = formData.increment_percentage;
+    }
+    if (calculationMethod === 'fixed' && formData.increment_amount) {
+      dataToSend.increment_amount = formData.increment_amount;
+    }
+   try {
       setLoading(true);
       await salaryIncrementService.createSalaryIncrement(dataToSend);
       toast.success('Salary increment created successfully');
@@ -433,7 +430,11 @@ export default function CreateSalaryIncrementPage() {
                     setFormData(prev => ({ ...prev, increment_type: value as any }));
                     if (value === 'amount') {
                       setCalculationMethod('fixed');
-                      setFormData(prev => ({ ...prev, increment_percentage: undefined }));
+                      setFormData(prev => {
+                        const newData = { ...prev };
+                        delete newData.increment_percentage;
+                        return newData;
+                      });
                     }
                   }}
                 >
@@ -462,7 +463,11 @@ export default function CreateSalaryIncrementPage() {
                       checked={calculationMethod === 'percentage'}
                       onChange={() => {
                         setCalculationMethod('percentage');
-                        setFormData(prev => ({ ...prev, increment_amount: undefined }));
+                        setFormData(prev => {
+                          const newData = { ...prev };
+                          delete newData.increment_amount;
+                          return newData;
+                        });
                       }}
                     />
                     <Label htmlFor="percentage">Percentage</Label>
@@ -476,7 +481,11 @@ export default function CreateSalaryIncrementPage() {
                       checked={calculationMethod === 'fixed'}
                       onChange={() => {
                         setCalculationMethod('fixed');
-                        setFormData(prev => ({ ...prev, increment_percentage: undefined }));
+                        setFormData(prev => {
+                          const newData = { ...prev };
+                          delete newData.increment_percentage;
+                          return newData;
+                        });
                       }}
                     />
                     <Label htmlFor="fixed">Fixed Amount</Label>

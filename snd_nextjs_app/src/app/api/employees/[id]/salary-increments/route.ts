@@ -1,134 +1,125 @@
+import { NextResponse, NextRequest } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { employees as employeesTable, salaryIncrements, users } from '@/lib/drizzle/schema';
-import { desc, eq } from 'drizzle-orm';
-import { NextResponse } from 'next/server';
+import { eq, desc } from 'drizzle-orm';
+import { withAuth } from '@/lib/rbac/api-middleware';
 
-export async function GET({ params }: { params: { id: string } }) {
+async function getEmployeeSalaryIncrementsHandler(
+  request: NextRequest & { employeeAccess?: { ownEmployeeId?: number; user: any } },
+  { params }: { params: Promise<{ id: string }> | { id: string } }
+) {
   try {
-    console.log('Starting GET /api/employees/[id]/salary-increments');
+    // Handle params which might be a Promise or object
+    let resolvedParams;
+    if (params instanceof Promise) {
+      try {
+        resolvedParams = await params;
+      } catch (error) {
+        return NextResponse.json({ error: 'Failed to resolve route parameters' }, { status: 500 });
+      }
+    } else {
+      resolvedParams = params;
+    }
 
-    const { id } = params;
-    console.log('Employee ID from params:', id);
-
+    if (!resolvedParams || !resolvedParams.id) {
+      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
+    }
+    
+    const { id } = resolvedParams;
     const employeeId = parseInt(id);
-    console.log('Parsed employee ID:', employeeId);
-
+    
     if (isNaN(employeeId)) {
       return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
-
-    console.log('About to check if employee exists...');
-
-    // Check if employee exists using Drizzle
-    let employee;
-    try {
-      employee = await db
-        .select({
-          id: employeesTable.id,
-          firstName: employeesTable.firstName,
-          lastName: employeesTable.lastName,
-          fileNumber: employeesTable.fileNumber,
-        })
-        .from(employeesTable)
-        .where(eq(employeesTable.id, employeeId))
-        .limit(1);
-
-      console.log('Employee check result:', employee.length > 0 ? 'Found' : 'Not found');
-    } catch (employeeError) {
-      console.error('Error checking employee:', employeeError);
-      throw employeeError;
+    
+    // For employee users, ensure they can only access their own employee record
+    if (request.employeeAccess?.ownEmployeeId) {
+      if (employeeId !== request.employeeAccess.ownEmployeeId) {
+        return NextResponse.json(
+          { error: 'You can only access your own employee record' },
+          { status: 403 }
+        );
+      }
     }
-
+    
+    // Check if employee exists
+    const employee = await db
+      .select({
+        id: employeesTable.id,
+        firstName: employeesTable.firstName,
+        lastName: employeesTable.lastName,
+        fileNumber: employeesTable.fileNumber,
+      })
+      .from(employeesTable)
+      .where(eq(employeesTable.id, employeeId))
+      .limit(1);
+    
     if (employee.length === 0) {
       return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
     }
-
-    console.log('About to query salary increments with Drizzle...');
-
-    // Query salary increments using Drizzle - full fields
-    let salaryIncrementsData;
-    try {
-      salaryIncrementsData = await db
-        .select({
-          id: salaryIncrements.id,
-          employeeId: salaryIncrements.employeeId,
-          currentBaseSalary: salaryIncrements.currentBaseSalary,
-          currentFoodAllowance: salaryIncrements.currentFoodAllowance,
-          currentHousingAllowance: salaryIncrements.currentHousingAllowance,
-          currentTransportAllowance: salaryIncrements.currentTransportAllowance,
-          newBaseSalary: salaryIncrements.newBaseSalary,
-          newFoodAllowance: salaryIncrements.newFoodAllowance,
-          newHousingAllowance: salaryIncrements.newHousingAllowance,
-          newTransportAllowance: salaryIncrements.newTransportAllowance,
-          incrementAmount: salaryIncrements.incrementAmount,
-          incrementPercentage: salaryIncrements.incrementPercentage,
-          incrementType: salaryIncrements.incrementType,
-          effectiveDate: salaryIncrements.effectiveDate,
-          reason: salaryIncrements.reason,
-          status: salaryIncrements.status,
-          requestedAt: salaryIncrements.requestedAt,
-          approvedAt: salaryIncrements.approvedAt,
-          rejectedAt: salaryIncrements.rejectedAt,
-          requestedBy: salaryIncrements.requestedBy,
-          approvedBy: salaryIncrements.approvedBy,
-          rejectedBy: salaryIncrements.rejectedBy,
-          notes: salaryIncrements.notes,
-          createdAt: salaryIncrements.createdAt,
-          updatedAt: salaryIncrements.updatedAt,
-        })
-        .from(salaryIncrements)
-        .where(eq(salaryIncrements.employeeId, employeeId))
-        .orderBy(desc(salaryIncrements.effectiveDate));
-
-      console.log('Drizzle query successful, found:', salaryIncrementsData.length);
-    } catch (queryError) {
-      console.error('Error in salary increments query:', queryError);
-      throw queryError;
-    }
-
-    // Fetch user names separately to avoid complex joins
+    
+    // Query salary increments
+    const salaryIncrementsData = await db
+      .select({
+        id: salaryIncrements.id,
+        employeeId: salaryIncrements.employeeId,
+        currentBaseSalary: salaryIncrements.currentBaseSalary,
+        currentFoodAllowance: salaryIncrements.currentFoodAllowance,
+        currentHousingAllowance: salaryIncrements.currentHousingAllowance,
+        currentTransportAllowance: salaryIncrements.currentTransportAllowance,
+        newBaseSalary: salaryIncrements.newBaseSalary,
+        newFoodAllowance: salaryIncrements.newFoodAllowance,
+        newHousingAllowance: salaryIncrements.newHousingAllowance,
+        newTransportAllowance: salaryIncrements.newTransportAllowance,
+        incrementAmount: salaryIncrements.incrementAmount,
+        incrementPercentage: salaryIncrements.incrementPercentage,
+        incrementType: salaryIncrements.incrementType,
+        effectiveDate: salaryIncrements.effectiveDate,
+        reason: salaryIncrements.reason,
+        status: salaryIncrements.status,
+        requestedAt: salaryIncrements.requestedAt,
+        approvedAt: salaryIncrements.approvedAt,
+        rejectedAt: salaryIncrements.rejectedAt,
+        requestedBy: salaryIncrements.requestedBy,
+        approvedBy: salaryIncrements.approvedBy,
+        rejectedBy: salaryIncrements.rejectedBy,
+        notes: salaryIncrements.notes,
+        createdAt: salaryIncrements.createdAt,
+        updatedAt: salaryIncrements.updatedAt,
+      })
+      .from(salaryIncrements)
+      .where(eq(salaryIncrements.employeeId, employeeId))
+      .orderBy(desc(salaryIncrements.effectiveDate));
+    
+    // Fetch user names for the salary increments
     const userIds = salaryIncrementsData
       .map(inc => [inc.requestedBy, inc.approvedBy, inc.rejectedBy])
       .flat()
       .filter(id => id !== null && id !== undefined);
-
     const uniqueUserIds = [...new Set(userIds)];
+    
     let usersData: { id: number; name: string }[] = [];
-
-    try {
-      if (uniqueUserIds.length > 0) {
-        console.log('Fetching user data for IDs:', uniqueUserIds);
-        // Use a simpler approach - query users one by one to avoid inArray issues
-        for (const userId of uniqueUserIds) {
-          try {
-            const userResult = await db
-              .select({ id: users.id, name: users.name })
-              .from(users)
-              .where(eq(users.id, userId))
-              .limit(1);
-
-            if (userResult.length > 0 && userResult[0]) {
-              usersData.push(userResult[0]);
-            }
-          } catch (userError) {
-            console.error(`Error fetching user ${userId}:`, userError);
-            // Continue with other users
+    if (uniqueUserIds.length > 0) {
+      for (const userId of uniqueUserIds) {
+        try {
+          const userResult = await db
+            .select({ id: users.id, name: users.name })
+            .from(users)
+            .where(eq(users.id, userId))
+            .limit(1);
+          if (userResult.length > 0 && userResult[0]) {
+            usersData.push(userResult[0]);
           }
+        } catch (userError) {
+          // Continue with other users if one fails
         }
-        console.log('Found users:', usersData.length);
       }
-    } catch (userError) {
-      console.error('Error fetching user data:', userError);
-      // Continue without user data if there's an error
-      usersData = [];
     }
-
+    
     // Create a map for quick user lookup
     const userMap = new Map(usersData.map(user => [user.id, user.name]));
-
-    console.log('Transforming data...');
-
-    // Transform the data to match the expected format - full version
+    
+    // Transform the data to match the expected format
     const transformedIncrements = salaryIncrementsData.map(increment => ({
       id: increment.id,
       employee_id: increment.employeeId,
@@ -171,19 +162,10 @@ export async function GET({ params }: { params: { id: string } }) {
       created_at: increment.createdAt,
       updated_at: increment.updatedAt,
     }));
-
-    console.log('Transformation complete, returning data...');
+    
     return NextResponse.json({ data: transformedIncrements });
+    
   } catch (error) {
-    console.error('Error in salary increments endpoint:', error);
-
-    // Log more detailed error information
-    if (error instanceof Error) {
-      console.error('Error name:', error.name);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-    }
-
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -193,3 +175,5 @@ export async function GET({ params }: { params: { id: string } }) {
     );
   }
 }
+
+export const GET = withAuth(getEmployeeSalaryIncrementsHandler);
