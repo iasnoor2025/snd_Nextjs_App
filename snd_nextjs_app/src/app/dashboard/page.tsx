@@ -477,7 +477,7 @@ export default function DashboardPage() {
         />
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-8 space-y-8">
+      <div className="px-6 py-8 space-y-8">
         {/* Iqama Section */}
         <IqamaSection
           iqamaData={iqamaData}

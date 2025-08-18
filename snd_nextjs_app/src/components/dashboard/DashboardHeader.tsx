@@ -19,7 +19,7 @@ export function DashboardHeader({ stats, equipmentCount, refreshing, onRefresh, 
 
   return (
     <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800 text-white shadow-lg">
-      <div className="container mx-auto px-6 py-8">
+      <div className="px-6 py-8">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="flex-1">
             <h1 className="text-3xl font-bold mb-2">{t('dashboard.title')}</h1>
