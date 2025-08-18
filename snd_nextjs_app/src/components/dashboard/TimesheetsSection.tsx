@@ -30,11 +30,12 @@ interface TimesheetsSectionProps {
   approvingTimesheet: number | null
   rejectingTimesheet: number | null
   markingAbsent: number | null
+  isRefreshing?: boolean
 }
 
-export function TimesheetsSection({ 
-  timesheetData, 
-  currentTime, 
+export function TimesheetsSection({
+  timesheetData,
+  currentTime,
   session,
   onApproveTimesheet,
   onRejectTimesheet,
@@ -43,11 +44,12 @@ export function TimesheetsSection({
   approvalSuccess,
   approvingTimesheet,
   rejectingTimesheet,
-  markingAbsent
+  markingAbsent,
+  isRefreshing = false
 }: TimesheetsSectionProps) {
-  
+
   const { t } = useI18n()
-  
+
   const getNextApprovalStage = (currentStatus: string) => {
     switch (currentStatus) {
       case 'draft': return t('timesheet.approvalWorkflow.submitDraft')
@@ -171,6 +173,16 @@ export function TimesheetsSection({
           </div>
         )}
 
+        {/* Loading Indicator */}
+        {isRefreshing && (
+          <div className="p-4 rounded-lg border bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800">
+            <div className="flex items-center gap-2 text-blue-800 dark:text-blue-200">
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              <span className="font-medium">Refreshing attendance data...</span>
+            </div>
+          </div>
+        )}
+
         {/* Timesheet Table */}
         <div className="rounded-lg border">
           <Table>
@@ -195,15 +207,15 @@ export function TimesheetsSection({
                         item.status === 'late' ? 'secondary' :
                           item.status === 'half-day' ? 'outline' : 'destructive'}
                       className={`${item.status === 'present' ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800' :
-                          item.status === 'late' ? 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800' :
-                            item.status === 'half-day' ? 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800' :
-                              'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
+                        item.status === 'late' ? 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800' :
+                          item.status === 'half-day' ? 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800' :
+                            'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
                         }`}
                     >
                       {item.status === 'present' ? t('timesheet.attendance.present') :
-                       item.status === 'late' ? t('timesheet.attendance.late') :
-                       item.status === 'half-day' ? t('timesheet.attendance.halfDay') :
-                       t('timesheet.attendance.absent')}
+                        item.status === 'late' ? t('timesheet.attendance.late') :
+                          item.status === 'half-day' ? t('timesheet.attendance.halfDay') :
+                            t('timesheet.attendance.absent')}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -214,18 +226,16 @@ export function TimesheetsSection({
                             item.approvalStatus === 'incharge_approved' ? 'outline' :
                               item.approvalStatus === 'checking_approved' ? 'secondary' :
                                 item.approvalStatus === 'submitted' ? 'secondary' :
-                                  item.approvalStatus === 'pending' ? 'outline' :
-                                    item.approvalStatus === 'draft' ? 'outline' :
-                                      'destructive'
+                                  item.approvalStatus === 'draft' ? 'outline' :
+                                    'destructive'
                       }
                       className={`capitalize ${item.approvalStatus === 'manager_approved' ? 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800' :
-                          item.approvalStatus === 'foreman_approved' ? 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800' :
-                            item.approvalStatus === 'incharge_approved' ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800' :
-                              item.approvalStatus === 'checking_approved' ? 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800' :
-                                item.approvalStatus === 'submitted' ? 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800' :
-                                  item.approvalStatus === 'pending' ? 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800' :
-                                    item.approvalStatus === 'draft' ? 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800' :
-                                      'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
+                        item.approvalStatus === 'foreman_approved' ? 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800' :
+                          item.approvalStatus === 'incharge_approved' ? 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800' :
+                            item.approvalStatus === 'checking_approved' ? 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800' :
+                              item.approvalStatus === 'submitted' ? 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800' :
+                                item.approvalStatus === 'draft' ? 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800' :
+                                  'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800'
                         }`}
                     >
                       {item.approvalStatus === 'manager_approved' ? t('timesheet.approvalWorkflow.finalApproved') :
@@ -233,9 +243,8 @@ export function TimesheetsSection({
                           item.approvalStatus === 'incharge_approved' ? t('timesheet.approvalWorkflow.inchargeApproved') :
                             item.approvalStatus === 'checking_approved' ? t('timesheet.approvalWorkflow.checkingApproved') :
                               item.approvalStatus === 'submitted' ? t('timesheet.approvalWorkflow.submitted') :
-                                item.approvalStatus === 'pending' ? t('timesheet.approvalWorkflow.pending') :
-                                  item.approvalStatus === 'draft' ? t('timesheet.approvalWorkflow.draft') :
-                                    item.approvalStatus}
+                                item.approvalStatus === 'draft' ? t('timesheet.approvalWorkflow.draft') :
+                                  item.approvalStatus}
                     </Badge>
                     {item.approvalStatus !== 'manager_approved' && (
                       <div className="text-xs text-muted-foreground mt-1">
@@ -434,7 +443,7 @@ export function TimesheetsSection({
             </div>
 
             <Button variant="outline" className="w-full"
-              onClick={() => {/* Navigate to Timesheet management */}}>
+              onClick={() => {/* Navigate to Timesheet management */ }}>
               {t('timesheet.viewAllTimesheets', { count: timesheetData.length })}
             </Button>
           </>

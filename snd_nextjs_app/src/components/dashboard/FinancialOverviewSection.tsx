@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -16,7 +17,11 @@ import {
   PieChart,
   Calendar,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  FileText,
+  Clock,
+  CheckCircle,
+  AlertCircle
 } from "lucide-react"
 import { useI18n } from "@/hooks/use-i18n"
 
@@ -26,6 +31,14 @@ interface AccountSummary {
   balance: number;
   currency: string;
   parentAccount?: string;
+}
+
+interface InvoiceSummary {
+  totalAmount: number;
+  paidAmount: number;
+  outstandingAmount: number;
+  overdueAmount: number;
+  count: number;
 }
 
 interface FinancialOverview {
@@ -53,12 +66,58 @@ interface FinancialOverview {
 
 export function FinancialOverviewSection() {
   const { t } = useI18n()
+  const { data: session, status } = useSession()
   const [financialOverview, setFinancialOverview] = useState<FinancialOverview | null>(null)
+  const [invoiceSummary, setInvoiceSummary] = useState<InvoiceSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('overview')
   const [selectedMonth, setSelectedMonth] = useState<string>('')
+
+  // Debug session info
+  console.log('🔐 FinancialOverviewSection - Session status:', status)
+  console.log('🔐 FinancialOverviewSection - Session data:', session)
+  console.log('🔐 FinancialOverviewSection - User role:', session?.user?.role)
+
+  // Wait for session to be loaded
+  if (status === 'loading') {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            {t('financial.comprehensiveOverview') || 'Comprehensive Financial Overview'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Check if user is authenticated
+  if (status === 'unauthenticated' || !session) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            {t('financial.comprehensiveOverview') || 'Comprehensive Financial Overview'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8">
+            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <p className="text-red-600 mb-4">{t('financial.notAuthenticated') || 'Please sign in to view financial data'}</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   // Generate last 12 months for dropdown
   const generateMonthOptions = () => {
@@ -109,25 +168,63 @@ export function FinancialOverviewSection() {
     }
   }
 
+  const fetchInvoiceSummary = async () => {
+    try {
+      console.log('🔍 Fetching invoice summary...');
+      // Fetch all invoices without monthly filtering
+      const response = await fetch('/api/erpnext/financial?type=invoice-summary')
+      console.log('📡 Invoice summary response status:', response.status);
+      console.log('📡 Invoice summary response ok:', response.ok);
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('📊 Invoice summary data received:', data)
+        setInvoiceSummary(data.data)
+      } else {
+        const errorText = await response.text()
+        console.error('❌ Failed to fetch invoice summary:', response.status, errorText)
+        // Try to get more details about the error
+        if (response.status === 401) {
+          console.error('❌ Authentication failed - user not logged in or session expired')
+        } else if (response.status === 403) {
+          console.error('❌ Access denied - user lacks required permissions')
+        }
+      }
+    } catch (err) {
+      console.error('❌ Error fetching invoice summary:', err)
+    }
+  }
+
   const handleMonthChange = (month: string) => {
+    if (!session) return
+    
     setSelectedMonth(month)
     fetchFinancialOverview(month)
   }
 
   const handleRefresh = async () => {
+    if (!session) return
+    
     setRefreshing(true)
-    await fetchFinancialOverview()
+    await Promise.all([
+      fetchFinancialOverview(),
+      fetchInvoiceSummary()
+    ])
     setRefreshing(false)
   }
 
   useEffect(() => {
-    if (monthOptions.length > 0) {
+    if (monthOptions.length > 0 && session) {
       setSelectedMonth(monthOptions[0].value)
       fetchFinancialOverview(monthOptions[0].value)
+      fetchInvoiceSummary()
     }
-  }, [])
+  }, [session])
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number | undefined | null) => {
+    if (amount === undefined || amount === null || isNaN(amount)) {
+      return 'SAR 0'
+    }
     return `SAR ${amount.toLocaleString()}`
   }
 
@@ -343,11 +440,12 @@ export function FinancialOverviewSection() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview">{t('financial.overview') || 'Overview'}</TabsTrigger>
               <TabsTrigger value="income">{t('financial.income') || 'Income'}</TabsTrigger>
               <TabsTrigger value="expenses">{t('financial.expenses') || 'Expenses'}</TabsTrigger>
               <TabsTrigger value="accounts">{t('financial.accounts') || 'Accounts'}</TabsTrigger>
+              <TabsTrigger value="invoices">{t('financial.invoices') || 'Invoices'}</TabsTrigger>
             </TabsList>
 
             {/* Overview Tab */}
@@ -595,6 +693,153 @@ export function FinancialOverviewSection() {
                   </tbody>
                 </table>
               </div>
+            </TabsContent>
+
+            {/* Invoices Tab */}
+            <TabsContent value="invoices" className="space-y-4">
+              <div className="text-center mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  {t('financial.invoiceSummary') || 'Invoice Summary'}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  {t('financial.allTimeInvoiceData') || 'All-time invoice data from ERPNext'}
+                </p>
+              </div>
+              
+              {invoiceSummary ? (
+                <div className="space-y-6">
+                  {/* Invoice Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center gap-3">
+                        <FileText className="h-6 w-6 text-blue-600" />
+                        <div>
+                          <p className="text-sm font-medium text-blue-700 dark:text-blue-300">
+                            {t('financial.totalInvoices') || 'Total Invoices'}
+                          </p>
+                          <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                            {invoiceSummary.count}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-gray-50 dark:bg-gray-950 rounded-lg border border-gray-200 dark:border-gray-800">
+                      <div className="flex items-center gap-3">
+                        <DollarSign className="h-6 w-6 text-gray-600" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {t('financial.totalAmount') || 'Total Amount'}
+                          </p>
+                          <p className="text-2xl font-bold text-gray-700 dark:text-gray-300">
+                            {formatCurrency(invoiceSummary.totalAmount)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="h-6 w-6 text-green-600" />
+                        <div>
+                          <p className="text-sm font-medium text-green-700 dark:text-green-300">
+                            {t('financial.paidAmount') || 'Paid Amount'}
+                          </p>
+                          <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                            {formatCurrency(invoiceSummary.paidAmount)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
+                      <div className="flex items-center gap-3">
+                        <AlertCircle className="h-6 w-6 text-red-600" />
+                        <div>
+                          <p className="text-sm font-medium text-red-700 dark:text-red-300">
+                            {t('financial.overdueAmount') || 'Overdue Amount'}
+                          </p>
+                          <p className="text-2xl font-bold text-red-700 dark:text-red-300">
+                            {formatCurrency(invoiceSummary.overdueAmount)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Invoice Details Table */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-2">{t('financial.metric') || 'Metric'}</th>
+                          <th className="text-left p-2">{t('financial.amount') || 'Amount'}</th>
+                          <th className="text-left p-2">{t('financial.percentage') || 'Percentage'}</th>
+                          <th className="text-left p-2">{t('financial.status') || 'Status'}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
+                          <td className="p-2 font-medium">{t('financial.totalAmount') || 'Total Amount'}</td>
+                          <td className="p-2 font-semibold">{formatCurrency(invoiceSummary.totalAmount)}</td>
+                          <td className="p-2">100%</td>
+                          <td className="p-2">
+                            <Badge variant="secondary">{t('financial.allInvoices') || 'All Invoices'}</Badge>
+                          </td>
+                        </tr>
+                        <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
+                          <td className="p-2 font-medium">{t('financial.paidAmount') || 'Paid Amount'}</td>
+                          <td className="p-2 font-semibold text-green-600">{formatCurrency(invoiceSummary.paidAmount)}</td>
+                          <td className="p-2">
+                            {invoiceSummary.totalAmount && invoiceSummary.totalAmount > 0 
+                              ? ((invoiceSummary.paidAmount || 0) / invoiceSummary.totalAmount * 100).toFixed(1)
+                              : '0.0'
+                            }%
+                          </td>
+                          <td className="p-2">
+                            <Badge variant="default" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                              {t('financial.paid') || 'Paid'}
+                            </Badge>
+                          </td>
+                        </tr>
+                        <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
+                          <td className="p-2 font-medium">{t('financial.outstandingAmount') || 'Outstanding Amount'}</td>
+                          <td className="p-2 font-semibold text-orange-600">{formatCurrency(invoiceSummary.outstandingAmount)}</td>
+                          <td className="p-2">
+                            {invoiceSummary.totalAmount && invoiceSummary.totalAmount > 0 
+                              ? ((invoiceSummary.outstandingAmount || 0) / invoiceSummary.totalAmount * 100).toFixed(1)
+                              : '0.0'
+                            }%
+                          </td>
+                          <td className="p-2">
+                            <Badge variant="outline" className="border-orange-200 text-orange-700 dark:border-orange-700 dark:text-orange-300">
+                              {t('financial.outstanding') || 'Outstanding'}
+                            </Badge>
+                          </td>
+                        </tr>
+                        <tr className="border-b hover:bg-gray-50 dark:hover:bg-gray-800">
+                          <td className="p-2 font-medium">{t('financial.overdueAmount') || 'Overdue Amount'}</td>
+                          <td className="p-2 font-semibold text-red-600">{formatCurrency(invoiceSummary.overdueAmount)}</td>
+                          <td className="p-2">
+                            {invoiceSummary.totalAmount && invoiceSummary.totalAmount > 0 
+                              ? ((invoiceSummary.overdueAmount || 0) / invoiceSummary.totalAmount * 100).toFixed(1)
+                              : '0.0'
+                            }%
+                          </td>
+                          <td className="p-2">
+                            <Badge variant="destructive">{t('financial.overdue') || 'Overdue'}</Badge>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>{t('financial.noInvoiceData') || 'No invoice data available'}</p>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>

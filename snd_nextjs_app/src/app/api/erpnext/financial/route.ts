@@ -28,6 +28,9 @@ export async function GET(_request: NextRequest) {
       case 'summary':
         data = await ERPNextFinancialService.getInvoiceSummary();
         break;
+      case 'invoice-summary':
+        data = await ERPNextFinancialService.getInvoiceSummary();
+        break;
       case 'overview':
         const month = searchParams.get('month');
         data = await ERPNextFinancialService.getFinancialOverview(month || undefined);

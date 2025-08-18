@@ -40,5 +40,19 @@
   "accountName": "Account Name",
   "accountType": "Account Type",
   "balance": "Balance",
-  "parentAccount": "Parent Account"
+  "parentAccount": "Parent Account",
+  "invoices": "Invoices",
+  "allTimeData": "All-time invoice data from ERPNext",
+  "allTimeInvoiceData": "All-time invoice data from ERPNext",
+  "totalAmount": "Total Amount",
+  "overdueAmount": "Overdue Amount",
+  "outstandingAmount": "Outstanding Amount",
+  "metric": "Metric",
+  "amount": "Amount",
+  "percentage": "Percentage",
+  "status": "Status",
+  "allInvoices": "All Invoices",
+  "paid": "Paid",
+  "noInvoiceData": "No invoice data available",
+  "notAuthenticated": "Please sign in to view financial data"
 }

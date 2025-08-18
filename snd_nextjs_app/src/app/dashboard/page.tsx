@@ -7,7 +7,6 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader"
 import { IqamaSection } from "@/components/dashboard/IqamaSection"
 import { EquipmentSection } from "@/components/dashboard/EquipmentSection"
 import { TimesheetsSection } from "@/components/dashboard/TimesheetsSection"
-import { FinancialMetricsSection } from "@/components/dashboard/FinancialMetricsSection"
 import { FinancialOverviewSection } from "@/components/dashboard/FinancialOverviewSection"
 import { QuickActions } from "@/components/dashboard/QuickActions"
 import { RecentActivity } from "@/components/dashboard/RecentActivity"
@@ -99,6 +98,7 @@ export default function DashboardPage() {
   const [approvingTimesheet, setApprovingTimesheet] = useState<number | null>(null)
   const [rejectingTimesheet, setRejectingTimesheet] = useState<number | null>(null)
   const [markingAbsent, setMarkingAbsent] = useState<number | null>(null)
+  const [refreshingTimesheets, setRefreshingTimesheets] = useState(false)
 
   // State for success messages
   const [approvalSuccess, setApprovalSuccess] = useState<string | null>(null)
@@ -173,6 +173,57 @@ export default function DashboardPage() {
       setLoading(false)
     }
   }
+
+  // Fetch only timesheet data for quick updates
+  const fetchTimesheetData = async () => {
+    try {
+      setRefreshingTimesheets(true)
+      const response = await fetch('/api/timesheets/today')
+      if (!response.ok) {
+        throw new Error('Failed to fetch timesheet data')
+      }
+      const data = await response.json()
+      setTimesheetData(data.timesheetData || [])
+    } catch (error) {
+      console.error('Error fetching timesheet data:', error)
+    } finally {
+      setRefreshingTimesheets(false)
+    }
+  }
+
+  // Fetch only Iqama data for quick updates
+  const fetchIqamaData = async () => {
+    try {
+      setUpdatingIqama(true)
+      const response = await fetch('/api/employees/iqama')
+      if (!response.ok) {
+        throw new Error('Failed to fetch Iqama data')
+      }
+      const data = await response.json()
+      setIqamaData(data.iqamaData || [])
+    } catch (error) {
+      console.error('Error fetching Iqama data:', error)
+    } finally {
+      setUpdatingIqama(false)
+    }
+  }
+
+  // Fetch only Equipment data for quick updates
+  const fetchEquipmentData = async () => {
+    try {
+      setUpdatingEquipment(true)
+      const response = await fetch('/api/equipment/dashboard')
+      if (!response.ok) {
+        throw new Error('Failed to fetch Equipment data')
+      }
+      const data = await response.json()
+      setEquipmentData(data.equipmentData || [])
+    } catch (error) {
+      console.error('Error fetching Equipment data:', error)
+    } finally {
+      setUpdatingEquipment(false)
+    }
+  }
   
   // Initial data fetch
   useEffect(() => {
@@ -212,7 +263,8 @@ export default function DashboardPage() {
         setIsIqamaModalOpen(false)
         setNewExpiryDate('')
         setSelectedIqama(null)
-        await fetchDashboardData()
+        // Only refresh Iqama data instead of full dashboard
+        await fetchIqamaData()
       } else {
         throw new Error('Failed to update Iqama')
       }
@@ -249,7 +301,8 @@ export default function DashboardPage() {
         setNewEquipmentExpiryDate('')
         setNewEquipmentIstimara('')
         setSelectedEquipment(null)
-        await fetchDashboardData()
+        // Only refresh Equipment data instead of full dashboard
+        await fetchEquipmentData()
       } else {
         throw new Error('Failed to update equipment')
       }
@@ -272,7 +325,8 @@ export default function DashboardPage() {
       if (response.ok) {
         const data = await response.json()
         setApprovalSuccess(data.message || 'Timesheet approved successfully')
-        await fetchDashboardData()
+        // Only refresh timesheet data instead of full dashboard
+        await fetchTimesheetData()
         setTimeout(() => setApprovalSuccess(null), 5000)
       } else {
         throw new Error('Failed to approve timesheet')
@@ -296,7 +350,8 @@ export default function DashboardPage() {
 
       if (response.ok) {
         setApprovalSuccess('Timesheet rejected successfully')
-        await fetchDashboardData()
+        // Only refresh timesheet data instead of full dashboard
+        await fetchTimesheetData()
         setTimeout(() => setApprovalSuccess(null), 5000)
       } else {
         throw new Error('Failed to reject timesheet')
@@ -320,7 +375,8 @@ export default function DashboardPage() {
 
       if (response.ok) {
         setApprovalSuccess('Employee marked as absent')
-        await fetchDashboardData()
+        // Only refresh timesheet data instead of full dashboard
+        await fetchTimesheetData()
         setTimeout(() => setApprovalSuccess(null), 5000)
       } else {
         throw new Error('Failed to mark absent')
@@ -364,7 +420,8 @@ export default function DashboardPage() {
         setEditOvertimeHours('')
         setSelectedTimesheetForEdit(null)
         setApprovalSuccess('Hours updated successfully')
-        await fetchDashboardData()
+        // Only refresh timesheet data instead of full dashboard
+        await fetchTimesheetData()
         setTimeout(() => setApprovalSuccess(null), 5000)
       } else {
         throw new Error('Failed to update hours')
@@ -433,9 +490,6 @@ export default function DashboardPage() {
           onUpdateEquipment={handleOpenEquipmentUpdateModal}
         />
 
-        {/* Financial Metrics Section */}
-        <FinancialMetricsSection />
-
         {/* Financial Overview Section */}
         <FinancialOverviewSection />
 
@@ -452,6 +506,7 @@ export default function DashboardPage() {
           approvingTimesheet={approvingTimesheet}
           rejectingTimesheet={rejectingTimesheet}
           markingAbsent={markingAbsent}
+          isRefreshing={refreshingTimesheets}
         />
 
             {/* Quick Actions */}
