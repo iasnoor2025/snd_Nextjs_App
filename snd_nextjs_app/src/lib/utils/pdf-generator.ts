@@ -1,11 +1,5 @@
-import jsPDF from 'jspdf';
-
-// Extend jsPDF interface to include autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-  }
-}
+import jsPDF from "jspdf";
+import autoTable, { RowInput } from "jspdf-autotable";
 
 interface IqamaData {
   id: number;
@@ -16,7 +10,7 @@ interface IqamaData {
   companyName: string;
   location: string;
   expiryDate: string;
-  status: 'active' | 'expired' | 'expiring' | 'missing';
+  status: "active" | "expired" | "expiring" | "missing";
   daysRemaining: number | null;
 }
 
@@ -26,7 +20,7 @@ interface EquipmentData {
   equipmentNumber?: string;
   istimara?: string;
   istimaraExpiry?: string;
-  status: 'available' | 'expired' | 'expiring' | 'missing';
+  status: "available" | "expired" | "expiring" | "missing";
   daysRemaining: number | null;
   manufacturer?: string;
   modelNumber?: string;
@@ -35,534 +29,123 @@ interface EquipmentData {
   driverFileNumber?: string;
 }
 
-// Professional PDF generation function
-function generateProfessionalPDF(data: any[], title: string, columns: string[], filename: string) {
-  const doc = new jsPDF('landscape');
-  
-  // Professional header
-  doc.setFillColor(220, 38, 38);
-  doc.rect(0, 0, 297, 30, 'F');
-  
-  doc.setTextColor(255, 255, 255);
+function generateTablePDF(data: any[], title: string, filename: string) {
+  const doc = new jsPDF("landscape");
+
+  // Sort by File Number
+  const sortedData = [...data].sort((a, b) => {
+    const fileA = a.fileNumber || "";
+    const fileB = b.fileNumber || "";
+    return fileA.localeCompare(fileB);
+  });
+
+  // Title
+  doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
-  doc.text(title, 148, 18, { align: 'center' });
-  
-  // Info section
-  doc.setFillColor(245, 245, 245);
-  doc.rect(0, 30, 297, 20, 'F');
-  
-  doc.setTextColor(60, 60, 60);
+  doc.text(title, 14, 20);
+
+  // Date & Total
   doc.setFontSize(10);
-  
-  const currentDate = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+  doc.setFont("helvetica", "normal");
+  const today = new Date().toLocaleDateString();
+  doc.text(`Date: ${today}`, 14, 28);
+  doc.text(`Total Records: ${sortedData.length}`, 14, 34);
+
+  // Table data
+  const body: RowInput[] = sortedData.map((item, index) => [
+    index + 1,
+    item.fileNumber || "N/A",
+    item.employeeName || item.equipmentName || "N/A",
+    item.iqamaNumber || item.equipmentNumber || "N/A",
+    item.expiryDate
+      ? new Date(item.expiryDate).toLocaleDateString("en-CA")
+      : item.istimaraExpiry
+      ? new Date(item.istimaraExpiry).toLocaleDateString("en-CA")
+      : "N/A",
+  ]);
+
+  autoTable(doc, {
+    startY: 45,
+    head: [["#", "File Number", "Name", "Iqama/Equip #", "Expiry Date"]],
+    body,
+    theme: "striped",
+    styles: {
+      font: "helvetica",
+      fontSize: 9,
+      cellPadding: 3,
+    },
+    headStyles: {
+      fillColor: [220, 38, 38], // Red header
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      halign: "center",
+    },
+    bodyStyles: {
+      halign: "left",
+      textColor: [50, 50, 50],
+    },
+    alternateRowStyles: {
+      fillColor: [245, 245, 245],
+    },
+    columnStyles: {
+      0: { halign: "center", cellWidth: 20 }, // #
+      1: { halign: "center", cellWidth: 40 }, // File Number
+      2: { halign: "left", cellWidth: 80 }, // Name
+      3: { halign: "center", cellWidth: 40 }, // Iqama/Equip #
+      4: { halign: "center", cellWidth: 40 }, // Expiry Date
+    },
+    didDrawPage: (data) => {
+      // Footer (Page number)
+      const pageSize = doc.internal.pageSize;
+      const pageHeight = pageSize.height ? pageSize.height : pageSize.getHeight();
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text(
+        `Page ${doc.internal.getNumberOfPages()}`,
+        pageSize.width / 2,
+        pageHeight - 10,
+        { align: "center" }
+      );
+    },
   });
-  
-  doc.text(`Generated on: ${currentDate}`, 20, 42);
-  doc.text(`Total Records: ${data.length}`, 20, 52);
-  
-  // Compact table format
-  let yPosition = 65;
-  const rowHeight = 10;
-  const colWidths = [45, 75, 45, 55];
-  const startX = 20;
-  
-  // Table header
-  doc.setFillColor(220, 38, 38);
-  doc.rect(startX, yPosition - 8, 220, 12, 'F');
-  
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(9);
-  
-  columns.forEach((column, index) => {
-    const xPos = startX + 5 + (index * colWidths[index]);
-    doc.text(column, xPos, yPosition);
-  });
-  
-  yPosition += 12;
-  
-  // Data rows
-  data.forEach((item, index) => {
-    if (yPosition > 180) {
-      doc.addPage('landscape');
-      yPosition = 20;
-      
-      // Repeat header
-      doc.setFillColor(220, 38, 38);
-      doc.rect(startX, yPosition - 8, 220, 12, 'F');
-      
-      doc.setTextColor(255, 255, 255);
-      doc.setFontSize(9);
-      
-      columns.forEach((column, colIndex) => {
-        const xPos = startX + 5 + (colIndex * colWidths[colIndex]);
-        doc.text(column, xPos, yPosition);
-      });
-      
-      yPosition += 12;
-    }
-    
-    // Alternate row colors
-    if (index % 2 === 0) {
-      doc.setFillColor(248, 249, 250);
-      doc.rect(startX, yPosition - 8, 220, rowHeight, 'F');
-    }
-    
-    doc.setTextColor(50, 50, 50);
-    doc.setFontSize(8);
-    
-    columns.forEach((column, colIndex) => {
-      const value = item[column] || 'N/A';
-      const xPos = startX + 5 + (colIndex * colWidths[colIndex]);
-      doc.text(value.toString(), xPos, yPosition);
-    });
-    
-    yPosition += rowHeight;
-  });
-  
-  // Footer
-  doc.setFillColor(40, 40, 40);
-  doc.rect(0, 200, 297, 20, 'F');
-  
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(8);
-  doc.text('Generated by SND Management System', 148, 212, { align: 'center' });
-  
+
   doc.save(filename);
 }
 
 export class PDFGenerator {
-  static async generateExpiredIqamaReport(expiredIqamaData: IqamaData[]): Promise<void> {
-    try {
-      // Try autotable for best formatting
-      if (typeof window !== 'undefined') {
-        try {
-          const autoTableModule = await import('jspdf-autotable');
-          const autoTable = autoTableModule.default || autoTableModule;
-          if (typeof autoTable === 'function') {
-            autoTable(jsPDF);
-            
-            const doc = new jsPDF('landscape');
-            
-            // Professional header
-            doc.setFillColor(220, 38, 38);
-            doc.rect(0, 0, 297, 35, 'F');
-            
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(20);
-            doc.text('EXPIRED IQAMA REPORT', 148, 22, { align: 'center' });
-            doc.setFontSize(12);
-            doc.text('SND Management System', 148, 32, { align: 'center' });
-            
-            // Info section
-            doc.setFillColor(245, 245, 245);
-            doc.rect(0, 35, 297, 25, 'F');
-            
-            doc.setTextColor(60, 60, 60);
-            doc.setFontSize(10);
-            
-            const currentDate = new Date().toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            });
-            
-            doc.text(`Generated on: ${currentDate}`, 20, 47);
-            doc.text(`Total Expired Records: ${expiredIqamaData.length}`, 20, 57);
-            
-            // Compact table
-            const tableColumns = [
-              'File Number',
-              'Employee Name',
-              'Iqama #',
-              'Expiry Date'
-            ];
-            
-            const tableRows = expiredIqamaData.map(item => [
-              item.fileNumber || 'N/A',
-              item.employeeName || 'N/A',
-              item.id.toString(),
-              item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : 'N/A'
-            ]);
-            
-            doc.autoTable({
-              head: [tableColumns],
-              body: tableRows,
-              startY: 70,
-              styles: {
-                fontSize: 8,
-                cellPadding: 2,
-                lineWidth: 0.1,
-              },
-              headStyles: {
-                fillColor: [220, 38, 38],
-                textColor: 255,
-                fontStyle: 'bold',
-                fontSize: 9,
-              },
-              bodyStyles: {
-                textColor: 50,
-                fontSize: 7,
-              },
-              alternateRowStyles: {
-                fillColor: [248, 249, 250],
-              },
-              columnStyles: {
-                0: { cellWidth: 35, halign: 'center' },
-                1: { cellWidth: 70, halign: 'left' },
-                2: { cellWidth: 35, halign: 'center' },
-                3: { cellWidth: 40, halign: 'center' },
-              },
-              margin: { left: 20, right: 20, top: 10 },
-              tableWidth: 257,
-            });
-            
-            // Footer
-            const pageCount = doc.internal.pages.length - 1;
-            for (let i = 1; i <= pageCount; i++) {
-              doc.setPage(i);
-              doc.setFillColor(40, 40, 40);
-              doc.rect(0, 200, 297, 20, 'F');
-              
-              doc.setTextColor(255, 255, 255);
-              doc.setFontSize(8);
-              doc.text(`Page ${i} of ${pageCount} | Generated by SND Management System`, 148, 212, { align: 'center' });
-            }
-            
-            const fileName = `Expired_Iqama_Report_${new Date().toISOString().split('T')[0]}.pdf`;
-            doc.save(fileName);
-            return;
-          }
-        } catch (error) {
-          console.error('Autotable failed, using professional fallback:', error);
-        }
-      }
-      
-      // Professional fallback
-      const columns = ['fileNumber', 'employeeName', 'id', 'expiryDate'];
-      const filename = `Expired_Iqama_Report_${new Date().toISOString().split('T')[0]}.pdf`;
-      generateProfessionalPDF(expiredIqamaData, 'EXPIRED IQAMA REPORT', columns, filename);
-    } catch (error) {
-      console.error('PDF generation failed:', error);
-      const columns = ['fileNumber', 'employeeName', 'id', 'expiryDate'];
-      const filename = `Expired_Iqama_Report_${new Date().toISOString().split('T')[0]}.pdf`;
-      generateProfessionalPDF(expiredIqamaData, 'EXPIRED IQAMA REPORT', columns, filename);
-    }
+  static async generateExpiredIqamaReport(
+    expiredIqamaData: IqamaData[]
+  ): Promise<void> {
+    const filename = `Expired_Iqama_Report_${new Date()
+      .toISOString()
+      .split("T")[0]}.pdf`;
+    generateTablePDF(expiredIqamaData, "EXPIRED IQAMA REPORT", filename);
   }
-  
-  static async generateExpiredEquipmentReport(expiredEquipmentData: EquipmentData[]): Promise<void> {
-    try {
-      // Try autotable for best formatting
-      if (typeof window !== 'undefined') {
-        try {
-          const autoTableModule = await import('jspdf-autotable');
-          const autoTable = autoTableModule.default || autoTableModule;
-          if (typeof autoTable === 'function') {
-            autoTable(jsPDF);
-            
-            const doc = new jsPDF('landscape');
-            
-            // Professional header
-            doc.setFillColor(220, 38, 38);
-            doc.rect(0, 0, 297, 35, 'F');
-            
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(20);
-            doc.text('EXPIRED EQUIPMENT ISTIMARA REPORT', 148, 22, { align: 'center' });
-            doc.setFontSize(12);
-            doc.text('SND Management System', 148, 32, { align: 'center' });
-            
-            // Info section
-            doc.setFillColor(245, 245, 245);
-            doc.rect(0, 35, 297, 25, 'F');
-            
-            doc.setTextColor(60, 60, 60);
-            doc.setFontSize(10);
-            
-            const currentDate = new Date().toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            });
-            
-            doc.text(`Generated on: ${currentDate}`, 20, 47);
-            doc.text(`Total Expired Equipment: ${expiredEquipmentData.length}`, 20, 57);
-            
-            // Compact table
-            const tableColumns = [
-              'File Number',
-              'Equipment Name',
-              'Istimara #',
-              'Expiry Date'
-            ];
-            
-            const tableRows = expiredEquipmentData.map(item => [
-              item.driverFileNumber || 'N/A',
-              item.equipmentName || 'N/A',
-              item.istimara || 'N/A',
-              item.istimaraExpiry ? new Date(item.istimaraExpiry).toLocaleDateString() : 'N/A'
-            ]);
-            
-            doc.autoTable({
-              head: [tableColumns],
-              body: tableRows,
-              startY: 70,
-              styles: {
-                fontSize: 8,
-                cellPadding: 2,
-                lineWidth: 0.1,
-              },
-              headStyles: {
-                fillColor: [220, 38, 38],
-                textColor: 255,
-                fontStyle: 'bold',
-                fontSize: 9,
-              },
-              bodyStyles: {
-                textColor: 50,
-                fontSize: 7,
-              },
-              alternateRowStyles: {
-                fillColor: [248, 249, 250],
-              },
-              columnStyles: {
-                0: { cellWidth: 35, halign: 'center' },
-                1: { cellWidth: 70, halign: 'left' },
-                2: { cellWidth: 35, halign: 'center' },
-                3: { cellWidth: 40, halign: 'center' },
-              },
-              margin: { left: 20, right: 20, top: 10 },
-              tableWidth: 257,
-            });
-            
-            // Footer
-            const pageCount = doc.internal.pages.length - 1;
-            for (let i = 1; i <= pageCount; i++) {
-              doc.setPage(i);
-              doc.setFillColor(40, 40, 40);
-              doc.rect(0, 200, 297, 20, 'F');
-              
-              doc.setTextColor(255, 255, 255);
-              doc.setFontSize(8);
-              doc.text(`Page ${i} of ${pageCount} | Generated by SND Management System`, 148, 212, { align: 'center' });
-            }
-            
-            const fileName = `Expired_Equipment_Report_${new Date().toISOString().split('T')[0]}.pdf`;
-            doc.save(fileName);
-            return;
-          }
-        } catch (error) {
-          console.error('Autotable failed, using professional fallback:', error);
-        }
-      }
-      
-      // Professional fallback
-      const columns = ['driverFileNumber', 'equipmentName', 'istimara', 'istimaraExpiry'];
-      const filename = `Expired_Equipment_Report_${new Date().toISOString().split('T')[0]}.pdf`;
-      generateProfessionalPDF(expiredEquipmentData, 'EXPIRED EQUIPMENT ISTIMARA REPORT', columns, filename);
-    } catch (error) {
-      console.error('PDF generation failed:', error);
-      const columns = ['driverFileNumber', 'equipmentName', 'istimara', 'istimaraExpiry'];
-      const filename = `Expired_Equipment_Report_${new Date().toISOString().split('T')[0]}.pdf`;
-      generateProfessionalPDF(expiredEquipmentData, 'EXPIRED EQUIPMENT ISTIMARA REPORT', columns, filename);
-    }
+
+  static async generateExpiredEquipmentReport(
+    expiredEquipmentData: EquipmentData[]
+  ): Promise<void> {
+    const filename = `Expired_Equipment_Report_${new Date()
+      .toISOString()
+      .split("T")[0]}.pdf`;
+    generateTablePDF(
+      expiredEquipmentData,
+      "EXPIRED EQUIPMENT REPORT",
+      filename
+    );
   }
-  
-  static async generateCombinedExpiredReport(expiredIqamaData: IqamaData[], expiredEquipmentData: EquipmentData[]): Promise<void> {
-    try {
-      // Try autotable for best formatting
-      if (typeof window !== 'undefined') {
-        try {
-          const autoTableModule = await import('jspdf-autotable');
-          const autoTable = autoTableModule.default || autoTableModule;
-          if (typeof autoTable === 'function') {
-            autoTable(jsPDF);
-            
-            const doc = new jsPDF('landscape');
-            
-            // Professional header
-            doc.setFillColor(220, 38, 38);
-            doc.rect(0, 0, 297, 35, 'F');
-            
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(20);
-            doc.text('COMPREHENSIVE EXPIRED DOCUMENTS REPORT', 148, 22, { align: 'center' });
-            doc.setFontSize(12);
-            doc.text('SND Management System', 148, 32, { align: 'center' });
-            
-            // Info section
-            doc.setFillColor(245, 245, 245);
-            doc.rect(0, 35, 297, 25, 'F');
-            
-            doc.setTextColor(60, 60, 60);
-            doc.setFontSize(10);
-            
-            const currentDate = new Date().toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            });
-            
-            doc.text(`Generated on: ${currentDate}`, 20, 47);
-            doc.text(`Total Expired Iqama: ${expiredIqamaData.length}`, 20, 57);
-            doc.text(`Total Expired Equipment: ${expiredEquipmentData.length}`, 120, 57);
-            doc.text(`Grand Total: ${expiredIqamaData.length + expiredEquipmentData.length}`, 220, 57);
-            
-            let startY = 70;
-            
-            // Iqama section
-            if (expiredIqamaData.length > 0) {
-              doc.setFontSize(14);
-              doc.setTextColor(40, 40, 40);
-              doc.text('EXPIRED IQAMA DOCUMENTS', 20, startY);
-              
-              const iqamaColumns = ['File Number', 'Employee Name', 'Iqama #', 'Expiry Date'];
-              const iqamaRows = expiredIqamaData.map(item => [
-                item.fileNumber || 'N/A',
-                item.employeeName || 'N/A',
-                item.id.toString(),
-                item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : 'N/A'
-              ]);
-              
-              doc.autoTable({
-                head: [iqamaColumns],
-                body: iqamaRows,
-                startY: startY + 10,
-                styles: {
-                  fontSize: 8,
-                  cellPadding: 2,
-                  lineWidth: 0.1,
-                },
-                headStyles: {
-                  fillColor: [220, 38, 38],
-                  textColor: 255,
-                  fontStyle: 'bold',
-                  fontSize: 9,
-                },
-                bodyStyles: {
-                  textColor: 50,
-                  fontSize: 7,
-                },
-                alternateRowStyles: {
-                  fillColor: [248, 249, 250],
-                },
-                columnStyles: {
-                  0: { cellWidth: 35, halign: 'center' },
-                  1: { cellWidth: 70, halign: 'left' },
-                  2: { cellWidth: 35, halign: 'center' },
-                  3: { cellWidth: 40, halign: 'center' },
-                },
-                margin: { left: 20, right: 20 },
-                tableWidth: 257,
-              });
-              
-              startY = (doc as any).lastAutoTable.finalY + 20;
-            }
-            
-            // Equipment section
-            if (expiredEquipmentData.length > 0) {
-              if (startY > 150) {
-                doc.addPage('landscape');
-                startY = 20;
-                
-                // Repeat header
-                doc.setFillColor(220, 38, 38);
-                doc.rect(0, 0, 297, 35, 'F');
-                
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(20);
-                doc.text('COMPREHENSIVE EXPIRED DOCUMENTS REPORT', 148, 22, { align: 'center' });
-                doc.setFontSize(12);
-                doc.text('SND Management System', 148, 32, { align: 'center' });
-                
-                startY = 70;
-              }
-              
-              doc.setFontSize(14);
-              doc.setTextColor(40, 40, 40);
-              doc.text('EXPIRED EQUIPMENT ISTIMARA', 20, startY);
-              
-              const equipmentColumns = ['File Number', 'Equipment Name', 'Istimara #', 'Expiry Date'];
-              const equipmentRows = expiredEquipmentData.map(item => [
-                item.driverFileNumber || 'N/A',
-                item.equipmentName || 'N/A',
-                item.istimara || 'N/A',
-                item.istimaraExpiry ? new Date(item.istimaraExpiry).toLocaleDateString() : 'N/A'
-              ]);
-              
-              doc.autoTable({
-                head: [equipmentColumns],
-                body: equipmentRows,
-                startY: startY + 10,
-                styles: {
-                  fontSize: 8,
-                  cellPadding: 2,
-                  lineWidth: 0.1,
-                },
-                headStyles: {
-                  fillColor: [220, 38, 38],
-                  textColor: 255,
-                  fontStyle: 'bold',
-                  fontSize: 9,
-                },
-                bodyStyles: {
-                  textColor: 50,
-                  fontSize: 7,
-                },
-                alternateRowStyles: {
-                  fillColor: [248, 249, 250],
-                },
-                columnStyles: {
-                  0: { cellWidth: 35, halign: 'center' },
-                  1: { cellWidth: 70, halign: 'left' },
-                  2: { cellWidth: 35, halign: 'center' },
-                  3: { cellWidth: 40, halign: 'center' },
-                },
-                margin: { left: 20, right: 20 },
-                tableWidth: 257,
-              });
-            }
-            
-            // Footer to all pages
-            const pageCount = doc.internal.pages.length - 1;
-            for (let i = 1; i <= pageCount; i++) {
-              doc.setPage(i);
-              doc.setFillColor(40, 40, 40);
-              doc.rect(0, 200, 297, 20, 'F');
-              
-              doc.setTextColor(255, 255, 255);
-              doc.setFontSize(8);
-              doc.text(`Page ${i} of ${pageCount} | Generated by SND Management System`, 148, 212, { align: 'center' });
-            }
-            
-            const fileName = `Combined_Expired_Documents_Report_${new Date().toISOString().split('T')[0]}.pdf`;
-            doc.save(fileName);
-            return;
-          }
-        } catch (error) {
-          console.error('Autotable failed, using professional fallback:', error);
-        }
-      }
-      
-      // Professional fallback
-      const allData = [
-        ...expiredIqamaData.map(item => ({ ...item, type: 'Iqama' })),
-        ...expiredEquipmentData.map(item => ({ ...item, type: 'Equipment' }))
-      ];
-      const columns = ['type', 'fileNumber', 'employeeName', 'equipmentName', 'id', 'istimara', 'expiryDate'];
-      const filename = `Combined_Expired_Documents_Report_${new Date().toISOString().split('T')[0]}.pdf`;
-      generateProfessionalPDF(allData, 'COMPREHENSIVE EXPIRED DOCUMENTS REPORT', columns, filename);
-    } catch (error) {
-      console.error('Combined PDF generation failed:', error);
-      const allData = [
-        ...expiredIqamaData.map(item => ({ ...item, type: 'Iqama' })),
-        ...expiredEquipmentData.map(item => ({ ...item, type: 'Equipment' }))
-      ];
-      const columns = ['type', 'fileNumber', 'employeeName', 'equipmentName', 'id', 'istimara', 'expiryDate'];
-      const filename = `Combined_Expired_Documents_Report_${new Date().toISOString().split('T')[0]}.pdf`;
-      generateProfessionalPDF(allData, 'COMPREHENSIVE EXPIRED DOCUMENTS REPORT', columns, filename);
-    }
+
+  static async generateCombinedExpiredReport(
+    expiredIqamaData: IqamaData[],
+    expiredEquipmentData: EquipmentData[]
+  ): Promise<void> {
+    const allData = [
+      ...expiredIqamaData.map((item) => ({ ...item, type: "Iqama" })),
+      ...expiredEquipmentData.map((item) => ({ ...item, type: "Equipment" })),
+    ];
+    const filename = `Combined_Report_${new Date()
+      .toISOString()
+      .split("T")[0]}.pdf`;
+    generateTablePDF(allData, "EXPIRED DOCUMENTS REPORT", filename);
   }
 }

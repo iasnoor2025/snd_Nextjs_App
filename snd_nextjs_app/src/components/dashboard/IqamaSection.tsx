@@ -31,6 +31,7 @@ interface IqamaData {
   id: number;
   employeeName: string;
   fileNumber: string;
+  iqamaNumber: string | null;
   nationality: string;
   position: string;
   companyName: string;
@@ -212,7 +213,7 @@ export function IqamaSection({ iqamaData, onUpdateIqama, onHideSection }: IqamaS
               <TableRow>
                 <TableHead>{t('employee.table.headers.name')}</TableHead>
                 <TableHead>{t('employee.fields.fileNumber')}</TableHead>
-                <TableHead>{t('employee.table.headers.company')}</TableHead>
+                <TableHead>Iqama #</TableHead>
                 <TableHead>{t('employee.table.headers.status')}</TableHead>
                 <TableHead>{t('employee.fields.iqamaExpiry')}</TableHead>
                 <TableHead>{t('employee.iqama.days')}</TableHead>
@@ -234,7 +235,7 @@ export function IqamaSection({ iqamaData, onUpdateIqama, onHideSection }: IqamaS
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">{item.fileNumber}</TableCell>
-                  <TableCell className="text-sm">{item.companyName}</TableCell>
+                  <TableCell className="text-sm font-mono">{item.iqamaNumber || item.id}</TableCell>
                   <TableCell>
                     <Badge
                       variant={

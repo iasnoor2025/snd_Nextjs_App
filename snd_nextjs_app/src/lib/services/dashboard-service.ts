@@ -47,6 +47,8 @@ export interface IqamaData {
   status: 'active' | 'expired' | 'expiring' | 'missing';
   nationality: string | null;
   position: string | null;
+  companyName?: string | null;
+  location?: string | null;
 }
 
 export interface EquipmentData {
@@ -340,6 +342,8 @@ export class DashboardService {
           nationality: employees.nationality,
           position: designations.name,
           department: departments.name,
+          companyName: sql<string>`'Company Name'`, // Placeholder - you can update this with actual company field
+          location: sql<string>`'Location'`, // Placeholder - you can update this with actual location field
         })
         .from(employees)
         .leftJoin(departments, eq(employees.departmentId, departments.id))
