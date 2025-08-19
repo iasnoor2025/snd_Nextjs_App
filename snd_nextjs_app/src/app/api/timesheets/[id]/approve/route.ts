@@ -75,7 +75,7 @@ export const POST = withPermission(
   async (_request: NextRequest, { params }: { params: { id: string } }) => {
     try {
 
-      const timesheetId = parseInt(params.id);
+      const timesheetId = parseInt(await params.id);
       if (isNaN(timesheetId)) {
         return NextResponse.json({ error: 'Invalid timesheet ID' }, { status: 400 });
       }

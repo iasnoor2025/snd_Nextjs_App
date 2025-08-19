@@ -734,7 +734,7 @@ export class DashboardService {
     try {
       const allActivities: any[] = [];
 
-      // Get recent timesheet submissions
+      // Get recent timesheet submissions and approvals
       const recentTimesheets = await db
         .select({
           id: timesheets.id,
@@ -748,7 +748,29 @@ export class DashboardService {
         .innerJoin(employees, eq(timesheets.employeeId, employees.id))
         .where(isNotNull(timesheets.submittedAt))
         .orderBy(desc(timesheets.submittedAt))
-        .limit(Math.ceil(limit * 0.3));
+        .limit(Math.ceil(limit * 0.2));
+
+      // Get recent timesheet approvals (status changes)
+      const recentTimesheetApprovals = await db
+        .select({
+          id: timesheets.id,
+          type: sql<string>`'Timesheet Approval'`,
+          description: sql<string>`CONCAT('Timesheet ', ${timesheets.status}, ' for ', ${timesheets.date})`,
+          user: sql<string>`CONCAT(${employees.firstName}, ' ', ${employees.lastName})`,
+          timestamp: timesheets.updatedAt || timesheets.createdAt,
+          severity: sql<string>`'medium'`,
+        })
+        .from(timesheets)
+        .innerJoin(employees, eq(timesheets.employeeId, employees.id))
+        .where(
+          and(
+            isNotNull(timesheets.status),
+            sql`${timesheets.status} IN ('foreman_approved', 'incharge_approved', 'checking_approved', 'manager_approved', 'rejected')`,
+            isNotNull(timesheets.updatedAt) // Only get timesheets that have been updated (approved)
+          )
+        )
+        .orderBy(desc(timesheets.updatedAt))
+        .limit(Math.ceil(limit * 0.1));
 
       // Get recent leave requests
       const recentLeaves = await db
@@ -842,6 +864,7 @@ export class DashboardService {
       // Combine all activities
       allActivities.push(
         ...recentTimesheets,
+        ...recentTimesheetApprovals,
         ...recentLeaves,
         ...recentEquipmentAssignments,
         ...recentProjectAssignments,
@@ -859,6 +882,15 @@ export class DashboardService {
           id: index + 1,
           severity: activity.severity as 'low' | 'medium' | 'high',
         }));
+
+      // Debug: Log the activities being returned
+      console.log('Dashboard Service - Recent Activities:', {
+        totalActivities: allActivities.length,
+        timesheetApprovals: recentTimesheetApprovals.length,
+        sortedActivities: sortedActivities.length,
+        sampleActivity: sortedActivities[0],
+        timestampSample: sortedActivities[0]?.timestamp
+      });
 
       return sortedActivities;
     } catch (error) {

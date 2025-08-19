@@ -12,7 +12,7 @@ import { TimesheetsSection } from '@/components/dashboard/TimesheetsSection';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/use-i18n';
 import { PDFGenerator } from '@/lib/utils/pdf-generator';
-import { ActiveProject, IqamaData } from '@/lib/services/dashboard-service';
+import { ActiveProject, IqamaData, RecentActivity as RecentActivityType } from '@/lib/services/dashboard-service';
 import { Download } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -75,7 +75,7 @@ export default function DashboardPage() {
   const [equipmentData, setEquipmentData] = useState<EquipmentData[]>([]);
   const [timesheetData, setTimesheetData] = useState<TimesheetData[]>([]);
   const [projectData, setProjectData] = useState<ActiveProject[]>([]);
-  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [activities, setActivities] = useState<RecentActivityType[]>([]);
 
   // State for loading and refreshing
   const [loading, setLoading] = useState(true);
@@ -159,7 +159,7 @@ export default function DashboardPage() {
 
       setTimesheetData(data.timesheetData || []);
       setProjectData(data.projectData || []);
-      setActivities(data.activities || []);
+             setActivities(data.recentActivity || []);
 
     } catch (error) {
       // Handle error silently for production
@@ -219,6 +219,20 @@ export default function DashboardPage() {
     }
   };
 
+  // Fetch only Recent Activity data for quick updates
+  const fetchRecentActivity = async () => {
+    try {
+      const response = await fetch('/api/dashboard');
+      if (!response.ok) {
+        throw new Error('Failed to fetch dashboard data');
+      }
+      const data = await response.json();
+      setActivities(data.recentActivity || []);
+    } catch (error) {
+      // Handle error silently for production
+    }
+  };
+
   // Fetch only Project data for quick updates
   // const fetchProjectData = async () => {
   //   try {
@@ -266,6 +280,7 @@ export default function DashboardPage() {
       fetchEquipmentData();
       fetchIqamaData();
       fetchTimesheetData();
+      fetchRecentActivity(); // Also refresh recent activity
     }, 30000); // Refresh every 30 seconds
     
     return () => clearInterval(interval);
@@ -275,6 +290,8 @@ export default function DashboardPage() {
   const handleRefresh = async () => {
     setRefreshing(true);
     await fetchDashboardData();
+    // Also refresh recent activity separately to ensure we get the latest data
+    await fetchRecentActivity();
     setRefreshing(false);
   };
 
@@ -729,6 +746,8 @@ export default function DashboardPage() {
           <RecentActivity
             activities={activities}
             onHideSection={() => toggleSection('recentActivity')}
+            currentUser={session?.user?.name || 'Unknown User'}
+            onRefresh={fetchRecentActivity}
           />
         )}
 
