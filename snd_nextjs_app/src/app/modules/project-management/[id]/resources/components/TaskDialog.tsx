@@ -172,11 +172,14 @@ export default function TaskDialog({
       }
 
       const submitData = {
-        ...formData,
-        completion_percentage: finalCompletionPercentage,
-        assigned_to_id: formData.assigned_to_id === 'none' ? null : formData.assigned_to_id,
+        name: formData.title || 'Task', // API expects 'name', not 'title'
+        description: formData.description,
+        status: formData.status,
+        priority: formData.priority,
+        assignedToId: formData.assigned_to_id === 'none' ? null : formData.assigned_to_id, // API expects 'assignedToId'
+        dueDate: formData.due_date, // API expects 'dueDate'
+        completionPercentage: finalCompletionPercentage, // API expects 'completionPercentage'
         type: 'tasks',
-        name: formData.title || 'Task',
       };
 
       // Use the tasks endpoint for project tasks

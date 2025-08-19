@@ -274,7 +274,16 @@ export default function EquipmentDialog({
         return;
       }
 
+      // Transform frontend field names to match API expectations
       const submitData = {
+        equipmentId: formData.equipment_id,
+        operatorId: formData.operator_id,
+        startDate: formData.start_date,
+        endDate: formData.end_date,
+        hourlyRate: formData.hourly_rate,
+        estimatedHours: formData.usage_hours,
+        maintenanceCost: formData.maintenance_cost,
+        notes: formData.notes,
         type: 'equipment',
         name:
           formData.name ||
@@ -285,24 +294,6 @@ export default function EquipmentDialog({
         description: formData.notes,
         total_cost: (formData.hourly_rate || 0) * (formData.usage_hours || 0),
         status: formData.status || 'pending',
-        notes: formData.notes,
-
-        // Equipment specific fields
-        equipment_id: formData.equipment_id,
-        equipment_name: formData.equipment_name,
-        operator_name: formData.operator_name,
-        hourly_rate: formData.hourly_rate,
-        usage_hours: formData.usage_hours,
-        maintenance_cost: formData.maintenance_cost,
-
-        // Date fields
-        start_date: formData.start_date,
-        end_date: formData.end_date,
-
-        // Additional fields
-        date: formData.start_date,
-        quantity: 1, // Equipment resources typically have quantity 1
-        unit_cost: formData.hourly_rate,
       };
 
       // Make the actual API call

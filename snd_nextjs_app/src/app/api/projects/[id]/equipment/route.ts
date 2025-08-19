@@ -50,7 +50,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         createdAt: projectEquipment.createdAt,
         updatedAt: projectEquipment.updatedAt,
         equipmentName: equipment.name,
-        equipmentModel: equipment.model,
+        equipmentModel: equipment.modelNumber,
         operatorName: employees.firstName,
         operatorLastName: employees.lastName,
       })
@@ -66,7 +66,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     });
   } catch (error) {
     console.error('Error fetching project equipment:', error);
-    return NextResponse.json({ error: 'Failed to fetch project equipment' }, { status: 500 });
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : 'Unknown'
+    });
+    return NextResponse.json({ 
+      error: 'Failed to fetch project equipment',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 

@@ -192,12 +192,13 @@ export default function ProjectResourcesPage() {
       setProject(projectResponse.data);
 
       // Fetch all resource types using new specific endpoints
-      const [manpowerResponse, equipmentResponse, materialsResponse, fuelResponse, expensesResponse] = await Promise.all([
+      const [manpowerResponse, equipmentResponse, materialsResponse, fuelResponse, expensesResponse, tasksResponse] = await Promise.all([
         ApiService.getProjectManpower(Number(projectId)),
         ApiService.getProjectEquipment(Number(projectId)),
         ApiService.getProjectMaterials(Number(projectId)),
         ApiService.getProjectFuel(Number(projectId)),
         ApiService.getProjectExpenses(Number(projectId)),
+        ApiService.getProjectTasks(Number(projectId)),
       ]);
 
       // Combine all resources with their types
@@ -207,6 +208,7 @@ export default function ProjectResourcesPage() {
         ...(materialsResponse.data || []).map((resource: any) => ({ ...resource, type: 'material' })),
         ...(fuelResponse.data || []).map((resource: any) => ({ ...resource, type: 'fuel' })),
         ...(expensesResponse.data || []).map((resource: any) => ({ ...resource, type: 'expense' })),
+        ...(tasksResponse.data || []).map((resource: any) => ({ ...resource, type: 'tasks' })),
       ];
 
       // Transform the API response to match our frontend structure
@@ -278,14 +280,14 @@ export default function ProjectResourcesPage() {
         amount: resource.amount ? parseFloat(resource.amount) : undefined,
 
         // Task specific fields
-        title: resource.title,
+        title: resource.name || resource.title, // API returns 'name', fallback to 'title'
         priority: resource.priority,
         due_date: resource.dueDate,
         completion_percentage: resource.completionPercentage,
-        assigned_to: resource.assigned_to
+        assigned_to: resource.assignedToId
           ? {
-              id: resource.assigned_to.id.toString(),
-              name: `${resource.assigned_to.first_name} ${resource.assigned_to.last_name}`,
+              id: resource.assignedToId.toString(),
+              name: `${resource.assignedToName || ''} ${resource.assignedToLastName || ''}`.trim() || 'Unassigned',
             }
           : undefined,
         assigned_to_id: resource.assignedToId?.toString(),

@@ -135,8 +135,18 @@ export default function ExpenseDialog({
         return;
       }
 
+      // Transform frontend field names to match API expectations
       const submitData = {
-        ...formData,
+        title: `${formData.category} Expense`,
+        description: formData.description,
+        category: formData.category,
+        amount: formData.amount,
+        expenseDate: formData.date,
+        receiptNumber: formData.receipt_number,
+        paymentMethod: formData.payment_method,
+        vendor: formData.vendor,
+        notes: formData.notes,
+        assignedTo: formData.assigned_to,
         type: 'expense',
         name: `${formData.category} Expense`,
         total_cost: formData.amount || 0,

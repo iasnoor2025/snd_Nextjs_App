@@ -172,15 +172,23 @@ export default function MaterialDialog({
         return;
       }
 
+      // Transform frontend field names to match API expectations
       const submitData = {
-        ...formData,
-        type: 'material',
         name:
           formData.name ||
           formData.material_name ||
           (formData.material_id
             ? MATERIALS.find(mat => mat.id === formData.material_id)?.name
             : ''),
+        description: formData.description,
+        category: formData.category,
+        unit: formData.unit,
+        quantity: formData.quantity,
+        unitPrice: formData.unit_price,
+        supplier: formData.supplier,
+        orderDate: formData.date_used,
+        notes: formData.notes,
+        type: 'material',
         total_cost: (formData.quantity || 0) * (formData.unit_price || 0),
       };
 

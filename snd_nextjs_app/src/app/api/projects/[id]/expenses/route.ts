@@ -54,14 +54,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         assignedTo: projectExpenses.assignedTo,
         createdAt: projectExpenses.createdAt,
         updatedAt: projectExpenses.updatedAt,
-        approvedByName: employees.firstName,
-        approvedByLastName: employees.lastName,
-        assignedToName: employees.firstName,
-        assignedToLastName: employees.lastName,
+        // Note: Employee names are not included to avoid JOIN conflicts
+        // These can be fetched separately if needed
       })
       .from(projectExpenses)
-      .leftJoin(employees, eq(projectExpenses.approvedBy, employees.id))
-      .leftJoin(employees, eq(projectExpenses.assignedTo, employees.id))
       .where(and(...whereConditions))
       .orderBy(desc(projectExpenses.expenseDate));
 
@@ -71,7 +67,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     });
   } catch (error) {
     console.error('Error fetching project expenses:', error);
-    return NextResponse.json({ error: 'Failed to fetch project expenses' }, { status: 500 });
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : 'Unknown'
+    });
+    return NextResponse.json({ 
+      error: 'Failed to fetch project expenses',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 

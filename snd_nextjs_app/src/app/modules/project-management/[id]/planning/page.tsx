@@ -137,7 +137,7 @@ export default function ProjectPlanningPage() {
       try {
         const [milestonesRes, tasksRes, manpowerRes, equipmentRes, materialsRes, fuelRes, expensesRes] = await Promise.all([
           ApiService.get(`/projects/${projectId}/milestones`),
-          ApiService.get(`/projects/${projectId}/tasks`),
+          ApiService.getProjectTasks(Number(projectId)),
           ApiService.getProjectManpower(Number(projectId)),
           ApiService.getProjectEquipment(Number(projectId)),
           ApiService.getProjectMaterials(Number(projectId)),

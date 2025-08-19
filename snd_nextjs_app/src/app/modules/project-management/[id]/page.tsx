@@ -256,10 +256,12 @@ export default function ProjectDetailPage() {
         setResources(allResources);
 
         // Fetch tasks
-        const tasksResponse = await ApiService.get<ProjectTask[]>(
-          `/projects/${projectId}/tasks`
-        );
-        setTasks(tasksResponse.data);
+        const tasksResponse = await ApiService.getProjectTasks(Number(projectId));
+        if (tasksResponse.success) {
+          setTasks(tasksResponse.data || []);
+        } else {
+          setTasks([]);
+        }
       } catch (error) {
         
         toast.error('Failed to load project details');

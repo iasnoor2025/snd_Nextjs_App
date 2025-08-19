@@ -235,8 +235,16 @@ export default function ManpowerDialog({
         return;
       }
 
+      // Transform frontend field names to match API expectations
       const submitData = {
-        ...formData,
+        employeeId: formData.employee_id || null,
+        workerName: formData.worker_name || null, // Send workerName for worker-based resources
+        jobTitle: formData.job_title || '',
+        dailyRate: formData.daily_rate || 0,
+        startDate: formData.start_date || '',
+        endDate: formData.end_date || null,
+        totalDays: formData.total_days || 0,
+        notes: formData.notes || '',
         type: 'manpower',
         name: formData.worker_name || formData.employee_name || formData.name || 'Unnamed Resource',
         total_cost: (formData.daily_rate || 0) * (formData.total_days || 0),

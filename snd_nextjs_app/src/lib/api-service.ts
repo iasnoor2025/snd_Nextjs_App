@@ -650,6 +650,11 @@ class ApiService {
   // PROJECT RESOURCES METHODS
   // ========================================
 
+  // Project Tasks
+  static async getProjectTasks(projectId: number) {
+    return this.get(`/projects/${projectId}/tasks`);
+  }
+
   // Project Manpower
   static async getProjectManpower(projectId: number) {
     return this.get(`/projects/${projectId}/manpower`);

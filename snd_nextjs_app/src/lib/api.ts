@@ -93,22 +93,7 @@ class ApiService {
     });
   }
 
-  // Project Resources Methods
-  async getProjectResources(projectId: string) {
-    return this.get(`/projects/${projectId}/resources`);
-  }
 
-  async createProjectResource(projectId: string, data: any) {
-    return this.post(`/projects/${projectId}/resources`, data);
-  }
-
-  async updateProjectResource(projectId: string, resourceId: string, data: any) {
-    return this.put(`/projects/${projectId}/resources/${resourceId}`, data);
-  }
-
-  async deleteProjectResource(projectId: string, resourceId: string) {
-    return this.delete(`/projects/${projectId}/resources/${resourceId}`);
-  }
 
   // Equipment Methods
   async getEquipment() {

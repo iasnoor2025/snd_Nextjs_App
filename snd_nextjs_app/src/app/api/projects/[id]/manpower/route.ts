@@ -95,6 +95,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const body = await request.json();
     const {
       employeeId,
+      workerName, // Use workerName instead of name
       jobTitle,
       dailyRate,
       startDate,
@@ -103,9 +104,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       notes,
     } = body;
 
-    // Validation
-    if (!employeeId || !jobTitle || !dailyRate || !startDate) {
-      return NextResponse.json({ error: 'Employee ID, job title, daily rate, and start date are required' }, { status: 400 });
+    // Validation - allow either employeeId OR workerName (for workers)
+    if ((!employeeId && !workerName) || !jobTitle || !dailyRate || !startDate) {
+      return NextResponse.json({ error: 'Either Employee ID or Worker Name, job title, daily rate, and start date are required' }, { status: 400 });
     }
 
     // Create manpower assignment
@@ -113,7 +114,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .insert(projectManpower)
       .values({
         projectId: parseInt(projectId),
-        employeeId: parseInt(employeeId),
+        employeeId: employeeId ? parseInt(employeeId) : null,
+        workerName: workerName || null,
         jobTitle,
         dailyRate: parseFloat(dailyRate),
         startDate: new Date(startDate),

@@ -185,8 +185,15 @@ export default function FuelDialog({
         return;
       }
 
+      // Transform frontend field names to match API expectations
       const submitData = {
-        ...formData,
+        fuelType: formData.fuel_type,
+        quantity: formData.liters,
+        unitPrice: formData.price_per_liter,
+        supplier: formData.supplier,
+        equipmentId: formData.equipment_id,
+        operatorId: formData.operator_id,
+        usageNotes: formData.notes,
         type: 'fuel',
         name: formData.name || `${formData.fuel_type} Fuel`,
         total_cost: (formData.liters || 0) * (formData.price_per_liter || 0),

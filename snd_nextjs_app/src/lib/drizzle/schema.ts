@@ -2172,7 +2172,8 @@ export const projectManpower = pgTable(
   {
     id: serial().primaryKey().notNull(),
     projectId: integer('project_id').notNull(),
-    employeeId: integer('employee_id').notNull(),
+    employeeId: integer('employee_id'), // Made nullable to support workers
+    workerName: text('worker_name'), // Added for worker-based resources
     jobTitle: text('job_title').notNull(),
     dailyRate: numeric('daily_rate', { precision: 10, scale: 2 }).notNull(),
     startDate: date('start_date').notNull(),
@@ -2199,7 +2200,7 @@ export const projectManpower = pgTable(
       name: 'project_manpower_employee_id_fkey',
     })
       .onUpdate('cascade')
-      .onDelete('restrict'),
+      .onDelete('set null'),
     foreignKey({
       columns: [table.assignedBy],
       foreignColumns: [employees.id],
