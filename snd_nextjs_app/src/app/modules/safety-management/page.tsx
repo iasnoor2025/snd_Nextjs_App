@@ -1,264 +1,408 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Edit, Eye, Plus, Search, Trash2 } from 'lucide-react';
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AlertTriangle, Plus, Search, Filter, FileText, Shield, AlertCircle } from 'lucide-react';
+import { apiService } from '@/lib/api-service';
 import { toast } from 'sonner';
 
+interface SafetyIncident {
+  id: number;
+  title: string;
+  description: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  status: 'open' | 'investigating' | 'resolved' | 'closed';
+  reportedBy: number;
+  assignedToId?: number;
+  location: string;
+  incidentDate: string;
+  resolvedDate?: string;
+  resolution?: string;
+  cost?: number;
+  createdAt: string;
+  updatedAt: string;
+  reportedByName?: string;
+  reportedByLastName?: string;
+  assignedToName?: string;
+  assignedToLastName?: string;
+}
+
 export default function SafetyManagementPage() {
-  const { t } = useTranslation('safety');
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [severity, setSeverity] = useState('all');
-  const [status, setStatus] = useState('all');
-  const [currentPage] = useState(1);
-  const [perPage] = useState(10);
+  const [incidents, setIncidents] = useState<SafetyIncident[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [severityFilter, setSeverityFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    severity: 'medium' as const,
+    reportedBy: '',
+    assignedToId: '',
+    location: '',
+    incidentDate: '',
+    resolution: '',
+    cost: '',
+  });
 
-  const mockSafetyReports = [
-    {
-      id: '1',
-      title: 'Equipment malfunction',
-      description: 'Excavator showing unusual vibrations during operation',
-      severity: 'high',
-      status: 'open',
-      reported_by: 'John Smith',
-      reported_date: '2024-01-15',
-      assigned_to: 'Mike Johnson',
-      location: 'Site A',
-    },
-    {
-      id: '2',
-      title: 'Safety equipment missing',
-      description: 'Hard hats not available for new workers',
-      severity: 'medium',
-      status: 'in_progress',
-      reported_by: 'Jane Doe',
-      reported_date: '2024-01-14',
-      assigned_to: 'Sarah Wilson',
-      location: 'Site B',
-    },
-    {
-      id: '3',
-      title: 'Unsafe working conditions',
-      description: 'Wet surfaces causing slip hazards',
-      severity: 'high',
-      status: 'resolved',
-      reported_by: 'Bob Johnson',
-      reported_date: '2024-01-13',
-      assigned_to: 'Mike Johnson',
-      location: 'Site A',
-    },
-  ];
+  useEffect(() => {
+    fetchIncidents();
+  }, []);
 
-  const filteredReports = mockSafetyReports.filter(report => {
-    const matchesSearch =
-      report.title.toLowerCase().includes(search.toLowerCase()) ||
-      report.description.toLowerCase().includes(search.toLowerCase());
-    const matchesSeverity = severity === 'all' || report.severity === severity;
-    const matchesStatus = status === 'all' || report.status === status;
+  const fetchIncidents = async () => {
+    try {
+      setLoading(true);
+      const response = await apiService.get('/api/safety-incidents');
+      if (response.success) {
+        setIncidents(response.data || []);
+      } else {
+        toast.error('Failed to load safety incidents');
+      }
+    } catch (error) {
+      console.error('Error fetching incidents:', error);
+      toast.error('Failed to load safety incidents');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateIncident = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.title || !formData.reportedBy || !formData.incidentDate) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await apiService.post('/api/safety-incidents', formData);
+      
+      if (response.success) {
+        toast.success('Safety incident created successfully');
+        setIsCreateDialogOpen(false);
+        setFormData({
+          title: '',
+          description: '',
+          severity: 'medium',
+          reportedBy: '',
+          assignedToId: '',
+          location: '',
+          incidentDate: '',
+          resolution: '',
+          cost: '',
+        });
+        fetchIncidents();
+      } else {
+        toast.error(response.message || 'Failed to create incident');
+      }
+    } catch (error) {
+      console.error('Error creating incident:', error);
+      toast.error('Failed to create incident');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'destructive';
+      case 'high': return 'destructive';
+      case 'medium': return 'default';
+      case 'low': return 'secondary';
+      default: return 'default';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'open': return 'destructive';
+      case 'investigating': return 'default';
+      case 'resolved': return 'secondary';
+      case 'closed': return 'secondary';
+      default: return 'default';
+    }
+  };
+
+  const filteredIncidents = incidents.filter(incident => {
+    const matchesSearch = incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         incident.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSeverity = severityFilter === 'all' || incident.severity === severityFilter;
+    const matchesStatus = statusFilter === 'all' || incident.status === statusFilter;
+    
     return matchesSearch && matchesSeverity && matchesStatus;
   });
 
-  const total = filteredReports.length;
-  const lastPage = Math.ceil(total / perPage);
-  const startIndex = (currentPage - 1) * perPage;
-  const endIndex = startIndex + perPage;
-  const paginatedData = filteredReports.slice(startIndex, endIndex);
-
-  useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-    }, 500);
-  }, [search, severity, status, currentPage, filteredReports, total, lastPage, paginatedData]);
-
-  const handleDelete = async () => {
-    try {
-      toast.loading('Deleting safety report...');
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Safety report deleted successfully');
-    } catch {
-      toast.error('Failed to delete safety report');
-    }
+  const stats = {
+    total: incidents.length,
+    open: incidents.filter(i => i.status === 'open').length,
+    investigating: incidents.filter(i => i.status === 'investigating').length,
+    resolved: incidents.filter(i => i.status === 'resolved').length,
+    critical: incidents.filter(i => i.severity === 'critical').length,
+    high: incidents.filter(i => i.severity === 'high').length,
   };
-
-  const getSeverityBadge = (severity: string) => {
-    switch (severity) {
-      case 'high':
-        return <Badge className="bg-red-100 text-red-800">High</Badge>;
-      case 'medium':
-        return <Badge className="bg-yellow-100 text-yellow-800">Medium</Badge>;
-      case 'low':
-        return <Badge className="bg-green-100 text-green-800">Low</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-800">{severity}</Badge>;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'open':
-        return <Badge className="bg-red-100 text-red-800">Open</Badge>;
-      case 'in_progress':
-        return <Badge className="bg-yellow-100 text-yellow-800">In Progress</Badge>;
-      case 'resolved':
-        return <Badge className="bg-green-100 text-green-800">Resolved</Badge>;
-      default:
-        return <Badge className="bg-gray-100 text-gray-800">{status}</Badge>;
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="h-8 bg-gray-200 rounded w-48 animate-pulse"></div>
-          <div className="h-10 bg-gray-200 rounded w-32 animate-pulse"></div>
-        </div>
-        <div className="space-y-4">
-          {[...Array(5)].map((_, i) => (
-            <div key={i} className="h-16 bg-gray-200 rounded animate-pulse"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{t('title')}</h1>
-        <Link href="/modules/safety-management/create">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('reportSafetyIssue')}
-          </Button>
-        </Link>
-      </div>
-
-      <div className="grid gap-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder={t('searchSafetyReportsPlaceholder')}
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <Select value={severity} onValueChange={setSeverity}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder={t('filterBySeverityPlaceholder')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('allSeverities')}</SelectItem>
-              <SelectItem value="high">{t('high')}</SelectItem>
-              <SelectItem value="medium">{t('medium')}</SelectItem>
-              <SelectItem value="low">{t('low')}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder={t('filterByStatusPlaceholder')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('allStatus')}</SelectItem>
-              <SelectItem value="open">{t('open')}</SelectItem>
-              <SelectItem value="in_progress">{t('inProgress')}</SelectItem>
-              <SelectItem value="resolved">{t('resolved')}</SelectItem>
-            </SelectContent>
-          </Select>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Safety Management</h1>
+          <p className="text-muted-foreground">Monitor and manage safety incidents and compliance</p>
         </div>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Report Incident
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Report Safety Incident</DialogTitle>
+              <DialogDescription>
+                Report a new safety incident or near-miss event
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleCreateIncident} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="title">Title *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Brief description of the incident"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="severity">Severity *</Label>
+                  <Select value={formData.severity} onValueChange={(value: any) => setFormData({ ...formData, severity: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="critical">Critical</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Detailed description of what happened"
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="location">Location</Label>
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    placeholder="Where did this happen?"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="incidentDate">Incident Date *</Label>
+                  <Input
+                    id="incidentDate"
+                    type="date"
+                    value={formData.incidentDate}
+                    onChange={(e) => setFormData({ ...formData, incidentDate: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="reportedBy">Reported By *</Label>
+                  <Input
+                    id="reportedBy"
+                    value={formData.reportedBy}
+                    onChange={(e) => setFormData({ ...formData, reportedBy: e.target.value })}
+                    placeholder="Employee ID"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cost">Estimated Cost</Label>
+                  <Input
+                    id="cost"
+                    type="number"
+                    value={formData.cost}
+                    onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                    placeholder="SAR"
+                  />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? 'Creating...' : 'Create Incident'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Incidents</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Open Cases</CardTitle>
+            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.open}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Under Investigation</CardTitle>
+            <Search className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.investigating}</div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Critical Issues</CardTitle>
+            <Shield className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.critical + stats.high}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>{t('safetyReportsTitle')}</CardTitle>
-              <CardDescription>{t('manageSafetyIncidentsAndComplianceReports')}</CardDescription>
-            </div>
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-500">
-                {total} {t('reports')}
-              </span>
-            </div>
-          </div>
+          <CardTitle>Safety Incidents</CardTitle>
+          <CardDescription>Monitor and manage all reported safety incidents</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('title')}</TableHead>
-                <TableHead>{t('severity')}</TableHead>
-                <TableHead>{t('status')}</TableHead>
-                <TableHead>{t('reportedBy')}</TableHead>
-                <TableHead>{t('assignedTo')}</TableHead>
-                <TableHead>{t('location')}</TableHead>
-                <TableHead>{t('reportedDate')}</TableHead>
-                <TableHead className="text-right">{t('actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paginatedData.map(report => (
-                <TableRow key={report.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{report.title}</div>
-                      <div className="text-sm text-gray-500">{report.description}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{getSeverityBadge(report.severity)}</TableCell>
-                  <TableCell>{getStatusBadge(report.status)}</TableCell>
-                  <TableCell>{report.reported_by}</TableCell>
-                  <TableCell>{report.assigned_to}</TableCell>
-                  <TableCell>{report.location}</TableCell>
-                  <TableCell>{new Date(report.reported_date).toLocaleDateString()}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end space-x-2">
-                      <Link href={`/modules/safety-management/${report.id}`}>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                      <Link href={`/modules/safety-management/${report.id}/edit`}>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                      <Button variant="ghost" size="sm" onClick={handleDelete}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+          <div className="flex flex-col sm:flex-row gap-4 mb-4">
+            <div className="flex-1">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search incidents..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            <Select value={severityFilter} onValueChange={setSeverityFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by severity" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Severities</SelectItem>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="open">Open</SelectItem>
+                <SelectItem value="investigating">Investigating</SelectItem>
+                <SelectItem value="resolved">Resolved</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {loading ? (
+            <div className="text-center py-8">Loading incidents...</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Severity</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Reported By</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Cost</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredIncidents.map((incident) => (
+                  <TableRow key={incident.id}>
+                    <TableCell className="font-medium">{incident.title}</TableCell>
+                    <TableCell>
+                      <Badge variant={getSeverityColor(incident.severity)}>
+                        {incident.severity}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusColor(incident.status)}>
+                        {incident.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{incident.location}</TableCell>
+                    <TableCell>
+                      {incident.reportedByName} {incident.reportedByLastName}
+                    </TableCell>
+                    <TableCell>{new Date(incident.incidentDate).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      {incident.cost ? `SAR ${incident.cost.toLocaleString()}` : '-'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+
+          {filteredIncidents.length === 0 && !loading && (
+            <div className="text-center py-8 text-muted-foreground">
+              No incidents found matching your criteria
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

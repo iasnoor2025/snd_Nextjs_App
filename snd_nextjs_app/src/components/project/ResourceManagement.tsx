@@ -94,19 +94,35 @@ export default function ResourceManagement({
     try {
       setLoading(true);
 
-      // Fetch resources
-      const resourcesResponse = await ApiService.getProjectResources(Number(projectId));
-      setResources(resourcesResponse.data || []);
+      // Fetch all resource types using new specific endpoints
+      const [manpowerResponse, equipmentResponse, materialsResponse, fuelResponse, expensesResponse] = await Promise.all([
+        ApiService.getProjectManpower(Number(projectId)),
+        ApiService.getProjectEquipment(Number(projectId)),
+        ApiService.getProjectMaterials(Number(projectId)),
+        ApiService.getProjectFuel(Number(projectId)),
+        ApiService.getProjectExpenses(Number(projectId)),
+      ]);
+
+      // Combine all resources with their types
+      const allResources = [
+        ...(manpowerResponse.data || []).map((resource: any) => ({ ...resource, type: 'manpower' })),
+        ...(equipmentResponse.data || []).map((resource: any) => ({ ...resource, type: 'equipment' })),
+        ...(materialsResponse.data || []).map((resource: any) => ({ ...resource, type: 'material' })),
+        ...(fuelResponse.data || []).map((resource: any) => ({ ...resource, type: 'fuel' })),
+        ...(expensesResponse.data || []).map((resource: any) => ({ ...resource, type: 'expense' })),
+      ];
+
+      setResources(allResources);
 
       // Fetch equipment for dropdown
-      const equipmentResponse = await ApiService.getEquipment();
-      setEquipment(equipmentResponse.data || []);
+      const equipmentResponse2 = await ApiService.getEquipment();
+      setEquipment(equipmentResponse2.data || []);
 
       // Fetch employees for dropdown
       const employeesResponse = await ApiService.getEmployees();
       setEmployees(employeesResponse.data || []);
     } catch (error) {
-      
+      console.error('Error fetching data:', error);
       toast.error('Failed to load resources');
     } finally {
       setLoading(false);
@@ -123,13 +139,33 @@ export default function ResourceManagement({
         project_id: projectId,
       };
 
-      await ApiService.createProjectResource(Number(projectId), resourceData);
+      // Use appropriate create endpoint based on resource type
+      switch (selectedType) {
+        case 'manpower':
+          await ApiService.createProjectManpower(Number(projectId), resourceData);
+          break;
+        case 'equipment':
+          await ApiService.createProjectEquipment(Number(projectId), resourceData);
+          break;
+        case 'material':
+          await ApiService.createProjectMaterial(Number(projectId), resourceData);
+          break;
+        case 'fuel':
+          await ApiService.createProjectFuel(Number(projectId), resourceData);
+          break;
+        case 'expense':
+          await ApiService.createProjectExpense(Number(projectId), resourceData);
+          break;
+        default:
+          throw new Error(`Unknown resource type: ${selectedType}`);
+      }
+
       toast.success('Resource added successfully');
       setDialogOpen(false);
       setFormData({});
       fetchData();
     } catch (error) {
-      
+      console.error('Error adding resource:', error);
       toast.error('Failed to add resource');
     }
   };

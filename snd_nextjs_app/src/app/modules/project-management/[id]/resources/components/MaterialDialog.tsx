@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import apiService from '@/lib/api';
+import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
 import { CalendarIcon, Package } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -184,14 +184,12 @@ export default function MaterialDialog({
         total_cost: (formData.quantity || 0) * (formData.unit_price || 0),
       };
 
-      // TODO: Project resource endpoints don't exist yet
-      // Implement these when the endpoints become available
       if (initialData?.id) {
-        // await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
-        toast.success('Material resource update feature not implemented yet');
+        await apiService.put(`/projects/${projectId}/materials?id=${initialData.id}`, submitData);
+        toast.success('Material updated successfully');
       } else {
-        // await apiService.post(`/projects/${projectId}/resources`, submitData);
-        toast.success('Material resource add feature not implemented yet');
+        await apiService.createProjectMaterial(projectId, submitData);
+        toast.success('Material added successfully');
       }
 
       onSuccess();

@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import apiService from '@/lib/api';
+import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
 import { CalendarIcon, User, Users } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -172,9 +172,9 @@ export default function ManpowerDialog({
   // Function to fetch employee details and populate form
   const fetchEmployeeDetails = async (employeeId: string, currentFormData: ManpowerResource) => {
     try {
-      const response = await fetch(`/api/employees/public?all=true&limit=1000`);
-      if (response.ok) {
-        const data = await response.json();
+      const response = await ApiService.get('/employees/public?all=true&limit=1000');
+      if (response.success) {
+        const data = response.data;
         const employeeData = data.data || data || [];
         const selectedEmployee = employeeData.find((emp: any) => emp.id === employeeId);
 
@@ -243,17 +243,17 @@ export default function ManpowerDialog({
       };
 
       if (initialData?.id) {
-        
-        await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
+        // Update existing manpower resource
+        await ApiService.put(`/projects/${projectId}/manpower/${initialData.id}`, submitData);
         toast.success('Manpower resource updated successfully');
       } else {
-        
+        // Create new manpower resource
         try {
-          const response = await apiService.post(`/projects/${projectId}/resources`, submitData);
+          const response = await ApiService.createProjectManpower(Number(projectId), submitData);
           
           toast.success('Manpower resource added successfully');
         } catch (apiError) {
-          
+          // Re-throw the error to be handled by the outer catch block
           throw apiError;
         }
       }

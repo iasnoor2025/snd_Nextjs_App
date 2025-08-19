@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import apiService from '@/lib/api';
+import ApiService from '@/lib/api-service';
 import { Wrench } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -118,7 +118,7 @@ export default function EquipmentDialog({
   const loadEquipment = async () => {
     try {
       // Use the correct API endpoint for equipment
-      const response = await apiService.get<{ data: Equipment[] }>('/equipment');
+      const response = await ApiService.get<Equipment[]>('/equipment');
       setEquipment(response.data || []);
     } catch (error) {
       
@@ -147,12 +147,9 @@ export default function EquipmentDialog({
   const loadManpowerResources = async () => {
     try {
       // Load manpower resources from the current project
-      const response = await apiService.get<{ success: boolean; data: any[] }>(
-        `/projects/${projectId}/resources`
-      );
+      const response = await ApiService.getProjectManpower(projectId);
       if (response.success) {
-        const manpowerData = response.data.filter((resource: any) => resource.type === 'manpower');
-        setManpowerResources(manpowerData || []);
+        setManpowerResources(response.data || []);
       }
     } catch (error) {
       
@@ -310,10 +307,10 @@ export default function EquipmentDialog({
 
       // Make the actual API call
       if (initialData?.id) {
-        await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
+        await ApiService.put(`/projects/${projectId}/equipment/${initialData.id}`, submitData);
         toast.success('Equipment resource updated successfully');
       } else {
-        await apiService.post(`/projects/${projectId}/resources`, submitData);
+        await ApiService.createProjectEquipment(Number(projectId), submitData);
         toast.success('Equipment resource added successfully');
       }
 

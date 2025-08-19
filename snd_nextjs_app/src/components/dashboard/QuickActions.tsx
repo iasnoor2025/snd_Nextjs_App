@@ -15,6 +15,9 @@ import {
   Truck,
   Users,
   Wrench,
+  Award,
+  BookOpen,
+  Star,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -159,6 +162,75 @@ export function QuickActions({ onHideSection }: QuickActionsProps) {
               </h3>
               <p className="text-orange-100 text-sm">
                 {t('dashboard.quick_actions.projects_desc')}
+              </p>
+            </CardContent>
+          </Card>
+        </RoleBased>
+
+        {/* NEW EMPLOYEE MANAGEMENT FEATURES */}
+        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR']}>
+          <Card
+            className="bg-gradient-to-br from-violet-600 via-violet-700 to-violet-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+            onClick={() => router.push('/modules/employee-management')}
+          >
+            <CardContent className="p-6 text-center">
+              <Users className="h-12 w-12 mx-auto mb-3 opacity-80" />
+              <h3 className="text-lg font-semibold mb-2">
+                Employee Management
+              </h3>
+              <p className="text-violet-100 text-sm">
+                Manage skills, training & performance
+              </p>
+            </CardContent>
+          </Card>
+        </RoleBased>
+
+        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR']}>
+          <Card
+            className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+            onClick={() => router.push('/modules/employee-management/skills')}
+          >
+            <CardContent className="p-6 text-center">
+              <Award className="h-12 w-12 mx-auto mb-3 opacity-80" />
+              <h3 className="text-lg font-semibold mb-2">
+                Skills Management
+              </h3>
+              <p className="text-emerald-100 text-sm">
+                Track employee skills & certifications
+              </p>
+            </CardContent>
+          </Card>
+        </RoleBased>
+
+        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR']}>
+          <Card
+            className="bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+            onClick={() => router.push('/modules/employee-management/training')}
+          >
+            <CardContent className="p-6 text-center">
+              <BookOpen className="h-12 w-12 mx-auto mb-3 opacity-80" />
+              <h3 className="text-lg font-semibold mb-2">
+                Training Programs
+              </h3>
+              <p className="text-blue-100 text-sm">
+                Manage training & development
+              </p>
+            </CardContent>
+          </Card>
+        </RoleBased>
+
+        <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'HR']}>
+          <Card
+            className="bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 text-white border-0 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 cursor-pointer"
+            onClick={() => router.push('/modules/employee-management/performance-reviews')}
+          >
+            <CardContent className="p-6 text-center">
+              <Star className="h-12 w-12 mx-auto mb-3 opacity-80" />
+              <h3 className="text-lg font-semibold mb-2">
+                Performance Reviews
+              </h3>
+              <p className="text-amber-100 text-sm">
+                Track employee performance & goals
               </p>
             </CardContent>
           </Card>

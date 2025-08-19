@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Progress } from '@/components/ui/progress';
-import apiService from '@/lib/api';
+import ApiService from '@/lib/api-service';
 import { formatDistanceToNow } from 'date-fns';
 import { AlertCircle, CheckCircle2, Clock, Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import React, { useState } from 'react';

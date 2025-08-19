@@ -24,7 +24,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import apiService from '@/lib/api';
+import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
 import {
   AlertCircle,
@@ -188,103 +188,116 @@ export default function ProjectResourcesPage() {
       setLoading(true);
 
       // Fetch project details
-      const projectResponse = await apiService.get<{ data: Project }>(`/projects/${projectId}`);
+      const projectResponse = await ApiService.get<{ data: Project }>(`/projects/${projectId}`);
       setProject(projectResponse.data);
 
-      // Fetch project resources
-      const resourcesResponse = (await apiService.getProjectResources(projectId)) as any;
+      // Fetch all resource types using new specific endpoints
+      const [manpowerResponse, equipmentResponse, materialsResponse, fuelResponse, expensesResponse] = await Promise.all([
+        ApiService.getProjectManpower(Number(projectId)),
+        ApiService.getProjectEquipment(Number(projectId)),
+        ApiService.getProjectMaterials(Number(projectId)),
+        ApiService.getProjectFuel(Number(projectId)),
+        ApiService.getProjectExpenses(Number(projectId)),
+      ]);
 
-      if (resourcesResponse.success) {
-        // Transform the API response to match our frontend structure
-        const transformedResources = (resourcesResponse.data || []).map((resource: any) => ({
-          id: resource.id.toString(),
-          type: resource.type,
-          name:
-            resource.name ||
-            resource.title ||
-            resource.worker_name ||
-            resource.equipment_name ||
-            resource.material_name ||
-            'Unnamed Resource',
-          description: resource.description,
-          quantity: resource.quantity,
-          unit_cost: resource.unitCost ? parseFloat(resource.unitCost) : undefined,
-          total_cost: resource.totalCost ? parseFloat(resource.totalCost) : undefined,
-          date: resource.date,
-          status: resource.status,
-          notes: resource.notes,
+      // Combine all resources with their types
+      const allResources = [
+        ...(manpowerResponse.data || []).map((resource: any) => ({ ...resource, type: 'manpower' })),
+        ...(equipmentResponse.data || []).map((resource: any) => ({ ...resource, type: 'equipment' })),
+        ...(materialsResponse.data || []).map((resource: any) => ({ ...resource, type: 'material' })),
+        ...(fuelResponse.data || []).map((resource: any) => ({ ...resource, type: 'fuel' })),
+        ...(expensesResponse.data || []).map((resource: any) => ({ ...resource, type: 'expense' })),
+      ];
 
-          // Manpower specific fields
-          employee_id: resource.employeeId?.toString(),
-          employee: resource.employee
-            ? {
-                id: resource.employee.id.toString(),
-                first_name: resource.employee.first_name,
-                last_name: resource.employee.last_name,
-                full_name: `${resource.employee.first_name} ${resource.employee.last_name}`,
-              }
-            : undefined,
-          employee_name: resource.employeeName,
-          employee_file_number: resource.employeeFileNumber,
-          worker_name: resource.workerName,
-          job_title: resource.jobTitle,
-          daily_rate: resource.dailyRate ? parseFloat(resource.dailyRate) : undefined,
-          days_worked: resource.daysWorked,
-          start_date: resource.startDate,
-          end_date: resource.endDate,
-          total_days: resource.totalDays,
+      // Transform the API response to match our frontend structure
+      const transformedResources = allResources.map((resource: any) => ({
+        id: resource.id.toString(),
+        type: resource.type,
+        name:
+          resource.name ||
+          resource.title ||
+          resource.workerName ||
+          resource.equipmentName ||
+          resource.materialName ||
+          resource.jobTitle ||
+          resource.companyName ||
+          'Unnamed Resource',
+        description: resource.description,
+        quantity: resource.quantity,
+        unit_cost: resource.unitCost ? parseFloat(resource.unitCost) : resource.hourlyRate ? parseFloat(resource.hourlyRate) : resource.dailyRate ? parseFloat(resource.dailyRate) : undefined,
+        total_cost: resource.totalCost ? parseFloat(resource.totalCost) : undefined,
+        date: resource.date || resource.startDate || resource.purchaseDate || resource.expenseDate,
+        status: resource.status,
+        notes: resource.notes,
 
-          // Equipment specific fields
-          equipment_id: resource.equipmentId?.toString(),
-          equipment_name: resource.equipmentName,
-          operator_name: resource.operatorName,
-          hourly_rate: resource.hourlyRate ? parseFloat(resource.hourlyRate) : undefined,
-          hours_worked: resource.hoursWorked ? parseFloat(resource.hoursWorked) : undefined,
-          usage_hours: resource.usageHours ? parseFloat(resource.usageHours) : undefined,
-          maintenance_cost: resource.maintenanceCost
-            ? parseFloat(resource.maintenanceCost)
-            : undefined,
+        // Manpower specific fields
+        employee_id: resource.employeeId?.toString(),
+        employee: resource.employee
+          ? {
+              id: resource.employee.id.toString(),
+              first_name: resource.employee.first_name,
+              last_name: resource.employee.last_name,
+              full_name: `${resource.employee.first_name} ${resource.employee.last_name}`,
+            }
+          : undefined,
+        employee_name: resource.employeeName,
+        employee_file_number: resource.employeeFileNumber,
+        worker_name: resource.workerName,
+        job_title: resource.jobTitle,
+        daily_rate: resource.dailyRate ? parseFloat(resource.dailyRate) : undefined,
+        days_worked: resource.daysWorked,
+        start_date: resource.startDate,
+        end_date: resource.endDate,
+        total_days: resource.totalDays,
 
-          // Material specific fields
-          material_name: resource.materialName,
-          unit: resource.unit,
-          unit_price: resource.unitPrice ? parseFloat(resource.unitPrice) : undefined,
-          material_id: resource.materialId?.toString(),
+        // Equipment specific fields
+        equipment_id: resource.equipmentId?.toString(),
+        equipment_name: resource.equipmentName,
+        operator_name: resource.operatorName,
+        hourly_rate: resource.hourlyRate ? parseFloat(resource.hourlyRate) : undefined,
+        hours_worked: resource.hoursWorked ? parseFloat(resource.hoursWorked) : undefined,
+        usage_hours: resource.usageHours ? parseFloat(resource.usageHours) : undefined,
+        maintenance_cost: resource.maintenanceCost
+          ? parseFloat(resource.maintenanceCost)
+          : undefined,
 
-          // Fuel specific fields
-          fuel_type: resource.fuelType,
-          liters: resource.liters ? parseFloat(resource.liters) : undefined,
-          price_per_liter: resource.pricePerLiter ? parseFloat(resource.pricePerLiter) : undefined,
+        // Material specific fields
+        material_name: resource.name,
+        unit: resource.unit,
+        unit_price: resource.unitPrice ? parseFloat(resource.unitPrice) : undefined,
+        material_id: resource.id?.toString(),
 
-          // Expense specific fields
-          category: resource.category,
-          expense_description: resource.expenseDescription,
-          amount: resource.amount ? parseFloat(resource.amount) : undefined,
+        // Fuel specific fields
+        fuel_type: resource.fuelType,
+        liters: resource.quantity,
+        price_per_liter: resource.unitPrice ? parseFloat(resource.unitPrice) : undefined,
 
-          // Task specific fields
-          title: resource.title,
-          priority: resource.priority,
-          due_date: resource.dueDate,
-          completion_percentage: resource.completionPercentage,
-          assigned_to: resource.assigned_to
-            ? {
-                id: resource.assigned_to.id.toString(),
-                name: `${resource.assigned_to.first_name} ${resource.assigned_to.last_name}`,
-              }
-            : undefined,
-          assigned_to_id: resource.assignedToId?.toString(),
+        // Expense specific fields
+        category: resource.category,
+        expense_description: resource.description,
+        amount: resource.amount ? parseFloat(resource.amount) : undefined,
 
-          created_at: resource.createdAt,
-          updated_at: resource.updatedAt,
-        }));
-        setResources(transformedResources);
-      } else {
-        setResources([]);
-      }
+        // Task specific fields
+        title: resource.title,
+        priority: resource.priority,
+        due_date: resource.dueDate,
+        completion_percentage: resource.completionPercentage,
+        assigned_to: resource.assigned_to
+          ? {
+              id: resource.assigned_to.id.toString(),
+              name: `${resource.assigned_to.first_name} ${resource.assigned_to.last_name}`,
+            }
+          : undefined,
+        assigned_to_id: resource.assignedToId?.toString(),
+
+        created_at: resource.createdAt,
+        updated_at: resource.updatedAt,
+      }));
+
+      setResources(transformedResources);
     } catch (error) {
-      
-      toast.error('Failed to fetch project data');
-      setResources([]);
+      console.error('Error fetching data:', error);
+      toast.error('Failed to load project data');
     } finally {
       setLoading(false);
     }
@@ -326,11 +339,32 @@ export default function ProjectResourcesPage() {
 
     try {
       setLoading(true);
-      await apiService.deleteProjectResource(projectId, deleteResource.id);
+      
+      // Use appropriate delete endpoint based on resource type
+      switch (deleteResource.type) {
+        case 'manpower':
+          await ApiService.delete(`/projects/${projectId}/manpower/${deleteResource.id}`);
+          break;
+        case 'equipment':
+          await ApiService.delete(`/projects/${projectId}/equipment/${deleteResource.id}`);
+          break;
+        case 'material':
+          await ApiService.delete(`/projects/${projectId}/materials/${deleteResource.id}`);
+          break;
+        case 'fuel':
+          await ApiService.delete(`/projects/${projectId}/fuel/${deleteResource.id}`);
+          break;
+        case 'expense':
+          await ApiService.delete(`/projects/${projectId}/expenses/${deleteResource.id}`);
+          break;
+        default:
+          throw new Error(`Unknown resource type: ${deleteResource.type}`);
+      }
+      
       toast.success('Resource deleted successfully');
       fetchData();
     } catch (error) {
-      
+      console.error('Error deleting resource:', error);
       toast.error('Failed to delete resource');
     } finally {
       setLoading(false);
@@ -974,15 +1008,19 @@ export default function ProjectResourcesPage() {
                   const resource = resources.find(r => r.id === task.id);
                   if (resource) {
                     try {
-                      // TODO: Project resource update endpoint doesn't exist yet
-                      // await apiService.put(`/projects/${projectId}/resources/${task.id}`, {
-                      //   ...resource,
-                      //   status
-                      // });
-                      toast.success('Task status update feature not implemented yet');
-                      // handleResourceSuccess();
-                    } catch (error) {
+                      const response = await ApiService.put(`/projects/${projectId}/tasks/${task.id}`, {
+                        ...resource,
+                        status
+                      });
                       
+                      if (response.success) {
+                        toast.success('Task status updated successfully');
+                        handleResourceSuccess();
+                      } else {
+                        toast.error(response.message || 'Failed to update task status');
+                      }
+                    } catch (error) {
+                      console.error('Error updating task status:', error);
                       toast.error('Failed to update task status');
                     }
                   }
@@ -991,15 +1029,19 @@ export default function ProjectResourcesPage() {
                   const resource = resources.find(r => r.id === task.id);
                   if (resource) {
                     try {
-                      // TODO: Project resource update endpoint doesn't exist yet
-                      // await apiService.put(`/projects/${projectId}/resources/${task.id}`, {
-                      //   ...resource,
-                      //   completion_percentage: percentage
-                      // });
-                      toast.success('Task completion update feature not implemented yet');
-                      // handleResourceSuccess();
-                    } catch (error) {
+                      const response = await ApiService.put(`/projects/${projectId}/tasks/${task.id}`, {
+                        ...resource,
+                        completion_percentage: percentage
+                      });
                       
+                      if (response.success) {
+                        toast.success('Task completion updated successfully');
+                        handleResourceSuccess();
+                      } else {
+                        toast.error(response.message || 'Failed to update task completion');
+                      }
+                    } catch (error) {
+                      console.error('Error updating task completion:', error);
                       toast.error('Failed to update task completion');
                     }
                   }

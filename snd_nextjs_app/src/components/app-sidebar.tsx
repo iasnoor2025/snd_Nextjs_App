@@ -19,6 +19,10 @@ import {
   User,
   Users,
   Wrench,
+  Award,
+  BookOpen,
+  Star,
+  Car,
 } from 'lucide-react';
 import * as React from 'react';
 // import { NotificationBell } from "@/components/notification-bell"
@@ -68,9 +72,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: Users,
     },
     {
+      title: 'Skills Management',
+      url: '/modules/employee-management/skills',
+      icon: Award,
+    },
+    {
+      title: 'Training Programs',
+      url: '/modules/employee-management/training',
+      icon: BookOpen,
+    },
+    {
+      title: 'Performance Reviews',
+      url: '/modules/employee-management/performance-reviews',
+      icon: Star,
+    },
+    {
       title: t('equipmentManagement'),
       url: '/modules/equipment-management',
-      icon: Wrench,
+      icon: Car,
     },
     {
       title: t('maintenanceManagement'),

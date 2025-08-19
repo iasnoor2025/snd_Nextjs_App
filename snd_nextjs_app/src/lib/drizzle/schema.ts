@@ -195,87 +195,7 @@ export const locations = pgTable('locations', {
   updatedAt: date('updated_at').notNull(),
 });
 
-export const projectResources = pgTable(
-  'project_resources',
-  {
-    id: serial().primaryKey().notNull(),
-    projectId: integer('project_id').notNull(),
-    type: text().notNull(),
-    name: text().notNull(),
-    description: text(),
-    quantity: integer(),
-    unitCost: numeric('unit_cost', { precision: 10, scale: 2 }),
-    totalCost: numeric('total_cost', { precision: 10, scale: 2 }),
-    date: date(),
-    status: text().default('pending').notNull(),
-    notes: text(),
-    employeeId: integer('employee_id'),
-    workerName: text('worker_name'),
-    jobTitle: text('job_title'),
-    dailyRate: numeric('daily_rate', { precision: 10, scale: 2 }),
-    daysWorked: integer('days_worked'),
-    startDate: date('start_date'),
-    endDate: date('end_date'),
-    totalDays: integer('total_days'),
-    equipmentId: integer('equipment_id'),
-    equipmentName: text('equipment_name'),
-    operatorName: text('operator_name'),
-    hourlyRate: numeric('hourly_rate', { precision: 10, scale: 2 }),
-    usageHours: numeric('usage_hours', { precision: 10, scale: 2 }),
-    maintenanceCost: numeric('maintenance_cost', { precision: 10, scale: 2 }),
-    materialName: text('material_name'),
-    unit: text(),
-    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }),
-    materialId: integer('material_id'),
-    fuelType: text('fuel_type'),
-    liters: numeric({ precision: 10, scale: 2 }),
-    pricePerLiter: numeric('price_per_liter', { precision: 10, scale: 2 }),
-    category: text(),
-    expenseDescription: text('expense_description'),
-    amount: numeric({ precision: 10, scale: 2 }),
-    title: text(),
-    priority: text(),
-    dueDate: date('due_date'),
-    completionPercentage: integer('completion_percentage'),
-    assignedToId: integer('assigned_to_id'),
-    createdAt: date('created_at')
-      .default(sql`CURRENT_DATE`)
-      .notNull(),
-    updatedAt: date('updated_at').notNull(),
-    employeeName: text('employee_name'),
-    employeeFileNumber: text('employee_file_number'),
-  },
-  table => [
-    foreignKey({
-      columns: [table.projectId],
-      foreignColumns: [projects.id],
-      name: 'project_resources_project_id_fkey',
-    })
-      .onUpdate('cascade')
-      .onDelete('cascade'),
-    foreignKey({
-      columns: [table.employeeId],
-      foreignColumns: [employees.id],
-      name: 'project_resources_employee_id_fkey',
-    })
-      .onUpdate('cascade')
-      .onDelete('set null'),
-    foreignKey({
-      columns: [table.equipmentId],
-      foreignColumns: [equipment.id],
-      name: 'project_resources_equipment_id_fkey',
-    })
-      .onUpdate('cascade')
-      .onDelete('set null'),
-    foreignKey({
-      columns: [table.assignedToId],
-      foreignColumns: [employees.id],
-      name: 'project_resources_assigned_to_id_fkey',
-    })
-      .onUpdate('cascade')
-      .onDelete('set null'),
-  ]
-);
+
 
 export const prismaMigrations = pgTable('_prisma_migrations', {
   id: varchar({ length: 36 }).primaryKey().notNull(),
@@ -1313,6 +1233,8 @@ export const skills = pgTable('skills', {
   name: text().notNull(),
   description: text(),
   category: text(),
+  requiredLevel: text('required_level'),
+  certificationRequired: boolean('certification_required').default(false),
   createdAt: date('created_at')
     .default(sql`CURRENT_DATE`)
     .notNull(),
@@ -1409,7 +1331,7 @@ export const timesheets = pgTable(
     uniqueIndex('timesheets_employee_id_date_key').using(
       'btree',
       table.employeeId.asc().nullsLast().op('int4_ops'),
-      table.date.asc().nullsLast().op('int4_ops')
+      table.date.asc().nullsLast()
     ),
     foreignKey({
       columns: [table.employeeId],
@@ -1453,9 +1375,15 @@ export const trainings = pgTable('trainings', {
   id: serial().primaryKey().notNull(),
   name: text().notNull(),
   description: text(),
-  duration: integer(),
-  cost: numeric({ precision: 10, scale: 2 }),
+  category: text(),
+  duration: text(),
   provider: text(),
+  cost: numeric({ precision: 10, scale: 2 }),
+  maxParticipants: integer('max_participants'),
+  prerequisites: text(),
+  objectives: text(),
+  materials: text(),
+  status: text().default('active').notNull(),
   createdAt: date('created_at')
     .default(sql`CURRENT_DATE`)
     .notNull(),
@@ -1924,5 +1852,577 @@ export const modelHasPermissions = pgTable(
       .onUpdate('cascade')
       .onDelete('cascade'),
     primaryKey({ columns: [table.permissionId, table.userId], name: 'model_has_permissions_pkey' }),
+  ]
+);
+
+// New missing tables
+
+export const projectTasks = pgTable(
+  'project_tasks',
+  {
+    id: serial().primaryKey().notNull(),
+    projectId: integer('project_id').notNull(),
+    name: text().notNull(),
+    description: text(),
+    status: text().default('pending').notNull(),
+    priority: text().default('medium').notNull(),
+    assignedToId: integer('assigned_to_id'),
+    startDate: date('start_date'),
+    dueDate: date('due_date'),
+    completionPercentage: integer('completion_percentage').default(0).notNull(),
+    estimatedHours: numeric('estimated_hours', { precision: 8, scale: 2 }),
+    actualHours: numeric('actual_hours', { precision: 8, scale: 2 }),
+    parentTaskId: integer('parent_task_id'),
+    order: integer().default(0).notNull(),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+    deletedAt: date('deleted_at'),
+  },
+  table => [
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'project_tasks_project_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.assignedToId],
+      foreignColumns: [employees.id],
+      name: 'project_tasks_assigned_to_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    foreignKey({
+      columns: [table.parentTaskId],
+      foreignColumns: [table.id],
+      name: 'project_tasks_parent_task_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
+export const projectMilestones = pgTable(
+  'project_milestones',
+  {
+    id: serial().primaryKey().notNull(),
+    projectId: integer('project_id').notNull(),
+    name: text().notNull(),
+    description: text(),
+    dueDate: date('due_date').notNull(),
+    status: text().default('pending').notNull(),
+    completionDate: date('completion_date'),
+    order: integer().default(0).notNull(),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'project_milestones_project_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+  ]
+);
+
+export const projectTemplates = pgTable(
+  'project_templates',
+  {
+    id: serial().primaryKey().notNull(),
+    name: text().notNull(),
+    description: text(),
+    category: text().notNull(),
+    estimatedDuration: integer('estimated_duration'),
+    estimatedBudget: numeric('estimated_budget', { precision: 12, scale: 2 }),
+    complexity: text().default('medium').notNull(),
+    teamSize: integer('team_size'),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdBy: integer('created_by'),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'project_templates_created_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
+export const projectRisks = pgTable(
+  'project_risks',
+  {
+    id: serial().primaryKey().notNull(),
+    projectId: integer('project_id').notNull(),
+    title: text().notNull(),
+    description: text(),
+    probability: text().default('medium').notNull(),
+    impact: text().default('medium').notNull(),
+    severity: text().default('medium').notNull(),
+    status: text().default('open').notNull(),
+    mitigationStrategy: text('mitigation_strategy'),
+    assignedToId: integer('assigned_to_id'),
+    dueDate: date('due_date'),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'project_risks_project_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.assignedToId],
+      foreignColumns: [employees.id],
+      name: 'project_risks_assigned_to_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
+export const systemSettings = pgTable(
+  'system_settings',
+  {
+    id: serial().primaryKey().notNull(),
+    key: text().notNull(),
+    value: text(),
+    type: text().default('string').notNull(),
+    description: text(),
+    isPublic: boolean('is_public').default(false).notNull(),
+    category: text().default('general').notNull(),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    uniqueIndex('system_settings_key_key').using('btree', table.key.asc().nullsLast().op('text_ops')),
+  ]
+);
+
+export const reportTemplates = pgTable(
+  'report_templates',
+  {
+    id: serial().primaryKey().notNull(),
+    name: text().notNull(),
+    description: text(),
+    type: text().notNull(),
+    parameters: jsonb(),
+    query: text(),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdBy: integer('created_by'),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'report_templates_created_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
+export const scheduledReports = pgTable(
+  'scheduled_reports',
+  {
+    id: serial().primaryKey().notNull(),
+    reportTemplateId: integer('report_template_id').notNull(),
+    name: text().notNull(),
+    schedule: text().notNull(),
+    parameters: jsonb(),
+    recipients: jsonb(),
+    isActive: boolean('is_active').default(true).notNull(),
+    lastRun: date('last_run'),
+    nextRun: date('next_run'),
+    createdBy: integer('created_by'),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.reportTemplateId],
+      foreignColumns: [reportTemplates.id],
+      name: 'scheduled_reports_report_template_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.createdBy],
+      foreignColumns: [users.id],
+      name: 'scheduled_reports_created_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
+export const safetyIncidents = pgTable(
+  'safety_incidents',
+  {
+    id: serial().primaryKey().notNull(),
+    title: text().notNull(),
+    description: text(),
+    severity: text().default('medium').notNull(),
+    status: text().default('open').notNull(),
+    reportedBy: integer('reported_by').notNull(),
+    assignedToId: integer('assigned_to_id'),
+    location: text(),
+    incidentDate: date('incident_date').notNull(),
+    resolvedDate: date('resolved_date'),
+    resolution: text(),
+    cost: numeric('cost', { precision: 12, scale: 2 }),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.reportedBy],
+      foreignColumns: [employees.id],
+      name: 'safety_incidents_reported_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('restrict'),
+    foreignKey({
+      columns: [table.assignedToId],
+      foreignColumns: [employees.id],
+      name: 'safety_incidents_assigned_to_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
+export const documentVersions = pgTable(
+  'document_versions',
+  {
+    id: serial().primaryKey().notNull(),
+    documentId: integer('document_id').notNull(),
+    version: integer().notNull(),
+    filePath: text('file_path').notNull(),
+    fileName: text('file_name').notNull(),
+    fileSize: integer('file_size').notNull(),
+    mimeType: text('mime_type').notNull(),
+    uploadedBy: integer('uploaded_by').notNull(),
+    changeNotes: text('change_notes'),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.documentId],
+      foreignColumns: [employeeDocuments.id],
+      name: 'document_versions_document_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.uploadedBy],
+      foreignColumns: [users.id],
+      name: 'document_versions_uploaded_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('restrict'),
+  ]
+);
+
+export const documentApprovals = pgTable(
+  'document_approvals',
+  {
+    id: serial().primaryKey().notNull(),
+    documentId: integer('document_id').notNull(),
+    approverId: integer('approver_id').notNull(),
+    status: text().default('pending').notNull(),
+    comments: text(),
+    approvedAt: date('approved_at'),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.documentId],
+      foreignColumns: [employeeDocuments.id],
+      name: 'document_approvals_document_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.approverId],
+      foreignColumns: [users.id],
+      name: 'document_approvals_approver_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('restrict'),
+  ]
+);
+
+// Project Resource Tables - Separated by type for better organization
+
+export const projectManpower = pgTable(
+  'project_manpower',
+  {
+    id: serial().primaryKey().notNull(),
+    projectId: integer('project_id').notNull(),
+    employeeId: integer('employee_id').notNull(),
+    jobTitle: text('job_title').notNull(),
+    dailyRate: numeric('daily_rate', { precision: 10, scale: 2 }).notNull(),
+    startDate: date('start_date').notNull(),
+    endDate: date('end_date'),
+    totalDays: integer('total_days'),
+    actualDays: integer('actual_days'),
+    status: text().default('active').notNull(), // active, completed, terminated
+    notes: text(),
+    assignedBy: integer('assigned_by'),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'project_manpower_project_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.employeeId],
+      foreignColumns: [employees.id],
+      name: 'project_manpower_employee_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('restrict'),
+    foreignKey({
+      columns: [table.assignedBy],
+      foreignColumns: [employees.id],
+      name: 'project_manpower_assigned_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
+export const projectEquipment = pgTable(
+  'project_equipment',
+  {
+    id: serial().primaryKey().notNull(),
+    projectId: integer('project_id').notNull(),
+    equipmentId: integer('equipment_id').notNull(),
+    operatorId: integer('operator_id'),
+    startDate: date('start_date').notNull(),
+    endDate: date('end_date'),
+    hourlyRate: numeric('hourly_rate', { precision: 10, scale: 2 }).notNull(),
+    estimatedHours: numeric('estimated_hours', { precision: 8, scale: 2 }),
+    actualHours: numeric('actual_hours', { precision: 8, scale: 2 }),
+    maintenanceCost: numeric('maintenance_cost', { precision: 10, scale: 2 }),
+    fuelConsumption: numeric('fuel_consumption', { precision: 8, scale: 2 }),
+    status: text().default('active').notNull(), // active, maintenance, returned, damaged
+    notes: text(),
+    assignedBy: integer('assigned_by'),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'project_equipment_project_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.equipmentId],
+      foreignColumns: [equipment.id],
+      name: 'project_equipment_equipment_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('restrict'),
+    foreignKey({
+      columns: [table.operatorId],
+      foreignColumns: [employees.id],
+      name: 'project_equipment_operator_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    foreignKey({
+      columns: [table.assignedBy],
+      foreignColumns: [employees.id],
+      name: 'project_equipment_assigned_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
+export const projectMaterials = pgTable(
+  'project_materials',
+  {
+    id: serial().primaryKey().notNull(),
+    projectId: integer('project_id').notNull(),
+    name: text().notNull(),
+    description: text(),
+    category: text().notNull(), // construction, electrical, plumbing, etc.
+    unit: text().notNull(), // kg, m, pieces, etc.
+    quantity: numeric('quantity', { precision: 10, scale: 2 }).notNull(),
+    unitPrice: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
+    totalCost: numeric('total_cost', { precision: 12, scale: 2 }),
+    supplier: text(),
+    orderDate: date('order_date'),
+    deliveryDate: date('delivery_date'),
+    status: text().default('ordered').notNull(), // ordered, delivered, used, returned
+    notes: text(),
+    assignedTo: integer('assigned_to'),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'project_materials_project_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.assignedTo],
+      foreignColumns: [employees.id],
+      name: 'project_materials_assigned_to_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
+export const projectFuel = pgTable(
+  'project_fuel',
+  {
+    id: serial().primaryKey().notNull(),
+    projectId: integer('project_id').notNull(),
+    fuelType: text('fuel_type').notNull(), // diesel, gasoline, etc.
+    quantity: numeric('quantity', { precision: 10, scale: 2 }).notNull(), // in liters
+    unitPrice: numeric('unit_price', { precision: 8, scale: 2 }).notNull(),
+    totalCost: numeric('total_cost', { precision: 10, scale: 2 }),
+    supplier: text(),
+    purchaseDate: date('purchase_date').notNull(),
+    equipmentId: integer('equipment_id'), // if specific to equipment
+    operatorId: integer('operator_id'), // who used it
+    usageNotes: text('usage_notes'),
+    status: text().default('purchased').notNull(), // purchased, used, returned
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'project_fuel_project_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.equipmentId],
+      foreignColumns: [equipment.id],
+      name: 'project_fuel_equipment_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    foreignKey({
+      columns: [table.operatorId],
+      foreignColumns: [employees.id],
+      name: 'project_fuel_operator_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
+export const projectExpenses = pgTable(
+  'project_expenses',
+  {
+    id: serial().primaryKey().notNull(),
+    projectId: integer('project_id').notNull(),
+    title: text().notNull(),
+    description: text(),
+    category: text().notNull(), // travel, accommodation, permits, etc.
+    amount: numeric('amount', { precision: 12, scale: 2 }).notNull(),
+    expenseDate: date('expense_date').notNull(),
+    receiptNumber: text('receipt_number'),
+    approvedBy: integer('approved_by'),
+    status: text().default('pending').notNull(), // pending, approved, rejected, paid
+    paymentMethod: text('payment_method'),
+    vendor: text(),
+    notes: text(),
+    assignedTo: integer('assigned_to'),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'project_expenses_project_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.approvedBy],
+      foreignColumns: [employees.id],
+      name: 'project_expenses_approved_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    foreignKey({
+      columns: [table.assignedTo],
+      foreignColumns: [employees.id],
+      name: 'project_expenses_assigned_to_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+  ]
+);
+
+export const projectSubcontractors = pgTable(
+  'project_subcontractors',
+  {
+    id: serial().primaryKey().notNull(),
+    projectId: integer('project_id').notNull(),
+    companyName: text('company_name').notNull(),
+    contactPerson: text('contact_person'),
+    phone: text(),
+    email: text(),
+    scopeOfWork: text('scope_of_work').notNull(),
+    contractValue: numeric('contract_value', { precision: 12, scale: 2 }),
+    startDate: date('start_date').notNull(),
+    endDate: date('end_date'),
+    status: text().default('active').notNull(), // active, completed, terminated
+    paymentTerms: text('payment_terms'),
+    notes: text(),
+    assignedBy: integer('assigned_by'),
+    createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.projectId],
+      foreignColumns: [projects.id],
+      name: 'project_subcontractors_project_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('cascade'),
+    foreignKey({
+      columns: [table.assignedBy],
+      foreignColumns: [employees.id],
+      name: 'project_subcontractors_assigned_by_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
   ]
 );

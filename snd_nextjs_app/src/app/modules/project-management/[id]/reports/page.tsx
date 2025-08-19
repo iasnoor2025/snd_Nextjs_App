@@ -20,7 +20,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import apiService from '@/lib/api';
+import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
 import {
   Activity,
@@ -127,7 +127,7 @@ export default function ProjectReportsPage() {
       setLoading(true);
 
       // Fetch project details
-      const projectRes = await apiService.get<{ data: Project }>(`/projects/${projectId}`);
+      const projectRes = await ApiService.get<Project>(`/projects/${projectId}`);
       setProject(projectRes.data);
 
       // TODO: Project reports endpoint doesn't exist yet, so we'll set empty data

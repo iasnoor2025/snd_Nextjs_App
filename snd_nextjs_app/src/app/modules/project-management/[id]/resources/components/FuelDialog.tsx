@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import apiService from '@/lib/api';
+import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
 import { CalendarIcon, Fuel } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -114,7 +114,7 @@ export default function FuelDialog({
 
   const loadEquipment = async () => {
     try {
-      const response = await apiService.get<{ data: Equipment[] }>('/equipment');
+      const response = await ApiService.get<Equipment[]>('/equipment');
       setEquipment(response.data || []);
     } catch (error) {
       
@@ -192,14 +192,12 @@ export default function FuelDialog({
         total_cost: (formData.liters || 0) * (formData.price_per_liter || 0),
       };
 
-      // TODO: Project resource endpoints don't exist yet
-      // Implement these when the endpoints become available
       if (initialData?.id) {
-        // await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
-        toast.success('Fuel resource update feature not implemented yet');
+        await apiService.put(`/projects/${projectId}/fuel?id=${initialData.id}`, submitData);
+        toast.success('Fuel record updated successfully');
       } else {
-        // await apiService.post(`/projects/${projectId}/resources`, submitData);
-        toast.success('Fuel resource add feature not implemented yet');
+        await apiService.createProjectFuel(projectId, submitData);
+        toast.success('Fuel record added successfully');
       }
 
       onSuccess();

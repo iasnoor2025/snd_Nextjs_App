@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import apiService from '@/lib/api';
+import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
 import { CalendarIcon, Target } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -37,18 +37,18 @@ interface Employee {
 
 interface TaskResource {
   id?: string;
-  title?: string;
-  description?: string;
-  status?: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  priority?: 'low' | 'medium' | 'high';
-  due_date?: string;
-  completion_percentage?: number;
-  assigned_to_id?: string;
+  title: string;
+  description: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+  priority: 'low' | 'medium' | 'high';
+  due_date: string;
+  completion_percentage: number;
+  assigned_to_id: string;
   assigned_to?: {
     id: string;
     name: string;
   };
-  notes?: string;
+  notes: string;
 }
 
 interface TaskDialogProps {
@@ -104,9 +104,7 @@ export default function TaskDialog({
     if (initialData) {
       setFormData({
         ...initialData,
-        due_date: initialData.due_date
-          ? new Date(initialData.due_date).toISOString().split('T')[0]
-          : '',
+        due_date: initialData.due_date || '',
       });
     } else {
       setFormData({
@@ -124,8 +122,9 @@ export default function TaskDialog({
 
   const loadEmployees = async () => {
     try {
-      const response = await apiService.get<{ data: Employee[] }>('/employees');
-      setEmployees(response.data || []);
+      const response = await ApiService.get<{ data: Employee[] }>('/employees');
+      const employeesData = response.data || [];
+      setEmployees(employeesData);
     } catch (error) {
       // API service already handles fallback to mock data
       setEmployees([]);
@@ -180,14 +179,23 @@ export default function TaskDialog({
         name: formData.title || 'Task',
       };
 
-      // TODO: Project resource endpoints don't exist yet
-      // Implement these when the endpoints become available
+      // Use the tasks endpoint for project tasks
       if (initialData?.id) {
-        // await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
-        toast.success('Task update feature not implemented yet');
+        const response = await ApiService.put(`/projects/${projectId}/tasks/${initialData.id}`, submitData);
+        if (response.success) {
+          toast.success('Task updated successfully');
+        } else {
+          toast.error(response.message || 'Failed to update task');
+          return;
+        }
       } else {
-        // await apiService.post(`/projects/${projectId}/resources`, submitData);
-        toast.success('Task add feature not implemented yet');
+        const response = await ApiService.post(`/projects/${projectId}/tasks`, submitData);
+        if (response.success) {
+          toast.success('Task created successfully');
+        } else {
+          toast.error(response.message || 'Failed to create task');
+          return;
+        }
       }
 
       onSuccess();

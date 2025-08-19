@@ -31,6 +31,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PermissionContent, RoleBased, RoleContent } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
+import ApiService from '@/lib/api-service';
 import {
   AlertCircle,
   BarChart3,
@@ -193,13 +194,12 @@ export default function ProjectManagementPage() {
           ...(priority && priority !== 'all' && { priority }),
         });
 
-        const response = await fetch(`/api/projects?${params}`);
-        if (!response.ok) {
+        const response = await ApiService.get(`/projects?${params}`);
+        if (response.success) {
+          setProjects(response.data);
+        } else {
           throw new Error('Failed to fetch projects');
         }
-
-        const data = await response.json();
-        setProjects(data);
       } catch (error) {
         
         // Use mock data for demo

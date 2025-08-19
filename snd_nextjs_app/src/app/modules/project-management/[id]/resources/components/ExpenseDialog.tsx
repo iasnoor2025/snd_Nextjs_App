@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import apiService from '@/lib/api';
+import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
 import { CalendarIcon, Receipt } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -142,14 +142,12 @@ export default function ExpenseDialog({
         total_cost: formData.amount || 0,
       };
 
-      // TODO: Project resource endpoints don't exist yet
-      // Implement these when the endpoints become available
       if (initialData?.id) {
-        // await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
-        toast.success('Expense resource update feature not implemented yet');
+        await apiService.put(`/projects/${projectId}/expenses?id=${initialData.id}`, submitData);
+        toast.success('Expense updated successfully');
       } else {
-        // await apiService.post(`/projects/${projectId}/resources`, submitData);
-        toast.success('Expense resource add feature not implemented yet');
+        await apiService.createProjectExpense(projectId, submitData);
+        toast.success('Expense added successfully');
       }
 
       onSuccess();

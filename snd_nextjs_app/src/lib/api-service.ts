@@ -650,31 +650,81 @@ class ApiService {
   // PROJECT RESOURCES METHODS
   // ========================================
 
-  static async getProjectResources(projectId: number) {
-    return this.get(`/projects/${projectId}/resources`);
+  // Project Manpower
+  static async getProjectManpower(projectId: number) {
+    return this.get(`/projects/${projectId}/manpower`);
   }
 
-  static async createProjectResource(projectId: number, data: any) {
-    return this.post(`/projects/${projectId}/resources`, data, {
+  static async createProjectManpower(projectId: number, data: any) {
+    return this.post(`/projects/${projectId}/manpower`, data, {
       showToast: true,
-      toastMessage: 'Resource added successfully',
-      errorMessage: 'Failed to add resource',
+      toastMessage: 'Manpower assigned successfully',
+      errorMessage: 'Failed to assign manpower',
     });
   }
 
-  static async updateProjectResource(projectId: number, resourceId: number, data: any) {
-    return this.put(`/projects/${projectId}/resources/${resourceId}`, data, {
+  // Project Equipment
+  static async getProjectEquipment(projectId: number) {
+    return this.get(`/projects/${projectId}/equipment`);
+  }
+
+  static async createProjectEquipment(projectId: number, data: any) {
+    return this.post(`/projects/${projectId}/equipment`, data, {
       showToast: true,
-      toastMessage: 'Resource updated successfully',
-      errorMessage: 'Failed to update resource',
+      toastMessage: 'Equipment assigned successfully',
+      errorMessage: 'Failed to assign equipment',
     });
   }
 
-  static async deleteProjectResource(projectId: number, resourceId: number) {
-    return this.delete(`/projects/${projectId}/resources/${resourceId}`, {
+  // Project Materials
+  static async getProjectMaterials(projectId: number) {
+    return this.get(`/projects/${projectId}/materials`);
+  }
+
+  static async createProjectMaterial(projectId: number, data: any) {
+    return this.post(`/projects/${projectId}/materials`, data, {
       showToast: true,
-      toastMessage: 'Resource deleted successfully',
-      errorMessage: 'Failed to delete resource',
+      toastMessage: 'Material added successfully',
+      errorMessage: 'Failed to add material',
+    });
+  }
+
+  // Project Fuel
+  static async getProjectFuel(projectId: number) {
+    return this.get(`/projects/${projectId}/fuel`);
+  }
+
+  static async createProjectFuel(projectId: number, data: any) {
+    return this.post(`/projects/${projectId}/fuel`, data, {
+      showToast: true,
+      toastMessage: 'Fuel record added successfully',
+      errorMessage: 'Failed to add fuel record',
+    });
+  }
+
+  // Project Expenses
+  static async getProjectExpenses(projectId: number) {
+    return this.get(`/projects/${projectId}/expenses`);
+  }
+
+  static async createProjectExpense(projectId: number, data: any) {
+    return this.post(`/projects/${projectId}/expenses`, data, {
+      showToast: true,
+      toastMessage: 'Expense added successfully',
+      errorMessage: 'Failed to add expense',
+    });
+  }
+
+  // Project Subcontractors
+  static async getProjectSubcontractors(projectId: number) {
+    return this.get(`/projects/${projectId}/subcontractors`);
+  }
+
+  static async createProjectSubcontractor(projectId: number, data: any) {
+    return this.post(`/projects/${projectId}/subcontractors`, data, {
+      showToast: true,
+      toastMessage: 'Subcontractor added successfully',
+      errorMessage: 'Failed to add subcontractor',
     });
   }
 

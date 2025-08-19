@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import apiService from '@/lib/api';
+import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
 import {
   AlertCircle,
@@ -90,7 +90,7 @@ interface Task {
 interface Resource {
   id: string;
   name: string;
-  type: 'manpower' | 'equipment' | 'material';
+  type: 'manpower' | 'equipment' | 'material' | 'fuel' | 'expense';
   allocated_hours: number;
   total_hours: number;
   cost_per_hour: number;
@@ -130,17 +130,49 @@ export default function ProjectPlanningPage() {
       setLoading(true);
 
       // Fetch project details
-      const projectRes = await apiService.get<{ data: Project }>(`/projects/${projectId}`);
+              const projectRes = await ApiService.get<Project>(`/projects/${projectId}`);
       setProject(projectRes.data);
 
-      // TODO: These endpoints don't exist yet, so we'll set empty arrays
-      // Implement these when the endpoints become available
-      setMilestones([]);
-      setTasks([]);
-      setResources([]);
+      // Fetch project data from new APIs
+      try {
+        const [milestonesRes, tasksRes, manpowerRes, equipmentRes, materialsRes, fuelRes, expensesRes] = await Promise.all([
+          ApiService.get(`/projects/${projectId}/milestones`),
+          ApiService.get(`/projects/${projectId}/tasks`),
+          ApiService.getProjectManpower(Number(projectId)),
+          ApiService.getProjectEquipment(Number(projectId)),
+          ApiService.getProjectMaterials(Number(projectId)),
+          ApiService.getProjectFuel(Number(projectId)),
+          ApiService.getProjectExpenses(Number(projectId)),
+        ]);
+
+        if (milestonesRes.success) {
+          setMilestones(milestonesRes.data || []);
+        }
+        if (tasksRes.success) {
+          setTasks(tasksRes.data || []);
+        }
+        
+        // Combine all resources
+        const allResources = [
+          ...(manpowerRes.data || []).map((r: any) => ({ ...r, type: 'manpower' })),
+          ...(equipmentRes.data || []).map((r: any) => ({ ...r, type: 'equipment' })),
+          ...(materialsRes.data || []).map((r: any) => ({ ...r, type: 'material' })),
+          ...(fuelRes.data || []).map((r: any) => ({ ...r, type: 'fuel' })),
+          ...(expensesRes.data || []).map((r: any) => ({ ...r, type: 'expense' })),
+        ];
+        setResources(allResources);
+      } catch (error) {
+        console.error('Error fetching project data:', error);
+        // Set empty arrays as fallback
+        setMilestones([]);
+        setTasks([]);
+        setResources([]);
+      }
+
+      // TODO: Budget items endpoint doesn't exist yet
       setBudgetItems([]);
     } catch (error) {
-      
+      console.error('Error fetching project data:', error);
       toast.error('Failed to load project data');
     } finally {
       setLoading(false);

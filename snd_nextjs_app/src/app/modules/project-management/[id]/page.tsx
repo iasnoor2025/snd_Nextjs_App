@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import apiService from '@/lib/api';
+import ApiService from '@/lib/api-service';
 import {
   AlertCircle,
   ArrowLeft,
@@ -188,7 +188,7 @@ export default function ProjectDetailPage() {
     try {
       setIsGeneratingReport(true);
 
-      const response = await apiService.post<{ data: BlobPart }>(`/projects/${projectId}/report`, {
+      const response = await ApiService.post<BlobPart>(`/projects/${projectId}/report`, {
         include_resources: true,
         include_tasks: true,
       });
@@ -216,7 +216,7 @@ export default function ProjectDetailPage() {
 
   const handleDeleteProject = async () => {
     try {
-      await apiService.delete(`/projects/${projectId}`);
+      await ApiService.delete(`/projects/${projectId}`);
       toast.success('Project deleted successfully');
       router.push('/modules/project-management');
     } catch (error) {
@@ -233,17 +233,30 @@ export default function ProjectDetailPage() {
         setLoading(true);
 
         // Fetch project details
-        const projectResponse = await apiService.get<{ data: Project }>(`/projects/${projectId}`);
+        const projectResponse = await ApiService.get<Project>(`/projects/${projectId}`);
         setProject(projectResponse.data);
 
         // Fetch project resources
-        const resourcesResponse = await apiService.get<{ data: ProjectResource[] }>(
-          `/projects/${projectId}/resources`
-        );
-        setResources(resourcesResponse.data);
+        const [manpowerRes, equipmentRes, materialsRes, fuelRes, expensesRes] = await Promise.all([
+          ApiService.getProjectManpower(Number(projectId)),
+          ApiService.getProjectEquipment(Number(projectId)),
+          ApiService.getProjectMaterials(Number(projectId)),
+          ApiService.getProjectFuel(Number(projectId)),
+          ApiService.getProjectExpenses(Number(projectId)),
+        ]);
+
+        // Combine all resources
+        const allResources = [
+          ...(manpowerRes.data || []).map((r: any) => ({ ...r, type: 'manpower' })),
+          ...(equipmentRes.data || []).map((r: any) => ({ ...r, type: 'equipment' })),
+          ...(materialsRes.data || []).map((r: any) => ({ ...r, type: 'material' })),
+          ...(fuelRes.data || []).map((r: any) => ({ ...r, type: 'fuel' })),
+          ...(expensesRes.data || []).map((r: any) => ({ ...r, type: 'expense' })),
+        ];
+        setResources(allResources);
 
         // Fetch tasks
-        const tasksResponse = await apiService.get<{ data: ProjectTask[] }>(
+        const tasksResponse = await ApiService.get<ProjectTask[]>(
           `/projects/${projectId}/tasks`
         );
         setTasks(tasksResponse.data);

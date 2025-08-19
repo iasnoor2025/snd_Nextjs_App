@@ -30,7 +30,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import apiService from '@/lib/api';
+import ApiService from '@/lib/api-service';
 import {
   Building2,
   Calendar,
@@ -103,10 +103,10 @@ export default function ProjectTemplatesPage() {
     name: '',
     description: '',
     category: '',
-    estimated_duration: '',
-    estimated_budget: '',
+    estimatedDuration: '',
+    estimatedBudget: '',
     complexity: 'medium',
-    team_size: '',
+    teamSize: '',
   });
 
   useEffect(() => {
@@ -116,12 +116,14 @@ export default function ProjectTemplatesPage() {
   const fetchTemplates = async () => {
     try {
       setLoading(true);
-      // TODO: Project templates endpoint doesn't exist yet
-      // const response = await apiService.get('/project-templates');
-      // setTemplates(response.data || []);
-      setTemplates([]);
+      const response = await ApiService.get('/project-templates');
+      if (response.success) {
+        setTemplates(response.data || []);
+      } else {
+        toast.error('Failed to load templates');
+      }
     } catch (error) {
-      
+      console.error('Error fetching templates:', error);
       toast.error('Failed to load templates');
     } finally {
       setLoading(false);
@@ -138,28 +140,31 @@ export default function ProjectTemplatesPage() {
 
     try {
       setLoading(true);
-      // TODO: Project template create endpoint doesn't exist yet
-      // await apiService.post('/project-templates', {
-      //   ...formData,
-      //   estimated_duration: parseInt(formData.estimated_duration) || 0,
-      //   estimated_budget: parseFloat(formData.estimated_budget) || 0,
-      //   team_size: parseInt(formData.team_size) || 0,
-      // });
-
-      toast.success('Template created successfully');
-      setDialogOpen(false);
-      setFormData({
-        name: '',
-        description: '',
-        category: '',
-        estimated_duration: '',
-        estimated_budget: '',
-        complexity: 'medium',
-        team_size: '',
+      const response = await ApiService.post('/project-templates', {
+        ...formData,
+        estimatedDuration: parseInt(formData.estimatedDuration) || 0,
+        estimatedBudget: parseFloat(formData.estimatedBudget) || 0,
+        teamSize: parseInt(formData.teamSize) || 0,
       });
-      fetchTemplates();
+
+      if (response.success) {
+        toast.success('Template created successfully');
+        setDialogOpen(false);
+        setFormData({
+          name: '',
+          description: '',
+          category: '',
+          estimatedDuration: '',
+          estimatedBudget: '',
+          complexity: 'medium',
+          teamSize: '',
+        });
+        fetchTemplates();
+      } else {
+        toast.error(response.message || 'Failed to create template');
+      }
     } catch (error) {
-      
+      console.error('Error creating template:', error);
       toast.error('Failed to create template');
     } finally {
       setLoading(false);
@@ -168,12 +173,20 @@ export default function ProjectTemplatesPage() {
 
   const handleUseTemplate = async (template: ProjectTemplate) => {
     try {
-      // TODO: Project from template endpoint doesn't exist yet
-      // const response = await apiService.post(`/project-templates/${template.id}/create-project`);
-      toast.success('Project from template feature not implemented yet');
-      // window.location.href = `/modules/project-management/${response.data.id}`;
+      const response = await ApiService.post(`/project-templates/${template.id}/create-project`, {
+        name: `${template.name} - New Project`,
+        description: template.description,
+        budget: template.estimatedBudget,
+      });
+
+      if (response.success) {
+        toast.success('Project created successfully from template');
+        window.location.href = `/modules/project-management/${response.data.id}`;
+      } else {
+        toast.error(response.message || 'Failed to create project from template');
+      }
     } catch (error) {
-      
+      console.error('Error creating project from template:', error);
       toast.error('Failed to create project from template');
     }
   };
@@ -340,9 +353,9 @@ export default function ProjectTemplatesPage() {
                     <Input
                       id="estimated_duration"
                       type="number"
-                      value={formData.estimated_duration}
+                      value={formData.estimatedDuration}
                       onChange={e =>
-                        setFormData(prev => ({ ...prev, estimated_duration: e.target.value }))
+                        setFormData(prev => ({ ...prev, estimatedDuration: e.target.value }))
                       }
                       placeholder="30"
                     />
@@ -352,9 +365,9 @@ export default function ProjectTemplatesPage() {
                     <Input
                       id="estimated_budget"
                       type="number"
-                      value={formData.estimated_budget}
+                      value={formData.estimatedBudget}
                       onChange={e =>
-                        setFormData(prev => ({ ...prev, estimated_budget: e.target.value }))
+                        setFormData(prev => ({ ...prev, estimatedBudget: e.target.value }))
                       }
                       placeholder="100000"
                       step="0.01"
@@ -384,8 +397,8 @@ export default function ProjectTemplatesPage() {
                     <Input
                       id="team_size"
                       type="number"
-                      value={formData.team_size}
-                      onChange={e => setFormData(prev => ({ ...prev, team_size: e.target.value }))}
+                      value={formData.teamSize}
+                      onChange={e => setFormData(prev => ({ ...prev, teamSize: e.target.value }))}
                       placeholder="5"
                     />
                   </div>

@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import apiService from '@/lib/api';
+import ApiService from '@/lib/api-service';
 import { format } from 'date-fns';
 import {
   AlertTriangle,
@@ -160,7 +160,7 @@ export default function EditProjectPage() {
       setLoading(true);
 
       // Fetch project details
-      const projectResponse = (await apiService.getProject(projectId)) as any;
+      const projectResponse = (await ApiService.getProject(projectId)) as any;
       if (projectResponse.success) {
         const projectData = projectResponse.data;
         setProject(projectData);
@@ -214,7 +214,7 @@ export default function EditProjectPage() {
 
       // Fetch customers
       try {
-        const customersResponse = (await apiService.get('/customers?limit=1000')) as any;
+        const customersResponse = (await ApiService.get('/customers?limit=1000')) as any;
         if (customersResponse.customers) {
           setCustomers(customersResponse.customers || []);
         } else {
@@ -228,7 +228,7 @@ export default function EditProjectPage() {
 
       // Fetch locations
       try {
-        const locationsResponse = (await apiService.get('/locations?limit=1000')) as any;
+        const locationsResponse = (await ApiService.get('/locations?limit=1000')) as any;
         if (locationsResponse.success && locationsResponse.data) {
           setLocations(locationsResponse.data || []);
         } else {
@@ -242,7 +242,7 @@ export default function EditProjectPage() {
 
       // Fetch employees
       try {
-        const employeesResponse = (await apiService.getEmployees({ per_page: 1000 })) as any;
+        const employeesResponse = (await ApiService.getEmployees({ per_page: 1000 })) as any;
         if (employeesResponse.success) {
           const allEmployees = employeesResponse.data || [];
           setEmployees(allEmployees);
@@ -324,7 +324,7 @@ export default function EditProjectPage() {
         initial_budget: parseFloat(formData.initial_budget) || 0,
       };
 
-      const response = (await apiService.updateProject(projectId, submitData)) as any;
+      const response = (await ApiService.updateProject(projectId, submitData)) as any;
 
       toast.success('Project updated successfully!');
       router.push(`/modules/project-management/${projectId}`);
