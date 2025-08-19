@@ -1,16 +1,16 @@
 'use client';
 
 import { RoleBased } from '@/components/RoleBased';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useI18n } from '@/hooks/use-i18n';
+import { ActiveProject } from '@/lib/services/dashboard-service';
 import {
   Calendar,
   CheckCircle,
-  Clock,
   Eye,
   Plus,
   Target,
@@ -21,28 +21,11 @@ import {
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-interface ProjectData {
-  id: number;
-  name: string;
-  status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
-  progress: number;
-  startDate: string;
-  endDate: string;
-  budget: number;
-  spent: number;
-  teamSize: number;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  manager: {
-    name: string;
-    avatar?: string;
-    initials: string;
-  };
-  department: string;
-}
+
 
 interface ProjectOverviewSectionProps {
-  projectData: ProjectData[];
-  onUpdateProject: (project: ProjectData) => void;
+  projectData: ActiveProject[];
+  onUpdateProject: (project: ActiveProject) => void;
   onHideSection: () => void;
 }
 
@@ -54,30 +37,27 @@ export function ProjectOverviewSection({
   const router = useRouter();
   const { t } = useI18n();
   const [statusFilter, setStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
+
 
   // Ensure projectData is always an array
   const safeProjectData = projectData || [];
 
-  // Filter projects based on status and priority
+  // Filter projects based on status only (priority not available in real data)
   const filteredProjects = safeProjectData.filter(project => {
     const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || project.priority === priorityFilter;
-    return matchesStatus && matchesPriority;
+    return matchesStatus;
   });
 
   // Calculate summary statistics
   const totalProjects = safeProjectData.length;
   const activeProjects = safeProjectData.filter(p => p.status === 'active').length;
   const completedProjects = safeProjectData.filter(p => p.status === 'completed').length;
-  const totalBudget = safeProjectData.reduce((sum, p) => sum + p.budget, 0);
+  const totalBudget = safeProjectData.reduce((sum, p) => sum + (p.budget ? Number(p.budget) : 0), 0);
   const totalSpent = safeProjectData.reduce((sum, p) => sum + p.spent, 0);
   const averageProgress = totalProjects > 0 ? safeProjectData.reduce((sum, p) => sum + p.progress, 0) / totalProjects : 0;
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'planning':
-        return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800';
       case 'active':
         return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800';
       case 'on-hold':
@@ -91,35 +71,18 @@ export function ProjectOverviewSection({
     }
   };
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'critical':
-        return 'bg-red-100 text-red-800 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800';
-      case 'high':
-        return 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/20 dark:text-orange-300 dark:border-orange-800';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-300 dark:border-yellow-800';
-      case 'low':
-        return 'bg-green-100 text-green-800 border-green-200 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800';
-    }
-  };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'planning':
-        return <Clock className="h-4 w-4" />;
       case 'active':
         return <TrendingUp className="h-4 w-4" />;
       case 'on-hold':
-        return <Target className="h-4 w-4" />;
+        return <X className="h-4 w-4" />;
       case 'completed':
         return <CheckCircle className="h-4 w-4" />;
       case 'cancelled':
         return <X className="h-4 w-4" />;
       default:
-        return <Clock className="h-4 w-4" />;
+        return <TrendingUp className="h-4 w-4" />;
     }
   };
 
@@ -130,7 +93,7 @@ export function ProjectOverviewSection({
           <div>
             <CardTitle className="flex items-center gap-3 text-2xl">
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <Target className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                <Target className="h-6 w-6 text-blue-600 dark:text-blue-400" /> 
               </div>
               {t('dashboard.projectOverview.title') || 'Project Overview'}
             </CardTitle>
@@ -249,28 +212,14 @@ export function ProjectOverviewSection({
               className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white dark:bg-gray-800 dark:border-gray-600"
             >
               <option value="all">All Statuses</option>
-              <option value="planning">Planning</option>
               <option value="active">Active</option>
-              <option value="on-hold">On Hold</option>
               <option value="completed">Completed</option>
+              <option value="on-hold">On Hold</option>
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Priority:</span>
-            <select
-              value={priorityFilter}
-              onChange={e => setPriorityFilter(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white dark:bg-gray-800 dark:border-gray-600"
-            >
-              <option value="all">All Priorities</option>
-              <option value="critical">Critical</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          </div>
+
         </div>
 
         {/* Projects Grid */}
@@ -285,14 +234,11 @@ export function ProjectOverviewSection({
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <CardTitle className="text-lg">{project.name}</CardTitle>
-                      <Badge variant="outline" className={getPriorityColor(project.priority)}>
-                        {project.priority.charAt(0).toUpperCase() + project.priority.slice(1)}
-                      </Badge>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        {new Date(project.startDate).toLocaleDateString()}
+                        {project.startDate ? new Date(project.startDate).toLocaleDateString() : 'N/A'}
                       </span>
                       <span className="flex items-center gap-1">
                         <Users className="h-4 w-4" />
@@ -324,20 +270,12 @@ export function ProjectOverviewSection({
                 {/* Project Details */}
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="space-y-1">
-                    <p className="text-gray-600 dark:text-gray-400">Department</p>
-                    <p className="font-medium">{project.department}</p>
+                    <p className="text-gray-600 dark:text-gray-400">Customer</p>
+                    <p className="font-medium">{project.customer || 'N/A'}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-gray-600 dark:text-gray-400">Manager</p>
-                    <div className="flex items-center gap-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarImage src={project.manager.avatar} />
-                        <AvatarFallback className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                          {project.manager.initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium">{project.manager.name}</span>
-                    </div>
+                    <p className="text-gray-600 dark:text-gray-400">Team Size</p>
+                    <p className="font-medium">{project.teamSize} members</p>
                   </div>
                 </div>
 
@@ -345,10 +283,12 @@ export function ProjectOverviewSection({
                 <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-gray-600 dark:text-gray-400">Budget</span>
-                    <span className="font-medium">SAR {project.budget.toLocaleString()}</span>
+                    <span className="font-medium">
+                      {project.budget ? `SAR ${Number(project.budget).toLocaleString()}` : 'N/A'}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between text-sm mt-1">
-                    <span className="text-gray-600 dark:text-gray-400">Spent</span>
+                    <span className="text-gray-400">Spent</span>
                     <span className="font-medium">SAR {project.spent.toLocaleString()}</span>
                   </div>
                 </div>
@@ -389,7 +329,7 @@ export function ProjectOverviewSection({
               No projects found
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {statusFilter !== 'all' || priorityFilter !== 'all'
+              {statusFilter !== 'all'
                 ? 'Try adjusting your filters to see more projects.'
                 : 'Get started by creating your first project.'}
             </p>

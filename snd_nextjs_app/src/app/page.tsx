@@ -12,23 +12,13 @@ import { TimesheetsSection } from '@/components/dashboard/TimesheetsSection';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/use-i18n';
 import { PDFGenerator } from '@/lib/utils/pdf-generator';
+import { ActiveProject, IqamaData } from '@/lib/services/dashboard-service';
 import { Download } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-interface IqamaData {
-  id: number;
-  employeeName: string;
-  fileNumber: string;
-  nationality: string;
-  position: string;
-  companyName: string;
-  location: string;
-  expiryDate: string;
-  status: 'active' | 'expired' | 'expiring' | 'missing';
-  daysRemaining: number | null;
-}
+
 
 interface EquipmentData {
   id: number;
@@ -63,24 +53,7 @@ interface TimesheetData {
   overtimeHours: number;
 }
 
-interface ProjectData {
-  id: number;
-  name: string;
-  status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
-  progress: number;
-  startDate: string;
-  endDate: string;
-  budget: number;
-  spent: number;
-  teamSize: number;
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  manager: {
-    name: string;
-    avatar?: string;
-    initials: string;
-  };
-  department: string;
-}
+
 
 interface ActivityItem {
   id: number;
@@ -101,7 +74,7 @@ export default function DashboardPage() {
   const [iqamaData, setIqamaData] = useState<IqamaData[]>([]);
   const [equipmentData, setEquipmentData] = useState<EquipmentData[]>([]);
   const [timesheetData, setTimesheetData] = useState<TimesheetData[]>([]);
-  const [projectData, setProjectData] = useState<ProjectData[]>([]);
+  const [projectData, setProjectData] = useState<ActiveProject[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
 
   // State for loading and refreshing
@@ -267,82 +240,7 @@ export default function DashboardPage() {
     }
   }, [session]);
 
-  // Add sample project data for testing
-  useEffect(() => {
-    if (projectData.length === 0) {
-      const sampleProjects: ProjectData[] = [
-        {
-          id: 1,
-          name: 'Office Building Construction',
-          status: 'active',
-          progress: 75,
-          startDate: '2024-01-15',
-          endDate: '2024-12-31',
-          budget: 2500000,
-          spent: 1875000,
-          teamSize: 45,
-          priority: 'high',
-          manager: {
-            name: 'Ahmed Al-Rashid',
-            initials: 'AR',
-          },
-          department: 'Construction',
-        },
-        {
-          id: 2,
-          name: 'Road Infrastructure Project',
-          status: 'planning',
-          progress: 25,
-          startDate: '2024-03-01',
-          endDate: '2025-06-30',
-          budget: 1800000,
-          spent: 450000,
-          teamSize: 32,
-          priority: 'critical',
-          manager: {
-            name: 'Sarah Johnson',
-            initials: 'SJ',
-          },
-          department: 'Infrastructure',
-        },
-        {
-          id: 3,
-          name: 'Shopping Mall Renovation',
-          status: 'on-hold',
-          progress: 60,
-          startDate: '2023-11-01',
-          endDate: '2024-08-31',
-          budget: 800000,
-          spent: 480000,
-          teamSize: 28,
-          priority: 'medium',
-          manager: {
-            name: 'Mohammed Al-Zahrani',
-            initials: 'MZ',
-          },
-          department: 'Renovation',
-        },
-        {
-          id: 4,
-          name: 'Residential Complex Phase 1',
-          status: 'completed',
-          progress: 100,
-          startDate: '2023-06-01',
-          endDate: '2024-02-28',
-          budget: 3200000,
-          spent: 3200000,
-          teamSize: 55,
-          priority: 'high',
-          manager: {
-            name: 'Fatima Al-Qahtani',
-            initials: 'FQ',
-          },
-          department: 'Residential',
-        },
-      ];
-      setProjectData(sampleProjects);
-    }
-  }, [projectData.length]);
+  // Project data is now fetched from the API via fetchDashboardData()
 
   // Load section visibility from localStorage on mount
   useEffect(() => {
@@ -622,7 +520,25 @@ export default function DashboardPage() {
     }
     
     try {
-      await PDFGenerator.generateCombinedExpiredReport(expiredIqamaData, expiredEquipmentData);
+      // Convert API data to PDFGenerator format (handle nullable fields)
+      const pdfIqamaData = expiredIqamaData.map(item => ({
+        ...item,
+        fileNumber: item.fileNumber || 'N/A',
+        nationality: item.nationality || 'N/A',
+        position: item.position || 'N/A',
+        companyName: item.companyName || 'N/A',
+        location: item.location || 'N/A',
+        expiryDate: item.expiryDate || 'N/A',
+      }));
+      
+      const pdfEquipmentData = expiredEquipmentData.map(item => ({
+        ...item,
+        equipmentNumber: item.equipmentNumber || 'N/A',
+        istimara: item.istimara || 'N/A',
+        istimaraExpiry: item.istimaraExpiry || 'N/A',
+      }));
+      
+      await PDFGenerator.generateCombinedExpiredReport(pdfIqamaData, pdfEquipmentData);
     } catch (error) {
       console.error('Failed to generate PDF:', error);
       alert('Failed to generate PDF. Please try again.');
