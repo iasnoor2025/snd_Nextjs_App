@@ -48,10 +48,16 @@ export function EquipmentSection({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // Debug: Log the onHideSection prop to ensure it's received
+  // Ensure equipmentData is always an array with robust type checking
+  const safeEquipmentData = Array.isArray(equipmentData) ? equipmentData : [];
+  
+  // Debug logging to help identify the issue
+  console.log('EquipmentSection - equipmentData:', equipmentData);
+  console.log('EquipmentSection - safeEquipmentData:', safeEquipmentData);
+  console.log('EquipmentSection - Array.isArray(equipmentData):', Array.isArray(equipmentData));
 
   // Filter and search logic
-  const filteredData = equipmentData.filter(item => {
+  const filteredData = safeEquipmentData.filter(item => {
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
     const matchesSearch =
       !search ||

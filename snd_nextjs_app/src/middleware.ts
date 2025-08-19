@@ -62,11 +62,6 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(accessDeniedUrl);
     }
 
-    // Redirect employees to employee dashboard
-    if (user.role === 'EMPLOYEE' && pathname === '/dashboard') {
-      return NextResponse.redirect(new URL('/employee-dashboard', request.url));
-    }
-
     return NextResponse.next();
   } catch (error) {
     // Try to redirect to login, but fallback to next() if that fails

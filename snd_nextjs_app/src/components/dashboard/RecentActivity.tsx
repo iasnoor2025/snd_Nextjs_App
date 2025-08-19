@@ -27,6 +27,9 @@ interface RecentActivityProps {
 export function RecentActivity({ activities, onHideSection }: RecentActivityProps) {
   const { t } = useI18n();
 
+  // Ensure activities is always an array
+  const safeActivities = activities || [];
+
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'success':
@@ -80,9 +83,9 @@ export function RecentActivity({ activities, onHideSection }: RecentActivityProp
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {activities.length > 0 ? (
+        {safeActivities.length > 0 ? (
           <div className="space-y-3">
-            {activities.slice(0, 8).map(activity => (
+            {safeActivities.slice(0, 8).map(activity => (
               <div
                 key={activity.id}
                 className={`p-3 rounded-lg border ${getActivityColor(activity.type)} transition-colors hover:bg-opacity-80`}
@@ -127,7 +130,7 @@ export function RecentActivity({ activities, onHideSection }: RecentActivityProp
         )}
 
         {/* Activity Summary */}
-        {activities.length > 0 && (
+        {safeActivities.length > 0 && (
           <div className="pt-4 border-t">
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-4">
@@ -135,19 +138,19 @@ export function RecentActivity({ activities, onHideSection }: RecentActivityProp
                 <div className="flex items-center gap-2">
                   <span className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    {t('dashboard.success')}: {activities.filter(a => a.type === 'success').length}
+                    {t('dashboard.success')}: {safeActivities.filter(a => a.type === 'success').length}
                   </span>
                   <span className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                    {t('dashboard.warning')}: {activities.filter(a => a.type === 'warning').length}
+                    {t('dashboard.warning')}: {safeActivities.filter(a => a.type === 'warning').length}
                   </span>
                   <span className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                    {t('dashboard.error')}: {activities.filter(a => a.type === 'error').length}
+                    {t('dashboard.error')}: {safeActivities.filter(a => a.type === 'error').length}
                   </span>
                   <span className="flex items-center gap-1">
                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                    {t('dashboard.info')}: {activities.filter(a => a.type === 'info').length}
+                    {t('dashboard.info')}: {safeActivities.filter(a => a.type === 'info').length}
                   </span>
                 </div>
               </div>

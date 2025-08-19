@@ -65,6 +65,9 @@ export function TimesheetsSection({
 }: TimesheetsSectionProps) {
   const { t } = useI18n();
 
+  // Ensure timesheetData is always an array
+  const safeTimesheetData = timesheetData || [];
+
   const getNextApprovalStage = (currentStatus: string) => {
     switch (currentStatus) {
       case 'draft':
@@ -133,25 +136,25 @@ export function TimesheetsSection({
         <div className="grid grid-cols-5 gap-4">
           <div className="text-center p-3 rounded-lg border bg-card">
             <div className="text-2xl font-bold text-green-600">
-              {timesheetData.filter(item => item.status === 'present').length}
+              {safeTimesheetData.filter(item => item.status === 'present').length}
             </div>
             <div className="text-sm text-muted-foreground">{t('timesheet.attendance.present')}</div>
           </div>
           <div className="text-center p-3 rounded-lg border bg-card">
             <div className="text-2xl font-bold text-yellow-600">
-              {timesheetData.filter(item => item.status === 'late').length}
+              {safeTimesheetData.filter(item => item.status === 'late').length}
             </div>
             <div className="text-sm text-muted-foreground">{t('timesheet.attendance.late')}</div>
           </div>
           <div className="text-center p-3 rounded-lg border bg-card">
             <div className="text-2xl font-bold text-red-600">
-              {timesheetData.filter(item => item.status === 'absent').length}
+              {safeTimesheetData.filter(item => item.status === 'absent').length}
             </div>
             <div className="text-sm text-muted-foreground">{t('timesheet.attendance.absent')}</div>
           </div>
           <div className="text-center p-3 rounded-lg border bg-card">
             <div className="text-2xl font-bold text-blue-600">
-              {timesheetData.filter(item => item.approvalStatus === 'manager_approved').length}
+              {safeTimesheetData.filter(item => item.approvalStatus === 'manager_approved').length}
             </div>
             <div className="text-sm text-muted-foreground">
               {t('timesheet.attendance.approved')}
@@ -159,7 +162,7 @@ export function TimesheetsSection({
           </div>
           <div className="text-center p-3 rounded-lg border bg-card">
             <div className="text-2xl font-bold text-orange-600">
-              {timesheetData.filter(item => item.approvalStatus !== 'manager_approved').length}
+              {safeTimesheetData.filter(item => item.approvalStatus !== 'manager_approved').length}
             </div>
             <div className="text-sm text-muted-foreground">{t('timesheet.attendance.pending')}</div>
           </div>
@@ -238,7 +241,7 @@ export function TimesheetsSection({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {timesheetData.slice(0, 10).map(item => (
+              {safeTimesheetData.slice(0, 10).map(item => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.employeeName}</TableCell>
                   <TableCell>
@@ -456,7 +459,7 @@ export function TimesheetsSection({
         </div>
 
         {/* No timesheets message */}
-        {timesheetData.length === 0 && (
+        {safeTimesheetData.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <Timer className="h-8 w-8 mx-auto mb-2 opacity-60" />
             <p className="font-medium">{t('timesheet.noTimesheetsToday')}</p>
@@ -464,7 +467,7 @@ export function TimesheetsSection({
           </div>
         )}
 
-        {timesheetData.length > 0 && (
+        {safeTimesheetData.length > 0 && (
           <>
             {/* Approval Progress Summary */}
             <div className="p-4 rounded-lg border bg-muted/50">
@@ -476,7 +479,7 @@ export function TimesheetsSection({
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                       {t('timesheet.finalApproved')}:{' '}
                       {
-                        timesheetData.filter(item => item.approvalStatus === 'manager_approved')
+                        safeTimesheetData.filter(item => item.approvalStatus === 'manager_approved')
                           .length
                       }
                     </span>
@@ -484,7 +487,7 @@ export function TimesheetsSection({
                       <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                       {t('timesheet.inProgress')}:{' '}
                       {
-                        timesheetData.filter(item => item.approvalStatus !== 'manager_approved')
+                        safeTimesheetData.filter(item => item.approvalStatus !== 'manager_approved')
                           .length
                       }
                     </span>
@@ -493,7 +496,7 @@ export function TimesheetsSection({
                         <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                         {t('timesheet.canApprove')}:{' '}
                         {
-                          timesheetData.filter(item => item.approvalStatus !== 'manager_approved')
+                          safeTimesheetData.filter(item => item.approvalStatus !== 'manager_approved')
                             .length
                         }
                       </span>
@@ -502,9 +505,9 @@ export function TimesheetsSection({
                 </div>
                 <div className="text-muted-foreground">
                   {Math.round(
-                    (timesheetData.filter(item => item.approvalStatus === 'manager_approved')
+                    (safeTimesheetData.filter(item => item.approvalStatus === 'manager_approved')
                       .length /
-                      timesheetData.length) *
+                      safeTimesheetData.length) *
                       100
                   )}
                   % {t('timesheet.complete')}
@@ -520,7 +523,7 @@ export function TimesheetsSection({
                   <div className="text-center">
                     <div className="font-medium">
                       {
-                        timesheetData.filter(
+                        safeTimesheetData.filter(
                           item =>
                             item.approvalStatus === 'submitted' || item.approvalStatus === 'draft'
                         ).length
@@ -533,7 +536,7 @@ export function TimesheetsSection({
                   <div className="text-center">
                     <div className="font-medium">
                       {
-                        timesheetData.filter(item => item.approvalStatus === 'foreman_approved')
+                        safeTimesheetData.filter(item => item.approvalStatus === 'foreman_approved')
                           .length
                       }
                     </div>
@@ -544,7 +547,7 @@ export function TimesheetsSection({
                   <div className="text-center">
                     <div className="font-medium">
                       {
-                        timesheetData.filter(item => item.approvalStatus === 'incharge_approved')
+                        safeTimesheetData.filter(item => item.approvalStatus === 'incharge_approved')
                           .length
                       }
                     </div>
@@ -555,7 +558,7 @@ export function TimesheetsSection({
                   <div className="text-center">
                     <div className="font-medium">
                       {
-                        timesheetData.filter(item => item.approvalStatus === 'checking_approved')
+                        safeTimesheetData.filter(item => item.approvalStatus === 'checking_approved')
                           .length
                       }
                     </div>
@@ -566,7 +569,7 @@ export function TimesheetsSection({
                   <div className="text-center">
                     <div className="font-medium">
                       {
-                        timesheetData.filter(item => item.approvalStatus === 'manager_approved')
+                        safeTimesheetData.filter(item => item.approvalStatus === 'manager_approved')
                           .length
                       }
                     </div>
@@ -585,7 +588,7 @@ export function TimesheetsSection({
                 /* Navigate to Timesheet management */
               }}
             >
-              {t('timesheet.viewAllTimesheets', { count: timesheetData.length })}
+              {t('timesheet.viewAllTimesheets', { count: safeTimesheetData.length })}
             </Button>
           </>
         )}

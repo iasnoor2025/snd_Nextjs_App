@@ -56,20 +56,23 @@ export function ProjectOverviewSection({
   const [statusFilter, setStatusFilter] = useState('all');
   const [priorityFilter, setPriorityFilter] = useState('all');
 
+  // Ensure projectData is always an array
+  const safeProjectData = projectData || [];
+
   // Filter projects based on status and priority
-  const filteredProjects = projectData.filter(project => {
+  const filteredProjects = safeProjectData.filter(project => {
     const matchesStatus = statusFilter === 'all' || project.status === statusFilter;
     const matchesPriority = priorityFilter === 'all' || project.priority === priorityFilter;
     return matchesStatus && matchesPriority;
   });
 
   // Calculate summary statistics
-  const totalProjects = projectData.length;
-  const activeProjects = projectData.filter(p => p.status === 'active').length;
-  const completedProjects = projectData.filter(p => p.status === 'completed').length;
-  const totalBudget = projectData.reduce((sum, p) => sum + p.budget, 0);
-  const totalSpent = projectData.reduce((sum, p) => sum + p.spent, 0);
-  const averageProgress = projectData.reduce((sum, p) => sum + p.progress, 0) / totalProjects;
+  const totalProjects = safeProjectData.length;
+  const activeProjects = safeProjectData.filter(p => p.status === 'active').length;
+  const completedProjects = safeProjectData.filter(p => p.status === 'completed').length;
+  const totalBudget = safeProjectData.reduce((sum, p) => sum + p.budget, 0);
+  const totalSpent = safeProjectData.reduce((sum, p) => sum + p.spent, 0);
+  const averageProgress = totalProjects > 0 ? safeProjectData.reduce((sum, p) => sum + p.progress, 0) / totalProjects : 0;
 
   const getStatusColor = (status: string) => {
     switch (status) {

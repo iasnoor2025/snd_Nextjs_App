@@ -61,12 +61,11 @@ export default function AccessDeniedPage() {
             </div>
 
             <div className="pt-4 space-y-3">
-              <Button asChild className="w-full" variant="outline">
-                <Link href="/dashboard">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back to Dashboard
-                </Link>
-              </Button>
+              <Link href="/">
+                <Button variant="outline" className="w-full">
+                  Go Home
+                </Button>
+              </Link>
 
               <Button asChild className="w-full" variant="default">
                 <Link href="/profile">View Profile</Link>

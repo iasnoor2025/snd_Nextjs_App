@@ -57,8 +57,11 @@ export function IqamaSection({ iqamaData, onUpdateIqama, onHideSection }: IqamaS
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  // Ensure iqamaData is always an array
+  const safeIqamaData = iqamaData || [];
+
   // Filter and search logic
-  const filteredData = iqamaData.filter(item => {
+  const filteredData = safeIqamaData.filter(item => {
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
     const matchesSearch =
       !search ||

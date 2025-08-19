@@ -43,9 +43,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Define all possible menu items with their routes
   const allMenuItems = [
     {
-      title: t('dashboard'),
-      url: '/dashboard',
+      title: 'Dashboard',
       icon: LayoutDashboard,
+      url: '/',
     },
     {
       title: t('employeeDashboard'),

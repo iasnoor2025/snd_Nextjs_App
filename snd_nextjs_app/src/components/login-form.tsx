@@ -34,7 +34,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
       } else {
         toast.success('Login successful!');
         // Redirect to dashboard after successful login
-        router.push('/dashboard');
+        router.push('/');
       }
     } catch (error) {
       toast.error('An error occurred during login');
@@ -47,7 +47,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
     setIsGoogleLoading(true);
     try {
       const result = await signIn('google', {
-        callbackUrl: '/dashboard',
+        callbackUrl: '/',
         redirect: false,
       });
 
@@ -55,7 +55,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
         toast.error('Google login failed. Please try again.');
       } else {
         toast.success('Google login successful!');
-        router.push('/dashboard');
+        router.push('/');
       }
     } catch (error) {
       toast.error('An error occurred during Google login');

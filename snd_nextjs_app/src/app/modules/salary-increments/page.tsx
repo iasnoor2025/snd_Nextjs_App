@@ -284,7 +284,7 @@ export default function SalaryIncrementsPage() {
               <strong>User ID:</strong> {session?.user?.id}
             </p>
           </div>
-          <Button onClick={() => router.push('/dashboard')} className="mt-4" variant="outline">
+          <Button onClick={() => router.push('/')} className="mt-4" variant="outline">
             Back to Dashboard
           </Button>
         </div>

@@ -69,7 +69,7 @@ export default function LoginPage() {
 
     if (session) {
       // Let the conditional layout handle the Nation ID check
-      router.push('/dashboard');
+      router.push('/');
     }
   }, [session, status, router]);
 
