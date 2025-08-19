@@ -50,11 +50,6 @@ export function EquipmentSection({
 
   // Ensure equipmentData is always an array with robust type checking
   const safeEquipmentData = Array.isArray(equipmentData) ? equipmentData : [];
-  
-  // Debug logging to help identify the issue
-  console.log('EquipmentSection - equipmentData:', equipmentData);
-  console.log('EquipmentSection - safeEquipmentData:', safeEquipmentData);
-  console.log('EquipmentSection - Array.isArray(equipmentData):', Array.isArray(equipmentData));
 
   // Filter and search logic
   const filteredData = safeEquipmentData.filter(item => {

@@ -185,10 +185,10 @@ export const useNotifications = () => {
     [showToast]
   );
 
-  // Fetch notifications on mount
-  useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
+  // Fetch notifications on mount - REMOVED: Now handled by NotificationProvider
+  // useEffect(() => {
+  //   fetchNotifications();
+  // }, [fetchNotifications]);
 
   return {
     notifications,

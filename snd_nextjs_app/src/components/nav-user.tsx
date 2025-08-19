@@ -40,7 +40,7 @@ export function NavUser() {
     : 'U';
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: '/auth/signin' });
+    signOut({ callbackUrl: '/login' });
   };
 
   return (

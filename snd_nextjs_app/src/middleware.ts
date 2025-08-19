@@ -6,9 +6,11 @@ import { createUserFromSession, hasRequiredRole, routePermissions } from './lib/
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip middleware for public routes and static assets
+  // Define public routes that should bypass middleware completely
   const publicRoutes = [
     '/login',
+    '/signup', 
+    '/test-signup',
     '/auth',
     '/api/auth',
     '/_next',
@@ -16,12 +18,36 @@ export async function middleware(request: NextRequest) {
     '/access-denied',
     '/uploads',
   ];
-  const staticAssets = ['/api/auth/refresh-session', '/api/auth/session'];
 
-  if (
-    publicRoutes.some(route => pathname.startsWith(route)) ||
-    staticAssets.some(route => pathname.startsWith(route))
-  ) {
+  // Define static assets
+  const staticAssets = [
+    '/api/auth/refresh-session', 
+    '/api/auth/session'
+  ];
+
+  // Check if current path is a public route
+  const isPublicRoute = publicRoutes.some(route => {
+    if (route === '/auth') {
+      return pathname.startsWith(route);
+    }
+    if (route === '/api/auth') {
+      return pathname.startsWith(route);
+    }
+    if (route === '/_next') {
+      return pathname.startsWith(route);
+    }
+    if (route === '/uploads') {
+      return pathname.startsWith(route);
+    }
+    // For exact matches like /login, /signup, /test-signup
+    return pathname === route;
+  });
+
+  // Check if current path is a static asset
+  const isStaticAsset = staticAssets.some(route => pathname.startsWith(route));
+
+  // If it's a public route or static asset, skip middleware completely
+  if (isPublicRoute || isStaticAsset) {
     return NextResponse.next();
   }
 

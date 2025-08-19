@@ -1,6 +1,7 @@
 'use client';
 
 import { Notification, useNotifications } from '@/hooks/use-notifications';
+import { useSession } from 'next-auth/react';
 import React, { createContext, ReactNode, useContext } from 'react';
 
 interface NotificationContextType {
@@ -34,7 +35,15 @@ interface NotificationProviderProps {
 }
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
+  const { data: session, status } = useSession();
   const notificationUtils = useNotifications();
+
+  // Only fetch notifications if user is authenticated
+  React.useEffect(() => {
+    if (status === 'authenticated' && session) {
+      notificationUtils.fetchNotifications();
+    }
+  }, [status, session, notificationUtils.fetchNotifications]);
 
   return (
     <NotificationContext.Provider value={notificationUtils}>

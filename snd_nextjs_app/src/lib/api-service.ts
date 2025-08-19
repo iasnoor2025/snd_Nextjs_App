@@ -1,31 +1,23 @@
-import { ToastService } from './toast-service';
+import ToastService from './toast-service';
 
 export interface ApiResponse<T = any> {
   success: boolean;
-  data?: T;
+  data: T;
   message?: string;
-  errors?: Record<string, string[]>;
-  pagination?: {
-    current_page: number;
-    last_page: number;
-    per_page: number;
-    total: number;
-    from: number;
-    to: number;
-  };
+  error?: string;
 }
 
 export interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   body?: any;
-  headers?: Record<string, string> | undefined;
-  params?: Record<string, any> | undefined;
+  headers?: Record<string, string>;
+  params?: Record<string, any>;
   showToast?: boolean;
   toastMessage?: string;
   errorMessage?: string;
 }
 
-export class ApiService {
+class ApiService {
   private static baseUrl = '/api';
 
   // ========================================

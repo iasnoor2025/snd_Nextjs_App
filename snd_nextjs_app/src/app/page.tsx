@@ -151,7 +151,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (status === 'loading') return;
     if (!session) {
-      router.push('/auth/signin');
+      router.push('/login');
       return;
     }
   }, [session, status, router]);

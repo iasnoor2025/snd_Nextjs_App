@@ -19,12 +19,14 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const { isRTL } = useI18n();
   const { data: session, status } = useSession();
   const isLoginPage = pathname === '/login';
+  const isSignupPage = pathname === '/signup';
+  const isPublicPage = isLoginPage || isSignupPage;
   const { isModalOpen, closeModal, nationIdData, isChecking, refreshCheck } = useNationIdCheck();
 
   // Check if user is an employee
   const isEmployee = session?.user?.role === 'EMPLOYEE';
 
-  if (isLoginPage) {
+  if (isPublicPage) {
     return <div className="min-h-screen bg-background">{children}</div>;
   }
 

@@ -10,21 +10,6 @@ import { useEffect, useState } from 'react';
 const FALLBACK_TEXTS = {
   loading: 'Loading...',
   app_name: 'SND Rental Management',
-  welcome: 'Welcome back',
-  subtitle: 'Login to your rental management account',
-  email: 'Email',
-  password: 'Password',
-  login: 'Login',
-  logging_in: 'Logging in...',
-  forgot_password: 'Forgot your password?',
-  no_account: "Don't have an account?",
-  sign_up: 'Sign up',
-  terms: 'By clicking continue, you agree to our',
-  terms_link: 'Terms of Service',
-  privacy: 'Privacy Policy',
-  privacy_link: 'Privacy Policy',
-  and: 'and',
-  continue: 'continue'
 };
 
 export default function LoginPage() {
@@ -42,7 +27,6 @@ export default function LoginPage() {
     t = translation.t;
     if (!i18nReady) setI18nReady(true);
   } catch (error) {
-    
     setI18nError(true);
     // Use fallback function
     t = (key: string) => FALLBACK_TEXTS[key as keyof typeof FALLBACK_TEXTS] || key;
@@ -55,7 +39,6 @@ export default function LoginPage() {
     session = authResult.data;
     status = authResult.status;
   } catch (error) {
-    
     setAuthError('Authentication system error');
     status = 'error';
   }
@@ -68,7 +51,7 @@ export default function LoginPage() {
     if (status === 'error') return;
 
     if (session) {
-      // Let the conditional layout handle the Nation ID check
+      // Redirect to home page (dashboard)
       router.push('/');
     }
   }, [session, status, router]);
@@ -111,7 +94,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
       <div className="flex w-full max-w-sm flex-col gap-6">
-        <a href="#" className="flex items-center gap-2 self-center font-medium">
+        <a href="/" className="flex items-center gap-2 self-center font-medium">
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <GalleryVerticalEnd className="size-4" />
           </div>

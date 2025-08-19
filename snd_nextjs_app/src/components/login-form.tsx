@@ -160,7 +160,10 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
               </div>
               <div className="text-center text-sm">
                 Don&apos;t have an account?{' '}
-                <a href="#" className="underline underline-offset-4">
+                <a
+                  href="/signup"
+                  className="text-primary hover:underline underline-offset-4 font-medium"
+                >
                   Sign up
                 </a>
               </div>
