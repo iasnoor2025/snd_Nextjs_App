@@ -5,7 +5,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const resolvedParams = await params;
 
     if (!resolvedParams || !resolvedParams.id) {
-      console.error('Invalid params received:', resolvedParams);
+      
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
@@ -62,7 +62,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       message: 'Advance payments retrieved successfully',
     });
   } catch (error) {
-    console.error('Error in GET /api/employees/[id]/advances:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const resolvedParams = await params;
 
     if (!resolvedParams || !resolvedParams.id) {
-      console.error('Invalid params received:', resolvedParams);
+      
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       data: { id: Math.floor(Math.random() * 1000), employee_id: parseInt(id), ...body },
     });
   } catch (error) {
-    console.error('Error in POST /api/employees/[id]/advances:', error);
+    
     return NextResponse.json(
       {
         success: false,

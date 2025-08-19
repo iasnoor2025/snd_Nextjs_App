@@ -17,21 +17,7 @@ export async function POST() {
     const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY;
     const ERPNEXT_API_SECRET = process.env.NEXT_PUBLIC_ERPNEXT_API_SECRET;
 
-    console.log('ERPNext Configuration Check:', {
-      hasUrl: !!ERPNEXT_URL,
-      hasKey: !!ERPNEXT_API_KEY,
-      hasSecret: !!ERPNEXT_API_SECRET,
-      url: ERPNEXT_URL,
-      keyLength: ERPNEXT_API_KEY?.length || 0,
-      secretLength: ERPNEXT_API_SECRET?.length || 0,
-    });
-
     if (!ERPNEXT_URL || !ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {
-      console.log('ERPNext configuration missing:', {
-        hasUrl: !!ERPNEXT_URL,
-        hasKey: !!ERPNEXT_API_KEY,
-        hasSecret: !!ERPNEXT_API_SECRET,
-      });
 
       return NextResponse.json(
         {
@@ -46,9 +32,9 @@ export async function POST() {
     try {
       // Test with a simple query
       await db.select({ count: sql<number>`count(*)` }).from(employeesTable);
-      console.log('Database connection successful');
+      
     } catch (dbError) {
-      console.error('Database connection failed:', dbError);
+      
       return NextResponse.json(
         {
           success: false,
@@ -65,11 +51,8 @@ export async function POST() {
       .select({ count: sql<number>`count(*)` })
       .from(employeesTable);
     const existingEmployeeCount = Number(existingEmployeeCountResult[0]?.count ?? 0);
-    console.log(`Database has ${existingEmployeeCount} existing employees`);
 
     // Fetch employees list from ERPnext
-    console.log('Fetching employee list from ERPNext...');
-    console.log('ERPNext URL:', `${ERPNEXT_URL}/api/resource/Employee?limit_page_length=1000`);
 
     const erpnextResponse = await fetch(
       `${ERPNEXT_URL}/api/resource/Employee?limit_page_length=1000`,
@@ -81,31 +64,19 @@ export async function POST() {
         },
       }
     );
-
-    console.log('ERPNext Response Status:', erpnextResponse.status);
-    console.log('ERPNext Response Headers:', Object.fromEntries(erpnextResponse.headers.entries()));
+    
 
     if (!erpnextResponse.ok) {
       const errorText = await erpnextResponse.text();
-      console.error('ERPNext API Error Response:', errorText);
+      
       throw new Error(
         `ERPNext API error: ${erpnextResponse.status} ${erpnextResponse.statusText} - ${errorText}`
       );
     }
 
     const erpnextData = await erpnextResponse.json();
-    console.log('ERPNext Raw Response:', JSON.stringify(erpnextData, null, 2));
-    console.log(`Found ${erpnextData.data?.length || 0} employees in ERPNext`);
 
     if (!erpnextData.data || erpnextData.data.length === 0) {
-      console.log('No employees found in ERPNext response');
-      console.log('ERPNext response structure:', {
-        keys: Object.keys(erpnextData),
-        dataType: typeof erpnextData.data,
-        dataLength: erpnextData.data?.length || 0,
-        hasData: !!erpnextData.data,
-        responseKeys: Object.keys(erpnextData),
-      });
 
       // Check if there are any other keys that might contain employee data
       const possibleDataKeys = ['results', 'employees', 'data', 'items'];
@@ -113,7 +84,7 @@ export async function POST() {
 
       for (const key of possibleDataKeys) {
         if (erpnextData[key] && Array.isArray(erpnextData[key]) && erpnextData[key].length > 0) {
-          console.log(`Found alternative data in key: ${key}`, erpnextData[key].length);
+          
           alternativeData = erpnextData[key];
           break;
         }
@@ -142,9 +113,6 @@ export async function POST() {
     // Process employees in batches
     for (let i = 0; i < erpnextData.data.length; i += BATCH_SIZE) {
       const batch = erpnextData.data.slice(i, i + BATCH_SIZE);
-      console.log(
-        `Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(erpnextData.data.length / BATCH_SIZE)}`
-      );
 
       // Process batch in parallel with limited concurrency
       const batchPromises = batch.map(async (item: any) => {
@@ -168,14 +136,14 @@ export async function POST() {
               return detailData.data;
             }
           } else {
-            console.error(`Failed to fetch employee ${item.name}: ${detailResponse.status}`);
+            
             errors.push({
               employee: item.name,
               error: `HTTP ${detailResponse.status}: ${detailResponse.statusText}`,
             });
           }
         } catch (error) {
-          console.error(`Error fetching employee ${item.name}:`, error);
+          
           errors.push({
             employee: item.name,
             error: error instanceof Error ? error.message : 'Unknown error',
@@ -199,8 +167,6 @@ export async function POST() {
       }
     }
 
-    console.log(`Successfully fetched ${erpEmployees.length} employee details`);
-
     // Batch database operations for better performance
     const syncedEmployees: any[] = [];
     const updatedEmployees: any[] = [];
@@ -210,9 +176,6 @@ export async function POST() {
     // Process database operations in batches
     for (let i = 0; i < erpEmployees.length; i += BATCH_SIZE) {
       const batch = erpEmployees.slice(i, i + BATCH_SIZE);
-      console.log(
-        `Processing database batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(erpEmployees.length / BATCH_SIZE)}`
-      );
 
       const batchPromises = batch.map(async erpEmployee => {
         try {
@@ -462,7 +425,7 @@ export async function POST() {
           if (existingEmployee.length > 0) {
             const existingEmployeeData = existingEmployee[0];
             if (!existingEmployeeData) {
-              console.log('Creating new employee (no existing data):', employeeData.erpnextId);
+              console.log('No existing employee data found for ERPNext ID:', employeeData.erpnextId);
 
               // Use the already transformed data directly
               const newEmployee = await db.insert(employeesTable).values(employeeData).returning();
@@ -492,7 +455,7 @@ export async function POST() {
                 (iqamaExpiry ? new Date(iqamaExpiry).toISOString().split('T')[0] : null);
 
             if (hasChanges) {
-              console.log('Updating existing employee:', existingEmployeeData.id);
+              console.log('Employee data has changed, updating:', employeeData.erpnextId);
               const updatedEmployee = await db
                 .update(employeesTable)
                 .set(employeeData)
@@ -500,7 +463,7 @@ export async function POST() {
                 .returning();
               return { type: 'updated', employee: updatedEmployee[0] };
             } else {
-              console.log('Employee unchanged, skipping:', existingEmployeeData.id);
+              console.log('Employee data unchanged:', employeeData.erpnextId);
               return { type: 'unchanged', employee: existingEmployeeData };
             }
           } else {
@@ -512,7 +475,7 @@ export async function POST() {
             return { type: 'created', employee: (newEmployeeResult as any[])[0] };
           }
         } catch (error) {
-          console.error(`Error processing employee ${erpEmployee.name}:`, error);
+          console.error('Error processing employee:', erpEmployee.name, error);
           dbErrors.push({
             employee: erpEmployee.name,
             error: error instanceof Error ? error.message : 'Unknown error',
@@ -583,12 +546,6 @@ export async function POST() {
       },
     });
   } catch (error) {
-    console.error('Error syncing employees:', error);
-    console.error('Error details:', {
-      name: error instanceof Error ? error.name : 'Unknown',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : 'No stack trace',
-    });
 
     return NextResponse.json(
       {

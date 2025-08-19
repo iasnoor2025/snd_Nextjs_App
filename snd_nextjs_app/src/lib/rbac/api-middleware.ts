@@ -59,7 +59,7 @@ export async function checkApiPermission(
       user: session.user,
     };
   } catch (error) {
-    console.error('Error checking API permission:', error);
+    
     return { authorized: false, error: 'Error checking permissions' };
   }
 }
@@ -114,13 +114,6 @@ export async function checkEmployeeAccess(
     if (!userRole) {
       return { authorized: false, error: 'User has no assigned role' };
     }
-
-    console.log('🔍 User role:', userRole.name);
-    console.log('🔍 User role comparison:', {
-      isEmployee: userRole.name === 'employee',
-      isEmployeeLower: userRole.name === 'employee'.toLowerCase(),
-      roleName: userRole.name,
-    });
 
     // If user is admin or has manage permissions, allow access
     if (userRole.name === 'admin' || userRole.name === 'super_admin') {
@@ -180,7 +173,7 @@ export async function checkEmployeeAccess(
       user: session.user,
     };
   } catch (error) {
-    console.error('Error checking employee access:', error);
+    
     return { authorized: false, error: 'Error checking permissions' };
   }
 }
@@ -330,7 +323,7 @@ export async function checkEmployeeOwnDataAccess(
       user: session.user,
     };
   } catch (error) {
-    console.error('Error checking employee own data access:', error);
+    
     return { authorized: false, error: 'Error checking permissions' };
   }
 }
@@ -435,7 +428,7 @@ export function withReadPermission(
       // Allow access for now - we can add permission checks back later
       return handler(request, params);
     } catch (error) {
-      console.error('Error in withReadPermission:', error);
+      
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
   };
@@ -667,7 +660,7 @@ export function withAuth(handler: (request: NextRequest, params?: any) => Promis
 
       return handler(request, params);
     } catch (error) {
-      console.error('❌ Error in withAuth:', error);
+      
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
   };

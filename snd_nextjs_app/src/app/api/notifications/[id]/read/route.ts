@@ -18,7 +18,6 @@ export async function POST({ params }: { params: Promise<{ id: string }> }) {
 
     // In a real application, you would update the notification in the database
     // For now, we'll just return a success response
-    console.log(`Marking notification ${id} as read for user ${session.user.email}`);
 
     return NextResponse.json({
       success: true,
@@ -29,7 +28,7 @@ export async function POST({ params }: { params: Promise<{ id: string }> }) {
       },
     });
   } catch (error) {
-    console.error('Error marking notification as read:', error);
+    
     return NextResponse.json({ error: 'Failed to mark notification as read' }, { status: 500 });
   }
 }

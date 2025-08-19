@@ -182,7 +182,7 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching quotations data:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch quotations data' }, { status: 500 });
   }
 }
@@ -212,7 +212,7 @@ export async function POST(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error creating quotation:', error);
+    
     return NextResponse.json({ error: 'Failed to create quotation' }, { status: 500 });
   }
 }

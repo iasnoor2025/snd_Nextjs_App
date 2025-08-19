@@ -49,8 +49,6 @@ export function EquipmentSection({
   const [pageSize, setPageSize] = useState(10);
 
   // Debug: Log the onHideSection prop to ensure it's received
-  console.log('EquipmentSection - onHideSection received:', typeof onHideSection);
-  console.log('EquipmentSection - onHideSection value:', onHideSection);
 
   // Filter and search logic
   const filteredData = equipmentData.filter(item => {

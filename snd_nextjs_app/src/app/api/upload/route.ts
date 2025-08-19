@@ -43,7 +43,6 @@ function isValidFileSize(size: number): boolean {
 
 export async function POST(_request: NextRequest) {
   try {
-    console.log('File upload API called');
 
     // Parse multipart form data
     const formData = await _request.formData();
@@ -111,8 +110,6 @@ export async function POST(_request: NextRequest) {
 
       const fileUrl = `https://${baseUrl}/${key}`;
 
-      console.log(`File uploaded successfully: ${fileUrl}`);
-
       return NextResponse.json({
         success: true,
         url: fileUrl,
@@ -123,7 +120,6 @@ export async function POST(_request: NextRequest) {
         message: 'File uploaded successfully',
       });
     } catch (s3Error) {
-      console.error('S3 upload error:', s3Error);
 
       // Fallback to local storage if S3 fails
       try {
@@ -139,8 +135,6 @@ export async function POST(_request: NextRequest) {
 
         const fileUrl = `/uploads/${folder}/${uniqueFilename}`;
 
-        console.log(`File uploaded to local storage: ${fileUrl}`);
-
         return NextResponse.json({
           success: true,
           url: fileUrl,
@@ -151,7 +145,7 @@ export async function POST(_request: NextRequest) {
           message: 'File uploaded to local storage successfully',
         });
       } catch (localError) {
-        console.error('Local storage upload error:', localError);
+        
         return NextResponse.json(
           {
             success: false,
@@ -162,7 +156,7 @@ export async function POST(_request: NextRequest) {
       }
     }
   } catch (error) {
-    console.error('File upload error:', error);
+    
     return NextResponse.json(
       {
         success: false,

@@ -115,7 +115,7 @@ export const GET = withPermission(async () => {
 
     return NextResponse.json(usersWithRoles);
   } catch (error) {
-    console.error('Error fetching users:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
   }
 }, PermissionConfigs.user.read);
@@ -189,7 +189,7 @@ export const POST = withPermission(async (request: NextRequest) => {
 
     return NextResponse.json(user, { status: 201 });
   } catch (error) {
-    console.error('Error creating user:', error);
+    
     return NextResponse.json({ error: 'Failed to create user' }, { status: 500 });
   }
 }, PermissionConfigs.user.create);
@@ -284,7 +284,7 @@ export const PUT = withPermission(async (request: NextRequest) => {
 
     return NextResponse.json(user);
   } catch (error) {
-    console.error('Error updating user:', error);
+    
     return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
   }
 }, PermissionConfigs.user.update);
@@ -316,7 +316,7 @@ export const DELETE = withPermission(async (request: NextRequest) => {
 
     return NextResponse.json({ message: 'User deleted successfully' });
   } catch (error) {
-    console.error('Error deleting user:', error);
+    
     return NextResponse.json({ error: 'Failed to delete user' }, { status: 500 });
   }
 }, PermissionConfigs.user.delete);

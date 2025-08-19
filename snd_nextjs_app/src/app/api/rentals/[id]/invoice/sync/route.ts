@@ -7,7 +7,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log('🔄 Starting invoice sync for rental (GET):', id);
 
     // Get rental to check current invoice status
     const rental = await db
@@ -33,16 +32,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       });
     }
 
-    console.log('🔍 Checking ERPNext invoice:', currentRental.invoiceId);
-
     // Check if ERPNext invoice still exists
     try {
       const erpnextInvoice = await ERPNextInvoiceService.getInvoice(currentRental.invoiceId);
-      console.log('✅ ERPNext invoice found:', erpnextInvoice?.name);
 
       // Note: erpnextInvoiceStatus, outstandingAmount, and lastErpNextSync fields don't exist in rentals schema
       // These updates are skipped as the fields are not available
-      console.log('ERPNext invoice sync completed - no schema fields to update');
 
       return NextResponse.json({
         success: true,
@@ -54,7 +49,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         },
       });
     } catch (erpnextError) {
-      console.log('❌ ERPNext invoice not found or deleted:', erpnextError);
 
       // Reset rental invoice information since ERPNext invoice was deleted
       const resetData = {
@@ -69,8 +63,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         .set(resetData)
         .where(eq(rentals.id, parseInt(id)));
 
-      console.log('✅ Rental invoice status reset - can create new invoice');
-
       return NextResponse.json({
         success: true,
         message: 'ERPNext invoice was deleted, rental reset for new invoice creation',
@@ -82,7 +74,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       });
     }
   } catch (error) {
-    console.error('❌ Error syncing invoice:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to sync invoice',
@@ -96,7 +88,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log('🔄 Starting invoice sync for rental (POST):', id);
 
     // Get rental to check current invoice status
     const rental = await db
@@ -122,16 +113,12 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       });
     }
 
-    console.log('🔍 Checking ERPNext invoice:', currentRental.invoiceId);
-
     // Check if ERPNext invoice still exists
     try {
       const erpnextInvoice = await ERPNextInvoiceService.getInvoice(currentRental.invoiceId);
-      console.log('✅ ERPNext invoice found:', erpnextInvoice?.name);
 
       // Note: erpnextInvoiceStatus, outstandingAmount, and lastErpNextSync fields don't exist in rentals schema
       // These updates are skipped as the fields are not available
-      console.log('ERPNext invoice sync completed - no schema fields to update');
 
       return NextResponse.json({
         success: true,
@@ -143,7 +130,6 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
         },
       });
     } catch (erpnextError) {
-      console.log('❌ ERPNext invoice not found or deleted:', erpnextError);
 
       // Reset rental invoice information since ERPNext invoice was deleted
       const resetData = {
@@ -161,8 +147,6 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
         .set(resetData)
         .where(eq(rentals.id, parseInt(id)));
 
-      console.log('✅ Rental invoice status reset - can create new invoice');
-
       return NextResponse.json({
         success: true,
         message: 'ERPNext invoice was deleted, rental reset for new invoice creation',
@@ -174,7 +158,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       });
     }
   } catch (error) {
-    console.error('❌ Error syncing invoice:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to sync invoice',

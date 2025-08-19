@@ -95,7 +95,7 @@ class ErrorBoundary extends React.Component<React.PropsWithChildren<object>, Err
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Leave Request Detail Error:', error, errorInfo);
+    
   }
 
   render() {

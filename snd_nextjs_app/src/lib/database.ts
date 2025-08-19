@@ -239,13 +239,13 @@ export class DatabaseService {
 
   static async syncCustomerFromERPNext(erpnextId: string, customerData: any) {
     // TODO: Implement with Drizzle
-    console.warn('syncCustomerFromERPNext not yet implemented with Drizzle');
+    
     return null;
   }
 
   static async getCustomerByERPNextId(erpnextId: string) {
     // TODO: Implement with Drizzle
-    console.warn('getCustomerByERPNextId not yet implemented with Drizzle');
+    
     return null;
   }
 
@@ -260,7 +260,7 @@ export class DatabaseService {
 
       return equipmentRows;
     } catch (error) {
-      console.error('Error fetching equipment:', error);
+      
       return [];
     }
   }
@@ -271,7 +271,7 @@ export class DatabaseService {
 
       return equipmentRows[0] || null;
     } catch (error) {
-      console.error('Error fetching equipment by ID:', error);
+      
       return null;
     }
   }
@@ -298,7 +298,7 @@ export class DatabaseService {
 
       return equipmentRows[0] || null;
     } catch (error) {
-      console.error('Error creating equipment:', error);
+      
       return null;
     }
   }
@@ -331,7 +331,7 @@ export class DatabaseService {
 
       return equipmentRows[0] || null;
     } catch (error) {
-      console.error('Error updating equipment:', error);
+      
       return null;
     }
   }
@@ -342,7 +342,7 @@ export class DatabaseService {
 
       return true;
     } catch (error) {
-      console.error('Error deleting equipment:', error);
+      
       return false;
     }
   }
@@ -359,13 +359,12 @@ export class DatabaseService {
     try {
       // TODO: Implement rental filtering with Drizzle
       // This would require proper joins with customers and rental_items tables
-      console.warn('getRentals filtering not yet fully implemented with Drizzle');
 
       const rentalRows = await db.select().from(rentals).orderBy(desc(rentals.createdAt));
 
       return rentalRows;
     } catch (error) {
-      console.error('Error fetching rentals:', error);
+      
       return [];
     }
   }
@@ -376,7 +375,7 @@ export class DatabaseService {
 
       return rentalRows[0] || null;
     } catch (error) {
-      console.error('Error fetching rental by ID:', error);
+      
       return null;
     }
   }
@@ -405,7 +404,6 @@ export class DatabaseService {
     try {
       // TODO: Implement rental creation with items
       // This would require transaction handling for rental + rental items
-      console.warn('createRental with items not yet fully implemented with Drizzle');
 
       const { rentalItems, ...rentalData } = data;
 
@@ -437,7 +435,7 @@ export class DatabaseService {
 
       return rentalRows[0] || null;
     } catch (error) {
-      console.error('Error creating rental:', error);
+      
       return null;
     }
   }
@@ -472,7 +470,6 @@ export class DatabaseService {
   ) {
     try {
       // TODO: Implement rental update with items
-      console.warn('updateRental with items not yet fully implemented with Drizzle');
 
       const updateData: any = {};
 
@@ -508,7 +505,7 @@ export class DatabaseService {
 
       return rentalRows[0] || null;
     } catch (error) {
-      console.error('Error updating rental:', error);
+      
       return null;
     }
   }
@@ -519,7 +516,7 @@ export class DatabaseService {
 
       return true;
     } catch (error) {
-      console.error('Error deleting rental:', error);
+      
       return false;
     }
   }
@@ -535,7 +532,7 @@ export class DatabaseService {
 
       return userRows;
     } catch (error) {
-      console.error('Error fetching users:', error);
+      
       return [];
     }
   }
@@ -546,7 +543,7 @@ export class DatabaseService {
 
       return userRows[0] || null;
     } catch (error) {
-      console.error('Error fetching user by ID:', error);
+      
       return null;
     }
   }
@@ -557,7 +554,7 @@ export class DatabaseService {
 
       return userRows[0] || null;
     } catch (error) {
-      console.error('Error fetching user by email:', error);
+      
       return null;
     }
   }
@@ -570,7 +567,6 @@ export class DatabaseService {
   }) {
     try {
       // TODO: Implement password hashing
-      console.warn('createUser password hashing not yet implemented');
 
       const userRows = await db
         .insert(users)
@@ -587,7 +583,7 @@ export class DatabaseService {
 
       return userRows[0] || null;
     } catch (error) {
-      console.error('Error creating user:', error);
+      
       return null;
     }
   }
@@ -613,7 +609,7 @@ export class DatabaseService {
 
       return userRows[0] || null;
     } catch (error) {
-      console.error('Error updating user:', error);
+      
       return null;
     }
   }
@@ -624,7 +620,7 @@ export class DatabaseService {
 
       return true;
     } catch (error) {
-      console.error('Error deleting user:', error);
+      
       return false;
     }
   }
@@ -664,7 +660,7 @@ export class DatabaseService {
 
       return rentalItemRows[0] || null;
     } catch (error) {
-      console.error('Error adding rental item:', error);
+      
       return null;
     }
   }
@@ -679,7 +675,7 @@ export class DatabaseService {
 
       return rentalItemRows;
     } catch (error) {
-      console.error('Error fetching rental items:', error);
+      
       return [];
     }
   }
@@ -694,7 +690,7 @@ export class DatabaseService {
 
       return rentalItemRows[0] || null;
     } catch (error) {
-      console.error('Error fetching rental item by ID:', error);
+      
       return null;
     }
   }
@@ -738,7 +734,7 @@ export class DatabaseService {
 
       return rentalItemRows[0] || null;
     } catch (error) {
-      console.error('Error updating rental item:', error);
+      
       return null;
     }
   }
@@ -749,7 +745,7 @@ export class DatabaseService {
 
       return true;
     } catch (error) {
-      console.error('Error deleting rental item:', error);
+      
       return false;
     }
   }

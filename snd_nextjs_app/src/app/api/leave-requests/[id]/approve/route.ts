@@ -86,7 +86,7 @@ export async function PUT({ params }: { params: Promise<{ id: string }> }) {
       message: 'Leave request approved successfully',
     });
   } catch (error) {
-    console.error('Error approving leave request:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

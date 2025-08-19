@@ -41,10 +41,6 @@ interface ERPNextInvoiceData {
 export class ERPNextInvoiceService {
   private static async makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
     // Enhanced configuration validation
-    console.log('🔧 ERPNext Configuration Check:');
-    console.log('  - URL:', ERPNEXT_URL ? '✅ Set' : '❌ Missing');
-    console.log('  - API Key:', ERPNEXT_API_KEY ? '✅ Set' : '❌ Missing');
-    console.log('  - API Secret:', ERPNEXT_API_SECRET ? '✅ Set' : '❌ Missing');
 
     if (!ERPNEXT_URL || !ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {
       const missingVars: string[] = [];
@@ -58,15 +54,12 @@ export class ERPNextInvoiceService {
     }
 
     const url = `${ERPNEXT_URL}${endpoint}`;
-    console.log('🌐 Making ERPNext request to:', url);
 
     const defaultHeaders = {
       Authorization: `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
       'Content-Type': 'application/json',
       Accept: 'application/json',
     };
-
-    console.log('📤 Request headers:', { ...defaultHeaders, Authorization: 'token [HIDDEN]' });
 
     try {
       const response = await fetch(url, {
@@ -77,25 +70,23 @@ export class ERPNextInvoiceService {
         },
       });
 
-      console.log('📥 Response status:', response.status, response.statusText);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ ERPNext API error response:', errorText);
+        
         throw new Error(
           `ERPNext API error: ${response.status} ${response.statusText} - ${errorText}`
         );
       }
 
       const responseData = await response.json();
-      console.log('✅ ERPNext response received successfully');
+      
       return responseData;
     } catch (fetchError) {
       if (fetchError instanceof Error) {
-        console.error('❌ Fetch error:', fetchError.message);
+        
         throw new Error(`Network error connecting to ERPNext: ${fetchError.message}`);
       } else {
-        console.error('❌ Unknown fetch error:', fetchError);
+        
         throw new Error('Unknown network error connecting to ERPNext');
       }
     }
@@ -103,18 +94,8 @@ export class ERPNextInvoiceService {
 
   static async createRentalInvoice(rental: any, invoiceNumber: string): Promise<any> {
     try {
-      console.log('🚀 Starting ERPNext invoice creation for rental:', rental.id);
-      console.log('🔢 Invoice number:', invoiceNumber);
 
       // Enhanced rental data validation
-      console.log('📋 Rental data validation:');
-      console.log(
-        '  - Customer Name:',
-        rental.customer?.name || rental.customerName || '❌ Missing'
-      );
-      console.log('  - Customer ID:', rental.customerId || rental.customer?.id || '❌ Missing');
-      console.log('  - Total Amount:', rental.totalAmount || '❌ Missing');
-      console.log('  - Rental Status:', rental.status || '❌ Missing');
 
       if (!rental.customer?.name && !rental.customerName && !rental.customerId) {
         throw new Error('Customer information is required for invoice generation');
@@ -122,7 +103,7 @@ export class ERPNextInvoiceService {
 
       if (!rental.totalAmount || parseFloat(rental.totalAmount.toString()) <= 0) {
         // If stored total is zero, calculate from rental items
-        console.log('⚠️ Stored total amount is zero, calculating from rental items...');
+        
         const rentalItems = await RentalService.getRentalItems(rental.id);
         const calculatedTotal = rentalItems.reduce((sum, item) => {
           const itemTotal = parseFloat(item.totalPrice?.toString() || '0') || 0;
@@ -130,7 +111,7 @@ export class ERPNextInvoiceService {
         }, 0);
 
         if (calculatedTotal > 0) {
-          console.log('✅ Calculated total from rental items:', calculatedTotal);
+          
           // Update the rental object with calculated total
           rental.totalAmount = calculatedTotal.toString();
         } else {
@@ -139,14 +120,12 @@ export class ERPNextInvoiceService {
       }
 
       // Get rental items from the rental service
-      console.log('🔍 Fetching rental items...');
+      
       const rentalItems = await RentalService.getRentalItems(rental.id);
-      console.log('✅ Rental items found:', rentalItems.length);
 
       // Get a suitable income account for the company
-      console.log('🏦 Finding suitable income account...');
+      
       const incomeAccount = await this.findSuitableIncomeAccount();
-      console.log('✅ Income account selected:', incomeAccount);
 
       // Get tax template data
       // const taxTemplateData = await this.getTaxTemplateData('ضريبة القيمة المضافة 15 % - SND');
@@ -164,8 +143,6 @@ export class ERPNextInvoiceService {
           doctype: 'Sales Taxes and Charges',
         },
       ];
-
-      console.log('🏦 KSA Tax Table created:', JSON.stringify(ksaTaxTable, null, 2));
 
       // Prepare invoice data
       const invoiceData: ERPNextInvoiceData = {
@@ -192,11 +169,9 @@ export class ERPNextInvoiceService {
         tax_amount: 0, // Include tax amount field
       };
 
-      console.log('💰 Using total amount for invoice:', rental.totalAmount);
-
       // Add rental items to invoice
       if (rentalItems.length > 0) {
-        console.log('📦 Processing rental items...');
+        
         invoiceData.items = rentalItems.map((item, index) => {
           const mappedItem = {
             item_code: item.equipmentName || `EQ-${item.equipmentId}`,
@@ -208,11 +183,10 @@ export class ERPNextInvoiceService {
             uom: 'Nos',
             income_account: incomeAccount, // Use dynamically found account
           };
-          console.log(`  Item ${index + 1}:`, mappedItem);
+          
           return mappedItem;
         });
       } else {
-        console.log('📝 Creating service line item (no equipment items found)');
         // If no rental items, create a single line item for the rental
         // Dynamically find a suitable item code
         const suitableItemCode = await this.findSuitableItemCode();
@@ -247,24 +221,7 @@ export class ERPNextInvoiceService {
       invoiceData.outstanding_amount = grandTotalWithVAT;
       invoiceData.tax_amount = vatAmount;
 
-      console.log('💰 Invoice totals calculated:');
-      console.log('  - Subtotal:', subtotal);
-      console.log('  - VAT Amount (15%):', vatAmount);
-      console.log('  - Total with VAT:', totalWithVAT);
-      console.log('  - Grand Total:', grandTotalWithVAT);
-
-      console.log('📤 Sending invoice data to ERPNext...');
-      console.log('📋 Invoice data prepared:', {
-        customer: invoiceData.customer,
-        items: invoiceData.items.length,
-        total: invoiceData.total,
-        grandTotal: invoiceData.grand_total,
-        taxes_and_charges: invoiceData.taxes_and_charges,
-        taxes_and_charges_table: invoiceData.taxes_and_charges_table,
-      });
-
       // Log the complete invoice data for debugging
-      console.log('🔍 Complete invoice data being sent:', JSON.stringify(invoiceData, null, 2));
 
       // Create invoice in ERPNext
       const response = await this.makeERPNextRequest('/api/resource/Sales Invoice', {
@@ -272,10 +229,8 @@ export class ERPNextInvoiceService {
         body: JSON.stringify(invoiceData),
       });
 
-      console.log('✅ ERPNext invoice created successfully:', response.data?.name);
       return response.data || response;
     } catch (error) {
-      console.error('❌ Error creating ERPNext invoice:', error);
 
       // Enhanced error reporting
       if (error instanceof Error) {
@@ -301,12 +256,12 @@ export class ERPNextInvoiceService {
   // Test ERPNext connection
   static async testConnection(): Promise<boolean> {
     try {
-      console.log('🧪 Testing ERPNext connection...');
+      
       const response = await this.makeERPNextRequest('/api/method/frappe.auth.get_logged_user');
-      console.log('✅ ERPNext connection test successful');
+      
       return true;
     } catch (error) {
-      console.error('❌ ERPNext connection test failed:', error);
+      
       return false;
     }
   }
@@ -314,12 +269,12 @@ export class ERPNextInvoiceService {
   // Get available items from ERPNext
   static async getAvailableItems(): Promise<any[]> {
     try {
-      console.log('🔍 Fetching available items from ERPNext...');
+      
       const response = await this.makeERPNextRequest('/api/resource/Item?limit_page_length=100');
-      console.log('✅ Available items fetched:', response.data?.length || 0);
+      
       return response.data || [];
     } catch (error) {
-      console.error('❌ Error fetching available items:', error);
+      
       return [];
     }
   }
@@ -327,12 +282,12 @@ export class ERPNextInvoiceService {
   // Get available accounts from ERPNext
   static async getAvailableAccounts(): Promise<any[]> {
     try {
-      console.log('🏦 Fetching available accounts from ERPNext...');
+      
       const response = await this.makeERPNextRequest('/api/resource/Account?limit_page_length=100');
-      console.log('✅ Available accounts fetched:', response.data?.length || 0);
+      
       return response.data || [];
     } catch (error) {
-      console.error('❌ Error fetching available accounts:', error);
+      
       return [];
     }
   }
@@ -355,17 +310,17 @@ export class ERPNextInvoiceService {
       );
 
       if (incomeAccounts.length > 0) {
-        console.log('✅ Found suitable income account:', incomeAccounts[0].name);
+        
         return incomeAccounts[0].name;
       }
 
       // If no income accounts found, use a known working account from the list
       // Based on the available accounts we can see, use "Accounts Receivable - SND"
       const fallbackAccount = 'Accounts Receivable - SND';
-      console.log('⚠️ No income accounts found, using fallback account:', fallbackAccount);
+      
       return fallbackAccount;
     } catch (error) {
-      console.error('❌ Error finding suitable income account:', error);
+      
       return 'Accounts Receivable - SND'; // Use known working account
     }
   }
@@ -386,21 +341,21 @@ export class ERPNextInvoiceService {
       );
 
       if (serviceItems.length > 0) {
-        console.log('✅ Found suitable service item:', serviceItems[0].item_code);
+        
         return serviceItems[0].item_code;
       }
 
       // If no service items, use the first available item
       if (items.length > 0) {
-        console.log('⚠️ No service items found, using first available item:', items[0].item_code);
+        
         return items[0].item_code;
       }
 
       // Fallback to a generic code
-      console.log('⚠️ No items found, using fallback code: SERVICE');
+      
       return 'SERVICE';
     } catch (error) {
-      console.error('❌ Error finding suitable item code:', error);
+      
       return 'SERVICE';
     }
   }
@@ -408,17 +363,16 @@ export class ERPNextInvoiceService {
   // Get existing tax template data
   static async getTaxTemplateData(templateName: string): Promise<any[]> {
     try {
-      console.log('🏦 Fetching existing tax template:', templateName);
+      
       const response = await this.makeERPNextRequest(
         `/api/resource/Sales Taxes and Charges Template/${encodeURIComponent(templateName)}`
       );
 
       if (response.data && response.data.taxes) {
-        console.log('✅ Tax template data fetched:', response.data.taxes.length, 'tax entries');
+        
         return response.data.taxes;
       }
 
-      console.log('⚠️ No tax entries found in template, using default VAT structure');
       // Return default VAT structure based on the template name
       return [
         {
@@ -431,7 +385,7 @@ export class ERPNextInvoiceService {
         },
       ];
     } catch (error) {
-      console.error('❌ Error fetching tax template:', error);
+      
       // Fallback to default VAT structure
       return [
         {
@@ -449,7 +403,6 @@ export class ERPNextInvoiceService {
   // Discover existing tax templates and their structures
   static async discoverTaxTemplates(): Promise<any> {
     try {
-      console.log('🔍 Discovering existing tax templates...');
 
       // Get all tax templates
       const templatesResponse = await this.makeERPNextRequest(
@@ -457,14 +410,12 @@ export class ERPNextInvoiceService {
       );
       const templates = templatesResponse.data || [];
 
-      console.log('📋 Found tax templates:', templates.length);
-
       // Get detailed structure of each template
       const detailedTemplates: any[] = [];
       for (const template of templates.slice(0, 5)) {
         // Limit to first 5 for performance
         try {
-          console.log(`🔍 Examining template: ${template.name}`);
+          
           const detailResponse = await this.makeERPNextRequest(
             `/api/resource/Sales Taxes and Charges Template/${encodeURIComponent(template.name)}`
           );
@@ -479,7 +430,7 @@ export class ERPNextInvoiceService {
             });
           }
         } catch (error) {
-          console.log(`⚠️ Could not fetch details for template: ${template.name}`);
+          
         }
       }
 
@@ -489,7 +440,7 @@ export class ERPNextInvoiceService {
         detailedTemplates: detailedTemplates,
       };
     } catch (error) {
-      console.error('❌ Error discovering tax templates:', error);
+      
       return { error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
@@ -497,7 +448,6 @@ export class ERPNextInvoiceService {
   // Create proper tax table structure for KSA compliance
   static createKSATaxTable(subtotal: number): any[] {
     try {
-      console.log('🏦 Creating KSA compliant tax table...');
 
       // KSA VAT rate is 15%
       const vatRate = 15;
@@ -518,15 +468,9 @@ export class ERPNextInvoiceService {
         },
       ];
 
-      console.log('✅ KSA tax table created:', {
-        rate: `${vatRate}%`,
-        amount: vatAmount,
-        total: subtotal + vatAmount,
-      });
-
       return taxTable;
     } catch (error) {
-      console.error('❌ Error creating KSA tax table:', error);
+      
       return [];
     }
   }
@@ -538,7 +482,7 @@ export class ERPNextInvoiceService {
       );
       return response.data;
     } catch (error) {
-      console.error('Error fetching ERPNext invoice:', error);
+      
       throw new Error(
         `Failed to fetch ERPNext invoice: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -553,7 +497,7 @@ export class ERPNextInvoiceService {
       );
       return response.data && response.data.name === invoiceId;
     } catch (error) {
-      console.log('Invoice not found in ERPNext:', invoiceId);
+      
       return false;
     }
   }
@@ -572,7 +516,7 @@ export class ERPNextInvoiceService {
       );
       return response.data;
     } catch (error) {
-      console.error('Error updating ERPNext invoice:', error);
+      
       throw new Error(
         `Failed to update ERPNext invoice: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -589,7 +533,7 @@ export class ERPNextInvoiceService {
       );
       return response.data;
     } catch (error) {
-      console.error('Error submitting ERPNext invoice:', error);
+      
       throw new Error(
         `Failed to submit ERPNext invoice: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -606,7 +550,7 @@ export class ERPNextInvoiceService {
       );
       return response.data;
     } catch (error) {
-      console.error('Error cancelling ERPNext invoice:', error);
+      
       throw new Error(
         `Failed to cancel ERPNext invoice: ${error instanceof Error ? error.message : 'Unknown error'}`
       );

@@ -53,7 +53,7 @@ export function FinancialMetricsSection() {
       }
     } catch (err) {
       setError(t('financial.failedToFetch'));
-      console.error('Error fetching financial data:', err);
+      
     } finally {
       setLoading(false);
     }

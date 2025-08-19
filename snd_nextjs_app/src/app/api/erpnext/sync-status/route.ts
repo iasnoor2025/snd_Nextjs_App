@@ -37,7 +37,7 @@ export async function GET() {
       message: 'Sync status retrieved successfully',
     });
   } catch (error) {
-    console.error('Error fetching sync status:', error);
+    
     return NextResponse.json(
       {
         success: false,

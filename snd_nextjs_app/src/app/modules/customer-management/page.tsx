@@ -63,7 +63,7 @@ export default function CustomerManagementPage() {
         }
       }
     } catch (err) {
-      console.error('Error fetching customers:', err);
+      
       setError('Failed to fetch customers from database. Please try again.');
     } finally {
       setLoading(false);
@@ -86,23 +86,20 @@ export default function CustomerManagementPage() {
   };
 
   const handleSyncFromERPNext = async () => {
-    console.log('Sync from ERPNext clicked');
+    
     setSyncing(true);
     toast.info('Starting sync from ERPNext...');
 
     try {
       // First fetch customers from ERPNext
-      console.log('Fetching customers from ERPNext...');
+      
       const response = await fetch('/api/erpnext/customers');
       const result = await response.json();
 
-      console.log('ERPNext response:', result);
-
       if (result.success && result.data && result.data.length > 0) {
-        console.log(`Found ${result.data.length} customers in ERPNext`);
 
         // Now call the sync endpoint to save the data
-        console.log('Calling sync endpoint...');
+        
         const syncResponse = await fetch('/api/customers/sync', {
           method: 'POST',
           headers: {
@@ -131,7 +128,7 @@ export default function CustomerManagementPage() {
                     erpnext_id: customer.name || '',
                   },
                 };
-                console.log('Mapped customer data:', mappedData);
+                
                 return mappedData;
               }),
               toUpdate: [],
@@ -141,18 +138,17 @@ export default function CustomerManagementPage() {
         });
 
         const syncResult = await syncResponse.json();
-        console.log('Sync result:', syncResult);
 
         if (syncResult.success) {
           const message = `Successfully synced ${syncResult.data.processed} customers from ERPNext!`;
-          console.log(message);
+          
           toast.success(message);
 
           // Refresh the customer list
           fetchCustomers();
         } else {
           const errorMessage = `Failed to sync customers: ${syncResult.message}`;
-          console.error(errorMessage);
+          
           toast.error(errorMessage);
         }
       } else {
@@ -160,12 +156,12 @@ export default function CustomerManagementPage() {
           result.data && result.data.length === 0
             ? 'No customers found in ERPNext'
             : 'Failed to fetch customers from ERPNext';
-        console.error(errorMessage);
+        
         toast.error(errorMessage);
       }
     } catch (error) {
       const errorMessage = `Error syncing customers: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      console.error(errorMessage);
+      
       toast.error(errorMessage);
     } finally {
       setSyncing(false);
@@ -173,19 +169,19 @@ export default function CustomerManagementPage() {
   };
 
   const handleViewCustomer = (customer: Customer) => {
-    console.log('View customer clicked:', customer);
+    
     // Navigate to customer detail page
     window.location.href = `/modules/customer-management/${customer.id}`;
   };
 
   const handleEditCustomer = (customer: Customer) => {
-    console.log('Edit customer clicked:', customer);
+    
     // Navigate to customer edit page
     window.location.href = `/modules/customer-management/${customer.id}/edit`;
   };
 
   const handleDeleteCustomer = async (customer: Customer) => {
-    console.log('Delete customer clicked:', customer);
+    
     if (confirm(`Are you sure you want to delete customer "${customer.name}"?`)) {
       try {
         const response = await fetch(`/api/customers`, {
@@ -204,25 +200,25 @@ export default function CustomerManagementPage() {
           toast.error(`Failed to delete customer: ${error.message}`);
         }
       } catch (error) {
-        console.error('Error deleting customer:', error);
+        
         toast.error('Error deleting customer');
       }
     }
   };
 
   const handleAddCustomer = () => {
-    console.log('Add customer clicked');
+    
     // Navigate to customer create page
     window.location.href = '/modules/customer-management/create';
   };
 
   const handleExportCustomers = () => {
-    console.log('Export customers clicked');
+    
     toast.info('Export functionality coming soon!');
   };
 
   const handleImportCustomers = () => {
-    console.log('Import customers clicked');
+    
     toast.info('Import functionality coming soon!');
   };
 

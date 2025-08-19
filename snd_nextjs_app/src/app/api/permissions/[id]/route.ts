@@ -84,7 +84,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json({ permission: permissionWithAssignments });
   } catch (error) {
-    console.error('Error fetching permission:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -168,7 +168,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       permission: updatedPermission,
     });
   } catch (error) {
-    console.error('Error updating permission:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -250,7 +250,7 @@ export async function DELETE(
       message: 'Permission deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting permission:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

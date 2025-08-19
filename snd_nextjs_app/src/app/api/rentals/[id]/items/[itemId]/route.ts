@@ -13,8 +13,6 @@ export async function PUT(
     const body = await request.json();
     const rentalId = id;
 
-    console.log('Updating rental item:', { rentalId, itemId, body });
-
     // Get current rental item to check if operator changed
     const newOperatorId = body.operatorId ? parseInt(body.operatorId) : null;
 
@@ -78,7 +76,7 @@ export async function PUT(
 
     return NextResponse.json(rentalItem);
   } catch (error) {
-    console.error('Error updating rental item:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to update rental item',
@@ -100,8 +98,6 @@ export async function DELETE(
   const { id, itemId } = await params;
   try {
     const rentalId = id;
-
-    console.log('Deleting rental item:', { rentalId, itemId });
 
     // Get current rental item to check if it has an operator
     const currentItem = await RentalService.getRentalItem(parseInt(itemId));
@@ -128,9 +124,8 @@ export async function DELETE(
             )
           );
 
-        console.log(`Employee assignment ended for operator ${operatorId} on rental ${rentalId}`);
       } catch (assignmentError) {
-        console.error('Error ending employee assignment:', assignmentError);
+        
         // Don't fail the rental item deletion if assignment update fails
         // Just log the error
       }
@@ -138,7 +133,7 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting rental item:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to delete rental item',

@@ -220,7 +220,7 @@ export default function RentalManagementPage() {
       setLoading(true);
       const queryParams = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) queryParams.append(key, value);
+        if (value && value !== 'all') queryParams.append(key, value);
       });
 
       const response = await fetch(`/api/rentals?${queryParams.toString()}`);
@@ -248,7 +248,7 @@ export default function RentalManagementPage() {
         setCustomers(data.customers || []);
       }
     } catch (err) {
-      console.error('Failed to fetch customers:', err);
+      
       setCustomers([]); // Ensure customers is always an array
     }
   };
@@ -527,7 +527,7 @@ export default function RentalManagementPage() {
                       <SelectValue placeholder={t('rental.allStatuses')} />
                     </SelectTrigger>
                     <SelectContent className="max-h-60 overflow-y-auto">
-                      <SelectItem value="">{t('rental.allStatuses')}</SelectItem>
+                      <SelectItem value="all">{t('rental.allStatuses')}</SelectItem>
                       <SelectItem value="pending">{t('rental.pending')}</SelectItem>
                       <SelectItem value="active">{t('rental.active')}</SelectItem>
                       <SelectItem value="completed">{t('rental.completed')}</SelectItem>
@@ -545,7 +545,7 @@ export default function RentalManagementPage() {
                       <SelectValue placeholder={t('rental.allPaymentStatuses')} />
                     </SelectTrigger>
                     <SelectContent className="max-h-60 overflow-y-auto">
-                      <SelectItem value="">{t('rental.allPaymentStatuses')}</SelectItem>
+                      <SelectItem value="all">{t('rental.allPaymentStatuses')}</SelectItem>
                       <SelectItem value="pending">{t('rental.pending')}</SelectItem>
                       <SelectItem value="partial">{t('rental.partial')}</SelectItem>
                       <SelectItem value="paid">{t('rental.paid')}</SelectItem>
@@ -563,7 +563,7 @@ export default function RentalManagementPage() {
                       <SelectValue placeholder={t('rental.allCustomers')} />
                     </SelectTrigger>
                     <SelectContent className="max-h-60 overflow-y-auto">
-                      <SelectItem value="">{t('rental.allCustomers')}</SelectItem>
+                      <SelectItem value="all">{t('rental.allCustomers')}</SelectItem>
                       {(customers || []).map(customer => (
                         <SelectItem key={customer.id} value={customer.id}>
                           {customer.name}

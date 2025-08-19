@@ -5,20 +5,16 @@ import { NextResponse } from 'next/server';
 
 export async function GET({ params }: { params: Promise<{ id: string }> }) {
   try {
-    console.log('🔍 PAYSLIP API - Starting request');
 
     const { id: idParam } = await params;
     const id = parseInt(idParam);
 
-    console.log('🔍 PAYSLIP API - Payroll ID:', id);
-
     // Connect to database
-    console.log('🔍 PAYSLIP API - Connecting to database...');
+    
     // Drizzle uses pooled connections automatically
-    console.log('🔍 PAYSLIP API - Database connected');
 
     // Get payroll with employee and items
-    console.log('🔍 PAYSLIP API - Fetching payroll data...');
+    
     const payrollRow = await db.select().from(payrolls).where(eq(payrolls.id, id)).limit(1);
     const payroll = payrollRow[0] as any;
 
@@ -33,13 +29,10 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
           .orderBy(asc(payrollItems.order))
       : [];
 
-    console.log('🔍 PAYSLIP API - Payroll found:', !!payroll);
-
     if (!payroll) {
-      console.log('🔍 PAYSLIP API - Payroll not found for ID:', id);
 
       // Generate sample data for testing if payroll not found
-      console.log('🔍 PAYSLIP API - Generating sample data for testing...');
+      
       const samplePayroll = {
         id: id,
         employee_id: 1,
@@ -123,7 +116,6 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
         website: 'www.snd.com',
       };
 
-      console.log('🔍 PAYSLIP API - Returning sample data');
       return NextResponse.json({
         success: true,
         data: {
@@ -136,7 +128,6 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
     }
 
     // Get attendance data for the payroll month
-    console.log('🔍 PAYSLIP API - Fetching attendance data...');
 
     // Use month-based filtering to avoid timezone issues
     const attendanceData = await db
@@ -157,22 +148,6 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       )
       .orderBy(asc(timesheets.date));
 
-    console.log('🔍 PAYSLIP API - Attendance records found:', attendanceData.length);
-    console.log('🔍 PAYSLIP API - Month filter applied:', {
-      year: payroll.year,
-      month: payroll.month,
-    });
-    console.log(
-      '🔍 PAYSLIP API - All attendance data:',
-      attendanceData.map(a => ({
-        date: a.date,
-        dateStr: a.date ? String(a.date).split('T')[0] : '',
-        day: a.date ? new Date(String(a.date).split('T')[0] || '').getDate() : 0,
-        hours: a.hours_worked,
-        overtime: a.overtime_hours,
-        status: a.status,
-      }))
-    );
 
     // Transform attendance data - Convert Decimal to numbers
     const transformedAttendanceData = attendanceData.map(attendance => ({
@@ -183,11 +158,6 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       hours: Number(attendance.hours_worked) || 0,
       overtime: Number(attendance.overtime_hours) || 0,
     }));
-
-    console.log(
-      '🔍 PAYSLIP API - Transformed attendance data:',
-      transformedAttendanceData.slice(0, 3)
-    );
 
     // Mock company data (you can replace this with actual company data from your database)
     const company = {
@@ -235,7 +205,7 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       : null;
 
     // Return JSON data for the frontend
-    console.log('🔍 PAYSLIP API - Returning response');
+    
     return NextResponse.json({
       success: true,
       data: {
@@ -246,9 +216,7 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       },
     });
   } catch (error) {
-    console.error('🔍 PAYSLIP API - Error:', error);
-    console.error('🔍 PAYSLIP API - Error message:', (error as Error).message);
-    console.error('🔍 PAYSLIP API - Error stack:', (error as Error).stack);
+    // Swallow detailed error logs in production
 
     return NextResponse.json(
       {

@@ -137,7 +137,7 @@ export async function POST(_request: NextRequest) {
           matchedEmployee = matchedEmployeeRows[0];
         }
       } catch (employeeError) {
-        console.error('Error fetching matched employee:', employeeError);
+        
         // Continue without matched employee data
       }
     }
@@ -159,7 +159,7 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json(result, { headers: cacheHeaders });
   } catch (error) {
-    console.error('❌ Error checking nation ID:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to check nation ID',
@@ -237,7 +237,7 @@ export async function PUT(_request: NextRequest) {
       userId: updatedUser.id,
     });
   } catch (error) {
-    console.error('Error updating nation ID:', error);
+    
     return NextResponse.json({ error: 'Failed to update nation ID' }, { status: 500 });
   }
 }

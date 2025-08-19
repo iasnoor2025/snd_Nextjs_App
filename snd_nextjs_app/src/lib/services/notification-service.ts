@@ -172,7 +172,7 @@ export class NotificationService {
         read: false,
       };
     } catch (error) {
-      console.error('Failed to create approval notification:', error);
+      
       throw error;
     }
   }

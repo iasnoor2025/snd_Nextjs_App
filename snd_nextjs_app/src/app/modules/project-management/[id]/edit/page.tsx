@@ -218,11 +218,11 @@ export default function EditProjectPage() {
         if (customersResponse.customers) {
           setCustomers(customersResponse.customers || []);
         } else {
-          console.error('Failed to fetch customers');
+          
           setCustomers([]);
         }
       } catch (error) {
-        console.error('Error fetching customers:', error);
+        
         setCustomers([]);
       }
 
@@ -232,11 +232,11 @@ export default function EditProjectPage() {
         if (locationsResponse.success && locationsResponse.data) {
           setLocations(locationsResponse.data || []);
         } else {
-          console.log('Locations API not available yet');
+          
           setLocations([]);
         }
       } catch (error) {
-        console.log('Locations API not available yet');
+        
         setLocations([]);
       }
 
@@ -280,17 +280,17 @@ export default function EditProjectPage() {
           }
           */
         } else {
-          console.error('Failed to fetch employees');
+          
           setEmployees([]);
           setProjectManagers([]);
         }
       } catch (error) {
-        console.error('Error fetching employees:', error);
+        
         setEmployees([]);
         setProjectManagers([]);
       }
     } catch (error) {
-      console.error('Error in fetchProjectData:', error);
+      
       toast.error('Failed to load project data');
       router.push('/modules/project-management');
     } finally {
@@ -329,7 +329,7 @@ export default function EditProjectPage() {
       toast.success('Project updated successfully!');
       router.push(`/modules/project-management/${projectId}`);
     } catch (error) {
-      console.error('Error updating project:', error);
+      
       toast.error('Failed to update project');
     } finally {
       setSaving(false);

@@ -98,7 +98,7 @@ export default function EditSalaryIncrementPage() {
         apply_to_allowances: incrementData.apply_to_allowances || false,
       });
     } catch (error) {
-      console.error('Error loading salary increment:', error);
+      
       toast.error('Failed to load salary increment');
       router.push('/modules/salary-increments');
     } finally {
@@ -128,7 +128,7 @@ export default function EditSalaryIncrementPage() {
       toast.success('Salary increment updated successfully');
       router.push('/modules/salary-increments');
     } catch (error) {
-      console.error('Error updating salary increment:', error);
+      
       toast.error('Failed to update salary increment');
     } finally {
       setSaving(false);

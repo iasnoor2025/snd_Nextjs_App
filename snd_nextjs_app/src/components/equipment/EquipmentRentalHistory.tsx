@@ -140,7 +140,7 @@ export default function EquipmentAssignmentHistory({
         setError(response.message || 'Failed to load assignment history');
       }
     } catch (error) {
-      console.error('Error fetching assignment history:', error);
+      
       setError('Failed to load assignment history');
     } finally {
       setLoading(false);
@@ -263,7 +263,7 @@ export default function EquipmentAssignmentHistory({
         setEmployees(response.data || []);
       }
     } catch (error) {
-      console.error('Error fetching employees:', error);
+      
     }
   };
 

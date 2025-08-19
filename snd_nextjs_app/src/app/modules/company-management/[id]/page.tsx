@@ -51,7 +51,7 @@ export default function CompanyDetailPage() {
           router.push('/modules/company-management');
         }
       } catch (error) {
-        console.error('Error fetching company:', error);
+        
         toast.error('Failed to fetch company');
         router.push('/modules/company-management');
       } finally {
@@ -81,7 +81,7 @@ export default function CompanyDetailPage() {
           toast.error(result.message || 'Failed to delete company');
         }
       } catch (error) {
-        console.error('Error deleting company:', error);
+        
         toast.error('Failed to delete company');
       }
     }

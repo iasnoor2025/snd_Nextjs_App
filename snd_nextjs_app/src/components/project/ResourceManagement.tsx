@@ -106,7 +106,7 @@ export default function ResourceManagement({
       const employeesResponse = await ApiService.getEmployees();
       setEmployees(employeesResponse.data || []);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      
       toast.error('Failed to load resources');
     } finally {
       setLoading(false);
@@ -129,7 +129,7 @@ export default function ResourceManagement({
       setFormData({});
       fetchData();
     } catch (error) {
-      console.error('Error creating resource:', error);
+      
       toast.error('Failed to add resource');
     }
   };

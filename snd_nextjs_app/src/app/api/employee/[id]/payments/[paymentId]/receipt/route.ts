@@ -169,7 +169,7 @@ const getEmployeePaymentReceiptHandler = async (
       receipt: receiptData,
     });
   } catch (error) {
-    console.error('Error fetching payment receipt:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch payment receipt' }, { status: 500 });
   }
 };

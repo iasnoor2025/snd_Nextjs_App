@@ -12,8 +12,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('Initializing cron service via API...');
-
     // Dynamic import to avoid client-side bundling
     const { cronService } = await import('@/lib/services/cron-service');
     cronService.initialize();
@@ -27,7 +25,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error initializing cron service:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to initialize cron service',
@@ -50,7 +48,7 @@ export async function GET() {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error getting cron service status:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to get cron service status',

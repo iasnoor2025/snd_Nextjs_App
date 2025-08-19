@@ -151,10 +151,6 @@ export default function EmployeeManagementPage() {
 
   // Debug function for assignment data
   const debugAssignments = () => {
-    console.log('=== Assignment Debug Info ===');
-    console.log('Total employees:', employees.length);
-    console.log('Filtered employees:', filteredAndSortedEmployees.length);
-    console.log('Current assignment filter:', assignmentFilter);
 
     const employeesWithAssignments = employees.filter(
       emp => emp.current_assignment && emp.current_assignment.id
@@ -163,19 +159,16 @@ export default function EmployeeManagementPage() {
       emp => !emp.current_assignment || !emp.current_assignment.id
     );
 
-    console.log('Employees with assignments:', employeesWithAssignments.length);
-    console.log('Employees without assignments:', employeesWithoutAssignments.length);
-
     // Show first few employees with assignments
-    console.log('Sample employees with assignments:');
+    
     employeesWithAssignments.slice(0, 3).forEach(emp => {
-      console.log(`- ${emp.file_number}: ${emp.full_name}`, emp.current_assignment);
+      
     });
 
     // Show first few employees without assignments
-    console.log('Sample employees without assignments:');
+    
     employeesWithoutAssignments.slice(0, 3).forEach(emp => {
-      console.log(`- ${emp.file_number}: ${emp.full_name}`, emp.current_assignment);
+      
     });
   };
 
@@ -211,20 +204,10 @@ export default function EmployeeManagementPage() {
         ? `/api/employees?_t=${Date.now()}`
         : `/api/employees?all=true&_t=${Date.now()}`;
 
-      console.log('Fetching employees with URL:', url);
-      console.log('User role:', user?.role);
-      console.log('Is employee user:', isEmployeeUser);
-
       const response = await fetch(url);
       if (response.ok) {
         const result = (await response.json()) as { success: boolean; data?: Employee[] };
         if (result.success && Array.isArray(result.data)) {
-          console.log('Fetched employees:', result.data.length);
-          console.log(
-            'Sample employee with assignment:',
-            result.data.find(emp => emp.current_assignment)
-          );
-
           setEmployees(result.data);
         } else {
           setEmployees([]);
@@ -275,7 +258,7 @@ export default function EmployeeManagementPage() {
             setStatistics(result.data);
           }
         } else {
-          console.error('Statistics API returned error:', response.status);
+          
           // Fallback: use employees array length for total count
           setStatistics({
             totalEmployees: employees.length,
@@ -288,7 +271,7 @@ export default function EmployeeManagementPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching statistics:', error);
+      
       // Fallback: use employees array length for total count
       setStatistics({
         totalEmployees: employees.length,

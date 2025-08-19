@@ -50,7 +50,7 @@ export async function GET(_request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error fetching ERPNext financial data:', error);
+    
     return NextResponse.json(
       {
         success: false,

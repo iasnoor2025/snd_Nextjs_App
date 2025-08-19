@@ -10,10 +10,6 @@ const ERPNEXT_API_SECRET = process.env.NEXT_PUBLIC_ERPNEXT_API_SECRET || process
 
 async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   // Enhanced logging for production debugging
-  console.log('🔧 ERPNext Equipment API Environment Check:');
-  console.log('  - ERPNEXT_URL:', ERPNEXT_URL ? '✅ Set' : '❌ Missing');
-  console.log('  - ERPNEXT_API_KEY:', ERPNEXT_API_KEY ? '✅ Set' : '❌ Missing');
-  console.log('  - ERPNEXT_API_SECRET:', ERPNEXT_API_SECRET ? '✅ Set' : '❌ Missing');
 
   if (!ERPNEXT_URL || !ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {
     const missingVars: string[] = [];
@@ -21,12 +17,10 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
     if (!ERPNEXT_API_KEY) missingVars.push('ERPNEXT_API_KEY (or NEXT_PUBLIC_ERPNEXT_API_KEY)');
     if (!ERPNEXT_API_SECRET) missingVars.push('ERPNEXT_API_SECRET (or NEXT_PUBLIC_ERPNEXT_API_SECRET)');
 
-    console.error('❌ ERPNext configuration missing:', missingVars);
     throw new Error(`ERPNext configuration is missing: ${missingVars.join(', ')}. Please check your environment variables.`);
   }
 
   const url = `${ERPNEXT_URL}${endpoint}`;
-  console.log('🌐 Making ERPNext request to:', url);
 
   const defaultHeaders = {
     Authorization: `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
@@ -44,12 +38,7 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('❌ ERPNext API error:', {
-      status: response.status,
-      statusText: response.statusText,
-      errorText,
-      url
-    });
+    
     throw new Error(`ERPNext API error: ${response.status} ${response.statusText}`);
   }
 
@@ -68,9 +57,7 @@ export async function GET(_request: NextRequest) {
     // Default: fetch equipment from ERPNext - simplified for testing
     const endpoint = `/api/resource/Item?limit_page_length=10`;
 
-    console.log('Making ERPNext request to:', endpoint);
     const data = await makeERPNextRequest(endpoint);
-    console.log('ERPNext response received, data length:', data.data?.length || 0);
 
     return NextResponse.json({
       success: true,
@@ -78,7 +65,7 @@ export async function GET(_request: NextRequest) {
       count: data.data?.length || 0,
     });
   } catch (error) {
-    console.error('Error fetching ERPNext equipment:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -106,7 +93,7 @@ export async function POST(_request: NextRequest) {
       { status: 400 }
     );
   } catch (error) {
-    console.error('Error processing ERPNext equipment request:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -119,7 +106,6 @@ export async function POST(_request: NextRequest) {
 
 async function syncEquipmentFromERPNext() {
   try {
-    console.log('Starting ERPNext equipment sync...');
 
     // Fetch equipment from ERPNext
     const filters = encodeURIComponent(JSON.stringify([['item_group', '=', 'Equipment']]));
@@ -127,8 +113,6 @@ async function syncEquipmentFromERPNext() {
 
     const erpData = await makeERPNextRequest(endpoint);
     const equipmentItems = erpData.data || [];
-
-    console.log(`Found ${equipmentItems.length} equipment items in ERPNext`);
 
     let createdCount = 0;
     let updatedCount = 0;
@@ -191,14 +175,10 @@ async function syncEquipmentFromERPNext() {
           createdCount++;
         }
       } catch (error) {
-        console.error(`Error processing equipment item ${item.item_code}:`, error);
+        
         errorCount++;
       }
     }
-
-    console.log(
-      `ERPNext equipment sync completed: ${createdCount} created, ${updatedCount} updated, ${errorCount} errors`
-    );
 
     return NextResponse.json({
       success: true,
@@ -211,7 +191,7 @@ async function syncEquipmentFromERPNext() {
       },
     });
   } catch (error) {
-    console.error('Error syncing equipment from ERPNext:', error);
+    
     return NextResponse.json(
       {
         success: false,

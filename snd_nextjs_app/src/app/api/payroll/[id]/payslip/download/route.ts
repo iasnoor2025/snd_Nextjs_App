@@ -5,19 +5,16 @@ import { NextResponse } from 'next/server';
 
 export async function GET({ params }: { params: Promise<{ id: string }> }) {
   try {
-    console.log('🔍 PAYSLIP DOWNLOAD API - Starting request');
 
     const { id: idParam } = await params;
     const id = parseInt(idParam);
-
-    console.log('🔍 PAYSLIP DOWNLOAD API - Payroll ID:', id);
 
     if (isNaN(id)) {
       return NextResponse.json({ success: false, message: 'Invalid payroll ID' }, { status: 400 });
     }
 
     // Get payroll with employee and items
-    console.log('🔍 PAYSLIP DOWNLOAD API - Fetching payroll data...');
+    
     const payrollData = await db
       .select({
         id: payrolls.id,
@@ -58,10 +55,8 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       .where(eq(payrolls.id, id))
       .limit(1);
 
-    console.log('🔍 PAYSLIP DOWNLOAD API - Payroll found:', !!payrollData[0]);
-
     if (!payrollData[0]) {
-      console.log('🔍 PAYSLIP DOWNLOAD API - Payroll not found for ID:', id);
+      
       return NextResponse.json(
         {
           success: false,
@@ -89,7 +84,6 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       .orderBy(asc(payrollItems.order));
 
     // Get attendance data for the payroll month
-    console.log('🔍 PAYSLIP DOWNLOAD API - Fetching attendance data...');
 
     // Use month-based filtering to avoid timezone issues
     const attendanceData = await db
@@ -110,22 +104,14 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       )
       .orderBy(asc(timesheets.date));
 
-    console.log('🔍 PAYSLIP DOWNLOAD API - Attendance records found:', attendanceData.length);
-    console.log('🔍 PAYSLIP DOWNLOAD API - Month filter applied:', {
-      year: payroll.year,
-      month: payroll.month,
-    });
-    console.log(
-      '🔍 PAYSLIP DOWNLOAD API - Sample attendance data:',
-      attendanceData.slice(0, 3).map(a => ({
-        date: a.date,
-        dateStr: a.date ? String(a.date).split('T')[0] : '',
-        day: a.date ? new Date(String(a.date).split('T')[0] || '').getDate() : 0,
-        hours: a.hoursWorked,
-        overtime: a.overtimeHours,
-        status: a.status,
-      }))
-    );
+    const attendanceDataMapped = attendanceData.map(a => ({
+      date: a.date,
+      dateStr: a.date ? String(a.date).split('T')[0] : '',
+      day: a.date ? new Date(String(a.date).split('T')[0] || '').getDate() : 0,
+      hours: a.hoursWorked,
+      overtime: a.overtimeHours,
+      status: a.status,
+    }));
 
     // Transform attendance data
     const transformedAttendanceData = attendanceData.map(attendance => ({
@@ -174,7 +160,7 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
 
     // For now, return JSON data with instructions to generate PDF on frontend
     // In a real implementation, you would generate PDF here using a library like puppeteer or jsPDF
-    console.log('🔍 PAYSLIP DOWNLOAD API - Returning data for frontend PDF generation');
+    
     return NextResponse.json({
       success: true,
       data: {
@@ -186,9 +172,7 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       message: 'Use frontend PDF generation',
     });
   } catch (error) {
-    console.error('🔍 PAYSLIP DOWNLOAD API - Error:', error);
-    console.error('🔍 PAYSLIP DOWNLOAD API - Error message:', (error as Error).message);
-    console.error('🔍 PAYSLIP DOWNLOAD API - Error stack:', (error as Error).stack);
+    // Swallow detailed error logs in production
 
     return NextResponse.json(
       {

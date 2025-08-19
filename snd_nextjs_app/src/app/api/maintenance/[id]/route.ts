@@ -70,7 +70,7 @@ export const GET = withAuth(
 
       return NextResponse.json({ success: true, data: { ...base, items } });
     } catch (error) {
-      console.error('GET /api/maintenance/[id] error:', error);
+      
       return NextResponse.json(
         { success: false, message: 'Internal server error' },
         { status: 500 }
@@ -211,7 +211,7 @@ export const PUT = withPermission(
 
       return NextResponse.json({ success: true, data: updated });
     } catch (error) {
-      console.error('PUT /api/maintenance/[id] error:', error);
+      
       return NextResponse.json(
         { success: false, message: 'Internal server error' },
         { status: 500 }
@@ -237,7 +237,7 @@ export const DELETE = withPermission(
       });
       return NextResponse.json({ success: true });
     } catch (error) {
-      console.error('DELETE /api/maintenance/[id] error:', error);
+      
       return NextResponse.json(
         { success: false, message: 'Internal server error' },
         { status: 500 }

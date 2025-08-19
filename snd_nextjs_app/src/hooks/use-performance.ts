@@ -100,7 +100,7 @@ export function usePerformance(options: UsePerformanceOptions = {}) {
       fidObserver.observe({ entryTypes: ['first-input'] });
       clsObserver.observe({ entryTypes: ['layout-shift'] });
     } catch (error) {
-      console.warn('Performance Observer not supported:', error);
+      
     }
 
     return () => {

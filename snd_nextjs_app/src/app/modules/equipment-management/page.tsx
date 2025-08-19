@@ -130,19 +130,19 @@ export default function EquipmentManagementPage() {
   const fetchEquipment = async () => {
     setLoading(true);
     try {
-      console.log('Fetching equipment...');
+      
       const response = await ApiService.getEquipment();
-      console.log('Equipment response:', response);
+      
       if (response.success && Array.isArray(response.data)) {
         setEquipment(response.data);
       } else {
         setEquipment([]);
-        console.error('Equipment response error:', response);
+        
         toast.error('Failed to load equipment');
       }
     } catch (error) {
       setEquipment([]);
-      console.error('Equipment fetch error:', error);
+      
       toast.error('Failed to load equipment');
     } finally {
       setLoading(false);

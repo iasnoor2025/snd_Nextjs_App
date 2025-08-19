@@ -174,12 +174,12 @@ function UnifiedTimeline({ rental }: { rental: Rental }) {
       try {
         const dateObj = new Date(date);
         if (isNaN(dateObj.getTime())) {
-          console.error('Invalid date format:', date);
+          
           return null;
         }
         return format(dateObj, 'MMM d, yyyy');
       } catch (e) {
-        console.error('Invalid date format:', date);
+        
         return null;
       }
     };
@@ -799,8 +799,7 @@ export default function RentalDetailPage() {
         throw new Error('Failed to fetch rental');
       }
       const data = await response.json();
-      console.log('Fetched rental data:', data);
-      console.log('Rental items:', data.rental_items || data.rentalItems);
+
       setRental(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -820,7 +819,7 @@ export default function RentalDetailPage() {
       const data = await response.json();
       setEquipment(data.data || data.equipment || []);
     } catch (err) {
-      console.error('Failed to fetch equipment:', err);
+      
     }
   };
 
@@ -834,7 +833,7 @@ export default function RentalDetailPage() {
       const data = await response.json();
       setEmployees(data.data || data.employees || []);
     } catch (err) {
-      console.error('Failed to fetch employees:', err);
+      
     }
   };
 
@@ -1060,8 +1059,6 @@ export default function RentalDetailPage() {
         rentalId: rental.id,
       };
 
-      console.log('Sending rental item data:', requestData);
-
       const response = await fetch(`/api/rentals/${rental.id}/items`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1070,7 +1067,7 @@ export default function RentalDetailPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('API Error:', errorData);
+        
         throw new Error(errorData.error || 'Failed to add rental item');
       }
 
@@ -1132,8 +1129,6 @@ export default function RentalDetailPage() {
         totalPrice,
       };
 
-      console.log('Updating rental item data:', requestData);
-
       const response = await fetch(`/api/rentals/${rental.id}/items/${itemFormData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -1142,7 +1137,7 @@ export default function RentalDetailPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('API Error:', errorData);
+        
         throw new Error(errorData.error || 'Failed to update rental item');
       }
 
@@ -1204,7 +1199,7 @@ export default function RentalDetailPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('API Error:', errorData);
+        
         throw new Error(errorData.error || 'Failed to delete rental item');
       }
 
@@ -1869,8 +1864,7 @@ export default function RentalDetailPage() {
                 value={itemFormData.equipmentId}
                 onValueChange={value => {
                   const selectedEquipment = equipment.find(eq => eq.id.toString() === value);
-                  console.log('Selected equipment:', selectedEquipment);
-                  console.log('Equipment list:', equipment);
+
                   setItemFormData(prev => ({
                     ...prev,
                     equipmentId: value,

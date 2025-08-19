@@ -47,7 +47,7 @@ export default function EditCompanyPage() {
           router.push('/modules/company-management');
         }
       } catch (error) {
-        console.error('Error fetching company:', error);
+        
         toast.error('Failed to fetch company');
         router.push('/modules/company-management');
       } finally {
@@ -87,7 +87,7 @@ export default function EditCompanyPage() {
         toast.error(result.message || 'Failed to update company');
       }
     } catch (error) {
-      console.error('Error updating company:', error);
+      
       toast.error('Failed to update company');
     } finally {
       setSaving(false);

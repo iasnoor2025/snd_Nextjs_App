@@ -15,7 +15,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log('PUT /api/timesheets/[id] - Updating timesheet:', { id });
 
     // Validate ID parameter
     const timesheetId = parseInt(id);
@@ -29,7 +28,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     const body = await request.json();
-    console.log('PUT /api/timesheets/[id] - Request body:', body);
 
     const {
       hoursWorked,
@@ -65,8 +63,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Timesheet not found' }, { status: 404 });
     }
 
-    console.log('PUT /api/timesheets/[id] - Found existing timesheet:', existingTimesheet);
-
     // Prepare update data with proper type handling
     const updateData: any = {
       hoursWorked: (parseFloat(hoursWorked) || 0).toString(),
@@ -88,7 +84,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           updateData.date = parsedDate.toISOString();
         }
       } catch (e) {
-        console.warn('Invalid date provided:', date);
+        
       }
     }
 
@@ -99,7 +95,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           updateData.startTime = parsedStartTime.toISOString();
         }
       } catch (e) {
-        console.warn('Invalid startTime provided:', startTime);
+        
       }
     }
 
@@ -110,7 +106,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           updateData.endTime = parsedEndTime.toISOString();
         }
       } catch (e) {
-        console.warn('Invalid endTime provided:', endTime);
+        
       }
     }
 
@@ -130,8 +126,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       updateData.startTime = new Date().toISOString();
     }
 
-    console.log('PUT /api/timesheets/[id] - Updating with data:', updateData);
-
     // Update the timesheet
     const [updatedTimesheet] = await db
       .update(timesheets)
@@ -142,8 +136,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (!updatedTimesheet) {
       throw new Error('No timesheet was updated');
     }
-
-    console.log('PUT /api/timesheets/[id] - Update successful:', updatedTimesheet);
 
     // Fetch the updated timesheet with related data
     const [timesheetWithDetails] = await db
@@ -261,7 +253,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json({ timesheet: transformedTimesheet });
   } catch (error) {
-    console.error('PUT /api/timesheets/[id] - Error updating timesheet:', error);
 
     return NextResponse.json(
       {
@@ -276,35 +267,32 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log('GET /api/timesheets/[id] - Fetching timesheet:', { id });
 
     // Validate ID parameter
     const timesheetId = parseInt(id);
     if (isNaN(timesheetId)) {
-      console.error('GET /api/timesheets/[id] - Invalid ID parameter:', id);
+      
       return NextResponse.json({ error: 'Invalid timesheet ID' }, { status: 400 });
     }
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      console.error('GET /api/timesheets/[id] - Unauthorized access attempt');
+      
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('GET /api/timesheets/[id] - Fetching timesheet with ID:', timesheetId);
-
     // Check database connection
     if (!db) {
-      console.error('GET /api/timesheets/[id] - Database connection not available');
+      
       return NextResponse.json({ error: 'Database connection not available' }, { status: 500 });
     }
 
     // Test database connection
     try {
       await db.execute(sql`SELECT 1`);
-      console.log('GET /api/timesheets/[id] - Database connection test successful');
+      
     } catch (dbTestError) {
-      console.error('GET /api/timesheets/[id] - Database connection test failed:', dbTestError);
+      
       return NextResponse.json(
         {
           error: 'Database connection failed',
@@ -315,7 +303,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     }
 
     // First, check if the timesheet exists with a simple query
-    console.log('GET /api/timesheets/[id] - Testing basic timesheet query...');
+    
     const [timesheetExists] = await db
       .select({ id: timesheets.id })
       .from(timesheets)
@@ -323,11 +311,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       .limit(1);
 
     if (!timesheetExists) {
-      console.log('GET /api/timesheets/[id] - Timesheet not found in database');
+      
       return NextResponse.json({ error: 'Timesheet not found' }, { status: 404 });
     }
-
-    console.log('GET /api/timesheets/[id] - Timesheet exists, fetching basic details...');
 
     // Fetch basic timesheet data first (without joins)
     let basicTimesheet;
@@ -358,7 +344,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         .where(eq(timesheets.id, timesheetId))
         .limit(1);
     } catch (basicQueryError) {
-      console.error('GET /api/timesheets/[id] - Basic timesheet query failed:', basicQueryError);
+      
       return NextResponse.json(
         {
           error: 'Basic timesheet query failed',
@@ -370,13 +356,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     }
 
     if (!basicTimesheet) {
-      console.error('GET /api/timesheets/[id] - Basic timesheet query returned no results');
+      
       return NextResponse.json({ error: 'Timesheet not found' }, { status: 404 });
     }
-
-    console.log(
-      'GET /api/timesheets/[id] - Basic timesheet query successful, fetching related data...'
-    );
 
     // Now try to fetch related data one by one to identify which join is failing
     let employeeData: any = null;
@@ -400,10 +382,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
           .where(eq(employees.id, basicTimesheet.employeeId))
           .limit(1);
         employeeData = employee || null;
-        console.log('GET /api/timesheets/[id] - Employee data fetched successfully');
+        
       }
     } catch (employeeError) {
-      console.warn('GET /api/timesheets/[id] - Failed to fetch employee data:', employeeError);
+      
     }
 
     try {
@@ -419,10 +401,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
           .where(eq(users.id, employeeData.userId))
           .limit(1);
         userData = user || null;
-        console.log('GET /api/timesheets/[id] - User data fetched successfully');
+        
       }
     } catch (userError) {
-      console.warn('GET /api/timesheets/[id] - Failed to fetch user data:', userError);
+      
     }
 
     try {
@@ -437,10 +419,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
           .where(eq(projects.id, basicTimesheet.projectId))
           .limit(1);
         projectData = project || null;
-        console.log('GET /api/timesheets/[id] - Project data fetched successfully');
+        
       }
     } catch (projectError) {
-      console.warn('GET /api/timesheets/[id] - Failed to fetch project data:', projectError);
+      
     }
 
     try {
@@ -455,10 +437,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
           .where(eq(rentals.id, basicTimesheet.rentalId))
           .limit(1);
         rentalData = rental || null;
-        console.log('GET /api/timesheets/[id] - Rental data fetched successfully');
+        
       }
     } catch (rentalError) {
-      console.warn('GET /api/timesheets/[id] - Failed to fetch rental data:', rentalError);
+      
     }
 
     try {
@@ -473,13 +455,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
           .where(eq(employeeAssignments.id, basicTimesheet.assignmentId))
           .limit(1);
         assignmentData = assignment || null;
-        console.log('GET /api/timesheets/[id] - Assignment data fetched successfully');
+        
       }
     } catch (assignmentError) {
-      console.warn('GET /api/timesheets/[id] - Failed to fetch assignment data:', assignmentError);
+      
     }
-
-    console.log('GET /api/timesheets/[id] - All related data queries completed');
 
     // Transform the response to match frontend interface
     const transformedTimesheet = {
@@ -545,10 +525,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         : undefined,
     };
 
-    console.log('GET /api/timesheets/[id] - Returning transformed timesheet');
     return NextResponse.json({ timesheet: transformedTimesheet });
   } catch (error) {
-    console.error('GET /api/timesheets/[id] - Unexpected error:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to fetch timesheet',
@@ -597,7 +576,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Timesheet deleted successfully' }, { status: 200 });
   } catch (error) {
-    console.error('DELETE /api/timesheets/[id] - Error deleting timesheet:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

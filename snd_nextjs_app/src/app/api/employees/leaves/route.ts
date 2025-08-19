@@ -115,7 +115,7 @@ const getLeavesHandler = async (request: NextRequest) => {
       message: 'Leave requests retrieved successfully',
     });
   } catch (error) {
-    console.error('Error in GET /api/employees/leaves:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -168,7 +168,7 @@ const createLeaveHandler = async (request: NextRequest) => {
       message: 'Leave request created successfully',
     });
   } catch (error) {
-    console.error('Error in POST /api/employees/leaves:', error);
+    
     return NextResponse.json(
       {
         success: false,

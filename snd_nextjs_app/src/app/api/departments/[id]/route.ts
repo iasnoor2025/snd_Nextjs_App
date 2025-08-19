@@ -10,8 +10,6 @@ export const GET = withPermission(
       const { id } = params;
       const departmentId = parseInt(id);
 
-      console.log('GET /api/departments/[id] - Fetching department ID:', departmentId);
-
       if (isNaN(departmentId)) {
         return NextResponse.json(
           {
@@ -36,8 +34,6 @@ export const GET = withPermission(
         .where(eq(departments.id, departmentId) && isNull(departments.deletedAt))
         .limit(1);
 
-      console.log('GET /api/departments/[id] - Department found:', department);
-
       if (department.length === 0) {
         return NextResponse.json(
           {
@@ -54,7 +50,7 @@ export const GET = withPermission(
         message: 'Department retrieved successfully',
       });
     } catch (error) {
-      console.error('Error fetching department:', error);
+      
       return NextResponse.json(
         {
           success: false,
@@ -75,8 +71,6 @@ export const PUT = withPermission(
       const { id } = params;
       const departmentId = parseInt(id);
 
-      console.log('PUT /api/departments/[id] - Updating department ID:', departmentId);
-
       if (isNaN(departmentId)) {
         return NextResponse.json(
           {
@@ -89,8 +83,6 @@ export const PUT = withPermission(
 
       const body = await request.json();
       const { name, code, description, active } = body;
-
-      console.log('PUT /api/departments/[id] - Request body:', body);
 
       if (!name || !name.trim()) {
         return NextResponse.json(
@@ -129,16 +121,9 @@ export const PUT = withPermission(
         );
       }
 
-      console.log(
-        'PUT /api/departments/[id] - Current name:',
-        currentName,
-        'New name:',
-        trimmedName
-      );
-
       // If the name hasn't changed, skip duplicate check
       if (currentName === trimmedName) {
-        console.log('Name unchanged, skipping duplicate check');
+        
       } else {
         // Check if another department with the same name already exists (case insensitive)
         const allDepartments = await db
@@ -149,13 +134,9 @@ export const PUT = withPermission(
           .from(departments)
           .where(isNull(departments.deletedAt));
 
-        console.log('PUT /api/departments/[id] - All departments for comparison:', allDepartments);
-
         const duplicateDepartment = allDepartments.find(
           dept => dept.id !== departmentId && dept.name.toLowerCase() === trimmedName.toLowerCase()
         );
-
-        console.log('PUT /api/departments/[id] - Duplicate department found:', duplicateDepartment);
 
         if (duplicateDepartment) {
           return NextResponse.json(
@@ -167,8 +148,6 @@ export const PUT = withPermission(
           );
         }
       }
-
-      console.log('PUT /api/departments/[id] - No duplicates, updating department');
 
       // Update department
       const [updatedDepartment] = await db
@@ -191,18 +170,13 @@ export const PUT = withPermission(
           updated_at: departments.updatedAt,
         });
 
-      console.log(
-        'PUT /api/departments/[id] - Department updated successfully:',
-        updatedDepartment
-      );
-
       return NextResponse.json({
         success: true,
         data: updatedDepartment,
         message: 'Department updated successfully',
       });
     } catch (error) {
-      console.error('Error updating department:', error);
+      
       return NextResponse.json(
         {
           success: false,
@@ -222,8 +196,6 @@ export const DELETE = withPermission(
     try {
       const { id } = params;
       const departmentId = parseInt(id);
-
-      console.log('DELETE /api/departments/[id] - Deleting department ID:', departmentId);
 
       if (isNaN(departmentId)) {
         return NextResponse.json(
@@ -245,8 +217,6 @@ export const DELETE = withPermission(
         .where(eq(departments.id, departmentId) && isNull(departments.deletedAt))
         .limit(1);
 
-      console.log('DELETE /api/departments/[id] - Department to delete:', existingDepartment);
-
       if (existingDepartment.length === 0) {
         return NextResponse.json(
           {
@@ -257,8 +227,6 @@ export const DELETE = withPermission(
         );
       }
 
-      console.log('DELETE /api/departments/[id] - Soft deleting department');
-
       // Soft delete by setting deletedAt timestamp
       await db
         .update(departments)
@@ -268,14 +236,12 @@ export const DELETE = withPermission(
         })
         .where(eq(departments.id, departmentId));
 
-      console.log('DELETE /api/departments/[id] - Department deleted successfully');
-
       return NextResponse.json({
         success: true,
         message: 'Department deleted successfully',
       });
     } catch (error) {
-      console.error('Error deleting department:', error);
+      
       return NextResponse.json(
         {
           success: false,

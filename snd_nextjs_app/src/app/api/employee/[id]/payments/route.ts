@@ -184,7 +184,7 @@ const getEmployeePaymentsHandler = async (
 
     return NextResponse.json(response);
   } catch (error) {
-    console.error('Error fetching employee payments:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch employee payments' }, { status: 500 });
   }
 };

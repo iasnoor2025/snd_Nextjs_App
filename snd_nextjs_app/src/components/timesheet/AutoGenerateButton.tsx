@@ -68,7 +68,7 @@ export default function AutoGenerateButton({
         }
       }
     } catch (error) {
-      console.error('Error auto-generating timesheets:', error);
+      
       toast.error('Failed to auto-generate timesheets');
     } finally {
       setIsLoading(false);

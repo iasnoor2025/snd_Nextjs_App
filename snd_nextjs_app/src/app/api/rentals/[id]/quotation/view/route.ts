@@ -4,10 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log('🔍 Fetching rental with ID:', id);
 
     const rental = await RentalService.getRental(parseInt(id));
-    console.log('📦 Rental data received:', rental);
 
     if (!rental) {
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
@@ -19,14 +17,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     // Ensure customer data exists
     if (!rental.customer) {
-      console.log('❌ Customer data missing from rental:', rental);
+      
       return NextResponse.json(
         { error: 'Customer data not found for this rental' },
         { status: 404 }
       );
     }
-
-    console.log('👤 Customer data found:', rental.customer);
 
     // Generate quotation data for display
     const quotation = {
@@ -77,12 +73,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       mdTerms: rental.mdTerms || '',
     };
 
-    console.log('📄 Generated quotation data:', quotation);
-
     // Return quotation data directly (not wrapped in an object)
     return NextResponse.json(quotation);
   } catch (error) {
-    console.error('❌ Error fetching quotation:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch quotation' }, { status: 500 });
   }
 }

@@ -49,7 +49,7 @@ export function NationIdRequired({ userName, userEmail, onNationIdSet }: NationI
         setError(data.error || 'Failed to save nation ID');
       }
     } catch (error) {
-      console.error('Error saving nation ID:', error);
+      
       setError('An error occurred while saving your nation ID');
     } finally {
       setIsLoading(false);

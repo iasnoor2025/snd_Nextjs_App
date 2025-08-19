@@ -10,7 +10,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export const POST = withPermission(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
     try {
-      console.log('🔍 MARK ABSENT - Starting request for timesheet:', params.id);
 
       const timesheetId = parseInt(params.id);
       if (isNaN(timesheetId)) {
@@ -36,12 +35,6 @@ export const POST = withPermission(
         return NextResponse.json({ error: 'Timesheet data not found' }, { status: 404 });
       }
 
-      console.log('🔍 MARK ABSENT - Found timesheet:', {
-        id: timesheetData.id,
-        status: timesheetData.status,
-        employeeId: timesheetData.employeeId,
-      });
-
       // Get session to check user permissions
       const session = await getServerSession(authConfig);
       if (!session?.user?.id) {
@@ -62,8 +55,6 @@ export const POST = withPermission(
           .where(eq(timesheets.id, timesheetId))
           .returning();
 
-        console.log(`🔍 MARK ABSENT - Employee marked as absent successfully: ${timesheetId}`);
-
         const updatedTimesheetData = updatedTimesheet[0];
         if (!updatedTimesheetData) {
           return NextResponse.json({ error: 'Failed to update timesheet' }, { status: 500 });
@@ -79,7 +70,7 @@ export const POST = withPermission(
           },
         });
       } catch (error) {
-        console.error(`🔍 MARK ABSENT - Error marking employee as absent ${timesheetId}:`, error);
+        
         return NextResponse.json(
           {
             error: `Failed to mark employee as absent: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -88,7 +79,7 @@ export const POST = withPermission(
         );
       }
     } catch (error) {
-      console.error('🔍 MARK ABSENT - Unexpected error:', error);
+      
       return NextResponse.json(
         {
           error: 'Internal server error',

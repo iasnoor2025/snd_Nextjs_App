@@ -113,12 +113,12 @@ function CreateLeaveRequestContent() {
           const error = await response.json();
           toast.error(error.error || error.message || 'Failed to submit leave request');
         } catch (parseError) {
-          console.error('Error parsing response:', parseError);
+          
           toast.error('Failed to submit leave request');
         }
       }
     } catch (error) {
-      console.error('Error submitting leave request:', error);
+      
       toast.error('Failed to submit leave request');
     } finally {
       setLoading(false);

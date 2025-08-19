@@ -61,7 +61,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Error in GET /api/employees/[id]/documents/[documentId]/download:', error);
+    
     return NextResponse.json(
       {
         success: false,

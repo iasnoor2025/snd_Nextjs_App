@@ -67,8 +67,6 @@ export async function POST(_request: NextRequest) {
         .where(eq(employees.status, 'active'));
     }
 
-    console.log(`Processing ${employeesToProcess.length} employees for ${month}/${year}`);
-
     const processedEmployees: string[] = [];
     const generatedPayrolls: string[] = [];
     const errors: string[] = [];
@@ -78,7 +76,6 @@ export async function POST(_request: NextRequest) {
     // Process each employee
     for (const employee of employeesToProcess) {
       try {
-        console.log(`Processing employee: ${employee.firstName} ${employee.lastName}`);
 
         // Check if payroll already exists for this month/year
         const existingPayroll = await db
@@ -94,9 +91,7 @@ export async function POST(_request: NextRequest) {
           .limit(1);
 
         if (existingPayroll.length > 0) {
-          console.log(
-            `Payroll already exists for ${employee.firstName} ${employee.lastName} - ${month}/${year}`
-          );
+          
           totalSkipped++;
           continue;
         }
@@ -141,9 +136,7 @@ export async function POST(_request: NextRequest) {
           timesheetMap.set(dateKey, ts);
 
           // Debug: log the date type and value
-          console.log(
-            `Monthly timesheet date debug - Type: ${typeof ts.date}, Value: ${ts.date}, Parsed: ${dateKey}`
-          );
+          
         });
 
         // Loop through all days in the month
@@ -216,14 +209,6 @@ export async function POST(_request: NextRequest) {
         // Calculate absent deduction: (Basic Salary / Total Days in Month) * Absent Days
         const basicSalary = Number(employee.basicSalary);
         const absentDeduction = absentDays > 0 ? (basicSalary / daysInMonth) * absentDays : 0;
-
-        console.log(`Absent calculation for ${employee.firstName} ${employee.lastName}:`, {
-          totalDaysInMonth: daysInMonth,
-          absentDays,
-          basicSalary,
-          absentDeduction,
-          calculation: `(${basicSalary} / ${daysInMonth}) * ${absentDays} = ${absentDeduction}`,
-        });
 
         const bonusAmount = 0; // Manual setting only
         const deductionAmount = absentDeduction; // Include absent deduction
@@ -298,15 +283,12 @@ export async function POST(_request: NextRequest) {
 
         await db.insert(payrollItems).values(payrollItemsData);
 
-        console.log(
-          `Generated payroll for ${employee.firstName} ${employee.lastName} - ${month}/${year}`
-        );
         processedEmployees.push(`${employee.firstName} ${employee.lastName}`);
         generatedPayrolls.push(payroll.id.toString());
         totalGenerated++;
       } catch (error) {
         const errorMsg = `Error processing ${employee.firstName} ${employee.lastName}: ${error}`;
-        console.error(errorMsg);
+        
         errors.push(errorMsg);
       }
     }
@@ -366,7 +348,7 @@ export async function POST(_request: NextRequest) {
       payroll_run_id: payrollRun.id,
     });
   } catch (error) {
-    console.error('Monthly payroll generation error:', error);
+    
     return NextResponse.json(
       {
         success: false,

@@ -10,8 +10,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const body = await request.json();
     const rentalId = id;
 
-    console.log('Received rental item data:', body);
-
     // Check if rental exists
     const rentalExists = await RentalService.getRental(parseInt(rentalId));
     if (!rentalExists) {
@@ -68,11 +66,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         //   updatedAt: new Date().toISOString().split('T')[0]
         // });
 
-        console.log(
-          `Employee assignment created for operator ${body.operatorId} on rental ${rentalId}`
-        );
       } catch (assignmentError) {
-        console.error('Error creating employee assignment:', assignmentError);
+        
         // Don't fail the rental item creation if assignment creation fails
         // Just log the error
       }
@@ -80,12 +75,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json(rentalItem, { status: 201 });
   } catch (error) {
-    console.error('Error adding rental item:', error);
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'Unknown',
-    });
+
     return NextResponse.json(
       {
         error: 'Failed to add rental item',
@@ -103,7 +93,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const rentalItems = await RentalService.getRentalItems(parseInt(rentalId));
     return NextResponse.json(rentalItems);
   } catch (error) {
-    console.error('Error fetching rental items:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch rental items' }, { status: 500 });
   }
 }
@@ -113,8 +103,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const body = await request.json();
     const rentalId = id;
-
-    console.log('Received rental item update data:', body);
 
     // Check if rental exists
     const rentalExists = await RentalService.getRental(parseInt(rentalId));
@@ -184,9 +172,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
                 )
               );
 
-            console.log(
-              `Ended employee assignment for previous operator ${previousOperatorId} on rental ${rentalId}`
-            );
           }
 
           // Create new employee assignment - temporarily commented out due to type issues
@@ -207,12 +192,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
           //   updatedAt: new Date().toISOString().split('T')[0]
           // });
 
-          console.log(
-            `Created new employee assignment for operator ${newOperatorId} on rental ${rentalId}`
-          );
         }
       } catch (assignmentError) {
-        console.error('Error updating employee assignment:', assignmentError);
+        
         // Don't fail the rental item update if assignment update fails
         // Just log the error
       }
@@ -220,12 +202,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json(updatedItem);
   } catch (error) {
-    console.error('Error updating rental item:', error);
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'Unknown',
-    });
+
     return NextResponse.json(
       {
         error: 'Failed to update rental item',
@@ -254,7 +231,7 @@ export async function DELETE(request: NextRequest, _params: { params: Promise<{ 
 
     return NextResponse.json({ message: 'Rental item deleted successfully' });
   } catch (error) {
-    console.error('Error deleting rental item:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to delete rental item',

@@ -194,7 +194,7 @@ export default function TimesheetManagementPage() {
       const oneHour = 60 * 60 * 1000; // 1 hour in milliseconds
 
       if (lastAutoGeneration && now - parseInt(lastAutoGeneration) < oneHour) {
-        console.log('Auto-generation was recently executed, skipping...');
+        
         return;
       }
 
@@ -207,31 +207,38 @@ export default function TimesheetManagementPage() {
           },
         });
 
-        const result = await response.json();
+        let result;
+        try {
+          result = await response.json();
+        } catch (jsonError) {
+          console.error('Failed to parse response as JSON:', jsonError);
+          console.error('Response text:', await response.text());
+          return;
+        }
 
-        if (result.success && result.created > 0) {
+        if (result && result.success && result.created > 0) {
           toast.success(`${t('auto_generated_timesheets', { count: result.created })}`);
           // Store the execution time
           localStorage.setItem('lastAutoGeneration', now.toString());
           // Refresh the timesheets table to show newly created timesheets
           fetchTimesheets();
-        } else if (result.success && result.created === 0) {
+        } else if (result && result.success && result.created === 0) {
           // No new timesheets created, which is fine
-          console.log('No new timesheets needed to be generated for the last 3 months');
+          
           // Store the execution time even if no timesheets were created
           localStorage.setItem('lastAutoGeneration', now.toString());
-        } else if (result.errors && result.errors.length > 0) {
-          console.warn('Auto-generation completed with some errors:', result.errors);
+        } else if (result && result.errors && result.errors.length > 0) {
+          
           // Store the execution time even if there were errors
           localStorage.setItem('lastAutoGeneration', now.toString());
         }
 
         // Update progress if available
-        if (result.progress) {
+        if (result && result.progress) {
           setAutoGenerationProgress(result.progress);
         }
       } catch (error) {
-        console.error('Error during auto-generation on page load:', error);
+        
         // Don't show error toast to user as this is a background process
       } finally {
         setAutoGenerating(false);
@@ -280,10 +287,10 @@ export default function TimesheetManagementPage() {
 
       // Show success message if this was a manual refresh (not from auto-generation)
       if (data.total !== undefined) {
-        console.log(`Refreshed timesheets: ${data.total} total timesheets`);
+        
       }
     } catch (error) {
-      console.error('Error fetching timesheets:', error);
+      
       toast.error(t('failed_to_fetch_timesheets'));
     } finally {
       setLoading(false);
@@ -539,7 +546,7 @@ export default function TimesheetManagementPage() {
       setSelectedTimesheets(new Set());
       fetchTimesheets(); // Refresh the list
     } catch (error) {
-      console.error('🔍 ALL PENDING ACTION - Error:', error);
+      
       toast.error(error instanceof Error ? error.message : 'Failed to process timesheets');
     } finally {
       setBulkActionLoading(false);
@@ -575,7 +582,7 @@ export default function TimesheetManagementPage() {
       setBulkActionDialog({ open: false, action: null, notes: '' });
       fetchTimesheets(); // Refresh the list
     } catch (error) {
-      console.error('🔍 BULK ACTION - Error:', error);
+      
       toast.error(error instanceof Error ? error.message : 'Failed to process timesheets');
     } finally {
       setBulkActionLoading(false);

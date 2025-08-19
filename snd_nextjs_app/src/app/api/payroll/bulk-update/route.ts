@@ -88,9 +88,6 @@ export async function POST(_request: NextRequest) {
 
         // Use simple formula: (Basic Salary / Total Days in Month) * Absent Days
         absentDeduction = (baseSalary / daysInMonth) * Number(updates.absentDays);
-        console.log(
-          `Bulk update absent calculation: (${baseSalary} / ${daysInMonth}) * ${updates.absentDays} = ${absentDeduction}`
-        );
       }
 
       updateData.finalAmount = (
@@ -119,7 +116,7 @@ export async function POST(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error in bulk update:', error);
+    
     return NextResponse.json(
       { success: false, message: 'Failed to update payrolls' },
       { status: 500 }

@@ -22,7 +22,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json(result, { status: 500 });
     }
   } catch (error) {
-    console.error('Error auto-generating timesheets:', error);
+    
     return NextResponse.json({ error: 'Failed to auto-generate timesheets' }, { status: 500 });
   }
 }

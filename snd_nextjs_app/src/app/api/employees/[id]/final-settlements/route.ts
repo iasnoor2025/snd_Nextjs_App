@@ -10,7 +10,7 @@ export async function GET() {
 
     return NextResponse.json(finalSettlements);
   } catch (error) {
-    console.error('Error fetching final settlements:', error);
+    
     return NextResponse.json(
       {
         success: false,

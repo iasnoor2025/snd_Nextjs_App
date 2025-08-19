@@ -4,7 +4,6 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    console.log('🔍 Validating database schema...');
 
     // Get all tables from the database
     const dbTablesResult = await db.execute(sql`
@@ -158,14 +157,14 @@ export async function GET() {
 
     if (hasCriticalIssues) {
       validationResult.message = 'Schema validation completed with issues found';
-      console.log('⚠️ Schema validation found issues:', validationResult);
+      
     } else {
-      console.log('✅ Schema validation completed successfully');
+      
     }
 
     return NextResponse.json(validationResult);
   } catch (error) {
-    console.error('❌ Schema validation failed:', error);
+    
     return NextResponse.json(
       {
         success: false,

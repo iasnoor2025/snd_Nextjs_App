@@ -20,7 +20,7 @@ export async function POST(_request: NextRequest) {
         await db.insert(timesheetsTable).values(timesheet);
         successCount++;
       } catch (error) {
-        console.error('Error inserting timesheet:', error);
+        
         errorCount++;
       }
     }
@@ -32,7 +32,7 @@ export async function POST(_request: NextRequest) {
       message: `Successfully created ${successCount} timesheets`,
     });
   } catch (error) {
-    console.error('Error creating bulk timesheets:', error);
+    
     return NextResponse.json({ error: 'Failed to create bulk timesheets' }, { status: 500 });
   }
 }
@@ -79,7 +79,7 @@ export async function DELETE(_request: NextRequest) {
       message: `Successfully deleted ${timesheetIds.length} timesheets`,
     });
   } catch (error) {
-    console.error('Error deleting bulk timesheets:', error);
+    
     return NextResponse.json({ error: 'Failed to delete bulk timesheets' }, { status: 500 });
   }
 }

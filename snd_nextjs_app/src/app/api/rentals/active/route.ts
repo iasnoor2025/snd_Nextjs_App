@@ -60,7 +60,7 @@ export const GET = withReadPermission(async (request: NextRequest) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching active rentals:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch active rentals' }, { status: 500 });
   }
 }, PermissionConfigs.rental.read);

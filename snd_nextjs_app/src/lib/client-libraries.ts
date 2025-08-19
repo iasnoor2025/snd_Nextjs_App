@@ -10,7 +10,7 @@ export const loadJsPDF = async () => {
     const { jsPDF } = await import('jspdf');
     return jsPDF;
   } catch (error) {
-    console.error('Failed to load jsPDF:', error);
+    
     throw new Error('Failed to load jsPDF library');
   }
 };
@@ -24,7 +24,7 @@ export const safeClientOperation = <T>(operation: () => T, fallback: T): T => {
     try {
       return operation();
     } catch (error) {
-      console.warn('Client operation failed, using fallback:', error);
+      
       return fallback;
     }
   }

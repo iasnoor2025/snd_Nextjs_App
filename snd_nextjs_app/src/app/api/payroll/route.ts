@@ -191,7 +191,7 @@ export async function GET(_request: NextRequest) {
       links: [],
     });
   } catch (error) {
-    console.error('Error fetching payrolls:', error);
+    
     return NextResponse.json(
       { success: false, message: 'Failed to fetch payrolls' },
       { status: 500 }
@@ -248,9 +248,7 @@ export async function POST(_request: NextRequest) {
 
       // Use simple formula: (Basic Salary / Total Days in Month) * Absent Days
       absentDeduction = (baseSalary / daysInMonth) * Number(body.absentDays);
-      console.log(
-        `Absent calculation: (${baseSalary} / ${daysInMonth}) * ${body.absentDays} = ${absentDeduction}`
-      );
+      console.log(`Absent deduction calculation: (${baseSalary} / ${daysInMonth}) * ${body.absentDays} = ${absentDeduction}`);
     }
 
     const finalAmount =

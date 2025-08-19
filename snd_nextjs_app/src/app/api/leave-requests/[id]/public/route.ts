@@ -8,8 +8,6 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
 
-    console.log('🔍 Fetching public leave request with ID:', id);
-
     const leaveRequestData = await db
       .select({
         id: employeeLeaves.id,
@@ -105,13 +103,12 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       ],
     };
 
-    console.log('✅ Returning public leave request data');
     return NextResponse.json({
       success: true,
       data: transformedLeaveRequest,
     });
   } catch (error) {
-    console.error('❌ Error fetching public leave request:', error);
+    
     return NextResponse.json(
       {
         error: 'Internal server error',

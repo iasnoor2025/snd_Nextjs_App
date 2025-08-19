@@ -10,7 +10,7 @@ export async function GET() {
 
     return NextResponse.json(leaveRequests);
   } catch (error) {
-    console.error('Error fetching leave requests:', error);
+    
     return NextResponse.json(
       {
         success: false,

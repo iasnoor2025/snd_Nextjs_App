@@ -23,9 +23,7 @@ export const GET = withReadPermission(async (request: NextRequest) => {
     const rentals = await RentalService.getRentals(filters);
     return NextResponse.json(rentals);
   } catch (error) {
-    console.error('Error fetching rentals:', error);
-    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
     return NextResponse.json(
       {
         error: 'Failed to fetch rentals',
@@ -88,7 +86,7 @@ export const POST = withReadPermission(async (request: NextRequest) => {
     const rental = await RentalService.createRental(rentalData);
     return NextResponse.json(rental, { status: 201 });
   } catch (error) {
-    console.error('Error creating rental:', error);
+    
     return NextResponse.json({ error: 'Failed to create rental' }, { status: 500 });
   }
 }, PermissionConfigs.rental.create);

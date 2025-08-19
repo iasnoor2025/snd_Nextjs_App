@@ -90,7 +90,7 @@ export async function getRBACPermissions(userId: string) {
       user: userForRBAC,
     };
   } catch (error) {
-    console.error('Error getting RBAC permissions:', error);
+    
     // Return a default ability that denies everything
     return {
       can: () => false,

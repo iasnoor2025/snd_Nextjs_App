@@ -28,10 +28,10 @@ export function I18nWrapper({ children }: I18nWrapperProps) {
               i18n.changeLanguage(data.language);
             }
           } else {
-            console.warn('Failed to load user language preference, using default');
+            
           }
         } catch (error) {
-          console.warn('Failed to load user language preference, using default:', error);
+          
         }
       };
 

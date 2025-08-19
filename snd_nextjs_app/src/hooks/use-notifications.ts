@@ -53,7 +53,7 @@ export const useNotifications = () => {
       }
     } catch (err) {
       setError('Failed to fetch notifications');
-      console.error('Error fetching notifications:', err);
+      
     } finally {
       setLoading(false);
     }
@@ -68,7 +68,7 @@ export const useNotifications = () => {
 
       setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (err) {
-      console.error('Error marking notification as read:', err);
+      
     }
   }, []);
 
@@ -81,7 +81,7 @@ export const useNotifications = () => {
 
       setUnreadCount(0);
     } catch (err) {
-      console.error('Error marking all notifications as read:', err);
+      
     }
   }, []);
 
@@ -92,7 +92,7 @@ export const useNotifications = () => {
       setNotifications([]);
       setUnreadCount(0);
     } catch (err) {
-      console.error('Error clearing all notifications:', err);
+      
     }
   }, []);
 

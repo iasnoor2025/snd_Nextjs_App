@@ -97,13 +97,10 @@ function TimesheetEditContent() {
       try {
         setLoading(true);
         setError(null);
-        console.log('Fetching timesheet with ID:', timesheetId);
 
         const response = await fetch(`/api/timesheets/${timesheetId}`, {
           credentials: 'include',
         });
-
-        console.log('Response status:', response.status);
 
         if (response.status === 404) {
           setError('Timesheet not found');
@@ -124,26 +121,19 @@ function TimesheetEditContent() {
             }
           } catch (parseError) {
             // If we can't parse the error response, use the default message
-            console.warn('Could not parse error response:', parseError);
+            
           }
-
-          console.error('API Response Error:', {
-            status: response.status,
-            statusText: response.statusText,
-            errorMessage,
-          });
 
           throw new Error(errorMessage);
         }
 
         const data = await response.json();
-        console.log('API Response Data:', data);
 
         // Handle both wrapped and direct response formats
         const timesheetData = data.timesheet || data;
 
         if (!timesheetData || !timesheetData.id) {
-          console.error('API Response missing timesheet data:', data);
+          
           throw new Error('Invalid API response format');
         }
 
@@ -167,9 +157,8 @@ function TimesheetEditContent() {
           notes: timesheetData.notes || '',
         });
 
-        console.log('Form data initialized:', formData);
       } catch (error) {
-        console.error('Error fetching timesheet:', error);
+        
         const errorMessage = error instanceof Error ? error.message : 'Failed to load timesheet';
         setError(errorMessage);
         toast.error(errorMessage);
@@ -219,7 +208,7 @@ function TimesheetEditContent() {
       router.push(`/modules/timesheet-management/${timesheetId}`);
     } catch (error) {
       toast.error('Failed to update timesheet');
-      console.error('Error updating timesheet:', error);
+      
     } finally {
       setSaving(false);
     }

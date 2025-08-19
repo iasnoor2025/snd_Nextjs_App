@@ -91,7 +91,7 @@ export const GET = withPermission(async (request: NextRequest) => {
       prev_page_url: page > 1 ? `/api/projects?page=${page - 1}` : null,
     });
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 });
   }
 }, PermissionConfigs.project.read);
@@ -187,7 +187,7 @@ export const POST = withPermission(async (request: NextRequest) => {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating project:', error);
+    
     return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
   }
 }, PermissionConfigs.project.create);
@@ -214,7 +214,7 @@ export const PUT = withPermission(async (request: NextRequest) => {
 
     return NextResponse.json(project);
   } catch (error) {
-    console.error('Error updating project:', error);
+    
     return NextResponse.json({ error: 'Failed to update project' }, { status: 500 });
   }
 }, PermissionConfigs.project.update);
@@ -228,7 +228,7 @@ export const DELETE = withPermission(async (request: NextRequest) => {
 
     return NextResponse.json({ message: 'Project deleted successfully' });
   } catch (error) {
-    console.error('Error deleting project:', error);
+    
     return NextResponse.json({ error: 'Failed to delete project' }, { status: 500 });
   }
 }, PermissionConfigs.project.delete);

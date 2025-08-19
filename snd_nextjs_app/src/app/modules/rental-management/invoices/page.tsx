@@ -126,7 +126,7 @@ export default function InvoicesPage() {
     documentTitle: 'Rental-Invoices-List',
     waitForImages: true,
     onPrintError: error => {
-      console.error('Print error details:', error);
+      
       // Continue with print even if there are image errors
     },
   });
@@ -141,7 +141,7 @@ export default function InvoicesPage() {
         const mockData = getMockInvoicesData(search, status, startDate, endDate, currentPage);
         setInvoices(mockData);
       } catch (error) {
-        console.error('Error fetching invoices:', error);
+        
         toast.error('Failed to fetch invoices');
       } finally {
         setLoading(false);

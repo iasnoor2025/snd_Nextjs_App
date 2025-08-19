@@ -220,7 +220,7 @@ export default function SettingsPage() {
         const data = await response.json();
         setSettings(data);
       } catch (error) {
-        console.error('Error fetching settings:', error);
+        
         toast.error('Failed to fetch settings');
       } finally {
         setLoading(false);

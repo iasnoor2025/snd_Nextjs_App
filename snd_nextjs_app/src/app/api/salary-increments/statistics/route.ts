@@ -118,7 +118,7 @@ export async function GET(_request: NextRequest) {
       data: statistics,
     });
   } catch (error) {
-    console.error('Error fetching salary increment statistics:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

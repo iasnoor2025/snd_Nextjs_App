@@ -25,7 +25,7 @@ async function updateEquipmentStatusOnAssignmentChange(
           updatedAt: new Date().toISOString(),
         })
         .where(eq(equipment.id, equipmentId));
-      console.log(`Equipment ${equipmentId} status updated to assigned`);
+      
     } else if (assignmentStatus === 'completed' || assignmentStatus === 'cancelled') {
       // Check if there are other active assignments for this equipment
       const otherActiveAssignments = await db
@@ -47,53 +47,46 @@ async function updateEquipmentStatusOnAssignmentChange(
             updatedAt: new Date().toISOString(),
           })
           .where(eq(equipment.id, equipmentId));
-        console.log(`Equipment ${equipmentId} status updated to available`);
+        
       } else {
-        console.log(
-          `Equipment ${equipmentId} still has other active assignments, keeping status as assigned`
-        );
+        
       }
     }
   } catch (error) {
-    console.error(`Error updating equipment ${equipmentId} status:`, error);
+    
   }
 }
 
 export async function GET({ params }: { params: Promise<{ id: string }> }) {
   try {
-    console.log('GET /api/equipment/[id]/rentals - Starting request');
 
     const { id: idParam } = await params;
     const id = parseInt(idParam);
-
-    console.log('Equipment ID:', id);
 
     if (isNaN(id)) {
       return NextResponse.json({ success: false, error: 'Invalid equipment ID' }, { status: 400 });
     }
 
     // Check if equipment exists
-    console.log('Checking if equipment exists...');
+    
     const equipmentData = await db.select().from(equipment).where(eq(equipment.id, id)).limit(1);
 
     if (!equipmentData.length) {
-      console.log('Equipment not found');
+      
       return NextResponse.json({ success: false, error: 'Equipment not found' }, { status: 404 });
     }
 
     const equipmentItem = equipmentData[0];
     if (!equipmentItem) {
-      console.log('Equipment data not found');
+      
       return NextResponse.json(
         { success: false, error: 'Equipment data not found' },
         { status: 404 }
       );
     }
 
-    console.log('Equipment found:', equipmentItem.name);
-
     // Get basic rental history without complex JOINs
-    console.log('Fetching basic rental history...');
+    
     const rentalHistory = await db
       .select({
         id: equipmentRentalHistory.id,
@@ -135,8 +128,6 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       .where(eq(equipmentRentalHistory.equipmentId, id))
       .orderBy(desc(equipmentRentalHistory.createdAt));
 
-    console.log('Basic rental history fetched, count:', rentalHistory.length);
-
     // Transform the basic data
     const history = rentalHistory.map(item => ({
       id: item.id,
@@ -172,18 +163,14 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       updated_at: item.updatedAt,
     }));
 
-    console.log('History transformed, count:', history.length);
-
     // For now, skip the complex rental items query to get the endpoint working
-    console.log('Skipping complex rental items query for now');
+    
     const rentalItemsHistory: any[] = [];
 
     // Combine histories
     const combinedHistory = [...history, ...rentalItemsHistory].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-
-    console.log('Combined history count:', combinedHistory.length);
 
     return NextResponse.json({
       success: true,
@@ -192,8 +179,7 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       message: 'Basic rental history loaded successfully',
     });
   } catch (error) {
-    console.error('Error fetching equipment rental history:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
     return NextResponse.json(
       {
         success: false,
@@ -368,9 +354,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           })
           .returning();
 
-        console.log('Employee assignment created automatically:', employeeAssignment);
       } catch (assignmentError) {
-        console.error('Error creating employee assignment:', assignmentError);
+        
         // Don't fail the equipment assignment if employee assignment creation fails
       }
     }
@@ -389,7 +374,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating equipment assignment:', error);
+    
     return NextResponse.json(
       { success: false, error: 'Failed to create equipment assignment' },
       { status: 500 }

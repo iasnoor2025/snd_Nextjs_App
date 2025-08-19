@@ -12,7 +12,6 @@ export async function POST() {
 
     // In a real application, you would update all notifications for this user in the database
     // For now, we'll just return a success response
-    console.log(`Marking all notifications as read for user ${session.user.email}`);
 
     return NextResponse.json({
       success: true,
@@ -23,7 +22,7 @@ export async function POST() {
       },
     });
   } catch (error) {
-    console.error('Error marking all notifications as read:', error);
+    
     return NextResponse.json(
       { error: 'Failed to mark all notifications as read' },
       { status: 500 }

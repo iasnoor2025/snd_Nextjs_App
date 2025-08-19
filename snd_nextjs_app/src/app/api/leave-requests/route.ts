@@ -73,8 +73,6 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create leave request' }, { status: 500 });
     }
 
-    console.log('✅ Leave request created:', leaveRequest.id);
-
     return NextResponse.json(
       {
         success: true,
@@ -94,7 +92,7 @@ export async function POST(_request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('❌ Error creating leave request:', error);
+    
     return NextResponse.json(
       {
         error: 'Internal server error',

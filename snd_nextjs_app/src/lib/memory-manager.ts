@@ -134,7 +134,7 @@ class MemoryManager {
       try {
         callback();
       } catch (error) {
-        console.warn('Memory cleanup callback failed:', error);
+        
       }
     });
   }

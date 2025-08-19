@@ -49,7 +49,7 @@ export function Providers({ children }: ProvidersProps) {
           mutations: {
             retry: 1,
             onError: (error: any) => {
-              console.error('Mutation error:', error);
+              
             },
           },
         },

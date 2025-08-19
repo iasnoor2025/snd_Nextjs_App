@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const resolvedParams = await params;
 
     if (!resolvedParams || !resolvedParams.id) {
-      console.error('Invalid params received:', resolvedParams);
+      
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       message: 'Timesheets retrieved successfully',
     });
   } catch (error) {
-    console.error('Error in GET /api/employees/[id]/timesheets:', error);
+    
     return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });
   }
 }
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const resolvedParams = await params;
 
     if (!resolvedParams || !resolvedParams.id) {
-      console.error('Invalid params received:', resolvedParams);
+      
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
@@ -176,7 +176,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       },
     });
   } catch (error) {
-    console.error('Error in POST /api/employees/[id]/timesheets:', error);
+    
     return NextResponse.json(
       {
         success: false,

@@ -64,7 +64,7 @@ export async function DELETE(
           fs.unlinkSync(filePath);
         }
       } catch (fileError) {
-        console.error('Error deleting file:', fileError);
+        
         // Continue with database deletion even if file deletion fails
       }
     }
@@ -74,7 +74,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Document deleted successfully' }, { status: 200 });
   } catch (error) {
-    console.error('Error deleting document:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

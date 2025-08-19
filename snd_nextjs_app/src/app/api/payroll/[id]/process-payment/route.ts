@@ -106,7 +106,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       message: 'Payment processed successfully',
     });
   } catch (error) {
-    console.error('Error processing payment:', error);
+    
     return NextResponse.json(
       {
         success: false,

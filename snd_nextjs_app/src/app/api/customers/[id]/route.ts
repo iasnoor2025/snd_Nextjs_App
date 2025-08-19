@@ -28,7 +28,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       customer: customer[0],
     });
   } catch (error) {
-    console.error('Error fetching customer:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -82,7 +82,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       message: 'Customer updated successfully',
     });
   } catch (error) {
-    console.error('Error updating customer:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -121,7 +121,7 @@ export async function DELETE(
       message: 'Customer deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting customer:', error);
+    
     return NextResponse.json(
       {
         success: false,

@@ -34,7 +34,7 @@ export const usePrint = (options: UsePrintOptions = {}) => {
             } else {
               img.onload = () => resolve(img);
               img.onerror = () => {
-                console.warn('Image failed to load for printing:', img.src);
+                
                 resolve(img); // Resolve anyway to continue printing
               };
             }
@@ -50,7 +50,7 @@ export const usePrint = (options: UsePrintOptions = {}) => {
       onAfterPrint?.();
       toast.success('Print completed successfully');
     } catch (error) {
-      console.error('Print failed:', error);
+      
       onPrintError?.(error);
       toast.error('Print failed. Please try again.');
     }

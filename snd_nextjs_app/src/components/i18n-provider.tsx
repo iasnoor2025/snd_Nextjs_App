@@ -29,7 +29,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
           document.documentElement.classList.remove('rtl');
         }
       } catch (error) {
-        console.error('Error setting document attributes:', error);
+        
       }
     }
   }, [currentLanguage, isRTL, mounted]);

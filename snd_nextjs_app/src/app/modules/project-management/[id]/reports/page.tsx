@@ -140,7 +140,7 @@ export default function ProjectReportsPage() {
         timeline: { onSchedule: 0, delayed: 0, completed: 0, milestones: [] },
       });
     } catch (error) {
-      console.error('Error fetching report data:', error);
+      
       toast.error('Failed to load report data');
     } finally {
       setLoading(false);
@@ -154,7 +154,7 @@ export default function ProjectReportsPage() {
       // Implement this when the endpoint becomes available
       toast.success('Report export feature not implemented yet');
     } catch (error) {
-      console.error('Error exporting report:', error);
+      
       toast.error('Failed to export report');
     }
   };

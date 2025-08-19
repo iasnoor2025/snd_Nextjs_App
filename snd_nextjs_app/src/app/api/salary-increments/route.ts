@@ -172,12 +172,6 @@ export async function GET(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching salary increments:', error);
-    console.error('Error details:', {
-      name: error instanceof Error ? error.name : 'Unknown',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : 'No stack trace',
-    });
 
     // If table doesn't exist yet, return empty result
     if (
@@ -304,8 +298,6 @@ export async function POST(_request: NextRequest) {
       updatedAt: new Date().toISOString().split('T')[0],
     };
 
-    console.log('Inserting salary increment with data:', insertData);
-
     const [newSalaryIncrement] = await db
       .insert(salaryIncrements)
       .values(insertData)
@@ -314,8 +306,6 @@ export async function POST(_request: NextRequest) {
     if (!newSalaryIncrement) {
       throw new Error('Failed to create salary increment');
     }
-
-    console.log('Successfully created salary increment:', newSalaryIncrement);
 
     return NextResponse.json({
       success: true,
@@ -337,7 +327,7 @@ export async function POST(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error creating salary increment:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

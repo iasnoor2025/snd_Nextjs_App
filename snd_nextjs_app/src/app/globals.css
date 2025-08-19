@@ -155,8 +155,48 @@
 
   /* Fix content width when sidebar toggles */
   [data-slot='sidebar-inset'] > main {
-    @apply min-w-0 flex-1 overflow-auto transition-all duration-200 ease-linear;
+    @apply min-w-0 flex-1 overflow-auto transition-all duration-200 ease-linear w-full;
   }
+
+  /* Full width utilities */
+  .w-full-container {
+    @apply w-full max-w-none;
+  }
+
+  .content-full-width {
+    @apply w-full max-w-none px-0;
+  }
+
+  /* Override container constraints only for page content, not sidebar */
+  [data-slot='sidebar-inset'] .container,
+  main .container {
+    max-width: none !important;
+    width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  /* Make page content full width without affecting individual elements */
+  /* This targets only the main page container, not individual UI elements */
+  [data-slot='sidebar-inset'] > main > div:first-child,
+  main > div:first-child {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   /* Desktop: Sidebar uses fixed positioning, no margin needed */
   @media (min-width: 768px) {
@@ -191,10 +231,7 @@
     @apply border-l-0 border-r;
   }
 
-  /* Ensure content doesn't get cut off in RTL */
-  .rtl .content-wrapper {
-    @apply w-full max-w-none;
-  }
+
 
   /* Fix for mobile RTL layout */
   @media (max-width: 767px) {

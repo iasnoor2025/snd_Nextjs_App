@@ -8,15 +8,13 @@ declare global {
 
 function createPool(): Pool {
   if (!process.env.DATABASE_URL) {
-    console.error('DATABASE_URL is not set');
+    
     throw new Error('DATABASE_URL is not set');
   }
 
   if (global.__drizzlePool) {
     return global.__drizzlePool;
   }
-
-  console.log('Creating new database pool...');
 
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -26,12 +24,12 @@ function createPool(): Pool {
   });
 
   pool.on('error', (err: Error) => {
-    console.error('Unexpected error on idle client', err);
+    
   });
 
   // Light connection test (runs only when pool is first created)
   pool.query('SELECT 1').catch((err: Error) => {
-    console.error('Database connection test failed:', err);
+    
   });
 
   global.__drizzlePool = pool;
@@ -42,7 +40,7 @@ export function getPool(): Pool {
   try {
     return createPool();
   } catch (error) {
-    console.error('Error creating database pool:', error);
+    
     throw error;
   }
 }
@@ -52,7 +50,7 @@ function createDb() {
     const pool = getPool();
     return drizzle(pool);
   } catch (error) {
-    console.error('Error creating database instance:', error);
+    
     throw error;
   }
 }
@@ -62,7 +60,7 @@ export function getDb() {
     try {
       global.__drizzleDb = createDb();
     } catch (error) {
-      console.error('Error initializing database:', error);
+      
       throw error;
     }
   }
@@ -75,7 +73,7 @@ export const pool: Pool = new Proxy({} as Pool, {
     try {
       return (getPool() as any)[prop];
     } catch (error) {
-      console.error('Error accessing database pool:', error);
+      
       throw error;
     }
   },
@@ -86,7 +84,7 @@ export const db = new Proxy({} as ReturnType<typeof drizzle>, {
     try {
       return (getDb() as any)[prop];
     } catch (error) {
-      console.error('Error accessing database:', error);
+      
       throw error;
     }
   },

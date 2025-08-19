@@ -53,7 +53,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       message: 'Company retrieved successfully',
     });
   } catch (error) {
-    console.error('Error in GET /api/companies/[id]:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -149,7 +149,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       data: formatCompanyForFrontend(updatedCompany),
     });
   } catch (error) {
-    console.error('Error in PUT /api/companies/[id]:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -203,7 +203,7 @@ export async function DELETE(
       message: 'Company deleted successfully',
     });
   } catch (error) {
-    console.error('Error in DELETE /api/companies/[id]:', error);
+    
     return NextResponse.json(
       {
         success: false,

@@ -65,7 +65,6 @@ export function EmployeeDropdown({
     setErrorMessage(null);
 
     try {
-      console.log('Loading employees...');
 
       // Use the public API endpoint that doesn't require authentication
       const response = await fetch('/api/employees/public?all=true&limit=1000', {
@@ -80,10 +79,8 @@ export function EmployeeDropdown({
       }
 
       const data = await response.json();
-      console.log('Employees API response:', data);
 
       const employeeData = data.data || data || [];
-      console.log(`Loaded ${employeeData.length} employees`);
 
       if (employeeData.length === 0) {
         setErrorMessage('No employees found in the database.');
@@ -91,7 +88,6 @@ export function EmployeeDropdown({
 
       setEmployees(employeeData);
     } catch (error) {
-      console.error('Error loading employees:', error);
 
       let errorMsg = 'Failed to load employees. Please try again.';
       if (error instanceof Error) {
@@ -251,7 +247,6 @@ export function useEmployees() {
       const employeeData = data.data || data || [];
       setEmployees(employeeData);
     } catch (err) {
-      console.error('Error loading employees:', err);
 
       let errorMsg = 'Failed to load employees';
       if (err instanceof Error) {

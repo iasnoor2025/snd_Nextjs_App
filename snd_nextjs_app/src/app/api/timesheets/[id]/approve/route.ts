@@ -49,23 +49,21 @@ function getApprovalStatusForStage(stage: ApprovalStage): string {
 
 // Helper function to check if user can approve at specific stage
 async function checkStageApprovalPermission(userId: string, stage: ApprovalStage) {
-  console.log('🔍 SINGLE APPROVE - Checking permission for stage:', stage, 'user:', userId);
 
   // Check if user has specific stage approval permission
   const stageResult = await checkUserPermission(userId, 'approve', 'Timesheet');
   if (stageResult.hasPermission) {
-    console.log('🔍 SINGLE APPROVE - Stage-specific permission granted for stage:', stage);
+    
     return { allowed: true };
   }
 
   // Check if user has general timesheet approval permission
   const generalResult = await checkUserPermission(userId, 'approve', 'Timesheet');
   if (generalResult.hasPermission) {
-    console.log('🔍 SINGLE APPROVE - General approval permission granted');
+    
     return { allowed: true };
   }
 
-  console.log('🔍 SINGLE APPROVE - No permission for stage:', stage);
   return {
     allowed: false,
     reason: `You don't have permission to approve timesheets at ${stage} stage`,
@@ -76,7 +74,6 @@ async function checkStageApprovalPermission(userId: string, stage: ApprovalStage
 export const POST = withPermission(
   async (_request: NextRequest, { params }: { params: { id: string } }) => {
     try {
-      console.log('🔍 SINGLE APPROVE - Starting request for timesheet:', params.id);
 
       const timesheetId = parseInt(params.id);
       if (isNaN(timesheetId)) {
@@ -99,12 +96,6 @@ export const POST = withPermission(
         return NextResponse.json({ error: 'Timesheet data not found' }, { status: 404 });
       }
 
-      console.log('🔍 SINGLE APPROVE - Found timesheet:', {
-        id: timesheetData.id,
-        status: timesheetData.status,
-        employeeId: timesheetData.employeeId,
-      });
-
       // Get session to check user permissions
       const session = await getServerSession(authConfig);
       if (!session?.user?.id) {
@@ -117,9 +108,7 @@ export const POST = withPermission(
       const nextStage = getNextApprovalStage(timesheetData.status);
 
       if (!nextStage) {
-        console.log(
-          `🔍 SINGLE APPROVE - Timesheet ${timesheetData.id} cannot be approved further. Current status: ${timesheetData.status}`
-        );
+        
         return NextResponse.json(
           {
             error: `Timesheet cannot be approved further. Current status: ${timesheetData.status}`,
@@ -131,7 +120,7 @@ export const POST = withPermission(
       // Check if user can approve at this stage
       const canApprove = await checkStageApprovalPermission(userId, nextStage);
       if (!canApprove.allowed) {
-        console.log(`🔍 SINGLE APPROVE - Stage approval permission denied: ${canApprove.reason}`);
+        
         return NextResponse.json(
           {
             error: canApprove.reason || 'Permission denied',
@@ -154,10 +143,6 @@ export const POST = withPermission(
           .where(eq(timesheets.id, timesheetId))
           .returning();
 
-        console.log(
-          `🔍 SINGLE APPROVE - Timesheet approved to ${nextStage} stage successfully: ${timesheetId} -> ${newStatus}`
-        );
-
         const updatedTimesheetData = updatedTimesheet[0];
         if (!updatedTimesheetData) {
           return NextResponse.json({ error: 'Failed to update timesheet' }, { status: 500 });
@@ -174,10 +159,7 @@ export const POST = withPermission(
           },
         });
       } catch (error) {
-        console.error(
-          `🔍 SINGLE APPROVE - Error approving timesheet ${timesheetId} to ${nextStage} stage:`,
-          error
-        );
+        
         return NextResponse.json(
           {
             error: `Failed to approve timesheet to ${nextStage} stage: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -186,7 +168,7 @@ export const POST = withPermission(
         );
       }
     } catch (error) {
-      console.error('🔍 SINGLE APPROVE - Unexpected error:', error);
+      
       return NextResponse.json(
         {
           error: 'Internal server error',

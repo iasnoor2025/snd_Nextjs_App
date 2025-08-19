@@ -116,7 +116,7 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       data: transformedLeaveRequest,
     });
   } catch (error) {
-    console.error('❌ Error fetching leave request:', error);
+    
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -161,14 +161,12 @@ export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
     // Delete the leave request
     await db.delete(employeeLeaves).where(eq(employeeLeaves.id, parseInt(id)));
 
-    console.log('✅ Leave request deleted:', id);
-
     return NextResponse.json({
       success: true,
       message: 'Leave request deleted successfully',
     });
   } catch (error) {
-    console.error('❌ Error deleting leave request:', error);
+    
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -273,7 +271,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       },
     });
   } catch (error) {
-    console.error('❌ Error updating leave request:', error);
+    
     return NextResponse.json(
       {
         error: 'Internal server error',

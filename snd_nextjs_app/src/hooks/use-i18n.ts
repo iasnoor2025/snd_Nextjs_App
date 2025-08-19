@@ -63,7 +63,7 @@ export function useI18n() {
         setCurrentLanguage(language);
         setIsRTL(selectedLanguage.dir === 'rtl');
       } catch (error) {
-        console.error('❌ Error changing language:', error);
+        
       }
     }
   };

@@ -77,7 +77,7 @@ export const GET = withPermission(
         message: 'Designation retrieved successfully',
       });
     } catch (error) {
-      console.error('Error fetching designation:', error);
+      
       return NextResponse.json(
         {
           success: false,
@@ -98,8 +98,6 @@ export const PUT = withPermission(
       const { id } = params;
       const designationId = parseInt(id);
 
-      console.log('PUT /api/designations/[id] - Updating designation ID:', designationId);
-
       if (isNaN(designationId)) {
         return NextResponse.json(
           {
@@ -112,8 +110,6 @@ export const PUT = withPermission(
 
       const body = await request.json();
       const { name, description, department_id, is_active } = body;
-
-      console.log('PUT /api/designations/[id] - Request body:', body);
 
       if (!name || !name.trim()) {
         return NextResponse.json(
@@ -162,16 +158,9 @@ export const PUT = withPermission(
         );
       }
 
-      console.log(
-        'PUT /api/designations/[id] - Current name:',
-        currentName,
-        'New name:',
-        trimmedName
-      );
-
       // If the name hasn't changed, skip duplicate check
       if (currentName === trimmedName) {
-        console.log('Name unchanged, skipping duplicate check');
+        
       } else {
         // Check if another designation with the same name already exists (case insensitive)
         const allDesignations = await db
@@ -182,19 +171,9 @@ export const PUT = withPermission(
           .from(designations)
           .where(isNull(designations.deletedAt));
 
-        console.log(
-          'PUT /api/designations/[id] - All designations for comparison:',
-          allDesignations
-        );
-
         const duplicateDesignation = allDesignations.find(
           desig =>
             desig.id !== designationId && desig.name.toLowerCase() === trimmedName.toLowerCase()
-        );
-
-        console.log(
-          'PUT /api/designations/[id] - Duplicate designation found:',
-          duplicateDesignation
         );
 
         if (duplicateDesignation) {
@@ -207,8 +186,6 @@ export const PUT = withPermission(
           );
         }
       }
-
-      console.log('PUT /api/designations/[id] - No duplicates, updating designation');
 
       // Update designation
       const [updatedDesignation] = await db
@@ -230,11 +207,6 @@ export const PUT = withPermission(
           created_at: designations.createdAt,
           updated_at: designations.updatedAt,
         });
-
-      console.log(
-        'PUT /api/designations/[id] - Designation updated successfully:',
-        updatedDesignation
-      );
 
       if (!updatedDesignation) {
         return NextResponse.json(
@@ -269,7 +241,7 @@ export const PUT = withPermission(
         message: 'Designation updated successfully',
       });
     } catch (error) {
-      console.error('Error updating designation:', error);
+      
       return NextResponse.json(
         {
           success: false,
@@ -334,7 +306,7 @@ export const DELETE = withPermission(
         message: 'Designation deleted successfully',
       });
     } catch (error) {
-      console.error('Error deleting designation:', error);
+      
       return NextResponse.json(
         {
           success: false,

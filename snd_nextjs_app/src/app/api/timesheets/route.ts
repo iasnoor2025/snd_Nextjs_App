@@ -129,7 +129,6 @@ const getTimesheetsHandler = async (request: NextRequest) => {
       // Parse month filter (format: YYYY-MM)
       const [year, monthNum] = month.split('-');
       if (year && monthNum) {
-        console.log(`Month filter: ${month} -> Year: ${year}, Month: ${monthNum}`);
 
         // Use raw SQL to avoid timezone conversion issues
         const monthFilter = sql`
@@ -139,7 +138,6 @@ const getTimesheetsHandler = async (request: NextRequest) => {
 
         filters.push(monthFilter);
 
-        console.log(`Applied month filter for ${month}`);
       }
     }
 
@@ -149,9 +147,8 @@ const getTimesheetsHandler = async (request: NextRequest) => {
 
     const conditions = filters.length ? and(...filters) : undefined;
 
-    console.log(`Timesheet query filters:`, filters.length, 'filters applied');
     if (month) {
-      console.log(`Month filter active for: ${month}`);
+      
     }
 
     const listRows = await db
@@ -192,8 +189,6 @@ const getTimesheetsHandler = async (request: NextRequest) => {
       .where(conditions);
 
     const total = Number(totalRow[0]?.count ?? 0);
-
-    console.log(`Timesheet query results: ${listRows.length} timesheets found, total: ${total}`);
 
     // Transform the response to match frontend interface
     const transformedTimesheets = listRows.map(timesheet => ({
@@ -239,7 +234,7 @@ const getTimesheetsHandler = async (request: NextRequest) => {
       prev_page_url: page > 1 ? `/api/timesheets?page=${page - 1}` : null,
     });
   } catch (error) {
-    console.error('Error fetching timesheets:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to fetch timesheets',
@@ -307,7 +302,7 @@ export const POST = withAuth(async (request: NextRequest) => {
 
     return NextResponse.json(inserted[0], { status: 201 });
   } catch (error) {
-    console.error('Error creating timesheet:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to create timesheet',
@@ -362,7 +357,7 @@ export const PUT = withAuth(async (request: NextRequest) => {
 
     return NextResponse.json(updated[0]);
   } catch (error) {
-    console.error('Error updating timesheet:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to update timesheet',
@@ -383,7 +378,7 @@ export const DELETE = withAuth(async (request: NextRequest) => {
 
     return NextResponse.json({ message: 'Timesheet deleted successfully' });
   } catch (error) {
-    console.error('Error deleting timesheet:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to delete timesheet',

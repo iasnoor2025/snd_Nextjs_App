@@ -7,7 +7,7 @@ const loadJsPDF = async () => {
       const { jsPDF: jsPDFModule } = await import('jspdf');
       jsPDF = jsPDFModule;
     } catch (error) {
-      console.error('Failed to load jsPDF:', error);
+      
       throw new Error('jsPDF library not available');
     }
   }
@@ -150,7 +150,7 @@ export class PDFGenerator {
 
       return pdf.output('blob');
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      
       throw error;
     }
   }
@@ -179,7 +179,7 @@ export class PDFGenerator {
 
       return pdf.output('blob');
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      
       throw error;
     }
   }

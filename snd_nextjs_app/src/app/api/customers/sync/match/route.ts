@@ -5,7 +5,6 @@ import { NextRequest, NextResponse } from 'next/server';
  * Map ERPNext customer fields to local fields
  */
 function mapERPNextToLocal(erpCustomer: any) {
-  console.log('Mapping customer:', erpCustomer.name || erpCustomer.customer_name);
 
   // Extract address from primary_address if it's HTML
   let address = null;
@@ -41,7 +40,6 @@ function mapERPNextToLocal(erpCustomer: any) {
     erpnext_id: erpCustomer.name || null,
   };
 
-  console.log('Mapped data:', mappedData);
   return mappedData;
 }
 
@@ -51,7 +49,6 @@ function empty(value: any): boolean {
 
 export async function POST(_request: NextRequest) {
   try {
-    console.log('Starting data matching process...');
 
     // Parse request body
     const body = await _request.json();
@@ -68,12 +65,9 @@ export async function POST(_request: NextRequest) {
     }
 
     const erpnextCustomers = erpnextData.erpnextCustomers;
-    console.log(`Processing ${erpnextCustomers.length} ERPNext customers for matching`);
 
     // Get existing customers from database
     const dbCustomers = await db.select().from(customers);
-
-    console.log(`Found ${dbCustomers.length} existing customers in database`);
 
     // Prepare matching results
     const matchResults: {
@@ -102,16 +96,12 @@ export async function POST(_request: NextRequest) {
     // Process each ERPNext customer
     for (const erpCustomer of erpnextCustomers) {
       try {
-        console.log(
-          'Processing customer for matching:',
-          erpCustomer.name || erpCustomer.customer_name
-        );
 
         const mappedData = mapERPNextToLocal(erpCustomer);
 
         // Skip if no ERPNext ID
         if (!mappedData.erpnext_id) {
-          console.log('Skipping customer without ERPNext ID:', erpCustomer);
+          
           matchResults.toSkip.push({
             reason: 'No ERPNext ID',
             customer: erpCustomer,
@@ -133,7 +123,7 @@ export async function POST(_request: NextRequest) {
 
         // Validate that we have essential data
         if (empty(mappedData.name) || empty(mappedData.erpnext_id)) {
-          console.log('Skipping customer with missing essential data:', mappedData);
+          
           matchResults.toSkip.push({
             reason: 'Missing essential data',
             customer: erpCustomer,
@@ -157,7 +147,7 @@ export async function POST(_request: NextRequest) {
             existingCustomer.companyName !== mappedData.company_name;
 
           if (needsUpdate) {
-            console.log('Customer needs update:', mappedData.name);
+            
             matchResults.toUpdate.push({
               existingId: existingCustomer.id,
               existingData: existingCustomer,
@@ -171,7 +161,7 @@ export async function POST(_request: NextRequest) {
             });
             matchResults.summary.toUpdate++;
           } else {
-            console.log('Customer up to date:', mappedData.name);
+            
             matchResults.toSkip.push({
               reason: 'Already up to date',
               customer: erpCustomer,
@@ -182,7 +172,7 @@ export async function POST(_request: NextRequest) {
           }
         } else {
           // New customer to create
-          console.log('New customer to create:', mappedData.name);
+          
           matchResults.toCreate.push({
             data: mappedData,
             originalCustomer: erpCustomer,
@@ -190,7 +180,7 @@ export async function POST(_request: NextRequest) {
           matchResults.summary.toCreate++;
         }
       } catch (error) {
-        console.error('Error processing customer for matching:', error);
+        
         matchResults.toSkip.push({
           reason: 'Processing error',
           customer: erpCustomer,
@@ -200,15 +190,13 @@ export async function POST(_request: NextRequest) {
       }
     }
 
-    console.log('Matching summary:', matchResults.summary);
-
     return NextResponse.json({
       success: true,
       message: `Matching completed. ${matchResults.summary.toCreate} to create, ${matchResults.summary.toUpdate} to update, ${matchResults.summary.toSkip} to skip.`,
       data: matchResults,
     });
   } catch (error) {
-    console.error('Error during data matching:', error);
+    
     return NextResponse.json(
       {
         success: false,

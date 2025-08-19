@@ -252,7 +252,7 @@ export async function GET(_request: NextRequest) {
       employeeDocuments: employeeDocumentsList,
     });
   } catch (error) {
-    console.error('Error fetching employee dashboard data:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

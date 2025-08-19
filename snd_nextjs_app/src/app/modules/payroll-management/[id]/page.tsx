@@ -117,7 +117,7 @@ export default function PayrollDetailsPage() {
         toast.error('Failed to fetch payroll details');
       }
     } catch (error) {
-      console.error('Error fetching payroll:', error);
+      
       toast.error('Error fetching payroll details');
     } finally {
       setLoading(false);
@@ -153,7 +153,7 @@ export default function PayrollDetailsPage() {
   };
 
   const handleDownloadPayslip = () => {
-    console.log('Downloading payslip for payroll:', payrollId);
+    
     toast.success('Payslip download started');
   };
 
@@ -161,13 +161,13 @@ export default function PayrollDetailsPage() {
     documentTitle: `Payroll-${payrollId}`,
     waitForImages: true,
     onPrintError: error => {
-      console.error('Print error details:', error);
+      
       // Continue with print even if there are image errors
     },
   });
 
   const handleShare = () => {
-    console.log('Sharing payroll details');
+    
     toast.success('Payroll details shared');
   };
 

@@ -21,16 +21,16 @@ export function log(level: LogLevel, message: string, ...args: any[]): void {
     const prefix = `[${level}]`;
     switch (level) {
       case 'ERROR':
-        console.error(prefix, message, ...args);
+        
         break;
       case 'WARN':
-        console.warn(prefix, message, ...args);
+        
         break;
       case 'INFO':
-        console.log(prefix, message, ...args);
+        
         break;
       case 'DEBUG':
-        console.log(prefix, message, ...args);
+        
         break;
     }
   }

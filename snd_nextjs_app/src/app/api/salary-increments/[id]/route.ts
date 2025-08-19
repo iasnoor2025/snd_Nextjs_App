@@ -120,7 +120,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       data: transformedData,
     });
   } catch (error) {
-    console.error('Error fetching salary increment:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -218,7 +218,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       },
     });
   } catch (error) {
-    console.error('Error updating salary increment:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -274,7 +274,7 @@ export async function DELETE(
       message: 'Salary increment deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting salary increment:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

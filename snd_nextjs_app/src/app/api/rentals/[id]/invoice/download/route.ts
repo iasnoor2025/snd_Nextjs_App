@@ -5,11 +5,9 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log('Downloading invoice PDF for rental:', id);
 
     // Get rental data with all necessary information
     const rental = await RentalService.getRental(parseInt(id));
-    console.log('✅ Rental fetched:', rental ? 'success' : 'not found');
 
     if (!rental) {
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
@@ -87,7 +85,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       },
     });
   } catch (error) {
-    console.error('Error downloading invoice PDF:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to download invoice PDF',

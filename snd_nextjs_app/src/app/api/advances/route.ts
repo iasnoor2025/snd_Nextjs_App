@@ -146,7 +146,7 @@ const getAdvancesHandler = async (
       prev_page_url: page > 1 ? `/api/advances?page=${page - 1}` : null,
     });
   } catch (error) {
-    console.error('Error fetching advances:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to fetch advances',
@@ -244,7 +244,7 @@ const createAdvanceHandler = async (
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating advance:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to create advance',
@@ -323,7 +323,7 @@ export const PUT = withEmployeeListPermission(
 
       return NextResponse.json(advanceWithEmployee);
     } catch (error) {
-      console.error('Error updating advance:', error);
+      
       return NextResponse.json(
         {
           error: 'Failed to update advance',
@@ -347,7 +347,7 @@ export const DELETE = withEmployeeListPermission(
 
       return NextResponse.json({ message: 'Advance deleted successfully' });
     } catch (error) {
-      console.error('Error deleting advance:', error);
+      
       return NextResponse.json(
         {
           error: 'Failed to delete advance',

@@ -21,7 +21,6 @@ function formatCompanyForFrontend(company: Record<string, any>) {
 
 export const GET = withPermission(async (request: NextRequest) => {
   try {
-    console.log('Companies API called');
 
     // Get query parameters for filtering
     const { searchParams } = new URL(request.url);
@@ -30,8 +29,6 @@ export const GET = withPermission(async (request: NextRequest) => {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '50');
     const offset = (page - 1) * limit;
-
-    console.log('Query parameters:', { search, status, page, limit });
 
     // Build where clause for filtering
     const filters: any[] = [];
@@ -75,8 +72,6 @@ export const GET = withPermission(async (request: NextRequest) => {
       .offset(offset)
       .limit(limit);
 
-    console.log(`Found ${companies.length} companies`);
-
     return NextResponse.json({
       success: true,
       data: companies.map(formatCompanyForFrontend),
@@ -89,12 +84,6 @@ export const GET = withPermission(async (request: NextRequest) => {
       message: 'Companies retrieved successfully',
     });
   } catch (error) {
-    console.error('Error in GET /api/companies:', error);
-    console.error('Error details:', {
-      name: error instanceof Error ? error.name : 'Unknown',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : 'No stack trace',
-    });
 
     return NextResponse.json(
       {

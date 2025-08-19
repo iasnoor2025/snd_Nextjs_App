@@ -31,7 +31,7 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       data: equipmentData,
     });
   } catch (error) {
-    console.error('Equipment GET error:', error);
+    
     return NextResponse.json(
       {
         success: false,

@@ -127,7 +127,7 @@ export default function AssignmentModal({
         toast.error(error.error || 'Failed to save assignment');
       }
     } catch (error) {
-      console.error('Error saving assignment:', error);
+      
       toast.error('Failed to save assignment');
     } finally {
       setLoading(false);

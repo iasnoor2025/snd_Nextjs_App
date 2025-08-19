@@ -25,7 +25,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json({ data: transformedDocuments });
   } catch (error) {
-    console.error('Error fetching project documents:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch project documents' }, { status: 500 });
   }
 }
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json({ data: documentRows[0] }, { status: 201 });
   } catch (error) {
-    console.error('Error creating project document:', error);
+    
     return NextResponse.json({ error: 'Failed to create project document' }, { status: 500 });
   }
 }

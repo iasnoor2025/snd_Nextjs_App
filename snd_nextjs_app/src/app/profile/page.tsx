@@ -268,8 +268,6 @@ export default function ProfilePage() {
 
       const response = await fetch('/api/profile');
 
-      
-
       if (response.ok) {
         const responseText = await response.text();
         if (!responseText) {
@@ -466,7 +464,7 @@ export default function ProfilePage() {
         toast.error(error.error || 'Failed to upload profile picture');
       }
     } catch (error) {
-      console.error('Error uploading profile picture:', error);
+      
       toast.error('Failed to upload profile picture');
     } finally {
       setIsUploading(false);
@@ -501,7 +499,7 @@ export default function ProfilePage() {
         toast.error(error.error || 'Failed to upload document');
       }
     } catch (error) {
-      console.error('Error uploading document:', error);
+      
       toast.error('Failed to upload document');
     } finally {
       setIsUploading(false);
@@ -2588,43 +2586,31 @@ function EmployeeDocumentsDisplay() {
 
   const fetchDocuments = async () => {
     try {
-      console.log('🔄 EmployeeDocumentsDisplay: Starting to fetch documents...');
+      console.log('Fetching documents...');
       const response = await fetch('/api/profile/documents');
-      console.log('📊 EmployeeDocumentsDisplay: Response status:', response.status);
-      console.log(
-        '📊 EmployeeDocumentsDisplay: Response headers:',
-        response.headers.get('content-type')
-      );
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ EmployeeDocumentsDisplay: Documents data received:', data);
-        console.log('✅ EmployeeDocumentsDisplay: Data type:', typeof data);
-        console.log('✅ EmployeeDocumentsDisplay: Is array?', Array.isArray(data));
-        console.log(
-          '✅ EmployeeDocumentsDisplay: Data length:',
-          Array.isArray(data) ? data.length : 'Not an array'
-        );
+        console.log('Documents response:', Array.isArray(data) ? data.length : 'Not an array');
 
         if (Array.isArray(data)) {
           // Check specifically for Iqama documents
           const iqamaDocs = data.filter(doc => doc.document_type === 'iqama');
-          console.log('🔍 EmployeeDocumentsDisplay: Iqama documents found:', iqamaDocs.length);
-          console.log('🔍 EmployeeDocumentsDisplay: Iqama documents:', iqamaDocs);
+          console.log('Iqama documents found:', iqamaDocs.length);
 
           // Check all document types
           const docTypes = [...new Set(data.map(doc => doc.document_type))];
-          console.log('🔍 EmployeeDocumentsDisplay: All document types found:', docTypes);
+          console.log('Document types found:', docTypes);
         }
 
         setDocuments(Array.isArray(data) ? data : []);
       } else {
         const errorText = await response.text();
-        console.error('❌ EmployeeDocumentsDisplay: Error response:', errorText);
+        console.error('Failed to load documents:', errorText);
         setError('Failed to load documents');
       }
     } catch (error) {
-      console.error('❌ EmployeeDocumentsDisplay: Network error fetching documents:', error);
+      console.error('Error fetching documents:', error);
       setError('Failed to load documents');
     } finally {
       setLoading(false);

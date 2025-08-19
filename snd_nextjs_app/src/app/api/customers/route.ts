@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
         total = countResult.length;
       }
     } catch (error) {
-      console.error('Error counting customers:', error);
+      
       total = 0;
     }
 
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
           .offset(offset);
       }
     } catch (error) {
-      console.error('Error fetching customers:', error);
+      
       customersResult = [];
     }
 
@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching customers:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
       message: 'Customer created successfully',
     });
   } catch (error) {
-    console.error('Error creating customer:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -207,7 +207,7 @@ export async function PUT(request: NextRequest) {
       message: 'Customer updated successfully',
     });
   } catch (error) {
-    console.error('Error updating customer:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -241,7 +241,7 @@ export async function DELETE(request: NextRequest) {
       message: 'Customer deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting customer:', error);
+    
     return NextResponse.json(
       {
         success: false,

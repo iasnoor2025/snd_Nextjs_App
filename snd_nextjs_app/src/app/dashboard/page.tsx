@@ -177,13 +177,11 @@ export default function DashboardPage() {
       setStats(data.stats || {});
       setIqamaData(data.iqamaData || []);
 
-      
       setEquipmentData(data.equipmentData || []);
 
       setTimesheetData(data.timesheetData || []);
       setProjectData(data.projectData || []);
       setActivities(data.activities || []);
-
 
     } catch (error) {
       // Handle error silently for production
@@ -253,7 +251,7 @@ export default function DashboardPage() {
   //     const data = await response.json()
   //     setProjectData(data.projectData || [])
   //   } catch (error) {
-  //     console.error('Error fetching project data:', error)
+  //     
   //   }
   // }
 

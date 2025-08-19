@@ -159,7 +159,7 @@ i18n
   })
   .then(() => {})
   .catch(error => {
-    console.error('i18n initialization error:', error);
+    
   });
 
 export default i18n;

@@ -213,7 +213,7 @@ export async function GET() {
 
     return response;
   } catch (error) {
-    console.error('Error exporting employees:', error);
+    
     return NextResponse.json({ error: 'Failed to export employees' }, { status: 500 });
   }
 }

@@ -73,7 +73,7 @@ export default function CompanyManagementPage() {
           toast.error(result.message || 'Failed to fetch companies');
         }
       } catch (error) {
-        console.error('Error fetching companies:', error);
+        
         toast.error('Failed to fetch companies');
       } finally {
         setLoading(false);
@@ -99,7 +99,7 @@ export default function CompanyManagementPage() {
           toast.error(result.message || 'Failed to delete company');
         }
       } catch (error) {
-        console.error('Error deleting company:', error);
+        
         toast.error('Failed to delete company');
       }
     }

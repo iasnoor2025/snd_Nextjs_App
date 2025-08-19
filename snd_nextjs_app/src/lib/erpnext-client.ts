@@ -312,7 +312,7 @@ export class ERPNextClient {
 
       return true;
     } catch (error) {
-      console.error('Failed to update ERPNext employee:', error);
+      
       return false;
     }
   }
@@ -353,7 +353,7 @@ export class ERPNextClient {
 
       return result.data?.name || null;
     } catch (error) {
-      console.error('Failed to create ERPNext employee:', error);
+      
       return null;
     }
   }

@@ -6,14 +6,11 @@ import { NextResponse } from 'next/server';
 
 const getDocumentsHandler = async (_request: any, { params }: { params: { id: string } }) => {
   try {
-    console.log('Starting GET /api/employees/[id]/documents');
 
-    console.log('Raw params object:', params);
-    console.log('Params type:', typeof params);
-    console.log('Params keys:', params ? Object.keys(params) : 'null/undefined');
+
 
     if (!params || !params.id) {
-      console.error('Invalid params received:', params);
+      
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
@@ -23,8 +20,6 @@ const getDocumentsHandler = async (_request: any, { params }: { params: { id: st
     if (isNaN(employeeId)) {
       return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
-
-    console.log('About to query database for employee:', employeeId);
 
     // Use the same approach as the working test endpoint
     const documentsRows = await db
@@ -42,8 +37,6 @@ const getDocumentsHandler = async (_request: any, { params }: { params: { id: st
       })
       .from(employeeDocuments)
       .where(eq(employeeDocuments.employeeId, employeeId));
-
-    console.log('Query successful, found:', documentsRows.length, 'documents');
 
     // Format response to match what DocumentManager expects
     const formattedDocuments = documentsRows.map(doc => ({
@@ -70,7 +63,6 @@ const getDocumentsHandler = async (_request: any, { params }: { params: { id: st
 
     return NextResponse.json(formattedDocuments);
   } catch (error) {
-    console.error('Error in GET /api/employees/[id]/documents:', error);
 
     // More detailed error information
     let errorMessage = 'Internal server error';
@@ -80,8 +72,6 @@ const getDocumentsHandler = async (_request: any, { params }: { params: { id: st
       errorMessage = error.message;
       errorDetails = error.stack || '';
     }
-
-    console.error('Error details:', { message: errorMessage, stack: errorDetails });
 
     return NextResponse.json(
       {

@@ -16,11 +16,10 @@ export const preferredRegion = 'auto';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    console.log('POST /api/employee/advances/[id]/repay called');
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      console.log('Unauthorized - no session');
+      
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -177,15 +176,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const updatedAdvance = updatedAdvanceRows[0];
 
-    console.log('Repayment recorded successfully:', updatedAdvance);
-
     return NextResponse.json({
       success: true,
       advance: updatedAdvance,
       message: 'Repayment recorded successfully',
     });
   } catch (error) {
-    console.error('Error recording repayment:', error);
+    
     return NextResponse.json(
       {
         error: `Failed to record repayment: ${error instanceof Error ? error.message : 'Unknown error'}`,

@@ -16,11 +16,10 @@ export const preferredRegion = 'auto';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    console.log('PATCH /api/employee/advances/[id] called');
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      console.log('Unauthorized - no session');
+      
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -56,15 +55,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const updatedAdvance = updatedAdvanceRows[0];
 
-    console.log('Advance updated successfully:', updatedAdvance);
-
     return NextResponse.json({
       success: true,
       advance: updatedAdvance,
       message: 'Advance updated successfully',
     });
   } catch (error) {
-    console.error('Error updating advance:', error);
+    
     return NextResponse.json(
       {
         error: `Failed to update advance: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -79,11 +76,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log('DELETE /api/employee/advances/[id] called');
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      console.log('Unauthorized - no session');
+      
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -116,14 +112,12 @@ export async function DELETE(
 
     const deletedAdvance = deletedAdvanceRows[0];
 
-    console.log('Advance deleted successfully:', deletedAdvance);
-
     return NextResponse.json({
       success: true,
       message: 'Advance deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting advance:', error);
+    
     return NextResponse.json(
       {
         error: `Failed to delete advance: ${error instanceof Error ? error.message : 'Unknown error'}`,

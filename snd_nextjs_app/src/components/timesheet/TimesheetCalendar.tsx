@@ -52,7 +52,7 @@ export default function TimesheetCalendar({ employeeId, className = '' }: Timesh
         setTimesheets(data.timesheets || []);
       }
     } catch (error) {
-      console.error('Error fetching timesheet data:', error);
+      
     } finally {
       setLoading(false);
     }

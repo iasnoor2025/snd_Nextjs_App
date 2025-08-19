@@ -134,7 +134,7 @@ export default function UserManagementPage() {
       const usersData = await response.json();
       setUsers(usersData);
     } catch (error) {
-      console.error('Error fetching users:', error);
+      
       throw error;
     }
   };
@@ -149,7 +149,7 @@ export default function UserManagementPage() {
       const rolesData = await response.json();
       setRoles(rolesData);
     } catch (error) {
-      console.error('Error fetching roles:', error);
+      
       throw error;
     }
   };
@@ -165,7 +165,7 @@ export default function UserManagementPage() {
       const data = await response.json();
       setPermissions(data.permissions || []);
     } catch (error) {
-      console.error('Error fetching permissions:', error);
+      
       throw error;
     } finally {
       setLoadingPermissions(false);
@@ -183,7 +183,7 @@ export default function UserManagementPage() {
       setSelectedRolePermissions(data.data || []);
       return data;
     } catch (error) {
-      console.error('Error fetching role permissions:', error);
+      
       throw error;
     }
   };
@@ -191,35 +191,31 @@ export default function UserManagementPage() {
   // Fetch permissions for all roles
   const fetchAllRolePermissions = async () => {
     try {
-      console.log('🔍 Fetching permissions for all roles...');
+      console.log('Fetching permissions for all roles...');
       const permissionsMap: Record<number, Permission[]> = {};
 
       for (const role of roles) {
         try {
-          console.log(`📋 Fetching permissions for role: ${role.name} (ID: ${role.id})`);
+          console.log(`Fetching permissions for role: ${role.name}`);
           const response = await fetch(`/api/roles/${role.id}/permissions`);
-          if (response.ok) {
-            const data = await response.json();
-            console.log(`✅ Role ${role.name} permissions:`, data);
-            permissionsMap[role.id] = data.data || [];
-          } else {
-            console.error(
-              `❌ Failed to fetch permissions for role ${role.name}:`,
-              response.status,
-              response.statusText
-            );
+                      if (response.ok) {
+              const data = await response.json();
+              console.log(`Permissions fetched for role ${role.name}:`, data.data?.length || 0);
+              permissionsMap[role.id] = data.data || [];
+            } else {
+              console.error(`Failed to fetch permissions for role ${role.name}:`, response.status);
+              permissionsMap[role.id] = [];
+            }
+          } catch (error) {
+            console.error(`Error fetching permissions for role ${role.name}:`, error);
             permissionsMap[role.id] = [];
           }
-        } catch (error) {
-          console.error(`❌ Error fetching permissions for role ${role.id}:`, error);
-          permissionsMap[role.id] = [];
-        }
       }
 
-      console.log('📊 Final permissions map:', permissionsMap);
       setRolePermissions(permissionsMap);
+      console.log('All role permissions fetched successfully');
     } catch (error) {
-      console.error('❌ Error fetching all role permissions:', error);
+      console.error('Error fetching all role permissions:', error);
     }
   };
 
@@ -473,7 +469,7 @@ export default function UserManagementPage() {
 
         await Promise.all([fetchUsers(), fetchRoles(), fetchPermissions()]);
       } catch (err) {
-        console.error('Error in fetchData:', err);
+        console.error('Error loading user management data:', err);
         setError(err instanceof Error ? err.message : t('loadDataFailed'));
       } finally {
         setLoading(false);

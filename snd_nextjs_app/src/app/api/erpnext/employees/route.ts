@@ -57,7 +57,7 @@ export async function GET() {
       count: employees.length,
     });
   } catch (error) {
-    console.error('Error fetching ERPNext employees:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -113,7 +113,7 @@ export async function POST(_request: NextRequest) {
       message: 'Employee created/updated successfully',
     });
   } catch (error) {
-    console.error('Error creating/updating ERPNext employee:', error);
+    
     return NextResponse.json(
       {
         success: false,

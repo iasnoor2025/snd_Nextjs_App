@@ -114,7 +114,7 @@ export const GET = withReadPermission(async (request: NextRequest) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching active leaves:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch active leaves' }, { status: 500 });
   }
 }, PermissionConfigs.leave.read);

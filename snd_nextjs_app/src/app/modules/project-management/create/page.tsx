@@ -120,11 +120,11 @@ export default function CreateProjectPage() {
         if (customersResponse.customers) {
           setCustomers(customersResponse.customers || []);
         } else {
-          console.error('Failed to fetch customers');
+          
           setCustomers([]);
         }
       } catch (error) {
-        console.error('Error fetching customers:', error);
+        
         setCustomers([]);
       }
 
@@ -134,11 +134,11 @@ export default function CreateProjectPage() {
         if (locationsResponse.success && locationsResponse.data) {
           setLocations(locationsResponse.data || []);
         } else {
-          console.log('Locations API not available yet');
+          
           setLocations([]);
         }
       } catch (error) {
-        console.log('Locations API not available yet');
+        
         setLocations([]);
       }
 
@@ -182,17 +182,17 @@ export default function CreateProjectPage() {
           }
           */
         } else {
-          console.error('Failed to fetch employees');
+          
           setEmployees([]);
           setProjectManagers([]);
         }
       } catch (error) {
-        console.error('Error fetching employees:', error);
+        
         setEmployees([]);
         setProjectManagers([]);
       }
     } catch (error) {
-      console.error('Error in fetchInitialData:', error);
+      
       toast.error('Failed to load initial data');
     }
   };
@@ -248,7 +248,7 @@ export default function CreateProjectPage() {
       toast.success('Project created successfully!');
       router.push(`/modules/project-management/${response.data.id}`);
     } catch (error) {
-      console.error('Error creating project:', error);
+      
       toast.error('Failed to create project');
     } finally {
       setLoading(false);

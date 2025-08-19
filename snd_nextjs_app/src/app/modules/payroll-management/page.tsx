@@ -248,7 +248,7 @@ export default function PayrollManagementPage() {
       }
     } catch (error) {
       toast.error(t('payroll:error.fetchPayrolls'));
-      console.error('Error:', error);
+      
       // Set empty data structure to prevent errors
       setPayrolls({
         data: [],
@@ -279,7 +279,7 @@ export default function PayrollManagementPage() {
         setEmployees(data.data);
       }
     } catch (error) {
-      console.error('Error fetching employees:', error);
+      
     }
   };
 
@@ -309,7 +309,7 @@ export default function PayrollManagementPage() {
       }
     } catch (error) {
       toast.error(t('payroll:error.generateApproved'));
-      console.error('Error:', error);
+      
     } finally {
       setGenerating(false);
     }
@@ -331,7 +331,7 @@ export default function PayrollManagementPage() {
       }
     } catch (error) {
       toast.error(t('payroll:error.approve'));
-      console.error('Error:', error);
+      
     }
   };
 
@@ -358,7 +358,7 @@ export default function PayrollManagementPage() {
       }
     } catch (error) {
       toast.error(t('payroll:error.processPayment'));
-      console.error('Error:', error);
+      
     }
   };
 
@@ -382,7 +382,7 @@ export default function PayrollManagementPage() {
       }
     } catch (error) {
       toast.error(t('payroll:error.cancel'));
-      console.error('Error:', error);
+      
     }
   };
 
@@ -406,7 +406,7 @@ export default function PayrollManagementPage() {
       }
     } catch (error) {
       toast.error(t('payroll:error.delete'));
-      console.error('Error:', error);
+      
     }
   };
 
@@ -440,7 +440,7 @@ export default function PayrollManagementPage() {
       }
     } catch (error) {
       toast.error(t('payroll:error.bulkDelete'));
-      console.error('Error:', error);
+      
     }
   };
 
@@ -469,7 +469,7 @@ export default function PayrollManagementPage() {
       toast.success(t('payroll:success.payslipOpen'));
     } catch (error) {
       toast.error(t('payroll:error.payslipOpen'));
-      console.error('Error:', error);
+      
     }
   };
 
@@ -1105,7 +1105,7 @@ export default function PayrollManagementPage() {
             document.body.removeChild(iframe);
             toast.success(t('payroll:success.payslipDownload'));
           } catch (error) {
-            console.error('PDF generation error:', error);
+            
             document.body.removeChild(iframe);
             toast.error(t('payroll:error.payslipDownload'));
           }
@@ -1115,7 +1115,7 @@ export default function PayrollManagementPage() {
       }
     } catch (error) {
       toast.error(t('payroll:error.payslipDownload'));
-      console.error('Error:', error);
+      
     } finally {
       setDownloadingPayslip(null);
     }
@@ -1136,7 +1136,7 @@ export default function PayrollManagementPage() {
         toast.error(result.message || t('payroll:error.recalculateOvertime'));
       }
     } catch (error) {
-      console.error('Error recalculating overtime:', error);
+      
       toast.error(t('payroll:error.recalculateOvertime'));
     } finally {
       setRecalculating(false);

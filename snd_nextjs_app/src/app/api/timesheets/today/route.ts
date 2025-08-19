@@ -31,7 +31,6 @@ export async function GET(_request: NextRequest) {
       message: "Today's timesheet data fetched successfully",
     });
   } catch (error) {
-    console.error("Error fetching today's timesheet data:", error);
 
     return NextResponse.json(
       {

@@ -6,7 +6,6 @@ import { NextRequest, NextResponse } from 'next/server';
 // GET /api/leave-requests/public - Get leave requests for management (no auth required)
 export async function GET(_request: NextRequest) {
   try {
-    console.log('🔍 Starting public leave requests fetch...');
 
     const { searchParams } = new URL(_request.url);
     const limit = parseInt(searchParams.get('limit') || '10');
@@ -16,8 +15,6 @@ export async function GET(_request: NextRequest) {
     const search = searchParams.get('search') || '';
 
     const skip = (page - 1) * limit;
-
-    console.log('🔍 Public search params:', { limit, page, status, leaveType, search });
 
     // Build where conditions
     let whereConditions: any[] = [];
@@ -42,8 +39,6 @@ export async function GET(_request: NextRequest) {
         )
       );
     }
-
-    console.log('🔍 Where conditions:', whereConditions);
 
     // Get leave requests with employee details
     const leaves = await db
@@ -80,8 +75,6 @@ export async function GET(_request: NextRequest) {
 
     const total = totalResult[0]?.count || 0;
 
-    console.log(`✅ Found ${leaves.length} leave requests out of ${total} total`);
-
     // Transform the data for the frontend
     const formattedLeaves = leaves.map(leave => ({
       id: leave.id,
@@ -111,11 +104,9 @@ export async function GET(_request: NextRequest) {
       pages: Math.ceil(total / limit),
     };
 
-    console.log('✅ Returning response with', formattedLeaves.length, 'leave requests');
     return NextResponse.json(response);
   } catch (error) {
-    console.error('❌ Error fetching leave requests:', error);
-    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
     return NextResponse.json(
       {
         error: 'Internal server error',

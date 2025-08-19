@@ -68,7 +68,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       message: 'Leave request rejected successfully',
     });
   } catch (error) {
-    console.error('Error rejecting leave request:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

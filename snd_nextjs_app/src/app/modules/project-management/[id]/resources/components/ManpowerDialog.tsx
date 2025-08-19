@@ -188,7 +188,7 @@ export default function ManpowerDialog({
         }
       }
     } catch (error) {
-      console.error('Error fetching employee details:', error);
+      
     }
   };
 
@@ -242,23 +242,18 @@ export default function ManpowerDialog({
         total_cost: (formData.daily_rate || 0) * (formData.total_days || 0),
       };
 
-      console.log('Submitting manpower data:', submitData);
-      console.log('Project ID:', projectId);
-      console.log('Form data before submit:', formData);
-      console.log('Use employee:', useEmployee);
-
       if (initialData?.id) {
-        console.log('Updating resource with ID:', initialData.id);
+        
         await apiService.put(`/projects/${projectId}/resources/${initialData.id}`, submitData);
         toast.success('Manpower resource updated successfully');
       } else {
-        console.log('Creating new resource');
+        
         try {
           const response = await apiService.post(`/projects/${projectId}/resources`, submitData);
-          console.log('API response:', response);
+          
           toast.success('Manpower resource added successfully');
         } catch (apiError) {
-          console.error('API Error details:', apiError);
+          
           throw apiError;
         }
       }
@@ -266,7 +261,7 @@ export default function ManpowerDialog({
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error saving manpower resource:', error);
+      
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to save manpower resource';
       toast.error(errorMessage);

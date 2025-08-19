@@ -7,19 +7,16 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   try {
     const { id: projectId } = await params;
 
-    console.log('Fetching project with ID:', projectId);
-
     // Validate projectId
     if (!projectId || isNaN(parseInt(projectId))) {
-      console.log('Invalid project ID:', projectId);
+      
       return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 
     const projectIdNum = parseInt(projectId);
-    console.log('Parsed project ID:', projectIdNum);
 
     // First, get the project data
-    console.log('Querying projects table...');
+    
     const projectData = await db
       .select({
         id: projects.id,
@@ -36,8 +33,6 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       .where(eq(projects.id, projectIdNum))
       .limit(1);
 
-    console.log('Project data found:', projectData.length > 0);
-
     if (!projectData.length) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
@@ -46,13 +41,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     if (!project) {
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
-    console.log('Project:', project);
 
     // Get customer data if customerId exists
     let customer: any = null;
     if (project.customerId) {
       try {
-        console.log('Fetching customer data for ID:', project.customerId);
+        
         const customerData = await db
           .select({
             id: customers.id,
@@ -65,9 +59,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
           .limit(1);
 
         customer = customerData[0] || null;
-        console.log('Customer data:', customer);
+        
       } catch (customerError) {
-        console.warn('Error fetching customer data:', customerError);
+        
         customer = null;
       }
     }
@@ -75,7 +69,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     // Get rental data if any exists for this project
     let rental: any = null;
     try {
-      console.log('Fetching rental data for project ID:', project.id);
+      
       const rentalData = await db
         .select({
           id: rentals.id,
@@ -86,9 +80,9 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         .limit(1);
 
       rental = rentalData[0] || null;
-      console.log('Rental data:', rental);
+      
     } catch (rentalError) {
-      console.warn('Error fetching rental data:', rentalError);
+      
       rental = null;
     }
 
@@ -117,15 +111,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       rental: rental,
     };
 
-    console.log('Transformed project:', transformedProject);
-
     return NextResponse.json({
       success: true,
       data: transformedProject,
     });
   } catch (error) {
-    console.error('Error fetching project:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
     return NextResponse.json(
       {
         error: 'Failed to fetch project',
@@ -211,7 +202,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       message: 'Project updated successfully',
     });
   } catch (error) {
-    console.error('Error updating project:', error);
+    
     return NextResponse.json({ error: 'Failed to update project' }, { status: 500 });
   }
 }
@@ -227,7 +218,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Project deleted successfully' });
   } catch (error) {
-    console.error('Error deleting project:', error);
+    
     return NextResponse.json({ error: 'Failed to delete project' }, { status: 500 });
   }
 }

@@ -42,7 +42,7 @@ export default function LoginPage() {
     t = translation.t;
     if (!i18nReady) setI18nReady(true);
   } catch (error) {
-    console.error('i18n error:', error);
+    
     setI18nError(true);
     // Use fallback function
     t = (key: string) => FALLBACK_TEXTS[key as keyof typeof FALLBACK_TEXTS] || key;
@@ -55,7 +55,7 @@ export default function LoginPage() {
     session = authResult.data;
     status = authResult.status;
   } catch (error) {
-    console.error('NextAuth error:', error);
+    
     setAuthError('Authentication system error');
     status = 'error';
   }

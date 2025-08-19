@@ -88,7 +88,7 @@ export async function GET(_request: NextRequest) {
       prev_page_url: page > 1 ? `/api/reports?page=${page - 1}&limit=${limit}` : null,
     });
   } catch (error) {
-    console.error('Error fetching reports:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -133,7 +133,7 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json(report, { status: 201 });
   } catch (error) {
-    console.error('Error creating report:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

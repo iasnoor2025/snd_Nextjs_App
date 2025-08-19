@@ -38,7 +38,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       rental: updatedRental,
     });
   } catch (error) {
-    console.error('Error completing rental:', error);
+    
     return NextResponse.json({ error: 'Failed to complete rental' }, { status: 500 });
   }
 }

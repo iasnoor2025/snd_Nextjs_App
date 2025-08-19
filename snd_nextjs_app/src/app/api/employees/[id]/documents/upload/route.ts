@@ -13,7 +13,7 @@ const uploadDocumentsHandler = async (
 ) => {
   try {
     if (!params || !params.id) {
-      console.error('Invalid params received:', params);
+      
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
@@ -129,17 +129,7 @@ const uploadDocumentsHandler = async (
     await writeFile(filePath, buffer);
 
     // Save document record to database (use the new file name)
-    console.log('Inserting document with values:', {
-      employeeId,
-      documentType: rawDocumentType,
-      filePath: relativePath,
-      fileName: storedFileName,
-      fileSize: file.size,
-      mimeType: file.type,
-      description: description || null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
+    // (no-op placeholder removed)
 
     const documentResult = await db
       .insert(employeeDocuments)
@@ -156,7 +146,6 @@ const uploadDocumentsHandler = async (
       })
       .returning();
 
-    console.log('Document inserted successfully:', documentResult);
     const document = documentResult[0];
 
     if (!document) {
@@ -181,10 +170,9 @@ const uploadDocumentsHandler = async (
       },
     };
 
-    console.log('Returning response:', responseData);
     return NextResponse.json(responseData);
   } catch (error) {
-    console.error('Error in POST /api/employees/[id]/documents/upload:', error);
+    
     return NextResponse.json(
       {
         success: false,

@@ -37,7 +37,7 @@ export async function GET() {
 
     return NextResponse.json(rolesWithUserCount);
   } catch (error) {
-    console.error('Error fetching roles:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch roles' }, { status: 500 });
   }
 }
@@ -87,7 +87,7 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json(roleWithUserCount, { status: 201 });
   } catch (error) {
-    console.error('Error creating role:', error);
+    
     return NextResponse.json({ error: 'Failed to create role' }, { status: 500 });
   }
 }
@@ -161,7 +161,7 @@ export async function PUT(_request: NextRequest) {
 
     return NextResponse.json(roleWithUserCount);
   } catch (error) {
-    console.error('Error updating role:', error);
+    
     return NextResponse.json({ error: 'Failed to update role' }, { status: 500 });
   }
 }
@@ -194,7 +194,7 @@ export async function DELETE(_request: NextRequest) {
 
     return NextResponse.json({ message: 'Role deleted successfully' });
   } catch (error) {
-    console.error('Error deleting role:', error);
+    
     return NextResponse.json({ error: 'Failed to delete role' }, { status: 500 });
   }
 }

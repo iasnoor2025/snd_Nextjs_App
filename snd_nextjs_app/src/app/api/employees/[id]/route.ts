@@ -16,7 +16,7 @@ const getEmployeeHandler = async (
       try {
         resolvedParams = await params;
       } catch (error) {
-        console.error('Error resolving params Promise:', error);
+        
         return NextResponse.json({ error: 'Failed to resolve route parameters' }, { status: 500 });
       }
     } else {
@@ -24,7 +24,7 @@ const getEmployeeHandler = async (
     }
 
     if (!resolvedParams || !resolvedParams.id) {
-      console.error('Invalid params received:', resolvedParams);
+      
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
@@ -273,7 +273,7 @@ const getEmployeeHandler = async (
       message: 'Employee retrieved successfully',
     });
   } catch (error) {
-    console.error('Error in GET /api/employees/[id]:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -504,7 +504,7 @@ const updateEmployeeHandler = async (
       },
     });
   } catch (error) {
-    console.error('Error in PUT /api/employees/[id]:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -549,7 +549,7 @@ const deleteEmployeeHandler = async (
       message: 'Employee deleted successfully',
     });
   } catch (error) {
-    console.error('Error in DELETE /api/employees/[id]:', error);
+    
     return NextResponse.json(
       {
         success: false,

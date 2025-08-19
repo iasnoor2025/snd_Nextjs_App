@@ -51,7 +51,7 @@ export async function GET(_request: NextRequest) {
       count: data.data?.length || 0,
     });
   } catch (error) {
-    console.error('Error fetching ERPNext invoices:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -77,7 +77,7 @@ export async function POST(_request: NextRequest) {
       message: 'Invoice created successfully',
     });
   } catch (error) {
-    console.error('Error creating ERPNext invoice:', error);
+    
     return NextResponse.json(
       {
         success: false,

@@ -76,7 +76,7 @@ export async function POST({ params }: { params: Promise<{ id: string }> }) {
       message: 'Payroll approved successfully',
     });
   } catch (error) {
-    console.error('Error approving payroll:', error);
+    
     return NextResponse.json(
       {
         success: false,

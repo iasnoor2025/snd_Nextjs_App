@@ -83,9 +83,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
 
   // Debug session status
   useEffect(() => {
-    console.log('DocumentsTab session status:', sessionStatus);
-    console.log('DocumentsTab session data:', session);
-    console.log('DocumentsTab employeeId:', employeeId);
+
   }, [sessionStatus, session, employeeId]);
 
   // Show loading while session is loading
@@ -118,7 +116,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
   useEffect(() => {
     if (error && !hasError) {
       setHasError(true);
-      console.error('DocumentsTab error state:', error);
+      
     }
   }, [error, hasError]);
 
@@ -132,13 +130,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching documents for employee:', employeeId);
-      console.log('Employee ID type:', typeof employeeId);
-      console.log('Employee ID is valid number:', !isNaN(Number(employeeId)));
-      console.log('Session user:', session?.user?.email);
-      console.log('Session role:', session?.user?.role);
-      console.log('Full URL:', `/api/employees/${employeeId}/documents`);
-
+      
       const response = await fetch(`/api/employees/${employeeId}/documents`, {
         method: 'GET',
         headers: {
@@ -147,17 +139,14 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
         // Add credentials to ensure cookies are sent
         credentials: 'include',
       });
-
-      console.log('Fetch response status:', response.status);
-      console.log('Fetch response headers:', Object.fromEntries(response.headers.entries()));
+      
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Fetch response data:', data);
+        
         setDocuments(Array.isArray(data) ? data : []);
       } else {
         const errorText = await response.text();
-        console.error('Error response body:', errorText);
 
         let errorData;
         try {
@@ -167,13 +156,13 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
         }
 
         const errorMessage = errorData.error || `Failed to load documents (${response.status})`;
-        console.error('Setting error:', errorMessage);
+        
         setError(errorMessage);
       }
     } catch (error) {
-      console.error('Error fetching documents:', error);
+      
       const errorMessage = error instanceof Error ? error.message : 'Failed to load documents';
-      console.error('Setting error from catch:', errorMessage);
+      
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -217,7 +206,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
         toast.error(errorData.error || 'Failed to upload document');
       }
     } catch (error) {
-      console.error('Error uploading document:', error);
+      
       toast.error('Failed to upload document');
     } finally {
       setUploading(false);
@@ -244,7 +233,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
         toast.error(errorData.error || 'Failed to delete document');
       }
     } catch (error) {
-      console.error('Error deleting document:', error);
+      
       toast.error('Failed to delete document');
     } finally {
       setDeletingId(null);
@@ -270,7 +259,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
         toast.error('Failed to download document');
       }
     } catch (error) {
-      console.error('Error downloading document:', error);
+      
       toast.error('Failed to download document');
     }
   };
@@ -432,7 +421,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
           }}
           loadDocuments={async () => {
             try {
-              console.log('Loading documents for employee:', employeeId);
+              
               const response = await fetch(`/api/employees/${employeeId}/documents`, {
                 method: 'GET',
                 headers: {
@@ -440,17 +429,13 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                 },
                 credentials: 'include',
               });
-              console.log('API response status:', response.status);
 
               if (response.ok) {
                 const data = await response.json();
-                console.log('API response data:', data);
 
                 const list = Array.isArray(data) ? data : [];
-                console.log('Processed list:', list);
 
                 return list.map((d: any) => {
-                  console.log('Processing document:', d);
 
                   // Map the API response fields to what DocumentManager expects
                   const result = {
@@ -473,19 +458,16 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                     document_type: d.documentType || '',
                   };
 
-                  console.log('Mapped document result:', result);
-                  console.log('Document URL for preview:', result.url);
-                  console.log('Document file type:', result.file_type);
                   return result as DocumentItem;
                 }) as DocumentItem[];
               } else {
-                console.error('API response not ok:', response.status, response.statusText);
+                
                 const errorText = await response.text();
-                console.error('Error response body:', errorText);
+                
                 throw new Error(`API request failed: ${response.status} ${response.statusText}`);
               }
             } catch (error) {
-              console.error('Error in loadDocuments:', error);
+              
               // Return empty array instead of throwing to prevent app crash
               return [] as DocumentItem[];
             }
@@ -514,7 +496,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
               fetchDocuments();
               return true;
             } catch (error) {
-              console.error('Error uploading document:', error);
+              
               toast.error(error instanceof Error ? error.message : 'Failed to upload document');
               return false;
             }
@@ -533,7 +515,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
               fetchDocuments();
               return true;
             } catch (error) {
-              console.error('Error deleting document:', error);
+              
               toast.error(error instanceof Error ? error.message : 'Failed to delete document');
               return false;
             }
@@ -653,7 +635,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
 
                       successCount++;
                     } catch (fileError) {
-                      console.error(`Error uploading file ${file.name}:`, fileError);
+                      
                       errorCount++;
                     }
                   }
@@ -686,7 +668,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                     toast.error('All document uploads failed');
                   }
                 } catch (e) {
-                  console.error('Error in upload process:', e);
+                  
                   toast.error('Failed to upload documents');
                 } finally {
                   setUploading(false);

@@ -136,7 +136,7 @@ export default function TimesheetSummary({
         setDailyRecords(records);
       }
     } catch (error) {
-      console.error('Error fetching timesheet data:', error);
+      
     } finally {
       setIsLoading(false);
     }

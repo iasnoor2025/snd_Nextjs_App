@@ -111,7 +111,6 @@ export async function PUT(
               )
             );
 
-          console.log(`Ended previous employee assignment for employee ${previousEmployeeId}`);
         }
 
         // If this is now a manual assignment with an employee, create a new employee assignment
@@ -144,10 +143,9 @@ export async function PUT(
             })
             .returning();
 
-          console.log('Employee assignment created/updated automatically:', employeeAssignment);
         }
       } catch (assignmentError) {
-        console.error('Error syncing employee assignment:', assignmentError);
+        
         // Don't fail the equipment assignment update if employee assignment sync fails
       }
     }
@@ -211,7 +209,7 @@ export async function PUT(
         (employeeAssignment ? ' and employee assignment synced automatically' : ''),
     });
   } catch (error) {
-    console.error('Error updating equipment assignment:', error);
+    
     return NextResponse.json(
       { success: false, error: 'Failed to update equipment assignment' },
       { status: 500 }
@@ -271,11 +269,11 @@ export async function DELETE({ params }: { params: Promise<{ assignmentId: strin
               .delete(employeeAssignments)
               .where(eq(employeeAssignments.id, employeeAssignmentToDelete.id));
             deletedEmployeeAssignment = employeeAssignmentToDelete;
-            console.log('Employee assignment deleted automatically:', employeeAssignmentToDelete);
+            
           }
         }
       } catch (assignmentError) {
-        console.error('Error deleting employee assignment:', assignmentError);
+        
         // Don't fail the equipment assignment deletion if employee assignment deletion fails
       }
     }
@@ -294,7 +292,7 @@ export async function DELETE({ params }: { params: Promise<{ assignmentId: strin
       },
     });
   } catch (error) {
-    console.error('Error deleting equipment assignment:', error);
+    
     return NextResponse.json(
       { success: false, error: 'Failed to delete equipment assignment' },
       { status: 500 }

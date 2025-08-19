@@ -142,7 +142,7 @@ export async function checkUserPermission(
       requiredPermissions: [specificRolePermission],
     };
   } catch (error) {
-    console.error('Error checking user permission:', error);
+    
     return {
       hasPermission: false,
       reason: 'Error checking permissions',
@@ -193,7 +193,7 @@ export async function getUserPermissions(userId: string): Promise<UserPermission
       inheritedPermissions,
     };
   } catch (error) {
-    console.error('Error getting user permissions:', error);
+    
     return null;
   }
 }
@@ -216,7 +216,7 @@ export async function assignPermissionsToRole(
 
     return { success: true, message: 'Permissions assigned successfully' };
   } catch (error) {
-    console.error('Error assigning permissions to role:', error);
+    
     return { success: false, message: 'Error assigning permissions' };
   }
 }
@@ -239,7 +239,7 @@ export async function assignPermissionsToUser(
 
     return { success: true, message: 'Permissions assigned successfully' };
   } catch (error) {
-    console.error('Error assigning permissions to user:', error);
+    
     return { success: false, message: 'Error assigning permissions' };
   }
 }
@@ -271,7 +271,7 @@ export async function createPermission(
 
     return { success: true, message: 'Permission created successfully', permission };
   } catch (error) {
-    console.error('Error creating permission:', error);
+    
     return { success: false, message: 'Error creating permission' };
   }
 }
@@ -328,7 +328,7 @@ export async function getPermissions(filters?: {
       },
     };
   } catch (error) {
-    console.error('Error getting permissions:', error);
+    
     throw error;
   }
 }

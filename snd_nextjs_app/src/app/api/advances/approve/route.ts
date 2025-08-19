@@ -161,7 +161,7 @@ export const POST = withPermission(
         advance: advanceWithEmployee,
       });
     } catch (error) {
-      console.error('Error approving advance:', error);
+      
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
   },

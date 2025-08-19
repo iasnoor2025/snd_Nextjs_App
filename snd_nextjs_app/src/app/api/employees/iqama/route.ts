@@ -31,7 +31,6 @@ export async function GET(_request: NextRequest) {
       message: 'Iqama data fetched successfully',
     });
   } catch (error) {
-    console.error('Error fetching Iqama data:', error);
 
     return NextResponse.json(
       {

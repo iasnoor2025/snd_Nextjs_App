@@ -130,7 +130,7 @@ export const GET = withReadPermission(async (request: NextRequest) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching iqama expiring employees:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
   }
 }, PermissionConfigs.employee.read);

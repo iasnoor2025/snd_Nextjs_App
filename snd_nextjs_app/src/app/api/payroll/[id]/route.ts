@@ -151,7 +151,7 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       data: transformedPayroll,
     });
   } catch (error) {
-    console.error('Error fetching payroll:', error);
+    
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -192,9 +192,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
       // Use simple formula: (Basic Salary / Total Days in Month) * Absent Days
       absentDeduction = (baseSalary / daysInMonth) * Number(body.absentDays);
-      console.log(
-        `Absent calculation: (${baseSalary} / ${daysInMonth}) * ${body.absentDays} = ${absentDeduction}`
-      );
     }
 
     const finalAmount =
@@ -253,7 +250,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       data: updatedPayroll,
     });
   } catch (error) {
-    console.error('Error updating payroll:', error);
+    
     return NextResponse.json(
       { success: false, message: 'Failed to update payroll' },
       { status: 500 }
@@ -292,7 +289,7 @@ export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
       message: 'Payroll deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting payroll:', error);
+    
     return NextResponse.json(
       { success: false, message: 'Failed to delete payroll' },
       { status: 500 }

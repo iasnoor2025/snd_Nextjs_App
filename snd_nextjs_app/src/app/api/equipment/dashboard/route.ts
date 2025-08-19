@@ -84,7 +84,6 @@ export async function GET(_request: NextRequest) {
       message: 'Equipment data fetched successfully',
     });
   } catch (error) {
-    console.error('Error fetching equipment data:', error);
 
     return NextResponse.json(
       {

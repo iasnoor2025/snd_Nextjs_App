@@ -628,7 +628,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     documentTitle: `Payslip-${id}`,
     waitForImages: true,
     onPrintError: error => {
-      console.error('Print error details:', error);
+      
       // Continue with print even if there are image errors
     },
   });
@@ -636,29 +636,27 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   useEffect(() => {
     const fetchPayslipData = async () => {
       try {
-        console.log('🔍 PAYSLIP FRONTEND - Starting fetch for payroll ID:', id);
+        
         setLoading(true);
         const response = await fetch(`/api/payroll/${id}/payslip`);
-        console.log('🔍 PAYSLIP FRONTEND - Response status:', response.status);
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('🔍 PAYSLIP FRONTEND - Response not ok:', errorText);
+          
           throw new Error(`Failed to fetch payslip data: ${response.status} ${errorText}`);
         }
 
         const data = await response.json();
-        console.log('🔍 PAYSLIP FRONTEND - Response data:', data);
 
         if (data.success) {
-          console.log('🔍 PAYSLIP FRONTEND - Payslip data received:', data.data);
+          
           setPayslipData(data.data);
         } else {
-          console.error('🔍 PAYSLIP FRONTEND - API returned success: false:', data.message);
+          
           throw new Error(data.message || 'Failed to fetch payslip data');
         }
       } catch (error) {
-        console.error('🔍 PAYSLIP FRONTEND - Error fetching payslip data:', error);
+        
         toast.error('Failed to load payslip data');
       } finally {
         setLoading(false);
@@ -724,7 +722,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
         }
       }
     } catch (e) {
-      console.error('Download error:', e);
+      
       toast.error('Failed to download PDF');
     } finally {
       setIsLoading(false);
@@ -804,7 +802,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       pdf.save(`payslip_${employeeId}_${monthName}_${payslipData?.payroll.year}.pdf`);
       toast.success('Payslip PDF generated successfully');
     } catch (error) {
-      console.error('PDF generation failed:', error);
+      
       toast.error('Failed to generate PDF. Please try again.');
     }
   };
@@ -856,10 +854,6 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     : 'Unknown Employee';
 
   // Debug the data
-  console.log('🔍 PAYSLIP DEBUG - Raw payslipData:', payslipData);
-  console.log('🔍 PAYSLIP DEBUG - Destructured attendanceData:', attendanceData);
-  console.log('🔍 PAYSLIP DEBUG - Payroll:', payroll);
-  console.log('🔍 PAYSLIP DEBUG - Employee:', employee);
 
   // Calculate pay details - Convert Decimal to numbers
   const basicSalary = Number(payroll.base_salary) || 0;
@@ -872,7 +866,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
 
   // Check if attendance data is available
   if (!attendanceData || !Array.isArray(attendanceData)) {
-    console.error('🔍 PAYSLIP ERROR - No attendance data available:', attendanceData);
+    
     return (
       <div className="flex h-full flex-1 flex-col gap-4 p-4">
         <div className="text-center">
@@ -941,13 +935,10 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
 
       if (dateKey) {
         attendanceMap.set(dateKey, day);
-        console.log(`🔍 PAYSLIP DEBUG - Added to attendanceMap: ${dateKey} ->`, day);
+        
       }
     });
   }
-
-  console.log('🔍 PAYSLIP DEBUG - Final attendanceMap size:', attendanceMap.size);
-  console.log('🔍 PAYSLIP DEBUG - AttendanceMap keys:', Array.from(attendanceMap.keys()));
 
   // Calculate absent days by checking ALL days in the month (including Fridays with smart logic)
   const absentDays = (() => {
@@ -1007,13 +998,6 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     }
 
     // Debug absent days calculation
-    console.log('🔍 PAYSLIP DEBUG - Absent Days Calculation:', {
-      totalDaysInMonth: daysInMonth,
-      absentCount,
-      absentDates,
-      attendanceMapSize: attendanceMap.size,
-      sampleAttendanceData: Array.from(attendanceMap.entries()).slice(0, 3),
-    });
 
     return absentCount;
   })();
@@ -1029,13 +1013,6 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   const absentDeduction = absentDays > 0 ? (basicSalary / daysInMonth) * absentDays : 0;
 
   // Debug absent calculation
-  console.log('🔍 PAYSLIP DEBUG - Absent Calculation:', {
-    totalDaysInMonth: daysInMonth,
-    absentDays,
-    basicSalary,
-    absentDeduction,
-    calculation: `(${basicSalary} / ${daysInMonth}) * ${absentDays} = ${absentDeduction}`,
-  });
 
   const netSalary =
     basicSalary +
@@ -1114,7 +1091,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                     alt="SND Logo"
                     className="w-12 h-12 object-contain"
                     onError={e => {
-                      console.warn('Logo failed to load, hiding image');
+                      
                       e.currentTarget.style.display = 'none';
                       // Add fallback text
                       const fallback = document.createElement('div');

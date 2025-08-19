@@ -16,7 +16,6 @@ import { NextRequest, NextResponse } from 'next/server';
 // GET /api/employees - List employees
 const getEmployeesHandler = async (request: NextRequest) => {
   try {
-    console.log('🔍 Starting employee fetch...');
 
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
@@ -25,8 +24,6 @@ const getEmployeesHandler = async (request: NextRequest) => {
     const department = searchParams.get('department') || '';
     const status = searchParams.get('status') || '';
     const all = searchParams.get('all') === 'true';
-
-    console.log('🔍 Search params:', { page, limit, search, department, status, all });
 
     const skip = (page - 1) * limit;
 
@@ -51,13 +48,9 @@ const getEmployeesHandler = async (request: NextRequest) => {
     }
 
     // No employee filtering - all authenticated users can see all employees
-    console.log('🔍 No employee filtering applied');
-
-    console.log('🔍 Filter count:', filters.length);
 
     const whereExpr = filters.length ? and(...filters) : undefined;
 
-    console.log('🔍 Executing employee query with assignments...');
     let baseQuery = db
       .select({
         id: employeesTable.id,
@@ -101,15 +94,12 @@ const getEmployeesHandler = async (request: NextRequest) => {
       .where(whereExpr as any);
     const total = Number((countRow as any)[0]?.count ?? 0);
 
-    console.log(`✅ Found ${employeeRows.length} employees out of ${total} total`);
-
     // Update employee statuses based on current leave status
-    console.log('🔄 Updating employee statuses based on leave...');
+    
     const statusUpdatePromises = employeeRows.map(employee =>
       updateEmployeeStatusBasedOnLeave(employee.id as number)
     );
     await Promise.all(statusUpdatePromises);
-    console.log('✅ Employee statuses updated');
 
     // Fetch latest assignment per employee in this page
     const employeeFileNumbers = employeeRows.map(e => e.file_number as string).filter(Boolean);
@@ -217,8 +207,6 @@ const getEmployeesHandler = async (request: NextRequest) => {
     });
 
     const employeesWithAssignments = transformedEmployees.filter(emp => emp.current_assignment);
-    console.log(`✅ Employees with current assignments: ${employeesWithAssignments.length}`);
-    console.log(`✅ Transformed ${transformedEmployees.length} employees`);
 
     const response = {
       success: true,
@@ -231,11 +219,9 @@ const getEmployeesHandler = async (request: NextRequest) => {
       },
     };
 
-    console.log('✅ Returning response with', transformedEmployees.length, 'employees');
     return NextResponse.json(response);
   } catch (error) {
-    console.error('❌ Error fetching employees:', error);
-    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -310,7 +296,7 @@ const createEmployeeHandler = async (request: NextRequest) => {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating employee:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 };

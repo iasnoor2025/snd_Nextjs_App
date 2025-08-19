@@ -10,7 +10,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export const POST = withPermission(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
     try {
-      console.log('🔍 REJECT TIMESHEET - Starting request for timesheet:', params.id);
 
       const timesheetId = parseInt(params.id);
       if (isNaN(timesheetId)) {
@@ -36,12 +35,6 @@ export const POST = withPermission(
         return NextResponse.json({ error: 'Timesheet data not found' }, { status: 404 });
       }
 
-      console.log('🔍 REJECT TIMESHEET - Found timesheet:', {
-        id: timesheetData.id,
-        status: timesheetData.status,
-        employeeId: timesheetData.employeeId,
-      });
-
       // Get session to check user permissions
       const session = await getServerSession(authConfig);
       if (!session?.user?.id) {
@@ -59,9 +52,7 @@ export const POST = withPermission(
       ].includes(timesheetData.status);
 
       if (!canReject) {
-        console.log(
-          `🔍 REJECT TIMESHEET - Timesheet ${timesheetData.id} cannot be rejected. Current status: ${timesheetData.status}`
-        );
+        
         return NextResponse.json(
           {
             error: `Timesheet cannot be rejected. Current status: ${timesheetData.status}`,
@@ -82,8 +73,6 @@ export const POST = withPermission(
           .where(eq(timesheets.id, timesheetId))
           .returning();
 
-        console.log(`🔍 REJECT TIMESHEET - Timesheet rejected successfully: ${timesheetId}`);
-
         const updatedTimesheetData = updatedTimesheet[0];
         if (!updatedTimesheetData) {
           return NextResponse.json({ error: 'Failed to update timesheet' }, { status: 500 });
@@ -99,7 +88,7 @@ export const POST = withPermission(
           },
         });
       } catch (error) {
-        console.error(`🔍 REJECT TIMESHEET - Error rejecting timesheet ${timesheetId}:`, error);
+        
         return NextResponse.json(
           {
             error: `Failed to reject timesheet: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -108,7 +97,7 @@ export const POST = withPermission(
         );
       }
     } catch (error) {
-      console.error('🔍 REJECT TIMESHEET - Unexpected error:', error);
+      
       return NextResponse.json(
         {
           error: 'Internal server error',

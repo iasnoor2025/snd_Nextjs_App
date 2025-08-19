@@ -134,7 +134,7 @@ export default function QuotationsPage() {
     documentTitle: 'Rental-Quotations-List',
     waitForImages: true,
     onPrintError: error => {
-      console.error('Print error details:', error);
+      
       // Continue with print even if there are image errors
     },
   });
@@ -149,7 +149,7 @@ export default function QuotationsPage() {
         const mockData = getMockQuotationsData(search, status, startDate, endDate, currentPage);
         setQuotations(mockData);
       } catch (error) {
-        console.error('Error fetching quotations:', error);
+        
         toast.error('Failed to fetch quotations');
       } finally {
         setLoading(false);

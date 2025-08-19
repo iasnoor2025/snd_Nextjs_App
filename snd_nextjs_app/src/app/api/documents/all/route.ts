@@ -82,7 +82,7 @@ export async function GET(_request: NextRequest) {
 
     // Fetch equipment documents
     if (type === 'all' || type === 'equipment') {
-      console.log('🔍 Fetching equipment documents...');
+      
       const equipmentQuery = db
         .select({
           id: media.id,
@@ -117,9 +117,6 @@ export async function GET(_request: NextRequest) {
         .orderBy(desc(media.createdAt))
         .limit(limit)
         .offset(offset);
-
-      console.log(`🔍 Found ${equipmentResults.length} equipment documents`);
-      console.log('🔍 Equipment documents:', equipmentResults);
 
       equipmentDocs = equipmentResults.map(doc => ({
         id: doc.id,
@@ -217,7 +214,7 @@ export async function GET(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching all documents:', error);
+    
     return NextResponse.json(
       {
         success: false,

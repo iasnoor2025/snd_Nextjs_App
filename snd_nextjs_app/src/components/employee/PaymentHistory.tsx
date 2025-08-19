@@ -70,7 +70,7 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
         setLoading(false);
       })
       .catch(error => {
-        console.error('PaymentHistory API error:', error);
+        
         setLoading(false);
       });
   }, [employeeId]);
@@ -102,7 +102,7 @@ export default function PaymentHistory({ employeeId }: PaymentHistoryProps) {
             setLoading(false);
           })
           .catch(error => {
-            console.error('PaymentHistory refresh error:', error);
+            
             setLoading(false);
           });
       } else {

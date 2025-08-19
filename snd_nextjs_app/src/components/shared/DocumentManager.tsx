@@ -88,7 +88,7 @@ export default function DocumentManager(props: DocumentManagerProps) {
       const list = await loadDocuments();
       setDocuments(Array.isArray(list) ? list : []);
     } catch (error) {
-      console.error('Failed to load documents', error);
+      
     } finally {
       setLoading(false);
     }

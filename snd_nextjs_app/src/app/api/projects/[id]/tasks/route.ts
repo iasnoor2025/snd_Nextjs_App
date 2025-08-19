@@ -13,7 +13,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     // For now, return empty array
     return NextResponse.json({ data: [] });
   } catch (error) {
-    console.error('Error fetching project tasks:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch project tasks' }, { status: 500 });
   }
 }
@@ -30,7 +30,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     // TODO: Implement project task creation when ProjectTask model is added to schema
     return NextResponse.json({ error: 'Project tasks not implemented yet' }, { status: 501 });
   } catch (error) {
-    console.error('Error creating project task:', error);
+    
     return NextResponse.json({ error: 'Failed to create project task' }, { status: 500 });
   }
 }

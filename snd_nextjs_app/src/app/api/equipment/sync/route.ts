@@ -11,12 +11,6 @@ export async function POST() {
     const ERPNEXT_API_SECRET = process.env.NEXT_PUBLIC_ERPNEXT_API_SECRET || process.env.ERPNEXT_API_SECRET;
 
     // Enhanced logging for production debugging
-    console.log('🔧 Equipment Sync Environment Check:');
-    console.log('  - ERPNEXT_URL:', ERPNEXT_URL ? '✅ Set' : '❌ Missing');
-    console.log('  - ERPNEXT_API_KEY:', ERPNEXT_API_KEY ? '✅ Set' : '❌ Missing');
-    console.log('  - ERPNEXT_API_SECRET:', ERPNEXT_API_SECRET ? '✅ Set' : '❌ Missing');
-    console.log('  - NODE_ENV:', process.env.NODE_ENV || 'Not set');
-    console.log('  - Available env vars:', Object.keys(process.env).filter(key => key.includes('ERPNEXT')));
 
     if (!ERPNEXT_URL || !ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {
       const missingVars: string[] = [];
@@ -24,7 +18,6 @@ export async function POST() {
       if (!ERPNEXT_API_KEY) missingVars.push('ERPNEXT_API_KEY (or NEXT_PUBLIC_ERPNEXT_API_KEY)');
       if (!ERPNEXT_API_SECRET) missingVars.push('ERPNEXT_API_SECRET (or NEXT_PUBLIC_ERPNEXT_API_SECRET)');
 
-      console.error('❌ ERPNext configuration missing:', missingVars);
       return NextResponse.json(
         {
           success: false,
@@ -43,9 +36,9 @@ export async function POST() {
     try {
       // Test with a simple query
       await db.select({ count: count() }).from(equipment).limit(1);
-      console.log('✅ Database connection successful');
+      
     } catch (dbError) {
-      console.error('❌ Database connection failed:', dbError);
+      
       return NextResponse.json(
         {
           success: false,
@@ -60,12 +53,9 @@ export async function POST() {
     // Check if database has existing equipment
     const existingEquipmentResult = await db.select({ count: count() }).from(equipment);
     const existingEquipmentCount = existingEquipmentResult[0]?.count || 0;
-    console.log(`📊 Database has ${existingEquipmentCount} existing equipment`);
 
     // Fetch all items from ERPNext (using only working fields)
-    console.log('🌐 Fetching items from ERPNext...');
-    console.log('🔗 ERPNext URL:', ERPNEXT_URL);
-    
+
     const erpnextResponse = await fetch(
       `${ERPNEXT_URL}/api/resource/Item?limit_page_length=1000&fields=["name","item_code","item_name","description","item_group","stock_uom","disabled","standard_rate","last_purchase_rate","valuation_rate"]`,
       {
@@ -79,24 +69,13 @@ export async function POST() {
 
     if (!erpnextResponse.ok) {
       const errorText = await erpnextResponse.text();
-      console.error('❌ ERPNext API Error Response:', {
-        status: erpnextResponse.status,
-        statusText: erpnextResponse.statusText,
-        errorText,
-        url: `${ERPNEXT_URL}/api/resource/Item`,
-        headers: {
-          Authorization: `token ${ERPNEXT_API_KEY}:***`,
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        }
-      });
+      
       throw new Error(
         `ERPNext API error: ${erpnextResponse.status} ${erpnextResponse.statusText} - ${errorText}`
       );
     }
 
     const erpnextData = await erpnextResponse.json();
-    console.log(`✅ Found ${erpnextData.data?.length || 0} total items in ERPNext`);
 
     if (!erpnextData.data || erpnextData.data.length === 0) {
       return NextResponse.json({
@@ -113,10 +92,6 @@ export async function POST() {
     // Filter equipment items
     const allItems = erpnextData.data;
     const equipmentItems = allItems.filter((item: any) => item.item_group === 'Equipment');
-
-    console.log(
-      `Found ${equipmentItems.length} equipment items out of ${allItems.length} total items`
-    );
 
     if (equipmentItems.length === 0) {
       return NextResponse.json({
@@ -147,13 +122,11 @@ export async function POST() {
     const newEquipment: any[] = [];
     const errors: Array<{ equipment: string; error: string }> = [];
 
-    console.log(`Processing ${equipmentItems.length} equipment items...`);
-
     for (const erpEquipmentItem of equipmentItems) {
       try {
         // Skip disabled items
         if (erpEquipmentItem.disabled) {
-          console.log(`Skipping disabled equipment: ${erpEquipmentItem.item_code}`);
+          
           continue;
         }
 
@@ -200,7 +173,7 @@ export async function POST() {
             existingEquipment.isActive !== equipmentData.isActive;
 
           if (hasChanges) {
-            console.log('Updating existing equipment:', existingEquipment.id);
+            
             const updatedEquipmentItem = await db
               .update(equipment)
               .set(equipmentData)
@@ -210,18 +183,18 @@ export async function POST() {
             syncedEquipment.push(updatedItem);
             updatedEquipment.push(updatedItem);
           } else {
-            console.log('Equipment unchanged, skipping:', existingEquipment.id);
+            
             syncedEquipment.push(existingEquipment);
           }
         } else {
-          console.log('Creating new equipment:', equipmentData.name);
+          
           const newEquipmentItem = await db.insert(equipment).values(equipmentData).returning();
           const newItem = newEquipmentItem[0];
           syncedEquipment.push(newItem);
           newEquipment.push(newItem);
         }
       } catch (error) {
-        console.error(`Error processing equipment ${erpEquipmentItem.item_code}:`, error);
+        
         errors.push({
           equipment: erpEquipmentItem.item_code,
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -259,7 +232,7 @@ export async function POST() {
       },
     });
   } catch (error) {
-    console.error('Error syncing equipment:', error);
+    
     return NextResponse.json(
       {
         success: false,

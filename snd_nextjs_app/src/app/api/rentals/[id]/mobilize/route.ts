@@ -37,7 +37,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       rental: updatedRental,
     });
   } catch (error) {
-    console.error('Error starting mobilization:', error);
+    
     return NextResponse.json({ error: 'Failed to start mobilization' }, { status: 500 });
   }
 }

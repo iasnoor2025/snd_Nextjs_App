@@ -90,7 +90,7 @@ export const POST = withAuth(async (request: NextRequest) => {
       timesheet: updatedTimesheet,
     });
   } catch (error) {
-    console.error('Error rejecting timesheet:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 });

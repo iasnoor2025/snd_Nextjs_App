@@ -125,7 +125,7 @@ export default function QuotationViewPage() {
       try {
         const textarea = e.currentTarget;
         if (!textarea) {
-          console.log('Textarea is null');
+          
           return;
         }
 
@@ -138,10 +138,6 @@ export default function QuotationViewPage() {
         const currentLine = lines[lines.length - 1] || '';
         const trimmedLine = currentLine.trim();
 
-        console.log('Current line:', currentLine);
-        console.log('Current line trimmed:', trimmedLine);
-        console.log('Field type:', fieldType);
-
         // Special handling for Rental Terms - auto-insert company name
         if (fieldType === 'rentalTerms' && quotation?.customer?.company) {
           const companyName = quotation.customer.company;
@@ -151,7 +147,6 @@ export default function QuotationViewPage() {
           if (numberedMatch) {
             const currentNumber = parseInt(numberedMatch[1]);
             const nextNumber = currentNumber + 1;
-            console.log('Continuing numbered list with company name:', nextNumber);
 
             const newText =
               textBeforeCursor + '\n' + nextNumber + '. ' + companyName + ' provides ';
@@ -174,7 +169,7 @@ export default function QuotationViewPage() {
             trimmedLine.startsWith('-');
 
           if (isBulletPoint) {
-            console.log('Adding bullet point with company name');
+            
             const newText = textBeforeCursor + '\n• ' + companyName + ' provides ';
             setter(newText);
 
@@ -193,7 +188,6 @@ export default function QuotationViewPage() {
         if (numberedMatch) {
           const currentNumber = parseInt(numberedMatch[1]);
           const nextNumber = currentNumber + 1;
-          console.log('Continuing numbered list:', nextNumber);
 
           const newText = textBeforeCursor + '\n' + nextNumber + '. ' + textAfterCursor;
           setter(newText);
@@ -213,11 +207,9 @@ export default function QuotationViewPage() {
           trimmedLine.startsWith('*') ||
           trimmedLine.startsWith('-');
 
-        console.log('Is bullet point:', isBulletPoint);
-
         // If current line starts with bullet or is empty, add new bullet
         if (isBulletPoint) {
-          console.log('Adding bullet point');
+          
           const newText = textBeforeCursor + '\n• ' + textAfterCursor;
           setter(newText);
 
@@ -227,13 +219,13 @@ export default function QuotationViewPage() {
             textarea: textarea,
           };
         } else {
-          console.log('Adding regular newline');
+          
           // Regular new line
           const newText = textBeforeCursor + '\n' + textAfterCursor;
           setter(newText);
         }
       } catch (error) {
-        console.warn('Error in bullet point handler:', error);
+        
         // Fallback to regular newline
         const cursorPosition = e.currentTarget.selectionStart || 0;
         const textBeforeCursor = currentValue.substring(0, cursorPosition);
@@ -268,7 +260,7 @@ export default function QuotationViewPage() {
           }
         }, 0);
       } catch (error) {
-        console.warn('Could not set cursor position:', error);
+        
       }
     }
   });
@@ -311,7 +303,7 @@ export default function QuotationViewPage() {
       setSaveNotes('');
       // Optionally refresh the quotation data: await fetchQuotation();
     } catch (error) {
-      console.error('Save error:', error);
+      
       toast.error('Failed to save terms and conditions', {
         description:
           error instanceof Error
@@ -380,7 +372,7 @@ export default function QuotationViewPage() {
 
       toast.success('PDF downloaded successfully!');
     } catch (error) {
-      console.error('PDF generation error:', error);
+      
       toast.error('Failed to generate PDF', {
         description: error instanceof Error ? error.message : 'Please try again',
       });

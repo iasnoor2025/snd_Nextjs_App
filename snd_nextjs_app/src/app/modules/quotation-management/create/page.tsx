@@ -152,7 +152,7 @@ export default function CreateQuotationPage() {
         // Generate next quotation number
         setNextQuotationNumber(`QUOT-2024-${Math.floor(Math.random() * 1000) + 1}`);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        
         toast.error('Failed to load form data');
       } finally {
         setLoading(false);
@@ -245,7 +245,7 @@ export default function CreateQuotationPage() {
       // Redirect to the new quotation
       window.location.href = `/modules/quotation-management/${result.data.id}`;
     } catch (error) {
-      console.error('Error creating quotation:', error);
+      
       toast.error('Failed to create quotation');
     } finally {
       setLoading(false);
@@ -426,16 +426,16 @@ export default function CreateQuotationPage() {
                           </TableCell>
                           <TableCell>
                             <Select
-                              value={item.operator_id?.toString() || ''}
+                              value={item.operator_id?.toString() || 'none'}
                               onValueChange={value =>
-                                updateQuotationItem(index, 'operator_id', parseInt(value))
+                                updateQuotationItem(index, 'operator_id', value === 'none' ? null : parseInt(value))
                               }
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select operator" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">No operator</SelectItem>
+                                <SelectItem value="none">No operator</SelectItem>
                                 {operators.map(op => (
                                   <SelectItem key={op.id} value={op.id.toString()}>
                                     {op.name}

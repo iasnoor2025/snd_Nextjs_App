@@ -118,7 +118,7 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
             setRentals([]);
           }
         } else {
-          console.warn('Failed to fetch rentals, setting empty array');
+          
           setRentals([]);
         }
 
@@ -126,7 +126,7 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
         // TODO: Implement invoice API when available
         setInvoices([]);
       } catch (error) {
-        console.error('Error fetching customer data:', error);
+        
         setError(error instanceof Error ? error.message : 'Failed to fetch customer data');
         toast.error('Failed to fetch customer data');
       } finally {

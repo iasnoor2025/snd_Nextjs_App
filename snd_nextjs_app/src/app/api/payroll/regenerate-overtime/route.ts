@@ -5,7 +5,6 @@ import { NextResponse } from 'next/server';
 
 export async function POST() {
   try {
-    console.log('Starting overtime recalculation for existing payrolls...');
 
     // Test basic connection first
     try {
@@ -14,9 +13,9 @@ export async function POST() {
         .select({ count: sql`1` })
         .from(employees)
         .limit(1);
-      console.log('✅ Database connection successful');
+      
     } catch (connectionError) {
-      console.error('❌ Database connection failed:', connectionError);
+      
       return NextResponse.json(
         {
           success: false,
@@ -52,21 +51,15 @@ export async function POST() {
       .leftJoin(employees, eq(payrolls.employeeId, employees.id))
       .where(and(gt(payrolls.overtimeHours, '0'), eq(payrolls.overtimeAmount, '0')));
 
-    console.log(`Found ${payrollsToUpdateData.length} payrolls to update`);
-
     const updatedPayrolls: string[] = [];
     const errors: string[] = [];
 
     for (const payroll of payrollsToUpdateData) {
       try {
         if (!payroll.employee) {
-          console.log(`Skipping payroll ${payroll.id} - no employee data`);
+          
           continue;
         }
-
-        console.log(
-          `Updating payroll for ${payroll.employee.firstName} ${payroll.employee.lastName} - ${payroll.month}/${payroll.year}`
-        );
 
         // Calculate overtime amount based on employee's overtime settings
         let overtimeAmount = 0;
@@ -75,14 +68,7 @@ export async function POST() {
           const basicSalary = Number(payroll.employee.basicSalary);
           const hourlyRate = basicSalary / 30 / 8; // basic/30/8
 
-          console.log(
-            `Overtime calculation for ${payroll.employee.firstName} ${payroll.employee.lastName}:`
-          );
-          console.log(`- Total overtime hours: ${payroll.overtimeHours}`);
-          console.log(`- Basic salary: ${basicSalary}`);
-          console.log(`- Hourly rate (basic/30/8): ${hourlyRate}`);
-          console.log(`- Overtime fixed rate: ${payroll.employee.overtimeFixedRate}`);
-          console.log(`- Overtime rate multiplier: ${payroll.employee.overtimeRateMultiplier}`);
+          console.log(`Hourly rate calculated: ${hourlyRate}`);
 
           // Use employee's overtime settings
           if (
@@ -92,15 +78,14 @@ export async function POST() {
             // Use fixed overtime rate
             overtimeAmount =
               Number(payroll.overtimeHours) * Number(payroll.employee.overtimeFixedRate);
-            console.log(`- Using fixed rate: ${payroll.employee.overtimeFixedRate} SAR/hr`);
+            console.log(`Using fixed overtime rate: ${payroll.employee.overtimeFixedRate} SAR/hr`);
           } else {
             // Use overtime multiplier with basic/30/8 formula
             const overtimeMultiplier = Number(payroll.employee.overtimeRateMultiplier) || 1.5;
             overtimeAmount = Number(payroll.overtimeHours) * (hourlyRate * overtimeMultiplier);
-            console.log(`- Using multiplier: ${overtimeMultiplier}x (basic/30/8 formula)`);
+            console.log(`Using overtime multiplier: ${overtimeMultiplier}x basic rate`);
           }
 
-          console.log(`- Final overtime amount: ${overtimeAmount}`);
         }
 
         // Update the payroll
@@ -157,10 +142,11 @@ export async function POST() {
         }
 
         updatedPayrolls.push(payroll.id.toString());
-        console.log(`✅ Updated payroll ${payroll.id} with overtime amount: ${overtimeAmount}`);
+        console.log(`Payroll ${payroll.id} updated successfully`);
+        
       } catch (error) {
         const errorMsg = `Error updating payroll ${payroll.id}: ${error}`;
-        console.error(errorMsg);
+        console.error('Error updating payroll:', errorMsg);
         errors.push(errorMsg);
       }
     }
@@ -188,7 +174,7 @@ export async function POST() {
       },
     });
   } catch (error) {
-    console.error('Overtime recalculation error:', error);
+    
     return NextResponse.json(
       {
         success: false,

@@ -14,7 +14,7 @@ export async function updateEmployeeStatusBasedOnLeave(employeeId: number): Prom
     const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
 
     if (!todayStr) {
-      console.error('Failed to generate today string');
+      
       return false;
     }
 
@@ -62,7 +62,7 @@ export async function updateEmployeeStatusBasedOnLeave(employeeId: number): Prom
 
     return statusUpdated;
   } catch (error) {
-    console.error('Error updating employee status based on leave:', error);
+    
     return false;
   }
 }
@@ -78,7 +78,7 @@ export async function isEmployeeCurrentlyOnLeave(employeeId: number): Promise<bo
     const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
 
     if (!todayStr) {
-      console.error('Failed to generate today string');
+      
       return false;
     }
 
@@ -97,7 +97,7 @@ export async function isEmployeeCurrentlyOnLeave(employeeId: number): Promise<bo
 
     return activeLeave.length > 0;
   } catch (error) {
-    console.error('Error checking if employee is on leave:', error);
+    
     return false;
   }
 }
@@ -113,7 +113,7 @@ export async function getEmployeeLeaveStatus(employeeId: number) {
     const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
 
     if (!todayStr) {
-      console.error('Failed to generate today string');
+      
       return {
         isCurrentlyOnLeave: false,
         currentLeave: null,
@@ -145,7 +145,7 @@ export async function getEmployeeLeaveStatus(employeeId: number) {
       totalApprovedLeaves: approvedLeaves.length,
     };
   } catch (error) {
-    console.error('Error getting employee leave status:', error);
+    
     return {
       isCurrentlyOnLeave: false,
       currentLeave: null,

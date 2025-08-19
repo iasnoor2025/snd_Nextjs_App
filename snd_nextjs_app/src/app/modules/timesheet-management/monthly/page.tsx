@@ -140,15 +140,9 @@ export default function MonthlyTimesheetPage() {
       }
 
       const data = await response.json();
-      console.log('Frontend received monthly data:', data);
-      console.log('Calendar keys:', Object.keys(data.calendar || {}));
-      console.log(
-        'Sample calendar day:',
-        data.calendar ? Object.values(data.calendar)[0] : 'No calendar data'
-      );
       setMonthlyData(data);
     } catch (error) {
-      console.error('Error fetching monthly data:', error);
+      
       toast.error(t('failed_to_fetch_monthly_data'));
     } finally {
       setLoading(false);
@@ -209,15 +203,6 @@ export default function MonthlyTimesheetPage() {
         }),
       };
 
-      console.log('Frontend - handleSaveEdit - Request details:', {
-        isNewTimesheet,
-        url,
-        method,
-        editingTimesheetId: editingTimesheet.id,
-        editingTimesheetIdType: typeof editingTimesheet.id,
-        requestBody,
-      });
-
       const response = await fetch(url, {
         method,
         headers: {
@@ -226,21 +211,9 @@ export default function MonthlyTimesheetPage() {
         body: JSON.stringify(requestBody),
       });
 
-      console.log('Frontend - handleSaveEdit - Response status:', response.status);
-      console.log(
-        'Frontend - handleSaveEdit - Response headers:',
-        Object.fromEntries(response.headers.entries())
-      );
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.log('Frontend - handleSaveEdit - Error response:', errorData);
-        console.log('Frontend - handleSaveEdit - Full error details:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorData,
-          requestBody,
-        });
+
         throw new Error(
           errorData.error ||
             (isNewTimesheet ? 'Failed to create timesheet' : 'Failed to update timesheet')
@@ -248,7 +221,6 @@ export default function MonthlyTimesheetPage() {
       }
 
       const responseData = await response.json().catch(() => ({}));
-      console.log('Frontend - handleSaveEdit - Success response:', responseData);
 
       toast.success(
         isNewTimesheet ? t('timesheet_created_successfully') : t('timesheet_updated_successfully')
@@ -257,7 +229,7 @@ export default function MonthlyTimesheetPage() {
       setEditingTimesheet(null);
       fetchMonthlyData();
     } catch (error) {
-      console.error('Frontend - handleSaveEdit - Error saving timesheet:', error);
+      
       toast.error(error instanceof Error ? error.message : t('failed_to_save_timesheet'));
     }
   };

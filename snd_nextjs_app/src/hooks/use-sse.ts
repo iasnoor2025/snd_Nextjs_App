@@ -151,7 +151,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
           }
         }
       } catch (error) {
-        console.error('Error parsing SSE event:', error);
+        
       }
     },
     [onEvent, eventTypes, showToasts]
@@ -269,7 +269,7 @@ export function useSSE(options: UseSSEOptions = {}): UseSSEReturn {
     } catch (error) {
       setIsConnecting(false);
       setError('Failed to establish connection');
-      console.error('SSE connection error:', error);
+      
     }
   }, [
     url,

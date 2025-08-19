@@ -14,9 +14,9 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     }
 
     // Check permission to apply salary increments
-    console.log('Session user ID:', session.user.id, 'Type:', typeof session.user.id);
+    
     const canApply = await checkPermission(session.user.id, 'SalaryIncrement', 'update');
-    console.log('Permission check result:', canApply);
+    
     if (!canApply) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
@@ -119,7 +119,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       message: 'Salary increment applied successfully to employee record',
     });
   } catch (error) {
-    console.error('Error applying salary increment:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

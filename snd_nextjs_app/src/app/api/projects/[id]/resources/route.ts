@@ -7,18 +7,14 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   try {
     const { id: projectId } = await params;
 
-    console.log('Fetching resources for project ID:', projectId);
-
     // Validate projectId
     if (!projectId || isNaN(parseInt(projectId))) {
-      console.log('Invalid project ID:', projectId);
+      
       return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 
     const projectIdNum = parseInt(projectId);
-    console.log('Parsed project ID:', projectIdNum);
 
-    console.log('Querying project resources...');
     const resources = await db
       .select({
         id: projectResources.id,
@@ -85,15 +81,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       .where(eq(projectResources.projectId, projectIdNum))
       .orderBy(desc(projectResources.createdAt));
 
-    console.log('Resources found:', resources.length);
-
     return NextResponse.json({
       success: true,
       data: resources,
     });
   } catch (error) {
-    console.error('Error fetching project resources:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
     return NextResponse.json(
       {
         error: 'Failed to fetch project resources',
@@ -197,7 +190,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // If this is a manpower resource with an employee, create an employee assignment
     if (body.type === 'manpower' && body.employee_id) {
       try {
-        console.log('Creating employee assignment for employee:', body.employee_id);
+        
         await db.insert(employeeAssignments).values({
           employeeId: parseInt(body.employee_id),
           projectId: parseInt(projectId),
@@ -211,9 +204,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           type: 'project',
           updatedAt: new Date().toISOString().split('T')[0],
         } as any);
-        console.log('Employee assignment created successfully');
+        
       } catch (assignmentError) {
-        console.error('Error creating employee assignment:', assignmentError);
+        
         // Don't fail the resource creation if assignment creation fails
       }
     }
@@ -221,7 +214,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // If this is an equipment resource, create an equipment assignment
     if (body.type === 'equipment' && body.equipment_id) {
       try {
-        console.log('Creating equipment assignment for equipment:', body.equipment_id);
+        
         await db
           .update(equipment)
           .set({
@@ -229,7 +222,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             updatedAt: new Date().toISOString(),
           })
           .where(eq(equipment.id, parseInt(body.equipment_id)));
-        console.log('Equipment assignment created successfully');
 
         // Automatically update equipment status to 'assigned'
         await db
@@ -239,9 +231,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             updatedAt: new Date().toISOString(),
           })
           .where(eq(equipment.id, parseInt(body.equipment_id)));
-        console.log('Equipment status updated to assigned');
+        
       } catch (assignmentError) {
-        console.error('Error creating equipment assignment:', assignmentError);
+        
         // Don't fail the resource creation if assignment creation fails
       }
     }
@@ -251,8 +243,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       data: resource,
     });
   } catch (error) {
-    console.error('Error creating project resource:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
     return NextResponse.json(
       {
         error: 'Failed to create project resource',

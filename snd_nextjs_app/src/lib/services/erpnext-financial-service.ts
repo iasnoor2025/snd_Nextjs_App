@@ -57,11 +57,7 @@ interface FinancialOverview {
 export class ERPNextFinancialService {
   static async makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
     if (!ERPNEXT_URL || !ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {
-      console.error('❌ ERPNext configuration missing:', {
-        url: ERPNEXT_URL ? 'Set' : 'Missing',
-        apiKey: ERPNEXT_API_KEY ? 'Set' : 'Missing',
-        apiSecret: ERPNEXT_API_SECRET ? 'Set' : 'Missing',
-      });
+      
       throw new Error('ERPNext configuration is missing. Please check your environment variables.');
     }
 
@@ -72,7 +68,6 @@ export class ERPNextFinancialService {
     }
 
     const url = `${baseUrl}${endpoint.startsWith('/') ? endpoint.slice(1) : endpoint}`;
-    console.log('🌐 Making ERPNext financial request to:', url);
 
     const defaultHeaders = {
       Authorization: `token ${ERPNEXT_API_KEY}:${ERPNEXT_API_SECRET}`,
@@ -81,7 +76,7 @@ export class ERPNextFinancialService {
     };
 
     try {
-      console.log('📤 Request headers:', { ...defaultHeaders, Authorization: 'token ***:***' });
+      
       const response = await fetch(url, {
         ...options,
         headers: {
@@ -90,19 +85,17 @@ export class ERPNextFinancialService {
         },
       });
 
-      console.log('📥 Response status:', response.status, response.statusText);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ ERPNext Financial API error:', errorText);
+        
         throw new Error(`ERPNext API error: ${response.status} ${response.statusText}`);
       }
 
       const responseData = await response.json();
-      console.log('✅ ERPNext response received, data length:', responseData?.data?.length || 0);
+      
       return responseData;
     } catch (error) {
-      console.error('❌ Error in ERPNext financial request:', error);
+      
       throw error;
     }
   }
@@ -181,7 +174,7 @@ export class ERPNextFinancialService {
         lastUpdated: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('❌ Error fetching financial metrics:', error);
+      
       // Return default values if ERPNext is not available
       return {
         totalMoneyReceived: 0,
@@ -238,7 +231,7 @@ export class ERPNextFinancialService {
         count,
       };
     } catch (error) {
-      console.error('❌ Error fetching invoice summary:', error);
+      
       return {
         totalAmount: 0,
         paidAmount: 0,
@@ -284,14 +277,13 @@ export class ERPNextFinancialService {
 
       return trends;
     } catch (error) {
-      console.error('❌ Error fetching monthly trends:', error);
+      
       return [];
     }
   }
 
   static async getFinancialOverview(selectedMonth?: string): Promise<FinancialOverview> {
     try {
-      console.log('🔍 Starting getFinancialOverview...');
 
       // Parse the selected month or use current month
       let targetMonth: Date;
@@ -303,12 +295,7 @@ export class ERPNextFinancialService {
         if (year && month && !isNaN(year) && !isNaN(month)) {
           targetMonth = new Date(year, month - 1, 1); // month is 0-indexed
           previousMonth = new Date(year, month - 2, 1); // previous month
-          console.log(
-            '📅 Using selected month:',
-            selectedMonth,
-            'Target:',
-            targetMonth.toISOString()
-          );
+
         } else {
           throw new Error('Invalid month format. Expected YYYY-MM format.');
         }
@@ -317,37 +304,31 @@ export class ERPNextFinancialService {
         const today = new Date();
         targetMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         previousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        console.log('📅 Using current month as default');
+        
       }
 
-      console.log('📅 Date ranges:', {
-        targetMonth: targetMonth.toISOString(),
-        previousMonth: previousMonth.toISOString(),
-      });
-
       // First, try to get financial data from invoices (more reliable)
-      console.log('🔄 Trying invoice-based approach first...');
+      
       try {
         const invoiceBasedData = await this.getFinancialOverviewFromInvoices(selectedMonth);
         if (invoiceBasedData.totalIncome > 0 || invoiceBasedData.totalExpenses > 0) {
-          console.log('✅ Invoice-based data successful, returning results');
+          
           return invoiceBasedData;
         }
       } catch (error) {
-        console.log('⚠️ Invoice-based approach failed, trying accounts...');
+        
       }
 
       // Get all Chart of Accounts - use the working endpoint structure
       const accountsEndpoint =
         '/api/resource/Account?limit_page_length=1000&fields=["name","account_name","account_type","parent_account","root_type","report_type","account_currency","is_group"]';
-      console.log('🌐 Fetching accounts from:', accountsEndpoint);
 
       let accountsData;
       try {
         accountsData = await this.makeERPNextRequest(accountsEndpoint);
-        console.log('📊 Accounts data received:', accountsData?.data?.length || 0, 'accounts');
+        
       } catch (error) {
-        console.log('❌ Failed to fetch accounts, using invoice fallback...');
+        
         return await this.getFinancialOverviewFromInvoices(selectedMonth);
       }
 
@@ -365,13 +346,6 @@ export class ERPNextFinancialService {
         .toISOString()
         .split('T')[0];
 
-      console.log('📅 GL date ranges:', {
-        targetMonthStart,
-        targetMonthEnd,
-        previousMonthStart,
-        previousMonthEnd,
-      });
-
       let targetMonthGL;
       let previousMonthGL;
 
@@ -379,9 +353,9 @@ export class ERPNextFinancialService {
         targetMonthGL = await this.makeERPNextRequest(
           `/api/resource/GL Entry?filters=[["posting_date","between",["${targetMonthStart}","${targetMonthEnd}"]]]&fields=["account","debit","credit","posting_date"]`
         );
-        console.log('📊 Target month GL entries:', targetMonthGL?.data?.length || 0);
+        
       } catch (error) {
-        console.log('❌ Failed to fetch target month GL entries');
+        
         targetMonthGL = { data: [] };
       }
 
@@ -389,9 +363,9 @@ export class ERPNextFinancialService {
         previousMonthGL = await this.makeERPNextRequest(
           `/api/resource/GL Entry?filters=[["posting_date","between",["${previousMonthStart}","${previousMonthEnd}"]]]&fields=["account","debit","credit","posting_date"]`
         );
-        console.log('📊 Previous month GL entries:', previousMonthGL?.data?.length || 0);
+        
       } catch (error) {
-        console.log('❌ Failed to fetch previous month GL entries');
+        
         previousMonthGL = { data: [] };
       }
 
@@ -408,7 +382,7 @@ export class ERPNextFinancialService {
       let previousMonthExpenses = 0;
 
       if (accountsData?.data) {
-        console.log('🔍 Processing', accountsData.data.length, 'accounts...');
+        
         for (const account of accountsData.data) {
           if (account.is_group === 0) {
             // Only leaf accounts
@@ -473,17 +447,9 @@ export class ERPNextFinancialService {
         }
       }
 
-      console.log('📊 Account breakdown:', {
-        total: accountBreakdown.length,
-        income: incomeBreakdown.length,
-        expenses: expenseBreakdown.length,
-        targetMonthIncome,
-        targetMonthExpenses,
-      });
-
       // If we still have zero values, try a broader date range approach
       if (targetMonthIncome === 0 && targetMonthExpenses === 0) {
-        console.log('⚠️ No data found for specific month, trying broader date range...');
+        
         try {
           // Try to get data from the last 3 months to see if there's any financial activity
           const broaderStart = new Date(targetMonth.getFullYear(), targetMonth.getMonth() - 2, 1);
@@ -493,7 +459,7 @@ export class ERPNextFinancialService {
           const broaderGL = await this.makeERPNextRequest(broaderGLEndpoint);
 
           if (broaderGL?.data && broaderGL.data.length > 0) {
-            console.log('📊 Found', broaderGL.data.length, 'GL entries in broader range');
+            
             // Use this data to populate the current month (as a fallback)
             broaderGL.data.forEach((entry: any) => {
               const entryDate = new Date(entry.posting_date);
@@ -516,7 +482,7 @@ export class ERPNextFinancialService {
             totalExpenses = targetMonthExpenses;
           }
         } catch (error) {
-          console.log('❌ Broader date range approach also failed');
+          
         }
       }
 
@@ -547,19 +513,15 @@ export class ERPNextFinancialService {
         },
       };
 
-      console.log('✅ Financial overview result:', result);
-
       // Final fallback: if we still have zero values, return invoice-based data
       if (result.totalIncome === 0 && result.totalExpenses === 0) {
-        console.log(
-          '⚠️ All approaches resulted in zero values, using invoice fallback as last resort'
-        );
+        
         return await this.getFinancialOverviewFromInvoices(selectedMonth);
       }
 
       return result;
     } catch (error) {
-      console.error('❌ Error fetching financial overview:', error);
+      
       // Return default values if ERPNext is not available
       return {
         totalIncome: 0,
@@ -583,7 +545,6 @@ export class ERPNextFinancialService {
     selectedMonth?: string
   ): Promise<FinancialOverview> {
     try {
-      console.log('🔄 Using invoice-based financial overview as fallback...');
 
       // Parse the selected month or use current month
       let targetMonth: Date;
@@ -605,19 +566,16 @@ export class ERPNextFinancialService {
         previousMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
       }
 
-      console.log('📅 Invoice fallback date ranges:', {
-        targetMonth: targetMonth.toISOString(),
-        previousMonth: previousMonth.toISOString(),
-      });
+
 
       // Get sales invoices for target month - try multiple approaches
       let targetMonthSales;
       try {
         const targetMonthSalesEndpoint = `/api/resource/Sales Invoice?filters=[["posting_date","between",["${targetMonth.toISOString().split('T')[0]}","${new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0).toISOString().split('T')[0]}"]]]&fields=["grand_total","outstanding_amount","status","posting_date"]`;
         targetMonthSales = await this.makeERPNextRequest(targetMonthSalesEndpoint);
-        console.log('📊 Target month sales invoices:', targetMonthSales?.data?.length || 0);
+        
       } catch (error) {
-        console.log('❌ Failed to fetch target month sales invoices');
+        
         targetMonthSales = { data: [] };
       }
 
@@ -626,9 +584,9 @@ export class ERPNextFinancialService {
       try {
         const targetMonthPurchaseEndpoint = `/api/resource/Purchase Invoice?filters=[["posting_date","between",["${targetMonth.toISOString().split('T')[0]}","${new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0).toISOString().split('T')[0]}"]]]&fields=["grand_total","outstanding_amount","status","posting_date"]`;
         targetMonthPurchase = await this.makeERPNextRequest(targetMonthPurchaseEndpoint);
-        console.log('📊 Target month purchase invoices:', targetMonthPurchase?.data?.length || 0);
+        
       } catch (error) {
-        console.log('❌ Failed to fetch target month purchase invoices');
+        
         targetMonthPurchase = { data: [] };
       }
 
@@ -637,9 +595,9 @@ export class ERPNextFinancialService {
       try {
         const previousMonthSalesEndpoint = `/api/resource/Sales Invoice?filters=[["posting_date","between",["${previousMonth.toISOString().split('T')[0]}","${new Date(previousMonth.getFullYear(), previousMonth.getMonth() + 1, 0).toISOString().split('T')[0]}"]]]&fields=["grand_total","outstanding_amount","status","posting_date"]`;
         previousMonthSales = await this.makeERPNextRequest(previousMonthSalesEndpoint);
-        console.log('📊 Previous month sales invoices:', previousMonthSales?.data?.length || 0);
+        
       } catch (error) {
-        console.log('❌ Failed to fetch previous month sales invoices');
+        
         previousMonthSales = { data: [] };
       }
 
@@ -648,12 +606,9 @@ export class ERPNextFinancialService {
       try {
         const previousMonthPurchaseEndpoint = `/api/resource/Purchase Invoice?filters=[["posting_date","between",["${previousMonth.toISOString().split('T')[0]}","${new Date(previousMonth.getFullYear(), previousMonth.getMonth() + 1, 0).toISOString().split('T')[0]}"]]]&fields=["grand_total","outstanding_amount","status","posting_date"]`;
         previousMonthPurchase = await this.makeERPNextRequest(previousMonthPurchaseEndpoint);
-        console.log(
-          '📊 Previous month purchase invoices:',
-          previousMonthPurchase?.data?.length || 0
-        );
+        
       } catch (error) {
-        console.log('❌ Failed to fetch previous month purchase invoices');
+        
         previousMonthPurchase = { data: [] };
       }
 
@@ -747,7 +702,6 @@ export class ERPNextFinancialService {
 
       // If we still have zero values, try to get some historical data
       if (targetMonthIncome === 0 && targetMonthExpenses === 0) {
-        console.log('⚠️ No invoice data for target month, trying to get some historical data...');
 
         // Try to get invoices from the last 6 months to show some activity
         const historicalStart = new Date(targetMonth.getFullYear(), targetMonth.getMonth() - 5, 1);
@@ -775,21 +729,12 @@ export class ERPNextFinancialService {
             });
           }
         } catch (error) {
-          console.log('❌ Historical data approach failed');
+          
         }
       }
 
       const targetMonthProfitLoss = targetMonthIncome - targetMonthExpenses;
       const previousMonthProfitLoss = previousMonthIncome - previousMonthExpenses;
-
-      console.log('📊 Invoice-based calculations:', {
-        targetMonthIncome,
-        targetMonthExpenses,
-        targetMonthProfitLoss,
-        previousMonthIncome,
-        previousMonthExpenses,
-        previousMonthProfitLoss,
-      });
 
       // Create sample account breakdowns based on invoice data
       const incomeBreakdown: AccountSummary[] = [
@@ -837,10 +782,9 @@ export class ERPNextFinancialService {
         },
       };
 
-      console.log('✅ Invoice-based financial overview result:', result);
       return result;
     } catch (error) {
-      console.error('❌ Error in invoice-based financial overview:', error);
+      
       // Return default values if everything fails
       return {
         totalIncome: 0,
@@ -898,7 +842,7 @@ export class ERPNextFinancialService {
 
       return accountSummary;
     } catch (error) {
-      console.error('❌ Error fetching account summary:', error);
+      
       return [];
     }
   }
@@ -906,7 +850,6 @@ export class ERPNextFinancialService {
   // Test method to check what data is available in ERPNext
   static async testERPNextData(): Promise<any> {
     try {
-      console.log('🧪 Testing ERPNext data availability...');
 
       const results = {
         accounts: { count: 0, sample: [] },
@@ -923,9 +866,9 @@ export class ERPNextFinancialService {
         const accountsData = await this.makeERPNextRequest(accountsEndpoint);
         results.accounts.count = accountsData?.data?.length || 0;
         results.accounts.sample = accountsData?.data?.slice(0, 3) || [];
-        console.log('✅ Accounts test successful:', results.accounts.count, 'accounts found');
+        
       } catch (error) {
-        console.log('❌ Accounts test failed:', error);
+        
       }
 
       // Test GL entries
@@ -935,9 +878,9 @@ export class ERPNextFinancialService {
         const glData = await this.makeERPNextRequest(glEndpoint);
         results.glEntries.count = glData?.data?.length || 0;
         results.glEntries.sample = glData?.data?.slice(0, 3) || [];
-        console.log('✅ GL Entries test successful:', results.glEntries.count, 'entries found');
+        
       } catch (error) {
-        console.log('❌ GL Entries test failed:', error);
+        
       }
 
       // Test sales invoices
@@ -947,13 +890,9 @@ export class ERPNextFinancialService {
         const salesData = await this.makeERPNextRequest(salesEndpoint);
         results.salesInvoices.count = salesData?.data?.length || 0;
         results.salesInvoices.sample = salesData?.data?.slice(0, 3) || [];
-        console.log(
-          '✅ Sales Invoices test successful:',
-          results.salesInvoices.count,
-          'invoices found'
-        );
+        
       } catch (error) {
-        console.log('❌ Sales Invoices test failed:', error);
+        
       }
 
       // Test purchase invoices
@@ -963,13 +902,9 @@ export class ERPNextFinancialService {
         const purchaseData = await this.makeERPNextRequest(purchaseEndpoint);
         results.purchaseInvoices.count = purchaseData?.data?.length || 0;
         results.purchaseInvoices.sample = purchaseData?.data?.slice(0, 3) || [];
-        console.log(
-          '✅ Purchase Invoices test successful:',
-          results.purchaseInvoices.count,
-          'invoices found'
-        );
+        
       } catch (error) {
-        console.log('❌ Purchase Invoices test failed:', error);
+        
       }
 
       // Test date ranges
@@ -990,15 +925,13 @@ export class ERPNextFinancialService {
           },
         };
 
-        console.log('✅ Date range test successful');
       } catch (error) {
-        console.log('❌ Date range test failed:', error);
+        
       }
 
-      console.log('🧪 ERPNext data test results:', results);
       return results;
     } catch (error) {
-      console.error('❌ Error in ERPNext data test:', error);
+      
       return { error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }

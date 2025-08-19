@@ -5,7 +5,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest) {
   try {
-    console.log('Starting customer sync process...');
 
     // Parse request body to get matched data
     const body = await _request.json();
@@ -24,9 +23,9 @@ export async function POST(_request: NextRequest) {
     // Test database connection
     try {
       await db.execute('select 1');
-      console.log('Database connection successful');
+      
     } catch (dbError) {
-      console.error('Database connection failed:', dbError);
+      
       return NextResponse.json(
         {
           success: false,
@@ -38,12 +37,6 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    console.log('Processing matched data:', {
-      toCreate: matchedData.toCreate?.length || 0,
-      toUpdate: matchedData.toUpdate?.length || 0,
-      toSkip: matchedData.toSkip?.length || 0,
-    });
-
     let processedCount = 0;
     let createdCount = 0;
     let updatedCount = 0;
@@ -51,12 +44,10 @@ export async function POST(_request: NextRequest) {
 
     // Process customers to create
     if (matchedData.toCreate && matchedData.toCreate.length > 0) {
-      console.log(`Creating ${matchedData.toCreate.length} new customers...`);
 
       for (const createItem of matchedData.toCreate) {
         try {
           const customerData = createItem.data;
-          console.log('Creating customer:', customerData.name);
 
           // Check if customer already exists by ERPNext ID
           if (customerData.erpnext_id) {
@@ -66,7 +57,7 @@ export async function POST(_request: NextRequest) {
               .where(eq(customers.erpnextId, customerData.erpnext_id));
 
             if (existingCustomer.length > 0) {
-              console.log('Customer already exists, skipping:', customerData.name);
+              
               continue;
             }
           }
@@ -95,9 +86,9 @@ export async function POST(_request: NextRequest) {
 
           createdCount++;
           processedCount++;
-          console.log('Successfully created customer:', customerData.name);
+          
         } catch (error) {
-          console.error('Error creating customer:', error);
+          
           const customerName = createItem.data?.name || 'Unknown';
           errors.push(
             `Failed to create ${customerName}: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -108,12 +99,10 @@ export async function POST(_request: NextRequest) {
 
     // Process customers to update
     if (matchedData.toUpdate && matchedData.toUpdate.length > 0) {
-      console.log(`Updating ${matchedData.toUpdate.length} existing customers...`);
 
       for (const updateItem of matchedData.toUpdate) {
         try {
           const { existingId, newData } = updateItem;
-          console.log('Updating customer:', newData.name);
 
           await db
             .update(customers)
@@ -139,9 +128,9 @@ export async function POST(_request: NextRequest) {
 
           updatedCount++;
           processedCount++;
-          console.log('Successfully updated customer:', newData.name);
+          
         } catch (error) {
-          console.error('Error updating customer:', error);
+          
           const customerName = updateItem.newData?.name || 'Unknown';
           errors.push(
             `Failed to update ${customerName}: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -150,11 +139,8 @@ export async function POST(_request: NextRequest) {
       }
     }
 
-    console.log(`Sync completed: ${processedCount} customers processed.`);
-    console.log(`Created: ${createdCount}, Updated: ${updatedCount}`);
-
     if (errors.length > 0) {
-      console.warn('Sync completed with errors:', errors);
+      
     }
 
     return NextResponse.json({
@@ -169,7 +155,7 @@ export async function POST(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error in customer sync:', error);
+    
     return NextResponse.json(
       {
         success: false,

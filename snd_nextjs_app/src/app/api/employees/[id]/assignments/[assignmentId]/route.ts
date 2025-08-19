@@ -131,7 +131,7 @@ export async function PUT(
       },
     });
   } catch (error) {
-    console.error('Error in PUT /api/employees/[id]/assignments/[assignmentId]:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -205,10 +205,10 @@ export async function DELETE(
             .delete(equipmentRentalHistory)
             .where(eq(equipmentRentalHistory.id, equipmentAssignment.id));
           deletedEquipmentAssignment = equipmentAssignment;
-          console.log('Equipment assignment deleted automatically:', equipmentAssignment);
+          
         }
       } catch (assignmentError) {
-        console.error('Error deleting equipment assignment:', assignmentError);
+        
         // Don't fail the employee assignment deletion if equipment assignment deletion fails
       }
     }
@@ -227,7 +227,7 @@ export async function DELETE(
       },
     });
   } catch (error) {
-    console.error('Error in DELETE /api/employees/[id]/assignments/[assignmentId]:', error);
+    
     return NextResponse.json(
       {
         success: false,

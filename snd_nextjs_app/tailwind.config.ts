@@ -13,10 +13,10 @@ const config = {
     prefix: '',
     theme: {
         container: {
-            center: true,
-            padding: '2rem',
+            center: false,
+            padding: '0',
             screens: {
-                '2xl': '1400px',
+                '2xl': 'none',
             },
         },
         extend: {

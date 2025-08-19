@@ -47,7 +47,7 @@ export async function DELETE(
       try {
         await unlink(filePath);
       } catch (error) {
-        console.error('Error deleting file from filesystem:', error);
+        
         // Continue with database deletion even if file deletion fails
       }
     }
@@ -60,7 +60,7 @@ export async function DELETE(
       message: 'Document deleted successfully',
     });
   } catch (error) {
-    console.error('Error in DELETE /api/employees/[id]/documents/[documentId]:', error);
+    
     return NextResponse.json(
       {
         success: false,

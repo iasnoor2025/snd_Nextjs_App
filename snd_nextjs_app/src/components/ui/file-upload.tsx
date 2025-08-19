@@ -79,7 +79,7 @@ export function FileUpload({
       setFiles([]);
       setUploadProgress({});
     } catch (error) {
-      console.error('Upload failed:', error);
+      
     } finally {
       setUploading(false);
     }

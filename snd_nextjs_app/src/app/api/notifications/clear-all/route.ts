@@ -12,7 +12,6 @@ export async function DELETE() {
 
     // In a real application, you would delete all notifications for this user from the database
     // For now, we'll just return a success response
-    console.log(`Clearing all notifications for user ${session.user.email}`);
 
     return NextResponse.json({
       success: true,
@@ -23,7 +22,7 @@ export async function DELETE() {
       },
     });
   } catch (error) {
-    console.error('Error clearing all notifications:', error);
+    
     return NextResponse.json({ error: 'Failed to clear all notifications' }, { status: 500 });
   }
 }

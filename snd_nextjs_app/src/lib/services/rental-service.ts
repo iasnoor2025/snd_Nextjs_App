@@ -110,9 +110,9 @@ export class RentalService {
     const rentalsWithItems = await Promise.all(
       results.map(async rental => {
         try {
-          console.log(`Fetching rental items for rental ${rental.id}...`);
+          
           const items = await this.getRentalItems(rental.id);
-          console.log(`Rental ${rental.id} has ${items?.length || 0} items:`, items);
+          
           return {
             ...rental,
             rental_items: items || [],
@@ -127,9 +127,7 @@ export class RentalService {
               : null,
           };
         } catch (error) {
-          console.error(`Error getting rental items for rental ${rental.id}:`, error);
-          console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
-          console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
           // Return rental without items if there's an error
           return {
             ...rental,
@@ -448,7 +446,7 @@ export class RentalService {
 
       return true;
     } catch (error) {
-      console.error('Error deleting rental:', error);
+      
       return false;
     }
   }
@@ -565,7 +563,7 @@ export class RentalService {
       await db.delete(rentalItems).where(eq(rentalItems.id, id));
       return true;
     } catch (error) {
-      console.error('Error deleting rental item:', error);
+      
       return false;
     }
   }
@@ -576,14 +574,14 @@ export class RentalService {
       // Get rental details
       const rental = await this.getRental(rentalId);
       if (!rental) {
-        console.error('Rental not found for automatic assignments:', rentalId);
+        
         return;
       }
 
       // Get rental items
       const items = await this.getRentalItems(rentalId);
       if (!items || items.length === 0) {
-        console.log('No rental items found for automatic assignments:', rentalId);
+        
         return;
       }
 
@@ -620,9 +618,7 @@ export class RentalService {
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString(),
             });
-            console.log(
-              `Created equipment assignment for equipment ${item.equipmentId} in rental ${rentalId}`
-            );
+            
           }
         }
 
@@ -652,16 +648,13 @@ export class RentalService {
               createdAt: new Date().toISOString().split('T')[0],
               updatedAt: new Date().toISOString().split('T')[0],
             });
-            console.log(
-              `Created employee assignment for employee ${item.operatorId} in rental ${rentalId}`
-            );
+            
           }
         }
       }
 
-      console.log(`Automatic assignments created successfully for rental ${rentalId}`);
     } catch (error) {
-      console.error('Error creating automatic assignments:', error);
+      
     }
   }
 
@@ -696,9 +689,8 @@ export class RentalService {
         })
         .where(eq(employeeAssignments.rentalId, rentalId));
 
-      console.log(`Updated assignment statuses to '${assignmentStatus}' for rental ${rentalId}`);
     } catch (error) {
-      console.error('Error updating assignment statuses:', error);
+      
     }
   }
 }

@@ -213,7 +213,7 @@ export default function AnalyticsPage() {
         const data = await response.json();
         setReports(data);
       } catch (error) {
-        console.error('Error fetching analytics reports:', error);
+        
         toast.error('Failed to fetch analytics reports');
       } finally {
         setLoading(false);

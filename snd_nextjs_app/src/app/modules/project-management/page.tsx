@@ -201,7 +201,7 @@ export default function ProjectManagementPage() {
         const data = await response.json();
         setProjects(data);
       } catch (error) {
-        console.error('Error fetching projects:', error);
+        
         // Use mock data for demo
         setProjects({
           data: mockProjects,

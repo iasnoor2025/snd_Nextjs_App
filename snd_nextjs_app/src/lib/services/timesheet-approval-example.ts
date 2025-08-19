@@ -25,7 +25,6 @@ export class TimesheetApprovalExample {
 
       // Update timesheet approval status
       // This would typically update the database
-      console.log(`Timesheet ${timesheetId} approved at stage ${stage} by ${approverId}`);
 
       return {
         success: true,
@@ -33,7 +32,7 @@ export class TimesheetApprovalExample {
         nextStage,
       };
     } catch (error) {
-      console.error('Error approving timesheet:', error);
+      
       return {
         success: false,
         message: 'Failed to approve timesheet',
@@ -80,7 +79,6 @@ export class TimesheetApprovalExample {
     // const approver = await getUserByRole(stage);
     // return approver?.email || null;
 
-    console.log(`Getting next approver for stage: ${stage}`);
     return null; // Placeholder
   }
 }

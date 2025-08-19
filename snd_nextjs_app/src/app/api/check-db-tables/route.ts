@@ -23,7 +23,7 @@ export async function GET() {
       count: result.rows.length,
     });
   } catch (error) {
-    console.error('Database tables check error:', error);
+    
     return NextResponse.json(
       {
         success: false,

@@ -141,7 +141,7 @@ export default function CreateRentalPage() {
         setCustomers(data);
       }
     } catch (err) {
-      console.error('Failed to fetch customers:', err);
+      
     }
   };
 
@@ -154,7 +154,7 @@ export default function CreateRentalPage() {
         setEquipment(data);
       }
     } catch (err) {
-      console.error('Failed to fetch equipment:', err);
+      
     }
   };
 

@@ -114,7 +114,7 @@ export async function GET(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error fetching permissions:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -176,7 +176,7 @@ export async function POST(_request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating permission:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

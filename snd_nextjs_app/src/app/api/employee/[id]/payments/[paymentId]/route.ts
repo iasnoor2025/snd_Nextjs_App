@@ -125,7 +125,7 @@ const deleteEmployeePaymentHandler = async (
       },
     });
   } catch (error) {
-    console.error('Error deleting payment:', error);
+    
     return NextResponse.json({ error: 'Failed to delete payment' }, { status: 500 });
   }
 };

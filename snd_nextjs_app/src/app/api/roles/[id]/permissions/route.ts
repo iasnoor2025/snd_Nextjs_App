@@ -41,7 +41,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       message: 'Role permissions retrieved successfully',
     });
   } catch (error) {
-    console.error('Error fetching role permissions:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch role permissions' }, { status: 500 });
   }
 }
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       message: 'Role permissions updated successfully',
     });
   } catch (error) {
-    console.error('Error updating role permissions:', error);
+    
     return NextResponse.json({ error: 'Failed to update role permissions' }, { status: 500 });
   }
 }
@@ -105,7 +105,7 @@ export async function DELETE(
       message: 'All role permissions removed successfully',
     });
   } catch (error) {
-    console.error('Error removing role permissions:', error);
+    
     return NextResponse.json({ error: 'Failed to remove role permissions' }, { status: 500 });
   }
 }

@@ -186,7 +186,7 @@ export default function EmployeeShowPage() {
         toast.error(data.error || 'Employee not found');
       }
     } catch (error) {
-      console.error('Error fetching employee data:', error);
+      
       toast.error('Failed to load employee data');
       setEmployee(null);
     } finally {
@@ -196,7 +196,7 @@ export default function EmployeeShowPage() {
 
   const fetchAdvances = async () => {
     if (!employeeId || isNaN(parseInt(employeeId))) {
-      console.warn('Invalid employeeId for fetchAdvances:', employeeId);
+      
       return;
     }
     setLoadingAdvances(true);
@@ -226,7 +226,7 @@ export default function EmployeeShowPage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching advances:', error);
+      
       toast.error('Failed to load advances');
     } finally {
       setLoadingAdvances(false);
@@ -251,7 +251,7 @@ export default function EmployeeShowPage() {
         toast.error(data.error || 'Failed to approve advance');
       }
     } catch (error) {
-      console.error('Error approving advance:', error);
+      
       toast.error('Failed to approve advance');
     }
   };
@@ -278,7 +278,7 @@ export default function EmployeeShowPage() {
         toast.error(data.error || 'Failed to reject advance');
       }
     } catch (error) {
-      console.error('Error rejecting advance:', error);
+      
       toast.error('Failed to reject advance');
     }
   };
@@ -308,7 +308,7 @@ export default function EmployeeShowPage() {
         toast.error(data.error || 'Failed to record repayment');
       }
     } catch (error) {
-      console.error('Error recording repayment:', error);
+      
       toast.error('Failed to record repayment');
     }
   };
@@ -345,14 +345,14 @@ export default function EmployeeShowPage() {
         toast.error(data.error || 'Failed to update monthly deduction');
       }
     } catch (error) {
-      console.error('Error updating monthly deduction:', error);
+      
       toast.error('Failed to update monthly deduction');
     }
   };
 
   const fetchPaymentHistory = async () => {
     if (!employeeId || isNaN(parseInt(employeeId))) {
-      console.warn('Invalid employeeId for fetchPaymentHistory:', employeeId);
+      
       return;
     }
     setLoadingPayments(true);
@@ -363,7 +363,7 @@ export default function EmployeeShowPage() {
         setPayments(data.data?.payments || data.payments || []);
       }
     } catch (error) {
-      console.error('Error fetching payment history:', error);
+      
       toast.error('Failed to load payment history');
     } finally {
       setLoadingPayments(false);
@@ -372,22 +372,22 @@ export default function EmployeeShowPage() {
 
   const fetchLeaves = async () => {
     if (!employeeId || isNaN(parseInt(employeeId))) {
-      console.warn('Invalid employeeId for fetchLeaves:', employeeId);
+      
       return;
     }
     setLoadingLeaves(true);
     try {
       const response = await fetch(`/api/employees/${employeeId}/leaves`);
       const data = await response.json();
-      console.log('Leave API response:', data); // Debug log
+       // Debug log
       if (data.success) {
         setLeaves(data.data || []);
       } else {
-        console.error('Leave API error:', data.message);
+        
         setLeaves([]);
       }
     } catch (error) {
-      console.error('Error fetching leaves:', error);
+      
       toast.error('Failed to load leave data');
       setLeaves([]);
     } finally {
@@ -397,7 +397,7 @@ export default function EmployeeShowPage() {
 
   const fetchSalaryHistory = async () => {
     if (!employeeId || isNaN(parseInt(employeeId))) {
-      console.warn('Invalid employeeId for fetchSalaryHistory:', employeeId);
+      
       return;
     }
     setLoadingSalaryHistory(true);
@@ -405,7 +405,7 @@ export default function EmployeeShowPage() {
       const data = await salaryIncrementService.getEmployeeSalaryHistory(parseInt(employeeId));
       setSalaryHistory(data || []);
     } catch (error) {
-      console.error('Error fetching salary history:', error);
+      
       toast.error('Failed to load salary history');
       setSalaryHistory([]);
     } finally {
@@ -457,7 +457,7 @@ export default function EmployeeShowPage() {
         toast.error(data?.error || 'Failed to delete advance');
       }
     } catch (error) {
-      console.error('Error deleting advance:', error);
+      
       toast.error('Failed to delete advance');
     }
   };
@@ -1568,7 +1568,7 @@ export default function EmployeeShowPage() {
                           toast.error(data.error || 'Failed to submit advance request');
                         }
                       } catch (error) {
-                        console.error('Error submitting advance request:', error);
+                        
                         toast.error('Failed to submit advance request');
                       }
                     }}

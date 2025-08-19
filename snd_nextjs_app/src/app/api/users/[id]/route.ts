@@ -33,7 +33,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const user = userRows[0];
     return NextResponse.json(user);
   } catch (error) {
-    console.error('Error fetching user:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
   }
 }
@@ -94,7 +94,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const updatedUser = updatedUserRows[0];
     return NextResponse.json(updatedUser);
   } catch (error) {
-    console.error('Error updating user:', error);
+    
     return NextResponse.json({ error: 'Failed to update user' }, { status: 500 });
   }
 }

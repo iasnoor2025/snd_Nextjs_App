@@ -109,7 +109,7 @@ export default function QuotationManagementPage() {
     documentTitle: 'Quotation-List',
     waitForImages: true,
     onPrintError: error => {
-      console.error('Print error details:', error);
+      
       // Continue with print even if there are image errors
     },
   });
@@ -133,7 +133,7 @@ export default function QuotationManagementPage() {
         const data = await response.json();
         setQuotations(data);
       } catch (error) {
-        console.error('Error fetching quotations:', error);
+        
         toast.error('Failed to load quotations');
       } finally {
         setLoading(false);

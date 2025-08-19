@@ -140,7 +140,7 @@ export default function ProjectPlanningPage() {
       setResources([]);
       setBudgetItems([]);
     } catch (error) {
-      console.error('Error fetching project data:', error);
+      
       toast.error('Failed to load project data');
     } finally {
       setLoading(false);

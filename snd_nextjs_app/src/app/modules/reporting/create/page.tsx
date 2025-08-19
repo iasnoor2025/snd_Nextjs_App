@@ -67,7 +67,7 @@ export default function CreateReportPage() {
       toast.success(t('report_created_successfully'));
       router.push('/modules/reporting');
     } catch (error) {
-      console.error('Error creating report:', error);
+      
       toast.error(t('failed_to_create_report'));
     } finally {
       setLoading(false);

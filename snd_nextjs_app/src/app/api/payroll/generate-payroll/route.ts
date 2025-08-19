@@ -5,7 +5,6 @@ import { NextResponse } from 'next/server';
 
 export async function POST() {
   try {
-    console.log('Starting payroll generation for approved timesheets...');
 
     // Test basic connection first
     try {
@@ -14,9 +13,9 @@ export async function POST() {
         .select({ count: sql`1` })
         .from(employees)
         .limit(1);
-      console.log('✅ Database connection successful');
+      
     } catch (connectionError) {
-      console.error('❌ Database connection failed:', connectionError);
+      
       return NextResponse.json(
         {
           success: false,
@@ -46,8 +45,6 @@ export async function POST() {
         )
       );
 
-    console.log(`Found ${employeesWithApprovedTimesheets.length} active employees`);
-
     const processedEmployees: string[] = [];
     const generatedPayrolls: string[] = [];
     const errors: string[] = [];
@@ -57,15 +54,6 @@ export async function POST() {
     // Process each employee
     for (const employee of employeesWithApprovedTimesheets) {
       try {
-        console.log(`Processing employee: ${employee.firstName} ${employee.lastName}`);
-        console.log(`Employee data:`, {
-          id: employee.id,
-          basic_salary: employee.basicSalary,
-          contract_days_per_month: employee.contractDaysPerMonth,
-          contract_hours_per_day: employee.contractHoursPerDay,
-          overtime_rate_multiplier: employee.overtimeRateMultiplier,
-          overtime_fixed_rate: employee.overtimeFixedRate,
-        });
 
         // Get approved timesheets for this employee
         const approvedTimesheets = await db
@@ -84,15 +72,9 @@ export async function POST() {
           );
 
         if (approvedTimesheets.length === 0) {
-          console.log(
-            `No approved timesheets found for ${employee.firstName} ${employee.lastName}`
-          );
+          
           continue;
         }
-
-        console.log(
-          `Found ${approvedTimesheets.length} approved timesheets for ${employee.firstName} ${employee.lastName}`
-        );
 
         // Group timesheets by month/year
         const timesheetsByMonth = new Map<string, any[]>();
@@ -112,7 +94,7 @@ export async function POST() {
           const [year, month] = monthKey.split('-').map(Number);
 
           if (!year || !month) {
-            console.log(`Invalid month key format: ${monthKey}`);
+            
             continue;
           }
 
@@ -130,9 +112,7 @@ export async function POST() {
             .limit(1);
 
           if (existingPayroll.length > 0) {
-            console.log(
-              `Payroll already exists for ${employee.firstName} ${employee.lastName} - ${month}/${year}`
-            );
+            
             totalSkipped++;
             continue;
           }
@@ -156,9 +136,7 @@ export async function POST() {
             timesheetMap.set(dateKey, ts);
 
             // Debug: log the date type and value
-            console.log(
-              `Timesheet date debug - Type: ${typeof ts.date}, Value: ${ts.date}, Parsed: ${dateKey}`
-            );
+            
           });
 
           // Loop through all days in the month
@@ -221,39 +199,25 @@ export async function POST() {
             const basicSalary = Number(employee.basicSalary);
             const hourlyRate = basicSalary / 30 / 8; // basic/30/8
 
-            console.log(`Overtime calculation for ${employee.firstName} ${employee.lastName}:`);
-            console.log(`- Total overtime hours: ${totalOvertimeHours}`);
-            console.log(`- Basic salary: ${basicSalary}`);
-            console.log(`- Hourly rate (basic/30/8): ${hourlyRate}`);
-            console.log(`- Overtime fixed rate: ${employee.overtimeFixedRate}`);
-            console.log(`- Overtime rate multiplier: ${employee.overtimeRateMultiplier}`);
-
             // Use employee's overtime settings
             if (employee.overtimeFixedRate && Number(employee.overtimeFixedRate) > 0) {
               // Use fixed overtime rate
               overtimeAmount = totalOvertimeHours * Number(employee.overtimeFixedRate);
-              console.log(`- Using fixed rate: ${employee.overtimeFixedRate} SAR/hr`);
+              console.log(`Using fixed overtime rate: ${employee.overtimeFixedRate} SAR/hr`);
             } else {
               // Use overtime multiplier with basic/30/8 formula
               const overtimeMultiplier = Number(employee.overtimeRateMultiplier) || 1.5;
               overtimeAmount = totalOvertimeHours * (hourlyRate * overtimeMultiplier);
-              console.log(`- Using multiplier: ${overtimeMultiplier}x (basic/30/8 formula)`);
+              console.log(`Using overtime multiplier: ${overtimeMultiplier}x basic rate`);
             }
 
-            console.log(`- Final overtime amount: ${overtimeAmount}`);
           }
 
           // Calculate absent deduction: (Basic Salary / Total Days in Month) * Absent Days
           const basicSalary = Number(employee.basicSalary);
           const absentDeduction = absentDays > 0 ? (basicSalary / daysInMonth) * absentDays : 0;
 
-          console.log(`Absent calculation for ${employee.firstName} ${employee.lastName}:`, {
-            totalDaysInMonth: daysInMonth,
-            absentDays,
-            basicSalary,
-            absentDeduction,
-            calculation: `(${basicSalary} / ${daysInMonth}) * ${absentDays} = ${absentDeduction}`,
-          });
+          console.log(`Absent deduction calculation: (${basicSalary} / ${daysInMonth}) * ${absentDays} = ${absentDeduction}`);
 
           const bonusAmount = 0; // Manual setting only
           const deductionAmount = absentDeduction; // Include absent deduction
@@ -329,16 +293,13 @@ export async function POST() {
 
           await db.insert(payrollItems).values(payrollItemsData);
 
-          console.log(
-            `Generated payroll for ${employee.firstName} ${employee.lastName} - ${month}/${year}`
-          );
           processedEmployees.push(`${employee.firstName} ${employee.lastName} (${month}/${year})`);
           generatedPayrolls.push(payroll.id.toString());
           totalGenerated++;
         }
       } catch (error) {
         const errorMsg = `Error processing ${employee.firstName} ${employee.lastName}: ${error}`;
-        console.error(errorMsg);
+        console.error('Error processing employee:', errorMsg);
         errors.push(errorMsg);
       }
     }
@@ -396,7 +357,7 @@ export async function POST() {
       payroll_run_id: payrollRun.id,
     });
   } catch (error) {
-    console.error('Payroll generation error:', error);
+    
     return NextResponse.json(
       {
         success: false,

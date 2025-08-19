@@ -60,7 +60,7 @@ export async function POST(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error in bulk delete:', error);
+    
     return NextResponse.json(
       { success: false, message: 'Failed to delete payrolls' },
       { status: 500 }

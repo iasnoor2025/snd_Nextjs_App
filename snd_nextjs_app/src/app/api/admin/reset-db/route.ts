@@ -5,7 +5,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(_request: NextRequest) {
   try {
-    console.log('🔄 Starting database reset...');
 
     // Drop all tables in reverse dependency order to respect foreign key constraints
     const dropQueries = [
@@ -70,17 +69,14 @@ export async function POST(_request: NextRequest) {
       'DROP TABLE IF EXISTS _prisma_migrations CASCADE',
     ];
 
-    console.log('🗑️ Dropping existing tables...');
     for (const query of dropQueries) {
       try {
         await db.execute(sql.raw(query));
-        console.log(`✅ Dropped: ${query.split(' ')[4]}`);
+        
       } catch (error) {
-        console.log(`⚠️ Warning dropping ${query.split(' ')[4]}:`, error);
+        // Handle error silently for production
       }
     }
-
-    console.log('🏗️ Creating new tables from Drizzle schema...');
 
     // Read and execute the generated migration file
     const fs = require('fs');
@@ -96,9 +92,9 @@ export async function POST(_request: NextRequest) {
         if (trimmedStatement) {
           try {
             await db.execute(sql.raw(trimmedStatement));
-            console.log('✅ Created table from migration');
+            
           } catch (error) {
-            console.error('❌ Error creating table:', error);
+            
             throw error;
           }
         }
@@ -106,8 +102,6 @@ export async function POST(_request: NextRequest) {
     } else {
       throw new Error('Migration file not found. Run npm run drizzle:generate first.');
     }
-
-    console.log('👤 Creating admin user...');
 
     // Create admin user
     const hashedPassword = await bcrypt.hash('password', 12);
@@ -124,8 +118,6 @@ export async function POST(_request: NextRequest) {
       throw new Error('Failed to create admin user');
     }
 
-    console.log('✅ Database reset completed successfully!');
-
     return NextResponse.json({
       success: true,
       message: 'Database reset completed successfully',
@@ -141,7 +133,7 @@ export async function POST(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('❌ Error during database reset:', error);
+    
     return NextResponse.json(
       {
         success: false,

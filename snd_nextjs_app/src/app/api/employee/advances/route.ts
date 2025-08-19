@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest) {
     const session = await getServerSession(authConfig);
 
     if (!session?.user?.id) {
-      console.log('GET /api/employee/advances - Not authenticated');
+      
       return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     }
 
@@ -27,11 +27,9 @@ export async function GET(_request: NextRequest) {
     const employeeId = searchParams.get('employeeId');
 
     if (!employeeId) {
-      console.log('GET /api/employee/advances - Employee ID is required');
+      
       return NextResponse.json({ error: 'Employee ID is required' }, { status: 400 });
     }
-
-    console.log(`GET /api/employee/advances - Fetching advances for employee ${employeeId}`);
 
     // Check if user has permission to view this employee's advances
     if (session.user.role === 'EMPLOYEE' && session.user.national_id) {
@@ -45,7 +43,7 @@ export async function GET(_request: NextRequest) {
       const employee = employeeRows[0];
 
       if (!employee || employee.id !== parseInt(employeeId)) {
-        console.log(`GET /api/employee/advances - Access denied for employee ${employeeId}`);
+        
         return NextResponse.json(
           { error: 'Access denied. You can only view your own advances.' },
           { status: 403 }
@@ -72,10 +70,6 @@ export async function GET(_request: NextRequest) {
       )
       .orderBy(advancePayments.createdAt);
 
-    console.log(
-      `GET /api/employee/advances - Found ${advancesRows.length} advances for employee ${employeeId}`
-    );
-
     const responseData = {
       success: true,
       advances: advancesRows.map(advance => ({
@@ -91,10 +85,9 @@ export async function GET(_request: NextRequest) {
       })),
     };
 
-    console.log('GET /api/employee/advances - Returning response:', responseData);
     return NextResponse.json(responseData);
   } catch (error) {
-    console.error('Error fetching advances:', error);
+    
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -177,7 +170,7 @@ export async function POST(_request: NextRequest) {
       advance,
     });
   } catch (error) {
-    console.error('Error creating advance request:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

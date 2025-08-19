@@ -102,7 +102,7 @@ export async function POST(_request: NextRequest) {
       count: created.length,
     });
   } catch (error) {
-    console.error('Error creating bulk timesheets:', error);
+    
     return NextResponse.json({ error: 'Failed to create bulk timesheets' }, { status: 500 });
   }
 }

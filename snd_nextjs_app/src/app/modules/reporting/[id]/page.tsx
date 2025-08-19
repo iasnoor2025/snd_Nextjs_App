@@ -60,7 +60,7 @@ export default function ViewReportPage() {
         const data = await response.json();
         setReport(data);
       } catch (error) {
-        console.error('Error fetching report:', error);
+        
         toast.error(t('failed_to_fetch_report'));
       } finally {
         setLoading(false);
@@ -99,7 +99,7 @@ export default function ViewReportPage() {
       setReportData(result);
       toast.success(t('report_generated_successfully'));
     } catch (error) {
-      console.error('Error generating report:', error);
+      
       toast.error(t('failed_to_generate_report'));
     } finally {
       setGenerating(false);
@@ -123,7 +123,7 @@ export default function ViewReportPage() {
       toast.success(t('report_deleted_successfully'));
       router.push('/modules/reporting');
     } catch (error) {
-      console.error('Error deleting report:', error);
+      
       toast.error(t('failed_to_delete_report'));
     }
   };

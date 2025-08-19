@@ -51,7 +51,7 @@ export async function GET(_request: NextRequest) {
       count: data.data?.length || 0,
     });
   } catch (error) {
-    console.error('Error fetching ERPNext items:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -106,7 +106,7 @@ export async function POST(_request: NextRequest) {
       message: 'Item created/updated successfully',
     });
   } catch (error) {
-    console.error('Error creating/updating ERPNext item:', error);
+    
     return NextResponse.json(
       {
         success: false,

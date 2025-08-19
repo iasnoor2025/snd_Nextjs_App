@@ -13,8 +13,6 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('Starting employee status update cron job...');
-
     // Get current date
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0] as string; // YYYY-MM-DD format
@@ -35,8 +33,6 @@ export async function GET(_request: NextRequest) {
         )
       );
 
-    console.log(`Found ${employeesOnLeave.length} employees on leave today`);
-
     // Update employees who should be on leave
     let onLeaveUpdated = 0;
     for (const leave of employeesOnLeave) {
@@ -47,7 +43,7 @@ export async function GET(_request: NextRequest) {
           .where(eq(employees.id, leave.employeeId));
         onLeaveUpdated++;
       } catch (error) {
-        console.error(`Error updating employee ${leave.employeeId} to on_leave:`, error);
+        
       }
     }
 
@@ -71,8 +67,6 @@ export async function GET(_request: NextRequest) {
         )
       );
 
-    console.log(`Found ${employeesToReactivate.length} employees to reactivate`);
-
     // Update employees who should be active
     let activeUpdated = 0;
     for (const employee of employeesToReactivate) {
@@ -80,13 +74,9 @@ export async function GET(_request: NextRequest) {
         await db.update(employees).set({ status: 'active' }).where(eq(employees.id, employee.id));
         activeUpdated++;
       } catch (error) {
-        console.error(`Error updating employee ${employee.id} to active:`, error);
+        
       }
     }
-
-    console.log(
-      `Cron job completed: ${onLeaveUpdated} employees set to on_leave, ${activeUpdated} employees set to active`
-    );
 
     return NextResponse.json({
       success: true,
@@ -98,7 +88,7 @@ export async function GET(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error in employee status cron job:', error);
+    
     return NextResponse.json(
       {
         success: false,

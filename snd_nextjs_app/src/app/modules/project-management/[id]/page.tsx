@@ -207,7 +207,7 @@ export default function ProjectDetailPage() {
 
       toast.success('Report generated successfully');
     } catch (error) {
-      console.error('Error generating report:', error);
+      
       toast.error('Failed to generate report');
     } finally {
       setIsGeneratingReport(false);
@@ -220,7 +220,7 @@ export default function ProjectDetailPage() {
       toast.success('Project deleted successfully');
       router.push('/modules/project-management');
     } catch (error) {
-      console.error('Error deleting project:', error);
+      
       toast.error('Failed to delete project');
     }
   };
@@ -248,7 +248,7 @@ export default function ProjectDetailPage() {
         );
         setTasks(tasksResponse.data);
       } catch (error) {
-        console.error('Error fetching project:', error);
+        
         toast.error('Failed to load project details');
       } finally {
         setLoading(false);

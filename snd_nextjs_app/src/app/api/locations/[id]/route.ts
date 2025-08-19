@@ -28,7 +28,7 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       data: location,
     });
   } catch (error) {
-    console.error('Error fetching location:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch location' }, { status: 500 });
   }
 }
@@ -70,7 +70,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       message: 'Location updated successfully',
     });
   } catch (error) {
-    console.error('Error updating location:', error);
+    
     return NextResponse.json({ error: 'Failed to update location' }, { status: 500 });
   }
 }
@@ -91,7 +91,7 @@ export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
       message: 'Location deleted successfully',
     });
   } catch (error) {
-    console.error('Error deleting location:', error);
+    
     return NextResponse.json({ error: 'Failed to delete location' }, { status: 500 });
   }
 }

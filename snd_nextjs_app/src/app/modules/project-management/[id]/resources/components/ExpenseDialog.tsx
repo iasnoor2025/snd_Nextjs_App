@@ -155,7 +155,7 @@ export default function ExpenseDialog({
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error saving expense resource:', error);
+      
       toast.error('Failed to save expense resource');
     } finally {
       setLoading(false);

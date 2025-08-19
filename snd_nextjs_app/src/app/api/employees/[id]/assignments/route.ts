@@ -46,15 +46,12 @@ async function manageAssignmentStatuses(employeeId: number) {
 
       const isCurrent = assignment.id === currentAssignment?.id;
 
-      console.log(`\n📝 Processing assignment ${assignment.name} (ID: ${assignment.id}):`);
-      console.log(`  Current status: ${assignment.status}`);
-      console.log(`  Current end_date: ${assignment.endDate}`);
-      console.log(`  Is current assignment: ${isCurrent}`);
+
 
       if (isCurrent) {
         // Current assignment should be active and have no end date
         if (assignment.status !== 'active' || assignment.endDate !== null) {
-          console.log(`  🔄 Updating current assignment to active with no end date`);
+          
           await db
             .update(employeeAssignments)
             .set({
@@ -63,7 +60,7 @@ async function manageAssignmentStatuses(employeeId: number) {
             })
             .where(eq(employeeAssignments.id, assignment.id));
         } else {
-          console.log(`  ✅ Current assignment already correct`);
+          
         }
       } else {
         // Previous assignments should be completed and have an end date
@@ -83,16 +80,12 @@ async function manageAssignmentStatuses(employeeId: number) {
           // Set end date to the day before the next assignment starts
           endDate = new Date(nextAssignment.startDate);
           endDate.setDate(endDate.getDate() - 1);
-          console.log(
-            `  🔄 Updating previous assignment to completed with end date: ${endDate.toISOString().slice(0, 10)} (day before ${nextAssignment.name})`
-          );
+          // End date set correctly before next assignment
         } else {
           // If no next assignment, set to the day before current assignment starts
           endDate = new Date(currentAssignment.startDate);
           endDate.setDate(endDate.getDate() - 1);
-          console.log(
-            `  🔄 Updating previous assignment to completed with end date: ${endDate.toISOString().slice(0, 10)} (day before current assignment)`
-          );
+          // End date set to day before current assignment
         }
 
         await db
@@ -102,11 +95,11 @@ async function manageAssignmentStatuses(employeeId: number) {
             endDate: endDate.toISOString(),
           })
           .where(eq(employeeAssignments.id, assignment.id));
-        console.log(`  ✅ Updated previous assignment`);
+        
       }
     }
   } catch (error) {
-    console.error('Error managing assignment statuses:', error);
+    
   }
 }
 
@@ -120,7 +113,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const resolvedParams = await params;
 
     if (!resolvedParams || !resolvedParams.id) {
-      console.error('Invalid params received:', resolvedParams);
+      
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
@@ -143,9 +136,8 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     }
 
     // Ensure assignment statuses are properly managed before fetching
-    console.log(`🔧 Managing assignment statuses for employee ${employeeId}...`);
+    
     await manageAssignmentStatuses(employeeId);
-    console.log(`✅ Assignment statuses managed for employee ${employeeId}`);
 
     // Get all assignments for the employee with related data using Drizzle
     const assignmentsRows = await db
@@ -209,7 +201,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       message: 'Assignments retrieved successfully',
     });
   } catch (error) {
-    console.error('Error fetching employee assignments:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to fetch employee assignments',
@@ -230,7 +222,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const resolvedParams = await params;
 
     if (!resolvedParams || !resolvedParams.id) {
-      console.error('Invalid params received:', resolvedParams);
+      
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
@@ -294,7 +286,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating employee assignment:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to create employee assignment',
@@ -315,7 +307,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const resolvedParams = await params;
 
     if (!resolvedParams || !resolvedParams.id) {
-      console.error('Invalid params received:', resolvedParams);
+      
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
@@ -366,9 +358,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const assignment = assignmentRows[0];
 
     // Manage assignment statuses after updating assignment
-    console.log(`🔧 Managing assignment statuses after update for employee ${employeeId}...`);
+    
     await manageAssignmentStatuses(employeeId);
-    console.log(`✅ Assignment statuses managed after update for employee ${employeeId}`);
 
     return NextResponse.json({
       success: true,
@@ -391,7 +382,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       },
     });
   } catch (error) {
-    console.error('Error in PUT /api/employees/[id]/assignments:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -415,7 +406,7 @@ export async function DELETE(
     const resolvedParams = await params;
 
     if (!resolvedParams || !resolvedParams.id) {
-      console.error('Invalid params received:', resolvedParams);
+      
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
@@ -496,11 +487,11 @@ export async function DELETE(
               .delete(equipmentRentalHistory)
               .where(eq(equipmentRentalHistory.id, equipmentAssignment.id));
             deletedEquipmentAssignment = equipmentAssignment;
-            console.log('Equipment assignment deleted automatically:', equipmentAssignment);
+            
           }
         }
       } catch (assignmentError) {
-        console.error('Error deleting equipment assignment:', assignmentError);
+        
         // Don't fail the employee assignment deletion if equipment assignment deletion fails
       }
     }
@@ -522,7 +513,7 @@ export async function DELETE(
       },
     });
   } catch (error) {
-    console.error('Error deleting employee assignment:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to delete employee assignment',

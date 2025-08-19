@@ -184,12 +184,9 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
         const effectiveStart = start;
 
         // Log assignment details for debugging
-        console.log(`Processing assignment:`, {
-          id: assignment.id,
-          employeeId: assignment.employee_id,
-          startDate: assignment.start_date,
-          endDate: assignment.end_date,
-          effectiveStart: effectiveStart.toDateString(),
+        console.log(`Processing assignment ${assignment.id}:`, {
+          employeeId,
+          startDate: effectiveStart.toDateString(),
           effectiveEnd: effectiveEnd.toDateString(),
         });
 
@@ -209,7 +206,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
             const day = String(currentDate.getDate()).padStart(2, '0');
             const dateString = `${year}-${month}-${day}`;
 
-            console.log(`Processing date: ${currentDate.toDateString()} -> ${dateString}`);
+            console.log(`Processing date: ${dateString}`);
 
             // Check for existing timesheet using raw SQL to avoid timezone issues
             const existingTimesheets = await db.execute(sql`
@@ -220,22 +217,12 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
                 AND deleted_at IS NULL
             `);
 
-            console.log(
-              `Checking for existing timesheet: employee ${employeeId}, date ${dateString}, found: ${existingTimesheets.rows.length}`
-            );
-
             if (existingTimesheets.rows.length > 0) {
               // Skip if timesheet already exists
-              console.log(
-                `Skipping existing timesheet for employee ${employeeId} on ${currentDate.toDateString()}`
-              );
+              //console.log(`Skipping existing timesheet for ${dateString}`);
               currentDate.setDate(currentDate.getDate() + 1);
               continue;
             }
-
-            console.log(
-              `Creating timesheet for employee ${employeeId} on ${currentDate.toDateString()}`
-            );
 
             // Determine work hours based on day of week (Friday is rest day)
             const dayOfWeek = currentDate.getDay();
@@ -255,9 +242,6 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
 
             // Create the timesheet using raw SQL to avoid timezone issues
             try {
-              console.log(
-                `Inserting timesheet: employee ${employeeId}, date ${dateString}, assignment ${assignment.id}`
-              );
 
               await db.execute(sql`
                 INSERT INTO timesheets (
@@ -274,16 +258,11 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
                 )
               `);
 
-              console.log(
-                `Successfully created timesheet for employee ${employeeId} on ${currentDate.toDateString()}`
-              );
+              console.log(`Timesheet created for ${dateString}`);
               created++;
               assignmentCreated++;
             } catch (insertError) {
-              console.error(
-                `Database insert error for employee ${employeeId} on ${currentDate.toDateString()}:`,
-                insertError
-              );
+              console.error(`Error creating timesheet for ${dateString}:`, insertError);
 
               // Check for specific database errors
               if (insertError instanceof Error) {
@@ -316,8 +295,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
             currentDate.setDate(currentDate.getDate() + 1);
           } catch (timesheetError) {
             console.error(
-              `Error processing timesheet for assignment ${assignment.id}, date ${currentDate.toDateString()}:`,
-              timesheetError
+              `Failed to process timesheet for assignment ${assignment.id} on ${currentDate.toDateString()}: ${timesheetError instanceof Error ? timesheetError.message : 'Unknown error'}`
             );
             errors.push(
               `Failed to process timesheet for assignment ${assignment.id} on ${currentDate.toDateString()}: ${timesheetError instanceof Error ? timesheetError.message : 'Unknown error'}`
@@ -334,9 +312,6 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
           );
         }
 
-        if (assignmentCreated > 0) {
-          console.log(`Created ${assignmentCreated} timesheets for assignment ${assignment.id}`);
-        }
       } catch (assignmentError) {
         console.error(`Error processing assignment ${assignment.id}:`, assignmentError);
         errors.push(
@@ -344,8 +319,6 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
         );
       }
     }
-
-    console.log(`Auto-generation completed. Total created: ${created}, Errors: ${errors.length}`);
 
     const progress = {
       current: processedAssignments,
@@ -362,7 +335,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
       progress,
     };
   } catch (error) {
-    console.error('Error auto-generating timesheets:', error);
+    console.error('Auto-generation error:', error);
     return {
       success: false,
       created: 0,

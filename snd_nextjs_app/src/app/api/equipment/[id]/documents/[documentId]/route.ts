@@ -62,7 +62,7 @@ export async function DELETE({ params }: { params: Promise<{ id: string; documen
       },
     });
   } catch (error) {
-    console.error('Error deleting equipment document:', error);
+    
     return NextResponse.json(
       {
         success: false,

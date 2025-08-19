@@ -46,7 +46,7 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       data: data.data || data,
     });
   } catch (error) {
-    console.error('Error fetching ERPNext invoice:', error);
+    
     return NextResponse.json(
       {
         success: false,

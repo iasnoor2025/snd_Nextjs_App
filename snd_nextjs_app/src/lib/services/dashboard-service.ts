@@ -150,7 +150,7 @@ export class DashboardService {
           .where(eq(employees.status, 'active'));
         totalEmployeesResult = result[0] || { count: 0 };
       } catch (error) {
-        console.error('Error fetching total employees:', error);
+        
       }
 
       // Get active projects
@@ -162,7 +162,7 @@ export class DashboardService {
           .where(eq(projects.status, 'active'));
         activeProjectsResult = result[0] || { count: 0 };
       } catch (error) {
-        console.error('Error fetching active projects:', error);
+        
       }
 
       // Get active rentals
@@ -174,7 +174,7 @@ export class DashboardService {
           .where(eq(rentals.status, 'active'));
         activeRentalsResult = result[0] || { count: 0 };
       } catch (error) {
-        console.error('Error fetching active rentals:', error);
+        
       }
 
       // Get today's timesheets
@@ -189,7 +189,7 @@ export class DashboardService {
           todayTimesheetsResult = result[0] || { count: 0 };
         }
       } catch (error) {
-        console.error('Error fetching today timesheets:', error);
+        
       }
 
       // Get expired documents count
@@ -203,7 +203,7 @@ export class DashboardService {
           );
         expiredDocumentsResult = result[0] || { count: 0 };
       } catch (error) {
-        console.error('Error fetching expired documents:', error);
+        
       }
 
       // Get expiring documents count (within 30 days)
@@ -223,7 +223,7 @@ export class DashboardService {
           );
         expiringDocumentsResult = result[0] || { count: 0 };
       } catch (error) {
-        console.error('Error fetching expiring documents:', error);
+        
       }
 
       // Get total customers
@@ -235,7 +235,7 @@ export class DashboardService {
           .where(eq(customers.status, 'active'));
         totalCustomersResult = result[0] || { count: 0 };
       } catch (error) {
-        console.error('Error fetching total customers:', error);
+        
       }
 
       // Get available equipment
@@ -247,7 +247,7 @@ export class DashboardService {
           .where(eq(equipment.status, 'available'));
         availableEquipmentResult = result[0] || { count: 0 };
       } catch (error) {
-        console.error('Error fetching available equipment:', error);
+        
       }
 
       // Get pending approvals (timesheets pending approval)
@@ -259,7 +259,7 @@ export class DashboardService {
           .where(eq(timesheets.status, 'pending'));
         pendingApprovalsResult = result[0] || { count: 0 };
       } catch (error) {
-        console.error('Error fetching pending approvals:', error);
+        
       }
 
       // Calculate monthly revenue (placeholder - you can implement actual calculation)
@@ -284,7 +284,7 @@ export class DashboardService {
         financialMetrics.netProfit =
           financialMetrics.totalMoneyReceived - financialMetrics.totalMoneyLost;
       } catch (error) {
-        console.error('Error fetching financial metrics from ERPNext:', error);
+        
         // Use default values if ERPNext is not available
       }
 
@@ -293,7 +293,7 @@ export class DashboardService {
       try {
         employeesCurrentlyOnLeave = await this.getEmployeesCurrentlyOnLeave();
       } catch (error) {
-        console.error('Error fetching employees on leave, using default:', error);
+        
         employeesCurrentlyOnLeave = [];
       }
 
@@ -319,7 +319,7 @@ export class DashboardService {
         currency: financialMetrics.currency,
       };
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
+      
       throw error;
     }
   }
@@ -376,7 +376,7 @@ export class DashboardService {
         };
       });
     } catch (error) {
-      console.error('Error fetching iqama data:', error);
+      
       throw error;
     }
   }
@@ -387,12 +387,8 @@ export class DashboardService {
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(today.getDate() + 30);
 
-      console.log('🔍 Getting equipment data...');
-      console.log('🔍 Database connection test...');
-
       // Test basic database connection first
       const testQuery = await db.select().from(equipment).limit(1);
-      console.log('🔍 Basic connection test result:', testQuery.length);
 
       const equipmentData = await db
         .select({
@@ -408,8 +404,6 @@ export class DashboardService {
         .from(equipment)
         .limit(limit);
 
-      console.log('🔍 Equipment data fetched:', equipmentData.length, 'items');
-      console.log('🔍 Sample equipment data:', JSON.stringify(equipmentData.slice(0, 2), null, 2));
 
       const result = equipmentData.map(doc => {
         let status: 'available' | 'expired' | 'expiring' | 'missing' = 'available';
@@ -443,20 +437,11 @@ export class DashboardService {
         };
       });
 
-      console.log('🔍 Final processed equipment data:', result.length, 'items');
-      console.log('🔍 Status breakdown:', {
-        available: result.filter(item => item.status === 'available').length,
-        expired: result.filter(item => item.status === 'expired').length,
-        expiring: result.filter(item => item.status === 'expiring').length,
-        missing: result.filter(item => item.status === 'missing').length,
-      });
-
       return result;
     } catch (error) {
-      console.error('❌ Error fetching Equipment data:', error);
+      
       if (error instanceof Error) {
-        console.error('❌ Error message:', error.message);
-        console.error('❌ Error stack:', error.stack);
+
       }
       // Return empty array instead of throwing to prevent dashboard crash
       return [];
@@ -512,7 +497,7 @@ export class DashboardService {
         };
       });
     } catch (error) {
-      console.error('Error fetching timesheet data:', error);
+      
       throw error;
     }
   }
@@ -573,7 +558,7 @@ export class DashboardService {
         };
       });
     } catch (error) {
-      console.error('Error fetching document data:', error);
+      
       throw error;
     }
   }
@@ -601,7 +586,7 @@ export class DashboardService {
 
       return leaveData;
     } catch (error) {
-      console.error('Error fetching leave data:', error);
+      
       throw error;
     }
   }
@@ -637,7 +622,7 @@ export class DashboardService {
 
       return leaveData;
     } catch (error) {
-      console.error('Error fetching employees currently on leave:', error);
+      
       // Return empty array instead of throwing to prevent dashboard from failing
       return [];
     }
@@ -680,7 +665,7 @@ export class DashboardService {
         };
       });
     } catch (error) {
-      console.error('Error fetching rental data:', error);
+      
       // Return empty array instead of throwing to prevent dashboard from failing
       return [];
     }
@@ -735,7 +720,7 @@ export class DashboardService {
         };
       });
     } catch (error) {
-      console.error('Error fetching project data:', error);
+      
       // Return empty array instead of throwing to prevent dashboard from failing
       return [];
     }
@@ -873,7 +858,7 @@ export class DashboardService {
 
       return sortedActivities;
     } catch (error) {
-      console.error('Error fetching recent activity:', error);
+      
       // Return empty array instead of throwing to prevent dashboard from failing
       return [];
     }

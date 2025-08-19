@@ -121,7 +121,6 @@ export class PermissionExamples {
     // Revoke permission from role
     await enhancedPermissionService.revoke('EMPLOYEE', 'timesheet', 'delete');
 
-    console.log('Permissions managed successfully');
   }
 
   /**

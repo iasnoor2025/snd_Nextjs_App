@@ -65,7 +65,7 @@ export async function POST(_request: NextRequest) {
       leaveRequest,
     });
   } catch (error) {
-    console.error('Error creating leave request:', error);
+    
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

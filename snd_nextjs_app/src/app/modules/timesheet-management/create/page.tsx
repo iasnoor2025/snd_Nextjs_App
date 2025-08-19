@@ -168,7 +168,7 @@ function CreateTimesheetContent() {
       setProjects(projectsData.data || []);
       setRentals(rentalsData.data || []);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      
       toast.error('Failed to load data');
     } finally {
       setLoading(false);
@@ -324,7 +324,7 @@ function CreateTimesheetContent() {
         });
       }
     } catch (error) {
-      console.error('Error creating timesheet:', error);
+      
       toast.error('Failed to create timesheet');
     } finally {
       setProcessing(false);
@@ -451,12 +451,12 @@ function CreateTimesheetContent() {
         setProcessing(false);
         router.push('/modules/timesheet-management');
       } else {
-        console.error('Bulk create failed:', responseData);
+        
         toast.error(responseData.error || 'Failed to create timesheets');
         setProcessing(false);
       }
     } catch (error) {
-      console.error('Bulk create error:', error);
+      
       toast.error('Failed to create timesheets');
       setProcessing(false);
     }
@@ -1176,7 +1176,7 @@ function CreateTimesheetContent() {
                     <SelectValue placeholder="Select a project to pre-fill" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Select a project to pre-fill</SelectItem>
+                    <SelectItem value="none">Select a project to pre-fill</SelectItem>
                     {projects.map(project => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}
@@ -1203,7 +1203,7 @@ function CreateTimesheetContent() {
                     <SelectValue placeholder="Select a rental to pre-fill" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Select a rental to pre-fill</SelectItem>
+                    <SelectItem value="none">Select a rental to pre-fill</SelectItem>
                     {rentals.map(rental => (
                       <SelectItem key={rental.id} value={rental.id}>
                         {rental.rentalNumber} - {rental.equipment?.name || 'Unknown'}

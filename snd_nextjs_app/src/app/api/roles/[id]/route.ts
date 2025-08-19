@@ -221,7 +221,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json(roleWithUserCount);
   } catch (error) {
-    console.error('Error fetching role:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch role' }, { status: 500 });
   }
 }
@@ -299,7 +299,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json(roleWithUserCount);
   } catch (error) {
-    console.error('Error updating role:', error);
+    
     return NextResponse.json({ error: 'Failed to update role' }, { status: 500 });
   }
 }

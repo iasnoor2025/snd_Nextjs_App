@@ -121,7 +121,7 @@ export default function EquipmentDialog({
       const response = await apiService.get<{ data: Equipment[] }>('/equipment');
       setEquipment(response.data || []);
     } catch (error) {
-      console.error('Error loading equipment:', error);
+      
       // Use mock data if API fails
       const mockEquipment = [
         {
@@ -155,7 +155,7 @@ export default function EquipmentDialog({
         setManpowerResources(manpowerData || []);
       }
     } catch (error) {
-      console.error('Error loading manpower resources:', error);
+      
       // Use mock data if API fails
       const mockManpower = [
         {
@@ -320,7 +320,6 @@ export default function EquipmentDialog({
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      console.error('Error saving equipment resource:', error);
 
       // Show more specific error messages
       if (error.response?.data?.error) {

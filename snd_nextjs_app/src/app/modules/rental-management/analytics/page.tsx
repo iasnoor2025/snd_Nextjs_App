@@ -90,7 +90,7 @@ export default function AnalyticsPage() {
 
         setStats(mockStats);
       } catch (error) {
-        console.error('Error fetching analytics:', error);
+        
         toast.error('Failed to load analytics data');
       } finally {
         setLoading(false);

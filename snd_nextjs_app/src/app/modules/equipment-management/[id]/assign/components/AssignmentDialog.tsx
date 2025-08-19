@@ -102,7 +102,7 @@ export function AssignmentDialog({
         toast.error(error.message || 'Failed to assign equipment');
       }
     } catch (error) {
-      console.error('Error assigning equipment:', error);
+      
       toast.error('Failed to assign equipment');
     } finally {
       setLoading(false);

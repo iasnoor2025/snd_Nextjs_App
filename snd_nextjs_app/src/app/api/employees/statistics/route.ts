@@ -8,7 +8,6 @@ import { NextResponse } from 'next/server';
 
 const getEmployeeStatisticsHandler = async () => {
   try {
-    console.log('Employee Statistics API called');
 
     // Drizzle pool is initialized on import
 
@@ -39,7 +38,6 @@ const getEmployeeStatisticsHandler = async () => {
           .where(eq(employees.fileNumber, ownEmployeeFileNumber))
       : await db.select({ count: sql<number>`count(*)` }).from(employees);
     const totalEmployees = Number((totalEmployeesRows as any)[0]?.count ?? 0);
-    console.log('Total employees:', totalEmployees);
 
     // Get employees with current assignments (filtered for employee users)
     let currentlyAssigned = 0;
@@ -63,7 +61,6 @@ const getEmployeeStatisticsHandler = async () => {
         .where(eq(employeeAssignments.status, 'active'));
       currentlyAssigned = Number((rows as any)[0]?.count ?? 0);
     }
-    console.log('Currently assigned:', currentlyAssigned);
 
     // Count project assignments (filtered for employee users)
     let projectAssignments = 0;
@@ -89,7 +86,6 @@ const getEmployeeStatisticsHandler = async () => {
         );
       projectAssignments = Number((rows as any)[0]?.count ?? 0);
     }
-    console.log('Project assignments:', projectAssignments);
 
     // Count rental assignments (filtered for employee users)
     let rentalAssignments = 0;
@@ -119,7 +115,6 @@ const getEmployeeStatisticsHandler = async () => {
         );
       rentalAssignments = Number((rows as any)[0]?.count ?? 0);
     }
-    console.log('Rental assignments:', rentalAssignments);
 
     return NextResponse.json({
       success: true,
@@ -132,12 +127,6 @@ const getEmployeeStatisticsHandler = async () => {
       message: 'Employee statistics retrieved successfully',
     });
   } catch (error) {
-    console.error('Error in GET /api/employees/statistics:', error);
-    console.error('Error details:', {
-      name: error instanceof Error ? error.name : 'Unknown',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : 'No stack trace',
-    });
 
     return NextResponse.json(
       {

@@ -173,7 +173,7 @@ export default function EmployeeDashboard() {
         setDashboardData(data);
       }
     } catch (error) {
-      console.error('Error fetching employee dashboard data:', error);
+      
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (!errorMessage.includes('401') && !errorMessage.includes('Unauthorized')) {
         // toast.error("Failed to load employee data")

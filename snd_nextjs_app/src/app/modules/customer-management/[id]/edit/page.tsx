@@ -93,7 +93,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
           router.push('/modules/customer-management');
         }
       } catch (error) {
-        console.error('Error fetching customer:', error);
+        
         toast.error('Error fetching customer');
         router.push('/modules/customer-management');
       } finally {
@@ -142,7 +142,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
         toast.error(error.message || 'Failed to update customer');
       }
     } catch (error) {
-      console.error('Error updating customer:', error);
+      
       toast.error('Error updating customer');
     } finally {
       setSaving(false);

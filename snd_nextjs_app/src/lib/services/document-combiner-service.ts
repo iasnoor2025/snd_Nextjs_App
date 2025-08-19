@@ -28,7 +28,7 @@ export class DocumentCombinerService {
       try {
         await this.addDocumentToPDF(pdfDoc, document);
       } catch (error) {
-        console.error(`Error processing document ${document.fileName}:`, error);
+        
         // Add error page for failed documents
         const errorPage = pdfDoc.addPage([595, 842]);
         const normalFont = await pdfDoc.embedFont('Helvetica');
@@ -68,12 +68,8 @@ export class DocumentCombinerService {
       filePath = join(process.cwd(), 'public', document.filePath);
     }
 
-    console.log(`🔍 Trying to read file: ${filePath}`);
-    console.log(`🔍 Document type: ${document.type}, MIME: ${document.mimeType}`);
-
     try {
       const fileBuffer = await readFile(filePath);
-      console.log(`🔍 Successfully read file: ${filePath}, size: ${fileBuffer.length} bytes`);
 
       if (document.mimeType.includes('pdf')) {
         await this.addPDFToDocument(pdfDoc, fileBuffer);
@@ -84,7 +80,7 @@ export class DocumentCombinerService {
         await this.addInfoPage(pdfDoc, document);
       }
     } catch (error) {
-      console.error(`❌ Error reading file ${filePath}:`, error);
+      
       await this.addInfoPage(pdfDoc, document);
     }
   }
@@ -98,7 +94,7 @@ export class DocumentCombinerService {
       const pages = await mainPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
       pages.forEach(page => mainPdf.addPage(page));
     } catch (error) {
-      console.error('Error copying PDF pages:', error);
+      
       throw error;
     }
   }
@@ -112,7 +108,6 @@ export class DocumentCombinerService {
     document: DocumentToCombine
   ): Promise<void> {
     try {
-      console.log(`🔍 Processing image: ${document.fileName}, size: ${imageBuffer.length} bytes`);
 
       // Process image with sharp - support multiple formats
       let processedImage: Buffer;
@@ -121,10 +116,6 @@ export class DocumentCombinerService {
       // Detect image format and process accordingly
       const sharpInstance = sharp(imageBuffer);
       const metadata = await sharpInstance.metadata();
-
-      console.log(
-        `🔍 Image metadata: format=${metadata.format}, width=${metadata.width}, height=${metadata.height}`
-      );
 
       if (metadata.format === 'png') {
         processedImage = await sharpInstance
@@ -147,8 +138,6 @@ export class DocumentCombinerService {
         imageFormat = 'jpeg';
       }
 
-      console.log(`🔍 Processed image: format=${imageFormat}, size=${processedImage.length} bytes`);
-
       // Convert to PDF page
       const imagePage = pdfDoc.addPage([595, 842]);
 
@@ -156,22 +145,19 @@ export class DocumentCombinerService {
       let image;
       if (imageFormat === 'png') {
         image = await pdfDoc.embedPng(processedImage);
-        console.log(`🔍 PNG image embedded successfully`);
+        
       } else {
         image = await pdfDoc.embedJpg(processedImage);
-        console.log(`🔍 JPEG image embedded successfully`);
+        
       }
 
       const { width, height } = image.scale(1);
-      console.log(`🔍 Image dimensions: ${width}x${height}`);
 
       // Calculate position to center the image on the page
       const pageWidth = 595;
       const pageHeight = 842;
       const x = (pageWidth - width) / 2;
       const y = (pageHeight - height) / 2; // Center vertically
-
-      console.log(`🔍 Drawing image at position: x=${x}, y=${y}`);
 
       // Draw the image centered on the page
       imagePage.drawImage(image, {
@@ -181,9 +167,8 @@ export class DocumentCombinerService {
         height,
       });
 
-      console.log(`🔍 Image successfully added to PDF`);
     } catch (error) {
-      console.error('❌ Error processing image:', error);
+      
       throw error;
     }
   }

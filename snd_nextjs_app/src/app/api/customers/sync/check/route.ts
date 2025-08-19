@@ -39,10 +39,8 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
  */
 async function fetchAllCustomersFromERPNext(): Promise<any[]> {
   try {
-    console.log('Fetching customers from ERPNext...');
 
     const response = await makeERPNextRequest('/api/resource/Customer?limit_page_length=1000');
-    console.log('ERPNext raw customer response:', response);
 
     // Handle different response structures
     let customerList: any[] = [];
@@ -53,37 +51,27 @@ async function fetchAllCustomersFromERPNext(): Promise<any[]> {
     } else if (Array.isArray(response)) {
       customerList = response;
     } else {
-      console.error('Unexpected ERPNext response structure:', response);
+      
       throw new Error('Invalid response structure from ERPNext');
     }
-
-    console.log(`Found ${customerList.length} customers in ERPNext response`);
 
     // Filter out customers without names
     const validCustomers = customerList.filter(
       (customer: any) => customer && (customer.customer_name || customer.name)
     );
 
-    console.log(`Filtered to ${validCustomers.length} valid customers`);
-
     return validCustomers;
   } catch (error) {
-    console.error('Error fetching customers from ERPNext:', error);
+    
     throw error;
   }
 }
 
 export async function POST(_request: NextRequest) {
   try {
-    console.log('Starting ERPNext data check...');
 
     // Validate environment variables
     if (!ERPNEXT_URL || !ERPNEXT_API_KEY || !ERPNEXT_API_SECRET) {
-      console.log('ERPNext configuration missing:', {
-        hasUrl: !!ERPNEXT_URL,
-        hasKey: !!ERPNEXT_API_KEY,
-        hasSecret: !!ERPNEXT_API_SECRET,
-      });
 
       return NextResponse.json(
         {
@@ -98,9 +86,9 @@ export async function POST(_request: NextRequest) {
     try {
       // Drizzle pool is initialized at import; try a trivial query
       await db.execute(sql`select 1`);
-      console.log('Database connection successful');
+      
     } catch (dbError) {
-      console.error('Database connection failed:', dbError);
+      
       return NextResponse.json(
         {
           success: false,
@@ -113,14 +101,12 @@ export async function POST(_request: NextRequest) {
     }
 
     // Fetch customers from ERPNext
-    console.log('Fetching customers from ERPNext...');
+    
     const erpnextCustomers = await fetchAllCustomersFromERPNext();
-    console.log(`Fetched ${erpnextCustomers.length} customers from ERPNext`);
 
     // Get existing customers count for comparison
     const countRows = await db.execute(sql`select count(*)::int as count from customers`);
     const existingCustomerCount = Number((countRows as any)?.rows?.[0]?.count ?? 0);
-    console.log(`Database has ${existingCustomerCount} existing customers`);
 
     // Prepare check result
     const checkResult = {
@@ -136,15 +122,13 @@ export async function POST(_request: NextRequest) {
       },
     };
 
-    console.log('Check result summary:', checkResult.summary);
-
     return NextResponse.json({
       success: true,
       message: `Successfully checked ERPNext data. Found ${erpnextCustomers.length} customers.`,
       data: checkResult,
     });
   } catch (error) {
-    console.error('Error during ERPNext check:', error);
+    
     return NextResponse.json(
       {
         success: false,

@@ -12,7 +12,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json(rental);
   } catch (error) {
-    console.error('Error fetching rental:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch rental' }, { status: 500 });
   }
 }
@@ -62,7 +62,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json(rental);
   } catch (error) {
-    console.error('Error updating rental:', error);
+    
     return NextResponse.json({ error: 'Failed to update rental' }, { status: 500 });
   }
 }
@@ -81,7 +81,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Rental deleted successfully' });
   } catch (error) {
-    console.error('Error deleting rental:', error);
+    
     return NextResponse.json({ error: 'Failed to delete rental' }, { status: 500 });
   }
 }

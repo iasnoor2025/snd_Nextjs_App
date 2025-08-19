@@ -114,7 +114,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         setError(errorData.error || 'Failed to load assignments');
       }
     } catch (error) {
-      console.error('Error fetching assignments:', error);
+      
       setError('Failed to load assignments');
     } finally {
       setLoading(false);
@@ -159,7 +159,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         toast.error(errorData.error || 'Failed to create assignment');
       }
     } catch (error) {
-      console.error('Error creating assignment:', error);
+      
       toast.error('Failed to create assignment');
     } finally {
       setSubmitting(false);
@@ -175,14 +175,6 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
     setSubmitting(true);
     try {
       // Update assignment logic here
-      console.log('Updating assignment:', {
-        employeeId,
-        assignmentId: selectedAssignment.id,
-        formData: {
-          ...formData,
-          id: selectedAssignment.id,
-        },
-      });
 
       const response = await fetch(`/api/employees/${employeeId}/assignments`, {
         method: 'PUT',
@@ -205,11 +197,11 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         fetchAssignments();
       } else {
         const errorData = await response.json();
-        console.error('❌ Failed to update assignment:', errorData);
+        
         toast.error(errorData.error || 'Failed to update assignment');
       }
     } catch (error) {
-      console.error('Error updating assignment:', error);
+      
       toast.error('Failed to update assignment');
     } finally {
       setSubmitting(false);
@@ -238,7 +230,7 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
         toast.error(errorData.error || 'Failed to delete assignment');
       }
     } catch (error) {
-      console.error('Error deleting assignment:', error);
+      
       toast.error('Failed to delete assignment');
     } finally {
       setDeletingId(null);

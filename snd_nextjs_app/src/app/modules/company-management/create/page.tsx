@@ -48,7 +48,7 @@ export default function CreateCompanyPage() {
         toast.error(result.message || 'Failed to create company');
       }
     } catch (error) {
-      console.error('Error creating company:', error);
+      
       toast.error('Failed to create company');
     } finally {
       setSaving(false);

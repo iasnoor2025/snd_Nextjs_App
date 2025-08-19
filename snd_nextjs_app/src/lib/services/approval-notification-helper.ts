@@ -47,9 +47,8 @@ export class ApprovalNotificationHelper {
         actionUrl: '/modules/timesheet-management',
       });
 
-      console.log(`Timesheet approval notification sent to ${managerEmail}`);
     } catch (error) {
-      console.error('Failed to send timesheet approval notification:', error);
+      
     }
   }
 
@@ -80,9 +79,8 @@ export class ApprovalNotificationHelper {
         actionUrl: '/modules/leave-management',
       });
 
-      console.log(`Leave approval notification sent to ${managerEmail}`);
     } catch (error) {
-      console.error('Failed to send leave approval notification:', error);
+      
     }
   }
 
@@ -113,9 +111,8 @@ export class ApprovalNotificationHelper {
         actionUrl: '/modules/payroll-management',
       });
 
-      console.log(`Advance approval notification sent to ${managerEmail}`);
     } catch (error) {
-      console.error('Failed to send advance approval notification:', error);
+      
     }
   }
 
@@ -144,9 +141,8 @@ export class ApprovalNotificationHelper {
         actionUrl: '/modules/equipment-management',
       });
 
-      console.log(`Equipment approval notification sent to ${managerEmail}`);
     } catch (error) {
-      console.error('Failed to send equipment approval notification:', error);
+      
     }
   }
 
@@ -175,9 +171,8 @@ export class ApprovalNotificationHelper {
         actionUrl,
       });
 
-      console.log(`Bulk approval notification sent to ${managerEmail}`);
     } catch (error) {
-      console.error('Failed to send bulk approval notification:', error);
+      
     }
   }
 
@@ -192,9 +187,8 @@ export class ApprovalNotificationHelper {
         message: `Your ${itemType} "${itemName}" has been approved!`,
       });
 
-      console.log(`Approval granted notification sent to ${employeeEmail}`);
     } catch (error) {
-      console.error('Failed to send approval granted notification:', error);
+      
     }
   }
 
@@ -216,9 +210,8 @@ export class ApprovalNotificationHelper {
           : `Your ${itemType} "${itemName}" was rejected`,
       });
 
-      console.log(`Approval rejected notification sent to ${employeeEmail}`);
     } catch (error) {
-      console.error('Failed to send approval rejected notification:', error);
+      
     }
   }
 }

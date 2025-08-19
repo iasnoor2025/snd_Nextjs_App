@@ -119,7 +119,7 @@ export async function PUT(
       data: resource,
     });
   } catch (error) {
-    console.error('Error updating project resource:', error);
+    
     return NextResponse.json({ error: 'Failed to update project resource' }, { status: 500 });
   }
 }
@@ -130,8 +130,6 @@ export async function DELETE(
 ) {
   try {
     const { id: projectId, resourceId } = await params;
-
-    console.log('Deleting project resource:', { projectId, resourceId });
 
     // Delete the resource
     const deletedResource = await db
@@ -149,7 +147,6 @@ export async function DELETE(
     }
 
     const deletedResourceItem = deletedResource[0];
-    console.log('Resource deleted successfully:', deletedResourceItem.id);
 
     return NextResponse.json({
       success: true,
@@ -157,8 +154,7 @@ export async function DELETE(
       data: deletedResourceItem,
     });
   } catch (error) {
-    console.error('Error deleting project resource:', error);
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
     return NextResponse.json(
       {
         error: 'Failed to delete project resource',

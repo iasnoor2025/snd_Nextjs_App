@@ -11,7 +11,7 @@ export const GET = withPermission(
       const resolvedParams = await params;
 
       if (!resolvedParams || !resolvedParams.id) {
-        console.error('Invalid params received:', resolvedParams);
+        
         return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
       }
 
@@ -127,7 +127,6 @@ export const GET = withPermission(
         message: 'Leave requests retrieved successfully',
       });
     } catch (error) {
-      console.error('Error in GET /api/employees/[id]/leaves:', error);
 
       let errorMessage = 'Failed to fetch leave requests';
       if (error instanceof Error) {
@@ -153,7 +152,7 @@ export const POST = withPermission(
       const resolvedParams = await params;
 
       if (!resolvedParams || !resolvedParams.id) {
-        console.error('Invalid params received:', resolvedParams);
+        
         return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
       }
 
@@ -197,7 +196,6 @@ export const POST = withPermission(
         data: newLeave,
       });
     } catch (error) {
-      console.error('Error in POST /api/employees/[id]/leaves:', error);
 
       let errorMessage = 'Failed to create leave request';
       if (error instanceof Error) {

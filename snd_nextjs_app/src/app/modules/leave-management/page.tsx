@@ -168,7 +168,7 @@ export default function LeaveManagementPage() {
         throw new Error(data.message || 'Failed to fetch leave requests');
       }
     } catch (error) {
-      console.error('Error fetching leave requests:', error);
+      
       toast.error(t('error_fetching_leave_requests'));
     } finally {
       setLoading(false);
@@ -202,7 +202,7 @@ export default function LeaveManagementPage() {
         throw new Error('Failed to delete leave request');
       }
     } catch (error) {
-      console.error('Error deleting leave request:', error);
+      
       toast.error(t('error_deleting_leave_request'));
     } finally {
       setShowDeleteDialog(false);
@@ -226,7 +226,7 @@ export default function LeaveManagementPage() {
         throw new Error('Failed to approve leave request');
       }
     } catch (error) {
-      console.error('Error approving leave request:', error);
+      
       toast.error(t('error_approving_leave_request'));
     }
   };
@@ -250,7 +250,7 @@ export default function LeaveManagementPage() {
         throw new Error('Failed to reject leave request');
       }
     } catch (error) {
-      console.error('Error rejecting leave request:', error);
+      
       toast.error(t('error_rejecting_leave_request'));
     }
   };

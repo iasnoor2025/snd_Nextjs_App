@@ -10,7 +10,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export const PUT = withPermission(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
     try {
-      console.log('🔍 UPDATE HOURS - Starting request for timesheet:', params.id);
 
       const timesheetId = parseInt(params.id);
       if (isNaN(timesheetId)) {
@@ -51,14 +50,6 @@ export const PUT = withPermission(
         return NextResponse.json({ error: 'Timesheet data not found' }, { status: 404 });
       }
 
-      console.log('🔍 UPDATE HOURS - Found timesheet:', {
-        id: timesheetData.id,
-        status: timesheetData.status,
-        employeeId: timesheetData.employeeId,
-        currentHours: timesheetData.hoursWorked,
-        currentOvertime: timesheetData.overtimeHours,
-      });
-
       // Get session to check user permissions
       const session = await getServerSession(authConfig);
       if (!session?.user?.id) {
@@ -80,10 +71,6 @@ export const PUT = withPermission(
           .where(eq(timesheets.id, timesheetId))
           .returning();
 
-        console.log(
-          `🔍 UPDATE HOURS - Hours updated successfully: ${timesheetId} - ${hoursWorked}h + ${overtimeHours}h OT`
-        );
-
         const updatedTimesheetData = updatedTimesheet[0];
         if (!updatedTimesheetData) {
           return NextResponse.json({ error: 'Failed to update timesheet' }, { status: 500 });
@@ -100,10 +87,7 @@ export const PUT = withPermission(
           },
         });
       } catch (error) {
-        console.error(
-          `🔍 UPDATE HOURS - Error updating hours for timesheet ${timesheetId}:`,
-          error
-        );
+        
         return NextResponse.json(
           {
             error: `Failed to update hours: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -112,7 +96,7 @@ export const PUT = withPermission(
         );
       }
     } catch (error) {
-      console.error('🔍 UPDATE HOURS - Unexpected error:', error);
+      
       return NextResponse.json(
         {
           error: 'Internal server error',

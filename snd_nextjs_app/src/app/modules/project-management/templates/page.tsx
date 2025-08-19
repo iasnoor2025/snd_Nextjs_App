@@ -121,7 +121,7 @@ export default function ProjectTemplatesPage() {
       // setTemplates(response.data || []);
       setTemplates([]);
     } catch (error) {
-      console.error('Error fetching templates:', error);
+      
       toast.error('Failed to load templates');
     } finally {
       setLoading(false);
@@ -159,7 +159,7 @@ export default function ProjectTemplatesPage() {
       });
       fetchTemplates();
     } catch (error) {
-      console.error('Error creating template:', error);
+      
       toast.error('Failed to create template');
     } finally {
       setLoading(false);
@@ -173,7 +173,7 @@ export default function ProjectTemplatesPage() {
       toast.success('Project from template feature not implemented yet');
       // window.location.href = `/modules/project-management/${response.data.id}`;
     } catch (error) {
-      console.error('Error creating project from template:', error);
+      
       toast.error('Failed to create project from template');
     }
   };
@@ -187,7 +187,7 @@ export default function ProjectTemplatesPage() {
       toast.success('Template delete feature not implemented yet');
       // fetchTemplates();
     } catch (error) {
-      console.error('Error deleting template:', error);
+      
       toast.error('Failed to delete template');
     }
   };
@@ -206,7 +206,7 @@ export default function ProjectTemplatesPage() {
       toast.success('Template duplicate feature not implemented yet');
       // fetchTemplates();
     } catch (error) {
-      console.error('Error duplicating template:', error);
+      
       toast.error('Failed to duplicate template');
     }
   };

@@ -16,11 +16,10 @@ export const preferredRegion = 'auto';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    console.log('POST /api/employee/advances/[id]/reject called');
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
-      console.log('Unauthorized - no session');
+      
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -73,15 +72,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     const updatedAdvance = updatedAdvanceRows[0];
 
-    console.log('Advance rejected successfully:', updatedAdvance);
-
     return NextResponse.json({
       success: true,
       advance: updatedAdvance,
       message: 'Advance rejected successfully',
     });
   } catch (error) {
-    console.error('Error rejecting advance:', error);
+    
     return NextResponse.json(
       {
         error: `Failed to reject advance: ${error instanceof Error ? error.message : 'Unknown error'}`,

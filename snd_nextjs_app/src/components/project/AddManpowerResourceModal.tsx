@@ -30,12 +30,7 @@ export function AddManpowerResourceModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Handle form submission
-    console.log('Submitting manpower resource:', {
-      projectId,
-      linkToEmployee,
-      selectedEmployee,
-      dailyRate,
-    });
+    
     onClose();
   };
 

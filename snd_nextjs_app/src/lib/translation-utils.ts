@@ -320,7 +320,7 @@ export const translateNameToArabic = async (
       }
     }
   } catch (error) {
-    console.log('Translation failed, trying phonetic transliteration:', error);
+    
   }
 
   // Fallback: phonetic transliteration
@@ -421,8 +421,6 @@ export const batchTranslateNames = async (
 
   if (untranslatedNames.length === 0) return;
 
-  console.log(`Translating ${untranslatedNames.length} unique names...`);
-
   // Process names in batches of 5 to avoid overwhelming the API
   const batchSize = 5;
   for (let i = 0; i < untranslatedNames.length; i += batchSize) {
@@ -437,7 +435,7 @@ export const batchTranslateNames = async (
             [name]: translated,
           }));
         } catch (error) {
-          console.log(`Failed to translate name: ${name}`, error);
+          
         }
       })
     );

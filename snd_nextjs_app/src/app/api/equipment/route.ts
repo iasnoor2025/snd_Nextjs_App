@@ -12,7 +12,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const GET = withReadPermission(async (_request: NextRequest) => {
   try {
-    console.log('Fetching equipment from database...');
 
     const equipment = await db
       .select({
@@ -34,10 +33,8 @@ export const GET = withReadPermission(async (_request: NextRequest) => {
       .from(equipmentTable)
       .orderBy(asc(equipmentTable.name));
 
-    console.log(`Found ${equipment.length} equipment items`);
-
     // Get current active assignments for equipment
-    console.log('=== FETCHING ASSIGNMENTS ===');
+    
     let currentAssignments: any[] = [];
 
     try {
@@ -57,8 +54,6 @@ export const GET = withReadPermission(async (_request: NextRequest) => {
         })
         .from(equipmentRentalHistory)
         .where(eq(equipmentRentalHistory.status, 'active'));
-
-      console.log(`Found ${currentAssignments.length} active assignments`);
 
       // Fetch additional details for projects, rentals, and employees if needed
       if (currentAssignments.length > 0) {
@@ -81,7 +76,7 @@ export const GET = withReadPermission(async (_request: NextRequest) => {
               }
             });
           } catch (error) {
-            console.error('Error fetching project names:', error);
+            
           }
         }
 
@@ -104,7 +99,7 @@ export const GET = withReadPermission(async (_request: NextRequest) => {
               }
             });
           } catch (error) {
-            console.error('Error fetching rental information:', error);
+            
           }
         }
 
@@ -128,24 +123,20 @@ export const GET = withReadPermission(async (_request: NextRequest) => {
               }
             });
           } catch (error) {
-            console.error('Error fetching employee names:', error);
+            
           }
         }
       }
     } catch (error) {
-      console.error('Error fetching assignments:', error);
+      
       currentAssignments = [];
     }
-
-    console.log('=== END ASSIGNMENT FETCH ===');
 
     // Create a map of equipment_id to assignment info
     const assignmentMap = new Map();
     currentAssignments.forEach(assignment => {
       assignmentMap.set(assignment.equipment_id, assignment);
     });
-
-    console.log(`Assignment map size: ${assignmentMap.size}`);
 
     // Add assignment info to equipment
     const equipmentWithAssignments = equipment.map(item => {
@@ -233,7 +224,7 @@ export const GET = withReadPermission(async (_request: NextRequest) => {
       count: equipmentWithAssignments.length,
     });
   } catch (error) {
-    console.error('Error fetching equipment:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -276,7 +267,7 @@ export const POST = withPermission(async (request: NextRequest) => {
 
     return NextResponse.json({ success: true, data: equipment }, { status: 201 });
   } catch (error) {
-    console.error('Error creating equipment:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -339,7 +330,7 @@ export const PUT = withPermission(async (request: NextRequest) => {
 
     return NextResponse.json({ success: true, data: equipment });
   } catch (error) {
-    console.error('Error updating equipment:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -359,7 +350,7 @@ export const DELETE = withPermission(async (request: NextRequest) => {
 
     return NextResponse.json({ success: true, message: 'Equipment deleted successfully' });
   } catch (error) {
-    console.error('Error deleting equipment:', error);
+    
     return NextResponse.json(
       {
         success: false,

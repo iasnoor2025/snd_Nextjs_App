@@ -17,6 +17,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useRBAC } from '@/lib/rbac/rbac-context';
+import { NationalityDropdown } from '@/components/shared/NationalityDropdown';
 import {
   ArrowLeft,
   CreditCard,
@@ -225,7 +226,7 @@ export default function CreateEmployeePage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching departments:', error);
+      
     }
   };
 
@@ -239,7 +240,7 @@ export default function CreateEmployeePage() {
         }
       }
     } catch (error) {
-      console.error('Error fetching designations:', error);
+      
     }
   };
 
@@ -313,11 +314,11 @@ export default function CreateEmployeePage() {
             setDepartments(refreshData.data || []);
           }
         } catch (refreshError) {
-          console.error('Error refreshing departments:', refreshError);
+          
         }
       }
     } catch (error) {
-      console.error('Error adding department:', error);
+      
       toast.error('Failed to add department. Please try again.');
 
       // Refresh departments list in case there was a sync issue
@@ -328,7 +329,7 @@ export default function CreateEmployeePage() {
           setDepartments(refreshData.data || []);
         }
       } catch (refreshError) {
-        console.error('Error refreshing departments:', refreshError);
+        
       }
     } finally {
       setAddingDepartment(false);
@@ -368,7 +369,7 @@ export default function CreateEmployeePage() {
         toast.error(result.message || 'Failed to add designation');
       }
     } catch (error) {
-      console.error('Error adding designation:', error);
+      
       toast.error('Failed to add designation');
     } finally {
       setAddingDesignation(false);
@@ -409,7 +410,7 @@ export default function CreateEmployeePage() {
         toast.error(result.message || 'Failed to update department');
       }
     } catch (error) {
-      console.error('Error updating department:', error);
+      
       toast.error('Failed to update department');
     } finally {
       setUpdatingDepartment(false);
@@ -450,7 +451,7 @@ export default function CreateEmployeePage() {
         toast.error(result.message || 'Failed to update designation');
       }
     } catch (error) {
-      console.error('Error updating designation:', error);
+      
       toast.error('Failed to update designation');
     } finally {
       setUpdatingDesignation(false);
@@ -490,7 +491,7 @@ export default function CreateEmployeePage() {
         toast.error(t('employee:messages.fileUploadError'));
       }
     } catch (error) {
-      console.error('File upload error:', error);
+      
       toast.error(t('employee:messages.fileUploadError'));
     }
   };
@@ -526,7 +527,7 @@ export default function CreateEmployeePage() {
         toast.error(errorData.message || t('employee:messages.createError'));
       }
     } catch (error) {
-      console.error('Error creating employee:', error);
+      
       toast.error(t('employee:messages.createError'));
     } finally {
       setIsLoading(false);
@@ -654,10 +655,10 @@ export default function CreateEmployeePage() {
                     </div>
                     <div>
                       <Label htmlFor="nationality">{t('employee:fields.nationality')}</Label>
-                      <Input
-                        id="nationality"
-                        value={formData.nationality}
-                        onChange={e => handleInputChange('nationality', e.target.value)}
+                      <NationalityDropdown
+                        value={formData.nationality || ''}
+                        onValueChange={(value) => handleInputChange('nationality', value)}
+                        placeholder={t('employee:fields.nationality')}
                       />
                     </div>
                   </div>
@@ -763,7 +764,7 @@ export default function CreateEmployeePage() {
                                     );
                                   }
                                 } catch (error) {
-                                  console.error('Error deleting department:', error);
+                                  
                                   toast.error(t('employee:messages.deleteError'));
                                 }
                               }
@@ -867,7 +868,7 @@ export default function CreateEmployeePage() {
                                     );
                                   }
                                 } catch (error) {
-                                  console.error('Error deleting designation:', error);
+                                  
                                   toast.error(t('employee:messages.deleteError'));
                                 }
                               }

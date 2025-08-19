@@ -45,7 +45,7 @@ export const POST = withPermission(
         rental: result[0],
       });
     } catch (error) {
-      console.error('Error saving terms and conditions:', error);
+      
       return NextResponse.json({ error: 'Failed to save terms and conditions' }, { status: 500 });
     }
   },

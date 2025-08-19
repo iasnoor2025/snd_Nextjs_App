@@ -59,7 +59,7 @@ export const GET = withReadPermission(async (request: NextRequest) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching active projects:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch active projects' }, { status: 500 });
   }
 }, PermissionConfigs.project.read);

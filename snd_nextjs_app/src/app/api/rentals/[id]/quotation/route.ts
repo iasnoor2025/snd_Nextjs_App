@@ -7,7 +7,6 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log('Generating quotation for rental:', id);
 
     // Test database connection first
     try {
@@ -15,9 +14,9 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
         .select({ test: sql`1` })
         .from(rentals)
         .limit(1);
-      console.log('✅ Database connection successful');
+      
     } catch (dbError) {
-      console.error('❌ Database connection failed:', dbError);
+      
       return NextResponse.json(
         {
           error: 'Database connection failed',
@@ -28,7 +27,6 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     }
 
     const rental = await RentalService.getRental(parseInt(id));
-    console.log('✅ Rental fetched:', rental ? 'success' : 'not found');
 
     if (!rental) {
       return NextResponse.json({ error: 'Rental not found' }, { status: 404 });
@@ -42,9 +40,6 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     // Generate a smaller quotation ID that fits in PostgreSQL integer
     const quotationId = Math.floor(timestamp / 1000) + Math.floor(Math.random() * 10000);
 
-    console.log('✅ Quotation number generated:', quotationNumber);
-    console.log('✅ Quotation ID generated:', quotationId);
-
     // Update rental with quotation information
     try {
       await db
@@ -55,9 +50,8 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
         })
         .where(eq(rentals.id, parseInt(id)));
 
-      console.log('✅ Rental updated successfully');
     } catch (updateError) {
-      console.error('❌ Failed to update rental:', updateError);
+      
       return NextResponse.json(
         {
           error: 'Failed to update rental',
@@ -75,9 +69,8 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
         .where(eq(rentals.id, parseInt(id)))
         .limit(1);
 
-      console.log('✅ Rental details fetched successfully');
     } catch (fetchError) {
-      console.error('❌ Failed to fetch rental details:', fetchError);
+      
       return NextResponse.json(
         {
           error: 'Failed to fetch rental details',
@@ -98,12 +91,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       },
     });
   } catch (error) {
-    console.error('❌ Error generating quotation:', error);
-    console.error('Error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'Unknown',
-    });
+
     return NextResponse.json(
       {
         error: 'Failed to generate quotation',

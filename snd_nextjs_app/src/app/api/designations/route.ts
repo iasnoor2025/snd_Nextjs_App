@@ -6,7 +6,6 @@ import { PermissionConfigs, withPermission } from '../../../lib/rbac/api-middlew
 
 export const GET = withPermission(async (_request: NextRequest) => {
   try {
-    console.log('GET /api/designations - Fetching all designations');
 
     const allDesignations = await db
       .select({
@@ -21,8 +20,6 @@ export const GET = withPermission(async (_request: NextRequest) => {
       .from(designations)
       .where(isNull(designations.deletedAt))
       .orderBy(designations.name);
-
-    console.log('GET /api/designations - Found designations:', allDesignations);
 
     // Fetch department details for each designation
     const designationsWithDepartments = await Promise.all(
@@ -56,7 +53,7 @@ export const GET = withPermission(async (_request: NextRequest) => {
       message: 'Designations retrieved successfully',
     });
   } catch (error) {
-    console.error('Error fetching designations:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -74,8 +71,6 @@ export const POST = withPermission(async (request: NextRequest) => {
     const body = await request.json();
     const { name, description, department_id } = body;
 
-    console.log('POST /api/designations - Request body:', body);
-
     if (!name || !name.trim()) {
       return NextResponse.json(
         {
@@ -87,7 +82,6 @@ export const POST = withPermission(async (request: NextRequest) => {
     }
 
     const trimmedName = name.trim();
-    console.log('POST /api/designations - Name to check:', trimmedName);
 
     // Check for existing designation with the same name (case insensitive)
     const allDesignations = await db
@@ -98,13 +92,9 @@ export const POST = withPermission(async (request: NextRequest) => {
       .from(designations)
       .where(isNull(designations.deletedAt));
 
-    console.log('POST /api/designations - All designations for comparison:', allDesignations);
-
     const existingDesignation = allDesignations.find(
       desig => desig.name.toLowerCase() === trimmedName.toLowerCase()
     );
-
-    console.log('POST /api/designations - Existing designation found:', existingDesignation);
 
     if (existingDesignation) {
       return NextResponse.json(
@@ -170,7 +160,7 @@ export const POST = withPermission(async (request: NextRequest) => {
       message: 'Designation created successfully',
     });
   } catch (error) {
-    console.error('Error creating designation:', error);
+    
     return NextResponse.json(
       {
         success: false,

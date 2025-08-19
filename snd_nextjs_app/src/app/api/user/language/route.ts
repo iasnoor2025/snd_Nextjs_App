@@ -25,7 +25,7 @@ export async function GET() {
       message: 'User language preference retrieved successfully',
     });
   } catch (error) {
-    console.error('Error fetching user language:', error);
+    
     return NextResponse.json(
       {
         success: false,
@@ -85,7 +85,7 @@ export async function PUT(request: NextRequest) {
       message: 'User language preference updated successfully',
     });
   } catch (error) {
-    console.error('Error updating user language:', error);
+    
     return NextResponse.json(
       {
         success: false,

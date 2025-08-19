@@ -44,7 +44,7 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json(defaultSettings);
   } catch (error) {
-    console.error('Error fetching settings:', error);
+    
     return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });
   }
 }
@@ -70,14 +70,13 @@ export async function PUT(_request: NextRequest) {
 
     // In a real app, you would save these settings to a database
     // For now, we'll just return success
-    console.log(`Updating ${type} settings for user:`, settings);
 
     return NextResponse.json({
       message: `${type} settings updated successfully`,
       settings,
     });
   } catch (error) {
-    console.error('Error updating settings:', error);
+    
     return NextResponse.json({ error: 'Failed to update settings' }, { status: 500 });
   }
 }

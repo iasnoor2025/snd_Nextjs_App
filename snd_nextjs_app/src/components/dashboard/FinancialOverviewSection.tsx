@@ -86,9 +86,6 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
   const [selectedMonth, setSelectedMonth] = useState<string>('');
 
   // Debug session info
-  console.log('🔐 FinancialOverviewSection - Session status:', status);
-  console.log('🔐 FinancialOverviewSection - Session data:', session);
-  console.log('🔐 FinancialOverviewSection - User role:', session?.user?.role);
 
   // Wait for session to be loaded
   if (status === 'loading') {
@@ -154,26 +151,23 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
       setError(null);
 
       const monthParam = month || selectedMonth || monthOptions[0]?.value;
-      console.log('🔍 Fetching financial overview for month:', monthParam);
 
       const response = await fetch(`/api/erpnext/financial?type=overview&month=${monthParam}`);
-      console.log('📡 Response status:', response.status);
-      console.log('📡 Response ok:', response.ok);
 
       if (response.ok) {
         const data = await response.json();
-        console.log('📊 Financial overview data received:', data);
+        
         setFinancialOverview(data.data);
         if (month) {
           setSelectedMonth(month);
         }
       } else {
         const errorText = await response.text();
-        console.error('❌ API error response:', errorText);
+        
         throw new Error(`Failed to fetch financial overview: ${response.status}`);
       }
     } catch (err) {
-      console.error('❌ Error fetching financial overview:', err);
+      
       setError(t('financial.failedToFetch') || 'Failed to fetch financial data');
     } finally {
       setLoading(false);
@@ -182,28 +176,26 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
 
   const fetchInvoiceSummary = async () => {
     try {
-      console.log('🔍 Fetching invoice summary...');
+      
       // Fetch all invoices without monthly filtering
       const response = await fetch('/api/erpnext/financial?type=invoice-summary');
-      console.log('📡 Invoice summary response status:', response.status);
-      console.log('📡 Invoice summary response ok:', response.ok);
 
       if (response.ok) {
         const data = await response.json();
-        console.log('📊 Invoice summary data received:', data);
+        
         setInvoiceSummary(data.data);
       } else {
         const errorText = await response.text();
-        console.error('❌ Failed to fetch invoice summary:', response.status, errorText);
+        
         // Try to get more details about the error
         if (response.status === 401) {
-          console.error('❌ Authentication failed - user not logged in or session expired');
+          
         } else if (response.status === 403) {
-          console.error('❌ Access denied - user lacks required permissions');
+          
         }
       }
     } catch (err) {
-      console.error('❌ Error fetching invoice summary:', err);
+      
     }
   };
 

@@ -80,9 +80,6 @@ export default function SalaryIncrementsPage() {
       setLoading(true);
 
       // Debug: Log user session information
-      console.log('Current user session:', session);
-      console.log('User role:', session?.user?.role);
-      console.log('User ID:', session?.user?.id);
 
       const [incrementsResponse, statsResponse] = await Promise.all([
         salaryIncrementService.getSalaryIncrements(filters),
@@ -93,7 +90,6 @@ export default function SalaryIncrementsPage() {
       setPagination(incrementsResponse?.pagination || { page: 1, limit: 15, total: 0, pages: 0 });
       setStatistics(statsResponse);
     } catch (error) {
-      console.error('Error loading salary increments:', error);
 
       // Check if it's an authentication error
       if (error instanceof Error && error.message.includes('401')) {
@@ -141,7 +137,7 @@ export default function SalaryIncrementsPage() {
       setApprovalNotes('');
       loadData();
     } catch (error) {
-      console.error('Error approving salary increment:', error);
+      
       toast.error('Failed to approve salary increment');
     }
   };
@@ -159,7 +155,7 @@ export default function SalaryIncrementsPage() {
       setShowRejectDialog(false);
       loadData();
     } catch (error) {
-      console.error('Error rejecting salary increment:', error);
+      
       toast.error('Failed to reject salary increment');
     }
   };
@@ -170,7 +166,7 @@ export default function SalaryIncrementsPage() {
       toast.success('Salary increment applied successfully');
       loadData();
     } catch (error) {
-      console.error('Error applying salary increment:', error);
+      
       toast.error('Failed to apply salary increment');
     }
   };
@@ -193,7 +189,7 @@ export default function SalaryIncrementsPage() {
       toast.success(successMessage);
       loadData();
     } catch (error) {
-      console.error('Error deleting salary increment:', error);
+      
       toast.error('Failed to delete salary increment');
     }
   };
@@ -378,7 +374,7 @@ export default function SalaryIncrementsPage() {
                     <SelectValue placeholder="All Statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Statuses</SelectItem>
+                    <SelectItem value="all">All Statuses</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="approved">Approved</SelectItem>
                     <SelectItem value="rejected">Rejected</SelectItem>
@@ -396,7 +392,7 @@ export default function SalaryIncrementsPage() {
                     <SelectValue placeholder="All Types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Types</SelectItem>
+                    <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="percentage">Percentage</SelectItem>
                     <SelectItem value="amount">Amount</SelectItem>
                     <SelectItem value="promotion">Promotion</SelectItem>

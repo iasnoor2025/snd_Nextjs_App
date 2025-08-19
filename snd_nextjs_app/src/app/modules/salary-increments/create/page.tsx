@@ -111,16 +111,6 @@ export default function CreateSalaryIncrementPage() {
     const transportAllowance = parseFloat(String(selectedEmployee.transport_allowance || 0));
 
     // Debug logging
-    console.log('Salary calculation debug:', {
-      employee: selectedEmployee,
-      baseSalary,
-      foodAllowance,
-      housingAllowance,
-      transportAllowance,
-      calculationMethod,
-      incrementPercentage: formData.increment_percentage,
-      incrementAmount: formData.increment_amount,
-    });
 
     const currentTotal = baseSalary + foodAllowance + housingAllowance + transportAllowance;
 
@@ -164,16 +154,6 @@ export default function CreateSalaryIncrementPage() {
     increaseAmount = newTotal - currentTotal;
 
     // Debug logging for results
-    console.log('Calculation results:', {
-      currentTotal,
-      newTotal,
-      increaseAmount,
-      increasePercentage,
-      newBase,
-      newFood,
-      newHousing,
-      newTransport,
-    });
 
     setCalculatedSalary({
       current_base: baseSalary,
@@ -201,7 +181,6 @@ export default function CreateSalaryIncrementPage() {
   };
 
   const handleEmployeeChange = async (employeeId: string) => {
-    console.log('Employee selected:', employeeId);
 
     if (!employeeId) {
       setSelectedEmployee(null);
@@ -215,25 +194,19 @@ export default function CreateSalaryIncrementPage() {
       // Fetch full employee details including salary information
       const response = await ApiService.get(`/employees/${employeeId}`);
 
-
       // The employee API returns data in response.employee, not response.data
       const employeeData = (response as any)?.employee || response?.data;
-      
 
-      
       if (employeeData) {
 
         setSelectedEmployee(employeeData);
 
       } else {
-        console.error('ERROR: No employee data in response');
-        console.error('Full response:', response);
-        console.error('Response keys:', Object.keys(response || {}));
         toast.error('Failed to load employee details');
         setSelectedEmployee(null);
       }
     } catch (error) {
-      console.error('Error fetching employee details:', error);
+      
       toast.error('Failed to load employee details');
       setSelectedEmployee(null);
     }
@@ -295,7 +268,7 @@ export default function CreateSalaryIncrementPage() {
       toast.success('Salary increment created successfully');
       router.push('/modules/salary-increments');
     } catch (error) {
-      console.error('Error creating salary increment:', error);
+      
       toast.error('Failed to create salary increment');
     } finally {
       setLoading(false);

@@ -197,7 +197,7 @@ export default function MaterialDialog({
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error saving material resource:', error);
+      
       toast.error('Failed to save material resource');
     } finally {
       setLoading(false);

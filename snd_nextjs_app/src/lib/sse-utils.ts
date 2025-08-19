@@ -35,7 +35,7 @@ export function broadcastEvent(event: SSEEvent) {
     try {
       controller.enqueue(new TextEncoder().encode(eventString));
     } catch (error) {
-      console.error('Error sending SSE event:', error);
+      
     }
   });
 }
@@ -51,6 +51,6 @@ export function sendEventToClient(controller: ReadableStreamDefaultController, e
   try {
     controller.enqueue(new TextEncoder().encode(eventString));
   } catch (error) {
-    console.error('Error sending SSE event to client:', error);
+    
   }
 }

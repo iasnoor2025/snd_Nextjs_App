@@ -51,7 +51,7 @@ export default function ReceiptPage() {
     documentTitle: `Payment-Receipt-${employeeId}-${paymentId}`,
     waitForImages: true,
     onPrintError: error => {
-      console.error('Print error details:', error);
+      
       // Continue with print even if there are image errors
     },
   });
@@ -81,7 +81,7 @@ export default function ReceiptPage() {
 
   const handleDownload = () => {
     // TODO: Implement PDF download functionality
-    console.log('Download receipt as PDF');
+    
   };
 
   if (loading) {

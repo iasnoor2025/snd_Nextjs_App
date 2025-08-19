@@ -16,7 +16,7 @@ class CronService {
   public async initialize() {
     // Only initialize on the server side
     if (typeof window !== 'undefined') {
-      console.log('Cron service cannot be initialized on the client side');
+      console.log('Cron service cannot run on client side');
       return;
     }
 
@@ -25,36 +25,31 @@ class CronService {
       return;
     }
 
-    console.log('Initializing cron service...');
-
     try {
+      console.log('Initializing cron service...');
+      
       // Schedule timesheet auto-generation at 4 AM every day
       cron.schedule(
         '0 4 * * *',
         async () => {
-          console.log('🕐 Running scheduled timesheet auto-generation at 4 AM...');
+          console.log('Running scheduled timesheet auto-generation...');
           try {
             // Dynamic import to avoid client-side bundling
             const { autoGenerateTimesheets } = await import('@/lib/timesheet-auto-generator');
             const result = await autoGenerateTimesheets();
             if (result.success) {
-              console.log(
-                `✅ Timesheet auto-generation completed successfully. Created: ${result.created} timesheets`
-              );
+              console.log('Scheduled timesheet auto-generation completed successfully');
               if (result.errors.length > 0) {
-                console.warn(
-                  `⚠️ Auto-generation completed with ${result.errors.length} errors:`,
-                  result.errors
-                );
+                console.warn('Scheduled timesheet auto-generation completed with warnings:', result.errors);
               }
             } else {
-              console.error('❌ Timesheet auto-generation failed:', result.message);
+              console.error('Scheduled timesheet auto-generation failed');
               if (result.errors.length > 0) {
-                console.error('Errors:', result.errors);
+                console.error('Scheduled timesheet auto-generation errors:', result.errors);
               }
             }
           } catch (error) {
-            console.error('❌ Error in scheduled timesheet auto-generation:', error);
+            console.error('Error in scheduled timesheet auto-generation cron job:', error);
           }
         },
         {
@@ -66,7 +61,7 @@ class CronService {
       cron.schedule(
         '0 5 * * *',
         async () => {
-          console.log('🕐 Running scheduled employee status update at 5 AM...');
+          console.log('Running scheduled employee status update...');
           try {
             // Call the employee status update API
             const response = await fetch(
@@ -82,16 +77,12 @@ class CronService {
 
             if (response.ok) {
               const result = await response.json();
-              console.log('✅ Employee status update completed successfully:', result);
+              console.log('Scheduled employee status update completed successfully');
             } else {
-              console.error(
-                '❌ Employee status update failed:',
-                response.status,
-                response.statusText
-              );
+              console.error('Scheduled employee status update failed with status:', response.status);
             }
           } catch (error) {
-            console.error('❌ Error in scheduled employee status update:', error);
+            console.error('Error in scheduled employee status update cron job:', error);
           }
         },
         {
@@ -102,34 +93,87 @@ class CronService {
       // In development, also schedule a test job every 5 minutes for testing
       if (process.env.NODE_ENV === 'development') {
         cron.schedule('*/5 * * * *', async () => {
-          console.log(
-            '🧪 Development mode: Running test timesheet auto-generation every 5 minutes...'
-          );
+          console.log('Running development test timesheet auto-generation...');
           try {
             // Dynamic import to avoid client-side bundling
             const { autoGenerateTimesheets } = await import('@/lib/timesheet-auto-generator');
             const result = await autoGenerateTimesheets();
             if (result.success) {
-              console.log(`✅ Development test completed. Created: ${result.created} timesheets`);
+              console.log('Development test timesheet auto-generation completed successfully');
             } else {
-              console.log(`⚠️ Development test completed with errors: ${result.errors.length}`);
+              console.error('Development test timesheet auto-generation failed:', result.errors);
             }
           } catch (error) {
-            console.error('❌ Error in development test:', error);
+            console.error('Error in development test timesheet auto-generation cron job:', error);
           }
         });
       }
 
       this.isInitialized = true;
-      console.log('✅ Cron service initialized successfully');
-      console.log('📅 Scheduled jobs:');
-      console.log('   - Timesheet auto-generation: 4:00 AM daily (Asia/Riyadh)');
-      console.log('   - Employee status update: 5:00 AM daily (Asia/Riyadh)');
-      if (process.env.NODE_ENV === 'development') {
-        console.log('   - Development test: Every 5 minutes');
-      }
+      console.log('Cron service initialized successfully with scheduled jobs');
     } catch (error) {
-      console.error('❌ Error initializing cron service:', error);
+      console.error('Failed to initialize cron service:', error);
+    }
+  }
+
+  // Method to manually trigger timesheet auto-generation
+  public async triggerTimesheetGeneration() {
+    try {
+      console.log('Manually triggering timesheet auto-generation...');
+      const { autoGenerateTimesheets } = await import('@/lib/timesheet-auto-generator');
+      const result = await autoGenerateTimesheets();
+      
+      if (result.success) {
+        console.log('Manual timesheet auto-generation completed successfully');
+        if (result.errors.length > 0) {
+          console.warn('Manual timesheet auto-generation completed with warnings:', result.errors);
+        }
+      } else {
+        console.error('Manual timesheet auto-generation failed');
+        if (result.errors.length > 0) {
+          console.error('Manual timesheet auto-generation errors:', result.errors);
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Error in manual timesheet auto-generation:', error);
+      throw error;
+    }
+  }
+
+  // Method to test if cron service is working
+  public async testCronService() {
+    try {
+      console.log('Testing cron service...');
+      
+      // Check if service is initialized
+      if (!this.isInitialized) {
+        console.log('Cron service not initialized, initializing now...');
+        await this.initialize();
+      }
+      
+      // Get status
+      const status = this.getStatus();
+      console.log('Cron service status:', status);
+      
+      // Test manual trigger
+      const result = await this.triggerTimesheetGeneration();
+      console.log('Test timesheet generation result:', result);
+      
+      return {
+        success: true,
+        status,
+        testResult: result,
+        message: 'Cron service test completed successfully'
+      };
+    } catch (error) {
+      console.error('Cron service test failed:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        message: 'Cron service test failed'
+      };
     }
   }
 
@@ -137,14 +181,33 @@ class CronService {
     console.log('Stopping cron service...');
     cron.getTasks().forEach(task => task.stop());
     this.isInitialized = false;
-    console.log('✅ Cron service stopped');
+    console.log('Cron service stopped');
   }
 
   public getStatus() {
     return {
       isInitialized: this.isInitialized,
       tasks: Array.from(cron.getTasks().keys()),
+      totalTasks: cron.getTasks().size,
+      nextRun: this.getNextRunTimes(),
     };
+  }
+
+  private getNextRunTimes() {
+    const tasks = cron.getTasks();
+    const nextRuns: { [key: string]: string } = {};
+    
+    tasks.forEach((task, name) => {
+      try {
+        // Note: node-cron doesn't provide next run time information
+        // We can only track if the task is running
+        nextRuns[name] = 'running';
+      } catch (error) {
+        console.error(`Error getting status for task ${name}:`, error);
+      }
+    });
+    
+    return nextRuns;
   }
 }
 

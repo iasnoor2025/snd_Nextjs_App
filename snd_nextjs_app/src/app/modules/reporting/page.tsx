@@ -83,7 +83,7 @@ export default function ReportingPage() {
         const data = await response.json();
         setReports(data);
       } catch (error) {
-        console.error('Error fetching reports:', error);
+        
         toast.error(t('failed_to_fetch_reports'));
       } finally {
         setLoading(false);
@@ -122,7 +122,7 @@ export default function ReportingPage() {
         setReports(data);
       }
     } catch (error) {
-      console.error('Error deleting report:', error);
+      
       toast.error(t('failed_to_delete_report'));
     }
   };
@@ -168,7 +168,7 @@ export default function ReportingPage() {
         setReports(data);
       }
     } catch (error) {
-      console.error('Error generating report:', error);
+      
       toast.error(t('failed_to_generate_report'));
     }
   };

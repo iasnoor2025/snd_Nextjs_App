@@ -142,7 +142,7 @@ const getAssignmentsHandler = async (
       prev_page_url: page > 1 ? `/api/assignments?page=${page - 1}` : null,
     });
   } catch (error) {
-    console.error('Error fetching assignments:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to fetch assignments',
@@ -245,7 +245,7 @@ const createAssignmentHandler = async (
       { status: 201 }
     );
   } catch (error) {
-    console.error('Error creating assignment:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to create assignment',
@@ -316,7 +316,7 @@ export const PUT = withEmployeeListPermission(
 
       return NextResponse.json(assignmentWithDetails);
     } catch (error) {
-      console.error('Error updating assignment:', error);
+      
       return NextResponse.json(
         {
           error: 'Failed to update assignment',
@@ -340,7 +340,7 @@ export const DELETE = withEmployeeListPermission(
 
       return NextResponse.json({ message: 'Assignment deleted successfully' });
     } catch (error) {
-      console.error('Error deleting assignment:', error);
+      
       return NextResponse.json(
         {
           error: 'Failed to delete assignment',

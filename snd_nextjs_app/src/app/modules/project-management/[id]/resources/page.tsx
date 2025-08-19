@@ -282,7 +282,7 @@ export default function ProjectResourcesPage() {
         setResources([]);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      
       toast.error('Failed to fetch project data');
       setResources([]);
     } finally {
@@ -330,7 +330,7 @@ export default function ProjectResourcesPage() {
       toast.success('Resource deleted successfully');
       fetchData();
     } catch (error) {
-      console.error('Error deleting resource:', error);
+      
       toast.error('Failed to delete resource');
     } finally {
       setLoading(false);
@@ -982,7 +982,7 @@ export default function ProjectResourcesPage() {
                       toast.success('Task status update feature not implemented yet');
                       // handleResourceSuccess();
                     } catch (error) {
-                      console.error('Error updating task status:', error);
+                      
                       toast.error('Failed to update task status');
                     }
                   }
@@ -999,7 +999,7 @@ export default function ProjectResourcesPage() {
                       toast.success('Task completion update feature not implemented yet');
                       // handleResourceSuccess();
                     } catch (error) {
-                      console.error('Error updating task completion:', error);
+                      
                       toast.error('Failed to update task completion');
                     }
                   }

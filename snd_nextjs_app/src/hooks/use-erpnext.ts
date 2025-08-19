@@ -111,7 +111,7 @@ export function useERPNext(): UseERPNextReturn {
       });
       return await response.json();
     } catch (error) {
-      console.error('Error creating customer:', error);
+      
       throw error;
     }
   }, []);
@@ -142,7 +142,7 @@ export function useERPNext(): UseERPNextReturn {
       });
       return await response.json();
     } catch (error) {
-      console.error('Error creating employee:', error);
+      
       throw error;
     }
   }, []);
@@ -174,7 +174,7 @@ export function useERPNext(): UseERPNextReturn {
       });
       return await response.json();
     } catch (error) {
-      console.error('Error creating item:', error);
+      
       throw error;
     }
   }, []);

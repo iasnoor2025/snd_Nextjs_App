@@ -117,7 +117,7 @@ export default function FuelDialog({
       const response = await apiService.get<{ data: Equipment[] }>('/equipment');
       setEquipment(response.data || []);
     } catch (error) {
-      console.error('Error loading equipment:', error);
+      
       // Use mock data if API fails
       setEquipment([
         { id: '1', name: 'Excavator', model_number: 'CAT-320', status: 'available' },
@@ -205,7 +205,7 @@ export default function FuelDialog({
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error saving fuel resource:', error);
+      
       toast.error('Failed to save fuel resource');
     } finally {
       setLoading(false);

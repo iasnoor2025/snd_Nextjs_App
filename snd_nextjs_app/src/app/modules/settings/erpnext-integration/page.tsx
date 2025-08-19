@@ -87,11 +87,11 @@ export default function ERPNextIntegrationPage() {
         toast.success(`Connection successful! Found ${result.data.employeeCount} employees`);
       } else {
         toast.error(`Connection failed: ${result.message}`);
-        console.error('Connection test failed:', result);
+        
       }
     } catch (error) {
       toast.error('Error testing connection');
-      console.error('Connection test error:', error);
+      
     } finally {
       setLoading(false);
     }
@@ -122,7 +122,7 @@ export default function ERPNextIntegrationPage() {
         });
       }
     } catch (error) {
-      console.error('Failed to load sync status:', error);
+      
       // Set empty status on error
       setSyncStatus({
         customers: { count: 0, lastSync: null },
@@ -189,7 +189,7 @@ export default function ERPNextIntegrationPage() {
         toast.error('Failed to fetch customers from ERPNext');
       }
     } catch (error) {
-      console.error('Error syncing customers:', error);
+      
       toast.error('Error syncing customers');
     } finally {
       setLoading(false);

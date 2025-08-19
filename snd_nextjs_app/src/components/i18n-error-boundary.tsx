@@ -23,7 +23,7 @@ export class I18nErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('I18n Error Boundary caught an error:', error, errorInfo);
+    
     this.setState({ hasError: true, error });
   }
 

@@ -18,7 +18,6 @@ export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
 
     // In a real application, you would delete the notification from the database
     // For now, we'll just return a success response
-    console.log(`Deleting notification ${id} for user ${session.user.email}`);
 
     return NextResponse.json({
       success: true,
@@ -29,7 +28,7 @@ export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
       },
     });
   } catch (error) {
-    console.error('Error deleting notification:', error);
+    
     return NextResponse.json({ error: 'Failed to delete notification' }, { status: 500 });
   }
 }

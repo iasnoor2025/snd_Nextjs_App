@@ -107,7 +107,7 @@ export async function POST(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error combining documents:', error);
+    
     return NextResponse.json(
       {
         success: false,

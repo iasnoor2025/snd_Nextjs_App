@@ -133,7 +133,7 @@ export default function EditPayrollPage() {
           toast.error('Failed to fetch payroll details');
         }
       } catch (error) {
-        console.error('Error fetching payroll:', error);
+        
         toast.error('Error fetching payroll details');
       } finally {
         setInitialLoading(false);
@@ -153,7 +153,7 @@ export default function EditPayrollPage() {
         setEmployees(data.data);
       }
     } catch (error) {
-      console.error('Error fetching employees:', error);
+      
     }
   };
 
@@ -199,7 +199,7 @@ export default function EditPayrollPage() {
         toast.error(data.message || 'Failed to update payroll');
       }
     } catch (error) {
-      console.error('Error updating payroll:', error);
+      
       toast.error('Error updating payroll');
     } finally {
       setLoading(false);

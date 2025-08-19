@@ -110,7 +110,7 @@ export default function DocumentManagementPage() {
           toast.error('Failed to fetch documents');
         }
       } catch (error) {
-        console.error('Error fetching documents:', error);
+        
         toast.error('Failed to fetch documents');
       } finally {
         setLoading(false);
@@ -191,7 +191,7 @@ export default function DocumentManagementPage() {
         toast.error('Failed to download document');
       }
     } catch (error) {
-      console.error('Error downloading document:', error);
+      
       toast.error('Failed to download document');
     }
   };
@@ -258,7 +258,7 @@ export default function DocumentManagementPage() {
         }
       }
     } catch (error) {
-      console.error('Error combining documents:', error);
+      
       toast.error('Failed to combine documents');
     } finally {
       setCombining(false);

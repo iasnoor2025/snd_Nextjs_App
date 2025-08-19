@@ -108,7 +108,7 @@ export const POST = withPermission(
         assignment: finalAssignment,
       });
     } catch (error) {
-      console.error('Error approving assignment:', error);
+      
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
   },

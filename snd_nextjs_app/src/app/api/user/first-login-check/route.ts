@@ -151,7 +151,7 @@ export async function POST(_request: NextRequest) {
           };
         }
       } catch (employeeError) {
-        console.error('Error fetching matched employee:', employeeError);
+        
       }
 
       return NextResponse.json({
@@ -242,7 +242,7 @@ export async function POST(_request: NextRequest) {
                 .update(employeesTable)
                 .set({ email: user.email })
                 .where(eq(employeesTable.id, employee.id));
-              console.log('✅ Updated employee email to match user email');
+              
             }
 
             // Update user's national_id to match employee's iqama_number
@@ -250,16 +250,15 @@ export async function POST(_request: NextRequest) {
               .update(usersTable)
               .set({ nationalId: employee.iqama_number })
               .where(eq(usersTable.id, userId));
-            console.log('✅ Updated user national_id to match employee iqama');
 
             // Update the matchedEmployee object with new email
             matchedEmployee.email = user.email;
           } catch (updateError) {
-            console.error('❌ Error updating employee/user relationship:', updateError);
+            
           }
         }
       } catch (employeeError) {
-        console.error('Error fetching matched employee:', employeeError);
+        
       }
     }
 
@@ -275,7 +274,7 @@ export async function POST(_request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('❌ Error checking first login:', error);
+    
     return NextResponse.json(
       {
         error: 'Failed to check first login',

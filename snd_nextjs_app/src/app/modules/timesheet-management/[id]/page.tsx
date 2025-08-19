@@ -125,7 +125,7 @@ function TimesheetDetailContent() {
         setUserRole('admin');
       } catch (error) {
         toast.error('Failed to load timesheet');
-        console.error('Error fetching timesheet:', error);
+        
       } finally {
         setLoading(false);
       }

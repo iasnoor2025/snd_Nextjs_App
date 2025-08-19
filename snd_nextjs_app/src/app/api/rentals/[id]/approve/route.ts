@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    console.log('Approving rental:', id);
+    
     const rental = await RentalService.getRental(parseInt(id));
 
     if (!rental) {
@@ -15,7 +15,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     }
 
     if (!rental.quotationId) {
-      console.log('No quotation found for rental:', rental);
+      
       return NextResponse.json({ error: 'No quotation found for this rental' }, { status: 404 });
     }
 
@@ -36,7 +36,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       rental: updatedRental,
     });
   } catch (error) {
-    console.error('Error approving quotation:', error);
+    
     return NextResponse.json({ error: 'Failed to approve quotation' }, { status: 500 });
   }
 }

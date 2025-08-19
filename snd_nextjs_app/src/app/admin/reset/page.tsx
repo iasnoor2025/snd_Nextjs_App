@@ -42,7 +42,7 @@ export default function AdminResetPage() {
         throw new Error(result.message || 'Reset failed');
       }
     } catch (error) {
-      console.error('Error resetting database:', error);
+      
       toast.error(error instanceof Error ? error.message : 'Failed to reset database');
     } finally {
       setIsResetting(false);

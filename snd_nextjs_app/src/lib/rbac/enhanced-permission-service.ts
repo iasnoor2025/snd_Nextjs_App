@@ -99,7 +99,7 @@ export class EnhancedPermissionService {
 
       return true;
     } catch (error) {
-      console.error('Error checking permission:', error);
+      
       return false;
     }
   }
@@ -429,7 +429,7 @@ export class EnhancedPermissionService {
 
       return false;
     } catch (error) {
-      console.error('Error checking permission:', error);
+      
       return false;
     }
   }

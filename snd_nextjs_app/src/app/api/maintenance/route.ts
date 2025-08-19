@@ -103,7 +103,7 @@ export const GET = withAuth(async (request: NextRequest) => {
 
     return NextResponse.json({ success: true, data: records });
   } catch (error) {
-    console.error('GET /api/maintenance error:', error);
+    
     return NextResponse.json({ success: false, message: 'Internal server error' }, { status: 500 });
   }
 });
@@ -201,7 +201,7 @@ export const POST = withPermission(
 
       return NextResponse.json({ success: true, data: created });
     } catch (error) {
-      console.error('POST /api/maintenance error:', error);
+      
       return NextResponse.json(
         { success: false, message: 'Internal server error' },
         { status: 500 }
