@@ -1,6 +1,7 @@
 import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
-import { equipment } from '@/lib/drizzle/schema';
+import { equipment, employees } from '@/lib/drizzle/schema';
+import { eq, sql } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -24,7 +25,7 @@ export async function GET(_request: NextRequest) {
       session.user.role && ['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role);
     const dataLimit = isSeniorRole ? Math.min(limit, 10000) : Math.min(limit, 10000);
 
-    // Fetch equipment data directly from database
+    // Fetch equipment data with assigned driver/operator information
     const directEquipmentData = await db
       .select({
         id: equipment.id,
@@ -36,8 +37,13 @@ export async function GET(_request: NextRequest) {
         manufacturer: equipment.manufacturer,
         modelNumber: equipment.modelNumber,
         serialNumber: equipment.serialNumber,
+        categoryId: equipment.categoryId,
+        assignedTo: equipment.assignedTo,
+        driverName: sql<string>`CONCAT(employees.first_name, ' ', COALESCE(employees.middle_name, ''), ' ', employees.last_name)`.as('driverName'),
+        driverFileNumber: employees.fileNumber,
       })
       .from(equipment)
+      .leftJoin(employees, eq(equipment.assignedTo, employees.id))
       .limit(dataLimit);
 
     // Process the data with status logic
@@ -76,6 +82,10 @@ export async function GET(_request: NextRequest) {
         manufacturer: doc.manufacturer,
         modelNumber: doc.modelNumber,
         serialNumber: doc.serialNumber,
+        categoryId: doc.categoryId,
+        assignedTo: doc.assignedTo,
+        driverName: doc.driverName,
+        driverFileNumber: doc.driverFileNumber,
       };
     });
 

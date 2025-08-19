@@ -14,18 +14,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useI18n } from '@/hooks/use-i18n';
+import { PDFGenerator } from '@/lib/utils/pdf-generator';
 import {
   AlertTriangle,
   Briefcase,
-  Building2,
   Calendar,
+  Download,
   Edit,
-  FileText,
-  Filter,
   Globe,
-  MapPin,
   Search,
-  User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -60,6 +57,23 @@ export function IqamaSection({ iqamaData, onUpdateIqama, onHideSection }: IqamaS
   // Ensure iqamaData is always an array
   const safeIqamaData = iqamaData || [];
 
+  // Get expired Iqama data for PDF generation
+  const expiredIqamaData = safeIqamaData.filter(item => item.status === 'expired');
+
+  // Handle PDF download for expired Iqama
+  const handleDownloadExpiredPDF = async () => {
+    if (expiredIqamaData.length === 0) {
+      alert('No expired Iqama records found to download.');
+      return;
+    }
+    try {
+      await PDFGenerator.generateExpiredIqamaReport(expiredIqamaData);
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
+  };
+
   // Filter and search logic
   const filteredData = safeIqamaData.filter(item => {
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
@@ -90,6 +104,17 @@ export function IqamaSection({ iqamaData, onUpdateIqama, onHideSection }: IqamaS
           </div>
           <div className="flex items-center gap-2">
             <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadExpiredPDF}
+                disabled={expiredIqamaData.length === 0}
+                className="flex items-center gap-2"
+                title={expiredIqamaData.length === 0 ? 'No expired Iqama records to download' : `Download PDF report for ${expiredIqamaData.length} expired Iqama records`}
+              >
+                <Download className="h-4 w-4" />
+                Download PDF ({expiredIqamaData.length})
+              </Button>
               <Button
                 variant="outline"
                 size="sm"

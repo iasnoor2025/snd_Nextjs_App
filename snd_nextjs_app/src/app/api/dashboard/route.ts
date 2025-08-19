@@ -94,7 +94,7 @@ export async function GET(_request: NextRequest) {
 
             if (diffDays < 0) {
               status = 'expired';
-              daysRemaining = Math.abs(diffDays);
+              daysRemaining = diffDays; // Keep negative for expired items
             } else if (diffDays <= 30) {
               status = 'expiring';
               daysRemaining = diffDays;

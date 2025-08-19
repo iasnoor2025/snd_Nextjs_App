@@ -14,9 +14,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useI18n } from '@/hooks/use-i18n';
-import { Edit, Plus, Search, Wrench } from 'lucide-react';
+import { PDFGenerator } from '@/lib/utils/pdf-generator';
+import { Download, Edit, Plus, Search, Wrench } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface EquipmentData {
   id: number;
@@ -24,44 +25,91 @@ interface EquipmentData {
   equipmentNumber?: string;
   manufacturer?: string;
   modelNumber?: string;
-  department?: string;
+  categoryId?: number;
   status: 'available' | 'expired' | 'expiring' | 'missing';
   istimaraExpiry?: string;
   daysRemaining: number | null;
+  istimara?: string;
+  assignedTo?: number;
+  driverName?: string;
+  driverFileNumber?: string;
 }
 
 interface EquipmentSectionProps {
   equipmentData: EquipmentData[];
   onUpdateEquipment: (equipment: EquipmentData) => void;
   onHideSection: () => void;
+  isRefreshing?: boolean;
 }
 
 export function EquipmentSection({
   equipmentData,
   onUpdateEquipment,
   onHideSection,
+  isRefreshing = false,
 }: EquipmentSectionProps) {
   const router = useRouter();
   const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [driverFilter, setDriverFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [previousIssueCount, setPreviousIssueCount] = useState(0);
+
+  // Update timestamp when data changes
+  useEffect(() => {
+    if (equipmentData && equipmentData.length > 0) {
+      const currentIssueCount = equipmentData.filter(item => item.status !== 'available').length;
+      
+      // Check if there are new issues
+      if (previousIssueCount > 0 && currentIssueCount > previousIssueCount) {
+        // Could add a toast notification here
+        console.log(`New equipment issues detected: ${currentIssueCount - previousIssueCount} new items need attention`);
+      }
+      
+      setPreviousIssueCount(currentIssueCount);
+      setLastUpdated(new Date());
+    }
+  }, [equipmentData, previousIssueCount]);
 
   // Ensure equipmentData is always an array with robust type checking
   const safeEquipmentData = Array.isArray(equipmentData) ? equipmentData : [];
 
+  // Get expired equipment data for PDF generation
+  const expiredEquipmentData = safeEquipmentData.filter(item => item.status === 'expired');
+
+  // Handle PDF download for expired equipment
+  const handleDownloadExpiredPDF = async () => {
+    if (expiredEquipmentData.length === 0) {
+      alert('No expired equipment records found to download.');
+      return;
+    }
+    try {
+      await PDFGenerator.generateExpiredEquipmentReport(expiredEquipmentData);
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
+  };
+
   // Filter and search logic
   const filteredData = safeEquipmentData.filter(item => {
     const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
+    const matchesDriver = driverFilter === 'all' || 
+      (driverFilter === 'assigned' && item.driverName) ||
+      (driverFilter === 'unassigned' && !item.driverName);
     const matchesSearch =
       !search ||
       item.equipmentName?.toLowerCase().includes(search.toLowerCase()) ||
       item.equipmentNumber?.toLowerCase().includes(search.toLowerCase()) ||
       item.manufacturer?.toLowerCase().includes(search.toLowerCase()) ||
-      item.modelNumber?.toLowerCase().includes(search.toLowerCase());
+      item.modelNumber?.toLowerCase().includes(search.toLowerCase()) ||
+      item.istimara?.toLowerCase().includes(search.toLowerCase()) ||
+      item.driverName?.toLowerCase().includes(search.toLowerCase());
 
-    return item.status !== 'available' && matchesStatus && matchesSearch;
+    return item.status !== 'available' && matchesStatus && matchesDriver && matchesSearch;
   });
 
   const totalPages = Math.ceil(filteredData.length / pageSize);
@@ -76,11 +124,43 @@ export function EquipmentSection({
             <CardTitle className="flex items-center gap-2">
               <Wrench className="h-5 w-5" />
               {t('equipment.istimara.title')}
+              {safeEquipmentData.filter(item => item.status === 'expired').length > 0 && (
+                <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                  {safeEquipmentData.filter(item => item.status === 'expired').length}
+                </span>
+              )}
             </CardTitle>
-            <CardDescription>{t('equipment.istimara.description')}</CardDescription>
+            <CardDescription>
+              {t('equipment.istimara.description')}
+                             <span className="block text-xs text-muted-foreground mt-1">
+                 Last Updated: {lastUpdated.toLocaleTimeString()}
+                 {isRefreshing && (
+                   <span className="ml-2 text-blue-500">
+                     • Refreshing...
+                   </span>
+                 )}
+               </span>
+            </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+                         {isRefreshing && (
+               <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                 Refreshing...
+               </div>
+             )}
             <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadExpiredPDF}
+                disabled={expiredEquipmentData.length === 0}
+                className="flex items-center gap-2"
+                title={expiredEquipmentData.length === 0 ? 'No expired equipment records to download' : `Download PDF report for ${expiredEquipmentData.length} expired equipment records`}
+              >
+                <Download className="h-4 w-4" />
+                Download PDF ({expiredEquipmentData.length})
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -102,81 +182,115 @@ export function EquipmentSection({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Search and Filter Controls */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder={t('equipment.istimara.searchPlaceholder')}
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <select
-              value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
-              className="h-10 px-3 text-sm border border-input rounded-md bg-background"
-            >
-              <option value="all">{t('equipment.istimara.allStatuses')}</option>
-              <option value="expired">{t('equipment.istimara.expired')}</option>
-              <option value="expiring">{t('equipment.istimara.expiringSoon')}</option>
-              <option value="missing">{t('equipment.istimara.missing')}</option>
-            </select>
-            {(search || statusFilter !== 'all') && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSearch('');
-                  setStatusFilter('all');
-                }}
-                className="h-10"
-              >
-                {t('equipment.istimara.clear')}
-              </Button>
-            )}
-          </div>
-        </div>
+             <CardContent className="space-y-4">
+         {/* Equipment Summary */}
+         <div className="mb-4 p-3 bg-muted/30 rounded-lg border">
+           <div className="grid grid-cols-2 gap-4 text-center">
+             <div>
+               <div className="text-lg font-semibold text-muted-foreground">
+                 Total Equipment: {safeEquipmentData.length}
+               </div>
+               <div className="text-sm text-muted-foreground">
+                 Items Requiring Attention: {safeEquipmentData.filter(item => item.status !== 'available').length}
+               </div>
+             </div>
+             <div>
+               <div className="text-lg font-semibold text-muted-foreground">
+                 With Driver: {safeEquipmentData.filter(item => item.driverName).length}
+               </div>
+               <div className="text-sm text-muted-foreground">
+                 Unassigned: {safeEquipmentData.filter(item => !item.driverName).length}
+               </div>
+             </div>
+           </div>
+         </div>
+         
+         <div className="grid grid-cols-5 gap-4">
+           <div className="text-center p-3 rounded-lg border bg-card">
+             <div className="text-2xl font-bold text-red-600">
+               {safeEquipmentData.filter(item => item.status === 'expired').length}
+             </div>
+             <div className="text-sm text-muted-foreground">Expired</div>
+           </div>
+           <div className="text-center p-3 rounded-lg border bg-card">
+             <div className="text-2xl font-bold text-yellow-600">
+               {safeEquipmentData.filter(item => item.status === 'expiring').length}
+             </div>
+             <div className="text-sm text-muted-foreground">Expiring Soon</div>
+           </div>
+           <div className="text-center p-3 rounded-lg border bg-card">
+             <div className="text-2xl font-bold text-blue-600">
+               {safeEquipmentData.filter(item => item.status === 'available').length}
+             </div>
+             <div className="text-sm text-muted-foreground">Available</div>
+           </div>
+           <div className="text-center p-3 rounded-lg border bg-card">
+             <div className="text-2xl font-bold text-gray-600">
+               {safeEquipmentData.filter(item => item.status === 'missing').length}
+             </div>
+             <div className="text-sm text-muted-foreground">Missing</div>
+           </div>
+           <div className="text-center p-3 rounded-lg border bg-card">
+             <div className="text-2xl font-bold text-green-600">
+               {safeEquipmentData.filter(item => item.driverName).length}
+             </div>
+             <div className="text-sm text-muted-foreground">With Driver</div>
+           </div>
+         </div>
 
-        {/* Equipment Summary */}
-        <div className="grid grid-cols-4 gap-4">
-          <div className="text-center p-3 rounded-lg border bg-card">
-            <div className="text-2xl font-bold text-red-600">
-              {equipmentData.filter(item => item.status === 'expired').length}
-            </div>
-            <div className="text-sm text-muted-foreground">{t('equipment.istimara.expired')}</div>
-          </div>
-          <div className="text-center p-3 rounded-lg border bg-card">
-            <div className="text-2xl font-bold text-yellow-600">
-              {equipmentData.filter(item => item.status === 'expiring').length}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              {t('equipment.istimara.expiringSoon')}
-            </div>
-          </div>
-          <div className="text-center p-3 rounded-lg border bg-card">
-            <div className="text-2xl font-bold text-blue-600">
-              {equipmentData.filter(item => item.status === 'available').length}
-            </div>
-            <div className="text-sm text-muted-foreground">{t('equipment.istimara.available')}</div>
-          </div>
-          <div className="text-center p-3 rounded-lg border bg-card">
-            <div className="text-2xl font-bold text-gray-600">
-              {equipmentData.filter(item => item.status === 'missing').length}
-            </div>
-            <div className="text-sm text-muted-foreground">{t('equipment.istimara.missing')}</div>
-          </div>
-        </div>
-
-        {/* Equipment Table */}
-        <div className="space-y-4">
-          {/* Equipment with Issues (Expired, Expiring, Missing) */}
-          {equipmentData.filter(item => item.status !== 'available').length > 0 && (
+         {/* Equipment Table */}
+         <div className="space-y-4">
+           {/* Search and Filter Controls - Moved above table */}
+           <div className="flex flex-col sm:flex-row gap-3 p-4 bg-muted/30 rounded-lg border">
+             <div className="flex-1">
+               <div className="relative">
+                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                 <Input
+                   placeholder="Search equipment, istimara, driver..."
+                   value={search}
+                   onChange={e => setSearch(e.target.value)}
+                   className="pl-10"
+                 />
+               </div>
+             </div>
+             <div className="flex gap-2">
+               <select
+                 value={statusFilter}
+                 onChange={e => setStatusFilter(e.target.value)}
+                 className="h-10 px-3 text-sm border border-input rounded-md bg-background"
+               >
+                 <option value="all">All Statuses</option>
+                 <option value="expired">Expired</option>
+                 <option value="expiring">Expiring Soon</option>
+                 <option value="missing">Missing</option>
+               </select>
+               <select
+                 value={driverFilter}
+                 onChange={e => setDriverFilter(e.target.value)}
+                 className="h-10 px-3 text-sm border border-input rounded-md bg-background"
+               >
+                 <option value="all">All Drivers</option>
+                 <option value="assigned">With Driver</option>
+                 <option value="unassigned">No Driver</option>
+               </select>
+               {(search || statusFilter !== 'all' || driverFilter !== 'all') && (
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={() => {
+                     setSearch('');
+                     setStatusFilter('all');
+                     setDriverFilter('all');
+                   }}
+                   className="h-10"
+                 >
+                   Clear
+                 </Button>
+               )}
+             </div>
+           </div>
+                  {/* Equipment with Issues (Expired, Expiring, Missing) */}
+        {safeEquipmentData.filter(item => item.status !== 'available').length > 0 && (
             <div className="rounded-lg border">
               <div className="p-4 border-b bg-muted/50">
                 <h4 className="font-medium text-sm">
@@ -187,31 +301,50 @@ export function EquipmentSection({
                 </p>
               </div>
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('equipment.fields.name')}</TableHead>
-                    <TableHead>{t('equipment.fields.department')}</TableHead>
-                    <TableHead>{t('equipment.fields.status')}</TableHead>
-                    <TableHead>{t('equipment.istimara.expiry')}</TableHead>
-                    <TableHead>{t('equipment.actions.actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
+                                 <TableHeader>
+                   <TableRow>
+                     <TableHead>Equipment Name</TableHead>
+                     <TableHead>Istimara #</TableHead>
+                     <TableHead>Driver/Operator</TableHead>
+                     <TableHead>Status</TableHead>
+                     <TableHead>Expiry Date</TableHead>
+                     <TableHead>Actions</TableHead>
+                   </TableRow>
+                 </TableHeader>
                 <TableBody>
                   {paginatedData.map(item => (
                     <TableRow key={item.id}>
-                      <TableCell className="font-medium">
-                        <div>
-                          <div>{item.equipmentName}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {item.equipmentNumber && `#${item.equipmentNumber}`}
-                            {item.manufacturer && ` • ${item.manufacturer}`}
-                            {item.modelNumber && ` • ${item.modelNumber}`}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {item.department || t('equipment.istimara.notApplicable')}
-                      </TableCell>
+                                             <TableCell className="font-medium">
+                         <div>
+                           <div>{item.equipmentName}</div>
+                           <div className="text-xs text-muted-foreground">
+                             {item.equipmentNumber && `#${item.equipmentNumber}`}
+                             {item.manufacturer && ` • ${item.manufacturer}`}
+                             {item.modelNumber && ` • ${item.modelNumber}`}
+                           </div>
+                         </div>
+                       </TableCell>
+                       <TableCell className="text-sm">
+                         {item.istimara ? (
+                           <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
+                             {item.istimara}
+                           </span>
+                         ) : (
+                           <span className="text-red-600 text-xs">No Istimara</span>
+                         )}
+                       </TableCell>
+                       <TableCell className="text-sm">
+                         {item.driverName ? (
+                           <div>
+                             <div className="font-medium">{item.driverName}</div>
+                             <div className="text-xs text-muted-foreground">
+                               File: {item.driverFileNumber || 'N/A'}
+                             </div>
+                           </div>
+                         ) : (
+                           <span className="text-muted-foreground text-xs">Unassigned</span>
+                         )}
+                       </TableCell>
                       <TableCell>
                         <Badge
                           variant={
@@ -241,30 +374,26 @@ export function EquipmentSection({
                           <div>
                             <div>{new Date(item.istimaraExpiry).toLocaleDateString()}</div>
                             {item.daysRemaining !== null && (
-                              <div
-                                className={`text-xs ${
-                                  item.daysRemaining < 0
-                                    ? 'text-red-600'
-                                    : item.daysRemaining <= 30
-                                      ? 'text-yellow-600'
-                                      : 'text-muted-foreground'
-                                }`}
-                              >
-                                {item.daysRemaining < 0
-                                  ? t('equipment.istimara.daysOverdue', {
-                                      days: Math.abs(item.daysRemaining),
-                                    })
-                                  : t('equipment.istimara.daysRemaining', {
-                                      days: item.daysRemaining,
-                                    })}
-                              </div>
+                                                               <div
+                                   className={`text-xs ${
+                                     item.daysRemaining < 0
+                                       ? 'text-red-600'
+                                       : item.daysRemaining <= 30
+                                         ? 'text-yellow-600'
+                                         : 'text-muted-foreground'
+                                   }`}
+                                 >
+                                   {item.daysRemaining < 0
+                                     ? `${Math.abs(item.daysRemaining)} days overdue`
+                                     : `${item.daysRemaining} days remaining`}
+                                 </div>
                             )}
                           </div>
-                        ) : (
-                          <span className="text-red-600 font-medium">
-                            {t('equipment.istimara.noExpiryDate')}
-                          </span>
-                        )}
+                                                 ) : (
+                           <span className="text-red-600 font-medium">
+                             No expiry date
+                           </span>
+                         )}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -272,11 +401,11 @@ export function EquipmentSection({
                           size="sm"
                           onClick={() => onUpdateEquipment(item)}
                           className="h-8 w-8 p-0"
-                          title={
-                            item.status === 'missing'
-                              ? t('equipment.istimara.addExpiryDate')
-                              : t('equipment.istimara.updateExpiryDate')
-                          }
+                                                     title={
+                             item.status === 'missing'
+                               ? 'Add Istimara expiry date'
+                               : 'Update Istimara expiry date'
+                           }
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -291,37 +420,37 @@ export function EquipmentSection({
           {/* Pagination */}
           {filteredData.length > 0 && (
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  {t('equipment.pagination.show')}
-                </span>
-                <select
-                  value={pageSize}
-                  onChange={e => {
-                    setPageSize(Number(e.target.value));
-                    setCurrentPage(1);
-                  }}
-                  className="h-8 px-2 text-sm border border-input rounded-md bg-background"
-                >
-                  <option value={10}>10</option>
-                  <option value={25}>25</option>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                </select>
-                <span className="text-sm text-muted-foreground">
-                  {t('equipment.pagination.perPage')}
-                </span>
-              </div>
+                             <div className="flex items-center gap-2">
+                 <span className="text-sm text-muted-foreground">
+                   {t('equipment.pagination.show')}
+                 </span>
+                 <select
+                   value={pageSize}
+                   onChange={e => {
+                     setPageSize(Number(e.target.value));
+                     setCurrentPage(1);
+                   }}
+                   className="h-8 px-2 text-sm border border-input rounded-md bg-background"
+                 >
+                   <option value={10}>10</option>
+                   <option value={25}>25</option>
+                   <option value={50}>50</option>
+                   <option value={100}>100</option>
+                 </select>
+                 <span className="text-sm text-muted-foreground">
+                   per page
+                 </span>
+               </div>
 
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                >
-                  {t('equipment.pagination.previous')}
-                </Button>
+                                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={() => setCurrentPage(currentPage - 1)}
+                   disabled={currentPage === 1}
+                 >
+                   Previous
+                 </Button>
 
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -340,34 +469,34 @@ export function EquipmentSection({
                   })}
                 </div>
 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                >
-                  {t('equipment.pagination.next')}
-                </Button>
+                                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={() => setCurrentPage(currentPage + 1)}
+                   disabled={currentPage === totalPages}
+                 >
+                   Next
+                 </Button>
               </div>
 
-              <div className="text-sm text-muted-foreground">
-                {t('equipment.pagination.page', { current: currentPage, total: totalPages })}
-              </div>
+                             <div className="text-sm text-muted-foreground">
+                 Page {currentPage} of {totalPages}
+               </div>
             </div>
           )}
         </div>
 
-        {filteredData.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            <Wrench className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="font-medium">{t('equipment.istimara.noRecordsFound')}</p>
-            <p className="text-sm opacity-80">
-              {search || statusFilter !== 'all'
-                ? t('equipment.istimara.tryAdjustingSearch')
-                : t('equipment.istimara.allRecordsValid')}
-            </p>
-          </div>
-        )}
+                 {filteredData.length === 0 && (
+           <div className="text-center py-8 text-muted-foreground">
+             <Wrench className="h-12 w-12 mx-auto mb-4 opacity-50" />
+             <p className="font-medium">No equipment records found</p>
+             <p className="text-sm opacity-80">
+               {search || statusFilter !== 'all'
+                 ? 'Try adjusting your search or filters'
+                 : 'All equipment Istimara records are currently valid'}
+             </p>
+           </div>
+         )}
       </CardContent>
     </Card>
   );

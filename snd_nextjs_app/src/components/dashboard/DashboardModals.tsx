@@ -34,11 +34,14 @@ interface EquipmentData {
   istimara: string | null;
   istimaraExpiry: string | null;
   daysRemaining: number | null;
-  department: string | null;
+  categoryId: number | null;
   status: 'available' | 'expired' | 'expiring' | 'missing';
   manufacturer: string | null;
   modelNumber: string | null;
   serialNumber: string | null;
+  assignedTo: number | null;
+  driverName: string | null;
+  driverFileNumber: string | null;
 }
 
 interface DashboardModalsProps {

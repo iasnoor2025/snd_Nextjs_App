@@ -11,6 +11,8 @@ import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { TimesheetsSection } from '@/components/dashboard/TimesheetsSection';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/use-i18n';
+import { PDFGenerator } from '@/lib/utils/pdf-generator';
+import { Download } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -35,11 +37,14 @@ interface EquipmentData {
   istimara?: string;
   istimaraExpiry?: string;
   daysRemaining: number | null;
-  department?: string;
+  categoryId?: number;
   status: 'available' | 'expired' | 'expiring' | 'missing';
   manufacturer?: string;
   modelNumber?: string;
   serialNumber?: string;
+  assignedTo?: number;
+  driverName?: string;
+  driverFileNumber?: string;
 }
 
 interface TimesheetData {
@@ -355,10 +360,18 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // Monitor equipment data state changes
+  // Auto-refresh critical data every 30 seconds
   useEffect(() => {
-    // Equipment data state monitoring removed for production
-  }, [equipmentData]);
+    if (!session) return;
+    
+    const interval = setInterval(() => {
+      fetchEquipmentData();
+      fetchIqamaData();
+      fetchTimesheetData();
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(interval);
+  }, [session]);
 
   // Handle refresh
   const handleRefresh = async () => {
@@ -417,17 +430,23 @@ export default function DashboardPage() {
       });
 
       if (response.ok) {
+        const data = await response.json();
+        setApprovalSuccess(data.message || 'Equipment updated successfully');
         setIsEquipmentUpdateModalOpen(false);
         setNewEquipmentExpiryDate('');
         setNewEquipmentIstimara('');
         setSelectedEquipment(null);
         // Only refresh Equipment data instead of full dashboard
         await fetchEquipmentData();
+        setTimeout(() => setApprovalSuccess(null), 5000);
       } else {
-        throw new Error('Failed to update equipment');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update equipment');
       }
     } catch (error) {
-      // Handle error silently for production
+      console.error('Equipment update error:', error);
+      setApprovalSuccess(`Error: ${error instanceof Error ? error.message : 'Failed to update equipment'}`);
+      setTimeout(() => setApprovalSuccess(null), 5000);
     } finally {
       setUpdatingEquipment(false);
     }
@@ -592,6 +611,24 @@ export default function DashboardPage() {
     });
   };
 
+  // Handle combined PDF download for all expired documents
+  const handleDownloadCombinedExpiredPDF = async () => {
+    const expiredIqamaData = iqamaData.filter(item => item.status === 'expired');
+    const expiredEquipmentData = equipmentData.filter(item => item.status === 'expired');
+    
+    if (expiredIqamaData.length === 0 && expiredEquipmentData.length === 0) {
+      alert('No expired documents found to download.');
+      return;
+    }
+    
+    try {
+      await PDFGenerator.generateCombinedExpiredReport(expiredIqamaData, expiredEquipmentData);
+    } catch (error) {
+      console.error('Failed to generate PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
+  };
+
   // Show loading state
   if (loading) {
     return (
@@ -641,6 +678,20 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDownloadCombinedExpiredPDF}
+              disabled={
+                iqamaData.filter(item => item.status === 'expired').length === 0 &&
+                equipmentData.filter(item => item.status === 'expired').length === 0
+              }
+              className="flex items-center gap-2"
+              title={`Download combined PDF report for all expired documents (${iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length} total)`}
+            >
+              <Download className="h-4 w-4" />
+              Download All Expired PDF ({iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length})
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -715,6 +766,7 @@ export default function DashboardPage() {
             equipmentData={equipmentData}
             onUpdateEquipment={handleOpenEquipmentUpdateModal}
             onHideSection={() => toggleSection('equipment')}
+            isRefreshing={updatingEquipment}
           />
         )}
 
