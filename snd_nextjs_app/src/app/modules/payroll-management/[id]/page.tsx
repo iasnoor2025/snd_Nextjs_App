@@ -853,7 +853,8 @@ export default function PayrollDetailsPage() {
               </Card>
 
               {/* Quick Actions */}
-              <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+              <div>
+                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="text-lg">Quick Actions</CardTitle>
                 </CardHeader>
@@ -889,8 +890,10 @@ export default function PayrollDetailsPage() {
                     </Button>
                   </CardContent>
                 </Card>
+              </div>
 
-                {/* Audit Information */}
+              {/* Audit Information */}
+              <div>
                 <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
                   <CardHeader>
                     <CardTitle className="text-lg">Audit Information</CardTitle>
@@ -900,20 +903,20 @@ export default function PayrollDetailsPage() {
                       <div>
                         <Label className="text-sm font-medium text-gray-500">Created</Label>
                         <p className="text-sm">
-                          {format(new Date(payroll.created_at), "PPP 'at' p")}
+                          {format(new Date(payroll.created_at), "PPP at p")}
                         </p>
                       </div>
                       <div>
                         <Label className="text-sm font-medium text-gray-500">Last Updated</Label>
                         <p className="p-2">
-                          {format(new Date(payroll.updated_at), "PPP 'at' p")}
+                          {format(new Date(payroll.updated_at), "PPP at p")}
                         </p>
                       </div>
                       {payroll.approved_at && (
                         <div>
                           <Label className="text-sm font-medium text-gray-500">Approved</Label>
                           <p className="text-sm">
-                            {format(new Date(payroll.approved_at), "PPP 'at' p")}
+                            {format(new Date(payroll.approved_at), "PPP at p")}
                           </p>
                         </div>
                       )}
@@ -921,7 +924,7 @@ export default function PayrollDetailsPage() {
                         <div>
                           <Label className="text-sm font-medium text-gray-500">Paid</Label>
                           <p className="text-sm">
-                            {format(new Date(payroll.paid_at), "PPP 'at' p")}
+                            {format(new Date(payroll.paid_at), "PPP at p")}
                           </p>
                         </div>
                       )}

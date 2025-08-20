@@ -126,7 +126,6 @@ export default function InvoicesPage() {
     documentTitle: 'Rental-Invoices-List',
     waitForImages: true,
     onPrintError: error => {
-      
       // Continue with print even if there are image errors
     },
   });
@@ -141,7 +140,6 @@ export default function InvoicesPage() {
         const mockData = getMockInvoicesData(search, status, startDate, endDate, currentPage);
         setInvoices(mockData);
       } catch (error) {
-        
         toast.error('Failed to fetch invoices');
       } finally {
         setLoading(false);
@@ -299,7 +297,7 @@ export default function InvoicesPage() {
       prev_page_url: page > 1 ? `?page=${page - 1}` : null,
       first_page_url: '?page=1',
       last_page_url: `?page=${lastPage}`,
-      path: '/modules/rental-management/invoices',
+      path: '/api/invoices',
       links: [],
     };
   };
@@ -307,10 +305,8 @@ export default function InvoicesPage() {
   const handleDelete = async (id: number) => {
     try {
       toast.loading('Deleting invoice...');
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       toast.success('Invoice deleted successfully');
-      // Refresh the list
       const mockData = getMockInvoicesData(search, status, startDate, endDate, currentPage);
       setInvoices(mockData);
     } catch (error) {
@@ -409,9 +405,9 @@ export default function InvoicesPage() {
                       </TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{invoice.rental.customer.companyName || invoice.rental.customer.name}</div>
+                          <div className="font-medium">{invoice.rental.customer.company_name}</div>
                           <div className="text-sm text-gray-500">
-                            {invoice.rental.customer.contactPerson}
+                            {invoice.rental.customer.contact_person}
                           </div>
                         </div>
                       </TableCell>
@@ -419,7 +415,7 @@ export default function InvoicesPage() {
                       <TableCell>
                         <div className="flex items-center space-x-2">
                           <Calendar className="h-3 w-3" />
-                          <span>{formatDate(invoice.issue_date)}</span>
+                          <span>{formatDate(invoice.created_at)}</span>
                         </div>
                       </TableCell>
                       <TableCell>
@@ -429,7 +425,7 @@ export default function InvoicesPage() {
                         </div>
                       </TableCell>
                       <TableCell className="font-semibold">
-                        {formatCurrency(invoice.total_amount)}
+                        {formatCurrency(invoice.amount)}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -443,323 +439,275 @@ export default function InvoicesPage() {
       {/* Main content - visible normally, hidden when printing */}
       <div className="block print:hidden">
         <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Invoices</h1>
-          <p className="text-muted-foreground">Manage rental invoices and payment tracking</p>
-        </div>
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-          <Button variant="outline">
-            <Printer className="h-4 w-4 mr-2" />
-            Print
-          </Button>
-          <Link href="/modules/rental-management/invoices/create">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              New Invoice
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <Card className="mb-6">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center space-x-2">
-              <Filter className="h-5 w-5" />
-              <span>Filters</span>
-            </CardTitle>
-            <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)}>
-              {showFilters ? <XCircle className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
-            </Button>
+          <div>
+            <h1 className="text-3xl font-bold">Invoices</h1>
+            <p className="text-muted-foreground">Manage rental invoices and payment tracking</p>
           </div>
-        </CardHeader>
-        {showFilters && (
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="text-sm font-medium">Search</label>
-                <Input
-                  placeholder="Search invoices..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium">Status</label>
-                <Select value={status} onValueChange={setStatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="All statuses" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="sent">Sent</SelectItem>
-                    <SelectItem value="partially_paid">Partially Paid</SelectItem>
-                    <SelectItem value="paid">Paid</SelectItem>
-                    <SelectItem value="overdue">Overdue</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">From Date</label>
-                <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-sm font-medium">To Date</label>
-                <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
-              </div>
-            </div>
-          </CardContent>
-        )}
-      </Card>
-
-      {/* Invoices Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Invoices</CardTitle>
-          <CardDescription>
-            Showing {invoices?.from || 0} to {invoices?.to || 0} of {invoices?.total || 0} invoices
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Rental #</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Paid</TableHead>
-                <TableHead>Outstanding</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invoices?.data.map(invoice => (
-                <TableRow key={invoice.id}>
-                  <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
-                  <TableCell>
-                    <Link
-                      href={`/modules/rental-management/${invoice.rental.id}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {invoice.rental.rental_number}
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{invoice.rental.customer.company_name}</div>
-                      <div className="text-sm text-muted-foreground">
-                        {invoice.rental.customer.contact_person}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="font-medium">{formatCurrency(invoice.amount)}</TableCell>
-                  <TableCell>
-                    <span className={invoice.paid_amount > 0 ? 'text-green-600' : 'text-gray-500'}>
-                      {formatCurrency(invoice.paid_amount)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={invoice.outstanding_amount > 0 ? 'text-red-600' : 'text-green-600'}
-                    >
-                      {formatCurrency(invoice.outstanding_amount)}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div
-                      className={`flex items-center space-x-1 ${invoice.is_overdue ? 'text-red-600' : ''}`}
-                    >
-                      <span>{formatDate(invoice.due_date)}</span>
-                      {invoice.is_overdue && <AlertCircle className="h-4 w-4" />}
-                    </div>
-                  </TableCell>
-                  <TableCell>{getStatusBadge(invoice.status)}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/modules/rental-management/invoices/${invoice.id}`}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View Details
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href={`/modules/rental-management/invoices/${invoice.id}/edit`}>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Printer className="h-4 w-4 mr-2" />
-                          Print
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Download className="h-4 w-4 mr-2" />
-                          Download PDF
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Mail className="h-4 w-4 mr-2" />
-                          Send Email
-                        </DropdownMenuItem>
-                        {invoice.nextPossibleStates?.includes('mark-paid') && (
-                          <DropdownMenuItem
-                            onClick={() => handleWorkflowAction(invoice.id, 'mark-paid')}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            Mark as Paid
-                          </DropdownMenuItem>
-                        )}
-                        {invoice.nextPossibleStates?.includes('send-reminder') && (
-                          <DropdownMenuItem
-                            onClick={() => handleWorkflowAction(invoice.id, 'send-reminder')}
-                          >
-                            <Mail className="h-4 w-4 mr-2" />
-                            Send Reminder
-                          </DropdownMenuItem>
-                        )}
-                        {invoice.nextPossibleStates?.includes('extend-due-date') && (
-                          <DropdownMenuItem
-                            onClick={() => handleWorkflowAction(invoice.id, 'extend-due-date')}
-                          >
-                            <Calendar className="h-4 w-4 mr-2" />
-                            Extend Due Date
-                          </DropdownMenuItem>
-                        )}
-                        {invoice.nextPossibleStates?.includes('send-collection') && (
-                          <DropdownMenuItem
-                            onClick={() => handleWorkflowAction(invoice.id, 'send-collection')}
-                          >
-                            <AlertCircle className="h-4 w-4 mr-2" />
-                            Send to Collection
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(invoice.id)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {/* Pagination */}
-          {invoices && invoices.last_page > 1 && (
-            <div className="mt-4">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-500">
-                  Showing {(currentPage - 1) * invoices.per_page + 1} to{' '}
-                  {Math.min(currentPage * invoices.per_page, invoices.total)} of {invoices.total}{' '}
-                  results
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    Previous
-                  </Button>
-
-                  <div className="flex items-center gap-1">
-                    {/* First page */}
-                    {currentPage > 2 && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setCurrentPage(1)}
-                          className="w-8 h-8 p-0"
-                        >
-                          1
-                        </Button>
-                        {currentPage > 3 && <span className="px-2 text-muted-foreground">...</span>}
-                      </>
-                    )}
-
-                    {/* Current page and surrounding pages */}
-                    {(() => {
-                      const pages: number[] = [];
-                      const startPage = Math.max(1, currentPage - 1);
-                      const endPage = Math.min(invoices.last_page, currentPage + 1);
-
-                      for (let page = startPage; page <= endPage; page++) {
-                        pages.push(page);
-                      }
-
-                      return pages.map(page => (
-                        <Button
-                          key={page}
-                          variant={currentPage === page ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setCurrentPage(page)}
-                          className="w-8 h-8 p-0"
-                        >
-                          {page}
-                        </Button>
-                      ));
-                    })()}
-
-                    {/* Last page */}
-                    {currentPage < invoices.last_page - 1 && (
-                      <>
-                        {currentPage < invoices.last_page - 2 && (
-                          <span className="px-2 text-muted-foreground">...</span>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setCurrentPage(invoices.last_page)}
-                          className="w-8 h-8 p-0"
-                        >
-                          {invoices.last_page}
-                        </Button>
-                      </>
-                    )}
-                  </div>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.min(invoices.last_page, currentPage + 1))}
-                    disabled={currentPage === invoices.last_page}
-                  >
-                    Next
-                    <ChevronRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          <div className="flex space-x-2">
+            <Button variant="outline" onClick={handleRefresh}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+            <Button variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+            <Button variant="outline">
+              <Printer className="h-4 w-4 mr-2" />
+              Print
+            </Button>
+            <Link href="/modules/rental-management/invoices/create">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                New Invoice
+              </Button>
+            </Link>
+          </div>
         </div>
+
+        {/* Filters */}
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center space-x-2">
+                <Filter className="h-5 w-5" />
+                <span>Filters</span>
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)}>
+                {showFilters ? <XCircle className="h-4 w-4" /> : <Filter className="h-4 w-4" />}
+              </Button>
+            </div>
+          </CardHeader>
+          {showFilters && (
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Search</label>
+                  <Input
+                    placeholder="Search invoices..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Status</label>
+                  <Select value={status} onValueChange={setStatus}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      <SelectItem value="draft">Draft</SelectItem>
+                      <SelectItem value="sent">Sent</SelectItem>
+                      <SelectItem value="partially_paid">Partially Paid</SelectItem>
+                      <SelectItem value="paid">Paid</SelectItem>
+                      <SelectItem value="overdue">Overdue</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">From Date</label>
+                  <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">To Date</label>
+                  <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                </div>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+
+        {/* Invoices Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Invoices</CardTitle>
+            <CardDescription>
+              Showing {invoices?.from || 0} to {invoices?.to || 0} of {invoices?.total || 0} invoices
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Rental #</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Paid</TableHead>
+                  <TableHead>Outstanding</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invoices?.data.map(invoice => (
+                  <TableRow key={invoice.id}>
+                    <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/modules/rental-management/${invoice.rental.id}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        {invoice.rental.rental_number}
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{invoice.rental.customer.company_name}</div>
+                        <div className="text-sm text-gray-500">{invoice.rental.customer.contact_person}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-semibold">{formatCurrency(invoice.amount)}</TableCell>
+                    <TableCell className="text-green-600">{formatCurrency(invoice.paid_amount)}</TableCell>
+                    <TableCell className="text-red-600">{formatCurrency(invoice.outstanding_amount)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="h-3 w-3" />
+                        <span className={invoice.is_overdue ? 'text-red-600 font-medium' : ''}>
+                          {formatDate(invoice.due_date)}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{getStatusBadge(invoice.status)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Link href={`/modules/rental-management/invoices/${invoice.id}`}>
+                          <Button variant="ghost" size="sm">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <Link href={`/modules/rental-management/invoices/${invoice.id}/edit`}>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleWorkflowAction(invoice.id, 'send-reminder')}>
+                              <Mail className="h-4 w-4 mr-2" />
+                              Send Reminder
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleWorkflowAction(invoice.id, 'mark-paid')}>
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                              Mark as Paid
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleWorkflowAction(invoice.id, 'extend-due-date')}>
+                              <Calendar className="h-4 w-4 mr-2" />
+                              Extend Due Date
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDelete(invoice.id)} className="text-red-600">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {/* Pagination */}
+            {invoices && invoices.last_page > 1 && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-500">
+                    Showing {(currentPage - 1) * invoices.per_page + 1} to{' '}
+                    {Math.min(currentPage * invoices.per_page, invoices.total)} of {invoices.total}{' '}
+                    results
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Previous
+                    </Button>
+
+                    <div className="flex items-center gap-1">
+                      {/* First page */}
+                      {currentPage > 2 && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(1)}
+                            className="w-8 h-8 p-0"
+                          >
+                            1
+                          </Button>
+                          {currentPage > 3 && <span className="px-2 text-muted-foreground">...</span>}
+                        </>
+                      )}
+
+                      {/* Current page and surrounding pages */}
+                      {(() => {
+                        const pages: number[] = [];
+                        const startPage = Math.max(1, currentPage - 1);
+                        const endPage = Math.min(invoices.last_page, currentPage + 1);
+
+                        for (let page = startPage; page <= endPage; page++) {
+                          pages.push(page);
+                        }
+
+                        return pages.map(page => (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setCurrentPage(page)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {page}
+                          </Button>
+                        ));
+                      })()}
+
+                      {/* Last page */}
+                      {currentPage < invoices.last_page - 1 && (
+                        <>
+                          {currentPage < invoices.last_page - 2 && (
+                            <span className="px-2 text-muted-foreground">...</span>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(invoices.last_page)}
+                            className="w-8 h-8 p-0"
+                          >
+                            {invoices.last_page}
+                          </Button>
+                        </>
+                      )}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(Math.min(invoices.last_page, currentPage + 1))}
+                      disabled={currentPage === invoices.last_page}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
