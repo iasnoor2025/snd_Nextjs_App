@@ -63,9 +63,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .where(and(...whereConditions))
       .orderBy(desc(projectMaterials.createdAt));
 
+    // Transform to match frontend expectations
+    const materialsWithType = materials.map(item => ({
+      ...item,
+      total_cost: Number(item.totalCost) || 0,
+      type: 'material' // Add type for frontend categorization
+    }));
+
     return NextResponse.json({ 
       success: true,
-      data: materials 
+      data: materialsWithType 
     });
   } catch (error) {
     console.error('Error fetching project materials:', error);

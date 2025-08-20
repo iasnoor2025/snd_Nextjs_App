@@ -69,7 +69,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     // Calculate total cost for each equipment item
     const equipmentWithCosts = projectEquipmentList.map(item => ({
       ...item,
-      totalCost: (Number(item.hourlyRate) || 0) * (Number(item.estimatedHours) || 0) + (Number(item.maintenanceCost) || 0)
+      total_cost: (Number(item.hourlyRate) || 0) * (Number(item.estimatedHours) || 0) + (Number(item.maintenanceCost) || 0),
+      type: 'equipment' // Add type for frontend categorization
     }));
 
     return NextResponse.json({ 

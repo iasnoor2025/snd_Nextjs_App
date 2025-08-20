@@ -80,12 +80,38 @@ export default function ProjectDetailPage() {
   const router = useRouter();
   const projectId = params.id as string;
 
+  console.log('Project ID from params:', projectId);
+  console.log('Params object:', params);
+
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<ProjectTask[]>([]);
   const [resources, setResources] = useState<ProjectResource[]>([]);
   const [loading, setLoading] = useState(true);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [creatingSample, setCreatingSample] = useState(false);
+
+  // Function to create sample data
+  const createSampleData = async () => {
+    try {
+      setCreatingSample(true);
+      const response = await ApiService.post('/projects/sample', {});
+      
+      if (response.success) {
+        toast.success('Sample project created successfully!');
+        // Refresh the page to load the new project data
+        window.location.reload();
+      } else {
+        throw new Error(response.error || 'Failed to create sample project');
+      }
+    } catch (error) {
+      console.error('Error creating sample project:', error);
+      toast.error('Failed to create sample project');
+    } finally {
+      setCreatingSample(false);
+    }
+  };
 
   // Utility functions to eliminate duplication
   const formatDate = (dateString: string | undefined, format: 'full' | 'short' = 'full') => {
@@ -123,8 +149,15 @@ export default function ProjectDetailPage() {
 
   const getResourceCountByType = (type: string) => resources.filter(r => r.type === type).length;
 
-  const getResourceCostByType = (type: string) =>
-    resources.filter(r => r.type === type).reduce((sum, r) => sum + (r.total_cost || 0), 0);
+  const getResourceCostByType = (type: string) => {
+    const cost = resources.filter(r => r.type === type).reduce((sum, r) => {
+      const resourceCost = r.total_cost || 0;
+      console.log(`Resource ${r.id} (${r.type}): total_cost = ${resourceCost}`);
+      return sum + resourceCost;
+    }, 0);
+    console.log(`Total cost for type ${type}:`, cost);
+    return cost;
+  };
 
   const getTaskCountByStatus = (status: string) => tasks.filter(t => t.status === status).length;
 
@@ -179,9 +212,13 @@ export default function ProjectDetailPage() {
   };
 
   const calculateGrandTotal = () => {
-    return resources.reduce((total, resource) => {
-      return total + (resource.total_cost || 0);
+    const total = resources.reduce((total, resource) => {
+      const cost = resource.total_cost || 0;
+      console.log(`Resource ${resource.id} (${resource.type}): cost = ${cost}`);
+      return total + cost;
     }, 0);
+    console.log('Grand total calculated:', total);
+    return total;
   };
 
   const generateReport = async () => {
@@ -227,6 +264,13 @@ export default function ProjectDetailPage() {
 
   const grandTotal = calculateGrandTotal();
 
+  // Debug logging
+  console.log('Project data:', project);
+  console.log('Project budget:', project?.budget);
+  console.log('Resources:', resources);
+  console.log('Tasks:', tasks);
+  console.log('Grand total:', grandTotal);
+
   useEffect(() => {
     const fetchProjectData = async () => {
       try {
@@ -234,6 +278,7 @@ export default function ProjectDetailPage() {
 
         // Fetch project details
         const projectResponse = await ApiService.get<Project>(`/projects/${projectId}`);
+        console.log('Project response:', projectResponse);
         setProject(projectResponse.data);
 
         // Fetch project resources
@@ -245,6 +290,14 @@ export default function ProjectDetailPage() {
           ApiService.getProjectExpenses(Number(projectId)),
         ]);
 
+        console.log('Resource responses:', {
+          manpower: manpowerRes,
+          equipment: equipmentRes,
+          materials: materialsRes,
+          fuel: fuelRes,
+          expenses: expensesRes
+        });
+
         // Combine all resources
         const allResources = [
           ...(manpowerRes.data || []).map((r: any) => ({ ...r, type: 'manpower' })),
@@ -253,18 +306,23 @@ export default function ProjectDetailPage() {
           ...(fuelRes.data || []).map((r: any) => ({ ...r, type: 'fuel' })),
           ...(expensesRes.data || []).map((r: any) => ({ ...r, type: 'expense' })),
         ];
+
+        console.log('Combined resources:', allResources);
         setResources(allResources);
 
         // Fetch tasks
         const tasksResponse = await ApiService.getProjectTasks(Number(projectId));
+        console.log('Tasks response:', tasksResponse);
         if (tasksResponse.success) {
           setTasks(tasksResponse.data || []);
         } else {
           setTasks([]);
         }
       } catch (error) {
-        
-        toast.error('Failed to load project details');
+        console.error('Error fetching project data:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to load project details';
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -283,12 +341,63 @@ export default function ProjectDetailPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
+        <Card>
+          <CardContent className="p-6">
+            <div className="text-center">
+              <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Project</h2>
+              <p className="text-gray-500 mb-4">{error}</p>
+              <Button onClick={() => window.location.reload()}>Retry</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (!project) {
     return (
       <div className="container mx-auto p-6">
         <Card>
           <CardContent className="p-6">
-            <p className="text-center text-gray-500">Project not found</p>
+            <div className="text-center">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Project Not Found</h2>
+              <p className="text-gray-500 mb-6">
+                Project with ID {projectId} was not found. This could be because:
+              </p>
+              <ul className="text-left text-gray-500 mb-6 space-y-2">
+                <li>• The project doesn't exist in the database</li>
+                <li>• There are no projects created yet</li>
+                <li>• There's an issue with the database connection</li>
+              </ul>
+              <div className="flex gap-3 justify-center">
+                <Button onClick={createSampleData} disabled={creatingSample}>
+                  {creatingSample ? (
+                    <>
+                      <span className="mr-2 animate-spin">⏳</span>
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Sample Data
+                    </>
+                  )}
+                </Button>
+                <Button asChild variant="outline">
+                  <Link href="/modules/project-management/create">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create New Project
+                  </Link>
+                </Button>
+                <Button variant="outline" onClick={() => window.location.reload()}>
+                  Retry
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

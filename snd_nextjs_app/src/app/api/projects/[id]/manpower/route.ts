@@ -47,10 +47,23 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .where(eq(projectManpower.projectId, parseInt(projectId)))
       .orderBy(desc(projectManpower.createdAt));
 
+    // Calculate total cost for each manpower entry
+    const manpowerWithCost = manpower.map(item => {
+      const daysWorked = item.actualDays || item.totalDays || 0;
+      const dailyRate = Number(item.dailyRate) || 0;
+      const totalCost = daysWorked * dailyRate;
+      
+      return {
+        ...item,
+        total_cost: totalCost,
+        type: 'manpower' // Add type for frontend categorization
+      };
+    });
+
     // Return simple response without complex JOIN
     return NextResponse.json({ 
       success: true,
-      data: manpower 
+      data: manpowerWithCost 
     });
   } catch (error) {
     console.error('Error fetching project manpower:', error);

@@ -9,13 +9,14 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
     // Validate projectId
     if (!projectId || isNaN(parseInt(projectId))) {
-      
+      console.error('Invalid project ID:', projectId);
       return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 
     const projectIdNum = parseInt(projectId);
 
     // First, get the project data
+    console.log('Fetching project with ID:', projectIdNum);
     
     const projectData = await db
       .select({
@@ -28,24 +29,31 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         endDate: projects.endDate,
         budget: projects.budget,
         notes: projects.notes,
+        createdAt: projects.createdAt,
+        updatedAt: projects.updatedAt,
       })
       .from(projects)
       .where(eq(projects.id, projectIdNum))
       .limit(1);
 
     if (!projectData.length) {
+      console.error('Project not found with ID:', projectIdNum);
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
     const project = projectData[0];
     if (!project) {
+      console.error('Project data is null for ID:', projectIdNum);
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
+
+    console.log('Found project:', project);
 
     // Get customer data if customerId exists
     let customer: any = null;
     if (project.customerId) {
       try {
+        console.log('Fetching customer with ID:', project.customerId);
         
         const customerData = await db
           .select({
@@ -59,9 +67,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
           .limit(1);
 
         customer = customerData[0] || null;
+        console.log('Found customer:', customer);
         
       } catch (customerError) {
-        
+        console.error('Error fetching customer:', customerError);
         customer = null;
       }
     }
@@ -69,6 +78,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     // Get rental data if any exists for this project
     let rental: any = null;
     try {
+      console.log('Fetching rental for project ID:', projectIdNum);
       
       const rentalData = await db
         .select({
@@ -80,9 +90,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         .limit(1);
 
       rental = rentalData[0] || null;
+      console.log('Found rental:', rental);
       
     } catch (rentalError) {
-      
+      console.error('Error fetching rental:', rentalError);
       rental = null;
     }
 
@@ -94,29 +105,31 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       client_name: customer?.name || 'Unknown Client',
       client_contact: customer?.email || customer?.phone || 'No contact info',
       status: project.status,
-      priority: 'medium', // Default value since priority field doesn't exist
-      start_date: project.startDate ? project.startDate.toString() : '',
-      end_date: project.endDate ? project.endDate.toString() : '',
+      priority: 'medium', // Default value since priority field doesn't exist in DB
+      start_date: project.startDate ? project.startDate.toString() : null,
+      end_date: project.endDate ? project.endDate.toString() : null,
       budget: Number(project.budget) || 0,
-      progress: 0, // Default value since progress field doesn't exist
+      progress: 0, // Will be calculated based on tasks
       manager: {
         id: '1',
-        name: 'John Smith',
-        email: 'john.smith@company.com',
+        name: 'Project Manager',
+        email: 'manager@company.com',
       },
-      location: 'Downtown Business District',
-      notes:
-        project.notes ||
-        'Project is progressing well with foundation work completed and structural framework 65% complete.',
+      location: 'Project Location', // Default since location field doesn't exist in DB
+      notes: project.notes || 'Project details and notes.',
       rental: rental,
+      created_at: project.createdAt,
+      updated_at: project.updatedAt,
     };
+
+    console.log('Transformed project data:', transformedProject);
 
     return NextResponse.json({
       success: true,
       data: transformedProject,
     });
   } catch (error) {
-
+    console.error('Error in GET /api/projects/[id]:', error);
     return NextResponse.json(
       {
         error: 'Failed to fetch project',

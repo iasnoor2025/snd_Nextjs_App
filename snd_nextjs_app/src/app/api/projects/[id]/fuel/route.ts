@@ -62,9 +62,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .where(and(...whereConditions))
       .orderBy(desc(projectFuel.purchaseDate));
 
+    // Transform to match frontend expectations
+    const fuelWithType = fuelList.map(item => ({
+      ...item,
+      total_cost: Number(item.totalCost) || 0,
+      type: 'fuel' // Add type for frontend categorization
+    }));
+
     return NextResponse.json({ 
       success: true,
-      data: fuelList 
+      data: fuelWithType 
     });
   } catch (error) {
     console.error('Error fetching project fuel:', error);
