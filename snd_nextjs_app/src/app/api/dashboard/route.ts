@@ -131,7 +131,15 @@ export async function GET(_request: NextRequest) {
 
     const rentalData = await DashboardService.getActiveRentals(dataLimit);
 
-    const projectData = await DashboardService.getActiveProjects(dataLimit);
+    // Fetch project data with better error handling
+    let projectData: any[] = [];
+    try {
+      projectData = await DashboardService.getActiveProjects(dataLimit);
+      console.log('Dashboard API - Projects fetched:', projectData.length);
+    } catch (error) {
+      console.error('Dashboard API - Error fetching projects:', error);
+      projectData = [];
+    }
 
     const activityData = await DashboardService.getRecentActivity(dataLimit);
 

@@ -12,7 +12,7 @@ import { TimesheetsSection } from '@/components/dashboard/TimesheetsSection';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/hooks/use-i18n';
 import { PDFGenerator } from '@/lib/utils/pdf-generator';
-import { ActiveProject, IqamaData, RecentActivity as RecentActivityType } from '@/lib/services/dashboard-service';
+import { ActiveProject, IqamaData, RecentActivity as RecentActivityType, EquipmentData, TimesheetData } from '@/lib/services/dashboard-service';
 import { Download } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -20,38 +20,7 @@ import { useEffect, useState } from 'react';
 
 
 
-interface EquipmentData {
-  id: number;
-  equipmentName: string;
-  equipmentNumber?: string;
-  istimara?: string;
-  istimaraExpiry?: string;
-  daysRemaining: number | null;
-  categoryId?: number;
-  status: 'available' | 'expired' | 'expiring' | 'missing';
-  manufacturer?: string;
-  modelNumber?: string;
-  serialNumber?: string;
-  assignedTo?: number;
-  driverName?: string;
-  driverFileNumber?: string;
-}
-
-interface TimesheetData {
-  id: number;
-  employeeName: string;
-  status: 'present' | 'late' | 'absent' | 'half-day';
-  approvalStatus:
-    | 'draft'
-    | 'submitted'
-    | 'foreman_approved'
-    | 'incharge_approved'
-    | 'checking_approved'
-    | 'manager_approved'
-    | 'rejected';
-  totalHours: number;
-  overtimeHours: number;
-}
+// Using imported types from dashboard-service
 
 
 
@@ -152,16 +121,24 @@ export default function DashboardPage() {
       }
       const data = await response.json();
 
+      console.log('Dashboard data fetched:', {
+        stats: data.stats,
+        iqamaCount: data.iqamaData?.length || 0,
+        equipmentCount: data.equipmentData?.length || 0,
+        timesheetCount: data.timesheetData?.length || 0,
+        projectCount: data.projectData?.length || 0,
+        activityCount: data.recentActivity?.length || 0,
+      });
+
       setStats(data.stats || {});
       setIqamaData(data.iqamaData || []);
-
       setEquipmentData(data.equipmentData || []);
-
       setTimesheetData(data.timesheetData || []);
       setProjectData(data.projectData || []);
-             setActivities(data.recentActivity || []);
+      setActivities(data.recentActivity || []);
 
     } catch (error) {
+      console.error('Error fetching dashboard data:', error);
       // Handle error silently for production
     } finally {
       setLoading(false);

@@ -436,8 +436,12 @@ export class DashboardService {
           equipmentName: doc.equipmentName || 'Unknown',
           equipmentNumber: doc.equipmentNumber || 'N/A',
           istimaraExpiry: doc.istimaraExpiry,
-          status: doc.status || 'unknown',
+          department: null, // Equipment doesn't have department in current schema
+          status: status,
           daysRemaining: daysRemaining,
+          manufacturer: doc.manufacturer,
+          modelNumber: doc.modelNumber,
+          serialNumber: doc.serialNumber,
         };
       });
 
@@ -677,6 +681,34 @@ export class DashboardService {
 
   static async getActiveProjects(limit: number = 50): Promise<ActiveProject[]> {
     try {
+      // First, let's check if we have any projects at all
+      const totalProjects = await db.select({ count: count() }).from(projects);
+      console.log('Total projects in database:', totalProjects[0]?.count || 0);
+
+      // Get all projects (not just active ones) to see what we have
+      const allProjects = await db
+        .select({
+          id: projects.id,
+          name: projects.name,
+          customer: customers.name,
+          startDate: projects.startDate,
+          endDate: projects.endDate,
+          budget: projects.budget,
+          status: projects.status,
+        })
+        .from(projects)
+        .leftJoin(customers, eq(projects.customerId, customers.id))
+        .limit(limit);
+
+      console.log('Sample projects from database:', allProjects);
+
+      // If no projects exist, return empty array
+      if (allProjects.length === 0) {
+        console.log('No projects found in database');
+        return [];
+      }
+
+      // Get projects with team size calculation
       const projectData = await db
         .select({
           id: projects.id,
@@ -694,11 +726,10 @@ export class DashboardService {
         })
         .from(projects)
         .leftJoin(customers, eq(projects.customerId, customers.id))
-        .where(eq(projects.status, 'active'))
         .limit(limit);
 
       return projectData.map(project => {
-        // Calculate progress based on dates (placeholder calculation)
+        // Calculate progress based on dates
         let progress = 0;
         if (project.startDate && project.endDate) {
           const start = new Date(project.startDate);
@@ -714,17 +745,19 @@ export class DashboardService {
           }
         }
 
-        // Set spent as 0 for now (placeholder)
+        // Calculate spent amount (placeholder - you can implement actual calculation)
         const spent = 0;
 
         return {
           ...project,
           progress,
           spent,
+          // Ensure teamSize is always a number
+          teamSize: Number(project.teamSize) || 0,
         };
       });
     } catch (error) {
-      
+      console.error('Error fetching projects:', error);
       // Return empty array instead of throwing to prevent dashboard from failing
       return [];
     }
