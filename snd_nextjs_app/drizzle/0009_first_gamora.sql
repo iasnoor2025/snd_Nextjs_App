@@ -1,0 +1,2 @@
+ALTER TABLE "projects" ADD COLUMN "location_id" integer;--> statement-breakpoint
+ALTER TABLE "projects" ADD CONSTRAINT "projects_location_id_fkey" FOREIGN KEY ("location_id") REFERENCES "public"."locations"("id") ON DELETE set null ON UPDATE cascade;

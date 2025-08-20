@@ -872,12 +872,36 @@ export const projects = pgTable("projects", {
 	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
 	updatedAt: date("updated_at").notNull(),
 	deletedAt: date("deleted_at"),
+	projectManagerId: integer("project_manager_id"),
+	projectEngineerId: integer("project_engineer_id"),
+	projectForemanId: integer("project_foreman_id"),
+	supervisorId: integer("supervisor_id"),
 }, (table) => [
 	foreignKey({
 			columns: [table.customerId],
 			foreignColumns: [customers.id],
 			name: "projects_customer_id_fkey"
 		}).onUpdate("cascade").onDelete("set null"),
+	foreignKey({
+			columns: [table.projectManagerId],
+			foreignColumns: [employees.id],
+			name: "fk_projects_project_manager"
+		}).onDelete("set null"),
+	foreignKey({
+			columns: [table.projectEngineerId],
+			foreignColumns: [employees.id],
+			name: "fk_projects_project_engineer"
+		}).onDelete("set null"),
+	foreignKey({
+			columns: [table.projectForemanId],
+			foreignColumns: [employees.id],
+			name: "fk_projects_project_foreman"
+		}).onDelete("set null"),
+	foreignKey({
+			columns: [table.supervisorId],
+			foreignColumns: [employees.id],
+			name: "fk_projects_supervisor"
+		}).onDelete("set null"),
 ]);
 
 export const rentals = pgTable("rentals", {

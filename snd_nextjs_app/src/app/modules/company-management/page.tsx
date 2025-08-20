@@ -30,6 +30,32 @@ interface Company {
   email: string | null;
   phone: string | null;
   logo: string | null;
+  // Saudi Law Required Documents
+  commercial_registration: string | null;
+  commercial_registration_expiry: string | null;
+  tax_registration: string | null;
+  tax_registration_expiry: string | null;
+  municipality_license: string | null;
+  municipality_license_expiry: string | null;
+  chamber_of_commerce: string | null;
+  chamber_of_commerce_expiry: string | null;
+  labor_office_license: string | null;
+  labor_office_license_expiry: string | null;
+  gosi_registration: string | null;
+  gosi_registration_expiry: string | null;
+  saudi_standards_license: string | null;
+  saudi_standards_license_expiry: string | null;
+  environmental_license: string | null;
+  environmental_license_expiry: string | null;
+  // Additional Company Information
+  website: string | null;
+  contact_person: string | null;
+  contact_person_phone: string | null;
+  contact_person_email: string | null;
+  company_type: string | null;
+  industry: string | null;
+  employee_count: number | null;
+  // Legacy field for backward compatibility
   legal_document: string | null;
   created_at: string | null;
   updated_at: string | null;

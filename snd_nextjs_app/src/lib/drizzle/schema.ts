@@ -125,6 +125,32 @@ export const companies = pgTable('companies', {
   email: text(),
   phone: text(),
   logo: text(),
+  // Saudi Law Required Documents
+  commercialRegistration: text('commercial_registration'),
+  commercialRegistrationExpiry: date('commercial_registration_expiry'),
+  taxRegistration: text('tax_registration'),
+  taxRegistrationExpiry: date('tax_registration_expiry'),
+  municipalityLicense: text('municipality_license'),
+  municipalityLicenseExpiry: date('municipality_license_expiry'),
+  chamberOfCommerce: text('chamber_of_commerce'),
+  chamberOfCommerceExpiry: date('chamber_of_commerce_expiry'),
+  laborOfficeLicense: text('labor_office_license'),
+  laborOfficeLicenseExpiry: date('labor_office_license_expiry'),
+  gosiRegistration: text('gosi_registration'),
+  gosiRegistrationExpiry: date('gosi_registration_expiry'),
+  saudiStandardsLicense: text('saudi_standards_license'),
+  saudiStandardsLicenseExpiry: date('saudi_standards_license_expiry'),
+  environmentalLicense: text('environmental_license'),
+  environmentalLicenseExpiry: date('environmental_license_expiry'),
+  // Additional Company Information
+  website: text(),
+  contactPerson: text('contact_person'),
+  contactPersonPhone: text('contact_person_phone'),
+  contactPersonEmail: text('contact_person_email'),
+  companyType: text('company_type'),
+  industry: text(),
+  employeeCount: integer('employee_count'),
+  // Legacy field for backward compatibility
   legalDocument: text('legal_document'),
   createdAt: date('created_at')
     .default(sql`CURRENT_DATE`)
@@ -1206,6 +1232,7 @@ export const projects = pgTable(
     name: text().notNull(),
     description: text(),
     customerId: integer('customer_id'),
+    locationId: integer('location_id'),
     startDate: date('start_date'),
     endDate: date('end_date'),
     status: text().default('active').notNull(),
@@ -1227,6 +1254,13 @@ export const projects = pgTable(
       columns: [table.customerId],
       foreignColumns: [customers.id],
       name: 'projects_customer_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
+    foreignKey({
+      columns: [table.locationId],
+      foreignColumns: [locations.id],
+      name: 'projects_location_id_fkey',
     })
       .onUpdate('cascade')
       .onDelete('set null'),

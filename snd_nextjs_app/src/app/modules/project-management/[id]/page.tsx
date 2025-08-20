@@ -53,6 +53,7 @@ interface Project {
   project_engineer?: { id: number; name: string };
   project_foreman?: { id: number; name: string };
   supervisor?: { id: number; name: string };
+  location_id?: number;
   location?: string;
   notes?: string;
 }
@@ -853,6 +854,22 @@ export default function ProjectDetailPage() {
               <div>
                 <p className="mb-1 text-sm text-gray-500">Location</p>
                 <p className="text-base font-medium">{project.location || 'Not specified'}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Project Location */}
+          <div className="border-b border-gray-100 p-4 dark:border-gray-800">
+            <h3 className="mb-3 text-base font-semibold">Project Location</h3>
+            <div className="flex items-center space-x-3">
+              <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                <Building2 className="h-4 w-4 text-indigo-600" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">Location</p>
+                <p className="text-sm text-gray-500">
+                  {project.location || 'Location not specified'}
+                </p>
               </div>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { db } from '@/lib/db';
-import { projects as projectsTable, customers, employees } from '@/lib/drizzle/schema';
+import { projects as projectsTable, customers, employees, locations } from '@/lib/drizzle/schema';
 import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, ilike, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
@@ -60,18 +60,21 @@ export const GET = withPermission(async (request: NextRequest) => {
           createdAt: projectsTable.createdAt,
           updatedAt: projectsTable.updatedAt,
           customerId: projectsTable.customerId,
+          locationId: projectsTable.locationId,
           notes: projectsTable.notes,
           customerName: customers.name,
+          locationName: locations.name,
+          locationCity: locations.city,
+          locationState: locations.state,
           // Project team roles
           projectManagerId: projectsTable.projectManagerId,
           projectEngineerId: projectsTable.projectEngineerId,
           projectForemanId: projectsTable.projectForemanId,
           supervisorId: projectsTable.supervisorId,
-          // Employee names for roles - we'll get these separately
-          customerName: customers.name,
         })
       .from(projectsTable)
       .leftJoin(customers, eq(projectsTable.customerId, customers.id))
+      .leftJoin(locations, eq(projectsTable.locationId, locations.id))
       .where(whereExpr as any)
       .orderBy(desc(projectsTable.createdAt))
       .offset(skip)
@@ -121,7 +124,7 @@ export const GET = withPermission(async (request: NextRequest) => {
       budget: Number(project.budget) || 0,
       progress: 0,
       team_size: 0,
-      location: 'Project Location',
+      location: project.locationId && project.locationName ? `${project.locationName}, ${project.locationCity}, ${project.locationState}` : 'Project Location',
       notes: project.notes || '',
       // Project team roles
       project_manager_id: project.projectManagerId,
@@ -168,6 +171,7 @@ export const POST = withPermission(async (request: NextRequest) => {
       name,
       description,
       customer_id,
+      location_id,
       start_date,
       end_date,
       status,
@@ -211,6 +215,7 @@ export const POST = withPermission(async (request: NextRequest) => {
         name,
         description: description ?? null,
         customerId: customer_id ? parseInt(customer_id) : null,
+        locationId: location_id ? parseInt(location_id) : null,
         startDate: start_date ? new Date(start_date).toISOString() : null,
         endDate: end_date ? new Date(end_date).toISOString() : null,
         status: status || 'planning',

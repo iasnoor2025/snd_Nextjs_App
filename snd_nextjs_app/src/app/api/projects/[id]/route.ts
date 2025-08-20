@@ -24,6 +24,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         name: projects.name,
         description: projects.description,
         customerId: projects.customerId,
+        locationId: projects.locationId,
         status: projects.status,
         startDate: projects.startDate,
         endDate: projects.endDate,
@@ -77,6 +78,33 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       } catch (customerError) {
         console.error('Error fetching customer:', customerError);
         customer = null;
+      }
+    }
+
+    // Get location data if locationId exists
+    let location: any = null;
+    if (project.locationId) {
+      try {
+        console.log('Fetching location with ID:', project.locationId);
+        
+        const locationData = await db
+          .select({
+            id: locations.id,
+            name: locations.name,
+            city: locations.city,
+            state: locations.state,
+            country: locations.country,
+          })
+          .from(locations)
+          .where(eq(locations.id, project.locationId))
+          .limit(1);
+
+        location = locationData[0] || null;
+        console.log('Found location:', location);
+        
+      } catch (locationError) {
+        console.error('Error fetching location:', locationError);
+        location = null;
       }
     }
 
@@ -203,6 +231,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       name: project.name,
       description: project.description,
       customer_id: project.customerId ?? null,
+      location_id: project.locationId ?? null,
       client_name: customer?.name || 'Unknown Client',
       client_contact: customer?.email || customer?.phone || 'No contact info',
       status: project.status,
@@ -236,7 +265,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         name: `${supervisor.firstName} ${supervisor.lastName}`,
         email: supervisor.email,
       } : null,
-      location: 'Project Location',
+      location: location ? `${location.name}, ${location.city}, ${location.state}` : 'Project Location',
       notes: project.notes || 'Project details and notes.',
       rental: rental,
       created_at: project.createdAt,
@@ -272,6 +301,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         name: body.name,
         description: body.description,
         customerId: body.customer_id ? parseInt(body.customer_id) : null,
+        locationId: body.location_id ? parseInt(body.location_id) : null,
         status: body.status,
         startDate: body.start_date ? body.start_date : null,
         endDate: body.end_date ? body.end_date : null,

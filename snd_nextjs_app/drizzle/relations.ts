@@ -103,6 +103,18 @@ export const employeesRelations = relations(employees, ({one, many}) => ({
 		relationName: "organizationalUnits_managerId_employees_id"
 	}),
 	rentalOperatorAssignments: many(rentalOperatorAssignments),
+	projects_projectManagerId: many(projects, {
+		relationName: "projects_projectManagerId_employees_id"
+	}),
+	projects_projectEngineerId: many(projects, {
+		relationName: "projects_projectEngineerId_employees_id"
+	}),
+	projects_projectForemanId: many(projects, {
+		relationName: "projects_projectForemanId_employees_id"
+	}),
+	projects_supervisorId: many(projects, {
+		relationName: "projects_supervisorId_employees_id"
+	}),
 	salaryIncrements: many(salaryIncrements),
 	timeEntries: many(timeEntries),
 	timesheets: many(timesheets),
@@ -166,6 +178,26 @@ export const projectsRelations = relations(projects, ({one, many}) => ({
 	customer: one(customers, {
 		fields: [projects.customerId],
 		references: [customers.id]
+	}),
+	employee_projectManagerId: one(employees, {
+		fields: [projects.projectManagerId],
+		references: [employees.id],
+		relationName: "projects_projectManagerId_employees_id"
+	}),
+	employee_projectEngineerId: one(employees, {
+		fields: [projects.projectEngineerId],
+		references: [employees.id],
+		relationName: "projects_projectEngineerId_employees_id"
+	}),
+	employee_projectForemanId: one(employees, {
+		fields: [projects.projectForemanId],
+		references: [employees.id],
+		relationName: "projects_projectForemanId_employees_id"
+	}),
+	employee_supervisorId: one(employees, {
+		fields: [projects.supervisorId],
+		references: [employees.id],
+		relationName: "projects_supervisorId_employees_id"
 	}),
 	rentals: many(rentals),
 	timesheets: many(timesheets),
