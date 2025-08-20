@@ -180,12 +180,12 @@ export default function MaterialDialog({
           (formData.material_id
             ? MATERIALS.find(mat => mat.id === formData.material_id)?.name
             : ''),
-        description: formData.description,
-        category: formData.category,
+        description: formData.notes, // Use notes as description
+        category: formData.material_name || 'General', // Use material name as category, fallback to 'General'
         unit: formData.unit,
         quantity: formData.quantity,
         unitPrice: formData.unit_price,
-        supplier: formData.supplier,
+        supplier: '', // Default empty supplier
         orderDate: formData.date_used,
         notes: formData.notes,
         type: 'material',
@@ -193,17 +193,17 @@ export default function MaterialDialog({
       };
 
       if (initialData?.id) {
-        await apiService.put(`/projects/${projectId}/materials?id=${initialData.id}`, submitData);
+        await ApiService.put(`/projects/${projectId}/materials?id=${initialData.id}`, submitData);
         toast.success('Material updated successfully');
       } else {
-        await apiService.createProjectMaterial(projectId, submitData);
+        await ApiService.post(`/projects/${projectId}/materials`, submitData);
         toast.success('Material added successfully');
       }
 
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      
+      console.error('Error saving material:', error);
       toast.error('Failed to save material resource');
     } finally {
       setLoading(false);
