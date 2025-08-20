@@ -41,7 +41,7 @@ class ApiService {
     try {
       // Build URL with query parameters
       let url = `${this.baseUrl}${endpoint}`;
-      if (params) {
+      if (params && typeof params === 'object') {
         const searchParams = new URLSearchParams();
         Object.entries(params).forEach(([key, value]) => {
           if (value !== undefined && value !== null) {
@@ -746,7 +746,7 @@ class ApiService {
       const formData = new FormData();
       formData.append('file', file);
 
-      if (additionalData) {
+      if (additionalData && typeof additionalData === 'object') {
         Object.entries(additionalData).forEach(([key, value]) => {
           formData.append(key, String(value));
         });

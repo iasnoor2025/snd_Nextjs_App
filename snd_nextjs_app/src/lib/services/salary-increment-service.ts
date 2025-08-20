@@ -107,11 +107,13 @@ class SalaryIncrementService {
   ): Promise<SalaryIncrementResponse> {
     const params = new URLSearchParams();
 
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== 'all') {
-        params.append(key, value.toString());
-      }
-    });
+    if (filters && typeof filters === 'object') {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== 'all') {
+          params.append(key, value.toString());
+        }
+      });
+    }
 
     const response = await ApiService.get(`/salary-increments?${params.toString()}`);
 
@@ -182,11 +184,13 @@ class SalaryIncrementService {
   ): Promise<SalaryIncrementStatistics> {
     const params = new URLSearchParams();
 
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        params.append(key, value);
-      }
-    });
+    if (filters && typeof filters === 'object') {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, value);
+        }
+      });
+    }
 
     const response = await ApiService.get(`/salary-increments/statistics?${params.toString()}`);
     return response.data;

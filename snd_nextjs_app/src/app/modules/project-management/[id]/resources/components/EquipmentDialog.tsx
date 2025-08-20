@@ -157,9 +157,10 @@ export default function EquipmentDialog({
         // Map API response to expected frontend format
         const mappedManpower = response.data.map((item: any) => ({
           id: item.id.toString(),
-          employee_name: item.employeeName ? `${item.employeeName} ${item.employeeLastName || ''}`.trim() : '',
+          employee_name: item.employeeName || '',
           worker_name: item.workerName || '',
           job_title: item.jobTitle || '',
+          // Create a display name that prioritizes employee name, then worker name
           name: item.employeeName ? `${item.employeeName} ${item.employeeLastName || ''}`.trim() : item.workerName || 'Unnamed Worker',
         }));
         setManpowerResources(mappedManpower);
@@ -253,10 +254,8 @@ export default function EquipmentDialog({
           const selectedOperator = manpowerResources.find(op => op.id === value);
           if (selectedOperator) {
             newData.operator_id = value;
-            newData.operator_name =
-              selectedOperator.employee_name ||
-              selectedOperator.worker_name ||
-              selectedOperator.name;
+            // Use the display name from manpower resource
+            newData.operator_name = selectedOperator.name;
           }
         } else {
           newData.operator_id = '';

@@ -77,13 +77,15 @@ export default function CreateCustomerPage() {
       const formDataToSend = new FormData();
 
       // Append all form fields
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'is_active') {
-          formDataToSend.append(key, value ? '1' : '0');
-        } else {
-          formDataToSend.append(key, value.toString());
-        }
-      });
+      if (formData && typeof formData === 'object') {
+        Object.entries(formData).forEach(([key, value]) => {
+          if (key === 'is_active') {
+            formDataToSend.append(key, value ? '1' : '0');
+          } else {
+            formDataToSend.append(key, value.toString());
+          }
+        });
+      }
 
       // Append document if selected
       if (document) {

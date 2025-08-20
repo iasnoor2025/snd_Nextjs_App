@@ -306,7 +306,7 @@ export default function EditRolePage() {
             <CardDescription>Select permissions for this role</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {Object.entries(permissionCategories).map(([category, permissions]) => (
+            {permissionCategories && typeof permissionCategories === 'object' && Object.entries(permissionCategories).map(([category, permissions]) => (
               <div key={category} className="space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium">{category}</Label>

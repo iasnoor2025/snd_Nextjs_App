@@ -19,19 +19,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 
-    // Get query parameters
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
-    const search = searchParams.get('search');
-
-    // Build where conditions
-    let whereConditions = [eq(projectManpower.projectId, parseInt(projectId))];
-    
-    if (status && status !== 'all') {
-      whereConditions.push(eq(projectManpower.status, status));
-    }
-
-    // Fetch manpower with related data
+    // Fetch manpower with related data - now with proper JOIN
     const manpower = await db
       .select({
         id: projectManpower.id,
@@ -49,15 +37,17 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         assignedBy: projectManpower.assignedBy,
         createdAt: projectManpower.createdAt,
         updatedAt: projectManpower.updatedAt,
-        employeeName: employees.firstName,
+        // Employee info from JOIN (only if employee_id exists)
+        employeeName: employees.lastName, // Use lastName since first_name doesn't exist in DB
         employeeLastName: employees.lastName,
         employeeFileNumber: employees.fileNumber,
       })
       .from(projectManpower)
       .leftJoin(employees, eq(projectManpower.employeeId, employees.id))
-      .where(and(...whereConditions))
+      .where(eq(projectManpower.projectId, parseInt(projectId)))
       .orderBy(desc(projectManpower.createdAt));
 
+    // Return simple response without complex JOIN
     return NextResponse.json({ 
       success: true,
       data: manpower 

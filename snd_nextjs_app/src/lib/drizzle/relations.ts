@@ -736,9 +736,9 @@ export const projectEquipmentRelations = relations(projectEquipment, ({ one }) =
     fields: [projectEquipment.equipmentId],
     references: [equipment.id],
   }),
-  operator: one(employees, {
+  operator: one(projectManpower, {
     fields: [projectEquipment.operatorId],
-    references: [employees.id],
+    references: [projectManpower.id],
   }),
   assignedBy: one(employees, {
     fields: [projectEquipment.assignedBy],

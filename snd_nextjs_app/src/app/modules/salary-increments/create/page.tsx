@@ -415,7 +415,7 @@ export default function CreateSalaryIncrementPage() {
                     <SelectValue placeholder="Select increment type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(incrementTypes).map(([key, value]) => (
+                    {incrementTypes && typeof incrementTypes === 'object' && Object.entries(incrementTypes).map(([key, value]) => (
                       <SelectItem key={key} value={key}>
                         {value}
                       </SelectItem>

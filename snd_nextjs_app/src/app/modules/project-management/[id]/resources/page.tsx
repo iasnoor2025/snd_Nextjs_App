@@ -193,22 +193,22 @@ export default function ProjectResourcesPage() {
 
       // Fetch all resource types using new specific endpoints
       const [manpowerResponse, equipmentResponse, materialsResponse, fuelResponse, expensesResponse, tasksResponse] = await Promise.all([
-        ApiService.getProjectManpower(Number(projectId)),
-        ApiService.getProjectEquipment(Number(projectId)),
-        ApiService.getProjectMaterials(Number(projectId)),
-        ApiService.getProjectFuel(Number(projectId)),
-        ApiService.getProjectExpenses(Number(projectId)),
-        ApiService.getProjectTasks(Number(projectId)),
+        ApiService.getProjectManpower(Number(projectId)).catch(() => ({ data: [] })),
+        ApiService.getProjectEquipment(Number(projectId)).catch(() => ({ data: [] })),
+        ApiService.getProjectMaterials(Number(projectId)).catch(() => ({ data: [] })),
+        ApiService.getProjectFuel(Number(projectId)).catch(() => ({ data: [] })),
+        ApiService.getProjectExpenses(Number(projectId)).catch(() => ({ data: [] })),
+        ApiService.getProjectTasks(Number(projectId)).catch(() => ({ data: [] })),
       ]);
 
-      // Combine all resources with their types
+      // Combine all resources with their types - ensure we have valid data arrays
       const allResources = [
-        ...(manpowerResponse.data || []).map((resource: any) => ({ ...resource, type: 'manpower' })),
-        ...(equipmentResponse.data || []).map((resource: any) => ({ ...resource, type: 'equipment' })),
-        ...(materialsResponse.data || []).map((resource: any) => ({ ...resource, type: 'material' })),
-        ...(fuelResponse.data || []).map((resource: any) => ({ ...resource, type: 'fuel' })),
-        ...(expensesResponse.data || []).map((resource: any) => ({ ...resource, type: 'expense' })),
-        ...(tasksResponse.data || []).map((resource: any) => ({ ...resource, type: 'tasks' })),
+        ...(Array.isArray(manpowerResponse?.data) ? manpowerResponse.data : []).map((resource: any) => ({ ...resource, type: 'manpower' })),
+        ...(Array.isArray(equipmentResponse?.data) ? equipmentResponse.data : []).map((resource: any) => ({ ...resource, type: 'equipment' })),
+        ...(Array.isArray(materialsResponse?.data) ? materialsResponse.data : []).map((resource: any) => ({ ...resource, type: 'material' })),
+        ...(Array.isArray(fuelResponse?.data) ? fuelResponse.data : []).map((resource: any) => ({ ...resource, type: 'fuel' })),
+        ...(Array.isArray(expensesResponse?.data) ? expensesResponse.data : []).map((resource: any) => ({ ...resource, type: 'expense' })),
+        ...(Array.isArray(tasksResponse?.data) ? tasksResponse.data : []).map((resource: any) => ({ ...resource, type: 'tasks' })),
       ];
 
       // Debug: Log the raw API responses
@@ -237,7 +237,6 @@ export default function ProjectResourcesPage() {
         description: resource.description,
         quantity: resource.quantity,
         unit_cost: resource.unitCost ? parseFloat(resource.unitCost) : resource.hourlyRate ? parseFloat(resource.hourlyRate) : resource.dailyRate ? parseFloat(resource.dailyRate) : undefined,
-        total_cost: resource.totalCost ? parseFloat(resource.totalCost) : undefined,
         date: resource.date || resource.startDate || resource.purchaseDate || resource.expenseDate,
         status: resource.status,
         notes: resource.notes,
@@ -252,8 +251,9 @@ export default function ProjectResourcesPage() {
               full_name: `${resource.employee.first_name} ${resource.employee.last_name}`,
             }
           : undefined,
-        employee_name: resource.employeeName,
-        employee_file_number: resource.employeeFileNumber,
+        // Handle both employee names (from JOIN) and worker names
+        employee_name: resource.employeeName || resource.workerName || `Employee ${resource.employeeId || 'Unknown'}`,
+        employee_file_number: resource.employeeFileNumber || '-',
         worker_name: resource.workerName,
         job_title: resource.jobTitle,
         daily_rate: resource.dailyRate ? parseFloat(resource.dailyRate) : undefined,
@@ -261,11 +261,28 @@ export default function ProjectResourcesPage() {
         start_date: resource.startDate,
         end_date: resource.endDate,
         total_days: resource.totalDays,
+        // Calculate total cost based on resource type
+        total_cost: (() => {
+          if (resource.type === 'manpower' && resource.dailyRate && resource.totalDays) {
+            return parseFloat(resource.dailyRate) * resource.totalDays;
+          } else if (resource.type === 'equipment' && resource.hourlyRate && resource.estimatedHours) {
+            return parseFloat(resource.hourlyRate) * parseFloat(resource.estimatedHours);
+          } else if (resource.type === 'material' && resource.unitPrice && resource.quantity) {
+            return parseFloat(resource.unitPrice) * parseFloat(resource.quantity);
+          } else if (resource.type === 'fuel' && resource.unitPrice && resource.quantity) {
+            return parseFloat(resource.unitPrice) * parseFloat(resource.quantity);
+          } else if (resource.type === 'expense' && resource.amount) {
+            return parseFloat(resource.amount);
+          }
+          return undefined;
+        })(),
 
         // Equipment specific fields
         equipment_id: resource.equipmentId?.toString(),
         equipment_name: resource.equipmentName,
-        operator_name: resource.operatorName ? `${resource.operatorName} ${resource.operatorLastName || ''}`.trim() : undefined,
+        operator_name: resource.operatorName && resource.operatorLastName 
+          ? `${resource.operatorName} ${resource.operatorLastName}`.trim()
+          : resource.operatorWorkerName || undefined,
         hourly_rate: resource.hourlyRate ? parseFloat(resource.hourlyRate) : undefined,
         hours_worked: resource.hoursWorked ? parseFloat(resource.hoursWorked) : undefined,
         usage_hours: resource.estimatedHours ? parseFloat(resource.estimatedHours) : undefined,
@@ -514,7 +531,8 @@ export default function ProjectResourcesPage() {
         description: resource.description,
         quantity: resource.quantity,
         unit_cost: resource.dailyRate ? parseFloat(resource.dailyRate) : undefined,
-        total_cost: resource.totalCost ? parseFloat(resource.totalCost) : undefined,
+        total_cost: resource.dailyRate && resource.totalDays ? 
+          parseFloat(resource.dailyRate) * resource.totalDays : undefined,
         date: resource.startDate,
         status: resource.status,
         notes: resource.notes,
@@ -570,7 +588,8 @@ export default function ProjectResourcesPage() {
         description: resource.description,
         quantity: resource.quantity,
         unit_cost: resource.hourlyRate ? parseFloat(resource.hourlyRate) : undefined,
-        total_cost: resource.totalCost ? parseFloat(resource.totalCost) : undefined,
+        total_cost: resource.hourlyRate && resource.estimatedHours ? 
+          parseFloat(resource.hourlyRate) * parseFloat(resource.estimatedHours) : undefined,
         date: resource.startDate,
         status: resource.status,
         notes: resource.notes,
@@ -944,9 +963,7 @@ export default function ProjectResourcesPage() {
                                       ? resource.employee_name
                                       : resource.name || resource.title}
                                   </div>
-                                  {resource.employee_id ||
-                                  resource.employee_name ||
-                                  resource.employee_file_number ? (
+                                  {resource.employee_id ? (
                                     <Badge
                                       variant="secondary"
                                       className="text-xs bg-blue-100 text-blue-800"

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
-import { projectEquipment, projects, equipment, employees } from '@/lib/drizzle/schema';
-import { eq, and, desc } from 'drizzle-orm';
+import { projectEquipment, projects, equipment, projectManpower, employees } from '@/lib/drizzle/schema';
+import { eq, and, desc, sql } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       whereConditions.push(eq(projectEquipment.status, status));
     }
 
-    // Fetch equipment with related data
+    // Fetch equipment with related data - now joining with projectManpower for operator info
     const projectEquipmentList = await db
       .select({
         id: projectEquipment.id,
@@ -51,19 +51,25 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         updatedAt: projectEquipment.updatedAt,
         equipmentName: equipment.name,
         equipmentModel: equipment.modelNumber,
-        operatorName: employees.firstName,
-        operatorLastName: employees.lastName,
+        // Operator info now comes from projectManpower with proper JOIN to employees
+        // Handle both employee-based and worker-based manpower records using SQL CASE
+        operatorName: sql`CASE WHEN ${projectManpower.employeeId} IS NOT NULL THEN ${employees.firstName} ELSE NULL END`,
+        operatorLastName: sql`CASE WHEN ${projectManpower.employeeId} IS NOT NULL THEN ${employees.lastName} ELSE NULL END`,
+        operatorJobTitle: projectManpower.jobTitle,
+        operatorEmployeeId: projectManpower.employeeId,
+        operatorWorkerName: projectManpower.workerName,
       })
       .from(projectEquipment)
       .leftJoin(equipment, eq(projectEquipment.equipmentId, equipment.id))
-      .leftJoin(employees, eq(projectEquipment.operatorId, employees.id))
+      .leftJoin(projectManpower, eq(projectEquipment.operatorId, projectManpower.id))
+      .leftJoin(employees, eq(projectManpower.employeeId, employees.id))
       .where(and(...whereConditions))
       .orderBy(desc(projectEquipment.createdAt));
 
     // Calculate total cost for each equipment item
     const equipmentWithCosts = projectEquipmentList.map(item => ({
       ...item,
-      totalCost: (item.hourlyRate || 0) * (item.estimatedHours || 0) + (item.maintenanceCost || 0)
+      totalCost: (Number(item.hourlyRate) || 0) * (Number(item.estimatedHours) || 0) + (Number(item.maintenanceCost) || 0)
     }));
 
     return NextResponse.json({ 

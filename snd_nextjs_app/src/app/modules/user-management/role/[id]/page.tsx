@@ -221,7 +221,7 @@ export default function RoleDetailPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {Object.entries(groupedPermissions).map(([category, permissions]) => (
+            {groupedPermissions && typeof groupedPermissions === 'object' && Object.entries(groupedPermissions).map(([category, permissions]) => (
               <div key={category}>
                 <h4 className="font-semibold mb-3 text-lg">{category}</h4>
                 <div className="flex flex-wrap gap-2">

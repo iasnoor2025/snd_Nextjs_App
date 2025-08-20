@@ -219,9 +219,11 @@ export default function RentalManagementPage() {
     try {
       setLoading(true);
       const queryParams = new URLSearchParams();
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value && value !== 'all') queryParams.append(key, value);
-      });
+      if (filters && typeof filters === 'object') {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value && value !== 'all') queryParams.append(key, value);
+        });
+      }
 
       const response = await fetch(`/api/rentals?${queryParams.toString()}`);
       if (!response.ok) {

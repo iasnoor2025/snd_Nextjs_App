@@ -2170,19 +2170,19 @@ export const documentApprovals = pgTable(
 export const projectManpower = pgTable(
   'project_manpower',
   {
-    id: serial().primaryKey().notNull(),
-    projectId: integer('project_id').notNull(),
-    employeeId: integer('employee_id'), // Made nullable to support workers
-    workerName: text('worker_name'), // Added for worker-based resources
+    id: serial('id').primaryKey().notNull(),
+    projectId: integer('project_id').notNull().references(() => projects.id),
+    employeeId: integer('employee_id').references(() => employees.id), // Made nullable
+    workerName: text('worker_name'), // Added worker_name field
     jobTitle: text('job_title').notNull(),
-    dailyRate: numeric('daily_rate', { precision: 10, scale: 2 }).notNull(),
+    dailyRate: numeric('daily_rate', { precision: 10, scale: 2 }).default('0.00').notNull(),
     startDate: date('start_date').notNull(),
     endDate: date('end_date'),
     totalDays: integer('total_days'),
     actualDays: integer('actual_days'),
-    status: text().default('active').notNull(), // active, completed, terminated
+    status: text('status').default('active').notNull(),
     notes: text(),
-    assignedBy: integer('assigned_by'),
+    assignedBy: integer('assigned_by').references(() => employees.id),
     createdAt: date('created_at').default(sql`CURRENT_DATE`).notNull(),
     updatedAt: date('updated_at').notNull(),
   },
@@ -2217,7 +2217,7 @@ export const projectEquipment = pgTable(
     id: serial().primaryKey().notNull(),
     projectId: integer('project_id').notNull(),
     equipmentId: integer('equipment_id').notNull(),
-    operatorId: integer('operator_id'),
+    operatorId: integer('operator_id'), // Now references projectManpower.id instead of employees.id
     startDate: date('start_date').notNull(),
     endDate: date('end_date'),
     hourlyRate: numeric('hourly_rate', { precision: 10, scale: 2 }).notNull(),
@@ -2248,7 +2248,7 @@ export const projectEquipment = pgTable(
       .onDelete('restrict'),
     foreignKey({
       columns: [table.operatorId],
-      foreignColumns: [employees.id],
+      foreignColumns: [projectManpower.id],
       name: 'project_equipment_operator_id_fkey',
     })
       .onUpdate('cascade')
