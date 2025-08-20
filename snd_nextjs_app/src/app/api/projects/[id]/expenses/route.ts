@@ -122,6 +122,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     if (!title || !category || !amount || !expenseDate) {
       return NextResponse.json({ error: 'Title, category, amount, and expense date are required' }, { status: 400 });
     }
+    
+    // Validate amount is a valid number
+    const amountValue = parseFloat(amount);
+    if (isNaN(amountValue) || amountValue <= 0) {
+      return NextResponse.json({ error: 'Amount must be a valid positive number' }, { status: 400 });
+    }
 
     // Create expense
     const [newExpense] = await db
@@ -131,14 +137,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         title,
         description,
         category,
-        amount: parseFloat(amount),
+        amount: amountValue,
         expenseDate: new Date(expenseDate),
-        receiptNumber,
-        paymentMethod,
-        vendor,
-        notes,
+        receiptNumber: receiptNumber || '',
+        paymentMethod: paymentMethod || 'cash',
+        vendor: vendor || '',
+        notes: notes || '',
         assignedTo: assignedTo ? parseInt(assignedTo) : null,
         status: 'pending',
+        createdAt: new Date(),
         updatedAt: new Date(),
       })
       .returning();
@@ -150,7 +157,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }, { status: 201 });
   } catch (error) {
     console.error('Error adding expense:', error);
-    return NextResponse.json({ error: 'Failed to add expense' }, { status: 500 });
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : 'Unknown'
+    });
+    return NextResponse.json({ 
+      error: 'Failed to add expense',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 
@@ -221,6 +236,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (!title || !category || !amount || !expenseDate) {
       return NextResponse.json({ error: 'Title, category, amount, and expense date are required' }, { status: 400 });
     }
+    
+    // Validate amount is a valid number
+    const amountValue = parseFloat(amount);
+    if (isNaN(amountValue) || amountValue <= 0) {
+      return NextResponse.json({ error: 'Amount must be a valid positive number' }, { status: 400 });
+    }
 
     // Update expense
     const [updatedExpense] = await db
@@ -229,7 +250,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         title,
         description,
         category,
-        amount: parseFloat(amount),
+        amount: amountValue,
         expenseDate: new Date(expenseDate),
         receiptNumber,
         approvedBy: approvedBy ? parseInt(approvedBy) : null,
@@ -250,7 +271,15 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     });
   } catch (error) {
     console.error('Error updating expense:', error);
-    return NextResponse.json({ error: 'Failed to update expense' }, { status: 500 });
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : 'Unknown'
+    });
+    return NextResponse.json({ 
+      error: 'Failed to update expense',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 
@@ -312,6 +341,14 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     });
   } catch (error) {
     console.error('Error deleting expense:', error);
-    return NextResponse.json({ error: 'Failed to delete expense' }, { status: 500 });
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : 'Unknown'
+    });
+    return NextResponse.json({ 
+      error: 'Failed to delete expense',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

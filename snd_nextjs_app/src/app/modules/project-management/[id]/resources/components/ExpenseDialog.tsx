@@ -142,28 +142,28 @@ export default function ExpenseDialog({
         category: formData.category,
         amount: formData.amount,
         expenseDate: formData.date,
-        receiptNumber: formData.receipt_number,
-        paymentMethod: formData.payment_method,
-        vendor: formData.vendor,
+        receiptNumber: '', // Default empty receipt number
+        paymentMethod: 'cash', // Default payment method
+        vendor: '', // Default empty vendor
         notes: formData.notes,
-        assignedTo: formData.assigned_to,
+        assignedTo: null, // Default null assigned to
         type: 'expense',
         name: `${formData.category} Expense`,
         total_cost: formData.amount || 0,
       };
 
       if (initialData?.id) {
-        await apiService.put(`/projects/${projectId}/expenses?id=${initialData.id}`, submitData);
+        await ApiService.put(`/projects/${projectId}/expenses?id=${initialData.id}`, submitData);
         toast.success('Expense updated successfully');
       } else {
-        await apiService.createProjectExpense(projectId, submitData);
+        await ApiService.createProjectExpense(projectId, submitData);
         toast.success('Expense added successfully');
       }
 
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      
+      console.error('Error saving expense resource:', error);
       toast.error('Failed to save expense resource');
     } finally {
       setLoading(false);

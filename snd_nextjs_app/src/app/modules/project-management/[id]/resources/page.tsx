@@ -458,6 +458,12 @@ export default function ProjectResourcesPage() {
       updateManpowerData();
     } else if (resourceType === 'equipment') {
       updateEquipmentData();
+    } else if (resourceType === 'material') {
+      updateMaterialsData();
+    } else if (resourceType === 'fuel') {
+      updateFuelData();
+    } else if (resourceType === 'expense') {
+      updateExpensesData();
     } else {
       // For other resource types, refresh all data
       fetchData();
@@ -614,6 +620,137 @@ export default function ProjectResourcesPage() {
       updateStatistics();
     } catch (error) {
       console.error('Error updating equipment data:', error);
+    }
+  };
+
+  // Function to update only materials data
+  const updateMaterialsData = async () => {
+    try {
+      const materialsResponse = await ApiService.getProjectMaterials(Number(projectId));
+      const materialsData = (materialsResponse.data || []).map((resource: any) => ({ 
+        ...resource, 
+        type: 'material' 
+      }));
+
+      // Transform materials data to match frontend structure
+      const transformedMaterials = materialsData.map((resource: any) => ({
+        id: resource.id.toString(),
+        type: resource.type,
+        name: resource.name || resource.title || 'Unnamed Material',
+        description: resource.description,
+        quantity: resource.quantity,
+        unit_cost: resource.unitPrice ? parseFloat(resource.unitPrice) : undefined,
+        total_cost: resource.unitPrice && resource.quantity ? 
+          parseFloat(resource.unitPrice) * parseFloat(resource.quantity) : undefined,
+        date: resource.orderDate || resource.date,
+        status: resource.status,
+        notes: resource.notes,
+        material_id: resource.materialId?.toString(),
+        material_name: resource.name,
+        unit: resource.unit,
+        supplier: resource.supplier,
+        created_at: resource.createdAt,
+        updated_at: resource.updatedAt,
+      }));
+
+      // Update only materials in the resources state
+      setResources(prevResources => {
+        const nonMaterialResources = prevResources.filter(r => r.type !== 'material');
+        return [...nonMaterialResources, ...transformedMaterials];
+      });
+      
+      // Update statistics
+      updateStatistics();
+    } catch (error) {
+      console.error('Error updating materials data:', error);
+    }
+  };
+
+  // Function to update only fuel data
+  const updateFuelData = async () => {
+    try {
+      const fuelResponse = await ApiService.getProjectFuel(Number(projectId));
+      const fuelData = (fuelResponse.data || []).map((resource: any) => ({ 
+        ...resource, 
+        type: 'fuel' 
+      }));
+
+      // Transform fuel data to match frontend structure
+      const transformedFuel = fuelData.map((resource: any) => ({
+        id: resource.id.toString(),
+        type: resource.type,
+        name: resource.fuelType || 'Fuel',
+        description: resource.usageNotes,
+        quantity: resource.quantity,
+        unit_cost: resource.unitPrice ? parseFloat(resource.unitPrice) : undefined,
+        total_cost: resource.unitPrice && resource.quantity ? 
+          parseFloat(resource.unitPrice) * parseFloat(resource.quantity) : undefined,
+        date: resource.purchaseDate || resource.date,
+        status: resource.status,
+        notes: resource.usageNotes,
+        fuel_type: resource.fuelType,
+        liters: resource.quantity,
+        price_per_liter: resource.unitPrice,
+        equipment_id: resource.equipmentId?.toString(),
+        equipment_name: resource.equipmentName,
+        created_at: resource.createdAt,
+        updated_at: resource.updatedAt,
+      }));
+
+      // Update only fuel in the resources state
+      setResources(prevResources => {
+        const nonFuelResources = prevResources.filter(r => r.type !== 'fuel');
+        return [...nonFuelResources, ...transformedFuel];
+      });
+      
+      // Update statistics
+      updateStatistics();
+    } catch (error) {
+      console.error('Error updating fuel data:', error);
+    }
+  };
+
+  // Function to update only expenses data
+  const updateExpensesData = async () => {
+    try {
+      const expensesResponse = await ApiService.getProjectExpenses(Number(projectId));
+      const expensesData = (expensesResponse.data || []).map((resource: any) => ({ 
+        ...resource, 
+        type: 'expense' 
+      }));
+
+      // Transform expenses data to match frontend structure
+      const transformedExpenses = expensesData.map((resource: any) => ({
+        id: resource.id.toString(),
+        type: resource.type,
+        name: resource.title || resource.name || 'Unnamed Expense',
+        description: resource.description,
+        quantity: 1, // Expenses are typically single items
+        unit_cost: resource.amount ? parseFloat(resource.amount) : undefined,
+        total_cost: resource.amount ? parseFloat(resource.amount) : undefined,
+        date: resource.expenseDate || resource.date,
+        status: resource.status,
+        notes: resource.notes,
+        category: resource.category,
+        amount: resource.amount,
+        receipt_number: resource.receiptNumber,
+        payment_method: resource.paymentMethod,
+        vendor: resource.vendor,
+        assigned_to: resource.assignedTo,
+        created_at: resource.createdAt,
+        updated_at: resource.updatedAt,
+      }));
+
+      // Update only expenses in the resources state
+      setResources(prevResources => {
+        const nonExpenseResources = prevResources.filter(r => r.type !== 'expense');
+        return [...nonExpenseResources, ...transformedExpenses];
+      });
+      
+      // Update statistics
+      updateStatistics();
+    } catch (error) {
+      console.error('Error updating expenses data:', error);
     }
   };
 
@@ -1277,7 +1414,7 @@ export default function ProjectResourcesPage() {
         onOpenChange={setMaterialDialogOpen}
         projectId={projectId}
         initialData={editingResource}
-        onSuccess={handleResourceSuccess}
+        onSuccess={() => handleResourceSuccess('material')}
       />
 
       <FuelDialog
@@ -1285,7 +1422,7 @@ export default function ProjectResourcesPage() {
         onOpenChange={setFuelDialogOpen}
         projectId={projectId}
         initialData={editingResource}
-        onSuccess={handleResourceSuccess}
+        onSuccess={() => handleResourceSuccess('fuel')}
       />
 
       <ExpenseDialog
@@ -1293,7 +1430,7 @@ export default function ProjectResourcesPage() {
         onOpenChange={setExpenseDialogOpen}
         projectId={projectId}
         initialData={editingResource}
-        onSuccess={handleResourceSuccess}
+        onSuccess={() => handleResourceSuccess('expense')}
       />
 
              <TaskDialog
