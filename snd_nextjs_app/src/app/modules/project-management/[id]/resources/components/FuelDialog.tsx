@@ -71,6 +71,7 @@ export default function FuelDialog({
 }: FuelDialogProps) {
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingEquipment, setLoadingEquipment] = useState(false);
   const [formData, setFormData] = useState<FuelResource>({
     equipment_id: '',
     equipment_name: '',
@@ -114,16 +115,33 @@ export default function FuelDialog({
 
   const loadEquipment = async () => {
     try {
-      const response = await ApiService.get<Equipment[]>('/equipment');
-      setEquipment(response.data || []);
+      setLoadingEquipment(true);
+      // Load equipment resources from the current project (like manpower)
+      const response = await ApiService.getProjectEquipment(Number(projectId));
+      console.log('Project Equipment API Response:', response);
+      
+      if (response.success && response.data) {
+        console.log('Raw project equipment data:', response.data);
+        // Map API response to expected frontend format
+        const mappedEquipment = response.data.map((item: any) => ({
+          id: item.id.toString(),
+          name: item.equipmentName || item.name || 'Unknown Equipment',
+          model_number: item.model || item.modelNumber || '',
+          status: item.status || 'available',
+        }));
+        setEquipment(mappedEquipment);
+        console.log('Loaded project equipment:', mappedEquipment);
+      } else {
+        console.warn('Failed to load project equipment:', response.message);
+        // Fall back to mock data if no project equipment
+        setEquipment([]);
+      }
     } catch (error) {
-      console.error('Error loading equipment:', error);
-      // Use mock data if API fails
-      setEquipment([
-        { id: '1', name: 'Excavator', model_number: 'CAT-320', status: 'available' },
-        { id: '2', name: 'Bulldozer', model_number: 'CAT-D6', status: 'available' },
-        { id: '3', name: 'Crane', model_number: 'LTM-1100', status: 'available' },
-      ]);
+      console.error('Error loading project equipment:', error);
+      // Use empty array if API fails
+      setEquipment([]);
+    } finally {
+      setLoadingEquipment(false);
     }
   };
 
@@ -235,21 +253,51 @@ export default function FuelDialog({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="equipment_id">Equipment</Label>
-              <Select
-                value={formData.equipment_id || undefined}
-                onValueChange={value => handleInputChange('equipment_id', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select equipment" />
-                </SelectTrigger>
-                <SelectContent>
-                  {equipment.map(eq => (
-                    <SelectItem key={eq.id} value={eq.id}>
-                      {eq.name} {eq.model_number && `(${eq.model_number})`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {loadingEquipment ? (
+                <div className="flex items-center justify-center p-3 border border-gray-300 rounded-md bg-gray-50">
+                  <span className="text-sm text-gray-500">Loading project equipment...</span>
+                </div>
+              ) : equipment.length === 0 ? (
+                <div className="flex items-center justify-between p-3 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                  <span className="text-sm text-gray-500">No equipment assigned to this project</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={loadEquipment}
+                  >
+                    Refresh
+                  </Button>
+                </div>
+              ) : (
+                <Select
+                  value={formData.equipment_id || undefined}
+                  onValueChange={value => handleInputChange('equipment_id', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select equipment from project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {equipment.map(eq => (
+                      <SelectItem key={eq.id} value={eq.id}>
+                        {eq.name} {eq.model_number && `(${eq.model_number})`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              {/* Show selected equipment details */}
+              {formData.equipment_id && (
+                <div className="rounded bg-green-100 p-3 mt-2">
+                  <div className="text-sm font-medium text-green-700">Selected Equipment</div>
+                  <div className="text-sm text-green-600 mt-1">
+                    {formData.equipment_name}
+                    {equipment.find(eq => eq.id === formData.equipment_id)?.model_number &&
+                      ` (${equipment.find(eq => eq.id === formData.equipment_id)?.model_number})`}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
