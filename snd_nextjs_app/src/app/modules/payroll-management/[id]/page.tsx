@@ -227,8 +227,10 @@ export default function PayrollDetailsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="p-6">
-        <div className="max-w-7xl mx-auto" ref={printRef}>
-          {/* Header */}
+        {/* Print container - only visible when printing */}
+        <div ref={printRef} className="hidden print:block">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-4">
               <Link href="/modules/payroll-management">
@@ -629,6 +631,323 @@ export default function PayrollDetailsPage() {
                         <div>
                           <Label className="text-sm font-medium text-gray-500">Reference</Label>
                           <p className="text-sm font-mono bg-gray-100 p-2 rounded">
+                            {payroll.payment_reference}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main content - visible normally, hidden when printing */}
+        <div className="block print:hidden">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-4">
+                <Link href="/modules/payroll-management">
+                  <Button variant="ghost" size="sm" className="hover:bg-white/80">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back
+                  </Button>
+                </Link>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Payroll Details</h1>
+                  <p className="text-gray-600">
+                    Payroll #{payroll.id} • {period}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handlePrint}>
+                  <Printer className="h-4 w-4 mr-2" />
+                  Print
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleShare}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleCopyLink}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy Link
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleDownloadPayslip}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download
+                </Button>
+                <Link href={`/modules/payroll-management/${payroll.id}/payslip`}>
+                  <Button variant="outline" size="sm">
+                    <FileText className="h-4 w-4 mr-2" />
+                    View Payslip
+                  </Button>
+                </Link>
+                <Link href={`/modules/payroll-management/${payroll.id}/edit`}>
+                  <Button
+                    size="sm"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            <div className="grid gap-8">
+              {/* Payroll Overview Card */}
+              <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-xl">Payroll #{payroll.id}</CardTitle>
+                      <CardDescription className="text-blue-100">
+                        {period} • {employeeName}
+                      </CardDescription>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-3xl font-bold">{formatCurrency(payroll.final_amount)}</div>
+                      <div className="text-blue-100 text-sm">Net Pay</div>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 rounded-lg">
+                        <User className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Employee</p>
+                        <p className="font-semibold">{employeeName}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 rounded-lg">
+                        <Calendar className="h-5 w-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Period</p>
+                        <p className="font-semibold">{period}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-100 rounded-lg">
+                        <Building className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Department</p>
+                        <p className="font-semibold">{payroll.employee?.department?.name || 'N/A'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-orange-100 rounded-lg">
+                        <StatusIcon className="h-5 w-5 text-orange-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Status</p>
+                        <p className="font-semibold">{getStatusLabel(payroll.status)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Earnings and Deductions */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Earnings */}
+                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-green-700">Earnings</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Basic Salary</span>
+                        <span className="font-semibold">{formatCurrency(payroll.basic_salary)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Allowances</span>
+                        <span className="font-semibold">{formatCurrency(payroll.allowances)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Overtime</span>
+                        <span className="font-semibold">{formatCurrency(payroll.overtime)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Bonuses</span>
+                        <span className="font-semibold">{formatCurrency(payroll.bonuses)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Other Earnings</span>
+                        <span className="font-semibold">{formatCurrency(payroll.other_earnings)}</span>
+                      </div>
+                      <div className="border-t pt-3">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-green-700">Total Earnings</span>
+                          <span className="font-bold text-lg text-green-700">
+                            {formatCurrency(payroll.total_earnings)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Deductions */}
+                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-red-700">Deductions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Tax</span>
+                        <span className="font-semibold">{formatCurrency(payroll.tax)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Social Security</span>
+                        <span className="font-semibold">{formatCurrency(payroll.social_security)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-4">Insurance</span>
+                        <span className="font-semibold">{formatCurrency(payroll.insurance)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Advances</span>
+                        <span className="font-semibold">{formatCurrency(payroll.advances)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-600">Other Deductions</span>
+                        <span className="font-semibold">{formatCurrency(payroll.other_deductions)}</span>
+                      </div>
+                      <div className="border-t pt-3">
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-red-700">Total Deductions</span>
+                          <span className="font-bold text-lg text-red-700">
+                            {formatCurrency(payroll.total_deductions)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Net Pay Summary */}
+              <Card className="border-0 shadow-lg bg-gradient-to-r from-green-50 to-emerald-50">
+                <CardContent className="p-6">
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-green-800 mb-2">Net Pay</h3>
+                    <div className="text-4xl font-bold text-green-600 mb-4">
+                      {formatCurrency(payroll.final_amount)}
+                    </div>
+                    <p className="text-green-700">
+                      {period} • {employeeName}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions */}
+              <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <Link href={`/modules/payroll-management/${payroll.id}/edit`}>
+                      <Button variant="outline" className="w-full justify-start">
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit Payroll
+                      </Button>
+                    </Link>
+                    <Link href={`/modules/payroll-management/${payroll.id}/payslip`}>
+                      <Button variant="outline" className="w-full justify-start">
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Payslip
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={handleDownloadPayslip}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Payslip
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={handlePrint}
+                    >
+                      <Printer className="h-4 w-4 mr-2" />
+                      Print
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Audit Information */}
+                <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Audit Information</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div>
+                        <Label className="text-sm font-medium text-gray-500">Created</Label>
+                        <p className="text-sm">
+                          {format(new Date(payroll.created_at), "PPP 'at' p")}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-500">Last Updated</Label>
+                        <p className="p-2">
+                          {format(new Date(payroll.updated_at), "PPP 'at' p")}
+                        </p>
+                      </div>
+                      {payroll.approved_at && (
+                        <div>
+                          <Label className="text-sm font-medium text-gray-500">Approved</Label>
+                          <p className="text-sm">
+                            {format(new Date(payroll.approved_at), "PPP 'at' p")}
+                          </p>
+                        </div>
+                      )}
+                      {payroll.paid_at && (
+                        <div>
+                          <Label className="text-sm font-medium text-gray-500">Paid</Label>
+                          <p className="text-sm">
+                            {format(new Date(payroll.paid_at), "PPP 'at' p")}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Payment Details */}
+                {payroll.payment_reference && (
+                  <Card className="border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Payment Details</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div>
+                          <Label className="text-sm font-medium text-gray-500">
+                            Payment Method
+                          </Label>
+                          <p className="text-sm font-semibold">
+                            {getPaymentMethodLabel(payroll.payment_method)}
+                          </p>
+                        </div>
+                        <div>
+                          <Label className="text-sm font-medium text-gray-500">Reference</Label>
+                          <p className="p-2 rounded">
                             {payroll.payment_reference}
                           </p>
                         </div>

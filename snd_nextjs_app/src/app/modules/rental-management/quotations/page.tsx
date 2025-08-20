@@ -419,8 +419,71 @@ export default function QuotationsPage() {
   }
 
   return (
-    <div className="p-6" ref={printRef}>
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-6">
+      {/* Print container - only visible when printing */}
+      <div ref={printRef} className="hidden print:block">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold">Quotations</h1>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Quotations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Quotation #</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Issue Date</TableHead>
+                    <TableHead>Valid Until</TableHead>
+                    <TableHead>Total Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {quotations?.data.map(quotation => (
+                    <TableRow key={quotation.id}>
+                      <TableCell className="font-mono font-medium">
+                        {quotation.quotation_number}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{quotation.customer.companyName || quotation.customer.name}</div>
+                          <div className="text-sm text-gray-500">
+                            {quotation.customer.contactPerson}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(quotation.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-3 w-3" />
+                          <span>{formatDate(quotation.issue_date)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x2">
+                          <Calendar className="h-3 w-3" />
+                          <span>{formatDate(quotation.valid_until)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        {formatCurrency(quotation.total_amount)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Main content - visible normally, hidden when printing */}
+      <div className="block print:hidden">
+        <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Quotations</h1>
           <p className="text-muted-foreground">Manage equipment rental quotations and proposals</p>
@@ -715,6 +778,8 @@ export default function QuotationsPage() {
           )}
         </CardContent>
       </Card>
+        </div>
+      </div>
     </div>
   );
 }

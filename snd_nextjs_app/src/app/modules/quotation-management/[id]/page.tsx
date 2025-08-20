@@ -38,10 +38,10 @@ import { toast } from 'sonner';
 interface Customer {
   id: number;
   name: string;
-  company_name: string;
-  contact_person: string;
-  email: string;
-  phone: string;
+  companyName: string | null;
+  contactPerson: string | null;
+  email: string | null;
+  phone: string | null;
 }
 
 interface Equipment {
@@ -160,8 +160,8 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
         customer: {
           id: 1,
           name: 'ABC Construction Ltd',
-          company_name: 'ABC Construction Ltd',
-          contact_person: 'John Smith',
+          companyName: 'ABC Construction Ltd',
+          contactPerson: 'John Smith',
           email: 'john@abcconstruction.com',
           phone: '+1-555-0123',
         },
@@ -423,8 +423,8 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Customer</label>
-                  <p className="text-lg">{quotation.customer.company_name}</p>
-                  <p className="text-sm text-gray-500">{quotation.customer.contact_person}</p>
+                  <p className="text-lg">{quotation.customer.companyName || quotation.customer.name}</p>
+                  <p className="text-sm text-gray-500">{quotation.customer.contactPerson}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Issue Date</label>
@@ -561,11 +561,11 @@ function QuotationDetailClient({ quotationId }: { quotationId: string }) {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-500">Company</label>
-                <p className="text-lg font-semibold">{quotation.customer.company_name}</p>
+                <p className="text-lg font-semibold">{quotation.customer.companyName || quotation.customer.name}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Contact Person</label>
-                <p className="text-lg">{quotation.customer.contact_person}</p>
+                <p className="text-lg">{quotation.customer.contactPerson}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Email</label>

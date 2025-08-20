@@ -41,10 +41,10 @@ import { useTranslation } from 'react-i18next';
 
 interface Customer {
   id: number;
-  company_name: string;
-  contact_person: string;
-  email: string;
-  phone: string;
+  companyName: string | null;
+  contactPerson: string | null;
+  email: string | null;
+  phone: string | null;
 }
 
 interface QuotationItem {
@@ -215,8 +215,77 @@ export default function QuotationManagementPage() {
   }
 
   return (
-    <div className="p-6" ref={printRef}>
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-6">
+      {/* Print container - only visible when printing */}
+      <div ref={printRef} className="hidden print:block">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-bold">{t('quotation_management.title')}</h1>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('quotation_management.quotations')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('quotation_management.quotation_number')}</TableHead>
+                    <TableHead>{t('quotation_management.customer')}</TableHead>
+                    <TableHead>{t('quotation_management.status')}</TableHead>
+                    <TableHead>{t('quotation_management.issue_date')}</TableHead>
+                    <TableHead>{t('quotation_management.valid_until')}</TableHead>
+                    <TableHead>{t('quotation_management.total_amount')}</TableHead>
+                    <TableHead>{t('quotation_management.items')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {quotations?.data.map(quotation => (
+                    <TableRow key={quotation.id}>
+                      <TableCell className="font-mono font-medium">
+                        {quotation.quotation_number}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{quotation.customer.companyName || quotation.customer.name}</div>
+                          <div className="text-sm text-gray-500">
+                            {quotation.customer.contactPerson}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(quotation.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-3 w-3" />
+                          <span>{formatDate(quotation.issue_date)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-3 w-3" />
+                          <span>{formatDate(quotation.valid_until)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        {formatCurrency(quotation.total_amount)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">
+                          {quotation.quotationItems.length} {t('quotation_management.items_count')}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Main content - visible normally, hidden when printing */}
+      <div className="block print:hidden">
+        <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">{t('quotation_management.title')}</h1>
         <div className="flex space-x-2">
           <Button variant="outline" size="sm" onClick={handleRefresh}>
@@ -325,10 +394,10 @@ export default function QuotationManagementPage() {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{quotation.customer.company_name}</div>
-                      <div className="text-sm text-gray-500">
-                        {quotation.customer.contact_person}
-                      </div>
+                      <div className="font-medium">{quotation.customer.companyName || quotation.customer.name}</div>
+                                              <div className="text-sm text-gray-500">
+                          {quotation.customer.contactPerson}
+                        </div>
                     </div>
                   </TableCell>
                   <TableCell>{getStatusBadge(quotation.status)}</TableCell>
@@ -427,6 +496,8 @@ export default function QuotationManagementPage() {
           )}
         </CardContent>
       </Card>
+        </div>
+      </div>
     </div>
   );
 }

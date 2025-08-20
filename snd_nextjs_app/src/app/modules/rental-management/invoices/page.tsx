@@ -378,8 +378,71 @@ export default function InvoicesPage() {
   }
 
   return (
-    <div className="p-6" ref={printRef}>
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-6">
+      {/* Print container - only visible when printing */}
+      <div ref={printRef} className="hidden print:block">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-3xl font-bold">Invoices</h1>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Invoices</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Invoice #</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Issue Date</TableHead>
+                    <TableHead>Due Date</TableHead>
+                    <TableHead>Total Amount</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {invoices?.data.map(invoice => (
+                    <TableRow key={invoice.id}>
+                      <TableCell className="font-mono font-medium">
+                        {invoice.invoice_number}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{invoice.rental.customer.companyName || invoice.rental.customer.name}</div>
+                          <div className="text-sm text-gray-500">
+                            {invoice.rental.customer.contactPerson}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(invoice.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-3 w-3" />
+                          <span>{formatDate(invoice.issue_date)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Calendar className="h-3 w-3" />
+                          <span>{formatDate(invoice.due_date)}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-semibold">
+                        {formatCurrency(invoice.total_amount)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Main content - visible normally, hidden when printing */}
+      <div className="block print:hidden">
+        <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold">Invoices</h1>
           <p className="text-muted-foreground">Manage rental invoices and payment tracking</p>
@@ -696,6 +759,8 @@ export default function InvoicesPage() {
           )}
         </CardContent>
       </Card>
+        </div>
+      </div>
     </div>
   );
 }
