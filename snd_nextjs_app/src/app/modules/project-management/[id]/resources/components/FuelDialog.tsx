@@ -117,7 +117,7 @@ export default function FuelDialog({
       const response = await ApiService.get<Equipment[]>('/equipment');
       setEquipment(response.data || []);
     } catch (error) {
-      
+      console.error('Error loading equipment:', error);
       // Use mock data if API fails
       setEquipment([
         { id: '1', name: 'Excavator', model_number: 'CAT-320', status: 'available' },
@@ -190,27 +190,25 @@ export default function FuelDialog({
         fuelType: formData.fuel_type,
         quantity: formData.liters,
         unitPrice: formData.price_per_liter,
-        supplier: formData.supplier,
-        equipmentId: formData.equipment_id,
-        operatorId: formData.operator_id,
+        supplier: '', // Default empty supplier
+        equipmentId: formData.equipment_id ? parseInt(formData.equipment_id) : null,
+        operatorId: null, // Default null operator
         usageNotes: formData.notes,
-        type: 'fuel',
-        name: formData.name || `${formData.fuel_type} Fuel`,
-        total_cost: (formData.liters || 0) * (formData.price_per_liter || 0),
+        purchaseDate: formData.date, // Add required purchaseDate field
       };
 
       if (initialData?.id) {
-        await apiService.put(`/projects/${projectId}/fuel?id=${initialData.id}`, submitData);
+        await ApiService.put(`/projects/${projectId}/fuel?id=${initialData.id}`, submitData);
         toast.success('Fuel record updated successfully');
       } else {
-        await apiService.createProjectFuel(projectId, submitData);
+        await ApiService.post(`/projects/${projectId}/fuel`, submitData);
         toast.success('Fuel record added successfully');
       }
 
       onSuccess();
       onOpenChange(false);
     } catch (error) {
-      
+      console.error('Error saving fuel resource:', error);
       toast.error('Failed to save fuel resource');
     } finally {
       setLoading(false);
