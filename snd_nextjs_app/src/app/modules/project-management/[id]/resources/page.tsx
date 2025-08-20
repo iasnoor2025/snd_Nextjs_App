@@ -211,6 +211,16 @@ export default function ProjectResourcesPage() {
         ...(tasksResponse.data || []).map((resource: any) => ({ ...resource, type: 'tasks' })),
       ];
 
+      // Debug: Log the raw API responses
+      console.log('Raw API responses:', {
+        manpower: manpowerResponse.data,
+        equipment: equipmentResponse.data,
+        materials: materialsResponse.data,
+        fuel: fuelResponse.data,
+        expenses: expensesResponse.data,
+        tasks: tasksResponse.data,
+      });
+
       // Transform the API response to match our frontend structure
       const transformedResources = allResources.map((resource: any) => ({
         id: resource.id.toString(),
@@ -255,10 +265,10 @@ export default function ProjectResourcesPage() {
         // Equipment specific fields
         equipment_id: resource.equipmentId?.toString(),
         equipment_name: resource.equipmentName,
-        operator_name: resource.operatorName,
+        operator_name: resource.operatorName ? `${resource.operatorName} ${resource.operatorLastName || ''}`.trim() : undefined,
         hourly_rate: resource.hourlyRate ? parseFloat(resource.hourlyRate) : undefined,
         hours_worked: resource.hoursWorked ? parseFloat(resource.hoursWorked) : undefined,
-        usage_hours: resource.usageHours ? parseFloat(resource.usageHours) : undefined,
+        usage_hours: resource.estimatedHours ? parseFloat(resource.estimatedHours) : undefined,
         maintenance_cost: resource.maintenanceCost
           ? parseFloat(resource.maintenanceCost)
           : undefined,
@@ -296,6 +306,9 @@ export default function ProjectResourcesPage() {
         updated_at: resource.updatedAt,
       }));
 
+      // Debug: Log the transformed resources
+      console.log('Transformed resources:', transformedResources);
+      
       setResources(transformedResources);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -561,13 +574,13 @@ export default function ProjectResourcesPage() {
         date: resource.startDate,
         status: resource.status,
         notes: resource.notes,
-        equipment_id: resource.equipmentId?.toString(),
-        equipment_name: resource.equipmentName,
-        operator_name: resource.operatorName,
-        hourly_rate: resource.hourlyRate ? parseFloat(resource.hourlyRate) : undefined,
-        hours_worked: resource.hoursWorked ? parseFloat(resource.hoursWorked) : undefined,
-        usage_hours: resource.usageHours ? parseFloat(resource.usageHours) : undefined,
-        maintenance_cost: resource.maintenanceCost ? parseFloat(resource.maintenanceCost) : undefined,
+                                   equipment_id: resource.equipmentId?.toString(),
+          equipment_name: resource.equipmentName,
+          operator_name: resource.operatorName ? `${resource.operatorName} ${resource.operatorLastName || ''}`.trim() : undefined,
+          hourly_rate: resource.hourlyRate ? parseFloat(resource.hourlyRate) : undefined,
+          hours_worked: resource.hoursWorked ? parseFloat(resource.hoursWorked) : undefined,
+          usage_hours: resource.estimatedHours ? parseFloat(resource.estimatedHours) : undefined,
+          maintenance_cost: resource.maintenanceCost ? parseFloat(resource.maintenanceCost) : undefined,
         created_at: resource.createdAt,
         updated_at: resource.updatedAt,
       }));

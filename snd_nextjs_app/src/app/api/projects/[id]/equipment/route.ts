@@ -60,9 +60,15 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       .where(and(...whereConditions))
       .orderBy(desc(projectEquipment.createdAt));
 
+    // Calculate total cost for each equipment item
+    const equipmentWithCosts = projectEquipmentList.map(item => ({
+      ...item,
+      totalCost: (item.hourlyRate || 0) * (item.estimatedHours || 0) + (item.maintenanceCost || 0)
+    }));
+
     return NextResponse.json({ 
       success: true,
-      data: projectEquipmentList 
+      data: equipmentWithCosts 
     });
   } catch (error) {
     console.error('Error fetching project equipment:', error);
