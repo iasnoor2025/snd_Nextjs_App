@@ -43,11 +43,16 @@ interface Project {
   end_date?: string;
   budget: number;
   progress: number;
-  manager?: {
-    id: string;
-    name: string;
-    email: string;
-  };
+  // Project team roles
+  project_manager_id?: number;
+  project_engineer_id?: number;
+  project_foreman_id?: number;
+  supervisor_id?: number;
+  // Team member names (from API)
+  project_manager?: { id: number; name: string };
+  project_engineer?: { id: number; name: string };
+  project_foreman?: { id: number; name: string };
+  supervisor?: { id: number; name: string };
   location?: string;
   notes?: string;
 }
@@ -852,6 +857,60 @@ export default function ProjectDetailPage() {
             </div>
           </div>
 
+          {/* Project Team */}
+          <div className="border-b border-gray-100 p-4 dark:border-gray-800">
+            <h3 className="mb-3 text-base font-semibold">Project Team</h3>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="flex items-center space-x-3">
+                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                  <User className="h-4 w-4 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Project Manager</p>
+                  <p className="text-sm text-gray-500">
+                    {project.project_manager?.name || 'Not assigned'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                  <User className="h-4 w-4 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Project Engineer</p>
+                  <p className="text-sm text-gray-500">
+                    {project.project_engineer?.name || 'Not assigned'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
+                  <User className="h-4 w-4 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Project Foreman</p>
+                  <p className="text-sm text-gray-500">
+                    {project.project_foreman?.name || 'Not assigned'}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-3">
+                <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center">
+                  <User className="h-4 w-4 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Supervisor</p>
+                  <p className="text-sm text-gray-500">
+                    {project.supervisor?.name || 'Not assigned'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Project Milestones */}
           <div className="p-4">
             <h3 className="mb-3 text-base font-semibold">Project Milestones</h3>
@@ -960,35 +1019,6 @@ export default function ProjectDetailPage() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Project Manager */}
-            {project.manager && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <User className="h-5 w-5" />
-                    <span>Project Manager</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center space-x-3">
-                    <Avatar>
-                      <AvatarImage src="" />
-                      <AvatarFallback>
-                        {project.manager.name
-                          .split(' ')
-                          .map(n => n[0])
-                          .join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium">{project.manager.name}</p>
-                      <p className="text-sm text-gray-600">{project.manager.email}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
 
             {/* Project Notes */}
             {project.notes && (

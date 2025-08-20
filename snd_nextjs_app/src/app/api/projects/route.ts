@@ -1,8 +1,10 @@
 import { db } from '@/lib/db';
-import { projects as projectsTable } from '@/lib/drizzle/schema';
+import { projects as projectsTable, customers, employees } from '@/lib/drizzle/schema';
 import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, ilike, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { inArray } from 'drizzle-orm';
+import { employees as employeesTable } from '@/lib/drizzle/schema';
 
 // Re-enable RBAC middleware now that the issue is fixed
 export const GET = withPermission(async (request: NextRequest) => {
@@ -59,12 +61,45 @@ export const GET = withPermission(async (request: NextRequest) => {
           updatedAt: projectsTable.updatedAt,
           customerId: projectsTable.customerId,
           notes: projectsTable.notes,
+          customerName: customers.name,
+          // Project team roles
+          projectManagerId: projectsTable.projectManagerId,
+          projectEngineerId: projectsTable.projectEngineerId,
+          projectForemanId: projectsTable.projectForemanId,
+          supervisorId: projectsTable.supervisorId,
+          // Employee names for roles - we'll get these separately
+          customerName: customers.name,
         })
       .from(projectsTable)
+      .leftJoin(customers, eq(projectsTable.customerId, customers.id))
       .where(whereExpr as any)
       .orderBy(desc(projectsTable.createdAt))
       .offset(skip)
       .limit(limit);
+
+    // Get employee names for team roles
+    const employeeIds = rows
+      .map(row => [row.projectManagerId, row.projectEngineerId, row.projectForemanId, row.supervisorId])
+      .flat()
+      .filter(id => id !== null) as number[];
+
+    let employeeNames: { [key: number]: string } = {};
+    if (employeeIds.length > 0) {
+      const uniqueEmployeeIds = [...new Set(employeeIds)];
+      const employees = await db
+        .select({
+          id: employeesTable.id,
+          firstName: employeesTable.firstName,
+          lastName: employeesTable.lastName,
+        })
+        .from(employeesTable)
+        .where(inArray(employeesTable.id, uniqueEmployeeIds));
+
+      employeeNames = employees.reduce((acc, emp) => {
+        acc[emp.id] = `${emp.firstName} ${emp.lastName}`;
+        return acc;
+      }, {} as { [key: number]: string });
+    }
     
     const countRows = await db
       .select({ id: projectsTable.id })
@@ -78,17 +113,26 @@ export const GET = withPermission(async (request: NextRequest) => {
       id: project.id,
       name: project.name,
       description: project.description || '',
-      client: 'Unknown Client', // Will be updated when we join with customers table
+      client: project.customerName || 'No Client Assigned',
       status: project.status,
-      priority: 'medium', // Default priority since it's not in the schema
+      priority: 'medium',
       start_date: project.startDate ? project.startDate.toString() : '',
       end_date: project.endDate ? project.endDate.toString() : '',
       budget: Number(project.budget) || 0,
-      progress: 0, // Will be calculated based on tasks
-      manager: 'Project Manager', // Default manager
-      team_size: 0, // Will be calculated based on manpower
-      location: 'Project Location', // Default location
+      progress: 0,
+      team_size: 0,
+      location: 'Project Location',
       notes: project.notes || '',
+      // Project team roles
+      project_manager_id: project.projectManagerId,
+      project_engineer_id: project.projectEngineerId,
+      project_foreman_id: project.projectForemanId,
+      supervisor_id: project.supervisorId,
+      // Team member names for display
+      project_manager: project.projectManagerId ? { id: project.projectManagerId, name: employeeNames[project.projectManagerId] || 'Unknown' } : null,
+      project_engineer: project.projectEngineerId ? { id: project.projectEngineerId, name: employeeNames[project.projectEngineerId] || 'Unknown' } : null,
+      project_foreman: project.projectForemanId ? { id: project.projectForemanId, name: employeeNames[project.projectForemanId] || 'Unknown' } : null,
+      supervisor: project.supervisorId ? { id: project.supervisorId, name: employeeNames[project.supervisorId] || 'Unknown' } : null,
       created_at: project.createdAt ? project.createdAt.toString() : '',
       updated_at: project.updatedAt ? project.updatedAt.toString() : '',
     }));
@@ -154,6 +198,11 @@ export const POST = withPermission(async (request: NextRequest) => {
       cost_plan_detailed,
       quality_plan_detailed,
       risk_plan_detailed,
+      // Project team roles
+      project_manager_id,
+      project_engineer_id,
+      project_foreman_id,
+      supervisor_id,
     } = body;
 
     const inserted = await db
@@ -166,6 +215,11 @@ export const POST = withPermission(async (request: NextRequest) => {
         endDate: end_date ? new Date(end_date).toISOString() : null,
         status: status || 'planning',
         budget: budget ? String(parseFloat(budget)) : null,
+        // Project team roles
+        projectManagerId: project_manager_id ? parseInt(project_manager_id) : null,
+        projectEngineerId: project_engineer_id ? parseInt(project_engineer_id) : null,
+        projectForemanId: project_foreman_id ? parseInt(project_foreman_id) : null,
+        supervisorId: supervisor_id ? parseInt(supervisor_id) : null,
         notes:
           (notes ||
             objectives ||
@@ -208,7 +262,7 @@ export const POST = withPermission(async (request: NextRequest) => {
       { status: 201 }
     );
   } catch (error) {
-    
+    console.error('Error creating project:', error);
     return NextResponse.json({ error: 'Failed to create project' }, { status: 500 });
   }
 }, PermissionConfigs.project.create);

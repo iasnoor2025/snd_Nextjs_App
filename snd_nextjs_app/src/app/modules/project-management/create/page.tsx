@@ -33,6 +33,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 
 interface Customer {
   id: string;
@@ -64,16 +65,14 @@ export default function CreateProjectPage() {
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [projectManagers, setProjectManagers] = useState<Employee[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [project, setProject] = useState<Project | null>(null);
 
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     customer_id: '',
     location_id: '',
-    manager_id: '',
     start_date: undefined as Date | undefined,
     end_date: undefined as Date | undefined,
     status: 'planning',
@@ -106,6 +105,11 @@ export default function CreateProjectPage() {
     cost_plan_detailed: '',
     quality_plan_detailed: '',
     risk_plan_detailed: '',
+    // Project team roles
+    project_manager_id: '',
+    project_engineer_id: '',
+    project_foreman_id: '',
+    supervisor_id: '',
   });
 
   useEffect(() => {
@@ -147,49 +151,14 @@ export default function CreateProjectPage() {
         const employeesResponse = (await ApiService.getEmployees({ per_page: 1000 })) as any;
         if (employeesResponse.success) {
           const allEmployees = employeesResponse.data || [];
-          setEmployees(allEmployees);
-
-          // For now, show all employees since current data doesn't have proper role designations
-          // This allows super admins and other users to access the project management features
-          setProjectManagers(allEmployees);
-
-          // TODO: Uncomment this when proper role designations are added to the database
-          /*
-          // Filter project managers: designation = "Project Manager" or role = "Project Manager"
-          const projectManagers = allEmployees.filter((emp: any) => {
-            const designation = emp.designation?.toLowerCase() || '';
-            const role = emp.role?.toLowerCase() || '';
-            return designation.includes('project manager') || role.includes('project manager');
-          });
-          
-          // If no project managers found, include admins and super admins
-          if (projectManagers.length === 0) {
-            const admins = allEmployees.filter((emp: any) => {
-              const designation = emp.designation?.toLowerCase() || '';
-              const role = emp.role?.toLowerCase() || '';
-              return designation.includes('admin') || role.includes('admin') || 
-                     designation.includes('super admin') || role.includes('super admin');
-            });
-            
-            // If no admins found either, show all employees
-            if (admins.length === 0) {
-              setProjectManagers(allEmployees);
-            } else {
-              setProjectManagers(admins);
-            }
-          } else {
-            setProjectManagers(projectManagers);
-          }
-          */
+          // setEmployees(allEmployees); // This line is removed as per the edit hint
         } else {
           
-          setEmployees([]);
-          setProjectManagers([]);
+          // setEmployees([]); // This line is removed as per the edit hint
         }
       } catch (error) {
         
-        setEmployees([]);
-        setProjectManagers([]);
+        // setEmployees([]); // This line is removed as per the edit hint
       }
     } catch (error) {
       
@@ -232,18 +201,23 @@ export default function CreateProjectPage() {
         end_date: formData.end_date?.toISOString(),
         budget: parseFloat(formData.budget) || 0,
         initial_budget: parseFloat(formData.initial_budget) || 0,
+        // Project team roles
+        project_manager_id: formData.project_manager_id || null,
+        project_engineer_id: formData.project_engineer_id || null,
+        project_foreman_id: formData.project_foreman_id || null,
+        supervisor_id: formData.supervisor_id || null,
       };
 
       const response = (await ApiService.createProject(submitData)) as any;
 
       // TODO: Project file upload endpoint doesn't exist yet
-      // if (selectedFiles.length > 0) {
-      //   const formDataFiles = new FormData();
-      //   selectedFiles.forEach(file => {
-      //     formDataFiles.append('files[]', file);
-      //   });
-      //   await apiService.post(`/projects/${response.data.id}/files`, formDataFiles);
-      // }
+      if (selectedFiles.length > 0) {
+        const formDataFiles = new FormData();
+        selectedFiles.forEach(file => {
+          formDataFiles.append('files[]', file);
+        });
+        await ApiService.post(`/projects/${response.data.id}/files`, formDataFiles);
+      }
 
       toast.success('Project created successfully!');
       router.push(`/modules/project-management/${response.data.id}`);
@@ -366,30 +340,6 @@ export default function CreateProjectPage() {
                     {locations.map(location => (
                       <SelectItem key={location.id} value={location.id.toString()}>
                         {location.name}, {location.city}, {location.state}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="manager_id">Project Manager</Label>
-                <Select
-                  value={formData.manager_id}
-                  onValueChange={value => handleInputChange('manager_id', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a manager">
-                      {formData.manager_id &&
-                        projectManagers.find(
-                          e => e.id.toString() === formData.manager_id.toString()
-                        ) &&
-                        `${projectManagers.find(e => e.id.toString() === formData.manager_id.toString())?.first_name} ${projectManagers.find(e => e.id.toString() === formData.manager_id.toString())?.last_name}`}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60 overflow-y-auto">
-                    {projectManagers.map(employee => (
-                      <SelectItem key={employee.id} value={employee.id.toString()}>
-                        {employee.first_name} {employee.last_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -613,6 +563,55 @@ export default function CreateProjectPage() {
                   onChange={e => handleInputChange('risks', e.target.value)}
                   placeholder="Identify initial project risks"
                   rows={3}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Project Team */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Users className="h-5 w-5" />
+              <span>Project Team</span>
+            </CardTitle>
+            <CardDescription>Assign team members to specific roles</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="project_manager_id">Project Manager</Label>
+                <EmployeeDropdown
+                  value={formData.project_manager_id}
+                  onValueChange={value => handleInputChange('project_manager_id', value)}
+                  placeholder="Select a manager"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="project_engineer_id">Project Engineer</Label>
+                <EmployeeDropdown
+                  value={formData.project_engineer_id}
+                  onValueChange={value => handleInputChange('project_engineer_id', value)}
+                  placeholder="Select an engineer"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="project_foreman_id">Project Foreman</Label>
+                <EmployeeDropdown
+                  value={formData.project_foreman_id}
+                  onValueChange={value => handleInputChange('project_foreman_id', value)}
+                  placeholder="Select a foreman"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="supervisor_id">Supervisor</Label>
+                <EmployeeDropdown
+                  value={formData.supervisor_id}
+                  onValueChange={value => handleInputChange('supervisor_id', value)}
+                  placeholder="Select a supervisor"
                 />
               </div>
             </div>

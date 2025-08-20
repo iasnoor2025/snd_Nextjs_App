@@ -1,5 +1,5 @@
 import { db } from '@/lib/drizzle';
-import { customers, projects, rentals } from '@/lib/drizzle/schema';
+import { customers, projects, rentals, employees } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -29,6 +29,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         endDate: projects.endDate,
         budget: projects.budget,
         notes: projects.notes,
+        // Project team roles
+        projectManagerId: projects.projectManagerId,
+        projectEngineerId: projects.projectEngineerId,
+        projectForemanId: projects.projectForemanId,
+        supervisorId: projects.supervisorId,
         createdAt: projects.createdAt,
         updatedAt: projects.updatedAt,
       })
@@ -97,25 +102,141 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
       rental = null;
     }
 
-    // Transform the data to match the frontend expectations
+    // Get project manager data if projectManagerId exists
+    let projectManager: any = null;
+    if (project.projectManagerId) {
+      try {
+        console.log('Fetching project manager with ID:', project.projectManagerId);
+        
+        const managerData = await db
+          .select({
+            id: employees.id,
+            firstName: employees.firstName,
+            lastName: employees.lastName,
+            email: employees.email,
+          })
+          .from(employees)
+          .where(eq(employees.id, project.projectManagerId))
+          .limit(1);
+
+        projectManager = managerData[0] || null;
+        console.log('Found project manager:', projectManager);
+        
+      } catch (managerError) {
+        console.error('Error fetching project manager:', managerError);
+        projectManager = null;
+      }
+    }
+
+    // Get project engineer data if projectEngineerId exists
+    let projectEngineer: any = null;
+    if (project.projectEngineerId) {
+      try {
+        const engineerData = await db
+          .select({
+            id: employees.id,
+            firstName: employees.firstName,
+            lastName: employees.lastName,
+            email: employees.email,
+          })
+          .from(employees)
+          .where(eq(employees.id, project.projectEngineerId))
+          .limit(1);
+
+        projectEngineer = engineerData[0] || null;
+        
+      } catch (engineerError) {
+        console.error('Error fetching project engineer:', engineerError);
+        projectEngineer = null;
+      }
+    }
+
+    // Get project foreman data if projectForemanId exists
+    let projectForeman: any = null;
+    if (project.projectForemanId) {
+      try {
+        const foremanData = await db
+          .select({
+            id: employees.id,
+            firstName: employees.firstName,
+            lastName: employees.lastName,
+            email: employees.email,
+          })
+          .from(employees)
+          .where(eq(employees.id, project.projectForemanId))
+          .limit(1);
+
+        projectForeman = foremanData[0] || null;
+        
+      } catch (foremanError) {
+        console.error('Error fetching project foreman:', foremanError);
+        projectForeman = null;
+      }
+    }
+
+    // Get supervisor data if supervisorId exists
+    let supervisor: any = null;
+    if (project.supervisorId) {
+      try {
+        const supervisorData = await db
+          .select({
+            id: employees.id,
+            firstName: employees.firstName,
+            lastName: employees.lastName,
+            email: employees.email,
+          })
+          .from(employees)
+          .where(eq(employees.id, project.supervisorId))
+          .limit(1);
+
+        supervisor = supervisorData[0] || null;
+        
+      } catch (supervisorError) {
+        console.error('Error fetching supervisor:', supervisorError);
+        supervisor = null;
+      }
+    }
+
+    // Transform the data to match the frontend expectations of edit page
     const transformedProject = {
       id: project.id,
       name: project.name,
       description: project.description,
+      customer_id: project.customerId ?? null,
       client_name: customer?.name || 'Unknown Client',
       client_contact: customer?.email || customer?.phone || 'No contact info',
       status: project.status,
-      priority: 'medium', // Default value since priority field doesn't exist in DB
+      priority: 'medium',
       start_date: project.startDate ? project.startDate.toString() : null,
       end_date: project.endDate ? project.endDate.toString() : null,
       budget: Number(project.budget) || 0,
-      progress: 0, // Will be calculated based on tasks
-      manager: {
-        id: '1',
-        name: 'Project Manager',
-        email: 'manager@company.com',
-      },
-      location: 'Project Location', // Default since location field doesn't exist in DB
+      progress: 0,
+      // Project team roles
+      project_manager_id: project.projectManagerId,
+      project_engineer_id: project.projectEngineerId,
+      project_foreman_id: project.projectForemanId,
+      supervisor_id: project.supervisorId,
+      project_manager: projectManager ? {
+        id: projectManager.id.toString(),
+        name: `${projectManager.firstName} ${projectManager.lastName}`,
+        email: projectManager.email,
+      } : null,
+      project_engineer: projectEngineer ? {
+        id: projectEngineer.id.toString(),
+        name: `${projectEngineer.firstName} ${projectEngineer.lastName}`,
+        email: projectEngineer.email,
+      } : null,
+      project_foreman: projectForeman ? {
+        id: projectForeman.id.toString(),
+        name: `${projectForeman.firstName} ${projectForeman.lastName}`,
+        email: projectForeman.email,
+      } : null,
+      supervisor: supervisor ? {
+        id: supervisor.id.toString(),
+        name: `${supervisor.firstName} ${supervisor.lastName}`,
+        email: supervisor.email,
+      } : null,
+      location: 'Project Location',
       notes: project.notes || 'Project details and notes.',
       rental: rental,
       created_at: project.createdAt,
@@ -155,6 +276,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         startDate: body.start_date ? body.start_date : null,
         endDate: body.end_date ? body.end_date : null,
         budget: body.budget ? String(parseFloat(body.budget)) : null,
+        // Project team roles
+        projectManagerId: body.project_manager_id ? parseInt(body.project_manager_id) : null,
+        projectEngineerId: body.project_engineer_id ? parseInt(body.project_engineer_id) : null,
+        projectForemanId: body.project_foreman_id ? parseInt(body.project_foreman_id) : null,
+        supervisorId: body.supervisor_id ? parseInt(body.supervisor_id) : null,
         notes:
           body.notes ||
           body.objectives ||
@@ -197,6 +323,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         endDate: projects.endDate,
         budget: projects.budget,
         notes: projects.notes,
+        // Project team roles
+        projectManagerId: projects.projectManagerId,
+        projectEngineerId: projects.projectEngineerId,
+        projectForemanId: projects.projectForemanId,
+        supervisorId: projects.supervisorId,
         customer: {
           id: customers.id,
           name: customers.name,
@@ -215,7 +346,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       message: 'Project updated successfully',
     });
   } catch (error) {
-    
+    console.error('Error updating project:', error);
     return NextResponse.json({ error: 'Failed to update project' }, { status: 500 });
   }
 }

@@ -75,9 +75,18 @@ interface Project {
   end_date: string;
   budget: number;
   progress: number;
-  manager?: string;
   team_size?: number;
   location?: string;
+  // Project team roles
+  project_manager_id?: number;
+  project_engineer_id?: number;
+  project_foreman_id?: number;
+  supervisor_id?: number;
+  // Team member names for display
+  project_manager?: { id: number; name: string };
+  project_engineer?: { id: number; name: string };
+  project_foreman?: { id: number; name: string };
+  supervisor?: { id: number; name: string };
 }
 
 interface PaginatedResponse {
@@ -494,7 +503,7 @@ export default function ProjectManagementPage() {
                   <TableRow>
                     <TableHead>{t('project_name')}</TableHead>
                     <TableHead>{t('client')}</TableHead>
-                    <TableHead>{t('manager')}</TableHead>
+                    <TableHead>{t('project_team')}</TableHead>
                     <TableHead>{t('status')}</TableHead>
                     <TableHead>{t('priority')}</TableHead>
                     <TableHead>{t('progress')}</TableHead>
@@ -517,7 +526,34 @@ export default function ProjectManagementPage() {
                         </div>
                       </TableCell>
                       <TableCell>{project.client}</TableCell>
-                      <TableCell>{project.manager || '—'}</TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          {project.project_manager_id && (
+                            <div className="text-xs text-muted-foreground">
+                              PM: {project.project_manager?.name || '—'}
+                            </div>
+                          )}
+                          {project.project_engineer_id && (
+                            <div className="text-xs text-muted-foreground">
+                              PE: {project.project_engineer?.name || '—'}
+                            </div>
+                          )}
+                          {project.project_foreman_id && (
+                            <div className="text-xs text-muted-foreground">
+                              PF: {project.project_foreman?.name || '—'}
+                            </div>
+                          )}
+                          {project.supervisor_id && (
+                            <div className="text-xs text-muted-foreground">
+                              SP: {project.supervisor?.name || '—'}
+                            </div>
+                          )}
+                          {!project.project_manager_id && !project.project_engineer_id && 
+                           !project.project_foreman_id && !project.supervisor_id && (
+                            <div className="text-xs text-muted-foreground">No team assigned</div>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>{getStatusBadge(project.status)}</TableCell>
                       <TableCell>{getPriorityBadge(project.priority)}</TableCell>
                       <TableCell>
@@ -604,12 +640,6 @@ export default function ProjectManagementPage() {
                       <span className="text-muted-foreground">{t('client')}</span>
                       <span className="font-medium">{project.client}</span>
                     </div>
-                    {project.manager && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">{t('manager')}</span>
-                        <span className="font-medium">{project.manager}</span>
-                      </div>
-                    )}
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-muted-foreground">{t('progress')}</span>
                       <span className="font-medium">{project.progress}%</span>
