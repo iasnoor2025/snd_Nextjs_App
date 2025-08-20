@@ -71,6 +71,27 @@
       "when": 1755687830362,
       "tag": "0009_first_gamora",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1755689012905,
+      "tag": "0010_warm_scream",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1755690916294,
+      "tag": "0011_wild_giant_girl",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1755691397109,
+      "tag": "0012_wonderful_romulus",
+      "breakpoints": true
     }
   ]
 }

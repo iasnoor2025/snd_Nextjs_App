@@ -36,6 +36,71 @@ export default function CreateCompanyPage() {
     saudi_standards_license_expiry: '',
     environmental_license: '',
     environmental_license_expiry: '',
+    // Additional Saudi Law Documents
+    zakat_registration: '',
+    zakat_registration_expiry: '',
+    saudi_arabia_visa: '',
+    saudi_arabia_visa_expiry: '',
+    investment_license: '',
+    investment_license_expiry: '',
+    import_export_license: '',
+    import_export_license_expiry: '',
+    pharmaceutical_license: '',
+    pharmaceutical_license_expiry: '',
+    food_safety_license: '',
+    food_safety_license_expiry: '',
+    construction_license: '',
+    construction_license_expiry: '',
+    transportation_license: '',
+    transportation_license_expiry: '',
+    banking_license: '',
+    banking_license_expiry: '',
+    insurance_license: '',
+    insurance_license_expiry: '',
+    telecom_license: '',
+    telecom_license_expiry: '',
+    energy_license: '',
+    energy_license_expiry: '',
+    mining_license: '',
+    mining_license_expiry: '',
+    tourism_license: '',
+    tourism_license_expiry: '',
+    education_license: '',
+    education_license_expiry: '',
+    healthcare_license: '',
+    healthcare_license_expiry: '',
+    real_estate_license: '',
+    real_estate_license_expiry: '',
+    legal_services_license: '',
+    legal_services_license_expiry: '',
+    accounting_license: '',
+    accounting_license_expiry: '',
+    advertising_license: '',
+    advertising_license_expiry: '',
+    media_license: '',
+    media_license_expiry: '',
+    security_license: '',
+    security_license_expiry: '',
+    cleaning_license: '',
+    cleaning_license_expiry: '',
+    catering_license: '',
+    catering_license_expiry: '',
+    warehouse_license: '',
+    warehouse_license_expiry: '',
+    logistics_license: '',
+    logistics_license_expiry: '',
+    maintenance_license: '',
+    maintenance_license_expiry: '',
+    training_license: '',
+    training_license_expiry: '',
+    consulting_license: '',
+    consulting_license_expiry: '',
+    research_license: '',
+    research_license_expiry: '',
+    technology_license: '',
+    technology_license_expiry: '',
+    innovation_license: '',
+    innovation_license_expiry: '',
     // Additional Company Information
     website: '',
     contact_person: '',
@@ -322,7 +387,8 @@ export default function CreateCompanyPage() {
                     value={formData.chamber_of_commerce}
                     onChange={e => handleInputChange('chamber_of_commerce', e.target.value)}
                     placeholder="Chamber of commerce registration"
-                  </div>
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="chamber_of_commerce_expiry">Expiry Date</Label>
                   <Input
@@ -418,6 +484,710 @@ export default function CreateCompanyPage() {
                     type="date"
                     value={formData.environmental_license_expiry}
                     onChange={e => handleInputChange('environmental_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Zakat Registration */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="zakat_registration">Zakat Registration</Label>
+                  <Input
+                    id="zakat_registration"
+                    value={formData.zakat_registration}
+                    onChange={e => handleInputChange('zakat_registration', e.target.value)}
+                    placeholder="Zakat registration number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="zakat_registration_expiry">Expiry Date</Label>
+                  <Input
+                    id="zakat_registration_expiry"
+                    type="date"
+                    value={formData.zakat_registration_expiry}
+                    onChange={e => handleInputChange('zakat_registration_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Saudi Arabia Visa */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="saudi_arabia_visa">Saudi Arabia Visa</Label>
+                  <Input
+                    id="saudi_arabia_visa"
+                    value={formData.saudi_arabia_visa}
+                    onChange={e => handleInputChange('saudi_arabia_visa', e.target.value)}
+                    placeholder="Business visa number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="saudi_arabia_visa_expiry">Expiry Date</Label>
+                  <Input
+                    id="saudi_arabia_visa_expiry"
+                    type="date"
+                    value={formData.saudi_arabia_visa_expiry}
+                    onChange={e => handleInputChange('saudi_arabia_visa_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Investment License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="investment_license">Investment License</Label>
+                  <Input
+                    id="investment_license"
+                    value={formData.investment_license}
+                    onChange={e => handleInputChange('investment_license', e.target.value)}
+                    placeholder="Investment license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="investment_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="investment_license_expiry"
+                    type="date"
+                    value={formData.investment_license_expiry}
+                    onChange={e => handleInputChange('investment_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Import/Export License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="import_export_license">Import/Export License</Label>
+                  <Input
+                    id="import_export_license"
+                    value={formData.import_export_license}
+                    onChange={e => handleInputChange('import_export_license', e.target.value)}
+                    placeholder="Import/export license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="import_export_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="import_export_license_expiry"
+                    type="date"
+                    value={formData.import_export_license_expiry}
+                    onChange={e => handleInputChange('import_export_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Pharmaceutical License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="pharmaceutical_license">Pharmaceutical License</Label>
+                  <Input
+                    id="pharmaceutical_license"
+                    value={formData.pharmaceutical_license}
+                    onChange={e => handleInputChange('pharmaceutical_license', e.target.value)}
+                    placeholder="Pharmaceutical license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pharmaceutical_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="pharmaceutical_license_expiry"
+                    type="date"
+                    value={formData.pharmaceutical_license_expiry}
+                    onChange={e => handleInputChange('pharmaceutical_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Food Safety License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="food_safety_license">Food Safety License</Label>
+                  <Input
+                    id="food_safety_license"
+                    value={formData.food_safety_license}
+                    onChange={e => handleInputChange('food_safety_license', e.target.value)}
+                    placeholder="Food safety license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="food_safety_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="food_safety_license_expiry"
+                    type="date"
+                    value={formData.food_safety_license_expiry}
+                    onChange={e => handleInputChange('food_safety_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Construction License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="construction_license">Construction License</Label>
+                  <Input
+                    id="construction_license"
+                    value={formData.construction_license}
+                    onChange={e => handleInputChange('construction_license', e.target.value)}
+                    placeholder="Construction license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="construction_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="construction_license_expiry"
+                    type="date"
+                    value={formData.construction_license_expiry}
+                    onChange={e => handleInputChange('construction_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Transportation License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="transportation_license">Transportation License</Label>
+                  <Input
+                    id="transportation_license"
+                    value={formData.transportation_license}
+                    onChange={e => handleInputChange('transportation_license', e.target.value)}
+                    placeholder="Transportation license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="transportation_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="transportation_license_expiry"
+                    type="date"
+                    value={formData.transportation_license_expiry}
+                    onChange={e => handleInputChange('transportation_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Banking License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="banking_license">Banking License</Label>
+                  <Input
+                    id="banking_license"
+                    value={formData.banking_license}
+                    onChange={e => handleInputChange('banking_license', e.target.value)}
+                    placeholder="Banking license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="banking_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="banking_license_expiry"
+                    type="date"
+                    value={formData.banking_license_expiry}
+                    onChange={e => handleInputChange('banking_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Insurance License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="insurance_license">Insurance License</Label>
+                  <Input
+                    id="insurance_license"
+                    value={formData.insurance_license}
+                    onChange={e => handleInputChange('insurance_license', e.target.value)}
+                    placeholder="Insurance license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="insurance_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="insurance_license_expiry"
+                    type="date"
+                    value={formData.insurance_license_expiry}
+                    onChange={e => handleInputChange('insurance_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Telecommunications License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="telecom_license">Telecommunications License</Label>
+                  <Input
+                    id="telecom_license"
+                    value={formData.telecom_license}
+                    onChange={e => handleInputChange('telecom_license', e.target.value)}
+                    placeholder="Telecom license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="telecom_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="telecom_license_expiry"
+                    type="date"
+                    value={formData.telecom_license_expiry}
+                    onChange={e => handleInputChange('telecom_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Energy License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="energy_license">Energy License</Label>
+                  <Input
+                    id="energy_license"
+                    value={formData.energy_license}
+                    onChange={e => handleInputChange('energy_license', e.target.value)}
+                    placeholder="Energy license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="energy_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="energy_license_expiry"
+                    type="date"
+                    value={formData.energy_license_expiry}
+                    onChange={e => handleInputChange('energy_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Mining License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="mining_license">Mining License</Label>
+                  <Input
+                    id="mining_license"
+                    value={formData.mining_license}
+                    onChange={e => handleInputChange('mining_license', e.target.value)}
+                    placeholder="Mining license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="mining_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="mining_license_expiry"
+                    type="date"
+                    value={formData.mining_license_expiry}
+                    onChange={e => handleInputChange('mining_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Tourism License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="tourism_license">Tourism License</Label>
+                  <Input
+                    id="tourism_license"
+                    value={formData.tourism_license}
+                    onChange={e => handleInputChange('tourism_license', e.target.value)}
+                    placeholder="Tourism license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tourism_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="tourism_license_expiry"
+                    type="date"
+                    value={formData.tourism_license_expiry}
+                    onChange={e => handleInputChange('tourism_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Education License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="education_license">Education License</Label>
+                  <Input
+                    id="education_license"
+                    value={formData.education_license}
+                    onChange={e => handleInputChange('education_license', e.target.value)}
+                    placeholder="Education license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="education_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="education_license_expiry"
+                    type="date"
+                    value={formData.education_license_expiry}
+                    onChange={e => handleInputChange('education_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Healthcare License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="healthcare_license">Healthcare License</Label>
+                  <Input
+                    id="healthcare_license"
+                    value={formData.healthcare_license}
+                    onChange={e => handleInputChange('healthcare_license', e.target.value)}
+                    placeholder="Healthcare license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="healthcare_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="healthcare_license_expiry"
+                    type="date"
+                    value={formData.healthcare_license_expiry}
+                    onChange={e => handleInputChange('healthcare_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Real Estate License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="real_estate_license">Real Estate License</Label>
+                  <Input
+                    id="real_estate_license"
+                    value={formData.real_estate_license}
+                    onChange={e => handleInputChange('real_estate_license', e.target.value)}
+                    placeholder="Real estate license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="real_estate_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="real_estate_license_expiry"
+                    type="date"
+                    value={formData.real_estate_license_expiry}
+                    onChange={e => handleInputChange('real_estate_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Legal Services License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="legal_services_license">Legal Services License</Label>
+                  <Input
+                    id="legal_services_license"
+                    value={formData.legal_services_license}
+                    onChange={e => handleInputChange('legal_services_license', e.target.value)}
+                    placeholder="Legal services license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="legal_services_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="legal_services_license_expiry"
+                    type="date"
+                    value={formData.legal_services_license_expiry}
+                    onChange={e => handleInputChange('legal_services_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Accounting License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="accounting_license">Accounting License</Label>
+                  <Input
+                    id="accounting_license"
+                    value={formData.accounting_license}
+                    onChange={e => handleInputChange('accounting_license', e.target.value)}
+                    placeholder="Accounting license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="accounting_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="accounting_license_expiry"
+                    type="date"
+                    value={formData.accounting_license_expiry}
+                    onChange={e => handleInputChange('accounting_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Advertising License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="advertising_license">Advertising License</Label>
+                  <Input
+                    id="advertising_license"
+                    value={formData.advertising_license}
+                    onChange={e => handleInputChange('advertising_license', e.target.value)}
+                    placeholder="Advertising license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="advertising_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="advertising_license_expiry"
+                    type="date"
+                    value={formData.advertising_license_expiry}
+                    onChange={e => handleInputChange('advertising_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Media License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="media_license">Media License</Label>
+                  <Input
+                    id="media_license"
+                    value={formData.media_license}
+                    onChange={e => handleInputChange('media_license', e.target.value)}
+                    placeholder="Media license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="media_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="media_license_expiry"
+                    type="date"
+                    value={formData.media_license_expiry}
+                    onChange={e => handleInputChange('media_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Security License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="security_license">Security License</Label>
+                  <Input
+                    id="security_license"
+                    value={formData.security_license}
+                    onChange={e => handleInputChange('security_license', e.target.value)}
+                    placeholder="Security license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="security_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="security_license_expiry"
+                    type="date"
+                    value={formData.security_license_expiry}
+                    onChange={e => handleInputChange('security_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Cleaning License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="cleaning_license">Cleaning License</Label>
+                  <Input
+                    id="cleaning_license"
+                    value={formData.cleaning_license}
+                    onChange={e => handleInputChange('cleaning_license', e.target.value)}
+                    placeholder="Cleaning license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="cleaning_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="cleaning_license_expiry"
+                    type="date"
+                    value={formData.cleaning_license_expiry}
+                    onChange={e => handleInputChange('cleaning_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Catering License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="catering_license">Catering License</Label>
+                  <Input
+                    id="catering_license"
+                    value={formData.catering_license}
+                    onChange={e => handleInputChange('catering_license', e.target.value)}
+                    placeholder="Catering license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="catering_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="catering_license_expiry"
+                    type="date"
+                    value={formData.catering_license_expiry}
+                    onChange={e => handleInputChange('catering_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Warehouse License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="warehouse_license">Warehouse License</Label>
+                  <Input
+                    id="warehouse_license"
+                    value={formData.warehouse_license}
+                    onChange={e => handleInputChange('warehouse_license', e.target.value)}
+                    placeholder="Warehouse license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="warehouse_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="warehouse_license_expiry"
+                    type="date"
+                    value={formData.warehouse_license_expiry}
+                    onChange={e => handleInputChange('warehouse_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Logistics License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="logistics_license">Logistics License</Label>
+                  <Input
+                    id="logistics_license"
+                    value={formData.logistics_license}
+                    onChange={e => handleInputChange('logistics_license', e.target.value)}
+                    placeholder="Logistics license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="logistics_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="logistics_license_expiry"
+                    type="date"
+                    value={formData.logistics_license_expiry}
+                    onChange={e => handleInputChange('logistics_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Maintenance License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="maintenance_license">Maintenance License</Label>
+                  <Input
+                    id="maintenance_license"
+                    value={formData.maintenance_license}
+                    onChange={e => handleInputChange('maintenance_license', e.target.value)}
+                    placeholder="Maintenance license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="maintenance_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="maintenance_license_expiry"
+                    type="date"
+                    value={formData.maintenance_license_expiry}
+                    onChange={e => handleInputChange('maintenance_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Training License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="training_license">Training License</Label>
+                  <Input
+                    id="training_license"
+                    value={formData.training_license}
+                    onChange={e => handleInputChange('training_license', e.target.value)}
+                    placeholder="Training license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="training_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="training_license_expiry"
+                    type="date"
+                    value={formData.training_license_expiry}
+                    onChange={e => handleInputChange('training_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Consulting License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="consulting_license">Consulting License</Label>
+                  <Input
+                    id="consulting_license"
+                    value={formData.consulting_license}
+                    onChange={e => handleInputChange('consulting_license', e.target.value)}
+                    placeholder="Consulting license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="consulting_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="consulting_license_expiry"
+                    type="date"
+                    value={formData.consulting_license_expiry}
+                    onChange={e => handleInputChange('consulting_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Research License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="research_license">Research License</Label>
+                  <Input
+                    id="research_license"
+                    value={formData.research_license}
+                    onChange={e => handleInputChange('research_license', e.target.value)}
+                    placeholder="Research license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="research_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="research_license_expiry"
+                    type="date"
+                    value={formData.research_license_expiry}
+                    onChange={e => handleInputChange('research_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Technology License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="technology_license">Technology License</Label>
+                  <Input
+                    id="technology_license"
+                    value={formData.technology_license}
+                    onChange={e => handleInputChange('technology_license', e.target.value)}
+                    placeholder="Technology license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="technology_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="technology_license_expiry"
+                    type="date"
+                    value={formData.technology_license_expiry}
+                    onChange={e => handleInputChange('technology_license_expiry', e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* Innovation License */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="innovation_license">Innovation License</Label>
+                  <Input
+                    id="innovation_license"
+                    value={formData.innovation_license}
+                    onChange={e => handleInputChange('innovation_license', e.target.value)}
+                    placeholder="Innovation license number"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="innovation_license_expiry">Expiry Date</Label>
+                  <Input
+                    id="innovation_license_expiry"
+                    type="date"
+                    value={formData.innovation_license_expiry}
+                    onChange={e => handleInputChange('innovation_license_expiry', e.target.value)}
                   />
                 </div>
               </div>

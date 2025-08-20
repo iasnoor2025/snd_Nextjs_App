@@ -5,6 +5,33 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // Helper function to format company data for frontend
 function formatCompanyForFrontend(company: any) {
+  // Helper function to safely format dates
+  const formatDate = (dateValue: any): string | null => {
+    if (!dateValue) return null;
+    
+    // If it's already a string, return as is
+    if (typeof dateValue === 'string') {
+      return dateValue;
+    }
+    
+    // If it's a Date object, convert to ISO string and extract date part
+    if (dateValue instanceof Date) {
+      return dateValue.toISOString().split('T')[0];
+    }
+    
+    // If it's a Date object from Drizzle (might be a custom type), try to convert
+    try {
+      const date = new Date(dateValue);
+      if (!isNaN(date.getTime())) {
+        return date.toISOString().split('T')[0];
+      }
+    } catch (e) {
+      // If conversion fails, return null
+    }
+    
+    return null;
+  };
+
   return {
     id: company.id,
     name: company.name,
@@ -14,21 +41,86 @@ function formatCompanyForFrontend(company: any) {
     logo: company.logo,
     // Saudi Law Required Documents
     commercial_registration: company.commercialRegistration,
-    commercial_registration_expiry: company.commercialRegistrationExpiry?.toISOString().split('T')[0] || null,
+    commercial_registration_expiry: formatDate(company.commercialRegistrationExpiry),
     tax_registration: company.taxRegistration,
-    tax_registration_expiry: company.taxRegistrationExpiry?.toISOString().split('T')[0] || null,
+    tax_registration_expiry: formatDate(company.taxRegistrationExpiry),
     municipality_license: company.municipalityLicense,
-    municipality_license_expiry: company.municipalityLicenseExpiry?.toISOString().split('T')[0] || null,
+    municipality_license_expiry: formatDate(company.municipalityLicenseExpiry),
     chamber_of_commerce: company.chamberOfCommerce,
-    chamber_of_commerce_expiry: company.chamberOfCommerceExpiry?.toISOString().split('T')[0] || null,
+    chamber_of_commerce_expiry: formatDate(company.chamberOfCommerceExpiry),
     labor_office_license: company.laborOfficeLicense,
-    labor_office_license_expiry: company.laborOfficeLicenseExpiry?.toISOString().split('T')[0] || null,
+    labor_office_license_expiry: formatDate(company.laborOfficeLicenseExpiry),
     gosi_registration: company.gosiRegistration,
-    gosi_registration_expiry: company.gosiRegistrationExpiry?.toISOString().split('T')[0] || null,
+    gosi_registration_expiry: formatDate(company.gosiRegistrationExpiry),
     saudi_standards_license: company.saudiStandardsLicense,
-    saudi_standards_license_expiry: company.saudiStandardsLicenseExpiry?.toISOString().split('T')[0] || null,
+    saudi_standards_license_expiry: formatDate(company.saudiStandardsLicenseExpiry),
     environmental_license: company.environmentalLicense,
-    environmental_license_expiry: company.environmentalLicenseExpiry?.toISOString().split('T')[0] || null,
+    environmental_license_expiry: formatDate(company.environmentalLicenseExpiry),
+    // Additional Saudi Law Documents
+    zakat_registration: company.zakatRegistration,
+    zakat_registration_expiry: formatDate(company.zakatRegistrationExpiry),
+    saudi_arabia_visa: company.saudiArabiaVisa,
+    saudi_arabia_visa_expiry: formatDate(company.saudiArabiaVisaExpiry),
+    investment_license: company.investmentLicense,
+    investment_license_expiry: formatDate(company.investmentLicenseExpiry),
+    import_export_license: company.importExportLicense,
+    import_export_license_expiry: formatDate(company.importExportLicenseExpiry),
+    pharmaceutical_license: company.pharmaceuticalLicense,
+    pharmaceutical_license_expiry: formatDate(company.pharmaceuticalLicenseExpiry),
+    food_safety_license: company.foodSafetyLicense,
+    food_safety_license_expiry: formatDate(company.foodSafetyLicenseExpiry),
+    construction_license: company.constructionLicense,
+    construction_license_expiry: formatDate(company.constructionLicenseExpiry),
+    transportation_license: company.transportationLicense,
+    transportation_license_expiry: formatDate(company.transportationLicenseExpiry),
+    banking_license: company.bankingLicense,
+    banking_license_expiry: formatDate(company.bankingLicenseExpiry),
+    insurance_license: company.insuranceLicense,
+    insurance_license_expiry: formatDate(company.insuranceLicenseExpiry),
+    telecom_license: company.telecomLicense,
+    telecom_license_expiry: formatDate(company.telecomLicenseExpiry),
+    energy_license: company.energyLicense,
+    energy_license_expiry: formatDate(company.energyLicenseExpiry),
+    mining_license: company.miningLicense,
+    mining_license_expiry: formatDate(company.miningLicenseExpiry),
+    tourism_license: company.tourismLicense,
+    tourism_license_expiry: formatDate(company.tourismLicenseExpiry),
+    education_license: company.educationLicense,
+    education_license_expiry: formatDate(company.educationLicenseExpiry),
+    healthcare_license: company.healthcareLicense,
+    healthcare_license_expiry: formatDate(company.healthcareLicenseExpiry),
+    real_estate_license: company.realEstateLicense,
+    real_estate_license_expiry: formatDate(company.realEstateLicenseExpiry),
+    legal_services_license: company.legalServicesLicense,
+    legal_services_license_expiry: formatDate(company.legalServicesLicenseExpiry),
+    accounting_license: company.accountingLicense,
+    accounting_license_expiry: formatDate(company.accountingLicenseExpiry),
+    advertising_license: company.advertisingLicense,
+    advertising_license_expiry: formatDate(company.advertisingLicenseExpiry),
+    media_license: company.mediaLicense,
+    media_license_expiry: formatDate(company.mediaLicenseExpiry),
+    security_license: company.securityLicense,
+    security_license_expiry: formatDate(company.securityLicenseExpiry),
+    cleaning_license: company.cleaningLicense,
+    cleaning_license_expiry: formatDate(company.cleaningLicenseExpiry),
+    catering_license: company.cateringLicense,
+    catering_license_expiry: formatDate(company.cateringLicenseExpiry),
+    warehouse_license: company.warehouseLicense,
+    warehouse_license_expiry: formatDate(company.warehouseLicenseExpiry),
+    logistics_license: company.logisticsLicense,
+    logistics_license_expiry: formatDate(company.logisticsLicenseExpiry),
+    maintenance_license: company.maintenanceLicense,
+    maintenance_license_expiry: formatDate(company.maintenanceLicenseExpiry),
+    training_license: company.trainingLicense,
+    training_license_expiry: formatDate(company.trainingLicenseExpiry),
+    consulting_license: company.consultingLicense,
+    consulting_license_expiry: formatDate(company.consultingLicenseExpiry),
+    research_license: company.researchLicense,
+    research_license_expiry: formatDate(company.researchLicenseExpiry),
+    technology_license: company.technologyLicense,
+    technology_license_expiry: formatDate(company.technologyLicenseExpiry),
+    innovation_license: company.innovationLicense,
+    innovation_license_expiry: formatDate(company.innovationLicenseExpiry),
     // Additional Company Information
     website: company.website,
     contact_person: company.contactPerson,
@@ -39,8 +131,8 @@ function formatCompanyForFrontend(company: any) {
     employee_count: company.employeeCount,
     // Legacy field for backward compatibility
     legal_document: company.legalDocument,
-    created_at: company.createdAt?.toISOString().split('T')[0] || null,
-    updated_at: company.updatedAt?.toISOString().split('T')[0] || null,
+    created_at: formatDate(company.createdAt),
+    updated_at: formatDate(company.updatedAt),
   };
 }
 

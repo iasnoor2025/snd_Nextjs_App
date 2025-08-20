@@ -147,6 +147,12 @@ export default function CompanyDetailPage() {
           <h1 className="text-2xl font-bold">{company.name}</h1>
         </div>
         <div className="flex gap-2">
+          <Link href="/modules/company-management/document-types">
+            <Button variant="outline">
+              <Shield className="h-4 w-4 mr-2" />
+              Manage Document Types
+            </Button>
+          </Link>
           <Link href={`/modules/company-management/${company.id}/edit`}>
             <Button>
               <Edit className="h-4 w-4 mr-2" />
