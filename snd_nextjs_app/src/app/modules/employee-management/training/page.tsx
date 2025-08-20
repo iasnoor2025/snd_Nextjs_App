@@ -36,8 +36,8 @@ export default function TrainingManagementPage() {
   const [trainings, setTrainings] = useState<Training[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTraining, setEditingTraining] = useState<Training | null>(null);
   const [formData, setFormData] = useState({
@@ -161,8 +161,8 @@ export default function TrainingManagementPage() {
   const filteredTrainings = trainings.filter(training => {
     const matchesSearch = training.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (training.description && training.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesCategory = !selectedCategory || training.category === selectedCategory;
-    const matchesStatus = !selectedStatus || training.status === selectedStatus;
+    const matchesCategory = !selectedCategory || selectedCategory === 'all' || training.category === selectedCategory;
+    const matchesStatus = !selectedStatus || selectedStatus === 'all' || training.status === selectedStatus;
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
@@ -210,7 +210,7 @@ export default function TrainingManagementPage() {
                 <SelectValue placeholder="All Categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Categories</SelectItem>
+                <SelectItem value="all">All Categories</SelectItem>
                 {categories.map(category => (
                   <SelectItem key={category} value={category}>{category}</SelectItem>
                 ))}
@@ -221,7 +221,7 @@ export default function TrainingManagementPage() {
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
                 {statuses.map(status => (
                   <SelectItem key={status} value={status}>{status}</SelectItem>
                 ))}

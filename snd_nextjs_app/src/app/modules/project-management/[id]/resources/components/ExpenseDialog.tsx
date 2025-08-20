@@ -203,7 +203,7 @@ export default function ExpenseDialog({
                 <div className="space-y-2">
                   <Label htmlFor="category">Category</Label>
                   <Select
-                    value={formData.category || ''}
+                    value={formData.category || undefined}
                     onValueChange={value => handleInputChange('category', value)}
                   >
                     <SelectTrigger>

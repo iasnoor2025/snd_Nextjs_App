@@ -231,7 +231,7 @@ export default function MaterialDialog({
             <div className="space-y-2">
               <Label htmlFor="material_id">Material</Label>
               <Select
-                value={formData.material_id || ''}
+                value={formData.material_id || undefined}
                 onValueChange={value => handleInputChange('material_id', value)}
               >
                 <SelectTrigger>
@@ -250,7 +250,7 @@ export default function MaterialDialog({
             <div className="space-y-2">
               <Label htmlFor="unit">Unit</Label>
               <Select
-                value={formData.unit || ''}
+                value={formData.unit || undefined}
                 onValueChange={value => handleInputChange('unit', value)}
               >
                 <SelectTrigger>

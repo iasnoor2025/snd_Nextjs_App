@@ -145,7 +145,7 @@ export function EmployeeDropdown({
         </Label>
       )}
 
-      <Select value={value || ''} onValueChange={onValueChange} disabled={disabled || isLoading}>
+      <Select value={value || undefined} onValueChange={onValueChange} disabled={disabled || isLoading}>
         <SelectTrigger
           className={`w-full border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500`}
         >

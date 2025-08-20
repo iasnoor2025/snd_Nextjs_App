@@ -45,8 +45,8 @@ export default function PerformanceReviewsPage() {
   console.log('ApiService.get method:', typeof ApiService?.get);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
-  const [selectedRating, setSelectedRating] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedRating, setSelectedRating] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingReview, setEditingReview] = useState<PerformanceReview | null>(null);
   const [formData, setFormData] = useState({
@@ -156,8 +156,8 @@ export default function PerformanceReviewsPage() {
     const employeeName = `${review.employee.firstName} ${review.employee.lastName}`.toLowerCase();
     const matchesSearch = employeeName.includes(searchTerm.toLowerCase()) ||
                          (review.comments && review.comments.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = !selectedStatus || review.status === selectedStatus;
-    const matchesRating = !selectedRating || review.rating?.toString() === selectedRating;
+    const matchesStatus = !selectedStatus || selectedStatus === 'all' || review.status === selectedStatus;
+    const matchesRating = !selectedRating || selectedRating === 'all' || review.rating?.toString() === selectedRating;
     return matchesSearch && matchesStatus && matchesRating;
   });
 
@@ -218,7 +218,7 @@ export default function PerformanceReviewsPage() {
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Statuses</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
                 {statuses.map(status => (
                   <SelectItem key={status} value={status}>{status.replace('_', ' ')}</SelectItem>
                 ))}
@@ -229,7 +229,7 @@ export default function PerformanceReviewsPage() {
                 <SelectValue placeholder="All Ratings" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Ratings</SelectItem>
+                <SelectItem value="all">All Ratings</SelectItem>
                 {ratings.map(rating => (
                   <SelectItem key={rating.value} value={rating.value}>{rating.label}</SelectItem>
                 ))}

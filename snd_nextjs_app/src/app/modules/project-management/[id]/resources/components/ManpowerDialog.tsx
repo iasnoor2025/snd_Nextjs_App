@@ -383,7 +383,7 @@ export default function ManpowerDialog({
                 </div>
               ) : (
                 <EmployeeDropdown
-                  value={formData.employee_id || ''}
+                  value={formData.employee_id || undefined}
                   onValueChange={value => handleInputChange('employee_id', value)}
                   label="Select Employee"
                   placeholder="Select an employee"

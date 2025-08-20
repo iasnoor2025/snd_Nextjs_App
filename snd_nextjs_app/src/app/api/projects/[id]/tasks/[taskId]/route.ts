@@ -78,14 +78,14 @@ export async function PUT(
         ...(status !== undefined && { status }),
         ...(priority !== undefined && { priority }),
         ...(assignedToId !== undefined && { assignedToId: assignedToId ? parseInt(assignedToId) : null }),
-        ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }),
-        ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate) : null }),
+        ...(startDate !== undefined && { startDate: startDate ? new Date(startDate).toISOString().split('T')[0] : null }),
+        ...(dueDate !== undefined && { dueDate: dueDate ? new Date(dueDate).toISOString().split('T')[0] : null }),
         ...(completionPercentage !== undefined && { completionPercentage: completionPercentage ? parseFloat(completionPercentage) : 0 }),
         ...(estimatedHours !== undefined && { estimatedHours: estimatedHours ? parseFloat(estimatedHours) : null }),
         ...(actualHours !== undefined && { actualHours: actualHours ? parseFloat(actualHours) : null }),
         ...(parentTaskId !== undefined && { parentTaskId: parentTaskId ? parseInt(parentTaskId) : null }),
         ...(order !== undefined && { order }),
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString().split('T')[0],
       })
       .where(eq(projectTasks.id, parseInt(taskId)))
       .returning();

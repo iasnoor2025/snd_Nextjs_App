@@ -238,7 +238,7 @@ export default function FuelDialog({
             <div className="space-y-2">
               <Label htmlFor="equipment_id">Equipment</Label>
               <Select
-                value={formData.equipment_id || ''}
+                value={formData.equipment_id || undefined}
                 onValueChange={value => handleInputChange('equipment_id', value)}
               >
                 <SelectTrigger>
@@ -257,7 +257,7 @@ export default function FuelDialog({
             <div className="space-y-2">
               <Label htmlFor="fuel_type">Fuel Type</Label>
               <Select
-                value={formData.fuel_type || ''}
+                value={formData.fuel_type || undefined}
                 onValueChange={value => handleInputChange('fuel_type', value)}
               >
                 <SelectTrigger>

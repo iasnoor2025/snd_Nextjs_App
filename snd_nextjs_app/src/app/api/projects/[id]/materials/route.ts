@@ -150,7 +150,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -164,7 +167,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 
-    // Get material ID from query params
+    // Get query parameters for material ID
     const { searchParams } = new URL(request.url);
     const materialId = searchParams.get('id');
 
@@ -183,78 +186,68 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: 'Project not found' }, { status: 404 });
     }
 
-    // Verify material exists
+    // Verify material exists and belongs to the project
     const existingMaterial = await db
-      .select({ id: projectMaterials.id })
+      .select()
       .from(projectMaterials)
-      .where(and(
-        eq(projectMaterials.id, parseInt(materialId)),
-        eq(projectMaterials.projectId, parseInt(projectId))
-      ))
+      .where(
+        and(
+          eq(projectMaterials.id, parseInt(materialId)),
+          eq(projectMaterials.projectId, parseInt(projectId))
+        )
+      )
       .limit(1);
 
     if (existingMaterial.length === 0) {
-      return NextResponse.json({ error: 'Material not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Material resource not found' }, { status: 404 });
     }
 
     const body = await request.json();
     const {
-      name,
-      description,
-      category,
-      unit,
+      materialName,
       quantity,
+      unit,
       unitPrice,
+      totalCost,
       supplier,
-      orderDate,
       deliveryDate,
-      status,
       notes,
-      assignedTo,
+      status,
     } = body;
-
-    // Validation
-    if (!name || !category || !unit || !quantity || !unitPrice) {
-      return NextResponse.json({ error: 'Name, category, unit, quantity, and unit price are required' }, { status: 400 });
-    }
-
-    // Calculate total cost
-    const totalCost = parseFloat(quantity) * parseFloat(unitPrice);
 
     // Update material
     const [updatedMaterial] = await db
       .update(projectMaterials)
       .set({
-        name,
-        description,
-        category,
-        unit,
-        quantity: parseFloat(quantity),
-        unitPrice: parseFloat(unitPrice),
-        totalCost,
-        supplier,
-        orderDate: orderDate ? new Date(orderDate) : undefined,
-        deliveryDate: deliveryDate ? new Date(deliveryDate) : undefined,
-        status: status || 'ordered',
-        notes,
-        assignedTo: assignedTo || null,
-        updatedAt: new Date(),
+        ...(materialName !== undefined && { materialName }),
+        ...(quantity !== undefined && { quantity: parseFloat(quantity) }),
+        ...(unit !== undefined && { unit }),
+        ...(unitPrice !== undefined && { unitPrice: parseFloat(unitPrice) }),
+        ...(totalCost !== undefined && { totalCost: parseFloat(totalCost) }),
+        ...(supplier !== undefined && { supplier }),
+        ...(deliveryDate !== undefined && { deliveryDate: deliveryDate ? new Date(deliveryDate).toISOString().split('T')[0] : null }),
+        ...(notes !== undefined && { notes }),
+        ...(status !== undefined && { status }),
+        updatedAt: new Date().toISOString().split('T')[0],
       })
       .where(eq(projectMaterials.id, parseInt(materialId)))
       .returning();
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       data: updatedMaterial,
-      message: 'Material updated successfully' 
+      message: 'Material resource updated successfully'
     });
   } catch (error) {
-    console.error('Error updating material:', error);
-    return NextResponse.json({ error: 'Failed to update material' }, { status: 500 });
+    console.error('Error updating project material:', error);
+    return NextResponse.json({ error: 'Failed to update project material' }, { status: 500 });
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -268,7 +261,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: 'Invalid project ID' }, { status: 400 });
     }
 
-    // Get material ID from query params
+    // Get query parameters for material ID
     const { searchParams } = new URL(request.url);
     const materialId = searchParams.get('id');
 
@@ -276,29 +269,20 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: 'Invalid material ID' }, { status: 400 });
     }
 
-    // Verify project exists
-    const project = await db
-      .select({ id: projects.id })
-      .from(projects)
-      .where(eq(projects.id, parseInt(projectId)))
-      .limit(1);
-
-    if (project.length === 0) {
-      return NextResponse.json({ error: 'Project not found' }, { status: 404 });
-    }
-
-    // Verify material exists
+    // Verify material exists and belongs to the project
     const existingMaterial = await db
-      .select({ id: projectMaterials.id })
+      .select()
       .from(projectMaterials)
-      .where(and(
-        eq(projectMaterials.id, parseInt(materialId)),
-        eq(projectMaterials.projectId, parseInt(projectId))
-      ))
+      .where(
+        and(
+          eq(projectMaterials.id, parseInt(materialId)),
+          eq(projectMaterials.projectId, parseInt(projectId))
+        )
+      )
       .limit(1);
 
     if (existingMaterial.length === 0) {
-      return NextResponse.json({ error: 'Material not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Material resource not found' }, { status: 404 });
     }
 
     // Delete material
@@ -306,12 +290,12 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       .delete(projectMaterials)
       .where(eq(projectMaterials.id, parseInt(materialId)));
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      message: 'Material deleted successfully' 
+      message: 'Material resource deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting material:', error);
-    return NextResponse.json({ error: 'Failed to delete material' }, { status: 500 });
+    console.error('Error deleting project material:', error);
+    return NextResponse.json({ error: 'Failed to delete project material' }, { status: 500 });
   }
 }

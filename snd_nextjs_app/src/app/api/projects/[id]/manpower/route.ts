@@ -37,6 +37,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         id: projectManpower.id,
         projectId: projectManpower.projectId,
         employeeId: projectManpower.employeeId,
+        workerName: projectManpower.workerName,
         jobTitle: projectManpower.jobTitle,
         dailyRate: projectManpower.dailyRate,
         startDate: projectManpower.startDate,

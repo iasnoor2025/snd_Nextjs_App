@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import ApiService from '@/lib/api-service';
 import { Wrench } from 'lucide-react';
@@ -60,6 +60,7 @@ export default function EquipmentDialog({
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [manpowerResources, setManpowerResources] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingManpower, setLoadingManpower] = useState(false);
   const [formData, setFormData] = useState<EquipmentResource>({
     equipment_id: '',
     equipment_name: '',
@@ -79,10 +80,11 @@ export default function EquipmentDialog({
   // Load equipment when dialog opens
   useEffect(() => {
     if (open) {
+      console.log('Dialog opened, projectId:', projectId);
       loadEquipment();
       loadManpowerResources();
     }
-  }, [open]);
+  }, [open, projectId]);
 
   // Initialize form data when editing
   useEffect(() => {
@@ -146,39 +148,62 @@ export default function EquipmentDialog({
 
   const loadManpowerResources = async () => {
     try {
+      setLoadingManpower(true);
       // Load manpower resources from the current project
-      const response = await ApiService.getProjectManpower(projectId);
-      if (response.success) {
-        setManpowerResources(response.data || []);
+      const response = await ApiService.getProjectManpower(Number(projectId));
+      console.log('API Response:', response);
+      if (response.success && response.data) {
+        console.log('Raw manpower data:', response.data);
+        // Map API response to expected frontend format
+        const mappedManpower = response.data.map((item: any) => ({
+          id: item.id.toString(),
+          employee_name: item.employeeName ? `${item.employeeName} ${item.employeeLastName || ''}`.trim() : '',
+          worker_name: item.workerName || '',
+          job_title: item.jobTitle || '',
+          name: item.employeeName ? `${item.employeeName} ${item.employeeLastName || ''}`.trim() : item.workerName || 'Unnamed Worker',
+        }));
+        setManpowerResources(mappedManpower);
+        console.log('Loaded manpower resources:', mappedManpower);
+        console.log('Manpower resources count:', mappedManpower.length);
+      } else {
+        console.warn('Failed to load manpower resources:', response.message);
+        // Fall back to mock data
+        loadMockManpowerData();
       }
     } catch (error) {
-      
+      console.error('Error loading manpower resources:', error);
       // Use mock data if API fails
-      const mockManpower = [
-        {
-          id: '1',
-          employee_name: 'John Doe',
-          worker_name: '',
-          job_title: 'Operator',
-          name: 'John Doe',
-        },
-        {
-          id: '2',
-          employee_name: '',
-          worker_name: 'Mike Smith',
-          job_title: 'Driver',
-          name: 'Mike Smith',
-        },
-        {
-          id: '3',
-          employee_name: 'Sarah Johnson',
-          worker_name: '',
-          job_title: 'Technician',
-          name: 'Sarah Johnson',
-        },
-      ];
-      setManpowerResources(mockManpower);
+      loadMockManpowerData();
+    } finally {
+      setLoadingManpower(false);
     }
+  };
+
+  const loadMockManpowerData = () => {
+    const mockManpower = [
+      {
+        id: '1',
+        employee_name: 'John Doe',
+        worker_name: '',
+        job_title: 'Operator',
+        name: 'John Doe',
+      },
+      {
+        id: '2',
+        employee_name: '',
+        worker_name: 'Mike Smith',
+        job_title: 'Driver',
+        name: 'Mike Smith',
+      },
+      {
+        id: '3',
+        employee_name: 'Sarah Johnson',
+        worker_name: '',
+        job_title: 'Technician',
+        name: 'Sarah Johnson',
+      },
+    ];
+    setManpowerResources(mockManpower);
   };
 
   // Calculate usage hours when start/end dates change
@@ -342,13 +367,11 @@ export default function EquipmentDialog({
           <div className="space-y-2">
             <Label htmlFor="equipment_id">Select Equipment</Label>
             <Select
-              value={formData.equipment_id || ''}
+              value={formData.equipment_id || undefined}
               onValueChange={value => handleInputChange('equipment_id', value)}
             >
               <SelectTrigger className="w-full">
-                {formData.equipment_name || (
-                  <span className="text-muted-foreground">Select equipment</span>
-                )}
+                <SelectValue placeholder="Select equipment" />
               </SelectTrigger>
               <SelectContent>
                 {equipment.map(eq => (
@@ -379,29 +402,43 @@ export default function EquipmentDialog({
             )}
           </div>
 
-          {/* Operator Selection - Second priority */}
+                               {/* Operator Selection - Second priority */}
           <div className="space-y-2">
             <Label htmlFor="operator_id">Select Operator</Label>
-            <Select
-              value={formData.operator_id || ''}
-              onValueChange={value => handleInputChange('operator_id', value)}
-            >
-              <SelectTrigger className="w-full">
-                {formData.operator_name || (
-                  <span className="text-muted-foreground">
-                    Select operator from manpower resources
-                  </span>
-                )}
-              </SelectTrigger>
-              <SelectContent>
-                {manpowerResources.map(resource => (
-                  <SelectItem key={resource.id} value={resource.id}>
-                    {resource.employee_name || resource.worker_name || resource.name}
-                    {resource.job_title && ` - ${resource.job_title}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+             {loadingManpower ? (
+               <div className="flex items-center justify-center p-3 border border-gray-300 rounded-md bg-gray-50">
+                 <span className="text-sm text-gray-500">Loading operators...</span>
+               </div>
+             ) : manpowerResources.length === 0 ? (
+               <div className="flex items-center justify-between p-3 border border-dashed border-gray-300 rounded-md bg-gray-50">
+                 <span className="text-sm text-gray-500">No operators available</span>
+                 <Button
+                   type="button"
+                   variant="outline"
+                   size="sm"
+                   onClick={loadManpowerResources}
+                 >
+                   Refresh
+                 </Button>
+               </div>
+             ) : (
+               <Select
+                 value={formData.operator_id || undefined}
+                 onValueChange={value => handleInputChange('operator_id', value)}
+               >
+                 <SelectTrigger className="w-full">
+                   <SelectValue placeholder="Select operator from manpower resources" />
+                 </SelectTrigger>
+                 <SelectContent>
+                   {manpowerResources.map(resource => (
+                     <SelectItem key={resource.id} value={resource.id}>
+                       {resource.employee_name || resource.worker_name || resource.name}
+                       {resource.job_title && ` - ${resource.job_title}`}
+                     </SelectItem>
+                   ))}
+                 </SelectContent>
+               </Select>
+             )}
 
             {/* Show selected operator details */}
             {formData.operator_id && (
@@ -415,6 +452,8 @@ export default function EquipmentDialog({
                 )}
               </div>
             )}
+
+            
           </div>
 
           {/* Date Range - Third priority */}

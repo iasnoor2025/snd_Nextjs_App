@@ -363,8 +363,17 @@ export default function ProjectResourcesPage() {
           throw new Error(`Unknown resource type: ${deleteResource.type}`);
       }
       
-      toast.success('Resource deleted successfully');
-      fetchData();
+             toast.success('Resource deleted successfully');
+       // Use targeted update if possible, otherwise refresh all data
+       if (deleteResource.type === 'tasks') {
+         await updateTasksData();
+       } else if (deleteResource.type === 'manpower') {
+         await updateManpowerData();
+       } else if (deleteResource.type === 'equipment') {
+         await updateEquipmentData();
+       } else {
+         fetchData();
+       }
     } catch (error) {
       console.error('Error deleting resource:', error);
       toast.error('Failed to delete resource');
@@ -411,9 +420,169 @@ export default function ProjectResourcesPage() {
     setEditingResource(null);
   };
 
-  const handleResourceSuccess = () => {
-    fetchData();
+  const handleResourceSuccess = (resourceType?: ResourceType) => {
+    // Use targeted update based on resource type, fallback to full refresh
+    if (resourceType === 'tasks') {
+      updateTasksData();
+    } else if (resourceType === 'manpower') {
+      updateManpowerData();
+    } else if (resourceType === 'equipment') {
+      updateEquipmentData();
+    } else {
+      // For other resource types, refresh all data
+      fetchData();
+    }
     handleDialogClose();
+  };
+
+  // Function to update only tasks data
+  const updateTasksData = async () => {
+    try {
+      const tasksResponse = await ApiService.getProjectTasks(Number(projectId));
+      const tasksData = (tasksResponse.data || []).map((resource: any) => ({ 
+        ...resource, 
+        type: 'tasks' 
+      }));
+
+      // Transform tasks data to match frontend structure
+      const transformedTasks = tasksData.map((resource: any) => ({
+        id: resource.id.toString(),
+        type: resource.type,
+        name: resource.name || resource.title || 'Unnamed Task',
+        description: resource.description,
+        quantity: resource.quantity,
+        unit_cost: resource.unitCost ? parseFloat(resource.unitCost) : undefined,
+        total_cost: resource.totalCost ? parseFloat(resource.totalCost) : undefined,
+        date: resource.date || resource.startDate || resource.purchaseDate || resource.expenseDate,
+        status: resource.status,
+        notes: resource.notes,
+        title: resource.name || resource.title,
+        priority: resource.priority,
+        due_date: resource.dueDate,
+        completion_percentage: resource.completionPercentage,
+        assigned_to: resource.assignedToId
+          ? {
+              id: resource.assignedToId.toString(),
+              name: `${resource.assignedToName || ''} ${resource.assignedToLastName || ''}`.trim() || 'Unassigned',
+            }
+          : undefined,
+        assigned_to_id: resource.assignedToId?.toString(),
+        created_at: resource.createdAt,
+        updated_at: resource.updatedAt,
+      }));
+
+      // Update only tasks in the resources state
+      setResources(prevResources => {
+        const nonTaskResources = prevResources.filter(r => r.type !== 'tasks');
+        return [...nonTaskResources, ...transformedTasks];
+      });
+      
+      // Update statistics
+      updateStatistics();
+    } catch (error) {
+      console.error('Error updating tasks data:', error);
+    }
+  };
+
+  // Function to update only manpower data
+  const updateManpowerData = async () => {
+    try {
+      const manpowerResponse = await ApiService.getProjectManpower(Number(projectId));
+      const manpowerData = (manpowerResponse.data || []).map((resource: any) => ({ 
+        ...resource, 
+        type: 'manpower' 
+      }));
+
+      // Transform manpower data to match frontend structure
+      const transformedManpower = manpowerData.map((resource: any) => ({
+        id: resource.id.toString(),
+        type: resource.type,
+        name: resource.name || resource.title || resource.workerName || resource.jobTitle || 'Unnamed Resource',
+        description: resource.description,
+        quantity: resource.quantity,
+        unit_cost: resource.dailyRate ? parseFloat(resource.dailyRate) : undefined,
+        total_cost: resource.totalCost ? parseFloat(resource.totalCost) : undefined,
+        date: resource.startDate,
+        status: resource.status,
+        notes: resource.notes,
+        employee_id: resource.employeeId?.toString(),
+        employee: resource.employee
+          ? {
+              id: resource.employee.id.toString(),
+              first_name: resource.employee.first_name,
+              last_name: resource.employee.last_name,
+              full_name: `${resource.employee.first_name} ${resource.employee.last_name}`,
+            }
+          : undefined,
+        employee_name: resource.employeeName,
+        employee_file_number: resource.employeeFileNumber,
+        worker_name: resource.workerName,
+        job_title: resource.jobTitle,
+        daily_rate: resource.dailyRate ? parseFloat(resource.dailyRate) : undefined,
+        days_worked: resource.daysWorked,
+        start_date: resource.startDate,
+        end_date: resource.endDate,
+        total_days: resource.totalDays,
+        created_at: resource.createdAt,
+        updated_at: resource.updatedAt,
+      }));
+
+      // Update only manpower in the resources state
+      setResources(prevResources => {
+        const nonManpowerResources = prevResources.filter(r => r.type !== 'manpower');
+        return [...nonManpowerResources, ...transformedManpower];
+      });
+      
+      // Update statistics
+      updateStatistics();
+    } catch (error) {
+      console.error('Error updating manpower data:', error);
+    }
+  };
+
+  // Function to update only equipment data
+  const updateEquipmentData = async () => {
+    try {
+      const equipmentResponse = await ApiService.getProjectEquipment(Number(projectId));
+      const equipmentData = (equipmentResponse.data || []).map((resource: any) => ({ 
+        ...resource, 
+        type: 'equipment' 
+      }));
+
+      // Transform equipment data to match frontend structure
+      const transformedEquipment = equipmentData.map((resource: any) => ({
+        id: resource.id.toString(),
+        type: resource.type,
+        name: resource.name || resource.title || resource.equipmentName || 'Unnamed Equipment',
+        description: resource.description,
+        quantity: resource.quantity,
+        unit_cost: resource.hourlyRate ? parseFloat(resource.hourlyRate) : undefined,
+        total_cost: resource.totalCost ? parseFloat(resource.totalCost) : undefined,
+        date: resource.startDate,
+        status: resource.status,
+        notes: resource.notes,
+        equipment_id: resource.equipmentId?.toString(),
+        equipment_name: resource.equipmentName,
+        operator_name: resource.operatorName,
+        hourly_rate: resource.hourlyRate ? parseFloat(resource.hourlyRate) : undefined,
+        hours_worked: resource.hoursWorked ? parseFloat(resource.hoursWorked) : undefined,
+        usage_hours: resource.usageHours ? parseFloat(resource.usageHours) : undefined,
+        maintenance_cost: resource.maintenanceCost ? parseFloat(resource.maintenanceCost) : undefined,
+        created_at: resource.createdAt,
+        updated_at: resource.updatedAt,
+      }));
+
+      // Update only equipment in the resources state
+      setResources(prevResources => {
+        const nonEquipmentResources = prevResources.filter(r => r.type !== 'equipment');
+        return [...nonEquipmentResources, ...transformedEquipment];
+      });
+      
+      // Update statistics
+      updateStatistics();
+    } catch (error) {
+      console.error('Error updating equipment data:', error);
+    }
   };
 
   const getResourceTypeIcon = (type: ResourceType) => {
@@ -478,6 +647,14 @@ export default function ProjectResourcesPage() {
       (sum, resource) => sum + (resource.total_cost || 0),
       0
     );
+  };
+
+  // Function to update statistics without full page refresh
+  const updateStatistics = () => {
+    // This will trigger a re-render of the statistics cards
+    // The existing filterResourcesByType and calculateTotalCost functions
+    // will automatically use the updated resources state
+    setResources(prevResources => [...prevResources]);
   };
 
   if (loading) {
@@ -1006,48 +1183,42 @@ export default function ProjectResourcesPage() {
                     handleDeleteResource(resource);
                   }
                 }}
-                onStatusChange={async (task, status) => {
-                  const resource = resources.find(r => r.id === task.id);
-                  if (resource) {
-                    try {
-                      const response = await ApiService.put(`/projects/${projectId}/tasks/${task.id}`, {
-                        ...resource,
-                        status
-                      });
-                      
-                      if (response.success) {
-                        toast.success('Task status updated successfully');
-                        handleResourceSuccess();
-                      } else {
-                        toast.error(response.message || 'Failed to update task status');
-                      }
-                    } catch (error) {
-                      console.error('Error updating task status:', error);
-                      toast.error('Failed to update task status');
-                    }
-                  }
-                }}
-                onCompletionChange={async (task, percentage) => {
-                  const resource = resources.find(r => r.id === task.id);
-                  if (resource) {
-                    try {
-                      const response = await ApiService.put(`/projects/${projectId}/tasks/${task.id}`, {
-                        ...resource,
-                        completion_percentage: percentage
-                      });
-                      
-                      if (response.success) {
-                        toast.success('Task completion updated successfully');
-                        handleResourceSuccess();
-                      } else {
-                        toast.error(response.message || 'Failed to update task completion');
-                      }
-                    } catch (error) {
-                      console.error('Error updating task completion:', error);
-                      toast.error('Failed to update task completion');
-                    }
-                  }
-                }}
+                                 onStatusChange={async (task, status) => {
+                   try {
+                     const response = await ApiService.put(`/projects/${projectId}/tasks/${task.id}`, {
+                       status
+                     });
+                     
+                     if (response.success) {
+                       toast.success('Task status updated successfully');
+                       // Update only tasks data instead of entire page
+                       await updateTasksData();
+                     } else {
+                       toast.error(response.message || 'Failed to update task status');
+                     }
+                   } catch (error) {
+                     console.error('Error updating task status:', error);
+                     toast.error('Failed to update task status');
+                   }
+                 }}
+                                 onCompletionChange={async (task, percentage) => {
+                   try {
+                     const response = await ApiService.put(`/projects/${projectId}/tasks/${task.id}`, {
+                       completionPercentage: percentage
+                     });
+                     
+                     if (response.success) {
+                       toast.success('Task completion updated successfully');
+                       // Update only tasks data instead of entire page
+                       await updateTasksData();
+                     } else {
+                       toast.error(response.message || 'Failed to update task completion');
+                     }
+                   } catch (error) {
+                     console.error('Error updating task completion:', error);
+                     toast.error('Failed to update task completion');
+                   }
+                 }}
               />
             </CardContent>
           </Card>
@@ -1055,21 +1226,21 @@ export default function ProjectResourcesPage() {
       </Tabs>
 
       {/* Separate Dialogs for each resource type */}
-      <ManpowerDialog
-        open={manpowerDialogOpen}
-        onOpenChange={setManpowerDialogOpen}
-        projectId={projectId}
-        initialData={editingResource}
-        onSuccess={handleResourceSuccess}
-      />
+             <ManpowerDialog
+         open={manpowerDialogOpen}
+         onOpenChange={setManpowerDialogOpen}
+         projectId={projectId}
+         initialData={editingResource}
+         onSuccess={() => handleResourceSuccess('manpower')}
+       />
 
-      <EquipmentDialog
-        open={equipmentDialogOpen}
-        onOpenChange={setEquipmentDialogOpen}
-        projectId={projectId}
-        initialData={editingResource}
-        onSuccess={handleResourceSuccess}
-      />
+       <EquipmentDialog
+         open={equipmentDialogOpen}
+         onOpenChange={setEquipmentDialogOpen}
+         projectId={projectId}
+         initialData={editingResource}
+         onSuccess={() => handleResourceSuccess('equipment')}
+       />
 
       <MaterialDialog
         open={materialDialogOpen}
@@ -1095,13 +1266,13 @@ export default function ProjectResourcesPage() {
         onSuccess={handleResourceSuccess}
       />
 
-      <TaskDialog
-        open={taskDialogOpen}
-        onOpenChange={setTaskDialogOpen}
-        projectId={projectId}
-        initialData={editingResource}
-        onSuccess={handleResourceSuccess}
-      />
+             <TaskDialog
+         open={taskDialogOpen}
+         onOpenChange={setTaskDialogOpen}
+         projectId={projectId}
+         initialData={editingResource}
+         onSuccess={() => handleResourceSuccess('tasks')}
+       />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
