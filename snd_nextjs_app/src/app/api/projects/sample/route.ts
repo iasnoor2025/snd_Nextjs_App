@@ -20,10 +20,16 @@ export async function POST() {
           .insert(customers)
           .values({
             name: 'ABC Corporation',
+            companyName: 'ABC Corporation Ltd.',
+            contactPerson: 'John Smith',
             email: 'contact@abc-corp.com',
             phone: '+966-11-123-4567',
             address: 'Riyadh, Saudi Arabia',
+            city: 'Riyadh',
+            state: 'Riyadh Province',
+            country: 'Saudi Arabia',
             isActive: true,
+            status: 'active',
             createdAt: new Date().toISOString().split('T')[0],
             updatedAt: new Date().toISOString().split('T')[0]
           })

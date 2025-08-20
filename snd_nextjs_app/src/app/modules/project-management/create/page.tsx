@@ -37,8 +37,8 @@ import { toast } from 'sonner';
 interface Customer {
   id: string;
   name: string;
-  company_name: string;
-  contact_person?: string;
+  companyName: string | null;
+  contactPerson?: string;
   email?: string;
   phone?: string;
 }
@@ -322,13 +322,14 @@ export default function CreateProjectPage() {
                     <SelectValue placeholder="Select a client">
                       {formData.customer_id &&
                         customers.find(c => c.id.toString() === formData.customer_id.toString())
-                          ?.company_name}
+                          ?.companyName || customers.find(c => c.id.toString() === formData.customer_id.toString())
+                          ?.name}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="max-h-60 overflow-y-auto">
                     {customers.map(customer => (
                       <SelectItem key={customer.id} value={customer.id.toString()}>
-                        {customer.company_name}
+                        {customer.companyName || customer.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

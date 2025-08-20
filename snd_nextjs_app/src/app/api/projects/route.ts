@@ -3,6 +3,8 @@ import { projects as projectsTable } from '@/lib/drizzle/schema';
 import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 import { and, desc, eq, ilike, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+
+// Re-enable RBAC middleware now that the issue is fixed
 export const GET = withPermission(async (request: NextRequest) => {
   try {
     const { searchParams } = new URL(request.url);
@@ -11,7 +13,6 @@ export const GET = withPermission(async (request: NextRequest) => {
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status') || '';
     const priority = searchParams.get('priority') || '';
-
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -46,53 +47,73 @@ export const GET = withPermission(async (request: NextRequest) => {
     const whereExpr = filters.length ? and(...filters) : undefined;
 
     const rows = await db
-      .select({
-        id: projectsTable.id,
-        name: projectsTable.name,
-        description: projectsTable.description,
-        status: projectsTable.status,
-        budget: projectsTable.budget,
-        start_date: projectsTable.startDate,
-        end_date: projectsTable.endDate,
-      })
+        .select({
+          id: projectsTable.id,
+          name: projectsTable.name,
+          description: projectsTable.description,
+          status: projectsTable.status,
+          budget: projectsTable.budget,
+          startDate: projectsTable.startDate,
+          endDate: projectsTable.endDate,
+          createdAt: projectsTable.createdAt,
+          updatedAt: projectsTable.updatedAt,
+          customerId: projectsTable.customerId,
+          notes: projectsTable.notes,
+        })
       .from(projectsTable)
       .where(whereExpr as any)
       .orderBy(desc(projectsTable.createdAt))
       .offset(skip)
       .limit(limit);
+    
     const countRows = await db
       .select({ id: projectsTable.id })
       .from(projectsTable)
       .where(whereExpr as any);
+    
     const total = countRows.length;
-
+    
     // Transform the data to match the frontend expectations
     const transformedProjects = rows.map(project => ({
       id: project.id,
       name: project.name,
-      client: 'Unknown Client',
+      description: project.description || '',
+      client: 'Unknown Client', // Will be updated when we join with customers table
       status: project.status,
-      priority: 'medium',
-      start_date: project.start_date || '',
-      end_date: project.end_date || '',
+      priority: 'medium', // Default priority since it's not in the schema
+      start_date: project.startDate ? project.startDate.toString() : '',
+      end_date: project.endDate ? project.endDate.toString() : '',
       budget: Number(project.budget) || 0,
-      progress: 0,
+      progress: 0, // Will be calculated based on tasks
+      manager: 'Project Manager', // Default manager
+      team_size: 0, // Will be calculated based on manpower
+      location: 'Project Location', // Default location
+      notes: project.notes || '',
+      created_at: project.createdAt ? project.createdAt.toString() : '',
+      updated_at: project.updatedAt ? project.updatedAt.toString() : '',
     }));
 
     const totalPages = Math.ceil(total / limit);
 
     return NextResponse.json({
-      data: transformedProjects,
-      current_page: page,
-      last_page: totalPages,
-      per_page: limit,
-      total,
-      next_page_url: page < totalPages ? `/api/projects?page=${page + 1}` : null,
-      prev_page_url: page > 1 ? `/api/projects?page=${page - 1}` : null,
+      success: true,
+      data: {
+        data: transformedProjects,
+        current_page: page,
+        last_page: totalPages,
+        per_page: limit,
+        total,
+        next_page_url: page < totalPages ? `/api/projects?page=${page + 1}` : null,
+        prev_page_url: page > 1 ? `/api/projects?page=${page - 1}` : null,
+      }
     });
   } catch (error) {
-    
-    return NextResponse.json({ error: 'Failed to fetch projects' }, { status: 500 });
+    console.error('Error fetching projects:', error);
+    return NextResponse.json({ 
+      success: false,
+      error: 'Failed to fetch projects',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }, PermissionConfigs.project.read);
 

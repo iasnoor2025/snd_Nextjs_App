@@ -121,7 +121,9 @@ export function Providers({ children }: ProvidersProps) {
               {/* Only load devtools in development */}
               {process.env.NODE_ENV === 'development' && (
                 <Suspense fallback={null}>
-                  <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+                  <div className="fixed bottom-4 right-4 z-50">
+                    <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+                  </div>
                 </Suspense>
               )}
             </SSEProvider>

@@ -38,10 +38,11 @@ import { toast } from 'sonner';
 
 interface Customer {
   id: number;
-  company_name: string;
-  contact_person: string;
-  email: string;
-  phone: string;
+  name: string;
+  companyName: string | null;
+  contactPerson: string | null;
+  email: string | null;
+  phone: string | null;
 }
 
 interface Equipment {
@@ -323,7 +324,7 @@ export default function CreateQuotationPage() {
                       <SelectContent>
                         {customers.map(customer => (
                           <SelectItem key={customer.id} value={customer.id.toString()}>
-                            {customer.company_name}
+                            {customer.companyName || customer.name}
                           </SelectItem>
                         ))}
                       </SelectContent>

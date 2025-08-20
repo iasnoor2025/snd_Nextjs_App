@@ -99,88 +99,11 @@ export default function ProjectManagementPage() {
   const [priority, setPriority] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState('table');
+  const [creatingSample, setCreatingSample] = useState(false);
   const { t } = useTranslation('project');
 
   // Get allowed actions for project management
   const allowedActions = getAllowedActions('Project');
-
-  const mockProjects = [
-    {
-      id: '1',
-      name: 'Office Building Construction',
-      description: 'Modern office complex with 20 floors and underground parking',
-      client: 'ABC Corporation',
-      status: 'in_progress',
-      priority: 'high',
-      start_date: '2024-01-01',
-      end_date: '2024-06-30',
-      budget: 500000,
-      progress: 65,
-      manager: 'John Smith',
-      team_size: 45,
-      location: 'Downtown Business District',
-    },
-    {
-      id: '2',
-      name: 'Residential Complex',
-      description: 'Luxury residential development with 150 units',
-      client: 'XYZ Developers',
-      status: 'planning',
-      priority: 'medium',
-      start_date: '2024-03-01',
-      end_date: '2024-12-31',
-      budget: 800000,
-      progress: 25,
-      manager: 'Sarah Johnson',
-      team_size: 32,
-      location: 'Suburban Area',
-    },
-    {
-      id: '3',
-      name: 'Highway Bridge Repair',
-      description: 'Critical infrastructure maintenance and repair',
-      client: 'City Council',
-      status: 'completed',
-      priority: 'high',
-      start_date: '2023-10-01',
-      end_date: '2024-02-28',
-      budget: 300000,
-      progress: 100,
-      manager: 'Mike Wilson',
-      team_size: 18,
-      location: 'Main Highway',
-    },
-    {
-      id: '4',
-      name: 'Shopping Mall Renovation',
-      description: 'Complete renovation of existing shopping center',
-      client: 'Retail Properties Inc',
-      status: 'on_hold',
-      priority: 'medium',
-      start_date: '2024-02-15',
-      end_date: '2024-08-15',
-      budget: 1200000,
-      progress: 15,
-      manager: 'Lisa Chen',
-      team_size: 28,
-      location: 'Commercial District',
-    },
-    {
-      id: '5',
-      name: 'Industrial Warehouse',
-      description: 'Large-scale warehouse facility for logistics',
-      client: 'Logistics Solutions Ltd',
-      status: 'in_progress',
-      priority: 'low',
-      start_date: '2024-01-15',
-      end_date: '2024-05-15',
-      budget: 400000,
-      progress: 80,
-      manager: 'David Brown',
-      team_size: 22,
-      location: 'Industrial Zone',
-    },
-  ];
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -198,26 +121,30 @@ export default function ProjectManagementPage() {
         if (response.success) {
           setProjects(response.data);
         } else {
-          throw new Error('Failed to fetch projects');
+          console.error('Failed to fetch projects:', response);
+          toast.error('Failed to fetch projects');
+          setProjects(null);
         }
       } catch (error) {
-        
-        // Use mock data for demo
-        setProjects({
-          data: mockProjects,
-          current_page: 1,
-          last_page: 1,
-          per_page: 10,
-          total: mockProjects.length,
-          next_page_url: null,
-          prev_page_url: null,
-        });
+        console.error('Error fetching projects:', error);
+        toast.error('Error fetching projects from database');
+        setProjects(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchProjects();
+
+    // Add event listener for refetch (used by sync function)
+    const handleRefetch = () => {
+      fetchProjects();
+    };
+
+    window.addEventListener('refetch', handleRefetch);
+    return () => {
+      window.removeEventListener('refetch', handleRefetch);
+    };
   }, [search, status, priority, currentPage]);
 
   const handleDelete = async (projectId: string) => {
@@ -225,19 +152,24 @@ export default function ProjectManagementPage() {
 
     try {
       toast.loading('Deleting project...');
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Project deleted successfully');
-
-      // Remove from local state
-      if (projects) {
-        setProjects({
-          ...projects,
-          data: projects.data.filter(p => p.id !== projectId),
-          total: projects.total - 1,
-        });
+      
+      const response = await ApiService.delete(`/projects/${projectId}`);
+      if (response.success) {
+        toast.success('Project deleted successfully');
+        
+        // Remove from local state
+        if (projects) {
+          setProjects({
+            ...projects,
+            data: projects.data.filter(p => p.id !== projectId),
+            total: projects.total - 1,
+          });
+        }
+      } else {
+        throw new Error(response.message || 'Failed to delete project');
       }
-    } catch {
+    } catch (error) {
+      console.error('Error deleting project:', error);
       toast.error('Failed to delete project');
     }
   };
@@ -245,21 +177,64 @@ export default function ProjectManagementPage() {
   const handleExport = async () => {
     try {
       toast.loading('Exporting projects...');
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Projects exported successfully');
-    } catch {
+      
+      const response = await ApiService.get('/projects/export');
+      if (response.success) {
+        toast.success('Projects exported successfully');
+        // Handle file download if response includes file data
+        if (response.data?.downloadUrl) {
+          window.open(response.data.downloadUrl, '_blank');
+        }
+      } else {
+        throw new Error(response.message || 'Failed to export projects');
+      }
+    } catch (error) {
+      console.error('Error exporting projects:', error);
       toast.error('Failed to export projects');
+    }
+  };
+
+  const handleCreateSampleData = async () => {
+    try {
+      setCreatingSample(true);
+      toast.loading('Creating sample project data...');
+      
+      const response = await ApiService.post('/projects/sample');
+      if (response.success) {
+        toast.success('Sample project data created successfully');
+        // Refresh the projects list
+        setCurrentPage(1);
+        // Trigger a refetch
+        const event = new Event('refetch');
+        window.dispatchEvent(event);
+      } else {
+        throw new Error(response.message || 'Failed to create sample data');
+      }
+    } catch (error) {
+      console.error('Error creating sample data:', error);
+      toast.error('Failed to create sample data');
+    } finally {
+      setCreatingSample(false);
     }
   };
 
   const handleSync = async () => {
     try {
       toast.loading('Syncing projects...');
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Projects synced successfully');
-    } catch {
+      
+      const response = await ApiService.post('/projects/sync');
+      if (response.success) {
+        toast.success('Projects synced successfully');
+        // Refresh the projects list after sync
+        setCurrentPage(1);
+        // Trigger a refetch
+        const event = new Event('refetch');
+        window.dispatchEvent(event);
+      } else {
+        throw new Error(response.message || 'Failed to sync projects');
+      }
+    } catch (error) {
+      console.error('Error syncing projects:', error);
       toast.error('Failed to sync projects');
     }
   };
@@ -304,7 +279,7 @@ export default function ProjectManagementPage() {
     }
   };
 
-  const priorities = Array.from(new Set(mockProjects.map(p => p.priority).filter(Boolean)));
+  const priorities = ['high', 'medium', 'low', 'critical'];
 
   const calculateStats = () => {
     if (!projects?.data) return { total: 0, active: 0, completed: 0, delayed: 0 };
@@ -343,7 +318,7 @@ export default function ProjectManagementPage() {
           </div>
           <div className="flex space-x-2">
             <PermissionContent action="export" subject="Project">
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleExport}>
                 <Download className="h-4 w-4 mr-2" />
                 {t('export')}
               </Button>
@@ -491,8 +466,19 @@ export default function ProjectManagementPage() {
           </div>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <Card>
+            <CardContent className="text-center py-8">
+              <RefreshCw className="h-12 w-12 mx-auto text-gray-400 mb-4 animate-spin" />
+              <h3 className="text-lg font-medium mb-2">Loading projects...</h3>
+              <p className="text-muted-foreground">Please wait while we fetch your projects from the database</p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Projects Display */}
-        {viewMode === 'table' ? (
+        {!loading && viewMode === 'table' ? (
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -577,7 +563,7 @@ export default function ProjectManagementPage() {
               </Table>
             </CardContent>
           </Card>
-        ) : (
+        ) : !loading && viewMode === 'cards' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {projects?.data.map(project => (
               <Card key={project.id} className="hover:shadow-lg transition-shadow">
@@ -645,6 +631,111 @@ export default function ProjectManagementPage() {
               </Card>
             ))}
           </div>
+        ) : null}
+
+        {/* Error State */}
+        {!loading && !projects && (
+          <Card>
+            <CardContent className="text-center py-8">
+              <AlertCircle className="h-12 w-12 mx-auto text-red-400 mb-4" />
+              <h3 className="text-lg font-medium mb-2 text-red-600">Failed to load projects</h3>
+              <p className="text-muted-foreground mb-4">
+                There was an error loading your projects from the database. This could be due to a connection issue or database problem.
+              </p>
+              <div className="flex gap-3 justify-center">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setCurrentPage(1);
+                    const event = new Event('refetch');
+                    window.dispatchEvent(event);
+                  }}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Retry
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleCreateSampleData}
+                  disabled={creatingSample}
+                >
+                  {creatingSample ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Sample Data
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* No Projects State */}
+        {!loading && projects && projects.data.length === 0 && (
+          <Card>
+            <CardContent className="text-center py-8">
+              <BarChart3 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium mb-2">
+                {search || status !== 'all' || priority !== 'all'
+                  ? 'No projects match your current filters'
+                  : 'No projects found in the database'}
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                {search || status !== 'all' || priority !== 'all'
+                  ? `No projects found matching "${search || 'any search term'}" with status "${status !== 'all' ? status : 'any status'}" and priority "${priority !== 'all' ? priority : 'any priority'}". Try adjusting your search criteria or filters.`
+                  : 'The database is empty. Get started by creating your first project or generate some sample data to explore the system.'}
+              </p>
+              {!search && status === 'all' && priority === 'all' && (
+                <div className="flex gap-3 justify-center">
+                  <Link href="/modules/project-management/create">
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      {t('create_project')}
+                    </Button>
+                  </Link>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleCreateSampleData}
+                    disabled={creatingSample}
+                  >
+                    {creatingSample ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Create Sample Data
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+              {(search || status !== 'all' || priority !== 'all') && (
+                <div className="mt-4">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setSearch('');
+                      setStatus('all');
+                      setPriority('all');
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Clear Filters
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {/* Pagination */}
@@ -735,27 +826,7 @@ export default function ProjectManagementPage() {
           </div>
         )}
 
-        {projects?.data.length === 0 && (
-          <Card>
-            <CardContent className="text-center py-8">
-              <BarChart3 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium mb-2">{t('no_projects_found')}</h3>
-              <p className="text-muted-foreground mb-4">
-                {search || status !== 'all' || priority !== 'all'
-                  ? t('no_projects_match_filters')
-                  : t('get_started_by_creating_project')}
-              </p>
-              {!search && status === 'all' && priority === 'all' && (
-                <Link href="/modules/project-management/create">
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t('create_project')}
-                  </Button>
-                </Link>
-              )}
-            </CardContent>
-          </Card>
-        )}
+
 
         {/* Role-based content example */}
         <RoleBased roles={['ADMIN', 'MANAGER']}>
