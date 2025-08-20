@@ -4,6 +4,7 @@ import { ProtectedRoute } from '@/components/protected-route';
 import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
 import { useEffect, useState } from 'react';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -180,6 +181,7 @@ export default function CompanyManagementPage() {
                     <TableHead className="min-w-[200px]">{t('companyName')}</TableHead>
                     <TableHead className="min-w-[150px]">{t('contact')}</TableHead>
                     <TableHead className="min-w-[120px]">{t('address')}</TableHead>
+                    <TableHead className="min-w-[100px]">{t('compliance')}</TableHead>
                     <TableHead className="min-w-[100px]">{t('createdAt')}</TableHead>
                     <TableHead className="text-right min-w-[120px]">{t('actions')}</TableHead>
                   </TableRow>
@@ -207,6 +209,24 @@ export default function CompanyManagementPage() {
                         ) : (
                           <div className="text-sm text-gray-400">{t('noAddress')}</div>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          {company.commercial_registration ? (
+                            <Badge variant="default" className="bg-green-100 text-green-800 text-xs">
+                              {t('commercialRegistrationShort')} ✓
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-xs">{t('commercialRegistrationShort')} ✗</Badge>
+                          )}
+                          {company.tax_registration ? (
+                            <Badge variant="default" className="bg-green-100 text-green-800 text-xs">
+                              {t('taxRegistrationShort')} ✓
+                            </Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-xs">{t('taxRegistrationShort')} ✗</Badge>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {company.created_at ? (

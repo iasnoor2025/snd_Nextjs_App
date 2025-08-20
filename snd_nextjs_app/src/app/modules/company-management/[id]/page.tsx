@@ -21,6 +21,7 @@ import {
   User,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import CompanyDocumentManager from '@/components/company/CompanyDocumentManager';
 
 interface Company {
   id: number;
@@ -453,6 +454,12 @@ export default function CompanyDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Company Document Manager */}
+        <CompanyDocumentManager 
+          companyId={company.id} 
+          companyName={company.name}
+        />
 
         <Card>
           <CardHeader>

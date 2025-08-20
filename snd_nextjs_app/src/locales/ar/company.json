@@ -67,5 +67,8 @@
   "saudiLawDocuments": "المستندات المطلوبة بموجب القانون السعودي",
   "saudiLawDocumentsDescription": "هذه المستندات مطلوبة بموجب القانون السعودي لتشغيل الشركة",
   "expiryDate": "تاريخ الانتهاء",
-  "noExpiryDate": "لم يتم تحديد تاريخ انتهاء"
+  "noExpiryDate": "لم يتم تحديد تاريخ انتهاء",
+  "compliance": "الامتثال",
+  "commercialRegistrationShort": "س.ت",
+  "taxRegistrationShort": "ض.ر"
 }

@@ -1,5 +1,5 @@
 import { db } from '@/lib/drizzle';
-import { customers, projects, rentals, employees } from '@/lib/drizzle/schema';
+import { customers, projects, rentals, employees, locations } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -54,6 +54,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     }
 
     console.log('Found project:', project);
+    console.log('Project locationId:', project.locationId);
 
     // Get customer data if customerId exists
     let customer: any = null;
@@ -101,6 +102,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
         location = locationData[0] || null;
         console.log('Found location:', location);
+        console.log('Location data:', locationData);
         
       } catch (locationError) {
         console.error('Error fetching location:', locationError);
@@ -265,7 +267,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         name: `${supervisor.firstName} ${supervisor.lastName}`,
         email: supervisor.email,
       } : null,
-      location: location ? `${location.name}, ${location.city}, ${location.state}` : 'Project Location',
+      location: location ? `${location.name}, ${location.city}, ${location.state}` : 'Location not specified',
       notes: project.notes || 'Project details and notes.',
       rental: rental,
       created_at: project.createdAt,

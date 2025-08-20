@@ -825,38 +825,34 @@ export default function ProjectDetailPage() {
             )}
           </div>
 
-          {/* Project Timeline */}
-          <div className="border-b border-gray-100 p-4 dark:border-gray-800">
-            <h3 className="mb-3 text-base font-semibold">Project Timeline</h3>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-              <div>
-                <p className="mb-1 text-sm text-gray-500">Start Date</p>
-                <p className="text-base font-medium">{formatDate(project.start_date)}</p>
-              </div>
-              <div>
-                <p className="mb-1 text-sm text-gray-500">End Date</p>
-                <p className="text-base font-medium">{formatDate(project.end_date)}</p>
-              </div>
-              <div>
-                <p className="mb-1 text-sm text-gray-500">Duration</p>
-                <p className="text-base font-medium">
-                  {project.start_date ? (
-                    project.end_date ? (
-                      `${Math.ceil((new Date(project.end_date).getTime() - new Date(project.start_date).getTime()) / (1000 * 60 * 60 * 24))} days`
-                    ) : (
-                      <span className="text-blue-600">Ongoing</span>
-                    )
-                  ) : (
-                    'Not started'
-                  )}
-                </p>
-              </div>
-              <div>
-                <p className="mb-1 text-sm text-gray-500">Location</p>
-                <p className="text-base font-medium">{project.location || 'Not specified'}</p>
-              </div>
-            </div>
-          </div>
+                     {/* Project Timeline */}
+           <div className="border-b border-gray-100 p-4 dark:border-gray-800">
+             <h3 className="mb-3 text-base font-semibold">Project Timeline</h3>
+             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+               <div>
+                 <p className="mb-1 text-sm text-gray-500">Start Date</p>
+                 <p className="text-base font-medium">{formatDate(project.start_date)}</p>
+               </div>
+               <div>
+                 <p className="mb-1 text-sm text-gray-500">End Date</p>
+                 <p className="text-base font-medium">{formatDate(project.end_date)}</p>
+               </div>
+               <div>
+                 <p className="mb-1 text-sm text-gray-500">Duration</p>
+                 <p className="text-base font-medium">
+                   {project.start_date ? (
+                     project.end_date ? (
+                       `${Math.ceil((new Date(project.end_date).getTime() - new Date(project.start_date).getTime()) / (1000 * 60 * 60 * 24))} days`
+                     ) : (
+                       <span className="text-blue-600">Ongoing</span>
+                     )
+                   ) : (
+                     'Not started'
+                   )}
+                 </p>
+               </div>
+             </div>
+           </div>
 
           {/* Project Location */}
           <div className="border-b border-gray-100 p-4 dark:border-gray-800">

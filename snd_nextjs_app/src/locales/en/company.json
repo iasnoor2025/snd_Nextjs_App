@@ -67,5 +67,8 @@
   "saudiLawDocuments": "Saudi Law Required Documents",
   "saudiLawDocumentsDescription": "These documents are required by Saudi Arabian law for company operations",
   "expiryDate": "Expiry Date",
-  "noExpiryDate": "No expiry date set"
+  "noExpiryDate": "No expiry date set",
+  "compliance": "Compliance",
+  "commercialRegistrationShort": "CR",
+  "taxRegistrationShort": "TR"
 }
