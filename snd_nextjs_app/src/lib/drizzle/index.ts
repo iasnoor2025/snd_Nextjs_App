@@ -60,7 +60,7 @@ export function getDb() {
     try {
       global.__drizzleDb = createDb();
     } catch (error) {
-      
+      console.error('Error creating database connection:', error);
       throw error;
     }
   }
@@ -73,7 +73,7 @@ export const pool: Pool = new Proxy({} as Pool, {
     try {
       return (getPool() as any)[prop];
     } catch (error) {
-      
+      console.error('Error accessing pool property:', error);
       throw error;
     }
   },
@@ -84,7 +84,7 @@ export const db = new Proxy({} as ReturnType<typeof drizzle>, {
     try {
       return (getDb() as any)[prop];
     } catch (error) {
-      
+      console.error('Error accessing db property:', error);
       throw error;
     }
   },
