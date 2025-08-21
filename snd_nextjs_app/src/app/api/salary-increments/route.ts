@@ -278,7 +278,7 @@ export async function POST(_request: NextRequest) {
     const insertData = {
       employeeId: employee_id,
       incrementType: increment_type,
-      effectiveDate: new Date(effective_date).toISOString().split('T')[0],
+      effectiveDate: new Date(effective_date).toISOString().split('T')[0] || null,
       reason,
       notes: body.notes || '',
       status: 'pending',
@@ -293,9 +293,9 @@ export async function POST(_request: NextRequest) {
       incrementAmount: increment_amount,
       incrementPercentage: increment_percentage,
       requestedBy: session.user.id,
-      requestedAt: new Date().toISOString().split('T')[0],
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0],
+      requestedAt: new Date().toISOString().split('T')[0] || null,
+      createdAt: new Date().toISOString().split('T')[0] || null,
+      updatedAt: new Date().toISOString().split('T')[0] || null,
     };
 
     const [newSalaryIncrement] = await db

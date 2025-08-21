@@ -51,7 +51,7 @@ export async function GET(_request: NextRequest) {
     const total = totalResult[0]?.count || 0;
 
     // Get payrolls with employee, department, and designation data
-    let payrollsQuery = db
+    const payrollsQuery = db
       .select({
         id: payrolls.id,
         employeeId: payrolls.employeeId,

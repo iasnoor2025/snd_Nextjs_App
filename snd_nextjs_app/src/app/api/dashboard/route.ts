@@ -55,7 +55,7 @@ export async function GET(_request: NextRequest) {
 
       }
     } catch (directError) {
-      
+      console.error('Dashboard API - Direct equipment query failed:', directError);
     }
 
     // Skip DashboardService and use direct database query directly
@@ -157,8 +157,9 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
       // Log more detailed error information
+      console.error('Dashboard API - Critical error:', error);
       if (error instanceof Error) {
-        // Handle error silently for production
+        console.error('Dashboard API - Error details:', error.stack);
       }
 
     return NextResponse.json(

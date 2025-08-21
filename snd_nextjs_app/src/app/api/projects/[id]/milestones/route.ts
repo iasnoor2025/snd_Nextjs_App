@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const status = searchParams.get('status');
 
     // Build where conditions
-    let whereConditions = [eq(projectMilestones.projectId, parseInt(projectId))];
+    const whereConditions = [eq(projectMilestones.projectId, parseInt(projectId))];
     
     if (status && status !== 'all') {
       whereConditions.push(eq(projectMilestones.status, status));

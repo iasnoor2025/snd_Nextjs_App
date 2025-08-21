@@ -51,7 +51,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
 
     const whereExpr = filters.length ? and(...filters) : undefined;
 
-    let baseQuery = db
+    const baseQuery = db
       .select({
         id: employeesTable.id,
         first_name: employeesTable.firstName,
@@ -103,7 +103,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
 
     // Fetch latest assignment per employee in this page
     const employeeFileNumbers = employeeRows.map(e => e.file_number as string).filter(Boolean);
-    let latestAssignments: Record<string, any> = {};
+    const latestAssignments: Record<string, any> = {};
     if (employeeFileNumbers.length > 0) {
       const assignmentRows = await db
         .select({
@@ -221,7 +221,7 @@ const getEmployeesHandler = async (request: NextRequest) => {
 
     return NextResponse.json(response);
   } catch (error) {
-
+    console.error('Employees API - Error fetching employees:', error);
     return NextResponse.json(
       {
         error: 'Internal server error',

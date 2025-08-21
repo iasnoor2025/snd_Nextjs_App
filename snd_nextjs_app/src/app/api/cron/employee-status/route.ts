@@ -15,7 +15,7 @@ export async function GET(_request: NextRequest) {
 
     // Get current date
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0] as string; // YYYY-MM-DD format
+    const todayStr = today.toISOString().split('T')[0] || null as string; // YYYY-MM-DD format
 
     // Find all employees who should be on leave today
     const employeesOnLeave = await db

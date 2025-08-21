@@ -144,10 +144,10 @@ export async function GET() {
       employee.country || '',
       employee.nationality || '',
       employee.dateOfBirth
-        ? new Date(employee.dateOfBirth as unknown as string).toISOString().split('T')[0]
+        ? new Date(employee.dateOfBirth as unknown as string).toISOString().split('T')[0] || null
         : '',
       employee.hireDate
-        ? new Date(employee.hireDate as unknown as string).toISOString().split('T')[0]
+        ? new Date(employee.hireDate as unknown as string).toISOString().split('T')[0] || null
         : '',
       employee.departmentName || '',
       employee.designationName || '',
@@ -170,31 +170,31 @@ export async function GET() {
       employee.emergencyContactRelationship || '',
       employee.iqamaNumber || '',
       employee.iqamaExpiry
-        ? new Date(employee.iqamaExpiry as unknown as string).toISOString().split('T')[0]
+        ? new Date(employee.iqamaExpiry as unknown as string).toISOString().split('T')[0] || null
         : '',
       employee.iqamaCost?.toString() || '0',
       employee.passportNumber || '',
       employee.passportExpiry
-        ? new Date(employee.passportExpiry as unknown as string).toISOString().split('T')[0]
+        ? new Date(employee.passportExpiry as unknown as string).toISOString().split('T')[0] || null
         : '',
       employee.drivingLicenseNumber || '',
       employee.drivingLicenseExpiry
-        ? new Date(employee.drivingLicenseExpiry as unknown as string).toISOString().split('T')[0]
+        ? new Date(employee.drivingLicenseExpiry as unknown as string).toISOString().split('T')[0] || null
         : '',
       employee.drivingLicenseCost?.toString() || '0',
       employee.operatorLicenseNumber || '',
       employee.operatorLicenseExpiry
-        ? new Date(employee.operatorLicenseExpiry as unknown as string).toISOString().split('T')[0]
+        ? new Date(employee.operatorLicenseExpiry as unknown as string).toISOString().split('T')[0] || null
         : '',
       employee.operatorLicenseCost?.toString() || '0',
       employee.tuvCertificationNumber || '',
       employee.tuvCertificationExpiry
-        ? new Date(employee.tuvCertificationExpiry as unknown as string).toISOString().split('T')[0]
+        ? new Date(employee.tuvCertificationExpiry as unknown as string).toISOString().split('T')[0] || null
         : '',
       employee.tuvCertificationCost?.toString() || '0',
       employee.spspLicenseNumber || '',
       employee.spspLicenseExpiry
-        ? new Date(employee.spspLicenseExpiry as unknown as string).toISOString().split('T')[0]
+        ? new Date(employee.spspLicenseExpiry as unknown as string).toISOString().split('T')[0] || null
         : '',
       employee.spspLicenseCost?.toString() || '0',
       employee.isOperator ? 'Yes' : 'No',

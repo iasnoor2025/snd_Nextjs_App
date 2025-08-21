@@ -21,7 +21,12 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json({ error: 'Document IDs are required' }, { status: 400 });
     }
 
-    let documents: any[] = [];
+    const documents: Array<{
+      id: number;
+      name: string;
+      url: string;
+      type: string;
+    }> = [];
 
     // Fetch employee documents
     if (type === 'all' || type === 'employee') {

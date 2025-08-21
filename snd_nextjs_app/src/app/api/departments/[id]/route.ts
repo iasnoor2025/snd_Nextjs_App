@@ -50,7 +50,7 @@ export const GET = withPermission(
         message: 'Department retrieved successfully',
       });
     } catch (error) {
-      
+      console.error('Department API - Error fetching department:', error);
       return NextResponse.json(
         {
           success: false,
@@ -176,7 +176,7 @@ export const PUT = withPermission(
         message: 'Department updated successfully',
       });
     } catch (error) {
-      
+      console.error('Department API - Error updating department:', error);
       return NextResponse.json(
         {
           success: false,
@@ -241,7 +241,7 @@ export const DELETE = withPermission(
         message: 'Department deleted successfully',
       });
     } catch (error) {
-      
+      console.error('Department API - Error deleting department:', error);
       return NextResponse.json(
         {
           success: false,

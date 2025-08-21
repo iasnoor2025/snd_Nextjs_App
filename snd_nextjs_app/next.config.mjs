@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true, // Keep disabled for now
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: true, // Keep disabled until we fix remaining issues
   },
   // Performance optimizations
   experimental: {
@@ -74,6 +74,7 @@ const nextConfig = {
     "jspdf",
     "html2canvas",
     "pdf-lib",
+    "puppeteer",
   ],
 
   // Webpack configuration for compatibility

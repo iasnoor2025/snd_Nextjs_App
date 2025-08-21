@@ -29,7 +29,7 @@ export async function GET(_request: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build where conditions for Drizzle
-    let whereConditions = [eq(analyticsReports.isActive, true)];
+    const whereConditions = [eq(analyticsReports.isActive, true)];
 
     if (search) {
       whereConditions.push(

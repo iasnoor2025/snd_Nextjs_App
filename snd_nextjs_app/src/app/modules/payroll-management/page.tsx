@@ -476,13 +476,14 @@ export default function PayrollManagementPage() {
   const handleDirectDownloadPayslip = async (payrollId: number) => {
     try {
       setDownloadingPayslip(payrollId);
-      // First, fetch the payslip data
-      const response = await fetch(`/api/payroll/${payrollId}/payslip`);
-      const data = await response.json();
+      
+      // Fetch data and use custom PDF generation
+      const dataResponse = await fetch(`/api/payroll/${payrollId}/payslip`);
+      const data = await dataResponse.json();
 
-      if (data.success) {
-        // Create a temporary iframe to render the payslip
-        const iframe = document.createElement('iframe');
+        if (data.success) {
+          // Create a temporary iframe to render the payslip
+          const iframe = document.createElement('iframe');
         iframe.style.position = 'absolute';
         iframe.style.left = '-9999px';
         iframe.style.top = '-9999px';

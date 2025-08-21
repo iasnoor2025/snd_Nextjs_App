@@ -17,14 +17,14 @@ function formatCompanyForFrontend(company: Record<string, any>) {
     
     // If it's a Date object, convert to ISO string and extract date part
     if (dateValue instanceof Date) {
-      return dateValue.toISOString().split('T')[0];
+      return dateValue.toISOString().split('T')[0] || null || null;
     }
     
     // If it's a Date object from Drizzle (might be a custom type), try to convert
     try {
       const date = new Date(dateValue);
       if (!isNaN(date.getTime())) {
-        return date.toISOString().split('T')[0];
+        return date.toISOString().split('T')[0] || null;
       }
     } catch (e) {
       // If conversion fails, return null

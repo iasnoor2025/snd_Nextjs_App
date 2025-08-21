@@ -14,7 +14,7 @@ export async function GET(_request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    let whereConditions: any[] = [];
+    const whereConditions: any[] = [];
 
     if (search) {
       whereConditions.push(

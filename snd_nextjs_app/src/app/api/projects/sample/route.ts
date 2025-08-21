@@ -30,8 +30,8 @@ export async function POST() {
             country: 'Saudi Arabia',
             isActive: true,
             status: 'active',
-            createdAt: new Date().toISOString().split('T')[0],
-            updatedAt: new Date().toISOString().split('T')[0]
+            createdAt: new Date().toISOString().split('T')[0] || null,
+            updatedAt: new Date().toISOString().split('T')[0] || null
           })
           .returning();
         

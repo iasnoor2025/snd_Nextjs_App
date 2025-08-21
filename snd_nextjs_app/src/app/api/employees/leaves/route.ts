@@ -85,10 +85,10 @@ const getLeavesHandler = async (request: NextRequest) => {
       id: leave.id,
       leave_type: leave.leave_type,
       start_date: leave.start_date
-        ? new Date(leave.start_date as unknown as string).toISOString().split('T')[0]
+        ? new Date(leave.start_date as unknown as string).toISOString().split('T')[0] || null
         : '',
       end_date: leave.end_date
-        ? new Date(leave.end_date as unknown as string).toISOString().split('T')[0]
+        ? new Date(leave.end_date as unknown as string).toISOString().split('T')[0] || null
         : '',
       days: leave.days,
       status: leave.status,

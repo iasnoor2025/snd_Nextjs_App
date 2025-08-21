@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // For now, we'll use a simple in-memory store to demonstrate the functionality
 const companyDocuments = new Map<number, any[]>();
 
-export const GET = withPermission(async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+export const GET = withPermission(async (_request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const { id: companyId } = await params;
     const id = parseInt(companyId);

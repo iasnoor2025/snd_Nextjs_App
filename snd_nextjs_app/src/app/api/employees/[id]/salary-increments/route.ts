@@ -98,7 +98,7 @@ async function getEmployeeSalaryIncrementsHandler(
       .filter(id => id !== null && id !== undefined);
     const uniqueUserIds = [...new Set(userIds)];
     
-    let usersData: { id: number; name: string }[] = [];
+    const usersData: { id: number; name: string }[] = [];
     if (uniqueUserIds.length > 0) {
       for (const userId of uniqueUserIds) {
         try {

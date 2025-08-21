@@ -119,7 +119,7 @@ function getDateRange(from: string, to: string): string[] {
   }
 
   while (current <= end) {
-    const dateString = current.toISOString().split('T')[0];
+    const dateString = current.toISOString().split('T')[0] || null;
     if (dateString) {
       dates.push(dateString);
     }

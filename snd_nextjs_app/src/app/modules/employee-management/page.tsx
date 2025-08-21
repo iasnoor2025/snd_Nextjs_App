@@ -47,6 +47,7 @@ import {
   getTranslatedName,
 } from '@/lib/translation-utils';
 import { useDeleteConfirmations } from '@/lib/utils/confirmation-utils';
+import { cn } from '@/lib/utils';
 
 interface Employee {
   id: number;
@@ -662,6 +663,8 @@ export default function EmployeeManagementPage() {
                   <SelectItem value="all">{t('employee:filters.all')}</SelectItem>
                   <SelectItem value="active">{t('employee:status.active')}</SelectItem>
                   <SelectItem value="inactive">{t('employee:status.inactive')}</SelectItem>
+                  <SelectItem value="on_leave">On Leave</SelectItem>
+                  <SelectItem value="left">Exit the company</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -848,7 +851,19 @@ export default function EmployeeManagementPage() {
                                 setTranslatedNames
                               ) || t('common.na')}
                               {employee.current_assignment && (
-                                <Badge variant="outline" className="text-xs">
+                                <Badge 
+                                  variant="outline" 
+                                  className={cn(
+                                    "text-xs",
+                                    employee.current_assignment.type === 'project'
+                                      ? 'bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100'
+                                      : employee.current_assignment.type === 'rental'
+                                        ? 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100'
+                                        : employee.current_assignment.type === 'manual'
+                                          ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                                          : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                                  )}
+                                >
                                   {employee.current_assignment.type === 'project'
                                     ? `📋 ${t('employee:assignment.project')}`
                                     : employee.current_assignment.type === 'rental'
@@ -949,11 +964,21 @@ export default function EmployeeManagementPage() {
                                   ? 'secondary'
                                   : employee.status === 'inactive'
                                     ? 'destructive'
+                                  : employee.status === 'left'
+                                    ? 'destructive'
                                     : 'secondary'
                             }
-                            className={
-                              employee.status === 'on_leave' ? 'bg-yellow-100 text-yellow-800' : ''
-                            }
+                            className={cn(
+                              employee.status === 'active' 
+                                ? 'bg-green-100 text-green-800 border-green-200 hover:bg-green-200'
+                                : employee.status === 'on_leave' 
+                                  ? 'bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200'
+                                  : employee.status === 'inactive'
+                                    ? 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
+                                  : employee.status === 'left'
+                                    ? 'bg-red-100 text-red-800 border-red-200 hover:bg-red-200'
+                                    : 'bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200'
+                            )}
                           >
                             {employee.status === 'active'
                               ? t('employee:status.active')
@@ -961,6 +986,8 @@ export default function EmployeeManagementPage() {
                                 ? t('employee:status.inactive')
                                 : employee.status === 'on_leave'
                                   ? 'On Leave'
+                                : employee.status === 'left'
+                                  ? 'Exit the company'
                                   : employee.status || t('common.na')}
                           </Badge>
                         </TableCell>

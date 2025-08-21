@@ -106,7 +106,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     }
 
     // Extract payment status and other details from ERPNext
-    let paymentStatus = erpnextInvoiceDetails?.docstatus === 1 ? 'submitted' : 'pending';
+    const paymentStatus = erpnextInvoiceDetails?.docstatus === 1 ? 'submitted' : 'pending';
     const outstandingAmount =
       erpnextInvoiceDetails?.outstanding_amount || erpnextInvoiceDetails?.grand_total || 0;
     let invoiceStatus = erpnextInvoiceDetails?.status || 'Draft';

@@ -16,7 +16,7 @@ export const GET = withPermission(async (request: NextRequest) => {
     const offset = (page - 1) * limit;
 
     // Build where conditions
-    let whereConditions = [];
+    const whereConditions = [];
     
     if (search) {
       whereConditions.push(

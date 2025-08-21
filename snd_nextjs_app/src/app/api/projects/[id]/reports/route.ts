@@ -48,7 +48,7 @@ export async function GET(
     const selectedProject = project[0];
 
     // Build date filter conditions
-    let dateConditions = [];
+    const dateConditions = [];
     if (dateRange !== 'all') {
       const now = new Date();
       let startDate: Date;

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const fuelType = searchParams.get('fuel_type');
 
     // Build where conditions
-    let whereConditions = [eq(projectFuel.projectId, parseInt(projectId))];
+    const whereConditions = [eq(projectFuel.projectId, parseInt(projectId))];
     
     if (status && status !== 'all') {
       whereConditions.push(eq(projectFuel.status, status));

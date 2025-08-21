@@ -128,7 +128,7 @@ export async function POST(_request: NextRequest) {
       .update(timesheets)
       .set({
         status: 'submitted',
-        submittedAt: new Date().toISOString().split('T')[0],
+        submittedAt: new Date().toISOString().split('T')[0] || null,
         notes: notes || timesheet.notes,
       })
       .where(eq(timesheets.id, parseInt(timesheetId)));

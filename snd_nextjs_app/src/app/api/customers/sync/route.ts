@@ -40,7 +40,7 @@ export async function POST(_request: NextRequest) {
     let processedCount = 0;
     let createdCount = 0;
     let updatedCount = 0;
-    let errors: string[] = [];
+    const errors: string[] = [];
 
     // Process customers to create
     if (matchedData.toCreate && matchedData.toCreate.length > 0) {
@@ -80,8 +80,8 @@ export async function POST(_request: NextRequest) {
             isActive: customerData.is_active !== false,
             erpnextId: customerData.erpnext_id || null,
             status: 'active',
-            createdAt: new Date().toISOString().split('T')[0],
-            updatedAt: new Date().toISOString().split('T')[0] as string,
+            createdAt: new Date().toISOString().split('T')[0] || null,
+            updatedAt: new Date().toISOString().split('T')[0] || null as string,
           });
 
           createdCount++;
@@ -122,7 +122,7 @@ export async function POST(_request: NextRequest) {
               paymentTerms: newData.payment_terms || null,
               notes: newData.notes || null,
               isActive: newData.is_active !== false,
-              updatedAt: new Date().toISOString().split('T')[0] as string,
+              updatedAt: new Date().toISOString().split('T')[0] || null as string,
             })
             .where(eq(customers.id, existingId));
 

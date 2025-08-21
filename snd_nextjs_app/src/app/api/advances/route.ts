@@ -24,7 +24,7 @@ const getAdvancesHandler = async (
     const session = await getServerSession(authConfig);
     const user = session?.user;
 
-    let employeeFilter: any = null;
+    let employeeFilter: ReturnType<typeof eq> | null = null;
 
     // For employee users, only show their own advances
     if (user?.role === 'EMPLOYEE' && user.national_id) {
@@ -41,7 +41,7 @@ const getAdvancesHandler = async (
     }
 
     // Build where conditions
-    let whereConditions: any[] = [isNull(advancePayments.deletedAt)];
+    const whereConditions: Array<ReturnType<typeof eq> | ReturnType<typeof isNull> | ReturnType<typeof like>> = [isNull(advancePayments.deletedAt)];
 
     if (employeeFilter) {
       whereConditions.push(employeeFilter);

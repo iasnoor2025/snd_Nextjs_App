@@ -249,7 +249,7 @@ export async function POST() {
                   name: trimmedDesignationName,
                   description: trimmedDesignationName,
                   isActive: true,
-                  updatedAt: new Date().toISOString().split('T')[0] as string,
+                  updatedAt: new Date().toISOString().split('T')[0] || null as string,
                 })
                 .returning();
               designation = newDesignation;
@@ -259,7 +259,7 @@ export async function POST() {
                 .set({
                   description: trimmedDesignationName,
                   isActive: true,
-                  updatedAt: new Date().toISOString().split('T')[0] as string,
+                  updatedAt: new Date().toISOString().split('T')[0] || null as string,
                 })
                 .where(sql`id = ${designation[0].id}`)
                 .returning();
@@ -280,7 +280,7 @@ export async function POST() {
                   name: departmentName.trim(),
                   description: departmentName.trim(),
                   active: true,
-                  updatedAt: new Date().toISOString().split('T')[0] as string,
+                  updatedAt: new Date().toISOString().split('T')[0] || null as string,
                 })
                 .returning();
               department = newDepartment;
@@ -290,7 +290,7 @@ export async function POST() {
                 .set({
                   description: departmentName.trim(),
                   active: true,
-                  updatedAt: new Date().toISOString().split('T')[0] as string,
+                  updatedAt: new Date().toISOString().split('T')[0] || null as string,
                 })
                 .where(sql`id = ${department[0].id}`)
                 .returning();
@@ -312,19 +312,19 @@ export async function POST() {
             phone: cellNumber,
             hireDate: dateOfJoining
               ? typeof dateOfJoining === 'string'
-                ? new Date(dateOfJoining).toISOString().split('T')[0]
-                : dateOfJoining.toISOString().split('T')[0]
+                ? new Date(dateOfJoining).toISOString().split('T')[0] || null
+                : dateOfJoining.toISOString().split('T')[0] || null
               : null,
             dateOfBirth: dateOfBirth
               ? typeof dateOfBirth === 'string'
-                ? new Date(dateOfBirth).toISOString().split('T')[0]
-                : dateOfBirth.toISOString().split('T')[0]
+                ? new Date(dateOfBirth).toISOString().split('T')[0] || null
+                : dateOfBirth.toISOString().split('T')[0] || null
               : null,
             departmentId: departmentId,
             designationId: designationId,
             // Additional fields from ERPNext
             iqamaNumber: iqama,
-            iqamaExpiry: iqamaExpiry ? new Date(iqamaExpiry).toISOString().split('T')[0] : null,
+            iqamaExpiry: iqamaExpiry ? new Date(iqamaExpiry).toISOString().split('T')[0] || null : null,
             // Address information
             address: erpEmployee.address || null,
             city: erpEmployee.city || null,
@@ -363,33 +363,33 @@ export async function POST() {
             // Legal documents
             passportNumber: erpEmployee.passport_number || null,
             passportExpiry: erpEmployee.passport_expiry
-              ? new Date(erpEmployee.passport_expiry).toISOString().split('T')[0]
+              ? new Date(erpEmployee.passport_expiry).toISOString().split('T')[0] || null
               : null,
             // Licenses and certifications
             drivingLicenseNumber: erpEmployee.driving_license_number || null,
             drivingLicenseExpiry: erpEmployee.driving_license_expiry
-              ? new Date(erpEmployee.driving_license_expiry).toISOString().split('T')[0]
+              ? new Date(erpEmployee.driving_license_expiry).toISOString().split('T')[0] || null
               : null,
             drivingLicenseCost: String(
               parseFloat(erpEmployee.driving_license_cost?.toString() || '0')
             ),
             operatorLicenseNumber: erpEmployee.operator_license_number || null,
             operatorLicenseExpiry: erpEmployee.operator_license_expiry
-              ? new Date(erpEmployee.operator_license_expiry).toISOString().split('T')[0]
+              ? new Date(erpEmployee.operator_license_expiry).toISOString().split('T')[0] || null
               : null,
             operatorLicenseCost: String(
               parseFloat(erpEmployee.operator_license_cost?.toString() || '0')
             ),
             tuvCertificationNumber: erpEmployee.tuv_certification_number || null,
             tuvCertificationExpiry: erpEmployee.tuv_certification_expiry
-              ? new Date(erpEmployee.tuv_certification_expiry).toISOString().split('T')[0]
+              ? new Date(erpEmployee.tuv_certification_expiry).toISOString().split('T')[0] || null
               : null,
             tuvCertificationCost: String(
               parseFloat(erpEmployee.tuv_certification_cost?.toString() || '0')
             ),
             spspLicenseNumber: erpEmployee.spsp_license_number || null,
             spspLicenseExpiry: erpEmployee.spsp_license_expiry
-              ? new Date(erpEmployee.spsp_license_expiry).toISOString().split('T')[0]
+              ? new Date(erpEmployee.spsp_license_expiry).toISOString().split('T')[0] || null
               : null,
             spspLicenseCost: String(parseFloat(erpEmployee.spsp_license_cost?.toString() || '0')),
             // File paths
@@ -405,13 +405,13 @@ export async function POST() {
             isOperator: erpEmployee.is_operator || false,
             // Access control
             accessRestrictedUntil: erpEmployee.access_restricted_until
-              ? new Date(erpEmployee.access_restricted_until).toISOString().split('T')[0]
+              ? new Date(erpEmployee.access_restricted_until).toISOString().split('T')[0] || null
               : null,
             accessStartDate: erpEmployee.access_start_date
-              ? new Date(erpEmployee.access_start_date).toISOString().split('T')[0]
+              ? new Date(erpEmployee.access_start_date).toISOString().split('T')[0] || null
               : null,
             accessEndDate: erpEmployee.access_end_date
-              ? new Date(erpEmployee.access_end_date).toISOString().split('T')[0]
+              ? new Date(erpEmployee.access_end_date).toISOString().split('T')[0] || null
               : null,
             accessRestrictionReason: erpEmployee.access_restriction_reason || null,
             // Current location
@@ -419,7 +419,7 @@ export async function POST() {
             // Advance salary fields
             advanceSalaryEligible: erpEmployee.advance_salary_eligible !== false,
             advanceSalaryApprovedThisMonth: erpEmployee.advance_salary_approved_this_month || false,
-            updatedAt: new Date().toISOString().split('T')[0] as string,
+            updatedAt: new Date().toISOString().split('T')[0] || null as string,
           };
 
           if (existingEmployee.length > 0) {
@@ -445,14 +445,14 @@ export async function POST() {
               existingEmployeeData.email !== email ||
               existingEmployeeData.phone !== cellNumber ||
               existingEmployeeData.dateOfBirth !==
-                (dateOfBirth ? new Date(dateOfBirth).toISOString().split('T')[0] : null) ||
+                (dateOfBirth ? new Date(dateOfBirth).toISOString().split('T')[0] || null : null) ||
               existingEmployeeData.hireDate !==
-                (dateOfJoining ? new Date(dateOfJoining).toISOString().split('T')[0] : null) ||
+                (dateOfJoining ? new Date(dateOfJoining).toISOString().split('T')[0] || null : null) ||
               existingEmployeeData.departmentId !== departmentId ||
               existingEmployeeData.designationId !== designationId ||
               existingEmployeeData.iqamaNumber !== iqama ||
               existingEmployeeData.iqamaExpiry !==
-                (iqamaExpiry ? new Date(iqamaExpiry).toISOString().split('T')[0] : null);
+                (iqamaExpiry ? new Date(iqamaExpiry).toISOString().split('T')[0] || null : null);
 
             if (hasChanges) {
               console.log('Employee data has changed, updating:', employeeData.erpnextId);

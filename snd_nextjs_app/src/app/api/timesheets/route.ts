@@ -55,7 +55,7 @@ const getTimesheetsHandler = async (request: NextRequest) => {
       const transformedTimesheets = rows.map(timesheet => ({
         id: timesheet.id.toString(),
         employeeId: timesheet.employee_id?.toString?.() ?? String(timesheet.employee_id),
-        date: new Date(timesheet.date as unknown as string).toISOString().split('T')[0],
+        date: new Date(timesheet.date as unknown as string).toISOString().split('T')[0] || null,
         hoursWorked: timesheet.hours_worked,
         overtimeHours: timesheet.overtime_hours,
         startTime: timesheet.start_time

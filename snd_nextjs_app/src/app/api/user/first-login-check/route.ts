@@ -167,7 +167,7 @@ export async function POST(_request: NextRequest) {
 
     // This is first login - check if user email matches any employee
     let matchedEmployee: any = null;
-    let isFirstLogin = true;
+    const isFirstLogin = true;
 
     if (user.email) {
       try {

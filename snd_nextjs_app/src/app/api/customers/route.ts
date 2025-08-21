@@ -140,8 +140,8 @@ export async function POST(request: NextRequest) {
       companyName: body.companyName || null,
       status: body.status || 'active',
       isActive: body.isActive !== undefined ? body.isActive : true,
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0] as string,
+      createdAt: new Date().toISOString().split('T')[0] || null,
+      updatedAt: new Date().toISOString().split('T')[0] || null as string,
     };
 
     const newCustomer = await db.insert(customers).values(insertData).returning();
@@ -192,7 +192,7 @@ export async function PUT(request: NextRequest) {
         companyName: body.companyName || null,
         status: body.status || 'active',
         isActive: body.isActive !== undefined ? body.isActive : true,
-        updatedAt: new Date().toISOString().split('T')[0],
+        updatedAt: new Date().toISOString().split('T')[0] || null,
       })
       .where(eq(customers.id, body.id))
       .returning();
