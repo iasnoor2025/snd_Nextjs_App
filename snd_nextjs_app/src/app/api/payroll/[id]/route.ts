@@ -1,6 +1,6 @@
 import { db } from '@/lib/drizzle';
-import { departments, designations, employees, payrollItems, payrolls } from '@/lib/drizzle/schema';
-import { eq } from 'drizzle-orm';
+import { departments, designations, employees, payrollItems, payrolls, advancePaymentHistories } from '@/lib/drizzle/schema';
+import { eq, and, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
@@ -57,10 +57,38 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
         .where(eq(designations.id, employee.designationId))
         .limit(1);
       
-      designation = desigResult[0] || null;
-    }
+              designation = desigResult[0] || null;
+      }
 
-    // Get payroll items
+      // Calculate advance deduction from advance_payment_histories for this month/year
+      let totalAdvanceDeduction = 0;
+      if (payroll.employeeId && payroll.month && payroll.year) {
+        // Create date range for the month (1st to last day of the month)
+        const lastDayOfMonth = new Date(payroll.year, payroll.month, 0).getDate();
+        const monthStart = `${payroll.year}-${payroll.month.toString().padStart(2, '0')}-01`;
+        const monthEnd = `${payroll.year}-${payroll.month.toString().padStart(2, '0')}-${lastDayOfMonth.toString().padStart(2, '0')}`;
+        
+        const advanceHistories = await db
+          .select({
+            amount: advancePaymentHistories.amount,
+          })
+          .from(advancePaymentHistories)
+          .where(
+            and(
+              eq(advancePaymentHistories.employeeId, payroll.employeeId),
+              // Check if payment date is within the month
+              sql`${advancePaymentHistories.paymentDate} >= ${monthStart}`,
+              sql`${advancePaymentHistories.paymentDate} <= ${monthEnd}`
+            )
+          );
+
+        // Sum up all advance payments for this month/year
+        totalAdvanceDeduction = advanceHistories.reduce((total, history) => {
+          return total + (history.amount ? Number(history.amount) : 0);
+        }, 0);
+      }
+
+      // Get payroll items
     const payrollItemsResult = await db
       .select()
       .from(payrollItems)
@@ -76,11 +104,11 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
       overtime_amount: payroll.overtimeAmount ? Number(payroll.overtimeAmount) : 0,
       bonus_amount: payroll.bonusAmount ? Number(payroll.bonusAmount) : 0,
       deduction_amount: 0, // Removed all deductions except advance
-      advance_deduction: payroll.advanceDeduction ? Number(payroll.advanceDeduction) : 0,
+      advance_deduction: totalAdvanceDeduction, // Auto-calculated from advance_payment_histories
       final_amount: (payroll.baseSalary ? Number(payroll.baseSalary) : 0) + 
                    (payroll.overtimeAmount ? Number(payroll.overtimeAmount) : 0) + 
                    (payroll.bonusAmount ? Number(payroll.bonusAmount) : 0) - 
-                   (payroll.advanceDeduction ? Number(payroll.advanceDeduction) : 0),
+                   totalAdvanceDeduction,
       total_worked_hours: payroll.totalWorkedHours ? Number(payroll.totalWorkedHours) : 0,
       overtime_hours: payroll.overtimeHours ? Number(payroll.overtimeHours) : 0,
       status: payroll.status || 'pending',
@@ -159,12 +187,40 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ success: false, message: 'Payroll not found' }, { status: 404 });
     }
 
+    // Calculate advance deduction from advance_payment_histories for this month/year
+    let totalAdvanceDeduction = 0;
+    if (body.month && body.year && body.employeeId) {
+      // Create date range for the month (1st to last day of the month)
+      const lastDayOfMonth = new Date(body.year, body.month, 0).getDate();
+      const monthStart = `${body.year}-${body.month.toString().padStart(2, '0')}-01`;
+      const monthEnd = `${body.year}-${body.month.toString().padStart(2, '0')}-${lastDayOfMonth.toString().padStart(2, '0')}`;
+      
+      const advanceHistories = await db
+        .select({
+          amount: advancePaymentHistories.amount,
+        })
+        .from(advancePaymentHistories)
+        .where(
+          and(
+            eq(advancePaymentHistories.employeeId, parseInt(body.employeeId) || 0),
+            // Check if payment date is within the month
+            sql`${advancePaymentHistories.paymentDate} >= ${monthStart}`,
+            sql`${advancePaymentHistories.paymentDate} <= ${monthEnd}`
+          )
+        );
+
+      // Sum up all advance payments for this month/year
+      totalAdvanceDeduction = advanceHistories.reduce((total, history) => {
+        return total + (history.amount ? Number(history.amount) : 0);
+      }, 0);
+    }
+
     // Calculate amounts
     const baseSalary = Number(body.baseSalary) || 0;
     const overtimeAmount = Number(body.overtimeAmount) || 0;
     const bonusAmount = Number(body.bonusAmount) || 0;
     const deductionAmount = 0; // Removed all deductions except advance
-    const advanceDeduction = Number(body.advanceDeduction) || 0;
+    const advanceDeduction = totalAdvanceDeduction; // Auto-calculated from advance_payment_histories
 
     const finalAmount = baseSalary + overtimeAmount + bonusAmount - advanceDeduction;
 
