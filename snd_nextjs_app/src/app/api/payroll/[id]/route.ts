@@ -75,9 +75,12 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
       base_salary: payroll.baseSalary ? Number(payroll.baseSalary) : 0,
       overtime_amount: payroll.overtimeAmount ? Number(payroll.overtimeAmount) : 0,
       bonus_amount: payroll.bonusAmount ? Number(payroll.bonusAmount) : 0,
-      deduction_amount: payroll.deductionAmount ? Number(payroll.deductionAmount) : 0,
+      deduction_amount: 0, // Removed all deductions except advance
       advance_deduction: payroll.advanceDeduction ? Number(payroll.advanceDeduction) : 0,
-      final_amount: payroll.finalAmount ? Number(payroll.finalAmount) : 0,
+      final_amount: (payroll.baseSalary ? Number(payroll.baseSalary) : 0) + 
+                   (payroll.overtimeAmount ? Number(payroll.overtimeAmount) : 0) + 
+                   (payroll.bonusAmount ? Number(payroll.bonusAmount) : 0) - 
+                   (payroll.advanceDeduction ? Number(payroll.advanceDeduction) : 0),
       total_worked_hours: payroll.totalWorkedHours ? Number(payroll.totalWorkedHours) : 0,
       overtime_hours: payroll.overtimeHours ? Number(payroll.overtimeHours) : 0,
       status: payroll.status || 'pending',
@@ -160,10 +163,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const baseSalary = Number(body.baseSalary) || 0;
     const overtimeAmount = Number(body.overtimeAmount) || 0;
     const bonusAmount = Number(body.bonusAmount) || 0;
-    const deductionAmount = Number(body.deductionAmount) || 0;
+    const deductionAmount = 0; // Removed all deductions except advance
     const advanceDeduction = Number(body.advanceDeduction) || 0;
 
-    const finalAmount = baseSalary + overtimeAmount + bonusAmount - deductionAmount - advanceDeduction;
+    const finalAmount = baseSalary + overtimeAmount + bonusAmount - advanceDeduction;
 
     // Update payroll
     const updatedPayroll = await db
