@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar, Plus, Search, Wrench, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
-import { apiService } from '@/lib/api-service';
+import ApiService from '@/lib/api-service';
 import { toast } from 'sonner';
 
 interface MaintenanceRecord {
@@ -57,7 +57,7 @@ export default function MaintenanceManagementPage() {
   const fetchMaintenanceRecords = async () => {
     try {
       setLoading(true);
-      const response = await apiService.get('/api/maintenance');
+      const response = await ApiService.get('/api/maintenance');
       if (response.success) {
         setMaintenanceRecords(response.data || []);
       } else {
@@ -81,7 +81,7 @@ export default function MaintenanceManagementPage() {
 
     try {
       setLoading(true);
-      const response = await apiService.post('/api/maintenance', formData);
+      const response = await ApiService.post('/api/maintenance', formData);
       
       if (response.success) {
         toast.success('Maintenance record created successfully');

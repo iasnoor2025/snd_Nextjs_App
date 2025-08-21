@@ -5,7 +5,7 @@ import { DashboardModals } from '@/components/dashboard/DashboardModals';
 import { EquipmentSection } from '@/components/dashboard/EquipmentSection';
 import { FinancialOverviewSection } from '@/components/dashboard/FinancialOverviewSection';
 import { IqamaSection } from '@/components/dashboard/IqamaSection';
-import { ProjectOverviewSection } from '@/components/dashboard/ProjectOverviewSection';
+import ProjectOverviewSection from '@/components/dashboard/ProjectOverviewSection';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { TimesheetsSection } from '@/components/dashboard/TimesheetsSection';

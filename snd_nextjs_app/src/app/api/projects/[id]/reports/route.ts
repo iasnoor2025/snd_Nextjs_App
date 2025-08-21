@@ -4,7 +4,6 @@ import {
   projects, 
   projectTasks, 
   projectMilestones, 
-  projectResources, 
   projectRisks,
   employees,
   timesheets 

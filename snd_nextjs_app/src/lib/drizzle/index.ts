@@ -24,12 +24,12 @@ function createPool(): Pool {
   });
 
   pool.on('error', (err: Error) => {
-    
+    console.error('Database pool error:', err);
   });
 
   // Light connection test (runs only when pool is first created)
   pool.query('SELECT 1').catch((err: Error) => {
-    
+    console.error('Database connection test failed:', err);
   });
 
   global.__drizzlePool = pool;

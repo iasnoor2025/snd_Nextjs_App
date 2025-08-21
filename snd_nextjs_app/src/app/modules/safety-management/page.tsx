@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertTriangle, Plus, Search, Filter, FileText, Shield, AlertCircle } from 'lucide-react';
-import { apiService } from '@/lib/api-service';
+import ApiService from '@/lib/api-service';
 import { toast } from 'sonner';
 
 interface SafetyIncident {
@@ -61,7 +61,7 @@ export default function SafetyManagementPage() {
   const fetchIncidents = async () => {
     try {
       setLoading(true);
-      const response = await apiService.get('/api/safety-incidents');
+      const response = await ApiService.get('/api/safety-incidents');
       if (response.success) {
         setIncidents(response.data || []);
       } else {
@@ -85,7 +85,7 @@ export default function SafetyManagementPage() {
 
     try {
       setLoading(true);
-      const response = await apiService.post('/api/safety-incidents', formData);
+      const response = await ApiService.post('/api/safety-incidents', formData);
       
       if (response.success) {
         toast.success('Safety incident created successfully');

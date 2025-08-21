@@ -151,7 +151,7 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       data: transformedPayroll,
     });
   } catch (error) {
-    
+    console.error('Payroll GET error:', error);
     return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -250,7 +250,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       data: updatedPayroll,
     });
   } catch (error) {
-    
+    console.error('Payroll PUT error:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to update payroll' },
       { status: 500 }
@@ -289,7 +289,7 @@ export async function DELETE({ params }: { params: Promise<{ id: string }> }) {
       message: 'Payroll deleted successfully',
     });
   } catch (error) {
-    
+    console.error('Payroll DELETE error:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to delete payroll' },
       { status: 500 }
