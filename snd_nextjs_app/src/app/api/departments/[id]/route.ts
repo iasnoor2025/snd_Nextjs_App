@@ -1,8 +1,8 @@
 import { departments } from '@/lib/drizzle/schema';
-import { eq, isNull } from 'drizzle-orm';
+import { eq, isNull, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '../../../../lib/db';
-import { PermissionConfigs, withPermission } from '../../../../lib/rbac/api-middleware';
+import { db } from '@/lib/db';
+import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 
 export const GET = withPermission(
   async (_request: NextRequest, { params }: { params: { id: string } }) => {
@@ -31,7 +31,7 @@ export const GET = withPermission(
           updated_at: departments.updatedAt,
         })
         .from(departments)
-        .where(eq(departments.id, departmentId) && isNull(departments.deletedAt))
+        .where(and(eq(departments.id, departmentId), isNull(departments.deletedAt)))
         .limit(1);
 
       if (department.length === 0) {
@@ -101,7 +101,7 @@ export const PUT = withPermission(
           name: departments.name,
         })
         .from(departments)
-        .where(eq(departments.id, departmentId) && isNull(departments.deletedAt))
+        .where(and(eq(departments.id, departmentId), isNull(departments.deletedAt)))
         .limit(1);
 
       if (!existingDepartment || existingDepartment.length === 0) {
@@ -214,7 +214,7 @@ export const DELETE = withPermission(
           name: departments.name,
         })
         .from(departments)
-        .where(eq(departments.id, departmentId) && isNull(departments.deletedAt))
+        .where(and(eq(departments.id, departmentId), isNull(departments.deletedAt)))
         .limit(1);
 
       if (existingDepartment.length === 0) {
