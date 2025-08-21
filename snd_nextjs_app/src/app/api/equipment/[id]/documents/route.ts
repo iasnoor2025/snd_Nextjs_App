@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { join } from 'path';
 
 // GET /api/equipment/[id]/documents
-export async function GET({ params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const equipmentId = parseInt(id);

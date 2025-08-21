@@ -416,7 +416,7 @@ export class RentalService {
               equipmentName: item.equipmentName,
               unitPrice: item.unitPrice,
               totalPrice: item.totalPrice,
-              rateType: item.rateType,
+              rateType: item.rateType || 'daily',
               operatorId: item.operatorId ? parseInt(item.operatorId) : null,
               status: item.status || 'active',
               notes: item.notes,
@@ -431,6 +431,9 @@ export class RentalService {
     if (isStatusChangingToActive) {
       await this.createAutomaticAssignments(id);
     }
+
+    // Recalculate and update financial totals
+    await this.recalculateRentalTotals(id);
 
     return this.getRental(id);
   }
@@ -478,6 +481,9 @@ export class RentalService {
         updatedAt: new Date().toISOString().split('T')[0],
       } as any)
       .returning();
+
+    // Recalculate rental totals after adding item
+    await this.recalculateRentalTotals(data.rentalId);
 
     return this.getRentalItem(result.id);
   }
@@ -554,16 +560,32 @@ export class RentalService {
 
     await db.update(rentalItems).set(updateData).where(eq(rentalItems.id, id));
 
+    // Get the rental ID to recalculate totals
+    const item = await this.getRentalItem(id);
+    if (item) {
+      await this.recalculateRentalTotals(item.rentalId);
+    }
+
     return this.getRentalItem(id);
   }
 
   // Delete rental item
   static async deleteRentalItem(id: number) {
     try {
+      // Get the rental ID before deleting
+      const item = await this.getRentalItem(id);
+      const rentalId = item?.rentalId;
+      
       await db.delete(rentalItems).where(eq(rentalItems.id, id));
+      
+      // Recalculate rental totals after deleting item
+      if (rentalId) {
+        await this.recalculateRentalTotals(rentalId);
+      }
+      
       return true;
     } catch (error) {
-      
+      console.error('Error deleting rental item:', error);
       return false;
     }
   }
@@ -691,6 +713,102 @@ export class RentalService {
 
     } catch (error) {
       
+    }
+  }
+
+  // Recalculate rental totals based on items
+  static async recalculateRentalTotals(rentalId: number) {
+    try {
+      const items = await this.getRentalItems(rentalId);
+      const subtotal = items.reduce((sum, item) => {
+        const itemTotal = parseFloat(item.totalPrice?.toString() || '0') || 0;
+        return sum + itemTotal;
+      }, 0);
+      
+      const taxRate = 15; // Default 15% VAT for KSA
+      const taxAmount = subtotal * (taxRate / 100);
+      const totalAmount = subtotal + taxAmount;
+      
+      // Update rental with calculated totals
+      await db.update(rentals).set({
+        subtotal,
+        taxAmount,
+        totalAmount,
+        tax: taxRate,
+        finalAmount: totalAmount,
+        updatedAt: new Date().toISOString().split('T')[0],
+      }).where(eq(rentals.id, rentalId));
+      
+    } catch (error) {
+      console.error('Error recalculating rental totals:', error);
+    }
+  }
+
+  // Create or update equipment assignment for rental item
+  static async createEquipmentAssignment(rentalId: number, equipmentId: number, unitPrice: number, totalPrice: number, startDate: Date, endDate?: Date) {
+    try {
+      // Check if equipment assignment already exists
+      const existingAssignment = await db
+        .select()
+        .from(equipmentRentalHistory)
+        .where(
+          and(
+            eq(equipmentRentalHistory.equipmentId, equipmentId),
+            eq(equipmentRentalHistory.rentalId, rentalId),
+            eq(equipmentRentalHistory.status, 'active')
+          )
+        );
+
+      if (existingAssignment.length === 0) {
+        // Create new equipment assignment
+        await db.insert(equipmentRentalHistory).values({
+          equipmentId,
+          rentalId,
+          assignmentType: 'rental',
+          startDate: startDate.toISOString(),
+          endDate: endDate?.toISOString() || null,
+          status: 'active',
+          notes: `Auto-created for rental assignment`,
+          dailyRate: unitPrice,
+          totalAmount: totalPrice,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      } else {
+        // Update existing assignment
+        await db
+          .update(equipmentRentalHistory)
+          .set({
+            dailyRate: unitPrice,
+            totalAmount: totalPrice,
+            endDate: endDate?.toISOString() || null,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(equipmentRentalHistory.id, existingAssignment[0].id));
+      }
+    } catch (error) {
+      console.error('Error creating/updating equipment assignment:', error);
+    }
+  }
+
+  // Remove equipment assignment when rental item is deleted
+  static async removeEquipmentAssignment(rentalId: number, equipmentId: number) {
+    try {
+      await db
+        .update(equipmentRentalHistory)
+        .set({
+          status: 'inactive',
+          updatedAt: new Date().toISOString(),
+        })
+        .where(
+          and(
+            eq(equipmentRentalHistory.rentalId, rentalId),
+            eq(equipmentRentalHistory.equipmentId, equipmentId),
+            eq(equipmentRentalHistory.status, 'active')
+          )
+        );
+    } catch (error) {
+      console.error('Error removing equipment assignment:', error);
     }
   }
 }

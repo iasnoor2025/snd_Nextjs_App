@@ -295,8 +295,8 @@ export default function AssignmentsTab({ employeeId }: AssignmentsTabProps) {
 
     if (assignment.rental) {
       details.push(`Rental: ${assignment.rental.rental_number}`);
-      if (assignment.rental.project_name) {
-        details.push(`Customer: ${assignment.rental.project_name}`);
+      if (assignment.rental.customer_name) {
+        details.push(`Customer: ${assignment.rental.customer_name}`);
       }
     }
 

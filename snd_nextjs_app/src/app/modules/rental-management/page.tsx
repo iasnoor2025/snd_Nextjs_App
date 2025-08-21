@@ -169,9 +169,15 @@ export default function RentalManagementPage() {
 
   // Helper function to convert Decimal to number
   const formatAmount = (amount: any): string => {
-    if (amount === null || amount === undefined) return '0.00';
+    if (amount === null || amount === undefined) return '0';
     const num = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
-    return isNaN(num) ? '0.00' : num.toFixed(2);
+    if (isNaN(num)) return '0';
+    
+    // Format with comma separators for thousands
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    });
   };
 
   // Get status badge color
@@ -230,7 +236,17 @@ export default function RentalManagementPage() {
         throw new Error('Failed to fetch rentals');
       }
       const data = await response.json();
-      setRentals(data || []);
+      
+      // Recalculate financial totals for each rental based on their items
+      const rentalsWithCalculatedTotals = (data || []).map((rental: any) => {
+        if (rental.rentalItems && rental.rentalItems.length > 0) {
+          const financials = calculateFinancials(rental.rentalItems);
+          return { ...rental, ...financials };
+        }
+        return rental;
+      });
+      
+      setRentals(rentalsWithCalculatedTotals);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
       toast.error('Failed to fetch rentals');
@@ -257,15 +273,22 @@ export default function RentalManagementPage() {
 
   // Calculate financial fields
   const calculateFinancials = (items: RentalItem[]) => {
-    const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-    const tax = subtotal * 0.1; // 10% tax
-    const totalAmount = subtotal + tax;
+    const subtotal = items.reduce((sum, item) => {
+      const itemTotal = parseFloat(item.totalPrice?.toString() || '0') || 0;
+      return sum + itemTotal;
+    }, 0);
+    
+    // Get tax rate from the first rental item or use default
+    const taxRate = 15; // Default 15% VAT for KSA
+    const taxAmount = subtotal * (taxRate / 100);
+    const totalAmount = subtotal + taxAmount;
+    
     return {
       subtotal,
-      taxAmount: tax,
+      taxAmount,
       totalAmount,
       discount: 0,
-      tax: 10, // 10% tax rate
+      tax: taxRate,
       finalAmount: totalAmount,
     };
   };
@@ -631,8 +654,8 @@ export default function RentalManagementPage() {
                     </TableCell>
                     <TableCell>{getStatusBadge(rental.status)}</TableCell>
                     <TableCell>{getPaymentStatusBadge(rental.paymentStatus)}</TableCell>
-                    <TableCell>
-                      {convertToArabicNumerals(formatAmount(rental.totalAmount), isRTL)}
+                    <TableCell className="font-mono">
+                      SAR {convertToArabicNumerals(formatAmount(rental.totalAmount), isRTL)}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">

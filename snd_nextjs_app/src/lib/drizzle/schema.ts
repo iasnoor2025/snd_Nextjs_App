@@ -1784,38 +1784,7 @@ export const rentalItems = pgTable(
   ]
 );
 
-export const rentalOperatorAssignments = pgTable(
-  'rental_operator_assignments',
-  {
-    id: serial().primaryKey().notNull(),
-    rentalId: integer('rental_id').notNull(),
-    employeeId: integer('employee_id').notNull(),
-    startDate: date('start_date').notNull(),
-    endDate: date('end_date'),
-    status: text().default('active').notNull(),
-    notes: text(),
-    createdAt: date('created_at')
-      .default(sql`CURRENT_DATE`)
-      .notNull(),
-    updatedAt: date('updated_at').notNull(),
-  },
-  table => [
-    foreignKey({
-      columns: [table.rentalId],
-      foreignColumns: [rentals.id],
-      name: 'rental_operator_assignments_rental_id_fkey',
-    })
-      .onUpdate('cascade')
-      .onDelete('restrict'),
-    foreignKey({
-      columns: [table.employeeId],
-      foreignColumns: [employees.id],
-      name: 'rental_operator_assignments_employee_id_fkey',
-    })
-      .onUpdate('cascade')
-      .onDelete('restrict'),
-  ]
-);
+
 
 export const roles = pgTable(
   'roles',

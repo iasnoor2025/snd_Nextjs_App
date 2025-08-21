@@ -57,35 +57,33 @@ async function updateEquipmentStatusOnAssignmentChange(
   }
 }
 
-export async function GET({ params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    console.log('Starting equipment rental history fetch...');
 
     const { id: idParam } = await params;
     const id = parseInt(idParam);
 
     if (isNaN(id)) {
+      console.log('Invalid equipment ID:', idParam);
       return NextResponse.json({ success: false, error: 'Invalid equipment ID' }, { status: 400 });
     }
 
+    console.log('Fetching equipment with ID:', id);
+
     // Check if equipment exists
-    
     const equipmentData = await db.select().from(equipment).where(eq(equipment.id, id)).limit(1);
 
     if (!equipmentData.length) {
-      
+      console.log('Equipment not found for ID:', id);
       return NextResponse.json({ success: false, error: 'Equipment not found' }, { status: 404 });
     }
 
     const equipmentItem = equipmentData[0];
-    if (!equipmentItem) {
-      
-      return NextResponse.json(
-        { success: false, error: 'Equipment data not found' },
-        { status: 404 }
-      );
-    }
+    console.log('Equipment found:', equipmentItem.name);
 
-    // Get basic rental history without complex JOINs
+    // Get basic rental history without JOINs first
+    console.log('Fetching rental history...');
     
     const rentalHistory = await db
       .select({
@@ -103,50 +101,88 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
         totalAmount: equipmentRentalHistory.totalAmount,
         createdAt: equipmentRentalHistory.createdAt,
         updatedAt: equipmentRentalHistory.updatedAt,
-        // Add JOINed data for assignment details
+      })
+      .from(equipmentRentalHistory)
+      .where(eq(equipmentRentalHistory.equipmentId, id))
+      .orderBy(desc(equipmentRentalHistory.createdAt));
+
+    console.log('Basic rental history fetched, count:', rentalHistory.length);
+
+    // Get additional data with JOINs for complete information
+    const rentalHistoryWithJoins = await db
+      .select({
+        id: equipmentRentalHistory.id,
+        equipmentId: equipmentRentalHistory.equipmentId,
+        rentalId: equipmentRentalHistory.rentalId,
+        projectId: equipmentRentalHistory.projectId,
+        employeeId: equipmentRentalHistory.employeeId,
+        assignmentType: equipmentRentalHistory.assignmentType,
+        startDate: equipmentRentalHistory.startDate,
+        endDate: equipmentRentalHistory.endDate,
+        status: equipmentRentalHistory.status,
+        notes: equipmentRentalHistory.notes,
+        dailyRate: equipmentRentalHistory.dailyRate,
+        totalAmount: equipmentRentalHistory.totalAmount,
+        createdAt: equipmentRentalHistory.createdAt,
+        updatedAt: equipmentRentalHistory.updatedAt,
+        // Rental information
+        rental: {
+          id: rentals.id,
+          rentalNumber: rentals.rentalNumber,
+        },
+        // Customer information
+        customer: {
+          id: customers.id,
+          name: customers.name,
+          email: customers.email,
+          phone: customers.phone,
+        },
+        // Project information
         project: {
           id: projects.id,
           name: projects.name,
           description: projects.description,
           status: projects.status,
         },
-        rental: {
-          id: rentals.id,
-          rentalNumber: rentals.rentalNumber,
-        },
+        // Employee information
         employee: {
           id: employees.id,
           firstName: employees.firstName,
           lastName: employees.lastName,
           fileNumber: employees.fileNumber,
+          email: employees.email,
+          phone: employees.phone,
         },
       })
       .from(equipmentRentalHistory)
-      .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
       .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
+      .leftJoin(customers, eq(rentals.customerId, customers.id))
+      .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
       .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
       .where(eq(equipmentRentalHistory.equipmentId, id))
       .orderBy(desc(equipmentRentalHistory.createdAt));
 
-    // Transform the basic data
-    const history = rentalHistory.map(item => ({
+    console.log('Enhanced rental history fetched with JOINs, count:', rentalHistoryWithJoins.length);
+
+    // Transform the data to match the expected format
+    const history = rentalHistoryWithJoins.map(item => ({
       id: item.id,
       rental_id: item.rentalId,
       rental_number: item.rental?.rentalNumber || null,
-      customer_name: null, // Will be populated from rental if needed
-      customer_email: null,
-      customer_phone: null,
+      customer_name: item.customer?.name || null,
+      customer_email: item.customer?.email || null,
+      customer_phone: item.customer?.phone || null,
       project_id: item.projectId,
       project_name: item.project?.name || null,
       project_description: item.project?.description || null,
       project_status: item.project?.status || null,
       employee_id: item.employeeId,
-      employee_name: item.employee
+      employee_name: item.employee 
         ? `${item.employee.firstName} ${item.employee.lastName}`.trim()
         : null,
       employee_id_number: item.employee?.fileNumber || null,
-      employee_email: null,
-      employee_phone: null,
+      employee_email: item.employee?.email || null,
+      employee_phone: item.employee?.phone || null,
       assignment_type: item.assignmentType,
       equipment_name: equipmentItem.name,
       quantity: 1,
@@ -163,23 +199,18 @@ export async function GET({ params }: { params: Promise<{ id: string }> }) {
       updated_at: item.updatedAt,
     }));
 
-    // For now, skip the complex rental items query to get the endpoint working
-    
-    const rentalItemsHistory: any[] = [];
-
-    // Combine histories
-    const combinedHistory = [...history, ...rentalItemsHistory].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+    console.log('History transformed successfully');
 
     return NextResponse.json({
       success: true,
-      data: combinedHistory,
-      count: combinedHistory.length,
-      message: 'Basic rental history loaded successfully',
+      data: history,
+      count: history.length,
+      message: 'Equipment rental history loaded successfully',
     });
-  } catch (error) {
 
+  } catch (error) {
+    console.error('Equipment rental history error:', error);
+    
     return NextResponse.json(
       {
         success: false,

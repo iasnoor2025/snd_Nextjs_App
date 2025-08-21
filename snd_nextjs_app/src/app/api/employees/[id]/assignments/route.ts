@@ -6,6 +6,7 @@ import {
   equipmentRentalHistory,
   projects,
   rentals,
+  customers,
 } from '@/lib/drizzle/schema';
 import { and, asc, desc, eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
@@ -158,11 +159,13 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         projectName: projects.name,
         rentalId_rel: rentals.id,
         rentalNumber: rentals.rentalNumber,
-        customerName: rentals.customerId, // We'll need to join with customers table for this
+        customerId: rentals.customerId,
+        customerName: customers.name,
       })
       .from(employeeAssignments)
       .leftJoin(projects, eq(projects.id, employeeAssignments.projectId))
       .leftJoin(rentals, eq(rentals.id, employeeAssignments.rentalId))
+      .leftJoin(customers, eq(customers.id, rentals.customerId))
       .where(eq(employeeAssignments.employeeId, employeeId))
       .orderBy(desc(employeeAssignments.createdAt));
 
@@ -188,7 +191,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
         ? {
             id: assignment.rentalId_rel,
             rental_number: assignment.rentalNumber || 'Unknown Rental',
-            project_name: 'Unknown Customer', // We'll need to join with customers for this
+            customer_name: assignment.customerName || 'Unknown Customer',
           }
         : null,
       created_at: assignment.createdAt,

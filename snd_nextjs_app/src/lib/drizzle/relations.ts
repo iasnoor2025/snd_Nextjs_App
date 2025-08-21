@@ -28,7 +28,6 @@ import {
   permissions,
   projects,
   rentalItems,
-  rentalOperatorAssignments,
   rentals,
   roleHasPermissions,
   roles,
@@ -120,7 +119,6 @@ export const employeesRelations = relations(employees, ({ one, many }) => ({
   timesheets: many(timesheets),
   timeEntries: many(timeEntries),
   equipment: many(equipment),
-  rentalOperatorAssignments: many(rentalOperatorAssignments),
   timeOffRequests: many(timeOffRequests),
   weeklyTimesheets: many(weeklyTimesheets),
   projectTasks: many(projectTasks),
@@ -193,7 +191,6 @@ export const rentalsRelations = relations(rentals, ({ one, many }) => ({
   }),
   timesheets: many(timesheets),
   rentalItems: many(rentalItems),
-  rentalOperatorAssignments: many(rentalOperatorAssignments),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -531,19 +528,7 @@ export const rentalItemsRelations = relations(rentalItems, ({ one }) => ({
   }),
 }));
 
-export const rentalOperatorAssignmentsRelations = relations(
-  rentalOperatorAssignments,
-  ({ one }) => ({
-    rental: one(rentals, {
-      fields: [rentalOperatorAssignments.rentalId],
-      references: [rentals.id],
-    }),
-    employee: one(employees, {
-      fields: [rentalOperatorAssignments.employeeId],
-      references: [employees.id],
-    }),
-  })
-);
+
 
 export const timeOffRequestsRelations = relations(timeOffRequests, ({ one }) => ({
   employee: one(employees, {

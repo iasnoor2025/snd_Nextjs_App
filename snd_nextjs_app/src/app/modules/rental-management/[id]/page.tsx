@@ -61,6 +61,10 @@ import {
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { 
+  RentalItemConfirmationDialog
+} from '@/components/rental';
+import { useRentalItemConfirmation } from '@/hooks/use-rental-item-confirmation';
 
 interface RentalItem {
   id: string;
@@ -745,9 +749,45 @@ export default function RentalDetailPage() {
 
   // Helper function to convert Decimal to number
   const formatAmount = (amount: any): string => {
-    if (amount === null || amount === undefined) return '0.00';
+    if (amount === null || amount === undefined) return '0';
     const num = typeof amount === 'string' ? parseFloat(amount) : Number(amount);
-    return isNaN(num) ? '0.00' : num.toFixed(2);
+    if (isNaN(num)) return '0';
+    
+    // Format with comma separators for thousands
+    return num.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    });
+  };
+
+  // Calculate financial totals from rental items
+  const calculateFinancials = (items: any[]) => {
+    const subtotal = items.reduce((sum, item) => {
+      const itemTotal = parseFloat(item.totalPrice?.toString() || '0') || 0;
+      return sum + itemTotal;
+    }, 0);
+    
+    const taxRate = 15; // Default 15% VAT for KSA
+    const taxAmount = subtotal * (taxRate / 100);
+    const totalAmount = subtotal + taxAmount;
+    
+    return {
+      subtotal,
+      taxAmount,
+      totalAmount,
+      discount: 0,
+      tax: taxRate,
+      finalAmount: totalAmount,
+    };
+  };
+
+  // Recalculate totals when rental items change
+  const recalculateTotals = () => {
+    if (rental && rental.rentalItems) {
+      const financials = calculateFinancials(rental.rentalItems);
+      // Update the rental object with calculated values
+      setRental(prev => prev ? { ...prev, ...financials } : null);
+    }
   };
 
   // Get status badge color
@@ -798,7 +838,13 @@ export default function RentalDetailPage() {
       if (!response.ok) {
         throw new Error('Failed to fetch rental');
       }
-      const data = await response.json();
+      let data = await response.json();
+
+      // Recalculate financial totals from rental items
+      if (data.rentalItems && data.rentalItems.length > 0) {
+        const financials = calculateFinancials(data.rentalItems);
+        data = { ...data, ...financials };
+      }
 
       setRental(data);
     } catch (err) {
@@ -1190,8 +1236,6 @@ export default function RentalDetailPage() {
   const deleteRentalItem = async (itemId: string) => {
     if (!rental) return;
 
-    if (!confirm('Are you sure you want to delete this rental item?')) return;
-
     try {
       const response = await fetch(`/api/rentals/${rental.id}/items/${itemId}`, {
         method: 'DELETE',
@@ -1210,13 +1254,33 @@ export default function RentalDetailPage() {
     }
   };
 
+  // Handle delete with confirmation dialog
+  const handleDeleteItem = (item: RentalItem) => {
+    confirmation.showDeleteConfirmation(
+      item.equipmentName,
+      'This action cannot be undone. Are you sure you want to delete this rental item?',
+      () => {
+        deleteRentalItem(item.id);
+      }
+    );
+  };
+
+  // Add useEffect to recalculate totals when rental items change
   useEffect(() => {
-    if (rentalId) {
-      fetchRental();
-      fetchEquipment();
-      fetchEmployees();
+    if (rental && rental.rentalItems) {
+      recalculateTotals();
     }
+  }, [rental?.rentalItems]);
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchRental();
+    fetchEquipment();
+    fetchEmployees();
   }, [rentalId]);
+
+  // Add confirmation hook for rental item actions
+  const confirmation = useRentalItemConfirmation();
 
   if (loading) {
     return (
@@ -1296,7 +1360,7 @@ export default function RentalDetailPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">${formatAmount(rental.totalAmount)}</div>
+                         <div className="text-2xl font-bold">SAR {formatAmount(rental.totalAmount)}</div>
           </CardContent>
         </Card>
         <Card>
@@ -1401,26 +1465,52 @@ export default function RentalDetailPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Financial Summary</CardTitle>
+                  <CardDescription>Calculated totals based on rental items</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span>Subtotal:</span>
-                      <span>${formatAmount(rental.subtotal)}</span>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Subtotal:</span>
+                                             <span className="font-mono">SAR {formatAmount(rental.subtotal)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Tax ({rental.tax}%):</span>
-                      <span>${formatAmount(rental.taxAmount)}</span>
+                    
+                    {rental.discount && rental.discount > 0 && (
+                      <div className="flex justify-between items-center text-green-600">
+                        <span className="text-sm font-medium">Discount ({rental.discount}%):</span>
+                                                 <span className="font-mono">-SAR {formatAmount(rental.discount)}</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Tax ({rental.tax || 15}%):</span>
+                                             <span className="font-mono">SAR {formatAmount(rental.taxAmount)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Discount:</span>
-                      <span>-${formatAmount(rental.discount)}</span>
-                    </div>
+                    
                     <Separator />
-                    <div className="flex justify-between font-bold">
+                    
+                    <div className="flex justify-between items-center text-lg font-bold">
                       <span>Total Amount:</span>
-                      <span>${formatAmount(rental.totalAmount)}</span>
+                                             <span className="font-mono text-primary">SAR {formatAmount(rental.totalAmount)}</span>
                     </div>
+                    
+                    <div className="flex justify-between items-center text-sm text-muted-foreground">
+                      <span>Final Amount:</span>
+                                             <span className="font-mono">SAR {formatAmount(rental.finalAmount)}</span>
+                    </div>
+                    
+                    {rental.depositAmount && rental.depositAmount > 0 && (
+                      <>
+                        <Separator />
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Deposit Amount:</span>
+                          <span className="font-mono text-blue-600">SAR {formatAmount(rental.depositAmount)}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm text-muted-foreground">
+                          <span>Remaining Balance:</span>
+                                                     <span className="font-mono">SAR {formatAmount((rental.finalAmount || rental.totalAmount) - (rental.depositAmount || 0))}</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -1448,8 +1538,9 @@ export default function RentalDetailPage() {
                       <TableRow>
                         <TableHead>Equipment</TableHead>
                         <TableHead>Unit Price</TableHead>
-                        <TableHead>Total Price</TableHead>
                         <TableHead>Rate Type</TableHead>
+                        <TableHead>Duration</TableHead>
+                        <TableHead>Total Price</TableHead>
                         <TableHead>Operator</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Actions</TableHead>
@@ -1466,13 +1557,40 @@ export default function RentalDetailPage() {
                           ? `${operator.first_name} ${operator.last_name}`
                           : 'N/A';
 
+                        // Calculate duration if we have start and end dates
+                        let durationText = 'N/A';
+                        if (rental.startDate && rental.expectedEndDate) {
+                          const startDate = new Date(rental.startDate);
+                          const endDate = new Date(rental.expectedEndDate);
+                          const rateType = item.rateType || 'daily';
+                          
+                          if (rateType === 'hourly') {
+                            const hours = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60));
+                            durationText = `${hours} hours`;
+                          } else if (rateType === 'weekly') {
+                            const weeks = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 7));
+                            durationText = `${weeks} weeks`;
+                          } else if (rateType === 'monthly') {
+                            const months = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+                            durationText = `${months} months`;
+                          } else {
+                            const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+                            durationText = `${days} days`;
+                          }
+                        }
+
                         return (
                           <TableRow key={item.id}>
-                            <TableCell>{item.equipmentName}</TableCell>
-                            <TableCell>${formatAmount(item.unitPrice)}</TableCell>
-                            <TableCell>${formatAmount(item.totalPrice)}</TableCell>
-                            <TableCell>{item.rateType}</TableCell>
-                            <TableCell>{operatorName}</TableCell>
+                            <TableCell className="font-medium">{item.equipmentName}</TableCell>
+                                                         <TableCell className="font-mono">SAR {formatAmount(item.unitPrice)}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="capitalize">
+                                {item.rateType || 'daily'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">{durationText}</TableCell>
+                                                         <TableCell className="font-mono font-semibold">SAR {formatAmount(item.totalPrice)}</TableCell>
+                            <TableCell className="text-sm">{operatorName}</TableCell>
                             <TableCell>
                               <Badge variant={item.status === 'active' ? 'default' : 'secondary'}>
                                 {item.status || 'active'}
@@ -1490,7 +1608,7 @@ export default function RentalDetailPage() {
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() => deleteRentalItem(item.id)}
+                                  onClick={() => handleDeleteItem(item)}
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </Button>
@@ -1539,7 +1657,7 @@ export default function RentalDetailPage() {
                           <TableCell>
                             {format(new Date(payment.paymentDate), 'MMM dd, yyyy')}
                           </TableCell>
-                          <TableCell>${formatAmount(payment.amount)}</TableCell>
+                                                     <TableCell>SAR {formatAmount(payment.amount)}</TableCell>
                           <TableCell>{payment.paymentMethod}</TableCell>
                           <TableCell>{payment.reference}</TableCell>
                           <TableCell>{getPaymentStatusBadge(payment.status)}</TableCell>
@@ -1585,7 +1703,7 @@ export default function RentalDetailPage() {
                       {rental.invoices?.map(invoice => (
                         <TableRow key={invoice.id}>
                           <TableCell>{invoice.invoiceNumber}</TableCell>
-                          <TableCell>${formatAmount(invoice.amount)}</TableCell>
+                                                     <TableCell>SAR {formatAmount(invoice.amount)}</TableCell>
                           <TableCell>{getPaymentStatusBadge(invoice.status)}</TableCell>
                           <TableCell>{format(new Date(invoice.dueDate), 'MMM dd, yyyy')}</TableCell>
                           <TableCell>
@@ -2171,6 +2289,18 @@ export default function RentalDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Rental Item Confirmation Dialog */}
+      <RentalItemConfirmationDialog
+        isOpen={confirmation.confirmationState.isOpen}
+        onClose={confirmation.hideConfirmation}
+        onConfirm={confirmation.handleConfirm}
+        title={confirmation.confirmationState.title}
+        description={confirmation.confirmationState.description}
+        actionType={confirmation.confirmationState.actionType}
+        itemName={confirmation.confirmationState.itemName}
+        isLoading={false}
+      />
     </div>
   );
 }

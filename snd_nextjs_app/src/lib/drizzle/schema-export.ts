@@ -91,7 +91,7 @@ export {
   telescopeEntryTags,
   telescopeMonitoring,
   rentalItems,
-  rentalOperatorAssignments,
+
   taxDocuments,
   taxDocumentPayrolls,
   passwordResetTokens,

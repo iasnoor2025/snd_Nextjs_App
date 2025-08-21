@@ -64,9 +64,11 @@ interface RentalItem {
   equipmentName: string;
   unitPrice: number;
   totalPrice: number;
-  rateType: string;
-  operatorId?: string;
-  notes?: string;
+  rateType: 'daily' | 'hourly' | 'weekly' | 'monthly';
+  quantity?: number;
+  duration?: number;
+  operatorId: string;
+  notes: string;
 }
 
 interface RentalFormData {
@@ -166,6 +168,8 @@ export default function CreateRentalPage() {
       unitPrice: 0,
       totalPrice: 0,
       rateType: 'daily',
+      quantity: 1,
+      duration: 1,
       operatorId: '',
       notes: '',
     };
@@ -185,15 +189,15 @@ export default function CreateRentalPage() {
       const selectedEquipment = equipment.find(eq => eq.id === value);
       if (selectedEquipment) {
         updatedItems[index].equipmentName = selectedEquipment.name;
-        updatedItems[index].unitPrice = selectedEquipment.dailyRate;
-        updatedItems[index].totalPrice = selectedEquipment.dailyRate;
+        updatedItems[index].unitPrice = selectedEquipment.dailyRate || 0;
+        // Recalculate total price with new unit price
+        updatedItems[index].totalPrice = calculateItemTotal(updatedItems[index]);
       }
     }
 
-    // If unitPrice changed, recalculate total price
-    if (field === 'unitPrice') {
-      const item = updatedItems[index];
-      updatedItems[index].totalPrice = item.unitPrice;
+    // If unitPrice, quantity, duration, or rateType changed, recalculate total price
+    if (['unitPrice', 'quantity', 'duration', 'rateType'].includes(field)) {
+      updatedItems[index].totalPrice = calculateItemTotal(updatedItems[index]);
     }
 
     setFormData(prev => ({
@@ -203,6 +207,36 @@ export default function CreateRentalPage() {
 
     // Recalculate totals
     calculateTotals(updatedItems);
+  };
+
+  // Calculate total price for a single rental item
+  const calculateItemTotal = (item: RentalItem): number => {
+    const { unitPrice, quantity = 1, duration = 1, rateType } = item;
+    
+    let basePrice = unitPrice;
+    
+    // Convert unit price based on rate type if needed
+    if (rateType === 'hourly' && formData.startDate && formData.expectedEndDate) {
+      // For hourly rates, calculate based on actual duration
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(formData.expectedEndDate);
+      const hoursDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60)));
+      basePrice = unitPrice * hoursDiff;
+    } else if (rateType === 'weekly' && formData.startDate && formData.expectedEndDate) {
+      // For weekly rates, calculate based on weeks
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(formData.expectedEndDate);
+      const weeksDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 7)));
+      basePrice = unitPrice * weeksDiff;
+    } else if (rateType === 'monthly' && formData.startDate && formData.expectedEndDate) {
+      // For monthly rates, calculate based on months
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(formData.expectedEndDate);
+      const monthsDiff = Math.max(1, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)));
+      basePrice = unitPrice * monthsDiff;
+    }
+    
+    return basePrice * quantity * duration;
   };
 
   // Remove rental item
@@ -218,19 +252,40 @@ export default function CreateRentalPage() {
   // Calculate totals
   const calculateTotals = (items: RentalItem[]) => {
     const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-    const tax = subtotal * 0.1; // 10% tax
-    const discount = 0; // No discount for now
-    const totalAmount = subtotal + tax - discount;
+    
+    // Calculate discount amount (if discount percentage is set)
+    const discountPercentage = formData.discount || 0;
+    const discountAmount = subtotal * (discountPercentage / 100);
+    
+    // Calculate tax on discounted amount
+    const taxRate = formData.tax || 15; // Default to 15% VAT for KSA
+    const taxAmount = (subtotal - discountAmount) * (taxRate / 100);
+    
+    // Calculate final amount
+    const totalAmount = subtotal - discountAmount + taxAmount;
 
     setFormData(prev => ({
       ...prev,
       subtotal,
-      taxAmount: tax,
-      totalAmount: totalAmount,
-      discount,
-      tax: 10, // 10%
+      discount: discountAmount,
+      taxAmount,
+      totalAmount,
       finalAmount: totalAmount,
     }));
+  };
+
+  // Handle discount percentage change
+  const handleDiscountChange = (value: string) => {
+    const discountPercentage = parseFloat(value) || 0;
+    setFormData(prev => ({ ...prev, discount: discountPercentage }));
+    calculateTotals(formData.rentalItems);
+  };
+
+  // Handle tax rate change
+  const handleTaxChange = (value: string) => {
+    const taxRate = parseFloat(value) || 15;
+    setFormData(prev => ({ ...prev, tax: taxRate }));
+    calculateTotals(formData.rentalItems);
   };
 
   // Handle form submission
@@ -542,17 +597,34 @@ export default function CreateRentalPage() {
                         <Label>Rate Type</Label>
                         <Select
                           value={item.rateType}
-                          onValueChange={value => updateRentalItem(index, 'rateType', value)}
+                          onValueChange={value => updateRentalItem(index, 'rateType', value as 'daily' | 'hourly' | 'weekly' | 'monthly')}
                         >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="daily">Daily</SelectItem>
+                            <SelectItem value="hourly">Hourly</SelectItem>
                             <SelectItem value="weekly">Weekly</SelectItem>
                             <SelectItem value="monthly">Monthly</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+                      <div>
+                        <Label>Quantity</Label>
+                        <Input
+                          type="number"
+                          value={item.quantity}
+                          onChange={e => updateRentalItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                        />
+                      </div>
+                      <div>
+                        <Label>Duration</Label>
+                        <Input
+                          type="number"
+                          value={item.duration}
+                          onChange={e => updateRentalItem(index, 'duration', parseInt(e.target.value) || 1)}
+                        />
                       </div>
                       <div>
                         <Label>Total Price</Label>
@@ -595,12 +667,12 @@ export default function CreateRentalPage() {
                     <span>${formatAmount(formData.subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Tax ({formData.tax}%):</span>
-                    <span>${formatAmount(formData.taxAmount)}</span>
+                    <span>Discount ({formData.discount}%):</span>
+                    <span>-${formatAmount(formData.discount)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Discount:</span>
-                    <span>-${formatAmount(formData.discount)}</span>
+                    <span>Tax ({formData.tax}%):</span>
+                    <span>${formatAmount(formData.taxAmount)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-bold text-lg">
@@ -621,6 +693,37 @@ export default function CreateRentalPage() {
                     <span>Items Count:</span>
                     <span>{formData.rentalItems.length}</span>
                   </div>
+                </div>
+              </div>
+              
+              {/* Discount and Tax Rate Controls */}
+              <Separator />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="discount">Discount Percentage (%)</Label>
+                  <Input
+                    id="discount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={formData.discount}
+                    onChange={e => handleDiscountChange(e.target.value)}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="tax">Tax Rate (%)</Label>
+                  <Input
+                    id="tax"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    value={formData.tax}
+                    onChange={e => handleTaxChange(e.target.value)}
+                    placeholder="15.00"
+                  />
                 </div>
               </div>
             </div>
