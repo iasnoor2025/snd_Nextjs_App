@@ -40,7 +40,7 @@ export function getPool(): Pool {
   try {
     return createPool();
   } catch (error) {
-    
+    console.error('Error creating database pool:', error);
     throw error;
   }
 }
@@ -50,7 +50,7 @@ function createDb() {
     const pool = getPool();
     return drizzle(pool);
   } catch (error) {
-    
+    console.error('Error creating database connection:', error);
     throw error;
   }
 }
