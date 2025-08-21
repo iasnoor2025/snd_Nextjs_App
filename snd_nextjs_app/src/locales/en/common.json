@@ -69,6 +69,12 @@
     "confirmDelete": "Are you sure you want to delete this item?",
     "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
   },
+  "error": {
+    "invalidId": "Invalid ID provided",
+    "notFound": "Resource not found",
+    "internalServer": "Internal server error",
+    "unknown": "Unknown error occurred"
+  },
   "pagination": {
     "previous": "Previous",
     "next": "Next",

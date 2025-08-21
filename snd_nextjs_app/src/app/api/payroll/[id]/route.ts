@@ -2,13 +2,16 @@ import { db } from '@/lib/drizzle';
 import { departments, designations, employees, payrollItems, payrolls, advancePaymentHistories } from '@/lib/drizzle/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { createTranslatorFromRequest } from '@/lib/server-i18n';
 
-export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+  const { t } = createTranslatorFromRequest(request);
+  
   try {
     const id = parseInt(params.id);
 
     if (isNaN(id)) {
-      return NextResponse.json({ success: false, error: 'Invalid payroll ID' }, { status: 400 });
+      return NextResponse.json({ success: false, error: t('common.error.invalidId') }, { status: 400 });
     }
 
     // Get payroll data
@@ -19,7 +22,7 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
       .limit(1);
 
     if (payrollResult.length === 0) {
-      return NextResponse.json({ success: false, error: 'Payroll not found' }, { status: 404 });
+      return NextResponse.json({ success: false, error: t('payroll.error.notFound') }, { status: 404 });
     }
 
     const payroll = payrollResult[0]!; // Safe because we checked length above
@@ -158,8 +161,8 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error'
+        error: t('common.error.internalServer'),
+        message: error instanceof Error ? error.message : t('common.error.unknown')
       }, 
       { status: 500 }
     );
@@ -167,11 +170,13 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
 }
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+  const { t } = createTranslatorFromRequest(request);
+  
   try {
     const id = parseInt(params.id);
 
     if (isNaN(id)) {
-      return NextResponse.json({ success: false, message: 'Invalid payroll ID' }, { status: 400 });
+      return NextResponse.json({ success: false, message: t('common.error.invalidId') }, { status: 400 });
     }
 
     const body = await request.json();
@@ -184,7 +189,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       .limit(1);
 
     if (existingPayroll.length === 0) {
-      return NextResponse.json({ success: false, message: 'Payroll not found' }, { status: 404 });
+      return NextResponse.json({ success: false, message: t('payroll.error.notFound') }, { status: 404 });
     }
 
     // Calculate advance deduction from advance_payment_histories for this month/year
@@ -268,7 +273,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     return NextResponse.json({
       success: true,
-      message: 'Payroll updated successfully',
+      message: t('payroll.success.update'),
       data: updatedPayroll[0],
     });
 
@@ -277,20 +282,22 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json(
       { 
         success: false, 
-        message: 'Failed to update payroll',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: t('payroll.error.update'),
+        error: error instanceof Error ? error.message : t('common.error.unknown')
       },
       { status: 500 }
     );
   }
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  const { t } = createTranslatorFromRequest(request);
+  
   try {
     const id = parseInt(params.id);
 
     if (isNaN(id)) {
-      return NextResponse.json({ success: false, message: 'Invalid payroll ID' }, { status: 400 });
+      return NextResponse.json({ success: false, message: t('common.error.invalidId') }, { status: 400 });
     }
 
     // Check if payroll exists
@@ -301,7 +308,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
       .limit(1);
 
     if (existingPayroll.length === 0) {
-      return NextResponse.json({ success: false, message: 'Payroll not found' }, { status: 404 });
+      return NextResponse.json({ success: false, message: t('payroll.error.notFound') }, { status: 404 });
     }
 
     // Delete payroll items first
@@ -312,7 +319,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
 
     return NextResponse.json({
       success: true,
-      message: 'Payroll deleted successfully',
+      message: t('payroll.success.delete'),
     });
 
   } catch (error) {
@@ -320,8 +327,8 @@ export async function DELETE(_request: NextRequest, { params }: { params: { id: 
     return NextResponse.json(
       { 
         success: false, 
-        message: 'Failed to delete payroll',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        message: t('payroll.error.delete'),
+        error: error instanceof Error ? error.message : t('common.error.unknown')
       },
       { status: 500 }
     );

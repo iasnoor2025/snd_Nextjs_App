@@ -6,17 +6,20 @@
     "processPayment": "Failed to process payment",
     "cancel": "Failed to cancel payroll",
     "delete": "Failed to delete payroll",
+    "update": "Failed to update payroll",
     "bulkDelete": "Failed to delete payrolls",
     "selectPayrolls": "Please select payrolls to delete",
     "payslipOpen": "Error opening payslip",
     "payslipDownload": "Failed to download payslip",
-    "recalculateOvertime": "Failed to recalculate overtime"
+    "recalculateOvertime": "Failed to recalculate overtime",
+    "notFound": "Payroll not found"
   },
   "success": {
     "approve": "Payroll approved successfully",
     "processPayment": "Payment processed successfully",
     "cancel": "Payroll cancelled successfully",
     "delete": "Payroll deleted successfully",
+    "update": "Payroll updated successfully",
     "bulkDelete": "Payrolls deleted successfully",
     "payslipOpen": "Opening payslip in new tab",
     "payslipDownload": "Payslip PDF downloaded successfully"
