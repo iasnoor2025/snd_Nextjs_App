@@ -281,7 +281,7 @@ export default function DashboardPage() {
       const response = await fetch(`/api/employees/${selectedIqama.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ iqamaExpiryDate: newExpiryDate }),
+        body: JSON.stringify({ iqama_expiry: newExpiryDate }),
       });
 
       if (response.ok) {
@@ -290,11 +290,17 @@ export default function DashboardPage() {
         setSelectedIqama(null);
         // Only refresh Iqama data instead of full dashboard
         await fetchIqamaData();
+        // Show success message
+        setApprovalSuccess(t('dashboard.iqamaUpdatedSuccessfully'));
+        setTimeout(() => setApprovalSuccess(null), 5000);
       } else {
-        throw new Error(t('dashboard.failedToUpdateIqama'));
+        const errorData = await response.json();
+        throw new Error(errorData.error || t('dashboard.failedToUpdateIqama'));
       }
     } catch (error) {
-      // Handle error silently for production
+      console.error('Iqama update error:', error);
+      setApprovalSuccess(`Error: ${error instanceof Error ? error.message : t('dashboard.failedToUpdateIqama')}`);
+      setTimeout(() => setApprovalSuccess(null), 5000);
     } finally {
       setUpdatingIqama(false);
     }
