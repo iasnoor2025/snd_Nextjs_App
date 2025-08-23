@@ -35,11 +35,10 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
 }
 
 /**
- * Fetch all customers from ERPNext
+ * Fetch all customers from ERPNext with detailed information
  */
 async function fetchAllCustomersFromERPNext(): Promise<any[]> {
   try {
-
     const response = await makeERPNextRequest('/api/resource/Customer?limit_page_length=1000');
 
     // Handle different response structures
@@ -51,7 +50,6 @@ async function fetchAllCustomersFromERPNext(): Promise<any[]> {
     } else if (Array.isArray(response)) {
       customerList = response;
     } else {
-      
       throw new Error('Invalid response structure from ERPNext');
     }
 
@@ -60,9 +58,27 @@ async function fetchAllCustomersFromERPNext(): Promise<any[]> {
       (customer: any) => customer && (customer.customer_name || customer.name)
     );
 
-    return validCustomers;
+    // Fetch detailed information for each customer
+    const detailedCustomers = [];
+    for (const customer of validCustomers) {
+      try {
+        const customerName = customer.customer_name || customer.name;
+        const detailResponse = await makeERPNextRequest(
+          `/api/resource/Customer/${encodeURIComponent(customerName)}`
+        );
+        
+        if (detailResponse.data) {
+          detailedCustomers.push(detailResponse.data);
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch details for customer ${customer.customer_name || customer.name}:`, error);
+        // Still include the basic customer info
+        detailedCustomers.push(customer);
+      }
+    }
+
+    return detailedCustomers;
   } catch (error) {
-    
     throw error;
   }
 }

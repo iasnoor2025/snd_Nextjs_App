@@ -94,6 +94,9 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
       case 'update':
         handleUpdate(data.payload);
         break;
+      case 'customer_update':
+        handleCustomerUpdate(data.payload);
+        break;
       default:
         // Handle unknown message types
         break;
@@ -172,10 +175,42 @@ export const SSEProvider: React.FC<SSEProviderProps> = ({ children }) => {
       case 'equipment':
         // Trigger equipment data refresh
         break;
+      case 'customer':
+        // Trigger customer data refresh
+        break;
       default:
         // Handle unknown entity types
         break;
     }
+  }, []);
+
+  // Handle customer update messages
+  const handleCustomerUpdate = useCallback((payload: any) => {
+    if (!isMountedRef.current) return;
+
+    // Create notification for customer update
+    const notification: Notification = {
+      id: `customer_${payload.customerId}_${Date.now()}`,
+      type: 'info',
+      title: 'Customer Updated',
+      message: `Customer "${payload.customerName}" was ${payload.action} in ERPNext`,
+      data: payload,
+      timestamp: new Date(payload.timestamp || Date.now()),
+      read: false,
+      action_url: `/modules/customer-management/${payload.customerId}`,
+      priority: 'medium',
+    };
+
+    setNotifications(prev => [notification, ...prev]);
+
+    // Show toast notification
+    if (!document.hidden) {
+      ToastService.info(`Customer "${payload.customerName}" was ${payload.action} in ERPNext`);
+    }
+
+    // Emit custom event for components to listen to
+    const event = new CustomEvent('customer-updated', { detail: payload });
+    window.dispatchEvent(event);
   }, []);
 
   // Initialize SSE connection with performance optimization

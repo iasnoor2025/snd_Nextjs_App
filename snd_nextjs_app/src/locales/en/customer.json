@@ -111,6 +111,7 @@
     "syncSuccess": "Successfully synced {{count}} customers from ERPNext!",
     "syncError": "Failed to sync from ERPNext",
     "syncNoData": "No customers found in ERPNext to sync",
+    "syncStarted": "Starting ERPNext sync...",
     "exportComingSoon": "Export functionality coming soon!",
     "importComingSoon": "Import functionality coming soon!",
     "errorGeneral": "An error occurred during the operation",

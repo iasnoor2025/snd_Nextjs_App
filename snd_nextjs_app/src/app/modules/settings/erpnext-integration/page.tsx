@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { WebhookManager } from '@/components/customer/WebhookManager';
 
 interface ERPNextConfig {
   url: string;
@@ -460,6 +461,9 @@ export default function ERPNextIntegrationPage() {
               </div>
             </CardContent>
           </Card>
+          
+          {/* Webhook Management */}
+          <WebhookManager />
         </TabsContent>
 
         {/* Employees Tab */}

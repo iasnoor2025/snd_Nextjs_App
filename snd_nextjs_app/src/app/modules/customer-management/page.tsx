@@ -91,82 +91,32 @@ export default function CustomerManagementPage() {
   };
 
   const handleSyncFromERPNext = async () => {
-    
     setSyncing(true);
     toast.info(t('messages.syncStarted'));
 
     try {
-      // First fetch customers from ERPNext
-      
-      const response = await fetch('/api/erpnext/customers');
-      const result = await response.json();
+      // Use the new enhanced sync endpoint
+      const syncResponse = await fetch('/api/customers/sync/enhanced', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-      if (result.success && result.data && result.data.length > 0) {
+      const syncResult = await syncResponse.json();
 
-        // Now call the sync endpoint to save the data
-        
-        const syncResponse = await fetch('/api/customers/sync', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            matchedData: {
-              toCreate: result.data.map((customer: any) => {
-                const mappedData = {
-                  data: {
-                    name: customer.customer_name || customer.name || '',
-                    company_name: customer.customer_name || customer.name || '',
-                    contact_person: customer.contact_person || customer.customer_name || '',
-                    email: customer.email_id || customer.email || '',
-                    phone: customer.mobile_no || customer.phone || '',
-                    address: customer.customer_address || customer.address || '',
-                    city: customer.city || '',
-                    state: customer.state || '',
-                    postal_code: customer.pincode || customer.postal_code || '',
-                    country: customer.country || '',
-                    tax_number: customer.tax_id || customer.tax_number || '',
-                    credit_limit: customer.credit_limit || 0,
-                    payment_terms: customer.payment_terms || '',
-                    notes: customer.notes || '',
-                    is_active: !customer.disabled,
-                    erpnext_id: customer.name || '',
-                  },
-                };
-                
-                return mappedData;
-              }),
-              toUpdate: [],
-              toSkip: [],
-            },
-          }),
-        });
+      if (syncResult.success) {
+        const message = t('messages.syncSuccess', { count: syncResult.data.processed });
+        toast.success(message);
 
-        const syncResult = await syncResponse.json();
-
-        if (syncResult.success) {
-          const message = t('messages.syncSuccess', { count: syncResult.data.processed });
-          
-          toast.success(message);
-
-          // Refresh the customer list
-          fetchCustomers();
-        } else {
-          const errorMessage = t('messages.syncError') + ': ' + syncResult.message;
-          
-          toast.error(errorMessage);
-        }
+        // Refresh the customer list
+        fetchCustomers();
       } else {
-        const errorMessage =
-          result.data && result.data.length === 0
-            ? t('messages.syncNoData')
-            : t('messages.syncError');
-        
+        const errorMessage = t('messages.syncError') + ': ' + syncResult.message;
         toast.error(errorMessage);
       }
     } catch (error) {
       const errorMessage = t('messages.syncError') + ': ' + (error instanceof Error ? error.message : t('messages.errorGeneral'));
-      
       toast.error(errorMessage);
     } finally {
       setSyncing(false);
