@@ -450,21 +450,21 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
             <CardContent className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-500">{t('fields.email')}</label>
-                <p className="text-lg">{customer.email || 'N/A'}</p>
+                                 <p className="text-lg">{customer.email || t('common.notAvailable')}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">{t('fields.phone')}</label>
-                <p className="text-lg">{customer.phone || 'N/A'}</p>
+                                 <p className="text-lg">{customer.phone || t('common.notAvailable')}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">{t('fields.website')}</label>
-                <p className="text-lg">{customer.website || 'N/A'}</p>
+                                 <p className="text-lg">{customer.website || t('common.notAvailable')}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">{t('fields.address')}</label>
-                <p className="text-sm">{customer.address || 'N/A'}</p>
+                                 <p className="text-sm">{customer.address || t('common.notAvailable')}</p>
                 <p className="text-sm text-gray-500">
-                  {customer.city || 'N/A'}, {customer.state || 'N/A'} {customer.country || 'N/A'}
+                                     {customer.city || t('common.notAvailable')}, {customer.state || t('common.notAvailable')} {customer.country || t('common.notAvailable')}
                 </p>
               </div>
             </CardContent>
