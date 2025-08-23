@@ -63,7 +63,7 @@ export function TimesheetsSection({
   isRefreshing = false,
   onHideSection,
 }: TimesheetsSectionProps) {
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
 
   // Ensure timesheetData is always an array
   const safeTimesheetData = timesheetData || [];
