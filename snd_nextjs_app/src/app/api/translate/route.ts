@@ -3,8 +3,43 @@ import { NextRequest, NextResponse } from 'next/server';
 // Simple in-memory cache for translations
 const translationCache = new Map<string, string>();
 
+// Rate limiting to prevent excessive API calls
+const requestCounts = new Map<string, { count: number; resetTime: number }>();
+const MAX_REQUESTS_PER_MINUTE = 15; // Reduced from 30 to 15
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+
+// Clean up old rate limit entries every 5 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of requestCounts.entries()) {
+    if (now > value.resetTime) {
+      requestCounts.delete(key);
+    }
+  }
+}, 5 * 60 * 1000);
+
 export async function POST(_request: NextRequest) {
   try {
+    // Rate limiting check
+    const clientIP = _request.headers.get('x-forwarded-for') || _request.headers.get('x-real-ip') || 'unknown';
+    const now = Date.now();
+    
+    if (!requestCounts.has(clientIP)) {
+      requestCounts.set(clientIP, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    } else {
+      const clientData = requestCounts.get(clientIP)!;
+      if (now > clientData.resetTime) {
+        // Reset window
+        requestCounts.set(clientIP, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+      } else if (clientData.count >= MAX_REQUESTS_PER_MINUTE) {
+        return NextResponse.json({ 
+          error: 'Rate limit exceeded. Please try again later.' 
+        }, { status: 429 });
+      } else {
+        clientData.count++;
+      }
+    }
+
     const { text, targetLanguage } = await _request.json();
 
     if (!text || !targetLanguage) {
@@ -63,12 +98,13 @@ export async function POST(_request: NextRequest) {
       });
     }
   } catch (error) {
-    
+    console.error('Translation API error:', error);
     return NextResponse.json(
       {
         error: 'Translation failed',
         translatedText: '',
         originalText: '',
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

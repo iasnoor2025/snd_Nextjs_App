@@ -13,9 +13,9 @@ import { Globe } from 'lucide-react';
 export function LanguageSwitcher() {
   const { currentLanguage, changeLanguage, languages, isRTL } = useI18n();
 
-  const handleLanguageChange = (languageCode: string) => {
+  const handleLanguageChange = async (languageCode: string) => {
     console.log('Language switcher: changing to', languageCode);
-    changeLanguage(languageCode);
+    await changeLanguage(languageCode);
   };
 
   const currentLang = languages.find(lang => lang.code === currentLanguage);

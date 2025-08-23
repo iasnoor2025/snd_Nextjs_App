@@ -43,15 +43,36 @@ export function useI18n() {
     },
   ];
 
-  const changeLanguage = (language: string) => {
+  const changeLanguage = async (language: string) => {
     const selectedLanguage = languages.find(lang => lang.code === language);
     if (selectedLanguage && mounted && i18n.isInitialized) {
       try {
-        console.log('Changing language to:', language);
+
         
         // Store language preference first
         localStorage.setItem('i18nextLng', language);
         sessionStorage.setItem('i18nextLng', language);
+
+        // Update language preference in database
+        try {
+          const response = await fetch('/api/user/language', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ language }),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            // Language preference saved to database successfully
+          } else {
+            const error = await response.text();
+            console.warn('Failed to save language preference to database. Status:', response.status, 'Error:', error);
+          }
+        } catch (dbError) {
+          console.warn('Network error saving language preference to database:', dbError);
+        }
 
         // Change language in i18next first
         i18n.changeLanguage(language).then(() => {
@@ -92,8 +113,6 @@ export function useI18n() {
       try {
         // Get the current language from i18next instance
         const currentI18nLanguage = i18n.language || 'en';
-        
-        console.log('Hook: Current i18n language:', currentI18nLanguage);
         
         const selectedLanguage = languages.find(lang => lang.code === currentI18nLanguage);
 
@@ -136,7 +155,6 @@ export function useI18n() {
   useEffect(() => {
     if (mounted) {
       const handleLanguageChanged = (lng: string) => {
-        console.log('i18next language changed to:', lng);
         const selectedLanguage = languages.find(lang => lang.code === lng);
         if (selectedLanguage) {
           setCurrentLanguage(lng);
@@ -163,7 +181,6 @@ export function useI18n() {
         const savedLang = localStorage.getItem('i18nextLng') || sessionStorage.getItem('i18nextLng');
         
         if (currentLang && savedLang && currentLang !== savedLang) {
-          console.log('Language inconsistency detected, syncing:', { currentLang, savedLang });
           i18n.changeLanguage(savedLang);
         }
         
@@ -174,13 +191,7 @@ export function useI18n() {
             const correctDir = selectedLanguage.dir;
             const correctLang = savedLang;
             
-            if (document.documentElement.dir !== correctDir || document.documentElement.lang !== correctLang) {
-              console.log('Document attributes mismatch, fixing:', { 
-                currentDir: document.documentElement.dir, 
-                correctDir, 
-                currentLang: document.documentElement.lang, 
-                correctLang 
-              });
+                         if (document.documentElement.dir !== correctDir || document.documentElement.lang !== correctLang) {
               document.documentElement.dir = correctDir;
               document.documentElement.lang = correctLang;
               

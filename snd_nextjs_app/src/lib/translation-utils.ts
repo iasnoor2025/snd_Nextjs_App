@@ -234,6 +234,10 @@ const phoneticMapping: { [key: string]: string } = {
 // In-memory cache for translations
 const translationCache = new Map<string, string>();
 
+// Track rate limiting status
+let isRateLimited = false;
+let rateLimitResetTime = 0;
+
 /**
  * Convert English numerals to Arabic numerals
  * @param text - The text containing numbers to convert
@@ -308,7 +312,7 @@ export const translateNameToArabic = async (
       },
       body: JSON.stringify({
         text: name,
-        targetLang: 'ar',
+        targetLanguage: 'ar',
       }),
     });
 
@@ -318,9 +322,15 @@ export const translateNameToArabic = async (
         translationCache.set(name, result.translatedText);
         return result.translatedText;
       }
+    } else if (response.status === 429) {
+      // Rate limited - return original name and don't retry
+      console.warn('Translation rate limited for:', name);
+      isRateLimited = true;
+      rateLimitResetTime = Date.now() + 60000; // Reset in 1 minute
+      return name;
     }
   } catch (error) {
-    
+    console.warn('Translation API error for:', name, error);
   }
 
   // Fallback: phonetic transliteration
@@ -395,9 +405,24 @@ export const getTranslatedName = (
 
   // For complex names, trigger background translation
   if (!translatedNames[name]) {
-    translateNameToArabic(name, isRTL).then(translated => {
-      setTranslatedNames(prev => ({ ...prev, [name]: translated }));
-    });
+    // Add a flag to prevent multiple simultaneous API calls for the same name
+    const translationKey = `translating_${name}`;
+    if (!translatedNames[translationKey]) {
+      translatedNames[translationKey] = 'translating';
+      translateNameToArabic(name, isRTL).then(translated => {
+        setTranslatedNames(prev => ({ 
+          ...prev, 
+          [name]: translated,
+          [translationKey]: undefined // Clear the flag
+        }));
+      }).catch(() => {
+        // Clear the flag on error too
+        setTranslatedNames(prev => ({ 
+          ...prev, 
+          [translationKey]: undefined 
+        }));
+      });
+    }
   }
 
   return name;
@@ -416,33 +441,47 @@ export const batchTranslateNames = async (
 ) => {
   if (!isRTL) return; // Don't translate in English mode
 
+  // Check if we're currently rate limited
+  if (isRateLimited) {
+    if (Date.now() < rateLimitResetTime) {
+      console.log('Translation rate limited, skipping batch translation');
+      return;
+    } else {
+      // Reset rate limit status
+      isRateLimited = false;
+      rateLimitResetTime = 0;
+    }
+  }
+
   const uniqueNames = [...new Set(names.filter(Boolean))];
   const untranslatedNames = uniqueNames.filter(name => !translationCache.has(name));
 
   if (untranslatedNames.length === 0) return;
 
-  // Process names in batches of 5 to avoid overwhelming the API
-  const batchSize = 5;
+  // Process names in smaller batches with longer delays to respect rate limits
+  const batchSize = 2; // Reduced from 5 to 2
   for (let i = 0; i < untranslatedNames.length; i += batchSize) {
     const batch = untranslatedNames.slice(i, i + batchSize);
 
-    await Promise.all(
-      batch.map(async name => {
-        try {
-          const translated = await translateNameToArabic(name, isRTL);
-          setTranslatedNames(prev => ({
-            ...prev,
-            [name]: translated,
-          }));
-        } catch (error) {
-          
-        }
-      })
-    );
+    // Process batch sequentially instead of in parallel to avoid overwhelming the API
+    for (const name of batch) {
+      try {
+        const translated = await translateNameToArabic(name, isRTL);
+        setTranslatedNames(prev => ({
+          ...prev,
+          [name]: translated,
+        }));
+        
+        // Add delay between individual translations
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (error) {
+        console.warn('Error translating name:', name, error);
+      }
+    }
 
-    // Add a small delay between batches to be respectful to the API
+    // Add longer delay between batches to be respectful to the API
     if (i + batchSize < untranslatedNames.length) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Increased from 100ms to 1000ms
     }
   }
 };
@@ -452,4 +491,6 @@ export const batchTranslateNames = async (
  */
 export const clearTranslationCache = () => {
   translationCache.clear();
+  isRateLimited = false;
+  rateLimitResetTime = 0;
 };

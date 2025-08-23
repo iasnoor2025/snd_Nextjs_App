@@ -1,6 +1,9 @@
 import { authOptions } from '@/lib/auth-config';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { users } from '@/lib/drizzle/schema';
+import { eq } from 'drizzle-orm';
 
 export async function GET() {
   try {
@@ -17,15 +20,33 @@ export async function GET() {
       );
     }
 
-    // For now, return a default language
-    // You can extend this to fetch from user preferences in the database
+    // Fetch user's language preference from database
+    const userRows = await db
+      .select({ locale: users.locale })
+      .from(users)
+      .where(eq(users.id, parseInt(session.user.id)))
+      .limit(1);
+
+    if (userRows.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'User not found',
+        },
+        { status: 404 }
+      );
+    }
+
+    const user = userRows[0]!;
+    const language = user.locale || 'en'; // Default to English if no locale set
+
     return NextResponse.json({
       success: true,
-      language: 'en', // Default to English
+      language: language,
       message: 'User language preference retrieved successfully',
     });
   } catch (error) {
-    
+    console.error('Error fetching user language preference:', error);
     return NextResponse.json(
       {
         success: false,
@@ -77,15 +98,38 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // For now, just return success
-    // You can extend this to save to user preferences in the database
+    // Update user's language preference in database
+    const updatedUserRows = await db
+      .update(users)
+      .set({
+        locale: language,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(users.id, parseInt(session.user.id)))
+      .returning({
+        id: users.id,
+        locale: users.locale,
+      });
+
+    if (updatedUserRows.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Failed to update user language preference',
+        },
+        { status: 500 }
+      );
+    }
+
+    const updatedUser = updatedUserRows[0]!;
+
     return NextResponse.json({
       success: true,
-      language: language,
+      language: updatedUser.locale,
       message: 'User language preference updated successfully',
     });
   } catch (error) {
-    
+    console.error('Error updating user language preference:', error);
     return NextResponse.json(
       {
         success: false,

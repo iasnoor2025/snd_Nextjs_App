@@ -127,7 +127,6 @@ export const initializeI18n = () => {
   try {
     // Get the saved language from storage
     const savedLanguage = localStorage.getItem('i18nextLng') || sessionStorage.getItem('i18nextLng') || 'en';
-    console.log('Initializing i18n with saved language:', savedLanguage);
 
     return i18n
       .use(initReactI18next)
@@ -175,15 +174,10 @@ export const initializeI18n = () => {
         },
       })
       .then(() => {
-        console.log('i18n initialized with language:', i18n.language);
-        
         // Verify the language is set correctly
         if (i18n.language !== savedLanguage && ['en', 'ar'].includes(savedLanguage)) {
-          console.log('Language mismatch, forcing change to:', savedLanguage);
-          return i18n.changeLanguage(savedLanguage);
+          i18n.changeLanguage(savedLanguage);
         }
-        
-        return Promise.resolve();
       })
       .catch((error: unknown) => {
         console.error('i18n initialization error:', error);

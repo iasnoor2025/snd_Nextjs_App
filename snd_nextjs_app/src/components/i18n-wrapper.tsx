@@ -33,23 +33,79 @@ export function I18nWrapper({ children }: I18nWrapperProps) {
 
   useEffect(() => {
     if (status === 'authenticated' && session?.user?.id && i18nReady) {
-      const loadUserLanguage = async () => {
+      const syncUserLanguage = async () => {
         try {
+          // Get current language from localStorage and database
+          const localLanguage = localStorage.getItem('i18nextLng') || 'en';
+          
           const response = await fetch('/api/user/language');
           if (response.ok) {
             const data = await response.json();
-            if (data.success && data.language) {
-              i18n.changeLanguage(data.language);
+            const dbLanguage = data.success && data.language ? data.language : 'en';
+            
+
+            
+            // If localStorage has a different language than database, prioritize localStorage and update database
+            if (localLanguage !== dbLanguage) {
+              
+              // Update database to match localStorage
+              try {
+                const updateResponse = await fetch('/api/user/language', {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ language: localLanguage }),
+                });
+                
+                if (updateResponse.ok) {
+                  // Database updated to match localStorage preference
+                } else {
+                  console.warn('Failed to update database language preference');
+                }
+                          } catch (updateError) {
+              console.warn('Error updating database language preference:', updateError);
+            }
+            }
+            
+            // Set the language (prioritize localStorage)
+            const finalLanguage = localLanguage;
+            if (i18n.language !== finalLanguage) {
+              i18n.changeLanguage(finalLanguage);
+            }
+            
+            // Ensure localStorage is updated
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('i18nextLng', finalLanguage);
+              sessionStorage.setItem('i18nextLng', finalLanguage);
             }
           } else {
-            console.warn('Failed to load user language preference');
+            console.warn('Failed to load user language preference from database');
+            
+            // If database fetch fails, save current localStorage language to database
+            const currentLanguage = localLanguage;
+            try {
+              const saveResponse = await fetch('/api/user/language', {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ language: currentLanguage }),
+              });
+              
+              if (saveResponse.ok) {
+                // Saved current language preference to database
+              }
+            } catch (saveError) {
+              console.warn('Error saving current language to database:', saveError);
+            }
           }
         } catch (error) {
-          console.warn('Error loading user language preference:', error);
+          console.warn('Error syncing user language preference:', error);
         }
       };
 
-      loadUserLanguage();
+      syncUserLanguage();
     }
   }, [status, session?.user?.id, i18nReady]);
 
