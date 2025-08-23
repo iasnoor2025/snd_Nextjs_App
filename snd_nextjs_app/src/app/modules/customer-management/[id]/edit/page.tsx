@@ -34,7 +34,26 @@ interface Customer {
   postalCode?: string | null;
   country?: string | null;
   companyName?: string | null;
+  website?: string | null;
+  taxNumber?: string | null;
+  vatNumber?: string | null;
+  creditLimit?: number | null;
+  creditLimitUsed?: number | null;
+  creditLimitRemaining?: number | null;
+  paymentTerms?: string | null;
+  currentDue?: number | null;
+  totalValue?: number | null;
+  outstandingAmount?: number | null;
+  currency?: string | null;
+  customerType?: string | null;
+  customerGroup?: string | null;
+  territory?: string | null;
+  salesPerson?: string | null;
+  defaultPriceList?: string | null;
+  defaultCurrency?: string | null;
+  language?: string | null;
   notes?: string | null;
+  remarks?: string | null;
 }
 
 export default function EditCustomerPage({ params }: { params: Promise<{ id: string }> }) {
@@ -60,7 +79,26 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
     postalCode: '',
     country: '',
     companyName: '',
+    website: '',
+    taxNumber: '',
+    vatNumber: '',
+    creditLimit: 0,
+    creditLimitUsed: 0,
+    creditLimitRemaining: 0,
+    paymentTerms: '',
+    currentDue: 0,
+    totalValue: 0,
+    outstandingAmount: 0,
+    currency: 'SAR',
+    customerType: '',
+    customerGroup: '',
+    territory: '',
+    salesPerson: '',
+    defaultPriceList: '',
+    defaultCurrency: 'SAR',
+    language: 'en',
     notes: '',
+    remarks: '',
   });
 
   useEffect(() => {
@@ -86,7 +124,26 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
               postalCode: data.customer.postalCode || '',
               country: data.customer.country || '',
               companyName: data.customer.companyName || '',
+              website: data.customer.website || '',
+              taxNumber: data.customer.taxNumber || '',
+              vatNumber: data.customer.vatNumber || '',
+              creditLimit: data.customer.creditLimit || 0,
+              creditLimitUsed: data.customer.creditLimitUsed || 0,
+              creditLimitRemaining: data.customer.creditLimitRemaining || 0,
+              paymentTerms: data.customer.paymentTerms || '',
+              currentDue: data.customer.currentDue || 0,
+              totalValue: data.customer.totalValue || 0,
+              outstandingAmount: data.customer.outstandingAmount || 0,
+              currency: data.customer.currency || 'SAR',
+              customerType: data.customer.customerType || '',
+              customerGroup: data.customer.customerGroup || '',
+              territory: data.customer.territory || '',
+              salesPerson: data.customer.salesPerson || '',
+              defaultPriceList: data.customer.defaultPriceList || '',
+              defaultCurrency: data.customer.defaultCurrency || 'SAR',
+              language: data.customer.language || 'en',
               notes: data.customer.notes || '',
+              remarks: data.customer.remarks || '',
             });
           } else {
             toast.error(t('messages.loadingError'));
@@ -248,6 +305,17 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                     onChange={e => handleInputChange('contactPerson', e.target.value)}
                   />
                 </div>
+
+                <div>
+                  <Label htmlFor="website">{t('fields.website')}</Label>
+                  <Input
+                    id="website"
+                    type="url"
+                    value={formData.website}
+                    onChange={e => handleInputChange('website', e.target.value)}
+                    placeholder="https://example.com"
+                  />
+                </div>
               </div>
 
               {/* Address Information */}
@@ -304,6 +372,143 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
               </div>
             </div>
 
+            {/* ERPNext Business Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">{t('sections.businessInfo')}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="taxNumber">{t('fields.taxNumber')}</Label>
+                  <Input
+                    id="taxNumber"
+                    value={formData.taxNumber}
+                    onChange={e => handleInputChange('taxNumber', e.target.value)}
+                    placeholder="123456789"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="vatNumber">{t('fields.vatNumber')}</Label>
+                  <Input
+                    id="vatNumber"
+                    value={formData.vatNumber}
+                    onChange={e => handleInputChange('vatNumber', e.target.value)}
+                    placeholder="VAT123456789"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="customerType">{t('fields.customerType')}</Label>
+                  <Input
+                    id="customerType"
+                    value={formData.customerType}
+                    onChange={e => handleInputChange('customerType', e.target.value)}
+                    placeholder="Individual/Company"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="customerGroup">{t('fields.customerGroup')}</Label>
+                  <Input
+                    id="customerGroup"
+                    value={formData.customerGroup}
+                    onChange={e => handleInputChange('customerGroup', e.target.value)}
+                    placeholder="Commercial/Residential"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="territory">{t('fields.territory')}</Label>
+                  <Input
+                    id="territory"
+                    value={formData.territory}
+                    onChange={e => handleInputChange('territory', e.target.value)}
+                    placeholder="Saudi Arabia"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="salesPerson">{t('fields.salesPerson')}</Label>
+                  <Input
+                    id="salesPerson"
+                    value={formData.salesPerson}
+                    onChange={e => handleInputChange('salesPerson', e.target.value)}
+                    placeholder="Sales Representative"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ERPNext Financial Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">{t('sections.financialInfo')}</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="creditLimit">{t('fields.creditLimit')}</Label>
+                  <Input
+                    id="creditLimit"
+                    type="number"
+                    step="0.01"
+                    value={formData.creditLimit}
+                    onChange={e => handleInputChange('creditLimit', parseFloat(e.target.value) || 0)}
+                    placeholder="0.00"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="paymentTerms">{t('fields.paymentTerms')}</Label>
+                  <Input
+                    id="paymentTerms"
+                    value={formData.paymentTerms}
+                    onChange={e => handleInputChange('paymentTerms', e.target.value)}
+                    placeholder="Net 30"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="currency">{t('fields.currency')}</Label>
+                  <Select
+                    value={formData.currency}
+                    onValueChange={value => handleInputChange('currency', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('fields.selectCurrency')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="SAR">SAR (Saudi Riyal)</SelectItem>
+                      <SelectItem value="USD">USD (US Dollar)</SelectItem>
+                      <SelectItem value="EUR">EUR (Euro)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="defaultPriceList">{t('fields.defaultPriceList')}</Label>
+                  <Input
+                    id="defaultPriceList"
+                    value={formData.defaultPriceList}
+                    onChange={e => handleInputChange('defaultPriceList', e.target.value)}
+                    placeholder="Standard"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="language">{t('fields.language')}</Label>
+                  <Select
+                    value={formData.language}
+                    onValueChange={value => handleInputChange('language', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('fields.selectLanguage')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="ar">العربية</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
             {/* Status and Notes */}
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -344,6 +549,17 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                   onChange={e => handleInputChange('notes', e.target.value)}
                   rows={4}
                   placeholder={t('fields.notesPlaceholder')}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="remarks">{t('fields.remarks')}</Label>
+                <Textarea
+                  id="remarks"
+                  value={formData.remarks}
+                  onChange={e => handleInputChange('remarks', e.target.value)}
+                  rows={3}
+                  placeholder={t('fields.remarksPlaceholder')}
                 />
               </div>
             </div>

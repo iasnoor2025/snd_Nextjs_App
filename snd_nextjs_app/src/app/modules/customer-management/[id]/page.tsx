@@ -38,17 +38,34 @@ interface Customer {
   city: string | null;
   state: string | null;
   country: string | null;
+  postalCode: string | null;
   companyName: string | null;
   contactPerson: string | null;
   website: string | null;
   taxNumber: string | null;
+  vatNumber: string | null;
   creditLimit: number | null;
+  creditLimitUsed: number | null;
+  creditLimitRemaining: number | null;
   paymentTerms: string | null;
+  currentDue: number | null;
+  totalValue: number | null;
+  outstandingAmount: number | null;
+  currency: string | null;
+  customerType: string | null;
+  customerGroup: string | null;
+  territory: string | null;
+  salesPerson: string | null;
+  defaultPriceList: string | null;
+  defaultCurrency: string | null;
+  language: string | null;
   isActive: boolean;
   erpnextId: string | null;
   createdAt: string;
   updatedAt: string;
   status: string;
+  notes: string | null;
+  remarks: string | null;
 }
 
 interface Rental {
@@ -258,58 +275,107 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('stats.totalRentals')}</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{rentals.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {formatCurrency(calculateTotalRentals())} {t('stats.totalValue')}
-            </p>
-          </CardContent>
-        </Card>
+             {/* Stats Cards */}
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+         <Card>
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">{t('stats.totalRentals')}</CardTitle>
+             <Package className="h-4 w-4 text-muted-foreground" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold">{rentals.length}</div>
+             <p className="text-xs text-muted-foreground">
+               {formatCurrency(calculateTotalRentals())} {t('stats.totalValue')}
+             </p>
+           </CardContent>
+         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('stats.totalInvoices')}</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{invoices.length}</div>
-            <p className="text-xs text-muted-foreground">
-              {formatCurrency(calculateTotalInvoices())} {t('stats.totalInvoiced')}
-            </p>
-          </CardContent>
-        </Card>
+         <Card>
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">{t('stats.totalInvoices')}</CardTitle>
+             <FileText className="h-4 w-4 text-muted-foreground" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold">{invoices.length}</div>
+             <p className="text-xs text-muted-foreground">
+               {formatCurrency(calculateTotalInvoices())} {t('stats.totalInvoiced')}
+             </p>
+           </CardContent>
+         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('stats.outstanding')}</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(calculateOutstandingAmount())}</div>
-            <p className="text-xs text-muted-foreground">{t('stats.amountDue')}</p>
-          </CardContent>
-        </Card>
+         <Card>
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">{t('stats.outstanding')}</CardTitle>
+             <DollarSign className="h-4 w-4 text-muted-foreground" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold">{formatCurrency(calculateOutstandingAmount())}</div>
+             <p className="text-xs text-muted-foreground">{t('stats.amountDue')}</p>
+           </CardContent>
+         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('fields.status')}</CardTitle>
-            <User className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{getStatusBadge(customer.status)}</div>
-            <p className="text-xs text-muted-foreground">
-              {customer.isActive ? t('status.active') : t('status.inactive')}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+         <Card>
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">{t('fields.status')}</CardTitle>
+             <User className="h-4 w-4 text-muted-foreground" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold">{getStatusBadge(customer.status)}</div>
+             <p className="text-xs text-muted-foreground">
+               {customer.isActive ? t('status.active') : t('status.inactive')}
+             </p>
+           </CardContent>
+         </Card>
+       </div>
+
+       {/* Additional ERPNext Stats Cards */}
+       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+         <Card>
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">{t('stats.creditLimit')}</CardTitle>
+             <DollarSign className="h-4 w-4 text-muted-foreground" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold">{formatCurrency(customer.creditLimit)}</div>
+             <p className="text-xs text-muted-foreground">
+               {t('stats.remaining')}: {formatCurrency(customer.creditLimitRemaining)}
+             </p>
+           </CardContent>
+         </Card>
+
+         <Card>
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">{t('stats.currentDue')}</CardTitle>
+             <DollarSign className="h-4 w-4 text-muted-foreground" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold">{formatCurrency(customer.currentDue)}</div>
+             <p className="text-xs text-muted-foreground">{t('stats.overdue')}</p>
+           </CardContent>
+         </Card>
+
+         <Card>
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">{t('stats.totalValue')}</CardTitle>
+             <DollarSign className="h-4 w-4 text-muted-foreground" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold">{formatCurrency(customer.totalValue)}</div>
+             <p className="text-xs text-muted-foreground">{t('stats.lifetime')}</p>
+           </CardContent>
+         </Card>
+
+         <Card>
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">{t('stats.currency')}</CardTitle>
+             <DollarSign className="h-4 w-4 text-muted-foreground" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold">{customer.currency || 'SAR'}</div>
+             <p className="text-xs text-muted-foreground">{t('stats.defaultCurrency')}</p>
+           </CardContent>
+         </Card>
+       </div>
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -407,89 +473,143 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
           </Tabs>
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Building className="h-5 w-5" />
-                <span>{t('sections.companyInfo')}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-500">{t('fields.companyName')}</label>
-                                 <p className="text-lg font-semibold">{customer.companyName || t('common.notAvailable')}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">{t('fields.contactPerson')}</label>
-                                 <p className="text-lg">{customer.contactPerson || t('common.notAvailable')}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">{t('fields.taxNumber')}</label>
-                                 <p className="text-sm font-mono">{customer.taxNumber || t('common.notAvailable')}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">{t('fields.creditLimit')}</label>
-                <p className="text-lg font-semibold">{formatCurrency(customer.creditLimit)}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">{t('fields.paymentTerms')}</label>
-                                 <p className="text-lg">{customer.paymentTerms || t('common.notAvailable')}</p>
-              </div>
-            </CardContent>
-          </Card>
+                 {/* Sidebar */}
+         <div className="space-y-6">
+           <Card>
+             <CardHeader>
+               <CardTitle className="flex items-center space-x-2">
+                 <Building className="h-5 w-5" />
+                 <span>{t('sections.companyInfo')}</span>
+               </CardTitle>
+             </CardHeader>
+             <CardContent className="space-y-4">
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.companyName')}</label>
+                 <p className="text-lg font-semibold">{customer.companyName || t('common.notAvailable')}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.contactPerson')}</label>
+                 <p className="text-lg">{customer.contactPerson || t('common.notAvailable')}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.taxNumber')}</label>
+                 <p className="text-sm font-mono">{customer.taxNumber || t('common.notAvailable')}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.vatNumber')}</label>
+                 <p className="text-sm font-mono">{customer.vatNumber || t('common.notAvailable')}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.creditLimit')}</label>
+                 <p className="text-lg font-semibold">{formatCurrency(customer.creditLimit)}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.paymentTerms')}</label>
+                 <p className="text-lg">{customer.paymentTerms || t('common.notAvailable')}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.customerType')}</label>
+                 <p className="text-lg">{customer.customerType || t('common.notAvailable')}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.customerGroup')}</label>
+                 <p className="text-lg">{customer.customerGroup || t('common.notAvailable')}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.territory')}</label>
+                 <p className="text-lg">{customer.territory || t('common.notAvailable')}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.salesPerson')}</label>
+                 <p className="text-lg">{customer.salesPerson || t('common.notAvailable')}</p>
+               </div>
+             </CardContent>
+           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Mail className="h-5 w-5" />
-                <span>{t('sections.contactInfo')}</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-500">{t('fields.email')}</label>
-                                 <p className="text-lg">{customer.email || t('common.notAvailable')}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">{t('fields.phone')}</label>
-                                 <p className="text-lg">{customer.phone || t('common.notAvailable')}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">{t('fields.website')}</label>
-                                 <p className="text-lg">{customer.website || t('common.notAvailable')}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">{t('fields.address')}</label>
-                                 <p className="text-sm">{customer.address || t('common.notAvailable')}</p>
-                <p className="text-sm text-gray-500">
-                                     {customer.city || t('common.notAvailable')}, {customer.state || t('common.notAvailable')} {customer.country || t('common.notAvailable')}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+           <Card>
+             <CardHeader>
+               <CardTitle className="flex items-center space-x-2">
+                 <Mail className="h-5 w-5" />
+                 <span>{t('sections.contactInfo')}</span>
+               </CardTitle>
+             </CardHeader>
+             <CardContent className="space-y-4">
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.email')}</label>
+                 <p className="text-lg">{customer.email || t('common.notAvailable')}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.phone')}</label>
+                 <p className="text-lg">{customer.phone || t('common.notAvailable')}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.website')}</label>
+                 <p className="text-lg">{customer.website || t('common.notAvailable')}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.address')}</label>
+                 <p className="text-sm">{customer.address || t('common.notAvailable')}</p>
+                 <p className="text-sm text-gray-500">
+                   {customer.city || t('common.notAvailable')}, {customer.state || t('common.notAvailable')} {customer.country || t('common.notAvailable')}
+                 </p>
+                 <p className="text-sm text-gray-500">
+                   {t('fields.postalCode')}: {customer.postalCode || t('common.notAvailable')}
+                 </p>
+               </div>
+             </CardContent>
+           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('sections.quickActions')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
-                <Package className="h-4 w-4 mr-2" />
-                {t('actions.createRental')}
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <DollarSign className="h-4 w-4 mr-2" />
-                {t('actions.createInvoice')}
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <FileText className="h-4 w-4 mr-2" />
-                {t('actions.generateReport')}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+           <Card>
+             <CardHeader>
+               <CardTitle className="flex items-center space-x-2">
+                 <DollarSign className="h-5 w-5" />
+                 <span>{t('sections.financialInfo')}</span>
+               </CardTitle>
+             </CardHeader>
+             <CardContent className="space-y-4">
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.currency')}</label>
+                 <p className="text-lg font-semibold">{customer.currency || 'SAR'}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.defaultPriceList')}</label>
+                 <p className="text-lg">{customer.defaultPriceList || t('common.notAvailable')}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.language')}</label>
+                 <p className="text-lg">{customer.language || t('common.notAvailable')}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.notes')}</label>
+                 <p className="text-sm">{customer.notes || t('common.notAvailable')}</p>
+               </div>
+               <div>
+                 <label className="text-sm font-medium text-gray-500">{t('fields.remarks')}</label>
+                 <p className="text-sm">{customer.remarks || t('common.notAvailable')}</p>
+               </div>
+             </CardContent>
+           </Card>
+
+           <Card>
+             <CardHeader>
+               <CardTitle>{t('sections.quickActions')}</CardTitle>
+             </CardHeader>
+             <CardContent className="space-y-2">
+               <Button variant="outline" className="w-full justify-start">
+                 <Package className="h-4 w-4 mr-2" />
+                 {t('actions.createRental')}
+               </Button>
+               <Button variant="outline" className="w-full justify-start">
+                 <DollarSign className="h-4 w-4 mr-2" />
+                 {t('actions.createInvoice')}
+               </Button>
+               <Button variant="outline" className="w-full justify-start">
+                 <FileText className="h-4 w-4 mr-2" />
+                 {t('actions.generateReport')}
+               </Button>
+             </CardContent>
+           </Card>
+         </div>
       </div>
     </div>
   );

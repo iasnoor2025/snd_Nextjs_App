@@ -36,15 +36,33 @@
     "postalCode": "الرمز البريدي",
     "country": "البلد",
     "taxNumber": "الرقم الضريبي",
+    "vatNumber": "رقم ضريبة القيمة المضافة",
     "creditLimit": "حد الائتمان",
+    "creditLimitUsed": "الائتمان المستخدم",
+    "creditLimitRemaining": "الائتمان المتبقي",
     "paymentTerms": "شروط الدفع",
+    "currentDue": "المبلغ المستحق حالياً",
+    "totalValue": "إجمالي القيمة",
+    "outstandingAmount": "المبلغ المستحق",
+    "currency": "العملة",
+    "customerType": "نوع العميل",
+    "customerGroup": "مجموعة العملاء",
+    "territory": "المنطقة",
+    "salesPerson": "مندوب المبيعات",
+    "defaultPriceList": "قائمة الأسعار الافتراضية",
+    "defaultCurrency": "العملة الافتراضية",
+    "language": "اللغة",
     "notes": "ملاحظات",
+    "remarks": "ملاحظات إضافية",
     "customerId": "رقم العميل",
     "website": "الموقع الإلكتروني",
     "basicInfo": "المعلومات الأساسية",
     "isActive": "عميل نشط",
     "notesPlaceholder": "ملاحظات إضافية حول العميل...",
-    "selectStatus": "اختر الحالة"
+    "remarksPlaceholder": "ملاحظات إضافية أو تعليقات...",
+    "selectStatus": "اختر الحالة",
+    "selectCurrency": "اختر العملة",
+    "selectLanguage": "اختر اللغة"
   },
   "status": {
     "active": "نشط",
@@ -127,7 +145,14 @@
     "totalInvoices": "إجمالي الفواتير",
     "totalInvoiced": "إجمالي المفوتر",
     "outstanding": "المبلغ المستحق",
-    "amountDue": "المبلغ المستحق"
+    "amountDue": "المبلغ المستحق",
+    "creditLimit": "حد الائتمان",
+    "remaining": "المتبقي",
+    "currentDue": "المبلغ المستحق حالياً",
+    "overdue": "متأخر",
+    "lifetime": "طوال العمر",
+    "currency": "العملة",
+    "defaultCurrency": "العملة الافتراضية"
   },
   "tabs": {
     "rentals": "التأجيرات",
@@ -138,6 +163,8 @@
   "sections": {
     "companyInfo": "معلومات الشركة",
     "contactInfo": "معلومات الاتصال",
+    "businessInfo": "معلومات الأعمال",
+    "financialInfo": "المعلومات المالية",
     "quickActions": "الإجراءات السريعة"
   },
   "common": {

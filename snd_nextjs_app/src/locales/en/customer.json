@@ -36,15 +36,33 @@
     "postalCode": "Postal Code",
     "country": "Country",
     "taxNumber": "Tax Number",
+    "vatNumber": "VAT Number",
     "creditLimit": "Credit Limit",
+    "creditLimitUsed": "Credit Limit Used",
+    "creditLimitRemaining": "Credit Limit Remaining",
     "paymentTerms": "Payment Terms",
+    "currentDue": "Current Due",
+    "totalValue": "Total Value",
+    "outstandingAmount": "Outstanding Amount",
+    "currency": "Currency",
+    "customerType": "Customer Type",
+    "customerGroup": "Customer Group",
+    "territory": "Territory",
+    "salesPerson": "Sales Person",
+    "defaultPriceList": "Default Price List",
+    "defaultCurrency": "Default Currency",
+    "language": "Language",
     "notes": "Notes",
+    "remarks": "Remarks",
     "customerId": "Customer ID",
     "website": "Website",
     "basicInfo": "Basic Information",
     "isActive": "Active Customer",
     "notesPlaceholder": "Additional notes about the customer...",
-    "selectStatus": "Select Status"
+    "remarksPlaceholder": "Additional remarks or comments...",
+    "selectStatus": "Select Status",
+    "selectCurrency": "Select Currency",
+    "selectLanguage": "Select Language"
   },
   "status": {
     "active": "Active",
@@ -127,7 +145,14 @@
     "totalInvoices": "Total Invoices",
     "totalInvoiced": "Total Invoiced",
     "outstanding": "Outstanding",
-    "amountDue": "Amount Due"
+    "amountDue": "Amount Due",
+    "creditLimit": "Credit Limit",
+    "remaining": "Remaining",
+    "currentDue": "Current Due",
+    "overdue": "Overdue",
+    "lifetime": "Lifetime",
+    "currency": "Currency",
+    "defaultCurrency": "Default Currency"
   },
   "tabs": {
     "rentals": "Rentals",
@@ -138,6 +163,8 @@
   "sections": {
     "companyInfo": "Company Info",
     "contactInfo": "Contact Info",
+    "businessInfo": "Business Info",
+    "financialInfo": "Financial Info",
     "quickActions": "Quick Actions"
   },
   "common": {
