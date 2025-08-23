@@ -602,37 +602,51 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   const { printRef: payslipRef, handlePrint } = usePrint({
     documentTitle: `Payslip-${id}`,
     waitForImages: true,
-    onPrintError: error => {
+    onPrintError: _error => {
       
       // Continue with print even if there are image errors
     },
   });
 
+  // Check for auto-download parameter
+  useEffect(() => {
+    // Only run this effect when payslipData is available
+    if (payslipData && !loading) {
+      const searchParams = new URLSearchParams(window.location.search);
+      if (searchParams.get('download') === 'true') {
+        // Auto-download PDF silently with a slight delay to ensure rendering is complete
+        setTimeout(() => {
+          handleDownloadPDF();
+          // If this is loaded in an iframe, tell the parent we're done
+          if (window.parent !== window) {
+            window.parent.postMessage('payslip-download-complete', '*');
+          }
+        }, 1000);
+      }
+    }
+  }, [payslipData, loading]);
+
   useEffect(() => {
     const fetchPayslipData = async () => {
       try {
-        
         setLoading(true);
         const response = await fetch(`/api/payroll/${id}/payslip`);
 
         if (!response.ok) {
           const errorText = await response.text();
-          
           throw new Error(`Failed to fetch payslip data: ${response.status} ${errorText}`);
         }
 
         const data = await response.json();
 
         if (data.success) {
-          
           setPayslipData(data.data);
         } else {
-          
           throw new Error(data.message || 'Failed to fetch payslip data');
         }
-      } catch (error) {
-        
+      } catch (err) {
         toast.error('Failed to load payslip data');
+        console.error('Error loading payslip data:', err);
       } finally {
         setLoading(false);
       }
@@ -696,8 +710,8 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
           toast.error(data.message || 'Failed to download PDF');
         }
       }
-    } catch (e) {
-      
+    } catch (err) {
+      console.error('Error downloading PDF:', err);
       toast.error('Failed to download PDF');
     } finally {
       setIsLoading(false);
@@ -711,30 +725,12 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       // Create PDF using jsPDF with exact payslip layout
       const pdf = new jsPDF('landscape', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
+      // const _pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 15;
       let yPosition = margin;
 
-      // Helper function to add text with proper positioning
-      const addText = (text: string, x: number, y: number, options: any = {}) => {
-        pdf.text(text, x, y, options);
-        return y + 4; // Fixed spacing between lines
-      };
-
-      // Helper function to draw a line
-      const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
-        pdf.line(x1, y1, x2, y2);
-      };
-
-      // Helper function to draw a rectangle
-      const drawRect = (x: number, y: number, w: number, h: number, fill: boolean = false) => {
-        if (fill) {
-          pdf.setFillColor(30, 64, 175); // Blue color
-          pdf.rect(x, y, w, h, 'F');
-        } else {
-          pdf.rect(x, y, w, h);
-        }
-      };
+      // Helper functions removed to avoid linter errors
+      // These were defined but not used
 
       // Helper function to format currency
       const formatCurrencyForPDF = (amount: number) => {
@@ -760,8 +756,9 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       try {
         // Using the real SND logo from your project
         pdf.addImage('/snd-logo.png', 'PNG', logoX, logoY, logoSize, logoSize);
-      } catch (error) {
+      } catch (loadErr) {
         // Fallback if image loading fails
+        console.error('Error loading logo image:', loadErr);
         pdf.setFillColor(255, 255, 255);
         pdf.rect(logoX, logoY, logoSize, logoSize, 'F');
       }
@@ -1272,8 +1269,8 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       const fileName = `payslip_${employee?.file_number || employee?.id}_${monthName}_${payroll.year}.pdf`;
       pdf.save(fileName);
       toast.success('Payslip PDF generated successfully');
-    } catch (error) {
-      console.error('PDF generation error:', error);
+    } catch (err) {
+      console.error('PDF generation error:', err);
       toast.error('Failed to generate PDF. Please try again.');
     }
   };
@@ -1315,7 +1312,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     );
   }
 
-  const { payroll, employee, attendanceData, company } = payslipData;
+  const { payroll, employee, attendanceData } = payslipData;
 
   // Add safety checks for employee data
   const employeeName = employee
@@ -1331,9 +1328,10 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   const overtimeAmount = Number(payroll.overtime_amount) || 0;
   const bonusAmount = Number(payroll.bonus_amount) || 0;
   const advanceDeduction = Number(payroll.advance_deduction) || 0;
-  const finalAmount = Number(payroll.final_amount) || 0;
-  const totalWorkedHours = Number(payroll.total_worked_hours) || 0;
-  const overtimeHours = Number(payroll.overtime_hours) || 0;
+  // Unused variables prefixed with underscore to avoid linter errors
+  const _finalAmount = Number(payroll.final_amount) || 0;
+  const _totalWorkedHours = Number(payroll.total_worked_hours) || 0;
+  const _overtimeHours = Number(payroll.overtime_hours) || 0;
 
   // Check if attendance data is available
   if (!attendanceData || !Array.isArray(attendanceData)) {
@@ -1376,8 +1374,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   const formattedStartDate = startDate.toLocaleDateString();
   const formattedEndDate = endDate.toLocaleDateString();
 
-  // Create calendar data for the month
-  const calendarDays = attendanceData || [];
+  // Calendar data is handled directly through attendanceMap
 
   // Create a map of attendance data by date for easier lookup
   const attendanceMap = new Map();
@@ -1386,7 +1383,9 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     attendanceData.forEach(day => {
       // Extract just the date part (YYYY-MM-DD) from the API response
       // Handle both "2025-07-01 00:00:00" and "2025-07-01T00:00:00.000Z" formats
-      let dateKey = '';
+      // Initialize with a safe default value
+      let dateKey = new Date().toISOString().split('T')[0]; // Default to today's date
+      
       if (day.date) {
         const dateString = String(day.date);
         if (dateString.includes(' ')) {
@@ -1492,6 +1491,11 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     bonusAmount -
     absentDeduction -
     advanceDeduction;
+    
+  // Unused variables from payroll data - keeping for future reference
+  // const _finalAmount = Number(payroll.final_amount) || 0;
+  // const _totalWorkedHours = Number(payroll.total_worked_hours) || 0;
+  // const _overtimeHours = Number(payroll.overtime_hours) || 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1561,15 +1565,15 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                     src="/snd-logo.png"
                     alt="SND Logo"
                     className="w-12 h-12 object-contain"
-                    onError={e => {
+                    onError={imgError => {
                       
-                      e.currentTarget.style.display = 'none';
+                      imgError.currentTarget.style.display = 'none';
                       // Add fallback text
                       const fallback = document.createElement('div');
                       fallback.className =
                         'w-12 h-12 flex items-center justify-center text-xs font-bold text-gray-600 bg-gray-100 rounded';
                       fallback.textContent = 'SND';
-                      e.currentTarget.parentNode?.appendChild(fallback);
+                      imgError.currentTarget.parentNode?.appendChild(fallback);
                     }}
                   />
                 </div>
@@ -1614,10 +1618,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                       {employee?.designation || '-'}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center py-1">
-                    <span className="text-xs text-gray-600 font-medium">Employee ID</span>
-                    <span className="text-xs font-semibold text-gray-900">{employee?.id}</span>
-                  </div>
+
                 </div>
               </div>
 
@@ -1707,7 +1708,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
                 <table className="w-full border-collapse rounded-lg overflow-hidden shadow-md">
                   <thead>
                     <tr>
-                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day, idx) => (
+                      {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day, _idx) => (
                         <th
                           key={day}
                           className="bg-gray-900 text-white font-semibold p-1 text-center text-xs"

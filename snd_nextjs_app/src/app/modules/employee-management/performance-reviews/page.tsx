@@ -338,17 +338,6 @@ export default function PerformanceReviewsPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="employeeId">Employee ID *</Label>
-                <Input
-                  id="employeeId"
-                  type="number"
-                  value={formData.employeeId}
-                  onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-                  required
-                  placeholder="Enter employee ID"
-                />
-              </div>
-              <div>
                 <Label htmlFor="reviewDate">Review Date *</Label>
                 <Input
                   id="reviewDate"

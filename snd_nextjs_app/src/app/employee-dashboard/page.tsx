@@ -541,12 +541,7 @@ export default function EmployeeDashboard() {
                     Personal Information
                   </h3>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2 border-b border-gray-50">
-                      <span className="text-sm text-gray-600">Employee ID</span>
-                      <span className="text-sm font-medium text-gray-900">
-                        {dashboardData?.employee?.employee_id || 'N/A'}
-                      </span>
-                    </div>
+
                     <div className="flex justify-between items-center py-2 border-b border-gray-50">
                       <span className="text-sm text-gray-600">Email</span>
                       <span className="text-sm font-medium text-gray-900">

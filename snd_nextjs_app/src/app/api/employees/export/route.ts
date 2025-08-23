@@ -74,7 +74,6 @@ export async function GET() {
 
     // Format employees for CSV
     const csvHeaders = [
-      'Employee ID',
       'File Number',
       'First Name',
       'Middle Name',
@@ -130,7 +129,6 @@ export async function GET() {
     ];
 
     const csvRows = employees.map(employee => [
-      employee.id || '',
       employee.fileNumber || '',
       employee.firstName || '',
       employee.middleName || '',

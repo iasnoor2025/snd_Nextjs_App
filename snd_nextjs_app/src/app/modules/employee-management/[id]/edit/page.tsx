@@ -676,16 +676,7 @@ export default function EditEmployeePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="employee_id">Employee ID *</Label>
-                <Input
-                  id="employee_id"
-                  value={formData.employee_id}
-                  onChange={e => handleInputChange('employee_id', e.target.value)}
-                  placeholder="Enter employee ID"
-                  required
-                />
-              </div>
+
 
               <div className="space-y-2">
                 <Label htmlFor="file_number">File Number</Label>

@@ -362,10 +362,7 @@ export default function CreateSalaryIncrementPage() {
                       {selectedEmployee.first_name} {selectedEmployee.last_name}
                     </span>
                   </div>
-                  <div>
-                    <span className="text-gray-600">Employee ID:</span>
-                    <span className="ml-2 font-medium">{selectedEmployee.employee_id}</span>
-                  </div>
+
                   <div>
                     <span className="text-gray-600">Department:</span>
                     <span className="ml-2 font-medium">

@@ -145,10 +145,7 @@ export default function ReceiptPage() {
                     <p>
                       <span className="font-medium">Name:</span> {receiptData.employee.name}
                     </p>
-                    <p>
-                      <span className="font-medium">Employee ID:</span>{' '}
-                      {receiptData.employee.employee_id}
-                    </p>
+
                     <p>
                       <span className="font-medium">Position:</span> {receiptData.employee.position}
                     </p>

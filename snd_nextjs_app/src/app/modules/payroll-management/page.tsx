@@ -3,7 +3,6 @@
 import { ProtectedRoute } from '@/components/protected-route';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -18,8 +17,6 @@ import {
 import { EmployeeDropdown } from '@/components/ui/employee-dropdown';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Pagination } from '@/components/ui/pagination';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -27,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import {
   Table,
   TableBody,
@@ -36,59 +32,40 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/hooks/use-i18n';
-import { loadJsPDF } from '@/lib/client-libraries';
-import { PermissionContent, RoleBased, RoleContent } from '@/lib/rbac/rbac-components';
+
+import { PermissionContent, RoleContent } from '@/lib/rbac/rbac-components';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import {
   batchTranslateNames,
   convertToArabicNumerals,
   getTranslatedName,
 } from '@/lib/translation-utils';
-import { useDeleteConfirmations } from '@/lib/utils/confirmation-utils';
 import { format } from 'date-fns';
 import {
-  AlertCircle,
   Ban,
   BarChart3,
   Calculator,
-  CalendarDays,
-  Calendar as CalendarIcon,
   CheckCircle,
-  CheckSquare,
   ChevronLeft,
   ChevronRight,
-  Clock,
-  CreditCard,
   DollarSign,
   Download,
   Edit,
   Eye,
-  FileDown,
   FileText,
-  Filter,
-  MoreHorizontal,
-  Play,
   Plus,
-  Printer,
   RefreshCw,
   Search,
   Settings,
-  Share2,
   Shield,
-  Square,
   Trash2,
   TrendingUp,
-  Upload,
-  User,
-  Users,
   XCircle,
   Zap,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
@@ -157,33 +134,26 @@ interface PayrollResponse {
   first_page_url: string;
   last_page_url: string;
   path: string;
-  links: any[];
+  links: { url: string | null; label: string; active: boolean }[];
 }
 
 export default function PayrollManagementPage() {
-  const { user, hasPermission, getAllowedActions } = useRBAC();
+  const { getAllowedActions: _ } = useRBAC();
   const { t } = useTranslation(['common', 'payroll']);
   const { isRTL } = useI18n();
   const [payrolls, setPayrolls] = useState<PayrollResponse | null>(null);
-  const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPayrolls, setSelectedPayrolls] = useState<Set<number>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [monthFilter, setMonthFilter] = useState<Date | undefined>(undefined);
-  const [showFilters, setShowFilters] = useState(false);
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
-  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null);
   const [generating, setGenerating] = useState(false);
   const [employeeFilter, setEmployeeFilter] = useState<string>('all');
   const [recalculating, setRecalculating] = useState(false);
   const [downloadingPayslip, setDownloadingPayslip] = useState<number | null>(null);
-  const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({});
-
-  // Get allowed actions for payroll management
-  const allowedActions = getAllowedActions('Payroll');
+  const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({})
 
   // Fetch payrolls from API
   const fetchPayrolls = async () => {
@@ -217,11 +187,11 @@ export default function PayrollManagementPage() {
         if (data.data && data.data.length > 0) {
           const namesToTranslate = data.data
             .map(
-              payroll =>
+              (payroll: Payroll) =>
                 payroll.employee?.full_name ||
                 `${payroll.employee?.first_name} ${payroll.employee?.last_name}`
             )
-            .filter(name => name && name.trim() !== '');
+            .filter((name: string | undefined) => name && name.trim() !== '');
 
           if (namesToTranslate.length > 0) {
             batchTranslateNames(namesToTranslate, isRTL, setTranslatedNames);
@@ -246,8 +216,9 @@ export default function PayrollManagementPage() {
           links: [],
         });
       }
-    } catch (error) {
+    } catch (err) {
       toast.error(t('payroll:error.fetchPayrolls'));
+      console.error('Error fetching payrolls:', err);
       
       // Set empty data structure to prevent errors
       setPayrolls({
@@ -273,13 +244,9 @@ export default function PayrollManagementPage() {
   // Fetch employees for filter
   const fetchEmployees = async () => {
     try {
-      const response = await fetch('/api/employees');
-      const data = await response.json();
-      if (data.success) {
-        setEmployees(data.data);
-      }
-    } catch (error) {
-      
+      await fetch('/api/employees');
+    } catch (err) {
+      console.error('Error fetching employees:', err);
     }
   };
 
@@ -307,9 +274,9 @@ export default function PayrollManagementPage() {
       } else {
         toast.error(data.message || t('payroll:error.generateApproved'));
       }
-    } catch (error) {
+    } catch (err) {
       toast.error(t('payroll:error.generateApproved'));
-      
+      console.error('Error generating approved payrolls:', err);
     } finally {
       setGenerating(false);
     }
@@ -329,9 +296,9 @@ export default function PayrollManagementPage() {
       } else {
         toast.error(data.message || t('payroll:error.approve'));
       }
-    } catch (error) {
+    } catch (err) {
       toast.error(t('payroll:error.approve'));
-      
+      console.error('Error approving payroll:', err);
     }
   };
 
@@ -356,9 +323,9 @@ export default function PayrollManagementPage() {
       } else {
         toast.error(data.message || t('payroll:error.processPayment'));
       }
-    } catch (error) {
+    } catch (err) {
       toast.error(t('payroll:error.processPayment'));
-      
+      console.error('Error processing payment:', err);
     }
   };
 
@@ -380,9 +347,9 @@ export default function PayrollManagementPage() {
       } else {
         toast.error(data.message || t('payroll:error.cancel'));
       }
-    } catch (error) {
+    } catch (err) {
       toast.error(t('payroll:error.cancel'));
-      
+      console.error('Error canceling payroll:', err);
     }
   };
 
@@ -404,9 +371,9 @@ export default function PayrollManagementPage() {
       } else {
         toast.error(data.message || t('payroll:error.delete'));
       }
-    } catch (error) {
+    } catch (err) {
       toast.error(t('payroll:error.delete'));
-      
+      console.error('Error deleting payroll:', err);
     }
   };
 
@@ -438,9 +405,9 @@ export default function PayrollManagementPage() {
       } else {
         toast.error(data.message || t('payroll:error.bulkDelete'));
       }
-    } catch (error) {
+    } catch (err) {
       toast.error(t('payroll:error.bulkDelete'));
-      
+      console.error('Error bulk deleting payrolls:', err);
     }
   };
 
@@ -467,9 +434,9 @@ export default function PayrollManagementPage() {
       // Navigate to the payslip page for this payroll
       window.open(`/modules/payroll-management/${payrollId}/payslip`, '_blank');
       toast.success(t('payroll:success.payslipOpen'));
-    } catch (error) {
+    } catch (err) {
       toast.error(t('payroll:error.payslipOpen'));
-      
+      console.error('Error opening payslip:', err);
     }
   };
 
@@ -477,647 +444,33 @@ export default function PayrollManagementPage() {
     try {
       setDownloadingPayslip(payrollId);
       
-      // Fetch data and use custom PDF generation
-      const dataResponse = await fetch(`/api/payroll/${payrollId}/payslip`);
-      const data = await dataResponse.json();
-
-        if (data.success) {
-          // Create a temporary iframe to render the payslip
-          const iframe = document.createElement('iframe');
-        iframe.style.position = 'absolute';
-        iframe.style.left = '-9999px';
-        iframe.style.top = '-9999px';
-        iframe.style.width = '1200px';
-        iframe.style.height = '900px';
-        document.body.appendChild(iframe);
-
-        // Calculate additional data needed for the payslip
-        const monthName = new Date(
-          data.data.payroll.year,
-          data.data.payroll.month - 1
-        ).toLocaleDateString('en-US', { month: 'long' });
-        const startDate = new Date(data.data.payroll.year, data.data.payroll.month - 1, 1);
-        const endDate = new Date(data.data.payroll.year, data.data.payroll.month, 0);
-        const formattedStartDate = startDate.toLocaleDateString();
-        const formattedEndDate = endDate.toLocaleDateString();
-        const daysInMonth = new Date(data.data.payroll.year, data.data.payroll.month, 0).getDate();
-
-        // Calculate attendance data
-        const attendanceMap = new Map();
-        if (data.data.attendanceData && Array.isArray(data.data.attendanceData)) {
-          data.data.attendanceData.forEach((day: any) => {
-            attendanceMap.set(day.date, day);
-          });
-        }
-
-        // Calculate totals
-        const basicSalary = Number(data.data.payroll.base_salary) || 0;
-        const overtimeAmount = Number(data.data.payroll.overtime_amount) || 0;
-        const bonusAmount = Number(data.data.payroll.bonus_amount) || 0;
-        const advanceDeduction = Number(data.data.payroll.advance_deduction) || 0;
-        const totalWorkedHoursFromAttendance = data.data.attendanceData.reduce(
-          (total: number, day: any) => {
-            return total + (Number(day.hours) || 0) + (Number(day.overtime) || 0);
-          },
-          0
-        );
-        const overtimeHoursFromAttendance = data.data.attendanceData.reduce(
-          (total: number, day: any) => {
-            return total + (Number(day.overtime) || 0);
-          },
-          0
-        );
-        const daysWorkedFromAttendance = data.data.attendanceData.reduce(
-          (count: number, day: any) => {
-            return count + (Number(day.hours) > 0 || Number(day.overtime) > 0 ? 1 : 0);
-          },
-          0
-        );
-
-        // Calculate absent days
-        const absentDays = data.data.attendanceData.reduce((count: number, day: any) => {
-          const date = new Date(day.date);
-          const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-          const isFriday = dayName === 'Fri';
-          if (Number(day.hours) === 0 && Number(day.overtime) === 0 && !isFriday) {
-            return count + 1;
-          }
-          return count;
-        }, 0);
-
-        const absentDeduction = absentDays > 0 ? (basicSalary / daysInMonth) * absentDays : 0;
-        const totalAllowances =
-          (Number(data.data.employee.food_allowance) || 0) +
-          (Number(data.data.employee.housing_allowance) || 0) +
-          (Number(data.data.employee.transport_allowance) || 0);
-        const netSalary =
-          basicSalary +
-          totalAllowances +
-          overtimeAmount +
-          bonusAmount -
-          absentDeduction -
-          advanceDeduction;
-
-        const employeeName =
-          data.data.employee.full_name ||
-          `${data.data.employee.first_name || ''} ${data.data.employee.last_name || ''}`.trim() ||
-          'Unknown Employee';
-
-        const formatCurrency = (amount: number) => {
-          return new Intl.NumberFormat('en-US', {
-            style: 'currency',
-            currency: 'SAR',
-          }).format(amount);
-        };
-
-        // Generate attendance table HTML
-        const generateAttendanceTable = () => {
-          let tableHTML =
-            '<table class="w-full border-collapse rounded-lg overflow-hidden shadow-md">';
-          tableHTML += '<thead><tr>';
-
-          // Day numbers header
-          for (let day = 1; day <= 31; day++) {
-            tableHTML += `<th class="bg-gray-900 text-white font-semibold p-1 text-center text-xs">${day.toString().padStart(2, '0')}</th>`;
-          }
-          tableHTML += '</tr><tr>';
-
-          // Day names header
-          for (let day = 1; day <= 31; day++) {
-            const date = new Date(
-              `${data.data.payroll.year}-${String(data.data.payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`
-            );
-            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-            tableHTML += `<th class="bg-gray-900 text-gray-300 font-medium p-1 text-center text-xs">${dayName.substring(0, 1).toUpperCase()}</th>`;
-          }
-          tableHTML += '</tr></thead><tbody><tr>';
-
-          // Regular hours row
-          for (let day = 1; day <= 31; day++) {
-            const date = new Date(
-              `${data.data.payroll.year}-${String(data.data.payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`
-            );
-            const dateString = date.toISOString().split('T')[0];
-            const dayData = attendanceMap.get(dateString);
-            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-            const isFriday = dayName === 'Fri';
-
-            let displayValue = '-';
-            let cellClass = 'bg-white';
-
-            if (dayData && Number(dayData.hours) > 0) {
-              displayValue = dayData.hours.toString();
-              cellClass = 'text-green-700 font-semibold';
-            } else if (isFriday && (!dayData || Number(dayData.hours) === 0)) {
-              displayValue = 'F';
-              cellClass = 'bg-blue-100';
-            } else if (
-              !dayData ||
-              (Number(dayData.hours) === 0 && Number(dayData.overtime) === 0)
-            ) {
-              displayValue = 'A';
-              cellClass = 'bg-red-100 text-red-700 font-semibold';
-            }
-
-            tableHTML += `<td class="p-1 text-center text-xs border border-gray-200 ${cellClass}">${displayValue}</td>`;
-          }
-          tableHTML += '</tr><tr>';
-
-          // Overtime hours row
-          for (let day = 1; day <= 31; day++) {
-            const date = new Date(
-              `${data.data.payroll.year}-${String(data.data.payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}T00:00:00.000Z`
-            );
-            const dateString = date.toISOString().split('T')[0];
-            const dayData = attendanceMap.get(dateString);
-            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-            const isFriday = dayName === 'Fri';
-
-            let overtimeValue = '-';
-            let cellClass = 'bg-white';
-
-            if (dayData && Number(dayData.hours) > 0) {
-              const overtime = Number(dayData.overtime) || 0;
-              if (overtime > 0) {
-                overtimeValue = overtime.toString();
-                cellClass = 'text-blue-700 font-semibold';
-              } else {
-                overtimeValue = '0';
-              }
-            } else if (isFriday && (!dayData || Number(dayData.hours) === 0)) {
-              cellClass = 'bg-blue-100';
-            } else if (
-              !dayData ||
-              (Number(dayData.hours) === 0 && Number(dayData.overtime) === 0)
-            ) {
-              cellClass = 'bg-red-100';
-            }
-
-            tableHTML += `<td class="p-1 text-center text-xs border border-gray-200 ${cellClass}">${overtimeValue}</td>`;
-          }
-          tableHTML += '</tr></tbody></table>';
-
-          return tableHTML;
-        };
-
-        // Write the payslip HTML to the iframe with exact same structure as the payslip page
-        const payslipHTML = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <title>Payslip</title>
-            <style>
-              body { margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-              .payslip-container { background: white; width: 100%; max-width: none; margin: 0; padding: 0; box-shadow: none; border: none; }
-                                 .bg-gradient-to-br { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 0.3rem; border-radius: 0; margin-bottom: 0.3rem; }
-              .grid.grid-cols-1.lg\\:grid-cols-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin-bottom: 0.5rem; }
-              .bg-gray-50.border.border-gray-200.rounded-lg.p-4 { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 0.5rem; }
-              .text-xs.font-semibold.text-gray-600.uppercase.tracking-wide.mb-3 { font-size: 0.65rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
-              .space-y-2 { display: flex; flex-direction: column; gap: 0.3rem; }
-              .flex.justify-between.items-center { display: flex; justify-content: space-between; align-items: center; padding: 0.2rem 0; border-bottom: 1px solid #f3f4f6; }
-              .text-xs.text-gray-600.font-medium { font-size: 0.65rem; color: #6b7280; font-weight: 500; }
-              .text-xs.font-semibold.text-gray-900 { font-size: 0.65rem; font-weight: 600; color: #111827; }
-              .text-xs.font-semibold.text-green-700 { font-size: 0.65rem; font-weight: 600; color: #15803d; }
-              .text-sm.font-semibold.text-gray-900.mb-2.pb-1.border-b.border-gray-200 { font-size: 0.75rem; font-weight: 600; color: #111827; margin-bottom: 0.4rem; padding-bottom: 0.2rem; border-bottom: 1px solid #e5e7eb; }
-              .overflow-x-auto { overflow-x: auto; }
-              .w-full.border-collapse.rounded-lg.overflow-hidden.shadow-md { width: 100%; border-collapse: collapse; border-radius: 0.5rem; overflow: hidden; box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb; }
-              .bg-gray-900.text-white.font-semibold.p-1.text-center.text-xs { background: #111827; color: white; font-weight: 600; padding: 0.2rem 0.25rem; text-align: center; font-size: 0.65rem; vertical-align: middle; }
-              .bg-gray-900.text-gray-300.font-medium.p-1.text-center.text-xs { background: #111827; color: #d1d5db; font-weight: 500; padding: 0.2rem 0.25rem; text-align: center; font-size: 0.65rem; vertical-align: middle; }
-              .p-1.text-center.text-xs.border.border-gray-200 { padding: 0.2rem 0.25rem; text-align: center; font-size: 0.65rem; border: 1px solid #e5e7eb; vertical-align: middle; }
-              .text-green-700.font-semibold { color: #15803d; font-weight: 600; font-size: 0.65rem; vertical-align: middle; }
-              .bg-blue-100 { background: #dbeafe; }
-              .bg-red-100.text-red-700.font-semibold { background: #fee2e2; color: #dc2626; font-weight: 600; font-size: 0.65rem; vertical-align: middle; }
-              .text-blue-700.font-semibold { color: #2563eb; font-weight: 600; font-size: 0.65rem; vertical-align: middle; }
-              .bg-red-100 { background: #fee2e2; }
-              .mt-2.p-2.bg-gray-50.rounded.text-xs.text-gray-600 { margin-top: 0.3rem; padding: 0.4rem; background: #f9fafb; border-radius: 0.25rem; font-size: 0.65rem; color: #6b7280; line-height: 1.4; }
-              .grid.grid-cols-1.lg\\:grid-cols-2.gap-4.mb-4 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem; }
-              .text-sm.font-semibold.text-gray-900.mb-3 { font-size: 0.7rem; font-weight: 600; color: #111827; margin-bottom: 0.3rem; }
-              .text-xs.font-semibold.text-gray-700.uppercase.tracking-wide.mb-2 { font-size: 0.65rem; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
-              .text-xs.font-semibold.text-red-700 { font-size: 0.65rem; font-weight: 600; color: #dc2626; }
-              .border-t.border-gray-200.pt-2 { border-top: 1px solid #e5e7eb; padding-top: 0.3rem; }
-              .border-t-2.border-gray-300.pt-2 { border-top: 2px solid #d1d5db; padding-top: 0.3rem; }
-              .text-sm.font-bold.text-gray-900 { font-size: 0.7rem; font-weight: 700; color: #111827; }
-              .text-sm.font-bold.text-green-700 { font-size: 0.7rem; font-weight: 700; color: #15803d; }
-              .grid.grid-cols-1.md\\:grid-cols-3.gap-4.pt-4.border-t.border-gray-200 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; padding-top: 0.5rem; border-top: 1px solid #e5e7eb; }
-              .text-center.p-3.bg-gray-50.border.border-gray-200.rounded-lg { text-align: center; padding: 0.4rem; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem; }
-              .text-xs.font-semibold.text-gray-600.uppercase.tracking-wide.mb-2 { font-size: 0.65rem; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
-              .text-sm.font-semibold.text-gray-900.mb-4 { font-size: 0.7rem; font-weight: 600; color: #111827; margin-bottom: 0.5rem; }
-              .border-t.border-gray-300.pt-1.text-xs.text-gray-500 { border-top: 1px solid #d1d5db; padding-top: 0.2rem; font-size: 0.6rem; color: #6b7280; }
-              .ml-4.space-y-1.text-xs.text-gray-500 { margin-left: 0.5rem; display: flex; flex-direction: column; gap: 0.15rem; font-size: 0.6rem; color: #6b7280; }
-              .flex.items-center.justify-between { display: flex; align-items: center; justify-content: space-between; }
-              .flex.items-center.space-x-4 { display: flex; align-items: center; gap: 0.5rem; }
-              .bg-white.p-2.rounded-lg.shadow-md { background: white; padding: 0.3rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); }
-              .w-8.h-8.object-contain { width: 2rem; height: 2rem; object-fit: contain; }
-              .text-xl.font-bold { font-size: 0.9rem; font-weight: 700; }
-              .text-sm.opacity-90 { font-size: 0.7rem; opacity: 0.9; }
-              .text-xs.opacity-90 { font-size: 0.6rem; opacity: 0.9; }
-              .text-lg.font-semibold { font-size: 0.8rem; font-weight: 600; }
-              .text-right { text-align: right; }
-            </style>
-          </head>
-          <body>
-            <div class="payslip-container">
-              <!-- Compact Header -->
-              <div class="bg-gradient-to-br from-blue-600 to-blue-700 text-white p-4">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center space-x-4">
-                    <div class="bg-white p-2 rounded-lg shadow-md">
-                      <img src="/snd-logo.png" alt="SND Logo" class="w-8 h-8 object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-                      <div class="w-8 h-8 flex items-center justify-center text-xs font-bold text-gray-600 bg-gray-100 rounded" style="display: none;">SND</div>
-                    </div>
-                    <div>
-                      <h1 class="text-xl font-bold">Samhan Naser Al-Dosri Est.</h1>
-                      <p class="text-sm opacity-90">For Gen. Contracting & Rent. Equipments</p>
-                    </div>
-                  </div>
-                  <div class="text-right">
-                    <h2 class="text-lg font-semibold">Employee Pay Slip</h2>
-                    <p class="text-sm opacity-90">${monthName} ${data.data.payroll.year}</p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Compact Employee Information Grid -->
-              <div class="p-4">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-                  <!-- Employee Details -->
-                  <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">Employee Details</h3>
-                    <div class="space-y-2">
-                      <div class="flex justify-between items-center py-1 border-b border-gray-100">
-                        <span class="text-xs text-gray-600 font-medium">File Number</span>
-                        <span class="text-xs font-semibold text-gray-900">${data.data.employee.file_number || '-'}</span>
-                      </div>
-                      <div class="flex justify-between items-center py-1 border-b border-gray-100">
-                        <span class="text-xs text-gray-600 font-medium">Employee Name</span>
-                        <span class="text-xs font-semibold text-gray-900">${employeeName.toUpperCase()}</span>
-                      </div>
-                      <div class="flex justify-between items-center py-1 border-b border-gray-100">
-                        <span class="text-xs text-gray-600 font-medium">Designation</span>
-                        <span class="text-xs font-semibold text-gray-900">${data.data.employee.designation || '-'}</span>
-                      </div>
-                      <div class="flex justify-between items-center py-1">
-                        <span class="text-xs text-gray-600 font-medium">Employee ID</span>
-                        <span class="text-xs font-semibold text-gray-900">${data.data.employee.id}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Work Details -->
-                  <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">Work Details</h3>
-                    <div class="space-y-2">
-                      <div class="flex justify-between items-center py-1 border-b border-gray-100">
-                        <span class="text-xs text-gray-600 font-medium">Pay Period</span>
-                        <span class="text-xs font-semibold text-gray-900">${monthName} ${data.data.payroll.year}</span>
-                      </div>
-                      <div class="flex justify-between items-center py-1 border-b border-gray-100">
-                        <span class="text-xs text-gray-600 font-medium">Date Range</span>
-                        <span class="text-xs font-semibold text-gray-900">${formattedStartDate} - ${formattedEndDate}</span>
-                      </div>
-                      <div class="flex justify-between items-center py-1 border-b border-gray-100">
-                        <span class="text-xs text-gray-600 font-medium">Status</span>
-                        <span class="text-xs font-semibold text-gray-900 capitalize">${data.data.payroll.status}</span>
-                      </div>
-                      <div class="flex justify-between items-center py-1">
-                        <span class="text-xs text-gray-600 font-medium">Payroll ID</span>
-                        <span class="text-xs font-semibold text-gray-900">#${data.data.payroll.id}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Salary Summary -->
-                  <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <h3 class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">Salary Summary</h3>
-                    <div class="space-y-2">
-                      <div class="flex justify-between items-center py-1 border-b border-gray-100">
-                        <span class="text-xs text-gray-600 font-medium">Basic Salary</span>
-                        <span class="text-xs font-semibold text-green-700">${formatCurrency(basicSalary)}</span>
-                      </div>
-                      ${
-                        Number(data.data.employee.food_allowance) > 0
-                          ? `
-                        <div class="flex justify-between items-center py-1 border-b border-gray-200">
-                          <span class="text-xs text-gray-600 font-medium">Food Allowance</span>
-                          <span class="text-xs font-semibold text-gray-900">${formatCurrency(Number(data.data.employee.food_allowance))}</span>
-                        </div>
-                      `
-                          : ''
-                      }
-                      ${
-                        Number(data.data.employee.housing_allowance) > 0
-                          ? `
-                        <div class="flex justify-between items-center py-1 border-b border-gray-200">
-                          <span class="text-xs text-gray-600 font-medium">Housing Allowance</span>
-                          <span class="text-xs font-semibold text-gray-900">${formatCurrency(Number(data.data.employee.housing_allowance))}</span>
-                        </div>
-                      `
-                          : ''
-                      }
-                      ${
-                        Number(data.data.employee.transport_allowance) > 0
-                          ? `
-                        <div class="flex justify-between items-center py-1 border-b border-gray-200">
-                          <span class="text-xs text-gray-600 font-medium">Transport Allowance</span>
-                          <span class="text-xs font-semibold text-gray-900">${formatCurrency(Number(data.data.employee.transport_allowance))}</span>
-                        </div>
-                      `
-                          : ''
-                      }
-                      <div class="flex justify-between items-center py-1 border-b border-gray-200">
-                        <span class="text-xs text-gray-600 font-medium">Overtime Pay</span>
-                        <span class="text-xs font-semibold text-green-700">${formatCurrency(overtimeAmount)}</span>
-                      </div>
-                      <div class="flex justify-between items-center py-1">
-                        <span class="text-xs text-gray-600 font-medium">Net Salary</span>
-                        <span class="text-xs font-semibold text-green-700">${formatCurrency(netSalary)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Compact Attendance Record -->
-                <div class="mb-4">
-                  <h3 class="text-sm font-semibold text-gray-900 mb-2 pb-1 border-b border-gray-200">Attendance Record</h3>
-                  <div class="overflow-x-auto">
-                    ${generateAttendanceTable()}
-                  </div>
-                  <div class="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">
-                    <span class="text-green-700 font-semibold">8</span> = regular hours, <span class="text-blue-700 font-semibold">More than 8</span> = overtime hours, <span class="text-red-700 font-semibold">A</span> = absent, <span class="text-blue-700 font-semibold">F</span> = Friday (weekend)
-                  </div>
-                </div>
-
-                <!-- Compact Summary Section -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                  <!-- Working Hours Summary -->
-                  <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <h3 class="text-sm font-semibold text-gray-900 mb-3">Working Hours Summary</h3>
-                    <div class="space-y-2">
-                      <!-- Hours Breakdown -->
-                      <div class="mb-3">
-                        <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Hours Breakdown</h4>
-                        <div class="space-y-1">
-                          <div class="flex justify-between items-center py-1">
-                            <span class="text-xs text-gray-600 font-medium">Total Hours Worked</span>
-                            <span class="text-xs font-semibold text-gray-900">${totalWorkedHoursFromAttendance} hrs</span>
-                          </div>
-                          <div class="flex justify-between items-center py-1">
-                            <span class="text-xs text-gray-600 font-medium">Regular Hours</span>
-                            <span class="text-xs font-semibold text-gray-900">${totalWorkedHoursFromAttendance - overtimeHoursFromAttendance} hrs</span>
-                          </div>
-                          <div class="flex justify-between items-center py-1">
-                            <span class="text-xs text-gray-600 font-medium">Overtime Hours</span>
-                            <span class="text-xs font-semibold text-green-700">${overtimeHoursFromAttendance} hrs</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Attendance Summary -->
-                      <div class="mb-3">
-                        <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Attendance Summary</h4>
-                        <div class="space-y-1">
-                          <div class="flex justify-between items-center py-1">
-                            <span class="text-xs text-gray-600 font-medium">Days Worked</span>
-                            <span class="text-xs font-semibold text-gray-900">${daysWorkedFromAttendance} days</span>
-                          </div>
-                          <div class="flex justify-between items-center py-1">
-                            <span class="text-xs text-gray-600 font-medium">Absent Days</span>
-                            <span class="text-xs font-semibold text-red-700">${absentDays} days</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Deductions -->
-                      <div class="border-t border-gray-200 pt-2">
-                        <div class="flex justify-between items-center py-1">
-                          <span class="text-xs text-gray-600 font-medium">Absent Deduction</span>
-                          <span class="text-xs font-semibold text-red-700">-${formatCurrency(absentDeduction)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Salary Breakdown -->
-                  <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                    <h3 class="text-sm font-semibold text-gray-900 mb-3">Salary Breakdown</h3>
-                    <div class="space-y-2">
-                      <!-- Earnings Section -->
-                      <div class="mb-3">
-                        <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Earnings</h4>
-                        <div class="space-y-1">
-                          <div class="flex justify-between items-center py-1">
-                            <span class="text-xs text-gray-600 font-medium">Basic Salary</span>
-                            <span class="text-xs font-semibold text-green-700">${formatCurrency(basicSalary)}</span>
-                          </div>
-                          ${
-                            Number(data.data.employee.food_allowance) > 0
-                              ? `
-                            <div class="flex justify-between items-center py-1">
-                              <span class="text-xs text-gray-600 font-medium">Food Allowance</span>
-                              <span class="text-xs font-semibold text-gray-900">${formatCurrency(Number(data.data.employee.food_allowance))}</span>
-                            </div>
-                          `
-                              : ''
-                          }
-                          ${
-                            Number(data.data.employee.housing_allowance) > 0
-                              ? `
-                            <div class="flex justify-between items-center py-1">
-                              <span class="text-xs text-gray-600 font-medium">Housing Allowance</span>
-                              <span class="text-xs font-semibold text-gray-900">${formatCurrency(Number(data.data.employee.housing_allowance))}</span>
-                            </div>
-                          `
-                              : ''
-                          }
-                          ${
-                            Number(data.data.employee.transport_allowance) > 0
-                              ? `
-                            <div class="flex justify-between items-center py-1">
-                              <span class="text-xs text-gray-600 font-medium">Transport Allowance</span>
-                              <span class="text-xs font-semibold text-gray-900">${formatCurrency(Number(data.data.employee.transport_allowance))}</span>
-                            </div>
-                          `
-                              : ''
-                          }
-                          <div class="flex justify-between items-center py-1">
-                            <span class="text-xs text-gray-600 font-medium">Overtime Pay</span>
-                            <span class="text-xs font-semibold text-green-700">${formatCurrency(overtimeAmount)}</span>
-                          </div>
-                          ${
-                            overtimeHoursFromAttendance > 0
-                              ? `
-                            <div class="ml-4 space-y-1 text-xs text-gray-500">
-                              <div class="flex justify-between items-center">
-                                <span>Overtime Hours:</span>
-                                <span>${overtimeHoursFromAttendance} hrs</span>
-                              </div>
-                              <div class="flex justify-between items-center">
-                                <span>Overtime Rate:</span>
-                                <span>
-                                  ${
-                                    data.data.employee.overtime_fixed_rate &&
-                                    data.data.employee.overtime_fixed_rate > 0
-                                      ? `${formatCurrency(Number(data.data.employee.overtime_fixed_rate))}/hr (Fixed)`
-                                      : `${data.data.employee.overtime_rate_multiplier || 1.5}x (Basic/30/8)`
-                                  }
-                                </span>
-                              </div>
-                            </div>
-                          `
-                              : ''
-                          }
-                          <div class="flex justify-between items-center py-1">
-                            <span class="text-xs text-gray-600 font-medium">Bonus Amount</span>
-                            <span class="text-xs font-semibold text-green-700">${formatCurrency(bonusAmount)}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Deductions Section -->
-                      <div class="mb-3">
-                        <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Deductions</h4>
-                        <div class="space-y-1">
-                          <div class="flex justify-between items-center py-1">
-                            <span class="text-xs text-gray-600 font-medium">Absent Days Deduction</span>
-                            <span class="text-xs font-semibold text-red-700">-${formatCurrency(absentDeduction)}</span>
-                          </div>
-                          <div class="flex justify-between items-center py-1">
-                            <span class="text-xs text-gray-600 font-medium">Advance Deduction</span>
-                            <span class="text-xs font-semibold text-red-700">-${formatCurrency(advanceDeduction)}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <!-- Total Section -->
-                      <div class="border-t-2 border-gray-300 pt-2">
-                        <div class="flex justify-between items-center py-2">
-                          <span class="text-sm font-bold text-gray-900">Net Salary</span>
-                          <span class="text-sm font-bold text-green-700">${formatCurrency(netSalary)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Compact Signatures Section -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-gray-200">
-                  <div class="text-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    <h4 class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Chief Accountant</h4>
-                    <div class="text-sm font-semibold text-gray-900 mb-4">Samir Taima</div>
-                    <div class="border-t border-gray-300 pt-1 text-xs text-gray-500">Signature</div>
-                  </div>
-                  <div class="text-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    <h4 class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Verified By</h4>
-                    <div class="text-sm font-semibold text-gray-900 mb-4">Salem Samhan Al-Dosri</div>
-                    <div class="border-t border-gray-300 pt-1 text-xs text-gray-500">Signature</div>
-                  </div>
-                  <div class="text-center p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                    <h4 class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Employee</h4>
-                    <div class="text-sm font-semibold text-gray-900 mb-4">${employeeName}</div>
-                    <div class="border-t border-gray-300 pt-1 text-xs text-gray-500">Signature</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </body>
-          </html>
-        `;
-
-        iframe.contentDocument?.write(payslipHTML);
-        iframe.contentDocument?.close();
-
-        // Wait for content to load, then generate PDF
-        setTimeout(async () => {
-          try {
-            // Dynamically load jsPDF library
-            const jsPDF = await loadJsPDF();
-
-            // Create PDF using jsPDF only (without html2canvas)
-            const pdf = new jsPDF('landscape', 'mm', 'a4');
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const margin = 20;
-
-            // Set font
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(24);
-
-            // Company header
-            pdf.text('C.A.T. INTERNATIONAL L.L.L.C.', pageWidth / 2, margin, { align: 'center' });
-
-            pdf.setFontSize(14);
-            pdf.setFont('helvetica', 'normal');
-            pdf.text('Equipment Rental & Construction Services', pageWidth / 2, margin + 15, {
-              align: 'center',
-            });
-
-            // Payslip title
-            pdf.setFontSize(20);
-            pdf.setFont('helvetica', 'bold');
-            pdf.text('PAYSLIP', pageWidth / 2, margin + 40, { align: 'center' });
-
-            // Employee information
-            pdf.setFontSize(12);
-            pdf.setFont('helvetica', 'normal');
-            const employeeName = data.data.employee.full_name || 'Unknown Employee';
-            const employeeId = data.data.employee.file_number || data.data.employee.id;
-            const monthName = new Date(
-              data.data.payroll.year,
-              data.data.payroll.month - 1
-            ).toLocaleDateString('en-US', { month: 'long' });
-
-            pdf.text(`Employee: ${employeeName}`, margin, margin + 70);
-            pdf.text(`Employee ID: ${employeeId}`, margin, margin + 85);
-            pdf.text(`Month: ${monthName} ${data.data.payroll.year}`, margin, margin + 100);
-
-            // Salary details
-            pdf.text(
-              `Basic Salary: ${formatCurrency(Number(data.data.payroll.base_salary || 0))}`,
-              margin,
-              margin + 125
-            );
-            pdf.text(
-              `Overtime: ${formatCurrency(Number(data.data.payroll.overtime_amount || 0))}`,
-              margin,
-              margin + 140
-            );
-            pdf.text(
-              `Bonus: ${formatCurrency(Number(data.data.payroll.bonus_amount || 0))}`,
-              margin,
-              margin + 155
-            );
-            pdf.text(
-              `Deductions: ${formatCurrency(Number(data.data.payroll.deduction_amount || 0))}`,
-              margin,
-              margin + 170
-            );
-            pdf.text(
-              `Final Amount: ${formatCurrency(Number(data.data.payroll.final_amount || 0))}`,
-              margin,
-              margin + 185
-            );
-
-            // Save PDF
-            const fileName = `payslip_${employeeId}_${monthName}_${data.data.payroll.year}.pdf`;
-            pdf.save(fileName);
-
-            // Clean up
-            document.body.removeChild(iframe);
-            toast.success(t('payroll:success.payslipDownload'));
-          } catch (error) {
-            
-            document.body.removeChild(iframe);
-            toast.error(t('payroll:error.payslipDownload'));
-          }
-        }, 1500);
-      } else {
-        toast.error(data.message || t('payroll:error.payslipDownload'));
-      }
-    } catch (error) {
-      toast.error(t('payroll:error.payslipDownload'));
+      // Fetch payslip data directly
+      const response = await fetch(`/api/payroll/${payrollId}/payslip`);
       
-    } finally {
+      if (!response.ok) {
+        throw new Error(`Failed to fetch payslip data: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to fetch payslip data');
+      }
+      
+      // Import the PDF generator utility
+      const { generatePayslipPDF } = await import('./utils/generatePayslipPDF');
+      
+      // Generate and download the PDF directly
+      await generatePayslipPDF(data.data);
+      
+      // Show success message
+            toast.success(t('payroll:success.payslipDownload'));
+            
+      // Reset downloading state
+      setDownloadingPayslip(null);
+    } catch (err) {
+            toast.error(t('payroll:error.payslipDownload'));
+      console.error('Error downloading payslip:', err);
       setDownloadingPayslip(null);
     }
   };
@@ -1136,9 +489,9 @@ export default function PayrollManagementPage() {
       } else {
         toast.error(result.message || t('payroll:error.recalculateOvertime'));
       }
-    } catch (error) {
-      
+    } catch (err) {
       toast.error(t('payroll:error.recalculateOvertime'));
+      console.error('Error recalculating overtime:', err);
     } finally {
       setRecalculating(false);
     }
@@ -1533,15 +886,19 @@ export default function PayrollManagementPage() {
                                 size="sm"
                                 onClick={() => handleDirectDownloadPayslip(payroll.id)}
                                 disabled={downloadingPayslip === payroll.id}
+                                className="flex items-center space-x-2"
                                 title={t('payroll:downloadPdf')}
                               >
                                 {downloadingPayslip === payroll.id ? (
                                   <>
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                                    <span className="sr-only">{t('payroll:generating')}</span>
+                                    <span>{t('payroll:generating')}</span>
                                   </>
                                 ) : (
-                                  <FileDown className="h-4 w-4" />
+                                  <>
+                                    <Download className="h-4 w-4" />
+                                    <span>{t('payroll:downloadPdf')}</span>
+                                  </>
                                 )}
                               </Button>
                               {payroll.status === 'pending' && (

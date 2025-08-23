@@ -3,10 +3,11 @@ import { employees, payrollItems, payrolls, timesheets, advancePaymentHistories 
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-
-    const id = parseInt(params.id);
+    // Fix the params.id error by properly awaiting params
+    const { id: idParam } = await params;
+    const id = parseInt(idParam);
 
     // Connect to database
     

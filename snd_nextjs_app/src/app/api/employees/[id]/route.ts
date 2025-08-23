@@ -383,6 +383,7 @@ const updateEmployeeHandler = async (
       'last_name',
       'email',
       'phone',
+      'file_number',
       'address',
       'city',
       'state',
@@ -405,36 +406,38 @@ const updateEmployeeHandler = async (
     ];
     for (const key of passthroughFields) {
       if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
-        const drizzleKey =
+        const                 drizzleKey =
           key === 'first_name'
             ? 'firstName'
             : key === 'middle_name'
               ? 'middleName'
               : key === 'last_name'
                 ? 'lastName'
-                : key === 'postal_code'
-                  ? 'postalCode'
-                  : key === 'department_id'
-                    ? 'departmentId'
-                    : key === 'designation_id'
-                      ? 'designationId'
-                      : key === 'iqama_number'
-                        ? 'iqamaNumber'
-                        : key === 'passport_number'
-                          ? 'passportNumber'
-                          : key === 'driving_license_number'
-                            ? 'drivingLicenseNumber'
-                            : key === 'operator_license_number'
-                              ? 'operatorLicenseNumber'
-                              : key === 'tuv_certification_number'
-                                ? 'tuvCertificationNumber'
-                                : key === 'spsp_license_number'
-                                  ? 'spspLicenseNumber'
-                                  : key === 'advance_salary_eligible'
-                                    ? 'advanceSalaryEligible'
-                                    : key === 'advance_salary_approved_this_month'
-                                      ? 'advanceSalaryApprovedThisMonth'
-                                      : key;
+                : key === 'file_number'
+                  ? 'fileNumber'
+                  : key === 'postal_code'
+                    ? 'postalCode'
+                    : key === 'department_id'
+                      ? 'departmentId'
+                      : key === 'designation_id'
+                        ? 'designationId'
+                        : key === 'iqama_number'
+                          ? 'iqamaNumber'
+                          : key === 'passport_number'
+                            ? 'passportNumber'
+                            : key === 'driving_license_number'
+                              ? 'drivingLicenseNumber'
+                              : key === 'operator_license_number'
+                                ? 'operatorLicenseNumber'
+                                : key === 'tuv_certification_number'
+                                  ? 'tuvCertificationNumber'
+                                  : key === 'spsp_license_number'
+                                    ? 'spspLicenseNumber'
+                                    : key === 'advance_salary_eligible'
+                                      ? 'advanceSalaryEligible'
+                                      : key === 'advance_salary_approved_this_month'
+                                        ? 'advanceSalaryApprovedThisMonth'
+                                        : key;
         drizzleData[drizzleKey] = updateDataRaw[key];
       }
     }

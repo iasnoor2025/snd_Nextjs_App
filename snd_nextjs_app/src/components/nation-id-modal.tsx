@@ -149,9 +149,7 @@ export function NationIdModal({
             <div className="space-y-2">
               <Label>Matched Employee Information</Label>
               <div className="text-sm text-muted-foreground space-y-1 p-3 bg-green-50 border border-green-200 rounded-md">
-                <p>
-                  <strong>Employee ID:</strong> {matchedEmployee.employee_id}
-                </p>
+
                 <p>
                   <strong>Full Name:</strong> {matchedEmployee.first_name}{' '}
                   {matchedEmployee.middle_name} {matchedEmployee.last_name}

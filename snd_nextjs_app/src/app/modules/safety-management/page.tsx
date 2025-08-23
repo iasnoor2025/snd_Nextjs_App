@@ -233,17 +233,7 @@ export default function SafetyManagementPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="reportedBy">Reported By *</Label>
-                  <Input
-                    id="reportedBy"
-                    value={formData.reportedBy}
-                    onChange={(e) => setFormData({ ...formData, reportedBy: e.target.value })}
-                    placeholder="Employee ID"
-                    required
-                  />
-                </div>
+              <div className="grid grid-cols-1 gap-4">
                 <div>
                   <Label htmlFor="cost">Estimated Cost</Label>
                   <Input
