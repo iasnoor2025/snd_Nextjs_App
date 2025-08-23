@@ -50,7 +50,6 @@ import {
   ChevronLeft,
   ChevronRight,
   DollarSign,
-  Download,
   Edit,
   Eye,
   FileText,
@@ -152,7 +151,6 @@ export default function PayrollManagementPage() {
   const [generating, setGenerating] = useState(false);
   const [employeeFilter, setEmployeeFilter] = useState<string>('all');
   const [recalculating, setRecalculating] = useState(false);
-  const [downloadingPayslip, setDownloadingPayslip] = useState<number | null>(null);
   const [translatedNames, setTranslatedNames] = useState<{ [key: string]: string }>({})
 
   // Fetch payrolls from API
@@ -429,52 +427,6 @@ export default function PayrollManagementPage() {
     }
   };
 
-  const handleDownloadPayslip = async (payrollId: number) => {
-    try {
-      // Navigate to the payslip page for this payroll
-      window.open(`/modules/payroll-management/${payrollId}/payslip`, '_blank');
-      toast.success(t('payroll:success.payslipOpen'));
-    } catch (err) {
-      toast.error(t('payroll:error.payslipOpen'));
-      console.error('Error opening payslip:', err);
-    }
-  };
-
-  const handleDirectDownloadPayslip = async (payrollId: number) => {
-    try {
-      setDownloadingPayslip(payrollId);
-      
-      // Fetch payslip data directly
-      const response = await fetch(`/api/payroll/${payrollId}/payslip`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch payslip data: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.message || 'Failed to fetch payslip data');
-      }
-      
-      // Import the PDF generator utility
-      const { generatePayslipPDF } = await import('./utils/generatePayslipPDF');
-      
-      // Generate and download the PDF directly
-      await generatePayslipPDF(data.data);
-      
-      // Show success message
-            toast.success(t('payroll:success.payslipDownload'));
-            
-      // Reset downloading state
-      setDownloadingPayslip(null);
-    } catch (err) {
-            toast.error(t('payroll:error.payslipDownload'));
-      console.error('Error downloading payslip:', err);
-      setDownloadingPayslip(null);
-    }
-  };
-
   const handleRecalculateOvertime = async () => {
     try {
       setRecalculating(true);
@@ -540,7 +492,7 @@ export default function PayrollManagementPage() {
           <div className="flex gap-2">
             <PermissionContent action="export" subject="Payroll">
               <Button variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
+                <DollarSign className="h-4 w-4 mr-2" />
                 {t('payroll:export')}
               </Button>
             </PermissionContent>
@@ -876,30 +828,12 @@ export default function PayrollManagementPage() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleDownloadPayslip(payroll.id)}
+                                asChild
                                 title={t('payroll:viewPayslip')}
                               >
-                                <FileText className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDirectDownloadPayslip(payroll.id)}
-                                disabled={downloadingPayslip === payroll.id}
-                                className="flex items-center space-x-2"
-                                title={t('payroll:downloadPdf')}
-                              >
-                                {downloadingPayslip === payroll.id ? (
-                                  <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                                    <span>{t('payroll:generating')}</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Download className="h-4 w-4" />
-                                    <span>{t('payroll:downloadPdf')}</span>
-                                  </>
-                                )}
+                                <Link href={`/modules/payroll-management/${payroll.id}/payslip`}>
+                                  <FileText className="h-4 w-4" />
+                                </Link>
                               </Button>
                               {payroll.status === 'pending' && (
                                 <Button
