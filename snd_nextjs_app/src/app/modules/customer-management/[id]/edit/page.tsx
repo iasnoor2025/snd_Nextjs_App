@@ -16,6 +16,8 @@ import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface Customer {
   id: number;
@@ -37,6 +39,8 @@ interface Customer {
 
 export default function EditCustomerPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const { t } = useTranslation('customer');
+  const { isRTL } = useI18n();
   // Unwrap params Promise immediately - this must be called unconditionally
   const { id } = use(params);
 
@@ -85,16 +89,16 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
               notes: data.customer.notes || '',
             });
           } else {
-            toast.error('Failed to fetch customer');
+            toast.error(t('messages.loadingError'));
             router.push('/modules/customer-management');
           }
         } else {
-          toast.error('Customer not found');
+          toast.error(t('messages.customerNotFound'));
           router.push('/modules/customer-management');
         }
       } catch (error) {
         
-        toast.error('Error fetching customer');
+        toast.error(t('messages.loadingError'));
         router.push('/modules/customer-management');
       } finally {
         setLoading(false);
@@ -132,18 +136,18 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
       if (response.ok) {
         const result = await response.json();
         if (result.success) {
-          toast.success('Customer updated successfully!');
+          toast.success(t('messages.saveSuccess'));
           router.push(`/modules/customer-management/${id}`);
         } else {
-          toast.error(result.message || 'Failed to update customer');
+          toast.error(result.message || t('messages.saveError'));
         }
       } else {
         const error = await response.json();
-        toast.error(error.message || 'Failed to update customer');
+        toast.error(error.message || t('messages.saveError'));
       }
     } catch (error) {
       
-      toast.error('Error updating customer');
+      toast.error(t('messages.saveError'));
     } finally {
       setSaving(false);
     }
@@ -154,7 +158,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading customer...</p>
+          <p className="text-muted-foreground">{t('messages.loading')}</p>
         </div>
       </div>
     );
@@ -164,7 +168,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <p className="text-muted-foreground">Customer not found</p>
+          <p className="text-muted-foreground">{t('messages.customerNotFound')}</p>
         </div>
       </div>
     );
@@ -180,18 +184,18 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
           onClick={() => router.push(`/modules/customer-management/${id}`)}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Customer
+          {t('actions.back')}
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Edit Customer</h1>
-          <p className="text-muted-foreground">Update customer information</p>
+          <h1 className="text-2xl font-bold">{t('actions.editCustomer')}</h1>
+          <p className="text-muted-foreground">{t('fields.basicInfo')}</p>
         </div>
       </div>
 
       {/* Edit Form */}
       <Card>
         <CardHeader>
-          <CardTitle>Customer Information</CardTitle>
+          <CardTitle>{t('fields.basicInfo')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -199,7 +203,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
               {/* Basic Information */}
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Name *</Label>
+                  <Label htmlFor="name">{t('fields.name')} *</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -209,7 +213,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">{t('fields.email')}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -219,7 +223,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="phone">Phone</Label>
+                  <Label htmlFor="phone">{t('fields.phone')}</Label>
                   <Input
                     id="phone"
                     value={formData.phone}
@@ -228,7 +232,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="companyName">Company Name</Label>
+                  <Label htmlFor="companyName">{t('fields.companyName')}</Label>
                   <Input
                     id="companyName"
                     value={formData.companyName}
@@ -237,7 +241,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 </div>
 
                 <div>
-                  <Label htmlFor="contactPerson">Contact Person</Label>
+                  <Label htmlFor="contactPerson">{t('fields.contactPerson')}</Label>
                   <Input
                     id="contactPerson"
                     value={formData.contactPerson}
@@ -249,7 +253,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
               {/* Address Information */}
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="address">Address</Label>
+                  <Label htmlFor="address">{t('fields.address')}</Label>
                   <Textarea
                     id="address"
                     value={formData.address}
@@ -260,7 +264,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="city">City</Label>
+                    <Label htmlFor="city">{t('fields.city')}</Label>
                     <Input
                       id="city"
                       value={formData.city}
@@ -269,7 +273,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                   </div>
 
                   <div>
-                    <Label htmlFor="state">State</Label>
+                    <Label htmlFor="state">{t('fields.state')}</Label>
                     <Input
                       id="state"
                       value={formData.state}
@@ -280,7 +284,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="postalCode">Postal Code</Label>
+                    <Label htmlFor="postalCode">{t('fields.postalCode')}</Label>
                     <Input
                       id="postalCode"
                       value={formData.postalCode}
@@ -289,7 +293,7 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                   </div>
 
                   <div>
-                    <Label htmlFor="country">Country</Label>
+                    <Label htmlFor="country">{t('fields.country')}</Label>
                     <Input
                       id="country"
                       value={formData.country}
@@ -304,18 +308,18 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status">{t('fields.status')}</Label>
                   <Select
                     value={formData.status}
                     onValueChange={value => handleInputChange('status', value)}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
+                                         <SelectTrigger>
+                       <SelectValue placeholder={t('fields.selectStatus')} />
+                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="active">{t('status.active')}</SelectItem>
+                      <SelectItem value="inactive">{t('status.inactive')}</SelectItem>
+                      <SelectItem value="pending">{t('status.pending')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -328,18 +332,18 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                     onChange={e => handleInputChange('isActive', e.target.checked)}
                     className="rounded border-gray-300"
                   />
-                  <Label htmlFor="isActive">Active Customer</Label>
+                  <Label htmlFor="isActive">{t('fields.isActive')}</Label>
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">{t('fields.notes')}</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
                   onChange={e => handleInputChange('notes', e.target.value)}
                   rows={4}
-                  placeholder="Additional notes about the customer..."
+                  placeholder={t('fields.notesPlaceholder')}
                 />
               </div>
             </div>
@@ -352,18 +356,18 @@ export default function EditCustomerPage({ params }: { params: Promise<{ id: str
                 onClick={() => router.push(`/modules/customer-management/${id}`)}
                 disabled={saving}
               >
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button type="submit" disabled={saving}>
                 {saving ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Saving...
+                    {t('messages.saving')}
                   </>
                 ) : (
                   <>
                     <Save className="h-4 w-4 mr-2" />
-                    Save Changes
+                    {t('actions.save')}
                   </>
                 )}
               </Button>

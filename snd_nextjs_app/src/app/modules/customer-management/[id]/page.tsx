@@ -26,6 +26,8 @@ import {
 import Link from 'next/link';
 import { use, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface Customer {
   id: number;
@@ -83,6 +85,8 @@ interface Invoice {
 }
 
 function CustomerDetailClient({ customerId }: { customerId: string }) {
+  const { t } = useTranslation('customer');
+  const { isRTL } = useI18n();
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [rentals, setRentals] = useState<Rental[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -127,8 +131,8 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
         setInvoices([]);
       } catch (error) {
         
-        setError(error instanceof Error ? error.message : 'Failed to fetch customer data');
-        toast.error('Failed to fetch customer data');
+        setError(error instanceof Error ? error.message : t('messages.loadingError'));
+        toast.error(t('messages.loadingError'));
       } finally {
         setLoading(false);
       }
@@ -143,29 +147,29 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
     switch (status?.toLowerCase()) {
       case 'active':
       case 'completed':
-        return <Badge className="bg-green-100 text-green-800">{status}</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t(`status.${status}`)}</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800">{status}</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t(`status.${status}`)}</Badge>;
       case 'cancelled':
       case 'overdue':
-        return <Badge className="bg-red-100 text-red-800">{status}</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t(`status.${status}`)}</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800">{status || 'Unknown'}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t(`status.${status}`) || t('status.unknown')}</Badge>;
     }
   };
 
   const getPaymentStatusBadge = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'paid':
-        return <Badge className="bg-green-100 text-green-800">{status}</Badge>;
+        return <Badge className="bg-green-100 text-green-800">{t(`status.${status}`)}</Badge>;
       case 'partially paid':
-        return <Badge className="bg-yellow-100 text-yellow-800">{status}</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-800">{t(`status.${status}`)}</Badge>;
       case 'overdue':
-        return <Badge className="bg-red-100 text-red-800">{status}</Badge>;
+        return <Badge className="bg-red-100 text-red-800">{t(`status.${status}`)}</Badge>;
       case 'pending':
-        return <Badge className="bg-blue-100 text-blue-800">{status}</Badge>;
+        return <Badge className="bg-blue-100 text-blue-800">{t(`status.${status}`)}</Badge>;
       default:
-        return <Badge className="bg-gray-100 text-gray-800">{status || 'Unknown'}</Badge>;
+        return <Badge className="bg-gray-100 text-gray-800">{t(`status.${status}`) || t('status.unknown')}</Badge>;
     }
   };
 
@@ -178,8 +182,8 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
   };
 
   const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
+    if (!dateString) return t('common.notAvailable');
+    return new Date(dateString).toLocaleDateString('ar-SA', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -207,7 +211,7 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-          <p className="text-muted-foreground">Loading customer...</p>
+                     <p className="text-muted-foreground">{t('messages.loadingCustomer')}</p>
         </div>
       </div>
     );
@@ -217,9 +221,9 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <p className="text-muted-foreground">{error || 'Customer not found'}</p>
+                     <p className="text-muted-foreground">{error || t('messages.customerNotFound')}</p>
           <Button variant="outline" className="mt-4" onClick={() => window.history.back()}>
-            Go Back
+            {t('actions.back')}
           </Button>
         </div>
       </div>
@@ -234,13 +238,13 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
           <Link href="/modules/customer-management">
             <Button variant="outline" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Customers
+{t('actions.backToCustomers')}
             </Button>
           </Link>
           <div>
             <h1 className="text-3xl font-bold">{customer.name}</h1>
             <p className="text-muted-foreground">
-              Customer ID: {customer.id} • {customer.status}
+{t('fields.customerId')}: {customer.id} • {customer.status}
             </p>
           </div>
         </div>
@@ -248,7 +252,7 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
           <Link href={`/modules/customer-management/${customerId}/edit`}>
             <Button>
               <Edit className="h-4 w-4 mr-2" />
-              Edit Customer
+{t('actions.editCustomer')}
             </Button>
           </Link>
         </div>
@@ -258,50 +262,50 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Rentals</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('stats.totalRentals')}</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{rentals.length}</div>
             <p className="text-xs text-muted-foreground">
-              {formatCurrency(calculateTotalRentals())} total value
+              {formatCurrency(calculateTotalRentals())} {t('stats.totalValue')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Invoices</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('stats.totalInvoices')}</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{invoices.length}</div>
             <p className="text-xs text-muted-foreground">
-              {formatCurrency(calculateTotalInvoices())} total invoiced
+              {formatCurrency(calculateTotalInvoices())} {t('stats.totalInvoiced')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('stats.outstanding')}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(calculateOutstandingAmount())}</div>
-            <p className="text-xs text-muted-foreground">Amount due</p>
+            <p className="text-xs text-muted-foreground">{t('stats.amountDue')}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Status</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('fields.status')}</CardTitle>
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{getStatusBadge(customer.status)}</div>
             <p className="text-xs text-muted-foreground">
-              {customer.isActive ? 'Active' : 'Inactive'}
+              {customer.isActive ? t('status.active') : t('status.inactive')}
             </p>
           </CardContent>
         </Card>
@@ -313,38 +317,38 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue="rentals" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="rentals">Rentals ({rentals.length})</TabsTrigger>
-              <TabsTrigger value="invoices">Invoices ({invoices.length})</TabsTrigger>
+              <TabsTrigger value="rentals">{t('tabs.rentals')} ({rentals.length})</TabsTrigger>
+              <TabsTrigger value="invoices">{t('tabs.invoices')} ({invoices.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="rentals" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Rental History</CardTitle>
+                  <CardTitle>{t('tabs.rentalHistory')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {rentals.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
-                      No rentals found for this customer
+{t('messages.noRentalsFound')}
                     </div>
                   ) : (
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Rental #</TableHead>
-                          <TableHead>Equipment</TableHead>
-                          <TableHead>Start Date</TableHead>
-                          <TableHead>End Date</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Payment</TableHead>
+                          <TableHead>{t('table.headers.rentalNumber')}</TableHead>
+                          <TableHead>{t('table.headers.equipment')}</TableHead>
+                          <TableHead>{t('table.headers.startDate')}</TableHead>
+                          <TableHead>{t('table.headers.endDate')}</TableHead>
+                          <TableHead>{t('table.headers.amount')}</TableHead>
+                          <TableHead>{t('table.headers.status')}</TableHead>
+                          <TableHead>{t('table.headers.payment')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {rentals.map(rental => (
                           <TableRow key={rental.id}>
                             <TableCell className="font-mono">{rental.rentalNumber}</TableCell>
-                            <TableCell>{rental.equipmentName || 'N/A'}</TableCell>
+                                                         <TableCell>{rental.equipmentName || t('common.notAvailable')}</TableCell>
                             <TableCell>{formatDate(rental.startDate)}</TableCell>
                             <TableCell>
                               {formatDate(rental.actualEndDate || rental.expectedEndDate)}
@@ -364,22 +368,22 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
             <TabsContent value="invoices" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle>Invoice History</CardTitle>
+                  <CardTitle>{t('tabs.invoiceHistory')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {invoices.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
-                      No invoices found for this customer
+{t('messages.noInvoicesFound')}
                     </div>
                   ) : (
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Invoice #</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Due Date</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Created</TableHead>
+                          <TableHead>{t('table.headers.invoiceNumber')}</TableHead>
+                          <TableHead>{t('table.headers.amount')}</TableHead>
+                          <TableHead>{t('table.headers.dueDate')}</TableHead>
+                          <TableHead>{t('table.headers.status')}</TableHead>
+                          <TableHead>{t('table.headers.created')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -409,29 +413,29 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Building className="h-5 w-5" />
-                <span>Company Info</span>
+                <span>{t('sections.companyInfo')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Company Name</label>
-                <p className="text-lg font-semibold">{customer.companyName || 'N/A'}</p>
+                <label className="text-sm font-medium text-gray-500">{t('fields.companyName')}</label>
+                                 <p className="text-lg font-semibold">{customer.companyName || t('common.notAvailable')}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Contact Person</label>
-                <p className="text-lg">{customer.contactPerson || 'N/A'}</p>
+                <label className="text-sm font-medium text-gray-500">{t('fields.contactPerson')}</label>
+                                 <p className="text-lg">{customer.contactPerson || t('common.notAvailable')}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Tax Number</label>
-                <p className="text-sm font-mono">{customer.taxNumber || 'N/A'}</p>
+                <label className="text-sm font-medium text-gray-500">{t('fields.taxNumber')}</label>
+                                 <p className="text-sm font-mono">{customer.taxNumber || t('common.notAvailable')}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Credit Limit</label>
+                <label className="text-sm font-medium text-gray-500">{t('fields.creditLimit')}</label>
                 <p className="text-lg font-semibold">{formatCurrency(customer.creditLimit)}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Payment Terms</label>
-                <p className="text-lg">{customer.paymentTerms || 'N/A'}</p>
+                <label className="text-sm font-medium text-gray-500">{t('fields.paymentTerms')}</label>
+                                 <p className="text-lg">{customer.paymentTerms || t('common.notAvailable')}</p>
               </div>
             </CardContent>
           </Card>
@@ -440,24 +444,24 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Mail className="h-5 w-5" />
-                <span>Contact Info</span>
+                <span>{t('sections.contactInfo')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Email</label>
+                <label className="text-sm font-medium text-gray-500">{t('fields.email')}</label>
                 <p className="text-lg">{customer.email || 'N/A'}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Phone</label>
+                <label className="text-sm font-medium text-gray-500">{t('fields.phone')}</label>
                 <p className="text-lg">{customer.phone || 'N/A'}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Website</label>
+                <label className="text-sm font-medium text-gray-500">{t('fields.website')}</label>
                 <p className="text-lg">{customer.website || 'N/A'}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Address</label>
+                <label className="text-sm font-medium text-gray-500">{t('fields.address')}</label>
                 <p className="text-sm">{customer.address || 'N/A'}</p>
                 <p className="text-sm text-gray-500">
                   {customer.city || 'N/A'}, {customer.state || 'N/A'} {customer.country || 'N/A'}
@@ -468,20 +472,20 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
 
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>{t('sections.quickActions')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <Button variant="outline" className="w-full justify-start">
                 <Package className="h-4 w-4 mr-2" />
-                Create Rental
+                {t('actions.createRental')}
               </Button>
               <Button variant="outline" className="w-full justify-start">
                 <DollarSign className="h-4 w-4 mr-2" />
-                Create Invoice
+                {t('actions.createInvoice')}
               </Button>
               <Button variant="outline" className="w-full justify-start">
                 <FileText className="h-4 w-4 mr-2" />
-                Generate Report
+                {t('actions.generateReport')}
               </Button>
             </CardContent>
           </Card>

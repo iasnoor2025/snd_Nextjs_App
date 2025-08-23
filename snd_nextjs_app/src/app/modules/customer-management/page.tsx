@@ -12,8 +12,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useI18n } from '@/hooks/use-i18n';
 import { Edit, Eye, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 interface Customer {
@@ -27,6 +29,9 @@ interface Customer {
 }
 
 export default function CustomerManagementPage() {
+  const { t } = useTranslation('customer');
+  const { isRTL } = useI18n();
+  
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,9 +52,9 @@ export default function CustomerManagementPage() {
 
       if (!response.ok) {
         if (response.status === 403) {
-          setError('Access denied. You do not have permission to view customers.');
+          setError(t('messages.accessDenied'));
         } else if (response.status === 404) {
-          setError('Customers API endpoint not found.');
+          setError(t('messages.loadingError'));
         } else {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -59,12 +64,12 @@ export default function CustomerManagementPage() {
           setCustomers(data.customers || []);
           setTotalPages(data.pagination?.totalPages || 1);
         } else {
-          setError(data.message || 'Failed to fetch customers');
+          setError(data.message || t('messages.loadingError'));
         }
       }
     } catch (err) {
       
-      setError('Failed to fetch customers from database. Please try again.');
+      setError(t('messages.loadingError'));
     } finally {
       setLoading(false);
     }
@@ -88,7 +93,7 @@ export default function CustomerManagementPage() {
   const handleSyncFromERPNext = async () => {
     
     setSyncing(true);
-    toast.info('Starting sync from ERPNext...');
+    toast.info(t('messages.syncStarted'));
 
     try {
       // First fetch customers from ERPNext
@@ -140,27 +145,27 @@ export default function CustomerManagementPage() {
         const syncResult = await syncResponse.json();
 
         if (syncResult.success) {
-          const message = `Successfully synced ${syncResult.data.processed} customers from ERPNext!`;
+          const message = t('messages.syncSuccess', { count: syncResult.data.processed });
           
           toast.success(message);
 
           // Refresh the customer list
           fetchCustomers();
         } else {
-          const errorMessage = `Failed to sync customers: ${syncResult.message}`;
+          const errorMessage = t('messages.syncError') + ': ' + syncResult.message;
           
           toast.error(errorMessage);
         }
       } else {
         const errorMessage =
           result.data && result.data.length === 0
-            ? 'No customers found in ERPNext'
-            : 'Failed to fetch customers from ERPNext';
+            ? t('messages.syncNoData')
+            : t('messages.syncError');
         
         toast.error(errorMessage);
       }
     } catch (error) {
-      const errorMessage = `Error syncing customers: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      const errorMessage = t('messages.syncError') + ': ' + (error instanceof Error ? error.message : t('messages.errorGeneral'));
       
       toast.error(errorMessage);
     } finally {
@@ -182,7 +187,7 @@ export default function CustomerManagementPage() {
 
   const handleDeleteCustomer = async (customer: Customer) => {
     
-    if (confirm(`Are you sure you want to delete customer "${customer.name}"?`)) {
+    if (confirm(t('messages.deleteConfirm'))) {
       try {
         const response = await fetch(`/api/customers`, {
           method: 'DELETE',
@@ -193,15 +198,15 @@ export default function CustomerManagementPage() {
         });
 
         if (response.ok) {
-          toast.success('Customer deleted successfully!');
+          toast.success(t('messages.deleteSuccess'));
           fetchCustomers(); // Refresh the list
         } else {
           const error = await response.json();
-          toast.error(`Failed to delete customer: ${error.message}`);
+          toast.error(t('messages.deleteError') + ': ' + error.message);
         }
       } catch (error) {
         
-        toast.error('Error deleting customer');
+        toast.error(t('messages.deleteError'));
       }
     }
   };
@@ -214,19 +219,19 @@ export default function CustomerManagementPage() {
 
   const handleExportCustomers = () => {
     
-    toast.info('Export functionality coming soon!');
+    toast.info(t('messages.exportComingSoon'));
   };
 
   const handleImportCustomers = () => {
     
-    toast.info('Import functionality coming soon!');
+    toast.info(t('messages.importComingSoon'));
   };
 
   const getStatusBadge = (status: string) => {
     return status === 'active' ? (
-      <Badge className="bg-green-100 text-green-800">Active</Badge>
+      <Badge className="bg-green-100 text-green-800">{t('status.active')}</Badge>
     ) : (
-      <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>
+      <Badge className="bg-gray-100 text-gray-800">{t('status.inactive')}</Badge>
     );
   };
 
@@ -235,7 +240,7 @@ export default function CustomerManagementPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading customers...</p>
+          <p className="text-muted-foreground">{t('messages.loading')}</p>
         </div>
       </div>
     );
@@ -245,22 +250,22 @@ export default function CustomerManagementPage() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Customer Management</h1>
-          <p className="text-muted-foreground">Manage your customer relationships</p>
+          <h1 className="text-3xl font-bold text-gray-900">{t('title')}</h1>
+          <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleSyncFromERPNext} disabled={syncing}>
-            {syncing ? 'Syncing...' : 'Sync from ERPNext'}
+            {syncing ? t('sync.inProgress') : t('actions.syncFromERPNext')}
           </Button>
           <Button variant="outline" onClick={handleExportCustomers}>
-            Export
+            {t('actions.exportCustomers')}
           </Button>
           <Button variant="outline" onClick={handleImportCustomers}>
-            Import
+            {t('actions.importCustomers')}
           </Button>
           <Button className="bg-primary hover:bg-primary/90" onClick={handleAddCustomer}>
             <Plus className="mr-2 h-4 w-4" />
-            Add Customer
+            {t('actions.addCustomer')}
           </Button>
         </div>
       </div>
@@ -275,20 +280,20 @@ export default function CustomerManagementPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Search & Filter</CardTitle>
+          <CardTitle>{t('search.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSearch} className="flex gap-4">
             <div className="flex-1">
               <Input
-                placeholder="Search by name or email..."
+                placeholder={t('search.placeholder')}
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
             </div>
             <Button type="submit" variant="outline">
               <Search className="mr-2 h-4 w-4" />
-              Search
+              {t('actions.search')}
             </Button>
           </form>
         </CardContent>
@@ -296,18 +301,18 @@ export default function CustomerManagementPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Customers ({filteredCustomers.length})</CardTitle>
+          <CardTitle>{t('search.resultCount', { count: filteredCustomers.length })}</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>{t('table.headers.name')}</TableHead>
+                <TableHead>{t('table.headers.email')}</TableHead>
+                <TableHead>{t('table.headers.phone')}</TableHead>
+                <TableHead>{t('table.headers.status')}</TableHead>
+                <TableHead>{t('table.headers.created')}</TableHead>
+                <TableHead>{t('table.headers.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -351,7 +356,7 @@ export default function CustomerManagementPage() {
 
           {filteredCustomers.length === 0 && (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No customers found</p>
+              <p className="text-muted-foreground">{t('search.noResults')}</p>
             </div>
           )}
         </CardContent>
@@ -364,17 +369,17 @@ export default function CustomerManagementPage() {
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
           >
-            Previous
+            {t('pagination.previous')}
           </Button>
           <span className="flex items-center px-4">
-            Page {currentPage} of {totalPages}
+            {t('pagination.page', { current: currentPage, total: totalPages })}
           </span>
           <Button
             variant="outline"
             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
           >
-            Next
+            {t('pagination.next')}
           </Button>
         </div>
       )}
