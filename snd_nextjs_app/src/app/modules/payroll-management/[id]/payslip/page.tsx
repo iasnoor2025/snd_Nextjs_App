@@ -771,10 +771,10 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       pdf.setFontSize(16);
       pdf.setTextColor(255, 255, 255);
       pdf.text('Samhan Naser Al-Dosri Est.', logoX + logoSize + 15, logoY + 8);
-      
+
       pdf.setFontSize(10);
       pdf.text('For Gen. Contracting & Rent. Equipments', logoX + logoSize + 20, logoY + 16);
-      
+
       // Right side: Payslip title and month
       pdf.setFontSize(14);
       pdf.text('Employee Pay Slip', pageWidth - margin - 10, logoY + 8, { align: 'right' });
@@ -810,16 +810,35 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       pdf.setFontSize(11);
       pdf.text('Employee Information', col1X + 8, col1Y + 4);
       
-      // Content
+      // Content with right-aligned values
       pdf.setTextColor(30, 58, 138); // Dark blue text
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(9);
       let contentY = col1Y + 10;
       const employeeName = employee?.full_name || `${employee?.first_name || ''} ${employee?.last_name || ''}`.trim() || 'Unknown Employee';
-      contentY = addText(`File Number: ${employee?.file_number || '-'}`, col1X + 8, contentY);
-      contentY = addText(`Employee Name: ${employeeName.toUpperCase()}`, col1X + 8, contentY);
-      contentY = addText(`Designation: ${employee?.designation || '-'}`, col1X + 8, contentY);
-      contentY = addText(`Employee ID: ${employee?.id || '-'}`, col1X + 8, contentY);
+      
+      // Right-aligned values for Employee Information
+      const col1LabelX = col1X + 8;
+      const col1ValueX = col1X + columnWidth - 8;
+      
+      pdf.text(`File Number:`, col1LabelX, contentY);
+      pdf.text(`${employee?.file_number || '-'}`, col1ValueX, contentY, { align: 'right' });
+      contentY += 4;
+      
+      pdf.text(`Employee Name:`, col1LabelX, contentY);
+      // Highlight employee name with different color and font weight
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10); // Slightly larger font
+      pdf.setTextColor(59, 130, 246); // Blue color to make it stand out
+      pdf.text(`${employeeName.toUpperCase()}`, col1ValueX, contentY, { align: 'right' });
+      // Reset to normal styling
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(30, 58, 138); // Reset to dark blue text
+      contentY += 4;
+      
+      pdf.text(`Designation:`, col1LabelX, contentY);
+      pdf.text(`${employee?.designation || '-'}`, col1ValueX, contentY, { align: 'right' });
 
       // Column 2: Pay Period Details - Green Theme
       const col2X = margin + columnWidth + 10;
@@ -841,7 +860,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       pdf.setFontSize(11);
       pdf.text('Pay Period Details', col2X + 8, col2Y + 4);
       
-      // Content
+      // Content with right-aligned values
       pdf.setTextColor(21, 128, 61); // Dark green text
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(9);
@@ -850,10 +869,21 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       const endDate = new Date(payroll.year, payroll.month, 0);
       const formattedStartDate = startDate.toLocaleDateString();
       const formattedEndDate = endDate.toLocaleDateString();
-      contentY = addText(`Pay Period: ${monthName} ${payroll.year}`, col2X + 8, contentY);
-      contentY = addText(`Date Range: ${formattedStartDate} - ${formattedEndDate}`, col2X + 8, contentY);
-      contentY = addText(`Status: ${payroll.status}`, col2X + 8, contentY);
-      contentY = addText(`Payroll ID: #${payroll.id}`, col2X + 8, contentY);
+      
+      // Right-aligned values for Pay Period Details
+      const col2LabelX = col2X + 8;
+      const col2ValueX = col2X + columnWidth - 8;
+      
+      pdf.text(`Pay Period:`, col2LabelX, contentY);
+      pdf.text(`${monthName} ${payroll.year}`, col2ValueX, contentY, { align: 'right' });
+      contentY += 4;
+      
+      pdf.text(`Date Range:`, col2LabelX, contentY);
+      pdf.text(`${formattedStartDate} - ${formattedEndDate}`, col2ValueX, contentY, { align: 'right' });
+      contentY += 4;
+      
+      pdf.text(`Status:`, col2LabelX, contentY);
+      pdf.text(`${payroll.status}`, col2ValueX, contentY, { align: 'right' });
 
       // Column 3: Salary Summary - Purple Theme
       const col3X = margin + 2 * columnWidth + 20;
@@ -875,14 +905,26 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       pdf.setFontSize(11);
       pdf.text('Salary Summary', col3X + 8, col3Y + 4);
       
-      // Content
+      // Content with right-aligned values
       pdf.setTextColor(88, 28, 135); // Dark purple text
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(9);
       contentY = col3Y + 10;
-      contentY = addText(`Basic Salary: ${formatCurrencyForPDF(basicSalary)}`, col3X + 8, contentY);
-      contentY = addText(`Overtime Pay: ${formatCurrencyForPDF(overtimeAmount)}`, col3X + 8, contentY);
-      contentY = addText(`Net Salary: ${formatCurrencyForPDF(netSalary)}`, col3X + 8, contentY);
+      
+      // Right-aligned values for Salary Summary
+      const col3LabelX = col3X + 8;
+      const col3ValueX = col3X + columnWidth - 8;
+      
+      pdf.text(`Basic Salary:`, col3LabelX, contentY);
+      pdf.text(`${formatCurrencyForPDF(basicSalary)}`, col3ValueX, contentY, { align: 'right' });
+      contentY += 4;
+      
+      pdf.text(`Overtime Pay:`, col3LabelX, contentY);
+      pdf.text(`${formatCurrencyForPDF(overtimeAmount)}`, col3ValueX, contentY, { align: 'right' });
+      contentY += 4;
+      
+      pdf.text(`Net Salary:`, col3LabelX, contentY);
+      pdf.text(`${formatCurrencyForPDF(netSalary)}`, col3ValueX, contentY, { align: 'right' });
 
       // Find the highest Y position from the 3 columns
       const firstRowHeight = firstRowY + columnHeight + 8;
@@ -923,14 +965,23 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       pdf.setFillColor(248, 250, 252);
       pdf.rect(margin, tableStartY + 3 * rowHeight, tableWidth, rowHeight, 'F');
       
-      // Highlight Friday columns with light orange
+      // Color individual cells based on content (F, A, 8)
       for (let day = 1; day <= daysInMonth; day++) {
+        const dateString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayData = attendanceMap.get(dateString);
         const date = new Date(payroll.year, payroll.month - 1, day);
         const dayOfWeek = date.getDay();
+        const x = margin + (day - 1) * cellWidth;
+        
         if (dayOfWeek === 5) { // Friday
-          const x = margin + (day - 1) * cellWidth;
-          pdf.setFillColor(255, 237, 213); // Light orange
-          pdf.rect(x, tableStartY, cellWidth, totalTableHeight, 'F');
+          pdf.setFillColor(255, 237, 213); // Light orange for Friday
+          pdf.rect(x, tableStartY + 2 * rowHeight, cellWidth, rowHeight, 'F');
+        } else if (dayData && Number(dayData.hours) > 0) {
+          pdf.setFillColor(220, 252, 231); // Light green for working days
+          pdf.rect(x, tableStartY + 2 * rowHeight, cellWidth, rowHeight, 'F');
+        } else {
+          pdf.setFillColor(254, 226, 226); // Light red for absent days
+          pdf.rect(x, tableStartY + 2 * rowHeight, cellWidth, rowHeight, 'F');
         }
       }
       
@@ -972,24 +1023,37 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
         pdf.text(dayName.substring(0, 1).toUpperCase(), x + cellWidth / 2, y, { align: 'center' });
       }
 
-      // Regular Hours row (third row)
+      // Regular Hours row (third row) - Show F for Friday, A for absent, 8 for working days
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(9);
-      pdf.setTextColor(55, 65, 81);
       for (let day = 1; day <= daysInMonth; day++) {
         const dateString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const dayData = attendanceMap.get(dateString);
+        const date = new Date(payroll.year, payroll.month - 1, day);
+        const dayOfWeek = date.getDay();
         const x = margin + (day - 1) * cellWidth;
         const y = tableStartY + 2 * rowHeight + rowHeight / 2 + 1.5;
         
-        if (dayData && Number(dayData.hours) > 0) {
-          pdf.text(Number(dayData.hours).toString(), x + cellWidth / 2, y, { align: 'center' });
+        if (dayOfWeek === 5) { // Friday
+          pdf.setTextColor(59, 130, 246); // Blue color for Friday (holiday)
+          pdf.text('F', x + cellWidth / 2, y, { align: 'center' });
+        } else if (dayData && Number(dayData.hours) > 0) {
+          const hours = Number(dayData.hours);
+          if (hours >= 8) {
+            pdf.setTextColor(34, 197, 94); // Green color for Present (8+ hours)
+            pdf.text('P', x + cellWidth / 2, y, { align: 'center' });
+          } else {
+            pdf.setTextColor(34, 197, 94); // Green color for partial hours
+            pdf.text(hours.toString(), x + cellWidth / 2, y, { align: 'center' });
+          }
         } else {
-          pdf.text('-', x + cellWidth / 2, y, { align: 'center' });
+          pdf.setTextColor(239, 68, 68); // Red color for absent
+          pdf.text('A', x + cellWidth / 2, y, { align: 'center' });
         }
       }
 
-      // Overtime Hours row (fourth row)
+      // Overtime Hours row (fourth row) - Pink color to stand out
+      pdf.setTextColor(220, 38, 127); // Pink color for overtime hours
       for (let day = 1; day <= daysInMonth; day++) {
         const dateString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const dayData = attendanceMap.get(dateString);
@@ -1007,7 +1071,7 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(8);
       pdf.setTextColor(107, 114, 128);
-      pdf.text('Legend: 8 = regular hours, More than 8 = overtime hours, A = absent, F = Friday (present if working days before/after)', margin, tableStartY + totalTableHeight + 8);
+      pdf.text('Legend: P = Present (8+ hours), 6/7 = Partial hours, A = absent, F = Friday (holiday)', margin, tableStartY + totalTableHeight + 8);
 
       // ===== THIRD ROW - WORKING HOURS & SALARY BREAKDOWN =====
       const thirdRowY = tableStartY + 35; // Moved down to prevent overlapping with attendance record
@@ -1079,7 +1143,11 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       leftY += 5; // Increased row spacing
       
       pdf.text(`Absent Days Deduction:`, leftLabelX, leftY);
+      if (absentDays > 0) {
+        pdf.setTextColor(239, 68, 68); // Red color for absent deduction
+      }
       pdf.text(`-${formatCurrencyForPDF(absentDeduction)}`, leftValueX, leftY, { align: 'right' });
+      pdf.setTextColor(120, 53, 15); // Reset to dark orange text
       leftY += 5; // Increased row spacing
 
       // Right side: Salary Breakdown - Teal Theme
@@ -1140,11 +1208,19 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       
       // DEDUCTIONS section with right-aligned values
       pdf.text(`Absent Days Deduction:`, labelX, rightY);
+      if (absentDays > 0) {
+        pdf.setTextColor(239, 68, 68); // Red color for absent deduction
+      }
       pdf.text(`-${formatCurrencyForPDF(absentDeduction)}`, valueX, rightY, { align: 'right' });
+      pdf.setTextColor(15, 118, 110); // Reset to dark teal text
       rightY += 5; // Increased row spacing
       
       pdf.text(`Advance Deduction:`, labelX, rightY);
+      if (advanceDeduction > 0) {
+        pdf.setTextColor(239, 68, 68); // Red color for advance deduction
+      }
       pdf.text(`-${formatCurrencyForPDF(advanceDeduction)}`, valueX, rightY, { align: 'right' });
+      pdf.setTextColor(15, 118, 110); // Reset to dark teal text
       rightY += 5; // Increased row spacing
       
       pdf.setFont('helvetica', 'bold');
