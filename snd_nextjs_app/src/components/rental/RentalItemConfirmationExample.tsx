@@ -6,7 +6,8 @@ import {
   RentalItemDetailedConfirmationDialog,
   RentalItemData 
 } from './index';
-import { useRentalItemConfirmation, useRentalItemDetailedConfirmation } from '@/hooks/use-rental-item-detailed-confirmation';
+import { useRentalItemConfirmation } from '@/hooks/use-rental-item-confirmation';
+import { useRentalItemDetailedConfirmation } from '@/hooks/use-rental-item-detailed-confirmation';
 
 const RentalItemConfirmationExample: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
