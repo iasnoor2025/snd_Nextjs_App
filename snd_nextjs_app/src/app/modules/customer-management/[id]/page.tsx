@@ -175,7 +175,7 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
 
   const formatCurrency = (amount: number | null) => {
     if (amount === null || amount === undefined) return 'SAR 0.00';
-    return new Intl.NumberFormat('ar-SA', {
+    return new Intl.NumberFormat(isRTL ? 'ar-SA' : 'en-US', {
       style: 'currency',
       currency: 'SAR',
     }).format(amount);
@@ -183,7 +183,7 @@ function CustomerDetailClient({ customerId }: { customerId: string }) {
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return t('common.notAvailable');
-    return new Date(dateString).toLocaleDateString('ar-SA', {
+    return new Date(dateString).toLocaleDateString(isRTL ? 'ar-SA' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

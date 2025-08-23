@@ -15,7 +15,7 @@ interface RecentActivityProps {
 }
 
 export function RecentActivity({ activities, onHideSection, currentUser, onRefresh }: RecentActivityProps) {
-  const { t } = useI18n();
+  const { t, isRTL } = useI18n();
 
   // Ensure activities is always an array
   const safeActivities = activities || [];
@@ -90,7 +90,7 @@ export function RecentActivity({ activities, onHideSection, currentUser, onRefre
         return t('dashboard.daysAgo', { days: diffInDays });
       } else {
         // Show full date and time for older entries with Saudi Arabia timezone
-        return date.toLocaleString('ar-SA', {
+        return date.toLocaleString(isRTL ? 'ar-SA' : 'en-US', {
           year: 'numeric',
           month: 'short',
           day: 'numeric',

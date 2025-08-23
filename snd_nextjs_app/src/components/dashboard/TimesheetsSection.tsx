@@ -98,7 +98,7 @@ export function TimesheetsSection({
               {t('timesheet.attendanceDescription')}
               <span className="ml-2 text-muted-foreground">
                 (
-                              {currentTime.toLocaleDateString('ar-SA', {
+                              {currentTime.toLocaleDateString(isRTL ? 'ar-SA' : 'en-US', {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
