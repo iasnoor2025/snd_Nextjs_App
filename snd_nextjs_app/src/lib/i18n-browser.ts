@@ -120,7 +120,6 @@ export const initializeI18n = () => {
   }
 
   if (i18n.isInitialized) {
-    console.log('i18n already initialized');
     return Promise.resolve();
   }
 
