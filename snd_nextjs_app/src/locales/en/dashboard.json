@@ -148,5 +148,7 @@
   "hideSection": "Hide Section",
   "showSection": "Show Section",
   "resetToDefault": "Reset to Default",
-  "loadingSections": "Loading sections..."
+  "loadingSections": "Loading sections...",
+  "failedToUpdateIqama": "Failed to update Iqama",
+  "iqamaUpdatedSuccessfully": "Iqama updated successfully"
 }

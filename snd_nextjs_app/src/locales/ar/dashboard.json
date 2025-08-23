@@ -162,6 +162,7 @@
   "timesheetRejectedSuccessfully": "تم رفض الجدول الزمني بنجاح",
   "failedToFetchDashboardData": "فشل في جلب بيانات لوحة التحكم",
   "failedToUpdateIqama": "فشل في تحديث الإقامة",
+  "iqamaUpdatedSuccessfully": "تم تحديث الإقامة بنجاح",
   "failedToFetchTimesheetData": "فشل في جلب بيانات الجدول الزمني",
   "failedToFetchIqamaData": "فشل في جلب بيانات الإقامة",
   "failedToFetchEquipmentData": "فشل في جلب بيانات المعدات",

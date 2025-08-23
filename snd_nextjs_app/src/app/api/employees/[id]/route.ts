@@ -312,6 +312,10 @@ const updateEmployeeHandler = async (
     const updateDataRaw: Record<string, any> = body || {};
     const drizzleData: Record<string, any> = {};
 
+    // Debug logging
+    console.log('Update request body:', body);
+    console.log('Employee ID:', employeeId);
+
     const dateFields = [
       'hire_date',
       'date_of_birth',
@@ -456,6 +460,9 @@ const updateEmployeeHandler = async (
           Math.round((Number(drizzleData.basicSalary) / (days * hours)) * 100) / 100;
       }
     }
+
+    // Debug logging
+    console.log('Drizzle update data:', drizzleData);
 
     // Update employee in database using Drizzle
     const updatedEmployeeRows = await db
