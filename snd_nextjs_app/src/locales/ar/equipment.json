@@ -120,6 +120,15 @@
     "updateExpiryDate": "تحديث تاريخ انتهاء صلاحية الإستمارة",
     "noRecordsFound": "لم يتم العثور على سجلات معدات",
     "tryAdjustingSearch": "حاول تعديل البحث أو الفلاتر",
+    "allRecordsValid": "جميع سجلات إستمارة المعدات صالحة حالياً",
+    "noExpiredRecords": "لم يتم العثور على سجلات معدات منتهية الصلاحية للتحميل.",
+    "pdfGenerationFailed": "فشل في توليد PDF. يرجى المحاولة مرة أخرى.",
+    "noExpiredRecordsToDownload": "لا توجد سجلات معدات منتهية الصلاحية للتحميل",
+    "downloadPdfReport": "تحميل تقرير PDF لـ {{count}} سجل معدات منتهية الصلاحية",
+    "itemsRequiringAttention": "العناصر التي تحتاج إلى اهتمام",
+    "addIstimaraExpiryDate": "إضافة تاريخ انتهاء صلاحية الإستمارة",
+    "updateIstimaraExpiryDate": "تحديث تاريخ انتهاء صلاحية الإستمارة",
+    "tryAdjustingSearchOrFilters": "حاول تعديل البحث أو الفلاتر",
     "allRecordsValid": "جميع سجلات إستمارة المعدات صالحة حالياً"
   }
 }

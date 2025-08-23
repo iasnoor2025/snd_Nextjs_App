@@ -94,7 +94,7 @@ export function FinancialOverviewSection({ onHideSection }: FinancialOverviewSec
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            {t('financial.comprehensiveOverview') || 'Comprehensive Financial Overview'}
+            {t('financial.comprehensiveOverview')}
           </CardTitle>
         </CardHeader>
         <CardContent>

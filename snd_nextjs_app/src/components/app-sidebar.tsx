@@ -47,7 +47,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   // Define all possible menu items with their routes
   const allMenuItems = [
     {
-      title: 'Dashboard',
+      title: t('dashboard'),
       icon: LayoutDashboard,
       url: '/',
     },
@@ -72,17 +72,17 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: Users,
     },
     {
-      title: 'Skills Management',
+      title: t('skillsManagement'),
       url: '/modules/employee-management/skills',
       icon: Award,
     },
     {
-      title: 'Training Programs',
+      title: t('trainingPrograms'),
       url: '/modules/employee-management/training',
       icon: BookOpen,
     },
     {
-      title: 'Performance Reviews',
+      title: t('performanceReviews'),
       url: '/modules/employee-management/performance-reviews',
       icon: Star,
     },

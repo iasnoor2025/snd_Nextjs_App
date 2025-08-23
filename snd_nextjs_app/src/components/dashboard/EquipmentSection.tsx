@@ -83,14 +83,14 @@ export function EquipmentSection({
   // Handle PDF download for expired equipment
   const handleDownloadExpiredPDF = async () => {
     if (expiredEquipmentData.length === 0) {
-      alert('No expired equipment records found to download.');
+      alert(t('equipment.istimara.noExpiredRecords'));
       return;
     }
     try {
       await PDFGenerator.generateExpiredEquipmentReport(expiredEquipmentData);
     } catch (error) {
       console.error('Failed to generate PDF:', error);
-      alert('Failed to generate PDF. Please try again.');
+      alert(t('equipment.istimara.pdfGenerationFailed'));
     }
   };
 
@@ -156,7 +156,7 @@ export function EquipmentSection({
                 onClick={handleDownloadExpiredPDF}
                 disabled={expiredEquipmentData.length === 0}
                 className="flex items-center gap-2"
-                title={expiredEquipmentData.length === 0 ? 'No expired equipment records to download' : `Download PDF report for ${expiredEquipmentData.length} expired equipment records`}
+                title={expiredEquipmentData.length === 0 ? t('equipment.istimara.noExpiredRecordsToDownload') : t('equipment.istimara.downloadPdfReport', { count: expiredEquipmentData.length })}
               >
                 <Download className="h-4 w-4" />
                 Download PDF ({expiredEquipmentData.length})
@@ -191,7 +191,7 @@ export function EquipmentSection({
                  Total Equipment: {safeEquipmentData.length}
                </div>
                <div className="text-sm text-muted-foreground">
-                 Items Requiring Attention: {safeEquipmentData.filter(item => item.status !== 'available').length}
+                 {t('equipment.istimara.itemsRequiringAttention')}: {safeEquipmentData.filter(item => item.status !== 'available').length}
                </div>
              </div>
              <div>
@@ -403,8 +403,8 @@ export function EquipmentSection({
                           className="h-8 w-8 p-0"
                                                      title={
                              item.status === 'missing'
-                               ? 'Add Istimara expiry date'
-                               : 'Update Istimara expiry date'
+                                       ? t('equipment.istimara.addIstimaraExpiryDate')
+        : t('equipment.istimara.updateIstimaraExpiryDate')
                            }
                         >
                           <Edit className="h-4 w-4" />
@@ -492,8 +492,8 @@ export function EquipmentSection({
              <p className="font-medium">No equipment records found</p>
              <p className="text-sm opacity-80">
                {search || statusFilter !== 'all'
-                 ? 'Try adjusting your search or filters'
-                 : 'All equipment Istimara records are currently valid'}
+                         ? t('equipment.istimara.tryAdjustingSearchOrFilters')
+        : t('equipment.istimara.allRecordsValid')}
              </p>
            </div>
          )}

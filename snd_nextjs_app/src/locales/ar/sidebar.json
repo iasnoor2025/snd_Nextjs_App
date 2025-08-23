@@ -4,6 +4,9 @@
   "customerManagement": "إدارة العملاء",
   "companyManagement": "إدارة الشركة",
   "employeeManagement": "إدارة الموظفين",
+  "skillsManagement": "إدارة المهارات",
+  "trainingPrograms": "برامج التدريب",
+  "performanceReviews": "مراجعات الأداء",
   "equipmentManagement": "إدارة المعدات",
   "maintenanceManagement": "الصيانة والإصلاحات",
   "rentalManagement": "إدارة التأجير",
@@ -23,6 +26,5 @@
   "search": "البحث",
   "analytics": "التحليلات",
   "auditCompliance": "المراجعة والامتثال",
-
-  "appTitle": "إدارة التأجير"
+  "appTitle": "إدارة التأجير SND"
 }

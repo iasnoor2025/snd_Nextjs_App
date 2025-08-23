@@ -117,7 +117,7 @@ export default function DashboardPage() {
       setLoading(true);
       const response = await fetch('/api/dashboard');
       if (!response.ok) {
-        throw new Error('Failed to fetch dashboard data');
+        throw new Error(t('dashboard.failedToFetchDashboardData'));
       }
       const data = await response.json();
 
@@ -151,7 +151,7 @@ export default function DashboardPage() {
       setRefreshingTimesheets(true);
       const response = await fetch('/api/timesheets/today');
       if (!response.ok) {
-        throw new Error('Failed to fetch timesheet data');
+        throw new Error(t('dashboard.failedToFetchTimesheetData'));
       }
       const data = await response.json();
       setTimesheetData(data.timesheetData || []);
@@ -168,7 +168,7 @@ export default function DashboardPage() {
       setUpdatingIqama(true);
       const response = await fetch('/api/employees/iqama');
       if (!response.ok) {
-        throw new Error('Failed to fetch Iqama data');
+        throw new Error(t('dashboard.failedToFetchIqamaData'));
       }
       const data = await response.json();
       setIqamaData(data.iqamaData || []);
@@ -185,7 +185,7 @@ export default function DashboardPage() {
       setUpdatingEquipment(true);
       const response = await fetch('/api/equipment/dashboard');
       if (!response.ok) {
-        throw new Error('Failed to fetch Equipment data');
+        throw new Error(t('dashboard.failedToFetchEquipmentData'));
       }
       const data = await response.json();
       setEquipmentData(data.equipmentData || []);
@@ -201,7 +201,7 @@ export default function DashboardPage() {
     try {
       const response = await fetch('/api/dashboard');
       if (!response.ok) {
-        throw new Error('Failed to fetch dashboard data');
+        throw new Error(t('dashboard.failedToFetchDashboardData'));
       }
       const data = await response.json();
       setActivities(data.recentActivity || []);
@@ -291,7 +291,7 @@ export default function DashboardPage() {
         // Only refresh Iqama data instead of full dashboard
         await fetchIqamaData();
       } else {
-        throw new Error('Failed to update Iqama');
+        throw new Error(t('dashboard.failedToUpdateIqama'));
       }
     } catch (error) {
       // Handle error silently for production
@@ -323,7 +323,7 @@ export default function DashboardPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setApprovalSuccess(data.message || 'Equipment updated successfully');
+        setApprovalSuccess(data.message || t('dashboard.equipmentUpdatedSuccessfully'));
         setIsEquipmentUpdateModalOpen(false);
         setNewEquipmentExpiryDate('');
         setNewEquipmentIstimara('');
@@ -333,11 +333,11 @@ export default function DashboardPage() {
         setTimeout(() => setApprovalSuccess(null), 5000);
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to update equipment');
+        throw new Error(errorData.error || t('dashboard.failedToUpdateEquipment'));
       }
     } catch (error) {
       console.error('Equipment update error:', error);
-      setApprovalSuccess(`Error: ${error instanceof Error ? error.message : 'Failed to update equipment'}`);
+              setApprovalSuccess(`Error: ${error instanceof Error ? error.message : t('dashboard.failedToUpdateEquipment')}`);
       setTimeout(() => setApprovalSuccess(null), 5000);
     } finally {
       setUpdatingEquipment(false);
@@ -355,7 +355,7 @@ export default function DashboardPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setApprovalSuccess(data.message || 'Timesheet approved successfully');
+        setApprovalSuccess(data.message || t('dashboard.timesheetApprovedSuccessfully'));
         // Only refresh timesheet data instead of full dashboard
         await fetchTimesheetData();
         setTimeout(() => setApprovalSuccess(null), 5000);
@@ -376,11 +376,11 @@ export default function DashboardPage() {
       const response = await fetch(`/api/timesheets/${id}/reject`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rejectionReason: 'Rejected by supervisor' }),
+        body: JSON.stringify({ rejectionReason: t('dashboard.rejectedBySupervisor') }),
       });
 
       if (response.ok) {
-        setApprovalSuccess('Timesheet rejected successfully');
+        setApprovalSuccess(t('dashboard.timesheetRejectedSuccessfully'));
         // Only refresh timesheet data instead of full dashboard
         await fetchTimesheetData();
         setTimeout(() => setApprovalSuccess(null), 5000);
@@ -401,11 +401,11 @@ export default function DashboardPage() {
       const response = await fetch(`/api/timesheets/${id}/mark-absent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ notes: 'Marked absent by supervisor' }),
+        body: JSON.stringify({ notes: t('dashboard.markedAbsentBySupervisor') }),
       });
 
       if (response.ok) {
-        setApprovalSuccess('Employee marked as absent');
+        setApprovalSuccess(t('dashboard.employeeMarkedAsAbsent'));
         // Only refresh timesheet data instead of full dashboard
         await fetchTimesheetData();
         setTimeout(() => setApprovalSuccess(null), 5000);
@@ -450,7 +450,7 @@ export default function DashboardPage() {
         setEditHours('');
         setEditOvertimeHours('');
         setSelectedTimesheetForEdit(null);
-        setApprovalSuccess('Hours updated successfully');
+        setApprovalSuccess(t('dashboard.hoursUpdatedSuccessfully'));
         // Only refresh timesheet data instead of full dashboard
         await fetchTimesheetData();
         setTimeout(() => setApprovalSuccess(null), 5000);
@@ -509,7 +509,7 @@ export default function DashboardPage() {
     const expiredEquipmentData = equipmentData.filter(item => item.status === 'expired');
     
     if (expiredIqamaData.length === 0 && expiredEquipmentData.length === 0) {
-      alert('No expired documents found to download.');
+      alert(t('dashboard.noExpiredDocumentsFound'));
       return;
     }
     
@@ -535,7 +535,7 @@ export default function DashboardPage() {
       await PDFGenerator.generateCombinedExpiredReport(pdfIqamaData, pdfEquipmentData);
     } catch (error) {
       console.error('Failed to generate PDF:', error);
-      alert('Failed to generate PDF. Please try again.');
+      alert(t('dashboard.pdfGenerationFailed'));
     }
   };
 
@@ -597,10 +597,10 @@ export default function DashboardPage() {
                 equipmentData.filter(item => item.status === 'expired').length === 0
               }
               className="flex items-center gap-2"
-              title={`Download combined PDF report for all expired documents (${iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length} total)`}
+              title={t('dashboard.downloadAllExpiredPdfTitle', { count: iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length })}
             >
               <Download className="h-4 w-4" />
-              Download All Expired PDF ({iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length})
+              {t('dashboard.downloadAllExpiredPdf', { count: iqamaData.filter(item => item.status === 'expired').length + equipmentData.filter(item => item.status === 'expired').length })}
             </Button>
             <Button
               variant="outline"
@@ -723,7 +723,7 @@ export default function DashboardPage() {
           <RecentActivity
             activities={activities}
             onHideSection={() => toggleSection('recentActivity')}
-            currentUser={session?.user?.name || 'Unknown User'}
+            currentUser={session?.user?.name || t('dashboard.unknownUser')}
             onRefresh={fetchRecentActivity}
           />
         )}

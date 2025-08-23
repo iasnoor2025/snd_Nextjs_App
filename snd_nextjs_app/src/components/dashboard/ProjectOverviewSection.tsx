@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Calendar, Users, TrendingUp, Eye, Target, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { ActiveProject } from '@/lib/services/dashboard-service';
+import { useI18n } from '@/hooks/use-i18n';
 
 interface ProjectOverviewSectionProps {
   projectData: ActiveProject[];
@@ -19,6 +20,7 @@ export default function ProjectOverviewSection({
   onUpdateProject,
 }: ProjectOverviewSectionProps) {
   const router = useRouter();
+  const { t } = useI18n();
   const [statusFilter, setStatusFilter] = useState('all');
 
   // Ensure projectData is always an array
@@ -83,7 +85,7 @@ export default function ProjectOverviewSection({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Target className="h-5 w-5" />
-          Project Overview
+          {t('dashboard.projectOverview.title')}
         </CardTitle>
       </CardHeader>
 
@@ -94,7 +96,7 @@ export default function ProjectOverviewSection({
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Projects</p>
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">{t('dashboard.projectOverview.totalProjects')}</p>
                   <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{summaryStats.total}</p>
                 </div>
                 <div className="p-3 bg-blue-200 dark:bg-blue-800 rounded-full">
@@ -108,7 +110,7 @@ export default function ProjectOverviewSection({
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-green-600 dark:text-green-400">Active Projects</p>
+                  <p className="text-sm font-medium text-green-600 dark:text-green-400">{t('dashboard.projectOverview.activeProjects')}</p>
                   <p className="text-2xl font-bold text-green-900 dark:text-green-100">{summaryStats.active}</p>
                 </div>
                 <div className="p-3 bg-green-200 dark:bg-green-800 rounded-full">
@@ -122,7 +124,7 @@ export default function ProjectOverviewSection({
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Completed</p>
+                  <p className="text-sm font-medium text-purple-600 dark:text-purple-400">{t('dashboard.projectOverview.completedProjects')}</p>
                   <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">{summaryStats.completed}</p>
                 </div>
                 <div className="p-3 bg-purple-200 dark:bg-purple-800 rounded-full">
@@ -136,7 +138,7 @@ export default function ProjectOverviewSection({
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Total Budget</p>
+                  <p className="text-sm font-medium text-orange-600 dark:text-orange-400">{t('dashboard.projectOverview.totalBudget')}</p>
                   <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">
                     SAR {summaryStats.totalBudget.toLocaleString()}
                   </p>
@@ -152,17 +154,17 @@ export default function ProjectOverviewSection({
         {/* Filters */}
         <div className="flex flex-wrap gap-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('dashboard.projectOverview.status')}:</span>
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
               className="px-3 py-2 text-sm border border-gray-300 rounded-md bg-white dark:bg-gray-800 dark:border-gray-600"
             >
-              <option value="all">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="completed">Completed</option>
-              <option value="on-hold">On Hold</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="all">{t('dashboard.projectOverview.allStatuses')}</option>
+              <option value="active">{t('dashboard.projectOverview.active')}</option>
+              <option value="completed">{t('dashboard.projectOverview.completed')}</option>
+              <option value="on-hold">{t('dashboard.projectOverview.onHold')}</option>
+              <option value="cancelled">{t('dashboard.projectOverview.cancelled')}</option>
             </select>
           </div>
         </div>
@@ -174,10 +176,10 @@ export default function ProjectOverviewSection({
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
             </div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              Loading projects...
+              {t('dashboard.projectOverview.loadingProjects')}
             </h3>
             <p className="text-gray-600 dark:text-gray-400">
-              Fetching project data from database
+              {t('dashboard.projectOverview.fetchingProjectData')}
             </p>
           </div>
         ) : (

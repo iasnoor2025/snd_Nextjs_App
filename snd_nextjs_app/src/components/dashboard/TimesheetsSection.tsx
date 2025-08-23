@@ -98,12 +98,12 @@ export function TimesheetsSection({
               {t('timesheet.attendanceDescription')}
               <span className="ml-2 text-muted-foreground">
                 (
-                {currentTime.toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
+                              {currentTime.toLocaleDateString('ar-SA', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
                 )
               </span>
             </CardDescription>
