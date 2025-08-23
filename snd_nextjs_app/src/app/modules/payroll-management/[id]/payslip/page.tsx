@@ -1,37 +1,12 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { usePrint } from '@/hooks/use-print';
 import { loadJsPDF } from '@/lib/client-libraries';
 import {
   ArrowLeft,
-  Building,
-  Calendar,
-  Clock,
-  DollarSign,
   Download,
-  FileText,
-  MapPin,
   Printer,
-  User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
@@ -733,76 +708,496 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
     try {
       const jsPDF = await loadJsPDF();
 
-      // Create PDF using jsPDF only (without html2canvas)
+      // Create PDF using jsPDF with exact payslip layout
       const pdf = new jsPDF('landscape', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 20;
+      const margin = 15;
+      let yPosition = margin;
 
-      // Set font
+      // Helper function to add text with proper positioning
+      const addText = (text: string, x: number, y: number, options: any = {}) => {
+        pdf.text(text, x, y, options);
+        return y + 4; // Fixed spacing between lines
+      };
+
+      // Helper function to draw a line
+      const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
+        pdf.line(x1, y1, x2, y2);
+      };
+
+      // Helper function to draw a rectangle
+      const drawRect = (x: number, y: number, w: number, h: number, fill: boolean = false) => {
+        if (fill) {
+          pdf.setFillColor(30, 64, 175); // Blue color
+          pdf.rect(x, y, w, h, 'F');
+        } else {
+          pdf.rect(x, y, w, h);
+        }
+      };
+
+      // Helper function to format currency
+      const formatCurrencyForPDF = (amount: number) => {
+        return new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'SAR',
+          minimumFractionDigits: 2,
+        }).format(amount);
+      };
+
+      // ===== PAYSLIP HEADER SECTION =====
+      // Header background
+      pdf.setFillColor(30, 64, 175); // Dark blue background
+      pdf.rect(margin, yPosition, pageWidth - 2 * margin, 20, 'F');
+      
+      // Left side: Company Logo and Name (like payslip)
+      const logoSize = 20;
+      const logoX = margin + 8;
+      const logoY = yPosition + 2;
+      
+      // Add the actual SND logo image from your payslip
+      // You need to add the logo image file to your project
+      try {
+        // Using the real SND logo from your project
+        pdf.addImage('/snd-logo.png', 'PNG', logoX, logoY, logoSize, logoSize);
+      } catch (error) {
+        // Fallback if image loading fails
+        pdf.setFillColor(255, 255, 255);
+        pdf.rect(logoX, logoY, logoSize, logoSize, 'F');
+      }
+      
+      // Company name and subtitle on LEFT SIDE (like your payslip)
       pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(24);
-
-      // Company header
-      pdf.text('C.A.T. INTERNATIONAL L.L.L.C.', pageWidth / 2, margin, { align: 'center' });
-
+      pdf.setFontSize(16);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('Samhan Naser Al-Dosri Est.', logoX + logoSize + 15, logoY + 8);
+      
+      pdf.setFontSize(10);
+      pdf.text('For Gen. Contracting & Rent. Equipments', logoX + logoSize + 20, logoY + 16);
+      
+      // Right side: Payslip title and month
       pdf.setFontSize(14);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('Equipment Rental & Construction Services', pageWidth / 2, margin + 15, {
-        align: 'center',
-      });
+      pdf.text('Employee Pay Slip', pageWidth - margin - 10, logoY + 8, { align: 'right' });
+      
+      const monthName = new Date(payroll.year, payroll.month - 1).toLocaleDateString('en-US', { month: 'long' });
+      pdf.setFontSize(10);
+      pdf.text(`${monthName} ${payroll.year}`, pageWidth - margin - 10, logoY + 16, { align: 'right' });
 
-      // Payslip title
-      pdf.setFontSize(20);
+      yPosition += 25; // Space after header
+
+      // ===== FIRST ROW - 3 COLUMNS =====
+      const firstRowY = yPosition;
+      const columnHeight = 25;
+      const columnWidth = (pageWidth - 2 * margin - 20) / 3; // 3 columns with spacing
+
+      // Column 1: Employee Information - Blue Theme
+      const col1X = margin;
+      const col1Y = firstRowY;
+      
+      // Background with rounded corners effect
+      pdf.setFillColor(219, 234, 254); // Light blue background
+      pdf.rect(col1X, col1Y, columnWidth, columnHeight, 'F');
+      pdf.setDrawColor(59, 130, 246); // Blue border
+      pdf.setLineWidth(0.8);
+      pdf.rect(col1X, col1Y, columnWidth, columnHeight);
+      
+      // Header with accent line
+      pdf.setFillColor(59, 130, 246); // Blue accent
+      pdf.rect(col1X, col1Y, columnWidth, 6, 'F');
+      
+      pdf.setTextColor(255, 255, 255); // White text for header
       pdf.setFont('helvetica', 'bold');
-      pdf.text('PAYSLIP', pageWidth / 2, margin + 40, { align: 'center' });
-
-      // Employee information
-      pdf.setFontSize(12);
+      pdf.setFontSize(11);
+      pdf.text('Employee Information', col1X + 8, col1Y + 4);
+      
+      // Content
+      pdf.setTextColor(30, 58, 138); // Dark blue text
       pdf.setFont('helvetica', 'normal');
-      const employeeName = payslipData?.employee?.full_name || 'Unknown Employee';
-      const employeeId = payslipData?.employee?.file_number || payslipData?.employee?.id;
-      const monthName = new Date(
-        payslipData?.payroll.year || 0,
-        (payslipData?.payroll.month || 1) - 1
-      ).toLocaleDateString('en-US', { month: 'long' });
+      pdf.setFontSize(9);
+      let contentY = col1Y + 10;
+      const employeeName = employee?.full_name || `${employee?.first_name || ''} ${employee?.last_name || ''}`.trim() || 'Unknown Employee';
+      contentY = addText(`File Number: ${employee?.file_number || '-'}`, col1X + 8, contentY);
+      contentY = addText(`Employee Name: ${employeeName.toUpperCase()}`, col1X + 8, contentY);
+      contentY = addText(`Designation: ${employee?.designation || '-'}`, col1X + 8, contentY);
+      contentY = addText(`Employee ID: ${employee?.id || '-'}`, col1X + 8, contentY);
 
-      pdf.text(`Employee: ${employeeName}`, margin, margin + 70);
-      pdf.text(`Employee ID: ${employeeId}`, margin, margin + 85);
-      pdf.text(`Month: ${monthName} ${payslipData?.payroll.year}`, margin, margin + 100);
+      // Column 2: Pay Period Details - Green Theme
+      const col2X = margin + columnWidth + 10;
+      const col2Y = firstRowY;
+      
+      // Background with rounded corners effect
+      pdf.setFillColor(220, 252, 231); // Light green background
+      pdf.rect(col2X, col2Y, columnWidth, columnHeight, 'F');
+      pdf.setDrawColor(34, 197, 94); // Green border
+      pdf.setLineWidth(0.8);
+      pdf.rect(col2X, col2Y, columnWidth, columnHeight);
+      
+      // Header with accent line
+      pdf.setFillColor(34, 197, 94); // Green accent
+      pdf.rect(col2X, col2Y, columnWidth, 6, 'F');
+      
+      pdf.setTextColor(255, 255, 255); // White text for header
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.text('Pay Period Details', col2X + 8, col2Y + 4);
+      
+      // Content
+      pdf.setTextColor(21, 128, 61); // Dark green text
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      contentY = col2Y + 10;
+      const startDate = new Date(payroll.year, payroll.month - 1, 1);
+      const endDate = new Date(payroll.year, payroll.month, 0);
+      const formattedStartDate = startDate.toLocaleDateString();
+      const formattedEndDate = endDate.toLocaleDateString();
+      contentY = addText(`Pay Period: ${monthName} ${payroll.year}`, col2X + 8, contentY);
+      contentY = addText(`Date Range: ${formattedStartDate} - ${formattedEndDate}`, col2X + 8, contentY);
+      contentY = addText(`Status: ${payroll.status}`, col2X + 8, contentY);
+      contentY = addText(`Payroll ID: #${payroll.id}`, col2X + 8, contentY);
 
-      // Salary details
-      pdf.text(
-        `Basic Salary: ${formatCurrency(Number(payslipData?.payroll.base_salary || 0))}`,
-        margin,
-        margin + 125
-      );
-      pdf.text(
-        `Overtime: ${formatCurrency(Number(payslipData?.payroll.overtime_amount || 0))}`,
-        margin,
-        margin + 140
-      );
-      pdf.text(
-        `Bonus: ${formatCurrency(Number(payslipData?.payroll.bonus_amount || 0))}`,
-        margin,
-        margin + 155
-      );
-      pdf.text(
-        `Deductions: ${formatCurrency(Number(payslipData?.payroll.deduction_amount || 0))}`,
-        margin,
-        margin + 170
-      );
-      pdf.text(
-        `Final Amount: ${formatCurrency(Number(payslipData?.payroll.final_amount || 0))}`,
-        margin,
-        margin + 185
-      );
+      // Column 3: Salary Summary - Purple Theme
+      const col3X = margin + 2 * columnWidth + 20;
+      const col3Y = firstRowY;
+      
+      // Background with rounded corners effect
+      pdf.setFillColor(243, 232, 255); // Light purple background
+      pdf.rect(col3X, col3Y, columnWidth, columnHeight, 'F');
+      pdf.setDrawColor(147, 51, 234); // Purple border
+      pdf.setLineWidth(0.8);
+      pdf.rect(col3X, col3Y, columnWidth, columnHeight);
+      
+      // Header with accent line
+      pdf.setFillColor(147, 51, 234); // Purple accent
+      pdf.rect(col3X, col3Y, columnWidth, 6, 'F');
+      
+      pdf.setTextColor(255, 255, 255); // White text for header
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.text('Salary Summary', col3X + 8, col3Y + 4);
+      
+      // Content
+      pdf.setTextColor(88, 28, 135); // Dark purple text
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      contentY = col3Y + 10;
+      contentY = addText(`Basic Salary: ${formatCurrencyForPDF(basicSalary)}`, col3X + 8, contentY);
+      contentY = addText(`Overtime Pay: ${formatCurrencyForPDF(overtimeAmount)}`, col3X + 8, contentY);
+      contentY = addText(`Net Salary: ${formatCurrencyForPDF(netSalary)}`, col3X + 8, contentY);
+
+      // Find the highest Y position from the 3 columns
+      const firstRowHeight = firstRowY + columnHeight + 8;
+
+      // ===== SECOND ROW - ATTENDANCE RECORD =====
+      const attendanceY = firstRowHeight;
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      pdf.text('Attendance Record', margin, attendanceY);
+      
+      // Create clean, modern attendance table
+      const daysInMonth = new Date(payroll.year, payroll.month, 0).getDate();
+      const tableStartY = attendanceY + 6;
+      const tableWidth = pageWidth - 2 * margin;
+      const cellWidth = tableWidth / daysInMonth;
+      const rowHeight = 5; // Increased height for better readability
+      const totalTableHeight = rowHeight * 4; // 4 rows
+
+      // Clean table background
+      pdf.setFillColor(250, 250, 250); // Light gray background
+      pdf.rect(margin, tableStartY, tableWidth, totalTableHeight, 'F');
+      
+      // Row backgrounds for better visual separation
+      // Row 1: Day numbers (light blue)
+      pdf.setFillColor(219, 234, 254);
+      pdf.rect(margin, tableStartY, tableWidth, rowHeight, 'F');
+      
+      // Row 2: Day names (very light blue)
+      pdf.setFillColor(239, 246, 255);
+      pdf.rect(margin, tableStartY + rowHeight, tableWidth, rowHeight, 'F');
+      
+      // Row 3: Regular hours (light gray)
+      pdf.setFillColor(241, 245, 249);
+      pdf.rect(margin, tableStartY + 2 * rowHeight, tableWidth, rowHeight, 'F');
+      
+      // Row 4: Overtime hours (very light gray)
+      pdf.setFillColor(248, 250, 252);
+      pdf.rect(margin, tableStartY + 3 * rowHeight, tableWidth, rowHeight, 'F');
+      
+      // Highlight Friday columns with light orange
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(payroll.year, payroll.month - 1, day);
+        const dayOfWeek = date.getDay();
+        if (dayOfWeek === 5) { // Friday
+          const x = margin + (day - 1) * cellWidth;
+          pdf.setFillColor(255, 237, 213); // Light orange
+          pdf.rect(x, tableStartY, cellWidth, totalTableHeight, 'F');
+        }
+      }
+      
+      // Clean table border
+      pdf.setDrawColor(209, 213, 219);
+      pdf.setLineWidth(0.8);
+      pdf.rect(margin, tableStartY, tableWidth, totalTableHeight);
+
+      // Subtle row separators
+      pdf.setDrawColor(229, 231, 235);
+      pdf.setLineWidth(0.3);
+      for (let row = 1; row <= 3; row++) {
+        const y = tableStartY + row * rowHeight;
+        pdf.line(margin, y, margin + tableWidth, y);
+      }
+
+      // Clean column separators
+      for (let day = 1; day <= daysInMonth; day++) {
+        const x = margin + day * cellWidth;
+        pdf.line(x, tableStartY, x, tableStartY + totalTableHeight);
+      }
+
+      // Day numbers header (first row)
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      pdf.setTextColor(31, 41, 55);
+      for (let day = 1; day <= daysInMonth; day++) {
+        const x = margin + (day - 1) * cellWidth;
+        const y = tableStartY + rowHeight / 2 + 1.5;
+        pdf.text(day.toString().padStart(2, '0'), x + cellWidth / 2, y, { align: 'center' });
+      }
+      
+      // Day names header (second row)
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(payroll.year, payroll.month - 1, day);
+        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+        const x = margin + (day - 1) * cellWidth;
+        const y = tableStartY + rowHeight + rowHeight / 2 + 1.5;
+        pdf.text(dayName.substring(0, 1).toUpperCase(), x + cellWidth / 2, y, { align: 'center' });
+      }
+
+      // Regular Hours row (third row)
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(55, 65, 81);
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayData = attendanceMap.get(dateString);
+        const x = margin + (day - 1) * cellWidth;
+        const y = tableStartY + 2 * rowHeight + rowHeight / 2 + 1.5;
+        
+        if (dayData && Number(dayData.hours) > 0) {
+          pdf.text(Number(dayData.hours).toString(), x + cellWidth / 2, y, { align: 'center' });
+        } else {
+          pdf.text('-', x + cellWidth / 2, y, { align: 'center' });
+        }
+      }
+
+      // Overtime Hours row (fourth row)
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateString = `${payroll.year}-${String(payroll.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dayData = attendanceMap.get(dateString);
+        const x = margin + (day - 1) * cellWidth;
+        const y = tableStartY + 3 * rowHeight + rowHeight / 2 + 1.5;
+        
+        if (dayData && Number(dayData.overtime) > 0) {
+          pdf.text(Number(dayData.overtime).toString(), x + cellWidth / 2, y, { align: 'center' });
+        } else {
+          pdf.text('-', x + cellWidth / 2, y, { align: 'center' });
+        }
+      }
+
+      // Clean legend with better positioning
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text('Legend: 8 = regular hours, More than 8 = overtime hours, A = absent, F = Friday (present if working days before/after)', margin, tableStartY + totalTableHeight + 8);
+
+      // ===== THIRD ROW - WORKING HOURS & SALARY BREAKDOWN =====
+      const thirdRowY = tableStartY + 35; // Moved down to prevent overlapping with attendance record
+      const sectionHeight = 50; // Increased height to fit all content with new spacing
+      
+      // Left side: Working Hours Summary - Orange Theme
+      const leftColumnX = margin;
+      const leftColumnWidth = (pageWidth - 2 * margin - 20) / 2;
+      
+      // Background with rounded corners effect
+      pdf.setFillColor(255, 237, 213); // Light orange background
+      pdf.rect(leftColumnX, thirdRowY, leftColumnWidth, sectionHeight, 'F');
+      pdf.setDrawColor(245, 158, 11); // Orange border
+      pdf.setLineWidth(0.8);
+      pdf.rect(leftColumnX, thirdRowY, leftColumnWidth, sectionHeight);
+      
+      // Header with accent line
+      pdf.setFillColor(245, 158, 11); // Orange accent
+      pdf.rect(leftColumnX, thirdRowY, leftColumnWidth, 6, 'F');
+      
+      pdf.setTextColor(255, 255, 255); // White text for header
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.text('HOURS BREAKDOWN:', leftColumnX + 8, thirdRowY + 4);
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(120, 53, 15); // Dark orange text
+      let leftY = thirdRowY + 10;
+      
+      // Right-aligned values like a proper payslip
+      const leftLabelX = leftColumnX + 8;
+      const leftValueX = leftColumnX + leftColumnWidth - 8;
+      
+      // HOURS BREAKDOWN section with right-aligned values
+      pdf.text(`Total Hours Worked:`, leftLabelX, leftY);
+      pdf.text(`${totalWorkedHoursFromAttendance} hrs`, leftValueX, leftY, { align: 'right' });
+      leftY += 4;
+      
+      pdf.text(`Regular Hours:`, leftLabelX, leftY);
+      pdf.text(`${totalWorkedHoursFromAttendance - overtimeHoursFromAttendance} hrs`, leftValueX, leftY, { align: 'right' });
+      leftY += 4;
+      
+      pdf.text(`Overtime Hours:`, leftLabelX, leftY);
+      pdf.text(`${overtimeHoursFromAttendance} hrs`, leftValueX, leftY, { align: 'right' });
+      leftY += 4;
+      
+      // ATTENDANCE SUMMARY sub-header with background
+      pdf.setFillColor(245, 158, 11); // Orange background for sub-header
+      pdf.rect(leftColumnX + 4, leftY - 2, leftColumnWidth - 8, 6, 'F');
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(255, 255, 255); // White text for sub-header
+      pdf.text('ATTENDANCE SUMMARY:', leftColumnX + 8, leftY + 2);
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(120, 53, 15); // Dark orange text
+      leftY += 8; // Increased spacing from header to content
+      
+      // ATTENDANCE SUMMARY section with right-aligned values
+      pdf.text(`Days Worked:`, leftLabelX, leftY);
+      pdf.text(`${daysWorkedFromAttendance} days`, leftValueX, leftY, { align: 'right' });
+      leftY += 5; // Increased row spacing
+      
+      pdf.text(`Absent Days:`, leftLabelX, leftY);
+      pdf.text(`${absentDays} days`, leftValueX, leftY, { align: 'right' });
+      leftY += 5; // Increased row spacing
+      
+      pdf.text(`Absent Days Deduction:`, leftLabelX, leftY);
+      pdf.text(`-${formatCurrencyForPDF(absentDeduction)}`, leftValueX, leftY, { align: 'right' });
+      leftY += 5; // Increased row spacing
+
+      // Right side: Salary Breakdown - Teal Theme
+      const rightColumnX = pageWidth / 2 + 10;
+      const rightColumnWidth = (pageWidth - 2 * margin - 20) / 2;
+      
+      // Background with rounded corners effect
+      pdf.setFillColor(204, 251, 241); // Light teal background
+      pdf.rect(rightColumnX, thirdRowY, rightColumnWidth, sectionHeight, 'F');
+      pdf.setDrawColor(20, 184, 166); // Teal border
+      pdf.setLineWidth(0.8);
+      pdf.rect(rightColumnX, thirdRowY, rightColumnWidth, sectionHeight);
+      
+      // Header with accent line
+      pdf.setFillColor(20, 184, 166); // Teal accent
+      pdf.rect(rightColumnX, thirdRowY, rightColumnWidth, 6, 'F');
+      
+      pdf.setTextColor(255, 255, 255); // White text for header
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.text('EARNINGS:', rightColumnX + 8, thirdRowY + 4);
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(15, 118, 110); // Dark teal text
+      let rightY = thirdRowY + 10;
+      
+      // Right-aligned values like a proper payslip
+      const labelX = rightColumnX + 8;
+      const valueX = rightColumnX + rightColumnWidth - 8;
+      
+      // EARNINGS section with right-aligned values
+      pdf.text(`Basic Salary:`, labelX, rightY);
+      pdf.text(`${formatCurrencyForPDF(basicSalary)}`, valueX, rightY, { align: 'right' });
+      rightY += 4;
+      
+      pdf.text(`Overtime Pay:`, labelX, rightY);
+      pdf.text(`${formatCurrencyForPDF(overtimeAmount)}`, valueX, rightY, { align: 'right' });
+      rightY += 4;
+      
+      pdf.text(`Bonus Amount:`, labelX, rightY);
+      pdf.text(`${formatCurrencyForPDF(bonusAmount)}`, valueX, rightY, { align: 'right' });
+      rightY += 4;
+      
+      // DEDUCTIONS sub-header with background
+      pdf.setFillColor(20, 184, 166); // Teal background for sub-header
+      pdf.rect(rightColumnX + 4, rightY - 2, rightColumnWidth - 8, 6, 'F');
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(255, 255, 255); // White text for sub-header
+      pdf.text('DEDUCTIONS:', rightColumnX + 8, rightY + 2);
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      pdf.setTextColor(15, 118, 110); // Dark teal text
+      rightY += 8; // Increased spacing from header to content
+      
+      // DEDUCTIONS section with right-aligned values
+      pdf.text(`Absent Days Deduction:`, labelX, rightY);
+      pdf.text(`-${formatCurrencyForPDF(absentDeduction)}`, valueX, rightY, { align: 'right' });
+      rightY += 5; // Increased row spacing
+      
+      pdf.text(`Advance Deduction:`, labelX, rightY);
+      pdf.text(`-${formatCurrencyForPDF(advanceDeduction)}`, valueX, rightY, { align: 'right' });
+      rightY += 5; // Increased row spacing
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      pdf.setTextColor(15, 118, 110); // Dark teal text
+      
+      // Net Salary with right-aligned value
+      pdf.text('Net Salary:', labelX, rightY);
+      pdf.text(`${formatCurrencyForPDF(netSalary)}`, valueX, rightY, { align: 'right' });
+
+      // ===== SIGNATURES SECTION =====
+      const signatureY = Math.max(leftY, rightY) + 25; // Much more space for signatures
+      const signatureWidth = (pageWidth - 2 * margin) / 3;
+      
+      // Chief Accountant
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(8);
+      pdf.text('Chief Accountant', margin + signatureWidth / 2, signatureY, { align: 'center' });
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      pdf.text('Samir Taima', margin + signatureWidth / 2, signatureY + 4, { align: 'center' });
+      pdf.line(margin + 10, signatureY + 6, margin + signatureWidth - 10, signatureY + 6);
+      pdf.setFontSize(6);
+      pdf.text('Signature', margin + signatureWidth / 2, signatureY + 9, { align: 'center' });
+
+      // Verified By
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(8);
+      pdf.text('Verified By', margin + signatureWidth + signatureWidth / 2, signatureY, { align: 'center' });
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      pdf.text('Salem Samhan Al-Dosri', margin + signatureWidth + signatureWidth / 2, signatureY + 4, { align: 'center' });
+      pdf.line(margin + signatureWidth + 10, signatureY + 6, margin + 2 * signatureWidth - 10, signatureY + 6);
+      pdf.setFontSize(6);
+      pdf.text('Signature', margin + signatureWidth + signatureWidth / 2, signatureY + 9, { align: 'center' });
+
+      // Employee
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(8);
+      pdf.text('Employee', margin + 2 * signatureWidth + signatureWidth / 2, signatureY, { align: 'center' });
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      pdf.text(employeeName || 'Unknown Employee', margin + 2 * signatureWidth + signatureWidth / 2, signatureY + 4, { align: 'center' });
+      pdf.line(margin + 2 * signatureWidth + 10, signatureY + 6, margin + 3 * signatureWidth - 10, signatureY + 6);
+      pdf.setFontSize(6);
+      pdf.text('Signature', margin + 2 * signatureWidth + signatureWidth / 2, signatureY + 9, { align: 'center' });
 
       // Save PDF
-      pdf.save(`payslip_${employeeId}_${monthName}_${payslipData?.payroll.year}.pdf`);
+      const fileName = `payslip_${employee?.file_number || employee?.id}_${monthName}_${payroll.year}.pdf`;
+      pdf.save(fileName);
       toast.success('Payslip PDF generated successfully');
     } catch (error) {
-      
+      console.error('PDF generation error:', error);
       toast.error('Failed to generate PDF. Please try again.');
     }
   };
@@ -905,9 +1300,6 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
   const formattedStartDate = startDate.toLocaleDateString();
   const formattedEndDate = endDate.toLocaleDateString();
 
-  // Calculate number of days in the month
-  const daysInMonth = new Date(payroll.year, payroll.month, 0).getDate();
-
   // Create calendar data for the month
   const calendarDays = attendanceData || [];
 
@@ -939,6 +1331,9 @@ export default function PayslipPage({ params }: { params: Promise<{ id: string }
       }
     });
   }
+
+  // Calculate number of days in the month
+  const daysInMonth = new Date(payroll.year, payroll.month, 0).getDate();
 
   // Calculate absent days by checking ALL days in the month (including Fridays with smart logic)
   const absentDays = (() => {
