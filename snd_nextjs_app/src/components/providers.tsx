@@ -5,7 +5,7 @@ import { I18nWrapper } from '@/components/i18n-wrapper';
 import { ConfirmationProvider } from '@/components/providers/confirmation-provider';
 import { NotificationProvider } from '@/contexts/notification-context';
 import SSEProvider from '@/contexts/sse-context';
-import '@/lib/i18n-client'; // Initialize i18n on client side
+import ErrorBoundary from '@/components/error-boundary';
 import { addCleanupCallback, startMemoryMonitoring } from '@/lib/memory-manager';
 import { RBACProvider } from '@/lib/rbac/rbac-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -101,35 +101,37 @@ export function Providers({ children }: ProvidersProps) {
   }, [queryClient]);
 
   return (
-    <SessionProvider>
-      <RBACProvider>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <QueryClientProvider client={queryClient}>
-            <SSEProvider>
-              <I18nWrapper>
-                <I18nProvider>
-                  <ConfirmationProvider>
-                    <NotificationProvider>{children}</NotificationProvider>
-                  </ConfirmationProvider>
-                </I18nProvider>
-              </I18nWrapper>
-              {/* Only load devtools in development */}
-              {process.env.NODE_ENV === 'development' && (
-                <Suspense fallback={null}>
-                  <div className="fixed bottom-4 right-4 z-50">
-                    <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
-                  </div>
-                </Suspense>
-              )}
-            </SSEProvider>
-          </QueryClientProvider>
-        </ThemeProvider>
-      </RBACProvider>
-    </SessionProvider>
+    <ErrorBoundary>
+      <SessionProvider>
+        <RBACProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <QueryClientProvider client={queryClient}>
+              <SSEProvider>
+                <I18nWrapper>
+                  <I18nProvider>
+                    <ConfirmationProvider>
+                      <NotificationProvider>{children}</NotificationProvider>
+                    </ConfirmationProvider>
+                  </I18nProvider>
+                </I18nWrapper>
+                {/* Only load devtools in development */}
+                {process.env.NODE_ENV === 'development' && (
+                  <Suspense fallback={null}>
+                    <div className="fixed bottom-4 right-4 z-50">
+                      <ReactQueryDevtools initialIsOpen={false} position="bottom-right" />
+                    </div>
+                  </Suspense>
+                )}
+              </SSEProvider>
+            </QueryClientProvider>
+          </ThemeProvider>
+        </RBACProvider>
+      </SessionProvider>
+    </ErrorBoundary>
   );
 }

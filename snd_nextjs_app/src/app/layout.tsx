@@ -26,7 +26,7 @@ export const viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning className={inter.variable}>
+    <html suppressHydrationWarning className={inter.variable}>
       <body className="font-sans antialiased">
         <Providers>
           <ConditionalLayout>{children}</ConditionalLayout>
