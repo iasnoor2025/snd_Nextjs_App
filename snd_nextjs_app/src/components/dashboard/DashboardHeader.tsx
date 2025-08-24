@@ -14,6 +14,7 @@ import {
   Truck,
   Users,
   Wrench,
+  Target,
 } from 'lucide-react';
 
 interface DashboardHeaderProps {
@@ -67,7 +68,7 @@ export function DashboardHeader({
 
         {/* Quick Stats Overview */}
         {stats && (
-          <div className="mt-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-9 gap-4">
+          <div className="mt-8 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-11 gap-4">
             <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
               <Users className="h-6 w-6 mx-auto mb-2 opacity-80" />
               <div className="text-2xl font-bold">{stats.totalEmployees || 0}</div>
@@ -77,6 +78,11 @@ export function DashboardHeader({
               <Calendar className="h-6 w-6 mx-auto mb-2 opacity-80" />
               <div className="text-2xl font-bold">{stats.activeProjects || 0}</div>
               <div className="text-xs text-blue-100">{t('dashboard.activeProjects')}</div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+              <Target className="h-6 w-6 mx-auto mb-2 opacity-80" />
+              <div className="text-2xl font-bold">{stats.totalProjects || 0}</div>
+              <div className="text-xs text-blue-100">{t('dashboard.totalProjects')}</div>
             </div>
             <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
               <TrendingUp className="h-6 w-6 mx-auto mb-2 opacity-80" />
@@ -110,6 +116,11 @@ export function DashboardHeader({
               <Truck className="h-6 w-6 mx-auto mb-2 opacity-80" />
               <div className="text-2xl font-bold">{stats.activeRentals || 0}</div>
               <div className="text-xs text-blue-100">{t('dashboard.activeRentals')}</div>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
+              <Truck className="h-6 w-6 mx-auto mb-2 opacity-80" />
+              <div className="text-2xl font-bold">{stats.totalRentals || 0}</div>
+              <div className="text-xs text-blue-100">{t('dashboard.totalRentals')}</div>
             </div>
             <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
               <FileText className="h-6 w-6 mx-auto mb-2 opacity-80" />

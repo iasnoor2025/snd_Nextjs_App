@@ -17,11 +17,13 @@ import { and, count, desc, eq, gte, isNotNull, lte, sql } from 'drizzle-orm';
 export interface DashboardStats {
   totalEmployees: number;
   activeProjects: number;
+  totalProjects: number;
   availableEquipment: number;
   totalEquipment: number;
   monthlyRevenue: number;
   pendingApprovals: number;
   activeRentals: number;
+  totalRentals: number;
   totalCompanies: number;
   totalDocuments: number;
   equipmentUtilization: number;
@@ -158,11 +160,22 @@ export class DashboardService {
       // Get active projects
       let activeProjectsResult = { count: 0 };
       try {
+        // First, let's see what status values exist for projects
+        const allProjectStatuses = await db
+          .select({ status: projects.status })
+          .from(projects)
+          .groupBy(projects.status);
+        console.log('Available project statuses:', allProjectStatuses.map(p => p.status));
+
+        // Count projects with various "active" statuses
         const result = await db
           .select({ count: count() })
           .from(projects)
-          .where(eq(projects.status, 'active'));
+          .where(
+            sql`${projects.status} IN ('active', 'in_progress', 'ongoing', 'running')`
+          );
         activeProjectsResult = result[0] || { count: 0 };
+        console.log('Active projects count:', activeProjectsResult.count);
       } catch (error) {
         console.error('Error fetching active projects:', error);
       }
@@ -174,11 +187,22 @@ export class DashboardService {
       // Get active rentals
       let activeRentalsResult = { count: 0 };
       try {
+        // First, let's see what status values exist for rentals
+        const allRentalStatuses = await db
+          .select({ status: rentals.status })
+          .from(rentals)
+          .groupBy(rentals.status);
+        console.log('Available rental statuses:', allRentalStatuses.map(r => r.status));
+
+        // Count rentals with various "active" statuses
         const result = await db
           .select({ count: count() })
           .from(rentals)
-          .where(eq(rentals.status, 'active'));
+          .where(
+            sql`${rentals.status} IN ('active', 'in_progress', 'ongoing', 'running', 'rented')`
+          );
         activeRentalsResult = result[0] || { count: 0 };
+        console.log('Active rentals count:', activeRentalsResult.count);
       } catch (error) {
         console.error('Error fetching active rentals:', error);
       }
@@ -186,6 +210,13 @@ export class DashboardService {
       // Get company and document counts using helper methods
       const totalCompanies = await this.getTotalCompaniesCount();
       const totalDocuments = await this.getTotalDocumentsCount();
+
+      // Get total projects and rentals counts
+      const totalProjects = await this.getTotalProjectsCount();
+      const totalRentals = await this.getTotalRentalsCount();
+
+      // Debug: Let's see what project and rental data actually exists
+      await this.debugProjectAndRentalData();
 
       // Get today's timesheets
       let todayTimesheetsResult = { count: 0 };
@@ -288,11 +319,13 @@ export class DashboardService {
       return {
         totalEmployees: totalEmployeesResult.count || 0,
         activeProjects: activeProjectsResult.count || 0,
+        totalProjects: totalProjects || 0,
         availableEquipment: availableEquipment || 0,
         totalEquipment: totalEquipment || 0,
         monthlyRevenue: monthlyRevenue || 0,
         pendingApprovals: pendingApprovalsResult.count || 0,
         activeRentals: activeRentalsResult.count || 0,
+        totalRentals: totalRentals || 0,
         totalCompanies: totalCompanies || 0,
         totalDocuments: totalDocuments || 0,
         equipmentUtilization: equipmentUtilization || 0,
@@ -361,6 +394,58 @@ export class DashboardService {
     } catch (error) {
       console.error('Error fetching total documents count:', error);
       return 0;
+    }
+  }
+
+  static async getTotalProjectsCount(): Promise<number> {
+    try {
+      const result = await db
+        .select({ count: count() })
+        .from(projects);
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('Error fetching total projects count:', error);
+      return 0;
+    }
+  }
+
+  static async getTotalRentalsCount(): Promise<number> {
+    try {
+      const result = await db
+        .select({ count: count() })
+        .from(rentals);
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('Error fetching total rentals count:', error);
+      return 0;
+    }
+  }
+
+  static async debugProjectAndRentalData(): Promise<void> {
+    try {
+      // Debug projects
+      const allProjects = await db
+        .select({
+          id: projects.id,
+          name: projects.name,
+          status: projects.status,
+        })
+        .from(projects)
+        .limit(10);
+      console.log('Sample projects:', allProjects);
+
+      // Debug rentals
+      const allRentals = await db
+        .select({
+          id: rentals.id,
+          equipmentName: rentals.equipmentName,
+          status: rentals.status,
+        })
+        .from(rentals)
+        .limit(10);
+      console.log('Sample rentals:', allRentals);
+    } catch (error) {
+      console.error('Error debugging project and rental data:', error);
     }
   }
 
