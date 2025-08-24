@@ -16,108 +16,160 @@ export const GET = withReadPermission(async (_request: NextRequest) => {
     // Generate cache key for equipment list
     const cacheKey = generateCacheKey('equipment', 'list', {});
     
-    return await cacheQueryResult(
-      cacheKey,
-      async () => {
-        const equipment = await db
-          .select({
-            id: equipmentTable.id,
-            name: equipmentTable.name,
-            model_number: equipmentTable.modelNumber,
-            status: equipmentTable.status,
-            category_id: equipmentTable.categoryId,
-            manufacturer: equipmentTable.manufacturer,
-            daily_rate: equipmentTable.dailyRate,
-            weekly_rate: equipmentTable.weeklyRate,
-            monthly_rate: equipmentTable.monthlyRate,
-            erpnext_id: equipmentTable.erpnextId,
-            istimara: equipmentTable.istimara,
-            istimara_expiry_date: equipmentTable.istimaraExpiryDate,
-            serial_number: equipmentTable.serialNumber,
-            description: equipmentTable.description,
-          })
-          .from(equipmentTable)
-          .orderBy(asc(equipmentTable.name));
-
-        // Get current active assignments for equipment
-        
-        let currentAssignments: any[] = [];
-
-        try {
-          // Get all active assignments with related data
-          currentAssignments = await db
+    try {
+      return await cacheQueryResult(
+        cacheKey,
+        async () => {
+          const equipment = await db
             .select({
-              equipment_id: equipmentTable.id,
-              employee_id: employees.id,
-              employee_name: employees.firstName,
-              employee_last_name: employees.lastName,
-              project_id: projects.id,
-              project_name: projects.name,
-              rental_id: rentals.id,
-              rental_number: rentals.rentalNumber,
-              assignment_date: equipmentRentalHistory.assignmentDate,
-              return_date: equipmentRentalHistory.returnDate,
-              status: equipmentRentalHistory.status,
+              id: equipmentTable.id,
+              name: equipmentTable.name,
+              model_number: equipmentTable.modelNumber,
+              status: equipmentTable.status,
+              category_id: equipmentTable.categoryId,
+              manufacturer: equipmentTable.manufacturer,
+              daily_rate: equipmentTable.dailyRate,
+              weekly_rate: equipmentTable.weeklyRate,
+              monthly_rate: equipmentTable.monthlyRate,
+              erpnext_id: equipmentTable.erpnextId,
+              istimara: equipmentTable.istimara,
+              istimara_expiry_date: equipmentTable.istimaraExpiryDate,
+              serial_number: equipmentTable.serialNumber,
+              description: equipmentTable.description,
             })
             .from(equipmentTable)
-            .leftJoin(equipmentRentalHistory, eq(equipmentTable.id, equipmentRentalHistory.equipmentId))
-            .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
-            .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
-            .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
-            .where(eq(equipmentRentalHistory.status, 'active'));
+            .orderBy(asc(equipmentTable.name));
 
-          // Group assignments by equipment
-          const assignmentsByEquipment = currentAssignments.reduce((acc, assignment) => {
-            const equipmentId = assignment.equipment_id;
-            if (!acc[equipmentId]) {
-              acc[equipmentId] = [];
-            }
-            acc[equipmentId].push(assignment);
-            return acc;
-          }, {} as Record<number, any[]>);
-
-          // Merge equipment data with assignments
-          const equipmentWithAssignments = equipment.map((item) => {
-            const assignments = assignmentsByEquipment[item.id] || [];
-            return {
-              ...item,
-              assignments,
-              is_assigned: assignments.length > 0,
-              current_assignment: assignments[0] || null,
-            };
-          });
-
-          return NextResponse.json({
-            success: true,
-            equipment: equipmentWithAssignments,
-            total: equipmentWithAssignments.length,
-          });
-        } catch (error) {
-          console.error('Error fetching equipment assignments:', error);
+          // Get current active assignments for equipment
           
-          // Return equipment without assignments if there's an error
-          const equipmentWithAssignments = equipment.map((item) => ({
-            ...item,
-            assignments: [],
-            is_assigned: false,
-            current_assignment: null,
-          }));
+          let currentAssignments: any[] = [];
 
-          return NextResponse.json({
-            success: true,
-            equipment: equipmentWithAssignments,
-            total: equipmentWithAssignments.length,
-          });
+          try {
+            // Get all active assignments with related data
+            currentAssignments = await db
+              .select({
+                equipment_id: equipmentTable.id,
+                employee_id: employees.id,
+                employee_name: employees.firstName,
+                employee_last_name: employees.lastName,
+                project_id: projects.id,
+                project_name: projects.name,
+                rental_id: rentals.id,
+                rental_number: rentals.rentalNumber,
+                assignment_date: equipmentRentalHistory.assignmentDate,
+                return_date: equipmentRentalHistory.returnDate,
+                status: equipmentRentalHistory.status,
+              })
+              .from(equipmentTable)
+              .leftJoin(equipmentRentalHistory, eq(equipmentTable.id, equipmentRentalHistory.equipmentId))
+              .leftJoin(employees, eq(equipmentRentalHistory.employeeId, employees.id))
+              .leftJoin(projects, eq(equipmentRentalHistory.projectId, projects.id))
+              .leftJoin(rentals, eq(equipmentRentalHistory.rentalId, rentals.id))
+              .where(eq(equipmentRentalHistory.status, 'active'));
+
+            // Group assignments by equipment
+            const assignmentsByEquipment = currentAssignments.reduce((acc, assignment) => {
+              const equipmentId = assignment.equipment_id;
+              if (!acc[equipmentId]) {
+                acc[equipmentId] = [];
+              }
+              acc[equipmentId].push(assignment);
+              return acc;
+            }, {} as Record<number, any[]>);
+
+            // Merge equipment data with assignments
+            const equipmentWithAssignments = equipment.map((item) => {
+              const assignments = assignmentsByEquipment[item.id] || [];
+              return {
+                ...item,
+                assignments,
+                is_assigned: assignments.length > 0,
+                current_assignment: assignments[0] || null,
+              };
+            });
+
+            return NextResponse.json({
+              success: true,
+              data: equipmentWithAssignments,
+              total: equipmentWithAssignments.length,
+            });
+          } catch (error) {
+            console.error('Error fetching equipment assignments:', error);
+            
+            // Return equipment without assignments if there's an error
+            const equipmentWithAssignments = equipment.map((item) => ({
+              ...item,
+              assignments: [],
+              is_assigned: false,
+              current_assignment: null,
+            }));
+
+            return NextResponse.json({
+              success: true,
+              data: equipmentWithAssignments,
+              total: equipmentWithAssignments.length,
+            });
+          }
+        },
+        {
+          ttl: 300, // 5 minutes
+          tags: [CACHE_TAGS.EQUIPMENT, CACHE_TAGS.EMPLOYEES, CACHE_TAGS.PROJECTS, CACHE_TAGS.RENTALS],
         }
-      },
-      {
-        ttl: 300, // 5 minutes
-        tags: [CACHE_TAGS.EQUIPMENT, CACHE_TAGS.EMPLOYEES, CACHE_TAGS.PROJECTS, CACHE_TAGS.RENTALS],
-      }
-    );
+      );
+    } catch (cacheError) {
+      console.error('Cache error, falling back to direct database query:', cacheError);
+      console.error('Cache error details:', {
+        message: cacheError instanceof Error ? cacheError.message : 'Unknown cache error',
+        stack: cacheError instanceof Error ? cacheError.stack : undefined,
+        name: cacheError instanceof Error ? cacheError.name : 'Unknown'
+      });
+      
+      // Fallback: direct database query without cache
+      const equipment = await db
+        .select({
+          id: equipmentTable.id,
+          name: equipmentTable.name,
+          model_number: equipmentTable.modelNumber,
+          status: equipmentTable.status,
+          category_id: equipmentTable.categoryId,
+          manufacturer: equipmentTable.manufacturer,
+          daily_rate: equipmentTable.dailyRate,
+          weekly_rate: equipmentTable.weeklyRate,
+          monthly_rate: equipmentTable.monthlyRate,
+          erpnext_id: equipmentTable.erpnextId,
+          istimara: equipmentTable.istimara,
+          istimara_expiry_date: equipmentTable.istimaraExpiryDate,
+          serial_number: equipmentTable.serialNumber,
+          description: equipmentTable.description,
+        })
+        .from(equipmentTable)
+        .orderBy(asc(equipmentTable.name));
+
+      // Return equipment without assignments as fallback
+      const equipmentWithAssignments = equipment.map((item) => ({
+        ...item,
+        assignments: [],
+        is_assigned: false,
+        current_assignment: null,
+      }));
+
+      return NextResponse.json({
+        success: true,
+        data: equipmentWithAssignments,
+        total: equipmentWithAssignments.length,
+      });
+    }
   } catch (error) {
     console.error('Error fetching equipment:', error);
-    return NextResponse.json({ error: 'Failed to fetch equipment' }, { status: 500 });
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : 'Unknown'
+    });
+    return NextResponse.json({ 
+      error: 'Failed to fetch equipment',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 });
 
