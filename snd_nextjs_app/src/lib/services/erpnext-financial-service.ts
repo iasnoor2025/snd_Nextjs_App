@@ -1,9 +1,9 @@
 import { ERPNextInvoiceService } from './erpnext-invoice-service';
 
 // ERPNext configuration
-const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
-const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY;
-const ERPNEXT_API_SECRET = process.env.NEXT_PUBLIC_ERPNEXT_API_SECRET;
+const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL || process.env.ERPNEXT_URL;
+const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY || process.env.ERPNEXT_API_KEY;
+const ERPNEXT_API_SECRET = process.env.NEXT_PUBLIC_ERPNEXT_API_SECRET || process.env.ERPNEXT_API_SECRET;
 
 interface FinancialMetrics {
   totalMoneyReceived: number;
