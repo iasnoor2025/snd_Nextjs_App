@@ -104,13 +104,26 @@ export default function DocumentManagementPage() {
           const data = await response.json();
           if (data.success) {
             // Transform documents to include proper viewing URLs
-            const transformedDocuments = data.data.documents.map((doc: Document) => ({
-              ...doc,
-              // Use proper API endpoints for viewing instead of direct file paths
-              viewUrl: doc.type === 'employee' 
+            const transformedDocuments = data.data.documents.map((doc: Document) => {
+              const viewUrl = doc.type === 'employee' 
                 ? `/api/employees/${doc.employeeId}/documents/${doc.id}/download`
-                : `/api/equipment/${doc.equipmentId}/documents/${doc.id}/download`
-            }));
+                : `/api/equipment/${doc.equipmentId}/documents/${doc.id}/download`;
+              
+              console.log('Document transformation:', {
+                id: doc.id,
+                type: doc.type,
+                employeeId: doc.employeeId,
+                equipmentId: doc.equipmentId,
+                originalUrl: doc.url,
+                viewUrl: viewUrl
+              });
+              
+              return {
+                ...doc,
+                // Use proper API endpoints for viewing instead of direct file paths
+                viewUrl: viewUrl
+              };
+            });
             setDocuments(transformedDocuments);
             setPagination(data.data.pagination);
             setCounts(data.data.counts);
@@ -220,6 +233,11 @@ export default function DocumentManagementPage() {
     setCombining(true);
     try {
       const selectedDocIds = Array.from(selectedDocuments);
+      
+      // Get the actual documents for debugging
+      const selectedDocs = documents.filter(doc => selectedDocuments.has(doc.id));
+      console.log('Selected documents for combination:', selectedDocs);
+      console.log('Document IDs being sent:', selectedDocIds);
 
       const response = await fetch('/api/documents/combine-pdf', {
         method: 'POST',
@@ -232,9 +250,13 @@ export default function DocumentManagementPage() {
         }),
       });
 
+      console.log('Combine PDF response status:', response.status);
+      console.log('Combine PDF response headers:', Object.fromEntries(response.headers.entries()));
+
       if (response.ok) {
         // Get the PDF blob directly from the response
         const pdfBlob = await response.blob();
+        console.log('PDF blob size:', pdfBlob.size);
 
         // Get filename from Content-Disposition header
         const contentDisposition = response.headers.get('Content-Disposition');
@@ -252,9 +274,9 @@ export default function DocumentManagementPage() {
         const a = window.document.createElement('a');
         a.href = downloadUrl;
         a.download = filename;
-        window.document.body.appendChild(a);
+        document.body.appendChild(a);
         a.click();
-        window.document.body.removeChild(a);
+        document.body.removeChild(a);
 
         // Clean up the blob URL
         window.URL.revokeObjectURL(downloadUrl);
@@ -267,14 +289,18 @@ export default function DocumentManagementPage() {
         // Try to get error message from response
         try {
           const errorData = await response.json();
-          toast.error(errorData.message || 'Failed to combine documents');
-        } catch {
-          toast.error('Failed to combine documents');
+          console.error('Combine PDF error response:', errorData);
+          toast.error(errorData.message || `Failed to combine documents (${response.status})`);
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+          const errorText = await response.text();
+          console.error('Raw error response:', errorText);
+          toast.error(`Failed to combine documents (${response.status}): ${errorText}`);
         }
       }
     } catch (error) {
-      
-      toast.error('Failed to combine documents');
+      console.error('Combine PDF error:', error);
+      toast.error('Failed to combine documents: ' + (error as Error).message);
     } finally {
       setCombining(false);
     }
@@ -568,11 +594,34 @@ export default function DocumentManagementPage() {
                 />
               ) : previewDocument.mimeType.includes('pdf') ? (
                 <div className="w-full h-[70vh] flex items-center justify-center">
-                  <iframe
-                    src={previewDocument.viewUrl || previewDocument.url}
-                    className="w-full h-full border rounded"
-                    title={previewDocument.fileName}
-                  />
+                  <div className="flex flex-col items-center justify-center h-full gap-4 max-w-md text-center">
+                    <div className="text-8xl text-red-500">📄</div>
+                    <h3 className="text-xl font-semibold text-gray-800">PDF Document</h3>
+                    <p className="text-sm text-gray-600">
+                      {previewDocument.fileName}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      PDF files cannot be previewed inline for security reasons.
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                      <Button
+                        onClick={() => window.open(previewDocument.viewUrl || previewDocument.url, '_blank')}
+                        variant="outline"
+                        className="flex items-center gap-2"
+                      >
+                        <FileText className="h-4 w-4" />
+                        Open in New Tab
+                      </Button>
+                      <Button
+                        onClick={() => downloadDocument(previewDocument)}
+                        variant="default"
+                        className="flex items-center gap-2"
+                      >
+                        <Download className="h-4 w-4" />
+                        Download PDF
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="w-full h-[70vh] flex items-center justify-center flex-col gap-4">

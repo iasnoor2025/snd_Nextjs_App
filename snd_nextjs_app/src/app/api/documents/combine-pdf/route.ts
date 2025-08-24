@@ -17,6 +17,8 @@ export async function POST(_request: NextRequest) {
     const body = await _request.json();
     const { documentIds, type = 'all' } = body;
 
+    console.log('Combine PDF request:', { documentIds, type });
+
     if (!documentIds || !Array.isArray(documentIds) || documentIds.length === 0) {
       return NextResponse.json({ error: 'Document IDs are required' }, { status: 400 });
     }
@@ -26,10 +28,14 @@ export async function POST(_request: NextRequest) {
       name: string;
       url: string;
       type: string;
+      fileName: string;
+      filePath: string;
+      mimeType: string;
     }> = [];
 
     // Fetch employee documents
     if (type === 'all' || type === 'employee') {
+      console.log('Fetching employee documents with IDs:', documentIds);
       const employeeDocs = await db
         .select({
           id: employeeDocuments.id,
@@ -49,11 +55,17 @@ export async function POST(_request: NextRequest) {
         .leftJoin(employees, eq(employees.id, employeeDocuments.employeeId))
         .where(inArray(employeeDocuments.id, documentIds));
 
+      console.log('Found employee documents:', employeeDocs.length);
+
       documents.push(
         ...employeeDocs.map(doc => ({
           ...doc,
           type: 'employee',
-          url: doc.filePath,
+          name: doc.fileName,
+          url: doc.filePath, // This should be the file path, not the full URL
+          fileName: doc.fileName,
+          filePath: doc.filePath,
+          mimeType: doc.mimeType,
           employeeName: `${doc.employeeFirstName || ''} ${doc.employeeLastName || ''}`.trim(),
           employeeFileNumber: doc.employeeFileNumber,
         }))
@@ -62,6 +74,7 @@ export async function POST(_request: NextRequest) {
 
     // Fetch equipment documents
     if (type === 'all' || type === 'equipment') {
+      console.log('Fetching equipment documents with IDs:', documentIds);
       const equipmentDocs = await db
         .select({
           id: media.id,
@@ -79,11 +92,17 @@ export async function POST(_request: NextRequest) {
         .leftJoin(equipment, eq(equipment.id, media.modelId))
         .where(inArray(media.id, documentIds));
 
+      console.log('Found equipment documents:', equipmentDocs.length);
+
       documents.push(
         ...equipmentDocs.map(doc => ({
           ...doc,
           type: 'equipment',
-          url: `/uploads/documents/${doc.filePath}`,
+          name: doc.fileName,
+          url: doc.filePath, // This should be the file path, not the full URL
+          fileName: doc.fileName,
+          filePath: doc.filePath,
+          mimeType: doc.mimeType,
           equipmentName: doc.equipmentName,
           equipmentModel: doc.equipmentModel,
           equipmentSerial: doc.equipmentSerial,
@@ -91,8 +110,18 @@ export async function POST(_request: NextRequest) {
       );
     }
 
+    console.log('Total documents found:', documents.length);
+    console.log('Document details:', documents.map(d => ({ id: d.id, name: d.name, type: d.type, url: d.url })));
+
     if (documents.length === 0) {
-      return NextResponse.json({ error: 'No documents found' }, { status: 404 });
+      return NextResponse.json({ 
+        error: 'No documents found for the provided IDs',
+        debug: {
+          requestedIds: documentIds,
+          type: type,
+          message: 'Check if document IDs exist in the database and match the correct type'
+        }
+      }, { status: 404 });
     }
 
     // Generate combined PDF using the document combiner service
@@ -101,6 +130,8 @@ export async function POST(_request: NextRequest) {
     // Generate descriptive filename with employee numbers and equipment names
     const timestamp = Date.now();
     const filename = generateDescriptiveFilename(documents, timestamp);
+
+    console.log('Generated combined PDF, size:', combinedPdfBuffer.length, 'filename:', filename);
 
     // Return the PDF data directly for download (no file saving)
     return new NextResponse(combinedPdfBuffer as any, {
@@ -112,7 +143,7 @@ export async function POST(_request: NextRequest) {
       },
     });
   } catch (error) {
-    
+    console.error('Combine PDF error:', error);
     return NextResponse.json(
       {
         success: false,
