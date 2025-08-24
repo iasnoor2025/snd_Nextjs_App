@@ -551,7 +551,6 @@ export default function DashboardPage() {
       {/* Header Section */}
       <DashboardHeader
         stats={stats}
-        equipmentCount={equipmentData.length}
         refreshing={refreshing}
         onRefresh={handleRefresh}
         session={session}

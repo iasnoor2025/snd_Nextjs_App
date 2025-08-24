@@ -29,6 +29,7 @@ export async function GET(_request: NextRequest) {
 
     const iqamaData = await DashboardService.getIqamaData(10000);
 
+    // Fetch equipment data using DashboardService
     let equipmentData: Array<{
       status: 'available' | 'expired' | 'expiring' | 'missing';
       daysRemaining: number | null;
@@ -39,85 +40,11 @@ export async function GET(_request: NextRequest) {
       istimaraExpiry: string | null;
     }> = [];
 
-    // Test direct database access first
     try {
-      
-      const { db } = await import('@/lib/drizzle');
-      const { equipment } = await import('@/lib/drizzle/schema');
-
-      // Test with just basic select
-      const directTest = await db
-        .select({ id: equipment.id, name: equipment.name })
-        .from(equipment)
-        .limit(1);
-
-      if (directTest.length > 0) {
-
-      }
-    } catch (directError) {
-      console.error('Dashboard API - Direct equipment query failed:', directError);
-    }
-
-    // Skip DashboardService and use direct database query directly
-    
-    try {
-      const { db } = await import('@/lib/drizzle');
-      const { equipment } = await import('@/lib/drizzle/schema');
-
-      // Use minimal fields to avoid any schema issues
-      
-      const directEquipmentData = await db
-        .select({
-          id: equipment.id,
-          equipmentName: equipment.name,
-          equipmentNumber: equipment.doorNumber,
-          istimara: equipment.istimara,
-          istimaraExpiry: equipment.istimaraExpiryDate,
-          status: equipment.status,
-        })
-        .from(equipment)
-        .limit(10000);
-
-      if (directEquipmentData.length > 0) {
-        // Process the data with status logic
-        const today = new Date();
-        const processedData = directEquipmentData.map(doc => {
-          let status: 'available' | 'expired' | 'expiring' | 'missing' = 'available';
-          let daysRemaining: number | null = null;
-
-          if (!doc.istimaraExpiry) {
-            status = 'missing';
-          } else {
-            const expiryDate = new Date(doc.istimaraExpiry);
-            const diffTime = expiryDate.getTime() - today.getTime();
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-            if (diffDays < 0) {
-              status = 'expired';
-              daysRemaining = diffDays; // Keep negative for expired items
-            } else if (diffDays <= 30) {
-              status = 'expiring';
-              daysRemaining = diffDays;
-            } else {
-              daysRemaining = diffDays;
-            }
-          }
-
-          return {
-            ...doc,
-            status,
-            daysRemaining,
-          };
-        });
-
-        equipmentData = processedData;
-      } else {
-        equipmentData = [];
-      }
+      equipmentData = await DashboardService.getEquipmentData(10000);
+      console.log('Dashboard API - Equipment fetched:', equipmentData.length);
     } catch (error) {
-      if (error instanceof Error) {
-        // Handle error silently for production
-      }
+      console.error('Dashboard API - Error fetching equipment:', error);
       equipmentData = [];
     }
 

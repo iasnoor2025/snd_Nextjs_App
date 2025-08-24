@@ -18,7 +18,6 @@ import {
 
 interface DashboardHeaderProps {
   stats: any;
-  equipmentCount: number;
   refreshing: boolean;
   onRefresh: () => void;
   session: any;
@@ -26,7 +25,6 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({
   stats,
-  equipmentCount,
   refreshing,
   onRefresh,
   session,
@@ -105,7 +103,7 @@ export function DashboardHeader({
             </div>
             <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">
               <Wrench className="h-6 w-6 mx-auto mb-2 opacity-80" />
-              <div className="text-2xl font-bold">{equipmentCount}</div>
+              <div className="text-2xl font-bold">{stats.totalEquipment || 0}</div>
               <div className="text-xs text-blue-100">{t('dashboard.totalEquipment')}</div>
             </div>
             <div className="text-center p-3 rounded-lg bg-white/10 backdrop-blur-sm">

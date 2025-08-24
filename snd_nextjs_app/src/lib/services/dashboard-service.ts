@@ -18,10 +18,12 @@ export interface DashboardStats {
   totalEmployees: number;
   activeProjects: number;
   availableEquipment: number;
+  totalEquipment: number;
   monthlyRevenue: number;
   pendingApprovals: number;
   activeRentals: number;
-  totalCustomers: number;
+  totalCompanies: number;
+  totalDocuments: number;
   equipmentUtilization: number;
   todayTimesheets: number;
   expiredDocuments: number;
@@ -140,8 +142,6 @@ export class DashboardService {
   static async getDashboardStats(): Promise<DashboardStats> {
     try {
       const today = new Date();
-      // const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      // const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
       // Get total employees
       let totalEmployeesResult = { count: 0 };
@@ -152,7 +152,7 @@ export class DashboardService {
           .where(eq(employees.status, 'active'));
         totalEmployeesResult = result[0] || { count: 0 };
       } catch (error) {
-        
+        console.error('Error fetching total employees:', error);
       }
 
       // Get active projects
@@ -164,8 +164,12 @@ export class DashboardService {
           .where(eq(projects.status, 'active'));
         activeProjectsResult = result[0] || { count: 0 };
       } catch (error) {
-        
+        console.error('Error fetching active projects:', error);
       }
+
+      // Get equipment counts using helper methods
+      const totalEquipment = await this.getTotalEquipmentCount();
+      const availableEquipment = await this.getAvailableEquipmentCount();
 
       // Get active rentals
       let activeRentalsResult = { count: 0 };
@@ -176,8 +180,12 @@ export class DashboardService {
           .where(eq(rentals.status, 'active'));
         activeRentalsResult = result[0] || { count: 0 };
       } catch (error) {
-        
+        console.error('Error fetching active rentals:', error);
       }
+
+      // Get company and document counts using helper methods
+      const totalCompanies = await this.getTotalCompaniesCount();
+      const totalDocuments = await this.getTotalDocumentsCount();
 
       // Get today's timesheets
       let todayTimesheetsResult = { count: 0 };
@@ -191,7 +199,7 @@ export class DashboardService {
           todayTimesheetsResult = result[0] || { count: 0 };
         }
       } catch (error) {
-        
+        console.error('Error fetching today timesheets:', error);
       }
 
       // Get expired documents count
@@ -205,7 +213,7 @@ export class DashboardService {
           );
         expiredDocumentsResult = result[0] || { count: 0 };
       } catch (error) {
-        
+        console.error('Error fetching expired documents:', error);
       }
 
       // Get expiring documents count (within 30 days)
@@ -225,31 +233,7 @@ export class DashboardService {
           );
         expiringDocumentsResult = result[0] || { count: 0 };
       } catch (error) {
-        
-      }
-
-      // Get total customers
-      let totalCustomersResult = { count: 0 };
-      try {
-        const result = await db
-          .select({ count: count() })
-          .from(customers)
-          .where(eq(customers.status, 'active'));
-        totalCustomersResult = result[0] || { count: 0 };
-      } catch (error) {
-        
-      }
-
-      // Get available equipment
-      let availableEquipmentResult = { count: 0 };
-      try {
-        const result = await db
-          .select({ count: count() })
-          .from(equipment)
-          .where(eq(equipment.status, 'available'));
-        availableEquipmentResult = result[0] || { count: 0 };
-      } catch (error) {
-        
+        console.error('Error fetching expiring documents:', error);
       }
 
       // Get pending approvals (timesheets pending approval)
@@ -261,14 +245,16 @@ export class DashboardService {
           .where(eq(timesheets.status, 'pending'));
         pendingApprovalsResult = result[0] || { count: 0 };
       } catch (error) {
-        
+        console.error('Error fetching pending approvals:', error);
       }
 
       // Calculate monthly revenue (placeholder - you can implement actual calculation)
       const monthlyRevenue = 0;
 
-      // Calculate equipment utilization (placeholder)
-      const equipmentUtilization = 0;
+      // Calculate equipment utilization
+      const equipmentUtilization = totalEquipment > 0 
+        ? Math.round((availableEquipment / totalEquipment) * 100)
+        : 0;
 
       // Get financial metrics from ERPNext
       let financialMetrics = {
@@ -286,7 +272,7 @@ export class DashboardService {
         financialMetrics.netProfit =
           financialMetrics.totalMoneyReceived - financialMetrics.totalMoneyLost;
       } catch (error) {
-        
+        console.error('Error fetching financial metrics from ERPNext:', error);
         // Use default values if ERPNext is not available
       }
 
@@ -295,34 +281,86 @@ export class DashboardService {
       try {
         employeesCurrentlyOnLeave = await this.getEmployeesCurrentlyOnLeave();
       } catch (error) {
-        
+        console.error('Error fetching employees on leave:', error);
         employeesCurrentlyOnLeave = [];
       }
 
       return {
-        totalEmployees: totalEmployeesResult.count,
-        activeProjects: activeProjectsResult.count,
-        availableEquipment: availableEquipmentResult.count,
-        monthlyRevenue,
-        pendingApprovals: pendingApprovalsResult.count,
-        activeRentals: activeRentalsResult.count,
-        totalCustomers: totalCustomersResult.count,
-        equipmentUtilization,
-        todayTimesheets: todayTimesheetsResult.count,
-        expiredDocuments: expiredDocumentsResult.count,
-        expiringDocuments: expiringDocumentsResult.count,
-        employeesOnLeave: employeesCurrentlyOnLeave.length,
+        totalEmployees: totalEmployeesResult.count || 0,
+        activeProjects: activeProjectsResult.count || 0,
+        availableEquipment: availableEquipment || 0,
+        totalEquipment: totalEquipment || 0,
+        monthlyRevenue: monthlyRevenue || 0,
+        pendingApprovals: pendingApprovalsResult.count || 0,
+        activeRentals: activeRentalsResult.count || 0,
+        totalCompanies: totalCompanies || 0,
+        totalDocuments: totalDocuments || 0,
+        equipmentUtilization: equipmentUtilization || 0,
+        todayTimesheets: todayTimesheetsResult.count || 0,
+        expiredDocuments: expiredDocumentsResult.count || 0,
+        expiringDocuments: expiringDocumentsResult.count || 0,
+        employeesOnLeave: employeesCurrentlyOnLeave.length || 0,
         // Financial metrics
-        totalMoneyReceived: financialMetrics.totalMoneyReceived,
-        totalMoneyLost: financialMetrics.totalMoneyLost,
-        monthlyMoneyReceived: financialMetrics.monthlyMoneyReceived,
-        monthlyMoneyLost: financialMetrics.monthlyMoneyLost,
-        netProfit: financialMetrics.netProfit,
-        currency: financialMetrics.currency,
+        totalMoneyReceived: financialMetrics.totalMoneyReceived || 0,
+        totalMoneyLost: financialMetrics.totalMoneyLost || 0,
+        monthlyMoneyReceived: financialMetrics.monthlyMoneyReceived || 0,
+        monthlyMoneyLost: financialMetrics.monthlyMoneyLost || 0,
+        netProfit: financialMetrics.netProfit || 0,
+        currency: financialMetrics.currency || 'SAR',
       };
     } catch (error) {
-      
+      console.error('Error in getDashboardStats:', error);
       throw error;
+    }
+  }
+
+  static async getTotalEquipmentCount(): Promise<number> {
+    try {
+      const result = await db
+        .select({ count: count() })
+        .from(equipment);
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('Error fetching total equipment count:', error);
+      return 0;
+    }
+  }
+
+  static async getAvailableEquipmentCount(): Promise<number> {
+    try {
+      const result = await db
+        .select({ count: count() })
+        .from(equipment)
+        .where(eq(equipment.status, 'available'));
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('Error fetching available equipment count:', error);
+      return 0;
+    }
+  }
+
+  static async getTotalCompaniesCount(): Promise<number> {
+    try {
+      const result = await db
+        .select({ count: count() })
+        .from(customers)
+        .where(eq(customers.status, 'active'));
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('Error fetching total companies count:', error);
+      return 0;
+    }
+  }
+
+  static async getTotalDocumentsCount(): Promise<number> {
+    try {
+      const result = await db
+        .select({ count: count() })
+        .from(employeeDocuments);
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('Error fetching total documents count:', error);
+      return 0;
     }
   }
 
