@@ -13,6 +13,13 @@ import {
   timesheets,
 } from '@/lib/drizzle/schema';
 import { and, count, desc, eq, gte, isNotNull, lte, sql } from 'drizzle-orm';
+import { 
+  cacheQueryResult, 
+  generateCacheKey, 
+  CACHE_TAGS, 
+  CACHE_PREFIXES,
+  invalidateCache 
+} from '@/lib/redis';
 
 export interface DashboardStats {
   totalEmployees: number;
@@ -141,18 +148,35 @@ export interface RecentActivity {
 }
 
 export class DashboardService {
+  /**
+   * Invalidate dashboard cache when relevant data changes
+   */
+  static async invalidateDashboardCache(): Promise<void> {
+    await invalidateCache([CACHE_TAGS.DASHBOARD]);
+  }
+
   static async getDashboardStats(): Promise<DashboardStats> {
     try {
       const today = new Date();
 
-      // Get total employees
+      // Get total employees with caching
       let totalEmployeesResult = { count: 0 };
       try {
-        const result = await db
-          .select({ count: count() })
-          .from(employees)
-          .where(eq(employees.status, 'active'));
-        totalEmployeesResult = result[0] || { count: 0 };
+        totalEmployeesResult = await cacheQueryResult(
+          generateCacheKey('employees', 'count', { status: 'active' }),
+          async () => {
+            const result = await db
+              .select({ count: count() })
+              .from(employees)
+              .where(eq(employees.status, 'active'));
+            return result[0] || { count: 0 };
+          },
+          {
+            ttl: 300, // 5 minutes
+            tags: [CACHE_TAGS.EMPLOYEES, CACHE_TAGS.DASHBOARD],
+            prefix: CACHE_PREFIXES.DASHBOARD
+          }
+        );
       } catch (error) {
         console.error('Error fetching total employees:', error);
       }

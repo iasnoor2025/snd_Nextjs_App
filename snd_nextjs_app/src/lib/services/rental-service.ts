@@ -1,4 +1,4 @@
-import { db } from '@/lib/db';
+import { db } from '@/lib/drizzle';
 import {
   customers,
   employeeAssignments,
@@ -8,6 +8,12 @@ import {
   rentals,
 } from '@/lib/drizzle/schema';
 import { and, desc, eq, gte, ilike, lte, or, sql } from 'drizzle-orm';
+import { 
+  cacheQueryResult, 
+  generateCacheKey, 
+  CACHE_TAGS, 
+  CACHE_PREFIXES 
+} from '@/lib/redis';
 
 export class RentalService {
   // Get all rentals with filters
@@ -19,134 +25,145 @@ export class RentalService {
     startDate?: string;
     endDate?: string;
   }) {
-    const conditions: any[] = [];
+    // Generate cache key based on filters
+    const cacheKey = generateCacheKey('rentals', 'list', filters || {});
+    
+    return cacheQueryResult(
+      cacheKey,
+      async () => {
+        const conditions: any[] = [];
 
-    if (filters?.search) {
-      conditions.push(
-        or(
-          ilike(rentals.rentalNumber, `%${filters.search}%`),
-          ilike(customers.name, `%${filters.search}%`)
-        )
-      );
-    }
-
-    if (filters?.status) {
-      conditions.push(eq(rentals.status, filters.status));
-    }
-
-    if (filters?.customerId) {
-      conditions.push(eq(rentals.customerId, parseInt(filters.customerId)));
-    }
-
-    if (filters?.paymentStatus) {
-      conditions.push(eq(rentals.paymentStatus, filters.paymentStatus));
-    }
-
-    if (filters?.startDate) {
-      conditions.push(gte(rentals.startDate, filters.startDate));
-    }
-
-    if (filters?.endDate) {
-      conditions.push(lte(rentals.expectedEndDate, filters.endDate));
-    }
-
-    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-
-    const results = await db
-      .select({
-        id: rentals.id,
-        customerId: rentals.customerId,
-        rentalNumber: rentals.rentalNumber,
-        projectId: rentals.projectId,
-        startDate: rentals.startDate,
-        expectedEndDate: rentals.expectedEndDate,
-        actualEndDate: rentals.actualEndDate,
-        status: rentals.status,
-        subtotal: rentals.subtotal,
-        taxAmount: rentals.taxAmount,
-        totalAmount: rentals.totalAmount,
-        discount: rentals.discount,
-        tax: rentals.tax,
-        finalAmount: rentals.finalAmount,
-        paymentStatus: rentals.paymentStatus,
-        notes: rentals.notes,
-        createdBy: rentals.createdBy,
-        equipmentName: rentals.equipmentName,
-        description: rentals.description,
-        quotationId: rentals.quotationId,
-        mobilizationDate: rentals.mobilizationDate,
-        invoiceDate: rentals.invoiceDate,
-        depositAmount: rentals.depositAmount,
-        paymentTermsDays: rentals.paymentTermsDays,
-        paymentDueDate: rentals.paymentDueDate,
-        hasTimesheet: rentals.hasTimesheet,
-        hasOperators: rentals.hasOperators,
-        completedBy: rentals.completedBy,
-        completedAt: rentals.completedAt,
-        approvedBy: rentals.approvedBy,
-        approvedAt: rentals.approvedAt,
-        depositPaid: rentals.depositPaid,
-        depositPaidDate: rentals.depositPaidDate,
-        depositRefunded: rentals.depositRefunded,
-        depositRefundDate: rentals.depositRefundDate,
-        invoiceId: rentals.invoiceId,
-        locationId: rentals.locationId,
-        createdAt: rentals.createdAt,
-        updatedAt: rentals.updatedAt,
-        deletedAt: rentals.deletedAt,
-        // Customer fields
-        customerName: customers.name,
-        customerEmail: customers.email,
-        customerPhone: customers.phone,
-        // Project fields (if needed)
-        projectName: sql<string>`NULL`,
-      })
-      .from(rentals)
-      .leftJoin(customers, eq(rentals.customerId, customers.id))
-      .where(whereClause)
-      .orderBy(desc(rentals.createdAt));
-
-    // Get rental items for each rental
-    const rentalsWithItems = await Promise.all(
-      results.map(async rental => {
-        try {
-          
-          const items = await this.getRentalItems(rental.id);
-          
-          return {
-            ...rental,
-            rental_items: items || [],
-            rentalItems: items || [], // Add camelCase version for frontend compatibility
-            customer: rental.customerName
-              ? {
-                  id: rental.customerId,
-                  name: rental.customerName,
-                  email: rental.customerEmail,
-                  phone: rental.customerPhone,
-                }
-              : null,
-          };
-        } catch (error) {
-
-          // Return rental without items if there's an error
-          return {
-            ...rental,
-            rental_items: [],
-            rentalItems: [], // Add camelCase version for frontend compatibility
-            customer: rental.customerName
-              ? {
-                  id: rental.customerId,
-                  name: rental.customerName,
-                  email: rental.customerEmail,
-                  phone: rental.customerPhone,
-                }
-              : null,
-          };
+        if (filters?.search) {
+          conditions.push(
+            or(
+              ilike(rentals.rentalNumber, `%${filters.search}%`),
+              ilike(customers.name, `%${filters.search}%`)
+            )
+          );
         }
-      })
-    );
 
-    return rentalsWithItems;
+        if (filters?.status) {
+          conditions.push(eq(rentals.status, filters.status));
+        }
+
+        if (filters?.customerId) {
+          conditions.push(eq(rentals.customerId, parseInt(filters.customerId)));
+        }
+
+        if (filters?.paymentStatus) {
+          conditions.push(eq(rentals.paymentStatus, filters.paymentStatus));
+        }
+
+        if (filters?.startDate) {
+          conditions.push(gte(rentals.startDate, filters.startDate));
+        }
+
+        if (filters?.endDate) {
+          conditions.push(lte(rentals.expectedEndDate, filters.endDate));
+        }
+
+        const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
+        const results = await db
+          .select({
+            id: rentals.id,
+            customerId: rentals.customerId,
+            rentalNumber: rentals.rentalNumber,
+            projectId: rentals.projectId,
+            startDate: rentals.startDate,
+            expectedEndDate: rentals.expectedEndDate,
+            actualEndDate: rentals.actualEndDate,
+            status: rentals.status,
+            subtotal: rentals.subtotal,
+            taxAmount: rentals.taxAmount,
+            totalAmount: rentals.totalAmount,
+            discount: rentals.discount,
+            tax: rentals.tax,
+            finalAmount: rentals.finalAmount,
+            paymentStatus: rentals.paymentStatus,
+            notes: rentals.notes,
+            createdBy: rentals.createdBy,
+            equipmentName: rentals.equipmentName,
+            description: rentals.description,
+            quotationId: rentals.quotationId,
+            mobilizationDate: rentals.mobilizationDate,
+            invoiceDate: rentals.invoiceDate,
+            depositAmount: rentals.depositAmount,
+            paymentTermsDays: rentals.paymentTermsDays,
+            paymentDueDate: rentals.paymentDueDate,
+            hasTimesheet: rentals.hasTimesheet,
+            hasOperators: rentals.hasOperators,
+            completedBy: rentals.completedBy,
+            completedAt: rentals.completedAt,
+            approvedBy: rentals.approvedBy,
+            approvedAt: rentals.approvedAt,
+            depositPaid: rentals.depositPaid,
+            depositPaidDate: rentals.depositPaidDate,
+            depositRefunded: rentals.depositRefunded,
+            depositRefundDate: rentals.depositRefundDate,
+            invoiceId: rentals.invoiceId,
+            locationId: rentals.locationId,
+            createdAt: rentals.createdAt,
+            updatedAt: rentals.updatedAt,
+            deletedAt: rentals.deletedAt,
+            // Customer fields
+            customerName: customers.name,
+            customerEmail: customers.email,
+            customerPhone: customers.phone,
+            // Project fields (if needed)
+            projectName: sql<string>`NULL`,
+          })
+          .from(rentals)
+          .leftJoin(customers, eq(rentals.customerId, customers.id))
+          .where(whereClause)
+          .orderBy(desc(rentals.createdAt));
+
+        // Get rental items for each rental
+        const rentalsWithItems = await Promise.all(
+          results.map(async rental => {
+            try {
+              const items = await this.getRentalItems(rental.id);
+              
+              return {
+                ...rental,
+                rental_items: items || [],
+                rentalItems: items || [], // Add camelCase version for frontend compatibility
+                customer: rental.customerName
+                  ? {
+                      id: rental.customerId,
+                      name: rental.customerName,
+                      email: rental.customerEmail,
+                      phone: rental.customerPhone,
+                    }
+                  : null,
+              };
+            } catch (error) {
+              // Return rental without items if there's an error
+              return {
+                ...rental,
+                rental_items: [],
+                rentalItems: [], // Add camelCase version for frontend compatibility
+                customer: rental.customerName
+                  ? {
+                      id: rental.customerId,
+                      name: rental.customerName,
+                      email: rental.customerEmail,
+                      phone: rental.customerPhone,
+                    }
+                  : null,
+              };
+            }
+          })
+        );
+
+        return rentalsWithItems;
+      },
+      {
+        ttl: 300, // 5 minutes
+        tags: [CACHE_TAGS.RENTALS],
+        prefix: CACHE_PREFIXES.RENTALS
+      }
+    );
   }
 
   // Get single rental by ID

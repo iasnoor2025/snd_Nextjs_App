@@ -43,7 +43,7 @@ interface EquipmentSectionProps {
 }
 
 export function EquipmentSection({
-  equipmentData,
+  equipmentData: initialEquipmentData,
   onUpdateEquipment,
   onHideSection,
   isRefreshing = false,
@@ -57,6 +57,43 @@ export function EquipmentSection({
   const [pageSize, setPageSize] = useState(10);
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [previousIssueCount, setPreviousIssueCount] = useState(0);
+  const [equipmentData, setEquipmentData] = useState(initialEquipmentData || []);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch equipment data from API
+  const fetchEquipmentData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/equipment/dashboard');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data.equipmentData) {
+        setEquipmentData(data.equipmentData);
+        setLastUpdated(new Date());
+      }
+    } catch (err) {
+      console.error('Failed to fetch equipment data:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch equipment data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchEquipmentData();
+  }, []);
+
+  // Refresh data function
+  const handleRefresh = async () => {
+    await fetchEquipmentData();
+  };
 
   // Update timestamp when data changes
   useEffect(() => {
@@ -133,10 +170,10 @@ export function EquipmentSection({
             <CardDescription>
               {t('equipment.istimara.description')}
                              <span className="block text-xs text-muted-foreground mt-1">
-                 Last Updated: {lastUpdated.toLocaleTimeString()}
+                 {t('equipment.istimara.lastUpdated')}: {lastUpdated.toLocaleTimeString()}
                  {isRefreshing && (
                    <span className="ml-2 text-blue-500">
-                     • Refreshing...
+                     • {t('equipment.istimara.refreshing')}
                    </span>
                  )}
                </span>
@@ -145,8 +182,8 @@ export function EquipmentSection({
           <div className="flex items-center gap-2">
                          {isRefreshing && (
                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                 Refreshing...
+                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+               {t('equipment.istimara.refreshing')}
                </div>
              )}
             <RoleBased roles={['SUPER_ADMIN', 'ADMIN', 'MANAGER']}>
@@ -159,7 +196,7 @@ export function EquipmentSection({
                 title={expiredEquipmentData.length === 0 ? t('equipment.istimara.noExpiredRecordsToDownload') : t('equipment.istimara.downloadPdfReport', { count: expiredEquipmentData.length })}
               >
                 <Download className="h-4 w-4" />
-                Download PDF ({expiredEquipmentData.length})
+                {t('equipment.istimara.downloadPdf')} ({expiredEquipmentData.length})
               </Button>
               <Button
                 variant="outline"
@@ -174,6 +211,15 @@ export function EquipmentSection({
             <Button
               variant="outline"
               size="sm"
+              onClick={handleRefresh}
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              {loading ? t('equipment.istimara.refreshing') : t('dashboard.refresh')}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={onHideSection}
               className="flex items-center gap-2"
             >
@@ -182,71 +228,94 @@ export function EquipmentSection({
           </div>
         </div>
       </CardHeader>
-             <CardContent className="space-y-4">
-         {/* Equipment Summary */}
-         <div className="mb-4 p-3 bg-muted/30 rounded-lg border">
-           <div className="grid grid-cols-2 gap-4 text-center">
-             <div>
-               <div className="text-lg font-semibold text-muted-foreground">
-                 Total Equipment: {safeEquipmentData.length}
-               </div>
-               <div className="text-sm text-muted-foreground">
-                 {t('equipment.istimara.itemsRequiringAttention')}: {safeEquipmentData.filter(item => item.status !== 'available').length}
-               </div>
-             </div>
-             <div>
-               <div className="text-lg font-semibold text-muted-foreground">
-                 With Driver: {safeEquipmentData.filter(item => item.driverName).length}
-               </div>
-               <div className="text-sm text-muted-foreground">
-                 Unassigned: {safeEquipmentData.filter(item => !item.driverName).length}
-               </div>
-             </div>
-           </div>
-         </div>
-         
-         <div className="grid grid-cols-5 gap-4">
-           <div className="text-center p-3 rounded-lg border bg-card">
-             <div className="text-2xl font-bold text-red-600">
-               {safeEquipmentData.filter(item => item.status === 'expired').length}
-             </div>
-             <div className="text-sm text-muted-foreground">Expired</div>
-           </div>
-           <div className="text-center p-3 rounded-lg border bg-card">
-             <div className="text-2xl font-bold text-yellow-600">
-               {safeEquipmentData.filter(item => item.status === 'expiring').length}
-             </div>
-             <div className="text-sm text-muted-foreground">Expiring Soon</div>
-           </div>
-           <div className="text-center p-3 rounded-lg border bg-card">
-             <div className="text-2xl font-bold text-blue-600">
-               {safeEquipmentData.filter(item => item.status === 'available').length}
-             </div>
-             <div className="text-sm text-muted-foreground">Available</div>
-           </div>
-           <div className="text-center p-3 rounded-lg border bg-card">
-             <div className="text-2xl font-bold text-gray-600">
-               {safeEquipmentData.filter(item => item.status === 'missing').length}
-             </div>
-             <div className="text-sm text-muted-foreground">Missing</div>
-           </div>
-           <div className="text-center p-3 rounded-lg border bg-card">
-             <div className="text-2xl font-bold text-green-600">
-               {safeEquipmentData.filter(item => item.driverName).length}
-             </div>
-             <div className="text-sm text-muted-foreground">With Driver</div>
-           </div>
-         </div>
+                   <CardContent className="space-y-4">
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-8">
+            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-muted-foreground">{t('equipment.istimara.refreshing')}</p>
+          </div>
+        )}
 
-         {/* Equipment Table */}
-         <div className="space-y-4">
+        {/* Error State */}
+        {error && !loading && (
+          <div className="text-center py-8">
+            <div className="text-red-600 mb-4">
+              <p className="font-medium">Error loading equipment data</p>
+              <p className="text-sm">{error}</p>
+            </div>
+            <Button onClick={handleRefresh} variant="outline">
+              Try Again
+            </Button>
+          </div>
+        )}
+
+        {/* Equipment Summary */}
+        {!loading && !error && (
+          <>
+            <div className="mb-4 p-3 bg-muted/30 rounded-lg border">
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <div className="text-lg font-semibold text-muted-foreground">
+                    {t('equipment.istimara.totalEquipment')}: {safeEquipmentData.length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {t('equipment.istimara.itemsRequiringAttention')}: {safeEquipmentData.filter(item => item.status !== 'available').length}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-lg font-semibold text-muted-foreground">
+                    {t('equipment.istimara.withDriver')}: {safeEquipmentData.filter(item => item.driverName).length}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {t('equipment.istimara.unassigned')}: {safeEquipmentData.filter(item => !item.driverName).length}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-5 gap-4">
+              <div className="text-center p-3 rounded-lg border bg-card">
+                <div className="text-2xl font-bold text-red-600">
+                  {safeEquipmentData.filter(item => item.status === 'expired').length}
+                </div>
+                <div className="text-sm text-muted-foreground">{t('equipment.istimara.expired')}</div>
+              </div>
+              <div className="text-center p-3 rounded-lg border bg-card">
+                <div className="text-2xl font-bold text-yellow-600">
+                  {safeEquipmentData.filter(item => item.status === 'expiring').length}
+                </div>
+                <div className="text-sm text-muted-foreground">{t('equipment.istimara.expiringSoon')}</div>
+              </div>
+              <div className="text-center p-3 rounded-lg border bg-card">
+                <div className="text-2xl font-bold text-blue-600">
+                  {safeEquipmentData.filter(item => item.status === 'available').length}
+                </div>
+                <div className="text-sm text-muted-foreground">{t('equipment.istimara.available')}</div>
+              </div>
+              <div className="text-center p-3 rounded-lg border bg-card">
+                <div className="text-2xl font-bold text-gray-600">
+                  {safeEquipmentData.filter(item => item.status === 'missing').length}
+                </div>
+                <div className="text-sm text-muted-foreground">{t('equipment.istimara.missing')}</div>
+              </div>
+              <div className="text-center p-3 rounded-lg border bg-card">
+                <div className="text-2xl font-bold text-green-600">
+                  {safeEquipmentData.filter(item => item.driverName).length}
+                </div>
+                <div className="text-sm text-muted-foreground">{t('equipment.istimara.withDriver')}</div>
+              </div>
+            </div>
+
+            {/* Equipment Table */}
+            <div className="space-y-4">
            {/* Search and Filter Controls - Moved above table */}
            <div className="flex flex-col sm:flex-row gap-3 p-4 bg-muted/30 rounded-lg border">
              <div className="flex-1">
                <div className="relative">
                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                  <Input
-                   placeholder="Search equipment, istimara, driver..."
+                   placeholder={t('equipment.istimara.searchPlaceholderDashboard')}
                    value={search}
                    onChange={e => setSearch(e.target.value)}
                    className="pl-10"
@@ -259,19 +328,19 @@ export function EquipmentSection({
                  onChange={e => setStatusFilter(e.target.value)}
                  className="h-10 px-3 text-sm border border-input rounded-md bg-background"
                >
-                 <option value="all">All Statuses</option>
-                 <option value="expired">Expired</option>
-                 <option value="expiring">Expiring Soon</option>
-                 <option value="missing">Missing</option>
+                 <option value="all">{t('equipment.istimara.allStatuses')}</option>
+                 <option value="expired">{t('equipment.istimara.expired')}</option>
+                 <option value="expiring">{t('equipment.istimara.expiringSoon')}</option>
+                 <option value="missing">{t('equipment.istimara.missing')}</option>
                </select>
                <select
                  value={driverFilter}
                  onChange={e => setDriverFilter(e.target.value)}
                  className="h-10 px-3 text-sm border border-input rounded-md bg-background"
                >
-                 <option value="all">All Drivers</option>
-                 <option value="assigned">With Driver</option>
-                 <option value="unassigned">No Driver</option>
+                 <option value="all">{t('equipment.istimara.allDrivers')}</option>
+                 <option value="assigned">{t('equipment.istimara.withDriver')}</option>
+                 <option value="unassigned">{t('equipment.istimara.noDriver')}</option>
                </select>
                {(search || statusFilter !== 'all' || driverFilter !== 'all') && (
                  <Button
@@ -284,7 +353,7 @@ export function EquipmentSection({
                    }}
                    className="h-10"
                  >
-                   Clear
+                   {t('equipment.istimara.clear')}
                  </Button>
                )}
              </div>
@@ -302,12 +371,12 @@ export function EquipmentSection({
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Equipment Name</TableHead>
-                          <TableHead>Istimara #</TableHead>
-                          <TableHead>Driver/Operator</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Expiry Date</TableHead>
-                          <TableHead>Actions</TableHead>
+                          <TableHead>{t('equipment.istimara.tableHeaders.equipmentName')}</TableHead>
+                          <TableHead>{t('equipment.istimara.tableHeaders.istimaraNumber')}</TableHead>
+                          <TableHead>{t('equipment.istimara.tableHeaders.driverOperator')}</TableHead>
+                          <TableHead>{t('equipment.istimara.tableHeaders.status')}</TableHead>
+                          <TableHead>{t('equipment.istimara.tableHeaders.expiryDate')}</TableHead>
+                          <TableHead>{t('equipment.istimara.tableHeaders.actions')}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -329,7 +398,7 @@ export function EquipmentSection({
                                   {item.istimara}
                                 </span>
                               ) : (
-                                <span className="text-red-600 text-xs">No Istimara</span>
+                                <span className="text-red-600 text-xs">{t('equipment.istimara.noIstimara')}</span>
                               )}
                             </TableCell>
                             <TableCell className="text-sm">
@@ -337,11 +406,11 @@ export function EquipmentSection({
                                 <div>
                                   <div className="font-medium">{item.driverName}</div>
                                   <div className="text-xs text-muted-foreground">
-                                    File: {item.driverFileNumber || 'N/A'}
+                                    {t('equipment.istimara.file')}: {item.driverFileNumber || 'N/A'}
                                   </div>
                                 </div>
                               ) : (
-                                <span className="text-muted-foreground text-xs">Unassigned</span>
+                                <span className="text-muted-foreground text-xs">{t('equipment.istimara.unassigned')}</span>
                               )}
                             </TableCell>
                             <TableCell>
@@ -383,15 +452,15 @@ export function EquipmentSection({
                                       }`}
                                     >
                                       {item.daysRemaining < 0
-                                        ? `${Math.abs(item.daysRemaining)} days overdue`
-                                        : `${item.daysRemaining} days remaining`}
+                                        ? t('equipment.istimara.daysOverdue', { days: Math.abs(item.daysRemaining) })
+                                        : t('equipment.istimara.daysRemaining', { days: item.daysRemaining })}
                                     </div>
                                   )}
                                 </div>
                               ) : (
-                                <span className="text-red-600 font-medium">
-                                  No expiry date
-                                </span>
+                                                                 <span className="text-red-600 font-medium">
+                                   {t('equipment.istimara.noExpiryDate')}
+                                 </span>
                               )}
                             </TableCell>
                             <TableCell>
@@ -436,7 +505,7 @@ export function EquipmentSection({
                           <option value={100}>100</option>
                         </select>
                         <span className="text-sm text-muted-foreground">
-                          per page
+                          {t('equipment.pagination.perPageText')}
                         </span>
                       </div>
 
@@ -447,7 +516,7 @@ export function EquipmentSection({
                           onClick={() => setCurrentPage(currentPage - 1)}
                           disabled={currentPage === 1}
                         >
-                          Previous
+                          {t('equipment.pagination.previous')}
                         </Button>
 
                         <div className="flex items-center gap-1">
@@ -473,12 +542,12 @@ export function EquipmentSection({
                           onClick={() => setCurrentPage(currentPage + 1)}
                           disabled={currentPage === totalPages}
                         >
-                          Next
+                          {t('equipment.pagination.next')}
                         </Button>
                       </div>
 
                       <div className="text-sm text-muted-foreground">
-                        Page {currentPage} of {totalPages}
+                        {t('equipment.pagination.page', { current: currentPage, total: totalPages })}
                       </div>
                     </div>
                   )}
@@ -487,7 +556,7 @@ export function EquipmentSection({
                 {filteredData.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     <Wrench className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="font-medium">No equipment records found</p>
+                    <p className="font-medium">{t('equipment.istimara.noRecordsFound')}</p>
                     <p className="text-sm opacity-80">
                       {search || statusFilter !== 'all'
                         ? t('equipment.istimara.tryAdjustingSearchOrFilters')
@@ -495,6 +564,8 @@ export function EquipmentSection({
                     </p>
                   </div>
                 )}
+            </>
+          )}
       </CardContent>
     </Card>
   );

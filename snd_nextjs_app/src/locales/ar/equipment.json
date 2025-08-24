@@ -137,7 +137,8 @@
     "page": "الصفحة {{current}} من {{total}}",
     "previous": "السابق",
     "next": "التالي",
-    "itemsPerPage": "عنصر في الصفحة"
+    "itemsPerPage": "عنصر في الصفحة",
+    "perPageText": "في الصفحة"
   },
   "documents": {
     "title": "مستندات المعدات",
@@ -183,6 +184,10 @@
     "istimaraExpiryDate": "تاريخ انتهاء الإستمارة",
     "status": "الحالة",
     "istimaraNumber": "رقم الإستمارة",
+    "noIstimara": "لا توجد إستمارة",
+    "unassigned": "غير مخصص",
+    "file": "ملف",
+    "totalEquipment": "إجمالي المعدات",
     "fileNumber": "رقم الملف",
     "name": "الاسم",
     "edit": "تعديل",
@@ -191,10 +196,27 @@
     "pdfGenerationFailed": "فشل في إنشاء PDF",
     "noExpiredRecordsToDownload": "لا توجد سجلات منتهية الصلاحية للتحميل",
     "downloadPdfReport": "تحميل تقرير PDF ({{count}} سجل)",
+    "downloadPdf": "تحميل PDF",
+    "lastUpdated": "آخر تحديث",
+    "refreshing": "جاري التحديث...",
     "itemsRequiringAttention": "العناصر التي تحتاج إلى اهتمام",
     "addIstimaraExpiryDate": "إضافة تاريخ انتهاء الإستمارة",
     "updateIstimaraExpiryDate": "تحديث تاريخ انتهاء الإستمارة",
     "tryAdjustingSearchOrFilters": "حاول تعديل البحث أو الفلاتر",
-    "allRecordsValid": "جميع سجلات الإستمارة صالحة حالياً"
+    "allRecordsValid": "جميع سجلات الإستمارة صالحة حالياً",
+    "allEquipment": "جميع المعدات",
+    "allEquipmentDescription": "قائمة كاملة بجميع المعدات مع حالة الإستمارة",
+    "searchPlaceholderDashboard": "البحث في المعدات والإستمارة والسائق...",
+    "allDrivers": "جميع السائقين",
+    "withDriver": "مع سائق",
+    "noDriver": "بدون سائق",
+    "tableHeaders": {
+      "equipmentName": "اسم المعدات",
+      "istimaraNumber": "رقم الإستمارة #",
+      "driverOperator": "السائق/المشغل",
+      "status": "الحالة",
+      "expiryDate": "تاريخ الانتهاء",
+      "actions": "الإجراءات"
+    }
   }
 }
