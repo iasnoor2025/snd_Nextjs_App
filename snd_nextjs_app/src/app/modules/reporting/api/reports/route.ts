@@ -5,6 +5,7 @@ import { getRBACPermissions } from '@/lib/rbac/rbac-utils';
 import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -50,45 +51,57 @@ export async function GET(_request: NextRequest) {
 
     const whereExpr = and(...whereConditions);
 
-    // Get reports with pagination using Drizzle
-    const [reports, totalResult] = await Promise.all([
-      db
-        .select({
-          id: analyticsReports.id,
-          name: analyticsReports.name,
-          type: analyticsReports.type,
-          status: analyticsReports.status,
-          createdBy: analyticsReports.createdBy,
-          createdAt: analyticsReports.createdAt,
-          lastGenerated: analyticsReports.lastGenerated,
-          schedule: analyticsReports.schedule,
-          description: analyticsReports.description,
-        })
-        .from(analyticsReports)
-        .where(whereExpr)
-        .orderBy(desc(analyticsReports.createdAt))
-        .offset(skip)
-        .limit(limit),
-      db
-        .select({ count: sql<number>`count(*)` })
-        .from(analyticsReports)
-        .where(whereExpr),
-    ]);
-
-    const total = Number(totalResult[0]?.count || 0);
-    const totalPages = Math.ceil(total / limit);
-
-    return NextResponse.json({
-      data: reports,
-      current_page: page,
-      last_page: totalPages,
-      per_page: limit,
-      total,
-      next_page_url: page < totalPages ? `/api/reports?page=${page + 1}&limit=${limit}` : null,
-      prev_page_url: page > 1 ? `/api/reports?page=${page - 1}&limit=${limit}` : null,
-    });
-  } catch (error) {
+    // Generate cache key based on filters and pagination
+    const cacheKey = generateCacheKey('reports', 'list', { page, limit, search, status, type });
     
+    return await cacheQueryResult(
+      cacheKey,
+      async () => {
+        // Get reports with pagination using Drizzle
+        const [reports, totalResult] = await Promise.all([
+          db
+            .select({
+              id: analyticsReports.id,
+              name: analyticsReports.name,
+              type: analyticsReports.type,
+              status: analyticsReports.status,
+              createdBy: analyticsReports.createdBy,
+              createdAt: analyticsReports.createdAt,
+              lastGenerated: analyticsReports.lastGenerated,
+              schedule: analyticsReports.schedule,
+              description: analyticsReports.description,
+            })
+            .from(analyticsReports)
+            .where(whereExpr)
+            .orderBy(desc(analyticsReports.createdAt))
+            .offset(skip)
+            .limit(limit),
+          db
+            .select({ count: sql<number>`count(*)` })
+            .from(analyticsReports)
+            .where(whereExpr),
+        ]);
+
+        const total = Number(totalResult[0]?.count || 0);
+        const totalPages = Math.ceil(total / limit);
+
+        return NextResponse.json({
+          data: reports,
+          current_page: page,
+          last_page: totalPages,
+          per_page: limit,
+          total,
+          next_page_url: page < totalPages ? `/api/reports?page=${page + 1}&limit=${limit}` : null,
+          prev_page_url: page > 1 ? `/api/reports?page=${page - 1}&limit=${limit}` : null,
+        });
+      },
+      {
+        ttl: 300, // 5 minutes
+        tags: [CACHE_TAGS.REPORTS, CACHE_TAGS.ANALYTICS],
+      }
+    );
+  } catch (error) {
+    console.error('Error fetching reports:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -7,7 +7,8 @@ import {
   roles,
   users,
 } from '@/lib/drizzle/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
+import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 
 export interface PermissionGrant {
   resource: string;
@@ -240,56 +241,94 @@ export class EnhancedPermissionService {
    * Get all permissions for a user
    * Similar to AccessControl's permissions() method
    */
-  async getUserPermissions(userId: string): Promise<string[]> {
-    const userIdInt = parseInt(userId);
+  static async getPermissions(userId: number): Promise<any> {
+    // Generate cache key for user permissions
+    const cacheKey = generateCacheKey('permissions', 'user', { userId });
+    
+    return await cacheQueryResult(
+      cacheKey,
+      async () => {
+        try {
+          // Get user roles
+          const userRoles = await db
+            .select({
+              roleId: modelHasRoles.roleId,
+            })
+            .from(modelHasRoles)
+            .where(eq(modelHasRoles.userId, userId));
 
-    const userResult = await db
-      .select({
-        id: users.id,
-        roleId: users.roleId,
-      })
-      .from(users)
-      .where(eq(users.id, userIdInt))
-      .limit(1);
+          if (userRoles.length === 0) {
+            return {
+              can: () => false,
+              cannot: () => true,
+              permissions: [],
+              roles: [],
+            };
+          }
 
-    if (userResult.length === 0) {
-      return [];
-    }
+          const roleIds = userRoles.map(ur => ur.roleId);
 
-    const user = userResult[0];
-    if (!user) {
-      return [];
-    }
+          // Get role permissions
+          const rolePermissions = await db
+            .select({
+              permissionId: roleHasPermissions.permissionId,
+              permissionName: permissions.name,
+              permissionAction: permissions.action,
+              permissionResource: permissions.resource,
+            })
+            .from(roleHasPermissions)
+            .innerJoin(permissions, eq(roleHasPermissions.permissionId, permissions.id))
+            .where(inArray(roleHasPermissions.roleId, roleIds));
 
-    const userPermissionsSet = new Set<string>();
+          // Get role names
+          const userRoleNames = await db
+            .select({
+              roleName: roles.name,
+            })
+            .from(roles)
+            .where(inArray(roles.id, roleIds));
 
-    // Add role permissions
-    const rolePermissions = await db
-      .select({
-        permissionName: permissions.name as any,
-      })
-      .from(roleHasPermissions)
-      .innerJoin(permissions, eq(roleHasPermissions.permissionId, permissions.id))
-      .where(eq(roleHasPermissions.roleId, user.roleId));
+          const permissionsList = rolePermissions.map(rp => ({
+            id: rp.permissionId,
+            name: rp.permissionName,
+            action: rp.permissionAction,
+            resource: rp.permissionResource,
+          }));
 
-    for (const rolePermission of rolePermissions) {
-      userPermissionsSet.add(rolePermission.permissionName);
-    }
+          const roleNames = userRoleNames.map(ur => ur.roleName);
 
-    // Add direct user permissions (override role permissions)
-    const userPermissions = await db
-      .select({
-        permissionName: permissions.name as any,
-      })
-      .from(modelHasPermissions)
-      .innerJoin(permissions, eq(modelHasPermissions.permissionId, permissions.id))
-      .where(eq(modelHasPermissions.userId, userIdInt));
+          // Create permission checker
+          const can = (action: string, resource: string): boolean => {
+            return permissionsList.some(
+              p => p.action === action && p.resource === resource
+            );
+          };
 
-    for (const userPermission of userPermissions) {
-      userPermissionsSet.add(userPermission.permissionName);
-    }
+          const cannot = (action: string, resource: string): boolean => {
+            return !can(action, resource);
+          };
 
-    return Array.from(userPermissionsSet);
+          return {
+            can,
+            cannot,
+            permissions: permissionsList,
+            roles: roleNames,
+          };
+        } catch (error) {
+          console.error('Error fetching user permissions:', error);
+          return {
+            can: () => false,
+            cannot: () => true,
+            permissions: [],
+            roles: [],
+          };
+        }
+      },
+      {
+        ttl: 600, // 10 minutes - permissions change less frequently
+        tags: [CACHE_TAGS.PERMISSIONS, CACHE_TAGS.ROLES, CACHE_TAGS.USERS],
+      }
+    );
   }
 
   /**

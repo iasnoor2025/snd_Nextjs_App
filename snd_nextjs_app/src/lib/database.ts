@@ -2,6 +2,7 @@
 import { db } from '@/lib/drizzle';
 import { customers, equipment, rentalItems, rentals, users } from '@/lib/drizzle/schema';
 import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 
 export class DatabaseService {
   // Customer operations
@@ -55,53 +56,41 @@ export class DatabaseService {
       }
     })();
 
-    const totalRow = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(customers)
-      .where(whereExpr as any);
-    const totalCount = Number((totalRow as any)[0]?.count ?? 0);
+    // Generate cache key based on options
+    const cacheKey = generateCacheKey('database', 'customers', { page, limit, search: options?.search, status: options?.status, sortBy, sortOrder });
+    
+    return await cacheQueryResult(
+      cacheKey,
+      async () => {
+        const totalRow = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(customers)
+          .where(whereExpr as any);
+        const totalCount = Number((totalRow as any)[0]?.count ?? 0);
 
-    const rows = await db
-      .select({
-        id: customers.id,
-        name: customers.name,
-        contact_person: customers.contactPerson,
-        email: customers.email,
-        phone: customers.phone,
-        address: customers.address,
-        city: customers.city,
-        state: customers.state,
-        postal_code: customers.postalCode,
-        country: customers.country,
-        website: customers.website,
-        tax_number: customers.taxNumber,
-        credit_limit: customers.creditLimit,
-        payment_terms: customers.paymentTerms,
-        notes: customers.notes,
-        is_active: customers.isActive,
-        company_name: customers.companyName,
-        erpnext_id: customers.erpnextId,
-        status: customers.status,
-        created_at: customers.createdAt,
-        updated_at: customers.updatedAt,
-      })
-      .from(customers)
-      .where(whereExpr as any)
-      .orderBy((sortOrder === 'asc' ? asc : desc)(orderCol))
-      .offset(skip)
-      .limit(limit);
+        const rows = await db
+          .select()
+          .from(customers)
+          .where(whereExpr as any)
+          .orderBy(sortOrder === 'asc' ? asc(orderCol) : desc(orderCol))
+          .limit(limit)
+          .offset(skip);
 
-    return {
-      customers: rows,
-      pagination: {
-        page,
-        limit,
-        total: totalCount,
-        totalPages: Math.ceil(totalCount / limit),
-        hasNext: page < Math.ceil(totalCount / limit),
-        hasPrev: page > 1,
+        return {
+          data: rows,
+          pagination: {
+            page,
+            limit,
+            total: totalCount,
+            pages: Math.ceil(totalCount / limit),
+          },
+        };
       },
-    };
+      {
+        ttl: 300, // 5 minutes
+        tags: [CACHE_TAGS.CUSTOMERS],
+      }
+    );
   }
 
   static async getCustomerById(id: number) {
@@ -356,17 +345,55 @@ export class DatabaseService {
     startDate?: string;
     endDate?: string;
   }) {
-    try {
-      // TODO: Implement rental filtering with Drizzle
-      // This would require proper joins with customers and rental_items tables
+    // Generate cache key based on filters
+    const cacheKey = generateCacheKey('database', 'rentals', filters || {});
+    
+    return await cacheQueryResult(
+      cacheKey,
+      async () => {
+        try {
+          const conditions: any[] = [];
 
-      const rentalRows = await db.select().from(rentals).orderBy(desc(rentals.createdAt));
+          if (filters?.search) {
+            conditions.push(
+              or(
+                ilike(rentals.rentalNumber, `%${filters.search}%`),
+                ilike(rentals.status, `%${filters.search}%`)
+              )
+            );
+          }
 
-      return rentalRows;
-    } catch (error) {
-      
-      return [];
-    }
+          if (filters?.status) {
+            conditions.push(eq(rentals.status, filters.status));
+          }
+
+          if (filters?.customerId) {
+            conditions.push(eq(rentals.customerId, parseInt(filters.customerId)));
+          }
+
+          if (filters?.paymentStatus) {
+            conditions.push(eq(rentals.paymentStatus, filters.paymentStatus));
+          }
+
+          const whereExpr = conditions.length > 0 ? and(...conditions) : undefined;
+
+          const rentalRows = await db
+            .select()
+            .from(rentals)
+            .where(whereExpr)
+            .orderBy(desc(rentals.createdAt));
+
+          return rentalRows;
+        } catch (error) {
+          console.error('Error fetching rentals:', error);
+          return [];
+        }
+      },
+      {
+        ttl: 300, // 5 minutes
+        tags: [CACHE_TAGS.RENTALS, CACHE_TAGS.CUSTOMERS],
+      }
+    );
   }
 
   static async getRental(id: number) {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 
 // Mock data that mirrors the Laravel controller response
 const getMockQuotationsData = (
@@ -169,20 +170,32 @@ export async function GET(_request: NextRequest) {
     const endDate = searchParams.get('end_date') || '';
     const page = parseInt(searchParams.get('page') || '1');
 
-    // In a real implementation, this would call the Laravel API
-    // const response = await fetch(`${process.env.LARAVEL_API_URL}/api/quotations?${searchParams.toString()}`, {
-    //   headers: {
-    //     'Authorization': `Bearer ${token}`,
-    //     'Content-Type': 'application/json',
-    //   },
-    // });
-
-    // For now, return mock data that mirrors the Laravel controller response
-    const data = getMockQuotationsData(search, status, startDate, endDate, page);
-
-    return NextResponse.json(data);
-  } catch (error) {
+    // Generate cache key based on filters and pagination
+    const cacheKey = generateCacheKey('quotations', 'list', { search, status, startDate, endDate, page });
     
+    return await cacheQueryResult(
+      cacheKey,
+      async () => {
+        // In a real implementation, this would call the Laravel API
+        // const response = await fetch(`${process.env.LARAVEL_API_URL}/api/quotations?${searchParams.toString()}`, {
+        //   headers: {
+        //     'Authorization': `Bearer ${token}`,
+        //     'Content-Type': 'application/json',
+        //   },
+        // });
+
+        // For now, return mock data that mirrors the Laravel controller response
+        const data = getMockQuotationsData(search, status, startDate, endDate, page);
+
+        return NextResponse.json(data);
+      },
+      {
+        ttl: 300, // 5 minutes
+        tags: [CACHE_TAGS.QUOTATIONS],
+      }
+    );
+  } catch (error) {
+    console.error('Error fetching quotations:', error);
     return NextResponse.json({ error: 'Failed to fetch quotations data' }, { status: 500 });
   }
 }

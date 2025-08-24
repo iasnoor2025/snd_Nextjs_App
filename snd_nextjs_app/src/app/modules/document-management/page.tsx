@@ -72,7 +72,7 @@ export default function DocumentManagementPage() {
   const [selectedDocuments, setSelectedDocuments] = useState<Set<number>>(new Set());
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
-    limit: 50,
+    limit: 10, // Fixed limit of 10 documents per page
     total: 0,
     totalPages: 0,
     hasNext: false,
@@ -91,7 +91,7 @@ export default function DocumentManagementPage() {
       try {
         const params = new URLSearchParams({
           page: page.toString(),
-          limit: pagination.limit.toString(),
+          limit: '10', // Use fixed limit instead of pagination.limit
           search,
           type,
         });
@@ -110,13 +110,13 @@ export default function DocumentManagementPage() {
           toast.error('Failed to fetch documents');
         }
       } catch (error) {
-        
+        console.error('Error fetching documents:', error);
         toast.error('Failed to fetch documents');
       } finally {
         setLoading(false);
       }
     },
-    [pagination.limit]
+    [] // Remove dependency on pagination.limit
   );
 
   useEffect(() => {

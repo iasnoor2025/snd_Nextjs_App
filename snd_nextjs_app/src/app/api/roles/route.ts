@@ -2,42 +2,56 @@ import { db } from '@/lib/db';
 import { modelHasRoles as modelHasRolesTable, roles as rolesTable } from '@/lib/drizzle/schema';
 import { desc, eq, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
+
 // GET /api/roles - Get all roles with user count
 export async function GET() {
   try {
-    // Fetch roles
-    const roles = await db
-      .select({
-        id: rolesTable.id,
-        name: rolesTable.name,
-        guard_name: rolesTable.guardName,
-        created_at: rolesTable.createdAt,
-        updated_at: rolesTable.updatedAt,
-      })
-      .from(rolesTable)
-      .orderBy(desc(rolesTable.createdAt));
-
-    // Count users per role
-    const counts = await db
-      .select({ role_id: modelHasRolesTable.roleId, count: sql<number>`count(*)` })
-      .from(modelHasRolesTable)
-      .groupBy(modelHasRolesTable.roleId);
-
-    const roleIdToCount = new Map<number, number>();
-    for (const c of counts as any[]) roleIdToCount.set(c.role_id, Number(c.count || 0));
-
-    const rolesWithUserCount = roles.map(role => ({
-      id: role.id,
-      name: role.name,
-      guard_name: role.guard_name,
-      createdAt: role.created_at,
-      updatedAt: role.updated_at,
-      userCount: roleIdToCount.get(role.id as number) || 0,
-    }));
-
-    return NextResponse.json(rolesWithUserCount);
-  } catch (error) {
+    // Generate cache key for roles list
+    const cacheKey = generateCacheKey('roles', 'list', {});
     
+    return await cacheQueryResult(
+      cacheKey,
+      async () => {
+        // Fetch roles
+        const roles = await db
+          .select({
+            id: rolesTable.id,
+            name: rolesTable.name,
+            guard_name: rolesTable.guardName,
+            created_at: rolesTable.createdAt,
+            updated_at: rolesTable.updatedAt,
+          })
+          .from(rolesTable)
+          .orderBy(desc(rolesTable.createdAt));
+
+        // Count users per role
+        const counts = await db
+          .select({ role_id: modelHasRolesTable.roleId, count: sql<number>`count(*)` })
+          .from(modelHasRolesTable)
+          .groupBy(modelHasRolesTable.roleId);
+
+        const roleIdToCount = new Map<number, number>();
+        for (const c of counts as any[]) roleIdToCount.set(c.role_id, Number(c.count || 0));
+
+        const rolesWithUserCount = roles.map(role => ({
+          id: role.id,
+          name: role.name,
+          guard_name: role.guard_name,
+          createdAt: role.created_at,
+          updatedAt: role.updated_at,
+          userCount: roleIdToCount.get(role.id as number) || 0,
+        }));
+
+        return NextResponse.json(rolesWithUserCount);
+      },
+      {
+        ttl: 600, // 10 minutes - roles change less frequently
+        tags: [CACHE_TAGS.ROLES, CACHE_TAGS.USERS],
+      }
+    );
+  } catch (error) {
+    console.error('Error fetching roles:', error);
     return NextResponse.json({ error: 'Failed to fetch roles' }, { status: 500 });
   }
 }

@@ -1,7 +1,8 @@
 import { db } from '@/lib/drizzle';
 import { customers } from '@/lib/drizzle/schema';
-import { desc, eq, like } from 'drizzle-orm';
+import { and, desc, eq, ilike, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,115 +10,129 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || '';
+    const sortBy = searchParams.get('sort_by') || 'created_at';
+    const sortOrder = searchParams.get('sort_order') || 'desc';
 
-    // Calculate offset
     const offset = (page - 1) * limit;
 
     // Build where conditions
-    let whereCondition = undefined;
-    if (search) {
-      whereCondition = like(customers.name, `%${search}%`);
-    }
-
-    // Get total count
-    let total = 0;
-    try {
-      if (whereCondition) {
-        const countResult = await db.select().from(customers).where(whereCondition);
-        total = countResult.length;
-      } else {
-        const countResult = await db.select().from(customers);
-        total = countResult.length;
-      }
-    } catch (error) {
-      
-      total = 0;
-    }
-
-    // Get customers with pagination
-    let customersResult: {
-      id: number;
-      name: string;
-      email: string | null;
-      phone: string | null;
-      companyName: string | null;
-      status: string;
-      createdAt: string;
-      isActive: boolean;
-    }[];
-    try {
-      if (whereCondition) {
-        customersResult = await db
-          .select({
-            id: customers.id,
-            name: customers.name,
-            email: customers.email,
-            phone: customers.phone,
-            companyName: customers.companyName,
-            status: customers.status,
-            createdAt: customers.createdAt,
-            isActive: customers.isActive,
-          })
-          .from(customers)
-          .where(whereCondition)
-          .orderBy(desc(customers.createdAt))
-          .limit(limit)
-          .offset(offset);
-      } else {
-        customersResult = await db
-          .select({
-            id: customers.id,
-            name: customers.name,
-            email: customers.email,
-            phone: customers.phone,
-            companyName: customers.companyName,
-            status: customers.status,
-            createdAt: customers.createdAt,
-            isActive: customers.isActive,
-          })
-          .from(customers)
-          .orderBy(desc(customers.createdAt))
-          .limit(limit)
-          .offset(offset);
-      }
-    } catch (error) {
-      
-      customersResult = [];
-    }
-
-    // Calculate pagination info
-    const totalPages = Math.ceil(total / limit);
-    const hasNext = page < totalPages;
-    const hasPrev = page > 1;
-
-    return NextResponse.json({
-      success: true,
-      customers: customersResult,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-        hasNext,
-        hasPrev,
-      },
-      statistics: {
-        totalCustomers: total,
-        activeCustomers: total,
-        erpnextSyncedCustomers: 0,
-        localOnlyCustomers: total,
-      },
-    });
-  } catch (error) {
+    const whereConditions: any[] = [];
     
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to fetch customers',
-        error: error instanceof Error ? error.message : 'Unknown error',
+    if (search) {
+      whereConditions.push(
+        or(
+          ilike(customers.name, `%${search}%`),
+          ilike(customers.companyName, `%${search}%`),
+          ilike(customers.contactPerson, `%${search}%`),
+          ilike(customers.email, `%${search}%`),
+          ilike(customers.phone, `%${search}%`)
+        )
+      );
+    }
+    
+    if (status && status !== 'all') {
+      whereConditions.push(eq(customers.status, status));
+    }
+
+    const whereCondition = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+
+    // Generate cache key based on filters and pagination
+    const cacheKey = generateCacheKey('customers', 'list', { page, limit, search, status, sortBy, sortOrder });
+    
+    return await cacheQueryResult(
+      cacheKey,
+      async () => {
+        // Get total count
+        const totalResult = await db
+          .select({ count: customers.id })
+          .from(customers)
+          .where(whereCondition);
+        const total = totalResult.length;
+
+        // Get customers with pagination
+        let customersResult: {
+          id: number;
+          name: string;
+          email: string;
+          phone: string;
+          companyName: string;
+          status: string;
+          createdAt: string;
+          isActive: boolean;
+        }[];
+        try {
+          if (whereCondition) {
+            customersResult = await db
+              .select({
+                id: customers.id,
+                name: customers.name,
+                email: customers.email,
+                phone: customers.phone,
+                companyName: customers.companyName,
+                status: customers.status,
+                createdAt: customers.createdAt,
+                isActive: customers.isActive,
+              })
+              .from(customers)
+              .where(whereCondition)
+              .orderBy(desc(customers.createdAt))
+              .limit(limit)
+              .offset(offset);
+          } else {
+            customersResult = await db
+              .select({
+                id: customers.id,
+                name: customers.name,
+                email: customers.email,
+                phone: customers.phone,
+                companyName: customers.companyName,
+                status: customers.status,
+                createdAt: customers.createdAt,
+                isActive: customers.isActive,
+              })
+              .from(customers)
+              .orderBy(desc(customers.createdAt))
+              .limit(limit)
+              .offset(offset);
+          }
+        } catch (error) {
+          console.error('Error fetching customers:', error);
+          customersResult = [];
+        }
+
+        // Calculate pagination info
+        const totalPages = Math.ceil(total / limit);
+        const hasNext = page < totalPages;
+        const hasPrev = page > 1;
+
+        return NextResponse.json({
+          success: true,
+          customers: customersResult,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNext,
+            hasPrev,
+          },
+          statistics: {
+            totalCustomers: total,
+            activeCustomers: total,
+            erpnextSyncedCustomers: 0,
+            localOnlyCustomers: total,
+          },
+        });
       },
-      { status: 500 }
+      {
+        ttl: 300, // 5 minutes
+        tags: [CACHE_TAGS.CUSTOMERS],
+      }
     );
+  } catch (error) {
+    console.error('Error fetching customers:', error);
+    return NextResponse.json({ error: 'Failed to fetch customers' }, { status: 500 });
   }
 }
 

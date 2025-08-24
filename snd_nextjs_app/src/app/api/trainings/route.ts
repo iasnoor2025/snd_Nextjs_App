@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { trainings } from '@/lib/drizzle/schema';
 import { eq, ilike, and, desc } from 'drizzle-orm';
+import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 
 // GET /api/trainings - Get all training programs with filtering and pagination
 export async function GET(request: NextRequest) {
@@ -36,32 +37,44 @@ export async function GET(request: NextRequest) {
 
     const whereClause = filters.length > 0 ? and(...filters) : undefined;
 
-    // Get total count
-    const totalResult = await db
-      .select({ count: trainings.id })
-      .from(trainings)
-      .where(whereClause);
-    const total = totalResult.length;
+    // Generate cache key based on filters and pagination
+    const cacheKey = generateCacheKey('trainings', 'list', { page, limit, search, category, status });
+    
+    return await cacheQueryResult(
+      cacheKey,
+      async () => {
+        // Get total count
+        const totalResult = await db
+          .select({ count: trainings.id })
+          .from(trainings)
+          .where(whereClause);
+        const total = totalResult.length;
 
-    // Get trainings with pagination
-    const trainingsList = await db
-      .select()
-      .from(trainings)
-      .where(whereClause)
-      .orderBy(desc(trainings.createdAt))
-      .limit(limit)
-      .offset(offset);
+        // Get trainings with pagination
+        const trainingsList = await db
+          .select()
+          .from(trainings)
+          .where(whereClause)
+          .orderBy(desc(trainings.createdAt))
+          .limit(limit)
+          .offset(offset);
 
-    return NextResponse.json({
-      success: true,
-      data: trainingsList,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
+        return NextResponse.json({
+          success: true,
+          data: trainingsList,
+          pagination: {
+            page,
+            limit,
+            total,
+            pages: Math.ceil(total / limit)
+          }
+        });
+      },
+      {
+        ttl: 600, // 10 minutes
+        tags: [CACHE_TAGS.TRAININGS],
       }
-    });
+    );
   } catch (error) {
     console.error('Error fetching trainings:', error);
     return NextResponse.json({ error: 'Failed to fetch trainings' }, { status: 500 });

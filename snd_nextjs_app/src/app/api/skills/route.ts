@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { skills } from '@/lib/drizzle/schema';
 import { eq, ilike, and, desc } from 'drizzle-orm';
+import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 
 // GET /api/skills - Get all skills with filtering and pagination
 export async function GET(request: NextRequest) {
@@ -32,32 +33,44 @@ export async function GET(request: NextRequest) {
 
     const whereClause = filters.length > 0 ? and(...filters) : undefined;
 
-    // Get total count
-    const totalResult = await db
-      .select({ count: skills.id })
-      .from(skills)
-      .where(whereClause);
-    const total = totalResult.length;
+    // Generate cache key based on filters and pagination
+    const cacheKey = generateCacheKey('skills', 'list', { page, limit, search, category });
+    
+    return await cacheQueryResult(
+      cacheKey,
+      async () => {
+        // Get total count
+        const totalResult = await db
+          .select({ count: skills.id })
+          .from(skills)
+          .where(whereClause);
+        const total = totalResult.length;
 
-    // Get skills with pagination
-    const skillsList = await db
-      .select()
-      .from(skills)
-      .where(whereClause)
-      .orderBy(desc(skills.createdAt))
-      .limit(limit)
-      .offset(offset);
+        // Get skills with pagination
+        const skillsList = await db
+          .select()
+          .from(skills)
+          .where(whereClause)
+          .orderBy(desc(skills.createdAt))
+          .limit(limit)
+          .offset(offset);
 
-    return NextResponse.json({
-      success: true,
-      data: skillsList,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit)
+        return NextResponse.json({
+          success: true,
+          data: skillsList,
+          pagination: {
+            page,
+            limit,
+            total,
+            pages: Math.ceil(total / limit)
+          }
+        });
+      },
+      {
+        ttl: 600, // 10 minutes
+        tags: [CACHE_TAGS.SKILLS],
       }
-    });
+    );
   } catch (error) {
     console.error('Error fetching skills:', error);
     return NextResponse.json({ error: 'Failed to fetch skills' }, { status: 500 });

@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { analyticsReports } from '@/lib/drizzle/schema';
 import { and, desc, eq, like, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 
 export async function GET(_request: NextRequest) {
   try {
@@ -36,32 +37,46 @@ export async function GET(_request: NextRequest) {
 
     const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
 
-    const [analyticsRows, totalRows] = await Promise.all([
-      db
-        .select()
-        .from(analyticsReports)
-        .where(whereClause)
-        .limit(limit)
-        .offset(skip)
-        .orderBy(desc(analyticsReports.createdAt)),
-      db.select({ count: analyticsReports.id }).from(analyticsReports).where(whereClause),
-    ]);
-
-    const total = totalRows.length;
-    const totalPages = Math.ceil(total / limit);
-
-    return NextResponse.json({
-      data: analyticsRows,
-      current_page: page,
-      last_page: totalPages,
-      per_page: limit,
-      total,
-      next_page_url: page < totalPages ? `/api/analytics?page=${page + 1}` : null,
-      prev_page_url: page > 1 ? `/api/analytics?page=${page - 1}` : null,
-    });
-  } catch (error) {
+    // Generate cache key based on filters and pagination
+    const cacheKey = generateCacheKey('analytics', 'list', { page, limit, search, status, type });
     
-    return NextResponse.json({ error: 'Failed to fetch analytics reports' }, { status: 500 });
+    return await cacheQueryResult(
+      cacheKey,
+      async () => {
+        const [analyticsRows, totalRows] = await Promise.all([
+          db
+            .select()
+            .from(analyticsReports)
+            .where(whereClause)
+            .limit(limit)
+            .offset(skip)
+            .orderBy(desc(analyticsReports.createdAt)),
+          db.select({ count: analyticsReports.id }).from(analyticsReports).where(whereClause),
+        ]);
+
+        const total = totalRows.length;
+        const totalPages = Math.ceil(total / limit);
+
+        return NextResponse.json({
+          data: analyticsRows,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+          },
+        });
+      },
+      {
+        ttl: 300, // 5 minutes
+        tags: [CACHE_TAGS.ANALYTICS, CACHE_TAGS.REPORTS],
+      }
+    );
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    return NextResponse.json({ error: 'Failed to fetch analytics' }, { status: 500 });
   }
 }
 

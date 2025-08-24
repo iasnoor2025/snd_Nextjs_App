@@ -1,7 +1,7 @@
 import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { employeeDocuments, employees, equipment, media } from '@/lib/drizzle/schema';
-import { and, desc, eq, ilike, or, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, or, sql, inArray } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -149,44 +149,83 @@ export async function GET(_request: NextRequest) {
     let totalEquipmentDocs = 0;
 
     if (type === 'all' || type === 'employee') {
-      const employeeCountQuery = db
-        .select({ count: sql<number>`count(*)` })
-        .from(employeeDocuments)
-        .leftJoin(employees, eq(employees.id, employeeDocuments.employeeId))
-        .where(
-          search
-            ? or(
-                ilike(employees.firstName, `%${search}%`),
-                ilike(employees.lastName, `%${search}%`),
-                ilike(employees.fileNumber, `%${search}%`),
-                ilike(employeeDocuments.fileName, `%${search}%`),
-                ilike(employeeDocuments.documentType, `%${search}%`)
-              )
-            : undefined
-        );
+      let employeeCountQuery;
+      
+      if (search) {
+        // If searching, first get the employee IDs that match the search
+        const matchingEmployeeIds = await db
+          .select({ id: employees.id })
+          .from(employees)
+          .where(
+            or(
+              ilike(employees.firstName, `%${search}%`),
+              ilike(employees.lastName, `%${search}%`),
+              ilike(employees.fileNumber, `%${search}%`)
+            )
+          );
+        
+        const employeeIds = matchingEmployeeIds.map(e => e.id);
+        
+        // Then count documents that match either the employee IDs or the document fields
+        employeeCountQuery = db
+          .select({ count: sql<number>`count(*)` })
+          .from(employeeDocuments)
+          .where(
+            or(
+              employeeIds.length > 0 ? inArray(employeeDocuments.employeeId, employeeIds) : undefined,
+              ilike(employeeDocuments.fileName, `%${search}%`),
+              ilike(employeeDocuments.documentType, `%${search}%`)
+            )
+          );
+      } else {
+        // If not searching, just count all employee documents directly
+        employeeCountQuery = db
+          .select({ count: sql<number>`count(*)` })
+          .from(employeeDocuments);
+      }
 
       const employeeCountResult = await employeeCountQuery;
       totalEmployeeDocs = employeeCountResult[0]?.count || 0;
     }
 
     if (type === 'all' || type === 'equipment') {
-      const equipmentCountQuery = db
-        .select({ count: sql<number>`count(*)` })
-        .from(media)
-        .leftJoin(equipment, eq(equipment.id, media.modelId))
-        .where(
-          search
-            ? and(
-                eq(media.modelType, 'Equipment'),
-                or(
-                  ilike(equipment.name, `%${search}%`),
-                  ilike(equipment.modelNumber, `%${search}%`),
-                  ilike(equipment.serialNumber, `%${search}%`),
-                  ilike(media.fileName, `%${search}%`)
-                )
+      let equipmentCountQuery;
+      
+      if (search) {
+        // If searching, first get the equipment IDs that match the search
+        const matchingEquipmentIds = await db
+          .select({ id: equipment.id })
+          .from(equipment)
+          .where(
+            or(
+              ilike(equipment.name, `%${search}%`),
+              ilike(equipment.modelNumber, `%${search}%`),
+              ilike(equipment.serialNumber, `%${search}%`)
+            )
+          );
+        
+        const equipmentIds = matchingEquipmentIds.map(e => e.id);
+        
+        // Then count documents that match either the equipment IDs or the document fields
+        equipmentCountQuery = db
+          .select({ count: sql<number>`count(*)` })
+          .from(media)
+          .where(
+            and(
+              eq(media.modelType, 'Equipment'),
+              or(
+                equipmentIds.length > 0 ? inArray(media.modelId, equipmentIds) : undefined,
+                ilike(media.fileName, `%${search}%`)
               )
-            : eq(media.modelType, 'Equipment')
-        );
+            )
+          );
+      } else {
+        // If not searching, just count all equipment documents directly
+        equipmentCountQuery = db
+          .select({ count: sql<number>`count(*)` })
+          .from(media)
+          .where(eq(media.modelType, 'Equipment'));
+      }
 
       const equipmentCountResult = await equipmentCountQuery;
       totalEquipmentDocs = equipmentCountResult[0]?.count || 0;

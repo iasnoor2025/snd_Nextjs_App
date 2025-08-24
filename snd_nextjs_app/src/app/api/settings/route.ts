@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/drizzle';
 import { systemSettings } from '@/lib/drizzle/schema';
 import { eq, and, desc, asc, like } from 'drizzle-orm';
+import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 
 export const GET = withPermission(async (request: NextRequest) => {
   try {
@@ -32,34 +33,46 @@ export const GET = withPermission(async (request: NextRequest) => {
       whereConditions.push(eq(systemSettings.isPublic, isPublic === 'true'));
     }
 
-    // Get total count
-    const totalCount = await db
-      .select({ count: systemSettings.id })
-      .from(systemSettings)
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
+    // Generate cache key based on filters and pagination
+    const cacheKey = generateCacheKey('settings', 'list', { page, limit, search, category, isPublic });
+    
+    return await cacheQueryResult(
+      cacheKey,
+      async () => {
+        // Get total count
+        const totalCount = await db
+          .select({ count: systemSettings.id })
+          .from(systemSettings)
+          .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
 
-    const total = totalCount.length;
+        const total = totalCount.length;
 
-    // Get settings with pagination
-    const settings = await db
-      .select()
-      .from(systemSettings)
-      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
-      .orderBy(asc(systemSettings.category), asc(systemSettings.key))
-      .limit(limit)
-      .offset(offset);
+        // Get settings with pagination
+        const settings = await db
+          .select()
+          .from(systemSettings)
+          .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+          .orderBy(asc(systemSettings.category), asc(systemSettings.key))
+          .limit(limit)
+          .offset(offset);
 
-    const lastPage = Math.ceil(total / limit);
+        const lastPage = Math.ceil(total / limit);
 
-    return NextResponse.json({
-      data: settings,
-      current_page: page,
-      last_page: lastPage,
-      per_page: limit,
-      total,
-      next_page_url: page < lastPage ? `/api/settings?page=${page + 1}` : null,
-      prev_page_url: page > 1 ? `/api/settings?page=${page - 1}` : null,
-    });
+        return NextResponse.json({
+          data: settings,
+          current_page: page,
+          last_page: lastPage,
+          per_page: limit,
+          total,
+          next_page_url: page < lastPage ? `/api/settings?page=${page + 1}&limit=${limit}` : null,
+          prev_page_url: page > 1 ? `/api/settings?page=${page - 1}&limit=${limit}` : null,
+        });
+      },
+      {
+        ttl: 900, // 15 minutes - settings change less frequently
+        tags: [CACHE_TAGS.SETTINGS, CACHE_TAGS.SYSTEM],
+      }
+    );
   } catch (error) {
     console.error('Error fetching settings:', error);
     return NextResponse.json({ error: 'Failed to fetch settings' }, { status: 500 });

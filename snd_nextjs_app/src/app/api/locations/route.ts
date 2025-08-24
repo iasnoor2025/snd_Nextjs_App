@@ -3,6 +3,7 @@ import { locations as locationsTable } from '@/lib/drizzle/schema';
 import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 import { and, asc, eq, ilike, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { cacheQueryResult, generateCacheKey, CACHE_TAGS } from '@/lib/redis';
 
 export const GET = withPermission(async (request: NextRequest) => {
   try {
@@ -34,36 +35,46 @@ export const GET = withPermission(async (request: NextRequest) => {
     }
     const whereExpr = filters.length ? and(...filters) : undefined;
 
-    // Get total count for pagination
-    const totalRows = await db
-      .select({ id: locationsTable.id })
-      .from(locationsTable)
-      .where(whereExpr as any);
-    const totalCount = totalRows.length;
-
-    // Get paginated results
-    const locations = await db
-      .select()
-      .from(locationsTable)
-      .where(whereExpr as any)
-      .orderBy(asc(locationsTable.name))
-      .offset((page - 1) * limit)
-      .limit(limit);
-
-    return NextResponse.json({
-      success: true,
-      data: locations,
-      pagination: {
-        page,
-        limit,
-        total: totalCount,
-        totalPages: Math.ceil(totalCount / limit),
-        hasNext: page < Math.ceil(totalCount / limit),
-        hasPrev: page > 1,
-      },
-    });
-  } catch (error) {
+    // Generate cache key based on filters and pagination
+    const cacheKey = generateCacheKey('locations', 'list', { page, limit, search, status, city });
     
+    return await cacheQueryResult(
+      cacheKey,
+      async () => {
+        // Get total count for pagination
+        const totalRows = await db
+          .select({ id: locationsTable.id })
+          .from(locationsTable)
+          .where(whereExpr as any);
+        const totalCount = totalRows.length;
+
+        // Get paginated results
+        const locations = await db
+          .select()
+          .from(locationsTable)
+          .where(whereExpr as any)
+          .orderBy(asc(locationsTable.name))
+          .offset((page - 1) * limit)
+          .limit(limit);
+
+        return NextResponse.json({
+          success: true,
+          data: locations,
+          pagination: {
+            page,
+            limit,
+            total: totalCount,
+            pages: Math.ceil(totalCount / limit)
+          }
+        });
+      },
+      {
+        ttl: 600, // 10 minutes
+        tags: [CACHE_TAGS.LOCATIONS],
+      }
+    );
+  } catch (error) {
+    console.error('Error fetching locations:', error);
     return NextResponse.json({ error: 'Failed to fetch locations' }, { status: 500 });
   }
 }, PermissionConfigs.location.read);

@@ -1,169 +1,165 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 import { 
-  getCacheStats, 
-  clearAllCache, 
-  invalidateCache, 
-  invalidateCacheByPrefix 
+  cacheService, 
+  getCacheStats 
 } from '@/lib/redis';
-import { CACHE_TAGS, CACHE_PREFIXES } from '@/lib/redis';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session?.user || session.user.role !== 'admin') {
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Check if user is admin
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const stats = await getCacheStats();
-    
-    return NextResponse.json({
-      success: true,
-      data: stats
-    });
+    return NextResponse.json(stats);
   } catch (error) {
-    console.error('Cache stats error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get cache stats' },
-      { status: 500 }
-    );
+    console.error('Error getting cache stats:', error);
+    return NextResponse.json({ error: 'Failed to get cache stats' }, { status: 500 });
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session?.user || session.user.role !== 'admin') {
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user is admin
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
-    const target = searchParams.get('target');
 
-    switch (action) {
-      case 'clear-all':
-        await clearAllCache();
-        return NextResponse.json({
-          success: true,
-          message: 'All cache cleared successfully'
-        });
-
-      case 'clear-tag':
-        if (!target) {
-          return NextResponse.json(
-            { error: 'Tag parameter required' },
-            { status: 400 }
-          );
-        }
-        await invalidateCache([target]);
-        return NextResponse.json({
-          success: true,
-          message: `Cache cleared for tag: ${target}`
-        });
-
-      case 'clear-prefix':
-        if (!target) {
-          return NextResponse.json(
-            { error: 'Prefix parameter required' },
-            { status: 400 }
-          );
-        }
-        await invalidateCacheByPrefix(target);
-        return NextResponse.json({
-          success: true,
-          message: `Cache cleared for prefix: ${target}`
-        });
-
-      default:
-        return NextResponse.json(
-          { error: 'Invalid action. Use: clear-all, clear-tag, or clear-prefix' },
-          { status: 400 }
-        );
+    if (action === 'clear-all') {
+      await cacheService.clearAll();
+      return NextResponse.json({ message: 'All cache cleared successfully' });
     }
+
+    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
-    console.error('Cache clear error:', error);
-    return NextResponse.json(
-      { error: 'Failed to clear cache' },
-      { status: 500 }
-    );
+    console.error('Error clearing cache:', error);
+    return NextResponse.json({ error: 'Failed to clear cache' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
-    if (!session?.user || session.user.role !== 'admin') {
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Check if user is admin
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const body = await request.json();
-    const { action, targets } = body;
+    const { action, target } = body;
 
     switch (action) {
-      case 'invalidate-multiple':
-        if (!targets || !Array.isArray(targets)) {
-          return NextResponse.json(
-            { error: 'Targets array required' },
-            { status: 400 }
-          );
+      case 'clear-by-tag':
+        if (!target) {
+          return NextResponse.json({ error: 'Tag is required' }, { status: 400 });
         }
-        await invalidateCache(targets);
-        return NextResponse.json({
-          success: true,
-          message: `Cache invalidated for ${targets.length} tags`
-        });
+        await cacheService.clearByTags([target]);
+        return NextResponse.json({ message: `Cache cleared for tag: ${target}` });
+
+      case 'clear-by-prefix':
+        if (!target) {
+          return NextResponse.json({ error: 'Prefix is required' }, { status: 400 });
+        }
+        await cacheService.clearPrefix(target);
+        return NextResponse.json({ message: `Cache cleared for prefix: ${target}` });
 
       case 'clear-dashboard':
-        await invalidateCache([CACHE_TAGS.DASHBOARD]);
-        return NextResponse.json({
-          success: true,
-          message: 'Dashboard cache cleared'
-        });
+        await cacheService.clearByTags(['dashboard']);
+        return NextResponse.json({ message: 'Dashboard cache cleared successfully' });
 
       case 'clear-employees':
-        await invalidateCache([CACHE_TAGS.EMPLOYEES]);
-        return NextResponse.json({
-          success: true,
-          message: 'Employee cache cleared'
-        });
+        await cacheService.clearByTags(['employees']);
+        return NextResponse.json({ message: 'Employees cache cleared successfully' });
 
       case 'clear-equipment':
-        await invalidateCache([CACHE_TAGS.EQUIPMENT]);
-        return NextResponse.json({
-          success: true,
-          message: 'Equipment cache cleared'
-        });
+        await cacheService.clearByTags(['equipment']);
+        return NextResponse.json({ message: 'Equipment cache cleared successfully' });
 
       case 'clear-customers':
-        await invalidateCache([CACHE_TAGS.CUSTOMERS]);
-        return NextResponse.json({
-          success: true,
-          message: 'Customer cache cleared'
-        });
+        await cacheService.clearByTags(['customers']);
+        return NextResponse.json({ message: 'Customers cache cleared successfully' });
 
       case 'clear-rentals':
-        await invalidateCache([CACHE_TAGS.RENTALS]);
-        return NextResponse.json({
-          success: true,
-          message: 'Rental cache cleared'
-        });
+        await cacheService.clearByTags(['rentals']);
+        return NextResponse.json({ message: 'Rentals cache cleared successfully' });
+
+      case 'clear-users':
+        await cacheService.clearByTags(['users']);
+        return NextResponse.json({ message: 'Users cache cleared successfully' });
+
+      case 'clear-roles':
+        await cacheService.clearByTags(['roles']);
+        return NextResponse.json({ message: 'Roles cache cleared successfully' });
+
+      case 'clear-permissions':
+        await cacheService.clearByTags(['permissions']);
+        return NextResponse.json({ message: 'Permissions cache cleared successfully' });
+
+      case 'clear-skills':
+        await cacheService.clearByTags(['skills']);
+        return NextResponse.json({ message: 'Skills cache cleared successfully' });
+
+      case 'clear-trainings':
+        await cacheService.clearByTags(['trainings']);
+        return NextResponse.json({ message: 'Trainings cache cleared successfully' });
+
+      case 'clear-locations':
+        await cacheService.clearByTags(['locations']);
+        return NextResponse.json({ message: 'Locations cache cleared successfully' });
+
+      case 'clear-settings':
+        await cacheService.clearByTags(['settings']);
+        return NextResponse.json({ message: 'Settings cache cleared successfully' });
+
+      case 'clear-analytics':
+        await cacheService.clearByTags(['analytics']);
+        return NextResponse.json({ message: 'Analytics cache cleared successfully' });
+
+      case 'clear-reports':
+        await cacheService.clearByTags(['reports']);
+        return NextResponse.json({ message: 'Reports cache cleared successfully' });
+
+      case 'clear-payroll':
+        await cacheService.clearByTags(['payroll']);
+        return NextResponse.json({ message: 'Payroll cache cleared successfully' });
+
+      case 'clear-quotations':
+        await cacheService.clearByTags(['quotations']);
+        return NextResponse.json({ message: 'Quotations cache cleared successfully' });
+
+      case 'clear-invoices':
+        await cacheService.clearByTags(['invoices']);
+        return NextResponse.json({ message: 'Invoices cache cleared successfully' });
+
+      case 'clear-system':
+        await cacheService.clearByTags(['system']);
+        return NextResponse.json({ message: 'System cache cleared successfully' });
 
       default:
-        return NextResponse.json(
-          { error: 'Invalid action' },
-          { status: 400 }
-        );
+        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
   } catch (error) {
-    console.error('Cache operation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to perform cache operation' },
-      { status: 500 }
-    );
+    console.error('Error performing cache action:', error);
+    return NextResponse.json({ error: 'Failed to perform cache action' }, { status: 500 });
   }
 }

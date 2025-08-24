@@ -123,30 +123,78 @@ export function generateCacheKey(
   return `${table}:${operation}:${sortedParams}`;
 }
 
-/**
- * Common cache tags for different data types
- */
+// Cache tags for different entity types
 export const CACHE_TAGS = {
+  // Core entities
   USERS: 'users',
   EMPLOYEES: 'employees',
   CUSTOMERS: 'customers',
   EQUIPMENT: 'equipment',
   RENTALS: 'rentals',
-  DASHBOARD: 'dashboard',
-  REPORTS: 'reports',
+  PROJECTS: 'projects',
+  TIMESHEETS: 'timesheets',
+  DOCUMENTS: 'documents',
+  LEAVES: 'leaves',
+  PAYROLL: 'payroll',
+  
+  // Supporting entities
+  SKILLS: 'skills',
+  TRAININGS: 'trainings',
+  LOCATIONS: 'locations',
+  SETTINGS: 'settings',
+  ROLES: 'roles',
+  PERMISSIONS: 'permissions',
+  
+  // Business entities
+  QUOTATIONS: 'quotations',
+  INVOICES: 'invoices',
   ANALYTICS: 'analytics',
+  REPORTS: 'reports',
+  
+  // Dashboard and aggregated data
+  DASHBOARD: 'dashboard',
+  STATISTICS: 'statistics',
+  ACTIVITY: 'activity',
+  
+  // System
+  SYSTEM: 'system',
+  CONFIG: 'config',
 } as const;
 
-/**
- * Common cache prefixes for different data types
- */
+// Cache prefixes for different entity types
 export const CACHE_PREFIXES = {
+  // Core entities
   USERS: 'users',
   EMPLOYEES: 'employees',
   CUSTOMERS: 'customers',
   EQUIPMENT: 'equipment',
   RENTALS: 'rentals',
-  DASHBOARD: 'dashboard',
-  REPORTS: 'reports',
+  PROJECTS: 'projects',
+  TIMESHEETS: 'timesheets',
+  DOCUMENTS: 'documents',
+  LEAVES: 'leaves',
+  PAYROLL: 'payroll',
+  
+  // Supporting entities
+  SKILLS: 'skills',
+  TRAININGS: 'trainings',
+  LOCATIONS: 'locations',
+  SETTINGS: 'settings',
+  ROLES: 'roles',
+  PERMISSIONS: 'permissions',
+  
+  // Business entities
+  QUOTATIONS: 'quotations',
+  INVOICES: 'invoices',
   ANALYTICS: 'analytics',
+  REPORTS: 'reports',
+  
+  // Dashboard and aggregated data
+  DASHBOARD: 'dashboard',
+  STATISTICS: 'statistics',
+  ACTIVITY: 'activity',
+  
+  // System
+  SYSTEM: 'system',
+  CONFIG: 'config',
 } as const;
