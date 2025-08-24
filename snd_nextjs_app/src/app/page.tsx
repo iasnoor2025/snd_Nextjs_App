@@ -672,6 +672,15 @@ export default function DashboardPage() {
             </Button>
           </div>
         </div>
+        {/* Manual Assignments Section */}
+        {sectionVisibility.manualAssignments && (
+          <ManualAssignmentSection 
+            employeeId={session?.user?.id ? parseInt(session.user.id) : undefined}
+            onHideSection={() => toggleSection('manualAssignments')}
+            allowAllEmployees={true}
+          />
+        )}
+
         {/* Iqama Section */}
         {sectionVisibility.iqama && (
           <IqamaSection
@@ -721,15 +730,6 @@ export default function DashboardPage() {
             projectData={projectData}
             onUpdateProject={handleOpenProjectModal}
             onHideSection={() => toggleSection('projectOverview')}
-          />
-        )}
-
-        {/* Manual Assignments Section */}
-        {sectionVisibility.manualAssignments && (
-          <ManualAssignmentSection 
-            employeeId={session?.user?.id ? parseInt(session.user.id) : undefined}
-            onHideSection={() => toggleSection('manualAssignments')}
-            allowAllEmployees={true}
           />
         )}
 
