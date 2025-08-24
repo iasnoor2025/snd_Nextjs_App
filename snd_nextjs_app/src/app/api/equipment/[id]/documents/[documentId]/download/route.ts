@@ -50,7 +50,20 @@ export async function GET(
     const cleanFilePath = documentRecord.filePath.startsWith('/') 
       ? documentRecord.filePath.slice(1) 
       : documentRecord.filePath;
-    const filePath = join(process.cwd(), 'public', 'uploads', 'documents', cleanFilePath);
+    
+    // Remove the uploads/documents/ prefix if it exists in the stored path
+    const finalFilePath = cleanFilePath.startsWith('uploads/documents/') 
+      ? cleanFilePath.slice('uploads/documents/'.length)
+      : cleanFilePath;
+    
+    const filePath = join(process.cwd(), 'public', 'uploads', 'documents', finalFilePath);
+
+    console.log('File path debugging:', {
+      originalPath: documentRecord.filePath,
+      cleanPath: cleanFilePath,
+      finalPath: finalFilePath,
+      fullPath: filePath
+    });
 
     // Check if file exists
     if (!existsSync(filePath)) {

@@ -61,12 +61,30 @@ export class DocumentCombinerService {
     let filePath: string;
 
     if (document.type === 'equipment') {
-      // Equipment documents are stored in public/uploads/documents/
-      filePath = join(process.cwd(), 'public', 'uploads', 'documents', document.filePath);
+      // Equipment documents - handle the path correctly
+      let finalFilePath = document.filePath;
+      
+      // Remove leading slash if present
+      if (finalFilePath.startsWith('/')) {
+        finalFilePath = finalFilePath.slice(1);
+      }
+      
+      // Remove uploads/documents/ prefix if it exists
+      if (finalFilePath.startsWith('uploads/documents/')) {
+        finalFilePath = finalFilePath.slice('uploads/documents/'.length);
+      }
+      
+      filePath = join(process.cwd(), 'public', 'uploads', 'documents', finalFilePath);
     } else {
       // Employee documents use the filePath directly
       filePath = join(process.cwd(), 'public', document.filePath);
     }
+
+    console.log('Document combiner file path:', {
+      type: document.type,
+      originalPath: document.filePath,
+      finalPath: filePath
+    });
 
     try {
       const fileBuffer = await readFile(filePath);
@@ -80,7 +98,7 @@ export class DocumentCombinerService {
         await this.addInfoPage(pdfDoc, document);
       }
     } catch (error) {
-      
+      console.error(`Error processing document ${document.fileName}:`, error);
       await this.addInfoPage(pdfDoc, document);
     }
   }
