@@ -23,6 +23,7 @@ import {
   Search,
   Settings,
   User,
+  X,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -46,6 +47,7 @@ interface Document {
   equipmentModel?: string;
   equipmentSerial?: string;
   url: string;
+  viewUrl?: string;
   searchableText: string;
 }
 
@@ -84,6 +86,7 @@ export default function DocumentManagementPage() {
     total: 0,
   });
   const [combining, setCombining] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
 
   const fetchDocuments = useCallback(
     async (page = 1, search = '', type = 'all') => {
@@ -100,7 +103,15 @@ export default function DocumentManagementPage() {
         if (response.ok) {
           const data = await response.json();
           if (data.success) {
-            setDocuments(data.data.documents);
+            // Transform documents to include proper viewing URLs
+            const transformedDocuments = data.data.documents.map((doc: Document) => ({
+              ...doc,
+              // Use proper API endpoints for viewing instead of direct file paths
+              viewUrl: doc.type === 'employee' 
+                ? `/api/employees/${doc.employeeId}/documents/${doc.id}/download`
+                : `/api/equipment/${doc.equipmentId}/documents/${doc.id}/download`
+            }));
+            setDocuments(transformedDocuments);
             setPagination(data.data.pagination);
             setCounts(data.data.counts);
           } else {
@@ -171,6 +182,10 @@ export default function DocumentManagementPage() {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const isImageFile = (mimeType: string) => {
+    return mimeType.includes('image');
   };
 
   const downloadDocument = async (document: Document) => {
@@ -267,6 +282,10 @@ export default function DocumentManagementPage() {
 
   const clearSelection = () => {
     setSelectedDocuments(new Set());
+  };
+
+  const handlePreviewDocument = (document: Document) => {
+    setPreviewDocument(document);
   };
 
   return (
@@ -469,7 +488,7 @@ export default function DocumentManagementPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open(document.url, '_blank')}
+                      onClick={() => handlePreviewDocument(document)}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -513,6 +532,77 @@ export default function DocumentManagementPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Document Preview Modal */}
+      {previewDocument && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-4 max-w-4xl max-h-[90vh] overflow-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold">{previewDocument.fileName}</h3>
+                <Badge variant={previewDocument.type === 'employee' ? 'default' : 'secondary'}>
+                  {previewDocument.type}
+                </Badge>
+                {previewDocument.documentType && (
+                  <Badge variant="outline" className="text-xs">
+                    {previewDocument.documentType.replace(/_/g, ' ')}
+                  </Badge>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setPreviewDocument(null)}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex justify-center">
+              {isImageFile(previewDocument.mimeType) ? (
+                <img
+                  src={previewDocument.viewUrl || previewDocument.url}
+                  alt={previewDocument.fileName}
+                  className="max-w-full max-h-[70vh] object-contain rounded"
+                />
+              ) : previewDocument.mimeType.includes('pdf') ? (
+                <div className="w-full h-[70vh] flex items-center justify-center">
+                  <iframe
+                    src={previewDocument.viewUrl || previewDocument.url}
+                    className="w-full h-full border rounded"
+                    title={previewDocument.fileName}
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-[70vh] flex items-center justify-center flex-col gap-4">
+                  <div className="text-6xl">{getFileIcon(previewDocument.mimeType)}</div>
+                  <div className="text-center">
+                    <p className="text-lg font-medium text-gray-600">{previewDocument.fileName}</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      This file type cannot be previewed directly.
+                    </p>
+                    <Button
+                      onClick={() => window.open(previewDocument.viewUrl || previewDocument.url, '_blank')}
+                      className="mt-4"
+                    >
+                      Open in New Tab
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="mt-4 text-sm text-muted-foreground text-center">
+              <p>Size: {formatFileSize(previewDocument.fileSize)}</p>
+              <p>Uploaded: {format(new Date(previewDocument.createdAt), 'PPP')}</p>
+              <p>Owner: {
+                previewDocument.type === 'employee'
+                  ? `${previewDocument.employeeName || 'Unknown'} (${previewDocument.employeeFileNumber || 'No File #'})`
+                  : `${previewDocument.equipmentName || 'Unknown'} ${previewDocument.equipmentModel ? `(${previewDocument.equipmentModel})` : ''}`
+              }</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
