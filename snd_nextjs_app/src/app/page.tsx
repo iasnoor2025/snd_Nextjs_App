@@ -5,6 +5,7 @@ import { DashboardModals } from '@/components/dashboard/DashboardModals';
 import { EquipmentSection } from '@/components/dashboard/EquipmentSection';
 import { FinancialOverviewSection } from '@/components/dashboard/FinancialOverviewSection';
 import { IqamaSection } from '@/components/dashboard/IqamaSection';
+import ManualAssignmentSection from '@/components/dashboard/ManualAssignmentSection';
 import ProjectOverviewSection from '@/components/dashboard/ProjectOverviewSection';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
@@ -89,6 +90,7 @@ export default function DashboardPage() {
     financial: true,
     timesheets: true,
     projectOverview: true,
+    manualAssignments: true,
     quickActions: true,
     recentActivity: true,
   });
@@ -618,6 +620,7 @@ export default function DashboardPage() {
                   financial: true,
                   timesheets: true,
                   projectOverview: true,
+                  manualAssignments: true,
                   quickActions: true,
                   recentActivity: true,
                 };
@@ -637,6 +640,7 @@ export default function DashboardPage() {
                   financial: false,
                   timesheets: false,
                   projectOverview: false,
+                  manualAssignments: false,
                   quickActions: false,
                   recentActivity: false,
                 };
@@ -656,6 +660,7 @@ export default function DashboardPage() {
                   financial: true,
                   timesheets: true,
                   projectOverview: true,
+                  manualAssignments: true,
                   quickActions: true,
                   recentActivity: true,
                 };
@@ -716,6 +721,15 @@ export default function DashboardPage() {
             projectData={projectData}
             onUpdateProject={handleOpenProjectModal}
             onHideSection={() => toggleSection('projectOverview')}
+          />
+        )}
+
+        {/* Manual Assignments Section */}
+        {sectionVisibility.manualAssignments && (
+          <ManualAssignmentSection 
+            employeeId={session?.user?.id ? parseInt(session.user.id) : undefined}
+            onHideSection={() => toggleSection('manualAssignments')}
+            allowAllEmployees={true}
           />
         )}
 
@@ -808,6 +822,16 @@ export default function DashboardPage() {
                   className="flex items-center gap-2"
                 >
                   {t('dashboard.showProjectOverviewSection')}
+                </Button>
+              )}
+              {!sectionVisibility.manualAssignments && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleSection('manualAssignments')}
+                  className="flex items-center gap-2"
+                >
+                  Show Manual Assignments
                 </Button>
               )}
               {!sectionVisibility.quickActions && (

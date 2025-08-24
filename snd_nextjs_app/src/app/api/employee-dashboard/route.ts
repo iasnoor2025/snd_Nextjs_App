@@ -153,6 +153,37 @@ export async function GET(_request: NextRequest) {
       .orderBy(desc(employeeAssignments.createdAt))
       .limit(5);
 
+    // Get all assignments for the employee (including manual assignments)
+    const allAssignmentsRows = await db
+      .select({
+        id: employeeAssignments.id,
+        name: employeeAssignments.name,
+        type: employeeAssignments.type,
+        location: employeeAssignments.location,
+        startDate: employeeAssignments.startDate,
+        endDate: employeeAssignments.endDate,
+        status: employeeAssignments.status,
+        notes: employeeAssignments.notes,
+        projectId: employeeAssignments.projectId,
+        rentalId: employeeAssignments.rentalId,
+        createdAt: employeeAssignments.createdAt,
+        updatedAt: employeeAssignments.updatedAt,
+        project: {
+          id: projects.id,
+          name: projects.name,
+        },
+        rental: {
+          id: rentals.id,
+          name: rentals.equipmentName,
+        },
+      })
+      .from(employeeAssignments)
+      .leftJoin(projects, eq(employeeAssignments.projectId, projects.id))
+      .leftJoin(rentals, eq(employeeAssignments.rentalId, rentals.id))
+      .where(eq(employeeAssignments.employeeId, employee.id))
+      .orderBy(desc(employeeAssignments.createdAt))
+      .limit(10);
+
     // Get recent advances using Drizzle
     const recentAdvancesRows = await db
       .select({
@@ -214,6 +245,23 @@ export async function GET(_request: NextRequest) {
       created_at: assignment.createdAt,
     }));
 
+    const assignments = allAssignmentsRows.map(assignment => ({
+      id: assignment.id,
+      name: assignment.name,
+      type: assignment.type,
+      location: assignment.location,
+      start_date: assignment.startDate,
+      end_date: assignment.endDate,
+      status: assignment.status,
+      notes: assignment.notes,
+      project_id: assignment.projectId,
+      rental_id: assignment.rentalId,
+      project: assignment.project,
+      rental: assignment.rental,
+      created_at: assignment.createdAt,
+      updated_at: assignment.updatedAt,
+    }));
+
     const recentAdvances = recentAdvancesRows.map(advance => ({
       id: advance.id,
       amount: advance.amount,
@@ -248,6 +296,7 @@ export async function GET(_request: NextRequest) {
       recentTimesheets,
       recentLeaves,
       currentAssignments,
+      assignments,
       recentAdvances,
       employeeDocuments: employeeDocumentsList,
     });

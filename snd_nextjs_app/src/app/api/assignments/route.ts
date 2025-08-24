@@ -75,7 +75,9 @@ const getAssignmentsHandler = async (
         status: employeeAssignments.status,
         startDate: employeeAssignments.startDate,
         endDate: employeeAssignments.endDate,
-        description: employeeAssignments.notes,
+        name: employeeAssignments.name,
+        location: employeeAssignments.location,
+        notes: employeeAssignments.notes,
         createdAt: employeeAssignments.createdAt,
         updatedAt: employeeAssignments.updatedAt,
         employee: {

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Award,
+  Briefcase,
   Building,
   Calendar,
   CalendarDays,
@@ -25,44 +26,30 @@ import { toast } from 'sonner';
 
 interface EmployeeDashboardData {
   employee: {
-    id: string;
-    erpnext_id?: string;
-    file_number?: string;
-    employee_id: string;
-    name: string;
+    id: number;
+    first_name: string;
+    last_name: string;
     email: string;
     phone: string;
-    address?: string;
-    city?: string;
-    state?: string;
-    postal_code?: string;
-    country?: string;
-    nationality?: string;
-    date_of_birth?: string;
-    hire_date?: string;
-    supervisor?: string;
-    designation: string;
-    department: string;
-    location: string;
-    // Salary and compensation
-    hourly_rate?: number;
-    basic_salary?: number;
-    food_allowance?: number;
-    housing_allowance?: number;
-    transport_allowance?: number;
-    absent_deduction_rate?: number;
-    overtime_rate_multiplier?: number;
-    overtime_fixed_rate?: number;
-    // Bank information
-    bank_name?: string;
-    bank_account_number?: string;
-    bank_iban?: string;
-    // Contract details
-    contract_hours_per_day?: number;
-    contract_days_per_month?: number;
-    // Emergency contact
-    emergency_contact_name?: string;
-    emergency_contact_phone?: string;
+    hire_date: string;
+    basic_salary: number;
+    status: string;
+    department: {
+      id: number;
+      name: string;
+      code: string;
+    };
+    designation: {
+      id: number;
+      name: string;
+      description: string;
+    };
+    user: {
+      id: number;
+      name: string;
+      email: string;
+      roleId: number;
+    };
   };
   statistics: {
     totalTimesheets: number;
@@ -96,9 +83,9 @@ interface EmployeeDashboardData {
     days: number;
   }>;
   currentProjects: Array<{
-    id: string;
+    id: number;
     name: string;
-    description: string;
+    description?: string;
     status: string;
     assignmentStatus: string;
   }>;
@@ -112,11 +99,26 @@ interface EmployeeDashboardData {
     updated_at: string;
   }>;
   assignments: Array<{
-    id: string;
-    title?: string;
-    description?: string;
-    status?: string;
+    id: number;
+    name: string;
+    type: string;
+    location?: string;
+    start_date: string;
+    end_date?: string;
+    status: string;
+    notes?: string;
+    project_id?: number;
+    rental_id?: number;
+    project?: {
+      id: number;
+      name: string;
+    };
+    rental?: {
+      id: number;
+      name: string;
+    };
     created_at: string;
+    updated_at: string;
   }>;
   advances: Array<{
     id: string;
@@ -172,12 +174,8 @@ export default function EmployeeDashboard() {
         const data = await response.json();
         setDashboardData(data);
       }
-    } catch (error) {
-      
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (!errorMessage.includes('401') && !errorMessage.includes('Unauthorized')) {
-        // toast.error("Failed to load employee data")
-      }
+    } catch {
+      // Silently handle errors for dashboard loading
     } finally {
       setLoading(false);
     }
@@ -197,7 +195,7 @@ export default function EmployeeDashboard() {
         const error = await response.json();
         toast.error(error.message || 'Failed to delete document');
       }
-    } catch (error) {
+    } catch {
       toast.error('An error occurred while deleting document');
     }
   };
@@ -228,7 +226,7 @@ export default function EmployeeDashboard() {
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">Employee Dashboard</h1>
               <p className="text-muted-foreground">
-                Welcome back, {session?.user?.name || 'Employee'}! Here's your personalized
+                Welcome back, {dashboardData?.employee ? `${dashboardData.employee.first_name} ${dashboardData.employee.last_name}` : session?.user?.name || 'Employee'}! Here's your personalized
                 dashboard.
               </p>
             </div>
@@ -261,10 +259,12 @@ export default function EmployeeDashboard() {
           </Card>
         </div>
 
+
+
         {/* Statistics Cards - Second Section */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-4">Overview</h2>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Timesheets</CardTitle>
@@ -298,9 +298,22 @@ export default function EmployeeDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {dashboardData?.statistics?.activeProjects || 0}
+                  {dashboardData?.assignments?.filter(a => a.type === 'project' && a.status === 'active').length || 0}
                 </div>
                 <p className="text-xs text-muted-foreground">Current assignments</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Assignments</CardTitle>
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {dashboardData?.assignments?.length || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">All assignments</p>
               </CardContent>
             </Card>
 
@@ -438,24 +451,24 @@ export default function EmployeeDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {dashboardData?.currentProjects?.length ? (
+                {dashboardData?.assignments?.filter(a => a.type === 'project' && a.status === 'active').length ? (
                   <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
                     <div className="flex-1">
                       <p className="text-sm font-medium">
-                        {dashboardData.currentProjects[0]?.name}
+                        {dashboardData.assignments.filter(a => a.type === 'project' && a.status === 'active')[0]?.name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {dashboardData.currentProjects[0]?.description}
+                        {dashboardData.assignments.filter(a => a.type === 'project' && a.status === 'active')[0]?.project?.name || 'Project assignment'}
                       </p>
                     </div>
                     <Badge
                       variant={
-                        dashboardData.currentProjects[0]?.status === 'active'
+                        dashboardData.assignments.filter(a => a.type === 'project' && a.status === 'active')[0]?.status === 'active'
                           ? 'default'
                           : 'secondary'
                       }
                     >
-                      {dashboardData.currentProjects[0]?.status}
+                      {dashboardData.assignments.filter(a => a.type === 'project' && a.status === 'active')[0]?.status}
                     </Badge>
                   </div>
                 ) : (
@@ -518,18 +531,18 @@ export default function EmployeeDashboard() {
           <Card className="overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
               <CardTitle className="flex items-center gap-3 text-xl">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
-                  {dashboardData?.employee?.name?.charAt(0) || 'E'}
-                </div>
-                <div>
-                  <div className="font-bold text-gray-900">
-                    {dashboardData?.employee?.name || 'Employee Name'}
+                                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
+                    {dashboardData?.employee?.first_name?.charAt(0) || 'E'}
                   </div>
-                  <div className="text-sm text-gray-600">
-                    {dashboardData?.employee?.designation || 'Designation'} •{' '}
-                    {dashboardData?.employee?.department || 'Department'}
+                  <div>
+                    <div className="font-bold text-gray-900">
+                      {dashboardData?.employee ? `${dashboardData.employee.first_name} ${dashboardData.employee.last_name}` : 'Employee Name'}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {dashboardData?.employee?.designation?.name || 'Designation'} •{' '}
+                      {dashboardData?.employee?.department?.name || 'Department'}
+                    </div>
                   </div>
-                </div>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">

@@ -13,11 +13,13 @@ import { useI18n } from '@/hooks/use-i18n';
 interface ProjectOverviewSectionProps {
   projectData: ActiveProject[];
   onUpdateProject: (project: ActiveProject) => void;
+  onHideSection?: () => void;
 }
 
 export default function ProjectOverviewSection({
   projectData,
   onUpdateProject,
+  onHideSection,
 }: ProjectOverviewSectionProps) {
   const router = useRouter();
   const { t } = useI18n();
@@ -83,10 +85,22 @@ export default function ProjectOverviewSection({
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Target className="h-5 w-5" />
-          {t('dashboard.projectOverview.title')}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            {t('dashboard.projectOverview.title')}
+          </CardTitle>
+          {onHideSection && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onHideSection}
+              className="text-xs"
+            >
+              Hide Section
+            </Button>
+          )}
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-6">
