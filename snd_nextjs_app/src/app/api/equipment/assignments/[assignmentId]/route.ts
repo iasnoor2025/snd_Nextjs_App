@@ -10,12 +10,25 @@ import {
 } from '@/lib/drizzle/schema';
 import { and, eq, like } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-config';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ assignmentId: string }> }
 ) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user has permission to update equipment assignments
+    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role || '')) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
     const { assignmentId: assignmentIdParam } = await params;
     const assignmentId = parseInt(assignmentIdParam);
 

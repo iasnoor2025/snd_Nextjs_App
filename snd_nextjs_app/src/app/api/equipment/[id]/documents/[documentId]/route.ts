@@ -4,11 +4,28 @@ import { and, eq } from 'drizzle-orm';
 import { existsSync } from 'fs';
 import { unlink } from 'fs/promises';
 import { NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { join } from 'path';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-config';
 
 // DELETE /api/equipment/[id]/documents/[documentId]
-export async function DELETE({ params }: { params: Promise<{ id: string; documentId: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; documentId: string }> }
+) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user has permission to delete equipment documents
+    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role || '')) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
     const { id, documentId } = await params;
     const equipmentId = parseInt(id);
     const docId = parseInt(documentId);
@@ -46,10 +63,17 @@ export async function DELETE({ params }: { params: Promise<{ id: string; documen
       );
     }
 
-    // Delete file from disk
-    const filePath = join(process.cwd(), 'public', 'uploads', 'documents', documentData.filePath);
-    if (existsSync(filePath)) {
-      await unlink(filePath);
+    // Delete file from disk if it exists
+    if (documentData.filePath) {
+      try {
+        const filePath = join(process.cwd(), 'public', 'uploads', 'documents', documentData.filePath);
+        if (existsSync(filePath)) {
+          await unlink(filePath);
+        }
+      } catch (fileError) {
+        console.error('Error deleting file from disk:', fileError);
+        // Continue with database deletion even if file deletion fails
+      }
     }
 
     // Delete from database
@@ -62,6 +86,7 @@ export async function DELETE({ params }: { params: Promise<{ id: string; documen
       },
     });
   } catch (error) {
+    console.error('Error deleting equipment document:', error);
     
     return NextResponse.json(
       {

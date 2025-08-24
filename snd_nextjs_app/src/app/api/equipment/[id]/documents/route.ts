@@ -5,10 +5,23 @@ import { existsSync } from 'fs';
 import { mkdir, unlink, writeFile } from 'fs/promises';
 import { NextRequest, NextResponse } from 'next/server';
 import { join } from 'path';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-config';
 
 // GET /api/equipment/[id]/documents
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user has permission to read equipment documents
+    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR'].includes(session.user.role || '')) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
     const { id } = await params;
     const equipmentId = parseInt(id);
 
@@ -41,6 +54,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       },
     });
   } catch (error) {
+    console.error('Error fetching equipment documents:', error);
     
     return NextResponse.json(
       {
@@ -56,6 +70,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 // POST /api/equipment/[id]/documents
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user has permission to upload equipment documents
+    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role || '')) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
     // Test database connection
     try {
       await db.execute(sql`SELECT 1`);
@@ -71,7 +96,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       );
       
     } catch (dbTestError) {
-      
+      console.error('Database test error:', dbTestError);
       throw new Error('Database connection failed');
     }
 
@@ -91,13 +116,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       .limit(1);
 
     if (!equipmentData.length) {
-      
+      console.error('Equipment not found:', equipmentId);
       return NextResponse.json({ success: false, error: 'Equipment not found' }, { status: 404 });
     }
 
     const equipmentItem = equipmentData[0];
     if (!equipmentItem) {
-      
+      console.error('Equipment data not found for ID:', equipmentId);
       return NextResponse.json(
         { success: false, error: 'Equipment data not found' },
         { status: 404 }
@@ -110,29 +135,30 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const documentName = formData.get('document_name') as string;
 
     if (!file) {
-      
+      console.error('No file provided in request');
       return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 });
     }
 
     // Validate that file is actually a File object
     if (!(file instanceof File)) {
-      
+      console.error('Invalid file object provided:', typeof file);
       return NextResponse.json({ success: false, error: 'Invalid file object' }, { status: 400 });
     }
 
     // Additional file validation
     if (!file.name || file.name.trim() === '') {
-      
+      console.error('File has no name');
       return NextResponse.json({ success: false, error: 'File must have a name' }, { status: 400 });
     }
 
     if (file.size === 0) {
-      
+      console.error('File is empty');
       return NextResponse.json({ success: false, error: 'File cannot be empty' }, { status: 400 });
     }
 
     // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
+      console.error('File size exceeds limit:', file.size);
       return NextResponse.json(
         { success: false, error: 'File size exceeds 10MB limit' },
         { status: 400 }
@@ -153,6 +179,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     ];
 
     if (!allowedTypes.includes(file.type)) {
+      console.error('File type not allowed:', file.type);
       return NextResponse.json({ success: false, error: 'File type not allowed' }, { status: 400 });
     }
 
@@ -161,18 +188,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     try {
       if (!existsSync(uploadsDir)) {
-        
+        console.log('Creating uploads directory:', uploadsDir);
         await mkdir(uploadsDir, { recursive: true });
-        
+        console.log('Uploads directory created successfully');
       }
 
       // Verify directory is writable
       const testFile = join(uploadsDir, '.test');
       await writeFile(testFile, 'test');
       await unlink(testFile);
+      console.log('Directory is writable');
       
     } catch (dirError) {
-      
+      console.error('Uploads directory error:', dirError);
       throw new Error(
         `Uploads directory error: ${dirError instanceof Error ? dirError.message : 'Unknown error'}`
       );
@@ -189,9 +217,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const bytes = await file.arrayBuffer();
       const buffer = Buffer.from(bytes);
       await writeFile(filePath, buffer);
+      console.log('File saved to disk:', filePath);
       
     } catch (fileError) {
-      
+      console.error('Error saving file to disk:', fileError);
       throw new Error(
         `Failed to save file: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`
       );
@@ -200,7 +229,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     // Save document info to database
     let insertedDocument;
     try {
-      
+      console.log('Inserting document into database...');
       const [document] = await db
         .insert(media)
         .values({
@@ -218,17 +247,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       if (!insertedDocument) {
         throw new Error('Failed to insert document into database');
       }
+      console.log('Document inserted successfully:', insertedDocument.id);
       
     } catch (dbError) {
-      
+      console.error('Database insert error:', dbError);
       // Try to clean up the uploaded file if database insert fails
       try {
         if (existsSync(filePath)) {
           await unlink(filePath);
-          
+          console.log('Cleaned up uploaded file after database error');
         }
       } catch (cleanupError) {
-        
+        console.error('Error cleaning up file:', cleanupError);
       }
       throw new Error(
         `Failed to save document to database: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`
@@ -254,7 +284,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // Log more detailed error information
     if (error instanceof Error) {
-
+      console.error('Error uploading equipment document:', error.message, error.stack);
+    } else {
+      console.error('Unknown error uploading equipment document:', error);
     }
 
     return NextResponse.json(

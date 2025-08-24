@@ -10,6 +10,8 @@ import {
 } from '@/lib/drizzle/schema';
 import { and, desc, eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-config';
 
 // Function to update equipment status when assignment status changes
 async function updateEquipmentStatusOnAssignmentChange(
@@ -53,12 +55,23 @@ async function updateEquipmentStatusOnAssignmentChange(
       }
     }
   } catch (error) {
-    
+    console.error('Error updating equipment status:', error);
   }
 }
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user has permission to read equipment rentals
+    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR'].includes(session.user.role || '')) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
     console.log('Starting equipment rental history fetch...');
 
     const { id: idParam } = await params;
@@ -224,6 +237,17 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user has permission to create equipment rentals
+    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR'].includes(session.user.role || '')) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
     const { id: idParam } = await params;
     const id = parseInt(idParam);
 

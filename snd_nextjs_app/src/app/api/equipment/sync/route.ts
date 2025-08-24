@@ -2,9 +2,22 @@ import { db } from '@/lib/db';
 import { equipment } from '@/lib/drizzle/schema';
 import { count, eq, or } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-config';
 
 export async function POST() {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user has permission to sync equipment
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role || '')) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
     // Validate environment variables - check both NEXT_PUBLIC_ and non-NEXT_PUBLIC_ versions
     const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL || process.env.ERPNEXT_URL;
     const ERPNEXT_API_KEY = process.env.NEXT_PUBLIC_ERPNEXT_API_KEY || process.env.ERPNEXT_API_KEY;
@@ -38,7 +51,7 @@ export async function POST() {
       await db.select({ count: count() }).from(equipment).limit(1);
       
     } catch (dbError) {
-      
+      console.error('Database connection error:', dbError);
       return NextResponse.json(
         {
           success: false,

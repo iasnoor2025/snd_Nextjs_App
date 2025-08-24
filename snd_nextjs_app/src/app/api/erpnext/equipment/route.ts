@@ -2,6 +2,8 @@ import { db } from '@/lib/drizzle';
 import { equipment } from '@/lib/drizzle/schema';
 import { eq, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-config';
 
 // ERPNext configuration - check both NEXT_PUBLIC_ and non-NEXT_PUBLIC_ versions
 const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL || process.env.ERPNEXT_URL;
@@ -37,8 +39,6 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    
     throw new Error(`ERPNext API error: ${response.status} ${response.statusText}`);
   }
 
@@ -47,6 +47,17 @@ async function makeERPNextRequest(endpoint: string, options: RequestInit = {}) {
 
 export async function GET(_request: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user has permission to access ERPNext equipment
+    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role || '')) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(_request.url);
     const action = searchParams.get('action');
 
@@ -65,6 +76,7 @@ export async function GET(_request: NextRequest) {
       count: data.data?.length || 0,
     });
   } catch (error) {
+    console.error('Error in ERPNext equipment GET:', error);
     
     return NextResponse.json(
       {
@@ -78,6 +90,17 @@ export async function GET(_request: NextRequest) {
 
 export async function POST(_request: NextRequest) {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user has permission to access ERPNext equipment
+    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role || '')) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
+
     const body = await _request.json();
     const { action } = body;
 
@@ -93,6 +116,7 @@ export async function POST(_request: NextRequest) {
       { status: 400 }
     );
   } catch (error) {
+    console.error('Error in ERPNext equipment POST:', error);
     
     return NextResponse.json(
       {
@@ -136,8 +160,8 @@ async function syncEquipmentFromERPNext() {
           dailyRate: item.standard_rate ? item.standard_rate.toString() : null,
           status: 'available',
           isActive: true,
-          createdAt: new Date().toISOString().split('T')[0] || null as string,
-          updatedAt: new Date().toISOString().split('T')[0] || null as string,
+          createdAt: new Date().toISOString().split('T')[0] || '',
+          updatedAt: new Date().toISOString().split('T')[0] || '',
         };
 
         // Check if equipment already exists using Drizzle
@@ -165,7 +189,7 @@ async function syncEquipmentFromERPNext() {
               dailyRate: equipmentData.dailyRate,
               status: equipmentData.status,
               isActive: equipmentData.isActive,
-              updatedAt: new Date().toISOString().split('T')[0] || null,
+              updatedAt: new Date().toISOString().split('T')[0] || '',
             })
             .where(eq(equipment.id, existingEquipmentRows[0]!.id));
           updatedCount++;
@@ -174,8 +198,8 @@ async function syncEquipmentFromERPNext() {
           await db.insert(equipment).values(equipmentData);
           createdCount++;
         }
-      } catch (error) {
-        
+      } catch (itemError) {
+        console.error('Error processing equipment item:', itemError);
         errorCount++;
       }
     }
@@ -190,12 +214,13 @@ async function syncEquipmentFromERPNext() {
         errors: errorCount,
       },
     });
-  } catch (error) {
+  } catch (syncError) {
+    console.error('Error syncing equipment from ERPNext:', syncError);
     
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : 'Failed to sync equipment from ERPNext',
+        message: syncError instanceof Error ? syncError.message : 'Failed to sync equipment from ERPNext',
       },
       { status: 500 }
     );

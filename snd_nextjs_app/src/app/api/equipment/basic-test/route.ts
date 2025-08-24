@@ -1,7 +1,19 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-config';
 
 export async function POST() {
   try {
+    // Check authentication
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check if user has permission to access equipment test
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.user.role || '')) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    }
 
     // Check environment variables
     const ERPNEXT_URL = process.env.NEXT_PUBLIC_ERPNEXT_URL;
@@ -27,6 +39,7 @@ export async function POST() {
       data: testData,
     });
   } catch (error) {
+    console.error('Error in equipment basic test:', error);
     
     return NextResponse.json(
       {
@@ -41,6 +54,6 @@ export async function POST() {
       { status: 500 }
     );
   } finally {
-    
+    // Cleanup if needed
   }
 }
