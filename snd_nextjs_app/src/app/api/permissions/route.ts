@@ -24,17 +24,18 @@ export async function GET(_request: NextRequest) {
     }
 
     // Check if user has permission to view permissions
-    if (!hasPermission(user, 'read', 'Settings')) {
+    if (!hasPermission(user, 'read', 'Permission')) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 
     const { searchParams } = new URL(_request.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limitParam = searchParams.get('limit');
+    const limit = limitParam === 'all' || limitParam === '-1' ? undefined : parseInt(limitParam || '50');
     const search = searchParams.get('search') || '';
     const role = searchParams.get('role') || '';
 
-    const skip = (page - 1) * limit;
+    const skip = limit ? (page - 1) * limit : 0;
 
     // Build where clause
     const filters: any[] = [];
@@ -55,7 +56,7 @@ export async function GET(_request: NextRequest) {
     const total = Number((totalRow as any)[0]?.count ?? 0);
 
     // page rows
-    const perms = await db
+    let query = db
       .select({
         id: permissionsTable.id,
         name: permissionsTable.name,
@@ -65,9 +66,13 @@ export async function GET(_request: NextRequest) {
       })
       .from(permissionsTable)
       .where(whereExpr as any)
-      .orderBy(asc(permissionsTable.name))
-      .offset(skip)
-      .limit(limit);
+      .orderBy(asc(permissionsTable.name));
+
+    if (limit) {
+      query = query.offset(skip).limit(limit);
+    }
+
+    const perms = await query;
 
     // join roles per permission
     const permIds = perms.map(p => p.id as number);
@@ -107,10 +112,10 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({
       permissions: results,
       pagination: {
-        page,
-        limit,
+        page: limit ? page : 1,
+        limit: limit || total,
         total,
-        pages: Math.ceil(total / limit),
+        pages: limit ? Math.ceil(total / limit) : 1,
       },
     });
   } catch (error) {
@@ -133,7 +138,7 @@ export async function POST(_request: NextRequest) {
     }
 
     // Check if user has permission to create permissions
-    if (!hasPermission(user, 'create', 'Settings')) {
+    if (!hasPermission(user, 'create', 'Permission')) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 });
     }
 

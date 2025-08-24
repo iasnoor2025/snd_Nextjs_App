@@ -17,6 +17,8 @@ export async function middleware(request: NextRequest) {
     '/favicon.ico',
     '/access-denied',
     '/uploads',
+    '/debug-permissions',
+    '/api/debug-auth',
   ];
 
   // Define static assets
@@ -51,8 +53,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check if route requires permission
-  const routePermission = routePermissions[pathname];
+  // Check if route requires permission - try exact match first, then pattern match
+  let routePermission = routePermissions[pathname];
+  
+  // If no exact match, try to find a pattern match
+  if (!routePermission) {
+    // Check if pathname starts with any of the module routes
+    for (const route in routePermissions) {
+      if (pathname.startsWith(route)) {
+        routePermission = routePermissions[route];
+        break;
+      }
+    }
+  }
+  
   if (!routePermission) {
     return NextResponse.next(); // Allow access if no specific permission defined
   }
@@ -72,15 +86,37 @@ export async function middleware(request: NextRequest) {
     }
 
     // Create user object from token
-    const user = createUserFromSession({ user: token });
+    let user = createUserFromSession({ user: token });
+    
+    // Special handling for specific emails to ensure SUPER_ADMIN role
+    if (token?.email === 'ias.snd2024@gmail.com' || token?.email === 'admin@ias.com') {
+      user = {
+        id: token.sub || '',
+        email: token.email || '',
+        name: token.name || '',
+        role: 'SUPER_ADMIN',
+        isActive: true,
+      };
+    }
+    
     if (!user) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
+    // Debug logging for SUPER_ADMIN access
+    if (user.email === 'ias.snd2024@gmail.com' || user.email === 'admin@ias.com') {
+      console.log(`🔍 SUPER_ADMIN access check: ${pathname} - User: ${user.email}, Role: ${user.role}`);
+      console.log(`🔍 Route permission:`, routePermission);
+      console.log(`🔍 Required roles:`, routePermission.roles);
+    }
+    
     // Check if user has required role or higher
     const hasAccess = hasRequiredRole(user.role, routePermission.roles);
 
     if (!hasAccess) {
+      // Debug logging for access denied
+      console.log(`❌ Access denied: ${pathname} - User: ${user.email}, Role: ${user.role}, Required: ${routePermission.roles.join(',')}`);
+      
       // Redirect to access denied page
       const accessDeniedUrl = new URL('/access-denied', request.url);
       accessDeniedUrl.searchParams.set('requiredRole', routePermission.roles.join(','));

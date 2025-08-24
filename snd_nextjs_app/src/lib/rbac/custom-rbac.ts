@@ -1,14 +1,7 @@
 // Custom RBAC System - Replaces CASL
 // Simple, direct role-based access control using NextAuth session
 
-export type UserRole =
-  | 'SUPER_ADMIN'
-  | 'ADMIN'
-  | 'MANAGER'
-  | 'SUPERVISOR'
-  | 'OPERATOR'
-  | 'EMPLOYEE'
-  | 'USER';
+export type UserRole = string; // Dynamic - will be loaded from database
 
 export type Action =
   | 'create'
@@ -46,6 +39,95 @@ export type Subject =
   | 'Safety'
   | 'employee-document'
   | 'SalaryIncrement'
+  | 'Role'
+  | 'Permission'
+  | 'employee-leave'
+  | 'employee-salary'
+  | 'employee-skill'
+  | 'employee-training'
+  | 'employee-performance'
+  | 'employee-resignation'
+  | 'customer-document'
+  | 'customer-project'
+  | 'equipment-rental'
+  | 'equipment-maintenance'
+  | 'equipment-history'
+  | 'maintenance-item'
+  | 'maintenance-schedule'
+  | 'rental-item'
+  | 'rental-history'
+  | 'rental-contract'
+  | 'quotation-term'
+  | 'quotation-item'
+  | 'payroll-item'
+  | 'payroll-run'
+  | 'tax-document'
+  | 'time-entry'
+  | 'weekly-timesheet'
+  | 'timesheet-approval'
+  | 'project-task'
+  | 'project-milestone'
+  | 'project-template'
+  | 'project-risk'
+  | 'project-manpower'
+  | 'project-equipment'
+  | 'project-material'
+  | 'project-fuel'
+  | 'project-expense'
+  | 'project-subcontractor'
+  | 'time-off-request'
+  | 'organizational-unit'
+  | 'Skill'
+  | 'Training'
+  | 'company-document'
+  | 'company-document-type'
+  | 'system-setting'
+  | 'country'
+  | 'report-template'
+  | 'scheduled-report'
+  | 'analytics-report'
+  | 'safety-incident'
+  | 'safety-report'
+  | 'advance-payment'
+  | 'loan'
+  | 'advance-history'
+  | 'Analytics'
+  | 'Dashboard'
+  | 'Notification'
+  | 'geofence-zone'
+  | 'Document'
+  | 'document-version'
+  | 'document-approval'
+  | 'resource-allocation'
+  | 'performance-review'
+  | 'performance-goal'
+  | 'file'
+  | 'image'
+  | 'video'
+  | 'audio'
+  | 'webhook'
+  | 'integration'
+  | 'external-system'
+  | 'cron-job'
+  | 'scheduled-task'
+  | 'translation'
+  | 'language'
+  | 'own-profile'
+  | 'own-preferences'
+  | 'own-timesheet'
+  | 'own-leave'
+  | 'employee-dashboard'
+  | 'employee-data'
+  | 'bulk'
+  | 'mass'
+  | 'override'
+  | 'bypass'
+  | 'emergency'
+  | 'audit'
+  | 'compliance'
+  | 'gdpr'
+  | 'backup'
+  | 'recovery'
   | 'all';
 
 export interface User {
@@ -58,15 +140,19 @@ export interface User {
   permissions?: string[];
 }
 
-// Role hierarchy (lower number = higher priority)
-const roleHierarchy: Record<UserRole, number> = {
-  SUPER_ADMIN: 1,
-  ADMIN: 2,
-  MANAGER: 3,
-  SUPERVISOR: 4,
-  OPERATOR: 5,
-  EMPLOYEE: 6,
-  USER: 7,
+// Dynamic role hierarchy - will be loaded from database
+// For now, use a simple mapping that can be extended
+const getRolePriority = (role: string): number => {
+  const priorityMap: Record<string, number> = {
+    'SUPER_ADMIN': 1,
+    'ADMIN': 2,
+    'MANAGER': 3,
+    'SUPERVISOR': 4,
+    'OPERATOR': 5,
+    'EMPLOYEE': 6,
+    'USER': 7,
+  };
+  return priorityMap[role] || 10; // Default priority for new roles
 };
 
 // Define permissions for each role
@@ -104,6 +190,10 @@ const rolePermissions: Record<
       { action: 'manage', subject: 'Safety' },
       { action: 'manage', subject: 'employee-document' },
       { action: 'manage', subject: 'SalaryIncrement' },
+      { action: 'manage', subject: 'Advance' },
+      { action: 'manage', subject: 'Assignment' },
+      { action: 'manage', subject: 'Location' },
+      { action: 'manage', subject: 'Maintenance' },
     ],
   },
   MANAGER: {
@@ -127,6 +217,10 @@ const rolePermissions: Record<
       { action: 'read', subject: 'Safety' },
       { action: 'manage', subject: 'employee-document' },
       { action: 'manage', subject: 'SalaryIncrement' },
+      { action: 'manage', subject: 'Advance' },
+      { action: 'manage', subject: 'Assignment' },
+      { action: 'read', subject: 'Location' },
+      { action: 'read', subject: 'Maintenance' },
     ],
   },
   SUPERVISOR: {
@@ -149,6 +243,11 @@ const rolePermissions: Record<
       { action: 'read', subject: 'Company' },
       { action: 'read', subject: 'Safety' },
       { action: 'manage', subject: 'employee-document' },
+      { action: 'read', subject: 'SalaryIncrement' },
+      { action: 'read', subject: 'Advance' },
+      { action: 'read', subject: 'Assignment' },
+      { action: 'read', subject: 'Location' },
+      { action: 'read', subject: 'Maintenance' },
     ],
   },
   OPERATOR: {
@@ -156,13 +255,13 @@ const rolePermissions: Record<
       // Operational access
       { action: 'read', subject: 'User' },
       { action: 'read', subject: 'Employee' },
-      { action: 'manage', subject: 'Customer' },
-      { action: 'manage', subject: 'Equipment' },
-      { action: 'manage', subject: 'Rental' },
-      { action: 'manage', subject: 'Quotation' },
+      { action: 'read', subject: 'Customer' },
+      { action: 'read', subject: 'Equipment' },
+      { action: 'read', subject: 'Rental' },
+      { action: 'read', subject: 'Quotation' },
       { action: 'read', subject: 'Payroll' },
-      { action: 'manage', subject: 'Timesheet' },
-      { action: 'manage', subject: 'Project' },
+      { action: 'read', subject: 'Timesheet' },
+      { action: 'read', subject: 'Project' },
       { action: 'read', subject: 'Leave' },
       { action: 'read', subject: 'Department' },
       { action: 'read', subject: 'Designation' },
@@ -170,8 +269,12 @@ const rolePermissions: Record<
       { action: 'read', subject: 'Settings' },
       { action: 'read', subject: 'Company' },
       { action: 'read', subject: 'Safety' },
-      { action: 'manage', subject: 'employee-document' },
+      { action: 'read', subject: 'employee-document' },
       { action: 'read', subject: 'SalaryIncrement' },
+      { action: 'read', subject: 'Advance' },
+      { action: 'read', subject: 'Assignment' },
+      { action: 'read', subject: 'Location' },
+      { action: 'read', subject: 'Maintenance' },
     ],
   },
   EMPLOYEE: {
@@ -209,12 +312,56 @@ const rolePermissions: Record<
       { action: 'read', subject: 'Project' },
       { action: 'read', subject: 'Leave' },
       { action: 'read', subject: 'Department' },
-      { action: 'read', subject: 'Designation' },
+      { action: 'read', subject: 'Subject' },
       { action: 'read', subject: 'Report' },
       { action: 'read', subject: 'Settings' },
       { action: 'read', subject: 'Company' },
       { action: 'read', subject: 'employee-document' },
       { action: 'read', subject: 'SalaryIncrement' },
+    ],
+  },
+  PROJECT_LEADER: {
+    can: [
+      // Project management focus
+      { action: 'manage', subject: 'Project' },
+      { action: 'manage', subject: 'project-resource' },
+      { action: 'manage', subject: 'project-task' },
+      { action: 'manage', subject: 'project-milestone' },
+      { action: 'read', subject: 'Employee' },
+      { action: 'read', subject: 'Timesheet' },
+      { action: 'read', subject: 'Report' },
+    ],
+  },
+  FINANCE_SPECIALIST: {
+    can: [
+      // Financial operations focus
+      { action: 'read', subject: 'Payroll' },
+      { action: 'read', subject: 'SalaryIncrement' },
+      { action: 'read', subject: 'Advance' },
+      { action: 'read', subject: 'Report' },
+      { action: 'read', subject: 'Employee' },
+      { action: 'export', subject: 'Report' },
+    ],
+  },
+  HR_SPECIALIST: {
+    can: [
+      // Human resources focus
+      { action: 'read', subject: 'Employee' },
+      { action: 'read', subject: 'LeaveRequest' },
+      { action: 'read', subject: 'PerformanceReview' },
+      { action: 'read', subject: 'Training' },
+      { action: 'read', subject: 'Report' },
+      { action: 'read', subject: 'User' },
+    ],
+  },
+  SALES_REPRESENTATIVE: {
+    can: [
+      // Sales operations focus
+      { action: 'read', subject: 'Customer' },
+      { action: 'manage', subject: 'Quotation' },
+      { action: 'read', subject: 'Project' },
+      { action: 'read', subject: 'Report' },
+      { action: 'export', subject: 'Report' },
     ],
   },
 };
@@ -224,7 +371,7 @@ export const routePermissions: Record<
   string,
   { action: Action; subject: Subject; roles: UserRole[] }
 > = {
-  '/dashboard': {
+  '/dashboard': { 
     action: 'read',
     subject: 'Settings',
     roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'],
@@ -415,8 +562,8 @@ export function createUserFromSession(session: any): User | null {
 
   let role = (session.user.role || 'USER').toUpperCase() as UserRole;
 
-  // ALWAYS ensure admin@ias.com has SUPER_ADMIN role
-  if (session.user.email === 'admin@ias.com') {
+  // ALWAYS ensure these emails have SUPER_ADMIN role
+  if (session.user.email === 'admin@ias.com' || session.user.email === 'ias.snd2024@gmail.com') {
     role = 'SUPER_ADMIN';
   }
 

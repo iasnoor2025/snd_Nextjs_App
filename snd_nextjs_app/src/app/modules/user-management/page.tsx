@@ -158,14 +158,14 @@ export default function UserManagementPage() {
   const fetchPermissions = async () => {
     try {
       setLoadingPermissions(true);
-      const response = await fetch('/api/permissions');
+      const response = await fetch('/api/permissions?limit=all');
       if (!response.ok) {
         throw new Error('Failed to fetch permissions');
       }
       const data = await response.json();
       setPermissions(data.permissions || []);
     } catch (error) {
-      
+      console.error('Error fetching permissions:', error);
       throw error;
     } finally {
       setLoadingPermissions(false);

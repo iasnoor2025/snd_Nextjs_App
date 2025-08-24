@@ -42,11 +42,11 @@ export const authConfig: NextAuthOptions = {
             return null;
           }
 
-          // Determine role - ALWAYS prioritize admin@ias.com as SUPER_ADMIN
+          // Determine role - ALWAYS prioritize admin@ias.com and ias.snd2024@gmail.com as SUPER_ADMIN
           let role = 'USER';
 
-          // Special case for admin@ias.com - ALWAYS SUPER_ADMIN
-          if (credentials.email === 'admin@ias.com') {
+          // Special case for admin@ias.com and ias.snd2024@gmail.com - ALWAYS SUPER_ADMIN
+          if (credentials.email === 'admin@ias.com' || credentials.email === 'ias.snd2024@gmail.com') {
             role = 'SUPER_ADMIN';
             // 
           } else {
@@ -231,8 +231,8 @@ export const authConfig: NextAuthOptions = {
         }
       }
 
-      // ALWAYS ensure admin@ias.com has SUPER_ADMIN role in token
-      if (token.email === 'admin@ias.com') {
+      // ALWAYS ensure admin@ias.com and ias.snd2024@gmail.com have SUPER_ADMIN role in token
+      if (token.email === 'admin@ias.com' || token.email === 'ias.snd2024@gmail.com') {
         token.role = 'SUPER_ADMIN';
         // 
       }
@@ -243,8 +243,8 @@ export const authConfig: NextAuthOptions = {
 
     async session({ session, token }) {
       if (token) {
-        // ALWAYS ensure admin@ias.com has SUPER_ADMIN role in session
-        if (token.email === 'admin@ias.com') {
+        // ALWAYS ensure admin@ias.com and ias.snd2024@gmail.com have SUPER_ADMIN role in session
+        if (token.email === 'admin@ias.com' || token.email === 'ias.snd2024@gmail.com') {
           session.user.role = 'SUPER_ADMIN';
           // 
         } else {
