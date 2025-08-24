@@ -31,21 +31,6 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-
-
-// Using imported types from dashboard-service
-
-
-
-interface ActivityItem {
-  id: number;
-  type: 'info' | 'success' | 'warning' | 'error';
-  message: string;
-  timestamp: string;
-  user?: string;
-  action?: string;
-}
-
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -70,8 +55,8 @@ export default function DashboardPage() {
 
   // State for selected items
   const [selectedIqama, setSelectedIqama] = useState<IqamaData | null>(null);
-  const [selectedEquipment, setSelectedEquipment] = useState<any | null>(null);
-  const [selectedTimesheetForEdit, setSelectedTimesheetForEdit] = useState<any | null>(null);
+  const [selectedEquipment, setSelectedEquipment] = useState<EquipmentData | null>(null);
+  const [selectedTimesheetForEdit, setSelectedTimesheetForEdit] = useState<TimesheetData | null>(null);
 
   // State for form inputs
   const [newExpiryDate, setNewExpiryDate] = useState('');
@@ -224,28 +209,12 @@ export default function DashboardPage() {
     }
   };
 
-  // Fetch only Project data for quick updates
-  // const fetchProjectData = async () => {
-  //   try {
-  //     const response = await fetch('/api/projects/dashboard')
-  //     if (!response.ok) {
-  //       throw new Error('Failed to fetch project data')
-  //     }
-  //     const data = await response.json()
-  //     setProjectData(data.projectData || [])
-  //   } catch (error) {
-  //     
-  //   }
-  // }
-
   // Initial data fetch
   useEffect(() => {
     if (session) {
       fetchDashboardData();
     }
   }, [session]);
-
-  // Project data is now fetched from the API via fetchDashboardData()
 
   // Load section visibility from localStorage on mount
   useEffect(() => {
@@ -331,7 +300,8 @@ export default function DashboardPage() {
       const updateData: any = { istimara_expiry_date: newEquipmentExpiryDate };
 
       // Only include istimara if it doesn't exist and user provided one
-      if (!selectedEquipment.istimara && newEquipmentIstimara.trim()) {
+      // Note: EquipmentData from dashboard-service doesn't have istimara property
+      if (newEquipmentIstimara.trim()) {
         updateData.istimara = newEquipmentIstimara.trim();
       }
 
@@ -548,7 +518,7 @@ export default function DashboardPage() {
       const pdfEquipmentData = expiredEquipmentData.map(item => ({
         ...item,
         equipmentNumber: item.equipmentNumber || 'N/A',
-        istimara: item.istimara || 'N/A',
+        istimara: 'N/A', // EquipmentData doesn't have istimara property
         istimaraExpiry: item.istimaraExpiry || 'N/A',
       }));
       
@@ -693,7 +663,7 @@ export default function DashboardPage() {
         {sectionVisibility.manualAssignments && (
           <ManualAssignmentsPermission>
             <ManualAssignmentSection 
-              employeeId={session?.user?.id ? parseInt(session.user.id) : undefined}
+              employeeId={session?.user?.id ? parseInt(session.user.id) : 0}
               onHideSection={() => toggleSection('manualAssignments')}
               allowAllEmployees={true}
             />
@@ -704,8 +674,8 @@ export default function DashboardPage() {
         {sectionVisibility.iqama && (
           <IqamaPermission>
             <IqamaSection
-              iqamaData={iqamaData}
-              onUpdateIqama={handleOpenIqamaModal}
+              iqamaData={iqamaData as any}
+              onUpdateIqama={handleOpenIqamaModal as any}
               onHideSection={() => toggleSection('iqama')}
             />
           </IqamaPermission>
@@ -715,8 +685,8 @@ export default function DashboardPage() {
         {sectionVisibility.equipment && (
           <EquipmentPermission>
             <EquipmentSection
-              equipmentData={equipmentData}
-              onUpdateEquipment={handleOpenEquipmentUpdateModal}
+              equipmentData={equipmentData as any}
+              onUpdateEquipment={handleOpenEquipmentUpdateModal as any}
               onHideSection={() => toggleSection('equipment')}
               isRefreshing={updatingEquipment}
             />
@@ -734,7 +704,7 @@ export default function DashboardPage() {
         {sectionVisibility.timesheets && (
           <TimesheetsPermission>
             <TimesheetsSection
-              timesheetData={timesheetData}
+              timesheetData={timesheetData as any}
               currentTime={currentTime}
               session={session}
               onApproveTimesheet={handleApproveTimesheet}
@@ -900,7 +870,7 @@ export default function DashboardPage() {
         // Iqama Modal
         isIqamaModalOpen={isIqamaModalOpen}
         setIsIqamaModalOpen={setIsIqamaModalOpen}
-        selectedIqama={selectedIqama}
+        selectedIqama={selectedIqama as any}
         newExpiryDate={newExpiryDate}
         setNewExpiryDate={setNewExpiryDate}
         updatingIqama={updatingIqama}
@@ -908,7 +878,7 @@ export default function DashboardPage() {
         // Equipment Modal
         isEquipmentUpdateModalOpen={isEquipmentUpdateModalOpen}
         setIsEquipmentUpdateModalOpen={setIsEquipmentUpdateModalOpen}
-        selectedEquipment={selectedEquipment}
+        selectedEquipment={selectedEquipment as any}
         newEquipmentExpiryDate={newEquipmentExpiryDate}
         setNewEquipmentExpiryDate={setNewEquipmentExpiryDate}
         newEquipmentIstimara={newEquipmentIstimara}
@@ -918,7 +888,7 @@ export default function DashboardPage() {
         // Edit Hours Modal
         isEditHoursModalOpen={isEditHoursModalOpen}
         setIsEditHoursModalOpen={setIsEditHoursModalOpen}
-        selectedTimesheetForEdit={selectedTimesheetForEdit}
+        selectedTimesheetForEdit={selectedTimesheetForEdit as any}
         editHours={editHours}
         setEditHours={setEditHours}
         editOvertimeHours={editOvertimeHours}
