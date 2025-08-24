@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { join } from 'path';
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string; documentId: string }> }
 ) {
   try {
@@ -41,22 +41,41 @@ export async function GET(
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
 
-    // Construct file path
-    const filePath = join(process.cwd(), 'public', documentRecord.filePath);
+    // Construct file path - remove leading slash if present
+    const cleanFilePath = documentRecord.filePath.startsWith('/') 
+      ? documentRecord.filePath.slice(1) 
+      : documentRecord.filePath;
+    const filePath = join(process.cwd(), 'public', cleanFilePath);
 
     // Check if file exists
     if (!existsSync(filePath)) {
-      return NextResponse.json({ error: 'File not found on server' }, { status: 404 });
+      console.error(`File not found at path: ${filePath}`);
+      console.error(`Original filePath: ${documentRecord.filePath}`);
+      console.error(`Clean filePath: ${cleanFilePath}`);
+      return NextResponse.json({ 
+        error: 'File not found on server',
+        debug: {
+          originalPath: documentRecord.filePath,
+          cleanPath: cleanFilePath,
+          fullPath: filePath
+        }
+      }, { status: 404 });
     }
 
     // Read file
     const fileBuffer = await readFile(filePath);
 
+    // Check if this is a preview request (no download parameter)
+    const url = new URL(request.url);
+    const isPreview = !url.searchParams.has('download');
+    
     // Return file with appropriate headers
     return new NextResponse(fileBuffer as any, {
       headers: {
         'Content-Type': documentRecord.mimeType || 'application/octet-stream',
-        'Content-Disposition': `attachment; filename="${documentRecord.fileName}"`,
+        'Content-Disposition': isPreview 
+          ? `inline; filename="${documentRecord.fileName}"`
+          : `attachment; filename="${documentRecord.fileName}"`,
         'Content-Length': documentRecord.fileSize?.toString() || fileBuffer.length.toString(),
       },
     });

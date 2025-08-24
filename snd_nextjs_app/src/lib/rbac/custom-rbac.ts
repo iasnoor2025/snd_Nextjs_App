@@ -312,7 +312,7 @@ const rolePermissions: Record<
       { action: 'read', subject: 'Project' },
       { action: 'read', subject: 'Leave' },
       { action: 'read', subject: 'Department' },
-      { action: 'read', subject: 'Subject' },
+      { action: 'read', subject: 'Settings' },
       { action: 'read', subject: 'Report' },
       { action: 'read', subject: 'Settings' },
       { action: 'read', subject: 'Company' },
@@ -324,7 +324,7 @@ const rolePermissions: Record<
     can: [
       // Project management focus
       { action: 'manage', subject: 'Project' },
-      { action: 'manage', subject: 'project-resource' },
+      { action: 'manage', subject: 'Project' },
       { action: 'manage', subject: 'project-task' },
       { action: 'manage', subject: 'project-milestone' },
       { action: 'read', subject: 'Employee' },
@@ -347,8 +347,8 @@ const rolePermissions: Record<
     can: [
       // Human resources focus
       { action: 'read', subject: 'Employee' },
-      { action: 'read', subject: 'LeaveRequest' },
-      { action: 'read', subject: 'PerformanceReview' },
+      { action: 'read', subject: 'Leave' },
+      { action: 'read', subject: 'performance-review' },
       { action: 'read', subject: 'Training' },
       { action: 'read', subject: 'Report' },
       { action: 'read', subject: 'User' },
@@ -374,28 +374,28 @@ export const routePermissions: Record<
   '/dashboard': { 
     action: 'read',
     subject: 'Settings',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'USER'],
   },
   '/employee-dashboard': { action: 'read', subject: 'Employee', roles: ['EMPLOYEE'] },
   '/modules/employee-management': {
     action: 'read',
     subject: 'Employee',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'USER'],
   },
   '/modules/customer-management': {
     action: 'read',
     subject: 'Customer',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'USER'],
   },
   '/modules/equipment-management': {
     action: 'read',
     subject: 'Equipment',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'USER'],
   },
   '/modules/maintenance-management': {
     action: 'read',
     subject: 'Maintenance',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'],
   },
   '/modules/company-management': {
     action: 'manage',
@@ -405,83 +405,83 @@ export const routePermissions: Record<
   '/modules/rental-management': {
     action: 'read',
     subject: 'Rental',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'USER'],
   },
   '/modules/quotation-management': {
     action: 'read',
     subject: 'Quotation',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'USER'],
   },
   '/modules/payroll-management': {
     action: 'read',
     subject: 'Payroll',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'],
   },
   '/modules/timesheet-management': {
     action: 'read',
     subject: 'Timesheet',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'],
   },
   '/modules/project-management': {
     action: 'read',
     subject: 'Project',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'USER'],
   },
   '/modules/leave-management': {
     action: 'read',
     subject: 'Leave',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE'],
   },
   '/modules/location-management': {
     action: 'read',
     subject: 'Settings',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'],
   },
   '/modules/user-management': { action: 'read', subject: 'User', roles: ['SUPER_ADMIN', 'ADMIN'] },
   '/modules/analytics': {
     action: 'read',
     subject: 'Report',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'],
   },
   '/modules/safety-management': {
     action: 'read',
     subject: 'Safety',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'],
   },
   '/modules/salary-increments': {
     action: 'read',
     subject: 'SalaryIncrement',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'OPERATOR', 'EMPLOYEE', 'USER'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'EMPLOYEE', 'USER'],
   },
   '/modules/reporting': {
     action: 'read',
     subject: 'Report',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'],
   },
   '/modules/settings': {
     action: 'read',
     subject: 'Settings',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR', 'EMPLOYEE', 'USER'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR', 'EMPLOYEE', 'USER'],
   },
   '/modules/audit-compliance': {
     action: 'read',
     subject: 'Report',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'],
   },
   '/admin': { action: 'manage', subject: 'Settings', roles: ['SUPER_ADMIN', 'ADMIN'] },
   '/reports': {
     action: 'read',
     subject: 'Report',
-    roles: ['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR'],
+    roles: ['SUPER_ADMIN', 'ADMIN', 'SUPERVISOR'],
   },
 };
 
 // Helper function to check if user has required role or higher
 export function hasRequiredRole(userRole: UserRole, requiredRoles: UserRole[]): boolean {
-  const userRoleLevel = roleHierarchy[userRole] || 7;
+  const userRoleLevel = getRolePriority(userRole);
 
   return requiredRoles.some(requiredRole => {
-    const requiredRoleLevel = roleHierarchy[requiredRole] || 7;
+    const requiredRoleLevel = getRolePriority(requiredRole);
     return userRoleLevel <= requiredRoleLevel; // Lower number = higher priority
   });
 }
@@ -552,12 +552,12 @@ export function canAccessRoute(user: User, route: string): boolean {
 }
 
 // Helper function to get user's role permissions
-export function getRolePermissions(role: UserRole): any {
+export function getRolePermissions(role: UserRole): typeof rolePermissions[UserRole] | undefined {
   return rolePermissions[role] || rolePermissions.USER;
 }
 
 // Helper function to create a user object from session
-export function createUserFromSession(session: any): User | null {
+export function createUserFromSession(session: { user?: { id?: string; email?: string; name?: string; role?: string; isActive?: boolean } }): User | null {
   if (!session?.user) return null;
 
   let role = (session.user.role || 'USER').toUpperCase() as UserRole;

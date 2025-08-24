@@ -1,7 +1,8 @@
 import { getToken } from 'next-auth/jwt';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { createUserFromSession, hasRequiredRole, routePermissions } from './lib/rbac/custom-rbac';
+import { createUserFromSession } from './lib/rbac/custom-rbac';
+import { getStaticRoutePermissions } from './lib/rbac/static-route-permissions';
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -53,19 +54,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check if route requires permission - try exact match first, then pattern match
-  let routePermission = routePermissions[pathname];
-  
-  // If no exact match, try to find a pattern match
-  if (!routePermission) {
-    // Check if pathname starts with any of the module routes
-    for (const route in routePermissions) {
-      if (pathname.startsWith(route)) {
-        routePermission = routePermissions[route];
-        break;
-      }
-    }
-  }
+  // Check if route requires permission using static system
+  const routePermission = getStaticRoutePermissions(pathname);
   
   if (!routePermission) {
     return NextResponse.next(); // Allow access if no specific permission defined
@@ -86,7 +76,15 @@ export async function middleware(request: NextRequest) {
     }
 
     // Create user object from token
-    let user = createUserFromSession({ user: token });
+    let user = createUserFromSession({ 
+      user: {
+        id: token.sub || '',
+        email: token.email || '',
+        name: token.name || '',
+        role: token.role || 'USER',
+        isActive: true
+      }
+    });
     
     // Special handling for specific emails to ensure SUPER_ADMIN role
     if (token?.email === 'ias.snd2024@gmail.com' || token?.email === 'admin@ias.com') {
@@ -110,8 +108,8 @@ export async function middleware(request: NextRequest) {
       console.log(`🔍 Required roles:`, routePermission.roles);
     }
     
-    // Check if user has required role or higher
-    const hasAccess = hasRequiredRole(user.role, routePermission.roles);
+    // Check if user has required role
+    const hasAccess = routePermission.roles.includes(user.role);
 
     if (!hasAccess) {
       // Debug logging for access denied

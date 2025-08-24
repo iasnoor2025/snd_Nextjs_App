@@ -161,7 +161,11 @@ export default function DocumentManager(props: DocumentManagerProps) {
 
   const handleDownload = (doc: DocumentItem) => {
     const link = document.createElement('a');
-    link.href = doc.url;
+    // Append download parameter to force download instead of preview
+    const downloadUrl = doc.url.includes('?') 
+      ? `${doc.url}&download=true` 
+      : `${doc.url}?download=true`;
+    link.href = downloadUrl;
     // Determine preferred prefix (employee file number)
     const prefixFromProp =
       typeof downloadPrefix === 'function' ? downloadPrefix(doc) : downloadPrefix;
@@ -197,6 +201,11 @@ export default function DocumentManager(props: DocumentManagerProps) {
     )
       return '📊';
     if (fileType.includes('image')) return '🖼️';
+    if (fileType.includes('text') || fileType.includes('plain')) return '📃';
+    if (fileType.includes('zip') || fileType.includes('rar') || fileType.includes('7z')) return '🗜️';
+    if (fileType.includes('powerpoint') || fileType.includes('presentation') || fileType.includes('ppt')) return '📽️';
+    if (fileType.includes('audio') || fileType.includes('mp3') || fileType.includes('wav')) return '🎵';
+    if (fileType.includes('video') || fileType.includes('mp4') || fileType.includes('avi')) return '🎬';
     return '📄';
   };
 
@@ -327,8 +336,16 @@ export default function DocumentManager(props: DocumentManagerProps) {
                       }}
                     />
                   ) : (
-                    <div className="w-12 h-12 flex items-center justify-center bg-muted rounded border text-xl">
-                      {getFileIcon(document.file_type)}
+                    <div 
+                      className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded border border-blue-200 cursor-pointer hover:from-blue-100 hover:to-indigo-200 transition-all duration-200"
+                      onClick={() => setPreviewImage(document)}
+                    >
+                      <div className="text-center">
+                        <div className="text-lg">{getFileIcon(document.file_type)}</div>
+                        <div className="text-xs text-blue-600 font-medium mt-1">
+                          {document.file_name?.split('.').pop()?.toUpperCase() || 'DOC'}
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -361,12 +378,19 @@ export default function DocumentManager(props: DocumentManagerProps) {
                   )}
 
                   <div className="flex items-center gap-1">
-                    {isImageFile(document.file_type) && canPreview && (
+                    {(isImageFile(document.file_type) || document.file_type.includes('pdf') || document.file_type.includes('text')) && canPreview && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => setPreviewImage(document)}
+                        onClick={() => {
+                          if (isImageFile(document.file_type)) {
+                            setPreviewImage(document);
+                          } else if (document.file_type.includes('pdf') || document.file_type.includes('text')) {
+                            window.open(document.url, '_blank');
+                          }
+                        }}
                         className="h-8 w-8 p-0"
+                        title={isImageFile(document.file_type) ? "Preview image" : "Open document"}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -404,7 +428,7 @@ export default function DocumentManager(props: DocumentManagerProps) {
         </div>
       </CardContent>
 
-      {/* Image Preview Modal */}
+      {/* Document Preview Modal */}
       {previewImage && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-4 max-w-4xl max-h-[90vh] overflow-auto">
@@ -425,11 +449,37 @@ export default function DocumentManager(props: DocumentManagerProps) {
               </Button>
             </div>
             <div className="flex justify-center">
-              <img
-                src={previewImage.url}
-                alt={previewImage.name}
-                className="max-w-full max-h-[70vh] object-contain rounded"
-              />
+              {isImageFile(previewImage.file_type) ? (
+                <img
+                  src={previewImage.url}
+                  alt={previewImage.name}
+                  className="max-w-full max-h-[70vh] object-contain rounded"
+                />
+              ) : previewImage.file_type.includes('pdf') ? (
+                <div className="w-full h-[70vh] flex items-center justify-center">
+                  <iframe
+                    src={previewImage.url}
+                    className="w-full h-full border rounded"
+                    title={previewImage.name}
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-[70vh] flex items-center justify-center flex-col gap-4">
+                  <div className="text-6xl">{getFileIcon(previewImage.file_type)}</div>
+                  <div className="text-center">
+                    <p className="text-lg font-medium text-gray-600">{previewImage.name}</p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      This file type cannot be previewed directly.
+                    </p>
+                    <Button
+                      onClick={() => window.open(previewImage.url, '_blank')}
+                      className="mt-4"
+                    >
+                      Open in New Tab
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="mt-4 text-sm text-muted-foreground text-center">
               <p>Size: {formatFileSize(previewImage.size)}</p>
