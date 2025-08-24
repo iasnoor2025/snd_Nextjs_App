@@ -120,6 +120,11 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
     const [allEmployees, setAllEmployees] = useState<Array<{ id: number, name: string, fileNumber: string }>>([]);
     const [showAllEmployees, setShowAllEmployees] = useState(false);
     const [fetchingEmployees, setFetchingEmployees] = useState(false);
+    
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(5);
+    const [totalPages, setTotalPages] = useState(1);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -186,6 +191,9 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                 setFilteredAssignments([]);
             }
         }
+        
+        // Reset to first page when search term changes
+        setCurrentPage(1);
     }, [assignments, searchTerm, allEmployees]);
 
     // Fetch all employees for search
@@ -252,6 +260,89 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
             setLoading(false);
         }
     };
+
+    // Pagination functions
+    const goToPage = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    const goToNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const goToPreviousPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    // Calculate pagination data
+    const getCurrentPageData = () => {
+        if (showAllEmployees) {
+            const filteredEmployees = allEmployees.filter(emp => {
+                if (!searchTerm) return true;
+                const nameMatch = emp.name.toLowerCase().includes(searchTerm.toLowerCase());
+                const fileNumberMatch = emp.fileNumber.toLowerCase().includes(searchTerm.toLowerCase());
+                return nameMatch || fileNumberMatch;
+            });
+            
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            return filteredEmployees.slice(startIndex, endIndex);
+        } else {
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            return filteredAssignments.slice(startIndex, endIndex);
+        }
+    };
+
+    // Get paginated employees data
+    const getCurrentPageEmployees = () => {
+        const filteredEmployees = allEmployees.filter(emp => {
+            if (!searchTerm) return true;
+            const nameMatch = emp.name.toLowerCase().includes(searchTerm.toLowerCase());
+            const fileNumberMatch = emp.fileNumber.toLowerCase().includes(searchTerm.toLowerCase());
+            return nameMatch || fileNumberMatch;
+        });
+        
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return filteredEmployees.slice(startIndex, endIndex);
+    };
+
+    // Get paginated assignments data
+    const getCurrentPageAssignments = () => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        return filteredAssignments.slice(startIndex, endIndex);
+    };
+
+    const getTotalItems = () => {
+        if (showAllEmployees) {
+            return allEmployees.filter(emp => {
+                if (!searchTerm) return true;
+                const nameMatch = emp.name.toLowerCase().includes(searchTerm.toLowerCase());
+                const fileNumberMatch = emp.fileNumber.toLowerCase().includes(searchTerm.toLowerCase());
+                return nameMatch || fileNumberMatch;
+            }).length;
+        } else {
+            return filteredAssignments.length;
+        }
+    };
+
+    // Update total pages when data changes
+    useEffect(() => {
+        const total = getTotalItems();
+        const pages = Math.ceil(total / itemsPerPage);
+        setTotalPages(pages);
+        
+        // Reset to first page if current page is out of bounds
+        if (currentPage > pages && pages > 0) {
+            setCurrentPage(1);
+        }
+    }, [filteredAssignments, allEmployees, searchTerm, showAllEmployees]);
 
 
 
@@ -887,16 +978,8 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                     </thead>
                                     <tbody>
                                         {showAllEmployees ? (
-                                                                                         // Show all employees when searching
-                                             (() => {
-                                                 const filteredEmployees = allEmployees.filter(emp => {
-                                                     const nameMatch = emp.name.toLowerCase().includes(searchTerm.toLowerCase());
-                                                     const fileNumberMatch = emp.fileNumber.toLowerCase().includes(searchTerm.toLowerCase());
-                                                     
-                                                     return nameMatch || fileNumberMatch;
-                                                 });
-                                                 
-                                                 return filteredEmployees.map(employee => (
+                                            // Show paginated employees when searching
+                                            getCurrentPageEmployees().map(employee => (
                                                     <tr key={employee.id} className="border-b hover:bg-muted/20">
                                                         <td className="p-3 text-sm">
                                                             <span className="font-mono bg-muted px-2 py-1 rounded text-xs">
@@ -935,11 +1018,10 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                                             </div>
                                                         </td>
                                                     </tr>
-                                                ));
-                                            })()
+                                            ))
                                         ) : (
-                                            // Show assignments
-                                            filteredAssignments.map(assignment => (
+                                            // Show paginated assignments
+                                            getCurrentPageAssignments().map(assignment => (
                                                 <tr key={assignment.id} className="border-b hover:bg-muted/20">
                                                     <td className="p-3 text-sm">
                                                         <span className="font-mono bg-muted px-2 py-1 rounded text-xs">
@@ -1022,13 +1104,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                             <div className="text-center text-sm text-muted-foreground">
                                 {showAllEmployees ? (
                                     <>
-                                        Total: {allEmployees.filter(emp =>
-                                            emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                            emp.fileNumber.toLowerCase().includes(searchTerm.toLowerCase())
-                                        ).length} employee{allEmployees.filter(emp =>
-                                            emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                            emp.fileNumber.toLowerCase().includes(searchTerm.toLowerCase())
-                                        ).length !== 1 ? 's' : ''} found
+                                        Total: {getTotalItems()} employee{getTotalItems() !== 1 ? 's' : ''} found
                                         {searchTerm && (
                                             <span className="ml-2 text-xs">
                                                 (searching all employees)
@@ -1037,7 +1113,7 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                     </>
                                 ) : (
                                     <>
-                                        Total: {filteredAssignments.length} assignment{filteredAssignments.length !== 1 ? 's' : ''}
+                                        Total: {getTotalItems()} assignment{getTotalItems() !== 1 ? 's' : ''}
                                         {searchTerm && (
                                             <span className="ml-2 text-xs">
                                                 (filtered from {assignments.length} total)
@@ -1046,6 +1122,53 @@ export default function ManualAssignmentSection({ employeeId: propEmployeeId, on
                                     </>
                                 )}
                             </div>
+
+                            {/* Pagination Controls */}
+                            {totalPages > 1 && (
+                                <div className="flex items-center justify-center gap-2 mt-4">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={goToPreviousPage}
+                                        disabled={currentPage === 1}
+                                    >
+                                        Previous
+                                    </Button>
+                                    
+                                    <div className="flex items-center gap-1">
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                            <Button
+                                                key={page}
+                                                variant={currentPage === page ? "default" : "outline"}
+                                                size="sm"
+                                                onClick={() => goToPage(page)}
+                                                className="w-8 h-8 p-0"
+                                            >
+                                                {page}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                    
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={goToNextPage}
+                                        disabled={currentPage === totalPages}
+                                    >
+                                        Next
+                                    </Button>
+                                </div>
+                            )}
+                            
+                            {/* Page Info - Always show when there are items */}
+                            {getTotalItems() > 0 && (
+                                <div className="text-center text-xs text-muted-foreground mt-2">
+                                    {totalPages > 1 ? (
+                                        <>Page {currentPage} of {totalPages} • </>
+                                    ) : null}
+                                    Showing {Math.min(itemsPerPage, getCurrentPageData().length)} of {getTotalItems()} items
+                                </div>
+                            )}
 
 
                         </div>
