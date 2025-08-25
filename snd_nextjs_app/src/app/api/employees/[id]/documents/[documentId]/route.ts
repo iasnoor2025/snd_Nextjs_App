@@ -5,6 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { SupabaseStorageService } from '@/lib/supabase/storage-service';
+import { cacheService } from '@/lib/redis/cache-service';
 
 export async function DELETE(
   _request: NextRequest,
@@ -75,6 +76,15 @@ export async function DELETE(
 
     // Delete document from database
     await db.delete(employeeDocuments).where(eq(employeeDocuments.id, documentId));
+
+    // Invalidate cache for this employee's documents and general documents
+    const employeeCacheKey = `employee:${employeeId}:documents`;
+    await cacheService.delete(employeeCacheKey, 'documents');
+    
+    // Also invalidate general document caches
+    await cacheService.clearByTags(['documents', 'employee']);
+    
+    console.log(`Invalidated cache for employee ${employeeId} documents after deletion`);
 
     return NextResponse.json({
       success: true,

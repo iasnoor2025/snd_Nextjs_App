@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useCacheManagement } from '@/hooks/use-cache-management';
+import { documentCacheService } from '@/lib/redis/document-cache-service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,8 +27,14 @@ import {
   Calculator,
   FileSpreadsheet,
   Receipt,
-  Cog
+  Cog,
+  Truck,
+  DollarSign,
+  Award,
+  Key,
+  Server
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 export function CacheManagement() {
   const {
@@ -58,12 +65,43 @@ export function CacheManagement() {
 
   const [showConfirmClearAll, setShowConfirmClearAll] = useState(false);
 
-  const handleClearAll = async () => {
+  const handleClearAllCache = async () => {
     try {
       await clearAllCache.mutateAsync();
-      setShowConfirmClearAll(false);
+      toast.success('All cache cleared successfully');
     } catch (error) {
       console.error('Failed to clear all cache:', error);
+      toast.error('Failed to clear all cache');
+    }
+  };
+
+  const handleClearDocumentCache = async () => {
+    try {
+      await documentCacheService.invalidateAllDocumentCaches();
+      toast.success('Document cache cleared successfully');
+    } catch (error) {
+      console.error('Failed to clear document cache:', error);
+      toast.error('Failed to clear document cache');
+    }
+  };
+
+  const handleClearEmployeeDocumentCache = async () => {
+    try {
+      await documentCacheService.invalidateCachesByType('employee');
+      toast.success('Employee document cache cleared successfully');
+    } catch (error) {
+      console.error('Failed to clear employee document cache:', error);
+      toast.error('Failed to clear employee document cache');
+    }
+  };
+
+  const handleClearEquipmentDocumentCache = async () => {
+    try {
+      await documentCacheService.invalidateCachesByType('equipment');
+      toast.success('Equipment document cache cleared successfully');
+    } catch (error) {
+      console.error('Failed to clear equipment document cache:', error);
+      toast.error('Failed to clear equipment document cache');
     }
   };
 
@@ -155,6 +193,44 @@ export function CacheManagement() {
         </CardContent>
       </Card>
 
+      {/* Document Cache Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Document Cache Management</CardTitle>
+          <CardDescription>
+            Clear document-specific caches for employees and equipment
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button
+              onClick={handleClearDocumentCache}
+              variant="outline"
+              className="w-full"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Clear All Document Cache
+            </Button>
+            <Button
+              onClick={handleClearEmployeeDocumentCache}
+              variant="outline"
+              className="w-full"
+            >
+              <User className="h-4 w-4 mr-2" />
+              Clear Employee Document Cache
+            </Button>
+            <Button
+              onClick={handleClearEquipmentDocumentCache}
+              variant="outline"
+              className="w-full"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Clear Equipment Document Cache
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Cache Clearing Actions */}
       <Card>
         <CardHeader>
@@ -166,281 +242,161 @@ export function CacheManagement() {
             Clear specific cache types or all cache data
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Core Entities */}
-            <div>
-              <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
-                Core Entities
-              </h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <Button
-                  onClick={() => clearUsersCache.mutate()}
-                  disabled={clearUsersCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Users
-                </Button>
-                
-                <Button
-                  onClick={() => clearEmployeesCache.mutate()}
-                  disabled={clearEmployeesCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <UserCheck className="h-4 w-4 mr-2" />
-                  Employees
-                </Button>
-                
-                <Button
-                  onClick={() => clearCustomersCache.mutate()}
-                  disabled={clearCustomersCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Customers
-                </Button>
-                
-                <Button
-                  onClick={() => clearEquipmentCache.mutate()}
-                  disabled={clearEquipmentCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <Database className="h-4 w-4 mr-2" />
-                  Equipment
-                </Button>
-                
-                <Button
-                  onClick={() => clearRentalsCache.mutate()}
-                  disabled={clearRentalsCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Rentals
-                </Button>
-                
-                <Button
-                  onClick={() => clearPayrollCache.mutate()}
-                  disabled={clearPayrollCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <Calculator className="h-4 w-4 mr-2" />
-                  Payroll
-                </Button>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Supporting Entities */}
-            <div>
-              <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
-                Supporting Entities
-              </h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <Button
-                  onClick={() => clearSkillsCache.mutate()}
-                  disabled={clearSkillsCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  Skills
-                </Button>
-                
-                <Button
-                  onClick={() => clearTrainingsCache.mutate()}
-                  disabled={clearTrainingsCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <GraduationCap className="h-4 w-4 mr-2" />
-                  Trainings
-                </Button>
-                
-                <Button
-                  onClick={() => clearLocationsCache.mutate()}
-                  disabled={clearLocationsCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Locations
-                </Button>
-                
-                <Button
-                  onClick={() => clearSettingsCache.mutate()}
-                  disabled={clearSettingsCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </Button>
-                
-                <Button
-                  onClick={() => clearRolesCache.mutate()}
-                  disabled={clearRolesCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  Roles
-                </Button>
-                
-                <Button
-                  onClick={() => clearPermissionsCache.mutate()}
-                  disabled={clearPermissionsCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <Shield className="h-4 w-4 mr-2" />
-                  Permissions
-                </Button>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Business Entities */}
-            <div>
-              <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
-                Business Entities
-              </h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <Button
-                  onClick={() => clearQuotationsCache.mutate()}
-                  disabled={clearQuotationsCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Quotations
-                </Button>
-                
-                <Button
-                  onClick={() => clearInvoicesCache.mutate()}
-                  disabled={clearInvoicesCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <Receipt className="h-4 w-4 mr-2" />
-                  Invoices
-                </Button>
-                
-                <Button
-                  onClick={() => clearAnalyticsCache.mutate()}
-                  disabled={clearAnalyticsCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Analytics
-                </Button>
-                
-                <Button
-                  onClick={() => clearReportsCache.mutate()}
-                  disabled={clearReportsCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
-                  Reports
-                </Button>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* System & Dashboard */}
-            <div>
-              <h4 className="font-medium mb-3 text-sm text-muted-foreground uppercase tracking-wide">
-                System & Dashboard
-              </h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                <Button
-                  onClick={() => clearDashboardCache.mutate()}
-                  disabled={clearDashboardCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Dashboard
-                </Button>
-                
-                <Button
-                  onClick={() => clearSystemCache.mutate()}
-                  disabled={clearSystemCache.isPending}
-                  variant="outline"
-                  size="sm"
-                  className="justify-start"
-                >
-                  <Cog className="h-4 w-4 mr-2" />
-                  System
-                </Button>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Clear All Cache */}
-            <div className="flex justify-center">
-              {!showConfirmClearAll ? (
-                <Button
-                  onClick={() => setShowConfirmClearAll(true)}
-                  variant="destructive"
-                  size="lg"
-                  disabled={clearAllCache.isPending}
-                >
-                  <Trash2 className="h-5 w-5 mr-2" />
-                  Clear All Cache
-                </Button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    Are you sure? This will clear ALL cached data.
-                  </span>
-                  <Button
-                    onClick={handleClearAll}
-                    variant="destructive"
-                    size="sm"
-                    disabled={clearAllCache.isPending}
-                  >
-                    Yes, Clear All
-                  </Button>
-                  <Button
-                    onClick={() => setShowConfirmClearAll(false)}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              )}
-            </div>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Button
+              onClick={() => clearUsersCache.mutate()}
+              disabled={clearUsersCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              {clearUsersCache.isPending ? 'Clearing...' : 'Clear Users Cache'}
+            </Button>
+            <Button
+              onClick={() => clearEmployeesCache.mutate()}
+              disabled={clearEmployeesCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <User className="h-4 w-4 mr-2" />
+              {clearEmployeesCache.isPending ? 'Clearing...' : 'Clear Employees Cache'}
+            </Button>
+            <Button
+              onClick={() => clearCustomersCache.mutate()}
+              disabled={clearCustomersCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <Users className="h-4 w-4 mr-2" />
+              {clearCustomersCache.isPending ? 'Clearing...' : 'Clear Customers Cache'}
+            </Button>
+            <Button
+              onClick={() => clearEquipmentCache.mutate()}
+              disabled={clearEquipmentCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              {clearEquipmentCache.isPending ? 'Clearing...' : 'Clear Equipment Cache'}
+            </Button>
+            <Button
+              onClick={() => clearRentalsCache.mutate()}
+              disabled={clearRentalsCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <Truck className="h-4 w-4 mr-2" />
+              {clearRentalsCache.isPending ? 'Clearing...' : 'Clear Rentals Cache'}
+            </Button>
+            <Button
+              onClick={() => clearPayrollCache.mutate()}
+              disabled={clearPayrollCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <DollarSign className="h-4 w-4 mr-2" />
+              {clearPayrollCache.isPending ? 'Clearing...' : 'Clear Payroll Cache'}
+            </Button>
+            <Button
+              onClick={() => clearSkillsCache.mutate()}
+              disabled={clearSkillsCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <Award className="h-4 w-4 mr-2" />
+              {clearSkillsCache.isPending ? 'Clearing...' : 'Clear Skills Cache'}
+            </Button>
+            <Button
+              onClick={() => clearTrainingsCache.mutate()}
+              disabled={clearTrainingsCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <GraduationCap className="h-4 w-4 mr-2" />
+              {clearTrainingsCache.isPending ? 'Clearing...' : 'Clear Trainings Cache'}
+            </Button>
+            <Button
+              onClick={() => clearLocationsCache.mutate()}
+              disabled={clearLocationsCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <MapPin className="h-4 w-4 mr-2" />
+              {clearLocationsCache.isPending ? 'Clearing...' : 'Clear Locations Cache'}
+            </Button>
+            <Button
+              onClick={() => clearSettingsCache.mutate()}
+              disabled={clearSettingsCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              {clearSettingsCache.isPending ? 'Clearing...' : 'Clear Settings Cache'}
+            </Button>
+            <Button
+              onClick={() => clearRolesCache.mutate()}
+              disabled={clearRolesCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              {clearRolesCache.isPending ? 'Clearing...' : 'Clear Roles Cache'}
+            </Button>
+            <Button
+              onClick={() => clearPermissionsCache.mutate()}
+              disabled={clearPermissionsCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <Key className="h-4 w-4 mr-2" />
+              {clearPermissionsCache.isPending ? 'Clearing...' : 'Clear Permissions Cache'}
+            </Button>
+            <Button
+              onClick={() => clearAnalyticsCache.mutate()}
+              disabled={clearAnalyticsCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <BarChart3 className="h-4 w-4 mr-2" />
+              {clearAnalyticsCache.isPending ? 'Clearing...' : 'Clear Analytics Cache'}
+            </Button>
+            <Button
+              onClick={() => clearReportsCache.mutate()}
+              disabled={clearReportsCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              {clearReportsCache.isPending ? 'Clearing...' : 'Clear Reports Cache'}
+            </Button>
+            <Button
+              onClick={() => clearQuotationsCache.mutate()}
+              disabled={clearQuotationsCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              {clearQuotationsCache.isPending ? 'Clearing...' : 'Clear Quotations Cache'}
+            </Button>
+            <Button
+              onClick={() => clearInvoicesCache.mutate()}
+              disabled={clearInvoicesCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <Receipt className="h-4 w-4 mr-2" />
+              {clearInvoicesCache.isPending ? 'Clearing...' : 'Clear Invoices Cache'}
+            </Button>
+            <Button
+              onClick={() => clearSystemCache.mutate()}
+              disabled={clearSystemCache.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <Server className="h-4 w-4 mr-2" />
+              {clearSystemCache.isPending ? 'Clearing...' : 'Clear System Cache'}
+            </Button>
           </div>
         </CardContent>
       </Card>

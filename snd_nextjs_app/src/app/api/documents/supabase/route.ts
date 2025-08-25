@@ -3,6 +3,7 @@ import { SupabaseStorageService } from '@/lib/supabase/storage-service';
 import { db } from '@/lib/drizzle';
 import { employees } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
+import { cacheService } from '@/lib/redis/cache-service';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,6 +15,19 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
 
     console.log('Fetching documents from Supabase:', { type, search, limit, page });
+
+    // Try to get from cache first (only for non-search queries to avoid cache fragmentation)
+    if (!search && page === 1) {
+      const cacheKey = `documents:${type}:${limit}`;
+      const cachedDocuments = await cacheService.get(cacheKey, 'documents');
+      
+      if (cachedDocuments) {
+        console.log(`Cache hit for documents: ${type}, limit: ${limit}`);
+        return NextResponse.json(cachedDocuments);
+      }
+    }
+
+    console.log(`Cache miss for documents, fetching from Supabase`);
 
     // Use static methods from SupabaseStorageService
     let allDocuments: any[] = [];
@@ -403,7 +417,7 @@ export async function GET(request: NextRequest) {
     const employeeCount = filteredDocuments.filter(doc => doc.type === 'employee').length;
     const equipmentCount = filteredDocuments.filter(doc => doc.type === 'equipment').length;
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
       data: {
         documents: paginatedDocuments,
@@ -421,7 +435,20 @@ export async function GET(request: NextRequest) {
           total: totalDocs,
         },
       },
-    });
+    };
+
+    // Cache the response for non-search queries (only first page to avoid cache fragmentation)
+    if (!search && page === 1) {
+      const cacheKey = `documents:${type}:${limit}`;
+      await cacheService.set(cacheKey, responseData, {
+        ttl: 300, // 5 minutes
+        prefix: 'documents',
+        tags: ['documents', type]
+      });
+      console.log(`Cached documents response for ${type}, limit: ${limit}`);
+    }
+
+    return NextResponse.json(responseData);
 
   } catch (error) {
     console.error('Error in documents API:', error);

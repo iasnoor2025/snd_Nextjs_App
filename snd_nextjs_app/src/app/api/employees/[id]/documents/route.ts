@@ -3,13 +3,13 @@ import { employeeDocuments } from '@/lib/drizzle/schema';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
+import { cacheService } from '@/lib/redis/cache-service';
 
 const getDocumentsHandler = async (_request: any, { params }: { params: Promise<{ id: string }> }) => {
   try {
     const resolvedParams = await params;
 
     if (!resolvedParams || !resolvedParams.id) {
-      
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
@@ -19,6 +19,17 @@ const getDocumentsHandler = async (_request: any, { params }: { params: Promise<
     if (isNaN(employeeId)) {
       return NextResponse.json({ error: 'Invalid employee ID' }, { status: 400 });
     }
+
+    // Try to get from cache first
+    const cacheKey = `employee:${employeeId}:documents`;
+    const cachedDocuments = await cacheService.get(cacheKey, 'documents');
+    
+    if (cachedDocuments) {
+      console.log(`Cache hit for employee ${employeeId} documents`);
+      return NextResponse.json(cachedDocuments);
+    }
+
+    console.log(`Cache miss for employee ${employeeId} documents, fetching from database`);
 
     // Use the same approach as the working test endpoint
     const documentsRows = await db
@@ -70,9 +81,17 @@ const getDocumentsHandler = async (_request: any, { params }: { params: Promise<
       };
     });
 
+    // Cache the formatted documents for 5 minutes
+    await cacheService.set(cacheKey, formattedDocuments, {
+      ttl: 300, // 5 minutes
+      prefix: 'documents',
+      tags: [`employee:${employeeId}`, 'documents']
+    });
+
+    console.log(`Cached employee ${employeeId} documents for 5 minutes`);
+
     return NextResponse.json(formattedDocuments);
   } catch (error) {
-
     // More detailed error information
     let errorMessage = 'Internal server error';
     let errorDetails = '';

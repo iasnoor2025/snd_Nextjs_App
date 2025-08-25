@@ -4,6 +4,7 @@ import { withAuth } from '@/lib/rbac/api-middleware';
 import { eq, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { SupabaseStorageService } from '@/lib/supabase/storage-service';
+import { cacheService } from '@/lib/redis/cache-service';
 
 const uploadDocumentsHandler = async (
   request: NextRequest,
@@ -179,6 +180,11 @@ const uploadDocumentsHandler = async (
     if (!document) {
       throw new Error('Failed to insert document into database');
     }
+
+    // Invalidate cache for this equipment's documents
+    const cacheKey = `equipment:${equipmentId}:documents`;
+    await cacheService.delete(cacheKey, 'documents');
+    console.log(`Invalidated cache for equipment ${equipmentId} documents`);
 
     const responseData = {
       success: true,

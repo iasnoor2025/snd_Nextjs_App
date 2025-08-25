@@ -6,6 +6,7 @@ import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { SupabaseStorageService } from '@/lib/supabase/storage-service';
+import { cacheService } from '@/lib/redis/cache-service';
 
 // DELETE /api/equipment/[id]/documents/[documentId]
 export async function DELETE(
@@ -97,6 +98,15 @@ export async function DELETE(
 
     // Delete from database
     await db.delete(media).where(eq(media.id, docId));
+
+    // Invalidate cache for this equipment's documents and general documents
+    const equipmentCacheKey = `equipment:${equipmentId}:documents`;
+    await cacheService.delete(equipmentCacheKey, 'documents');
+    
+    // Also invalidate general document caches
+    await cacheService.clearByTags(['documents', 'equipment']);
+    
+    console.log(`Invalidated cache for equipment ${equipmentId} documents after deletion`);
 
     return NextResponse.json({
       success: true,

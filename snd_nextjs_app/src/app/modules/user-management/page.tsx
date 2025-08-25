@@ -93,6 +93,13 @@ export default function UserManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Ensure users is always an array - with additional safety
+  const safeUsers = Array.isArray(users) ? users : [];
+  const safeRoles = Array.isArray(roles) ? roles : [];
+  const safePermissions = Array.isArray(permissions) ? permissions : [];
+  
+
+
   // Get allowed actions for user management
   const allowedActions = getAllowedActions('User');
 
@@ -132,9 +139,21 @@ export default function UserManagementPage() {
         throw new Error('Failed to fetch users');
       }
       const usersData = await response.json();
-      setUsers(usersData);
-    } catch (error) {
       
+      // The API returns { success: true, users: [...] }
+      let usersArray = [];
+      if (usersData && typeof usersData === 'object' && Array.isArray(usersData.users)) {
+        usersArray = usersData.users;
+      } else if (Array.isArray(usersData)) {
+        // Fallback: if the API returns the array directly
+        usersArray = usersData;
+      }
+      
+      setUsers(usersArray);
+    } catch (error) {
+      console.error('Error in fetchUsers:', error);
+      // Always set an empty array on error
+      setUsers([]);
       throw error;
     }
   };
@@ -147,9 +166,18 @@ export default function UserManagementPage() {
         throw new Error('Failed to fetch roles');
       }
       const rolesData = await response.json();
-      setRoles(rolesData);
-    } catch (error) {
       
+      // Ensure we always set an array
+      let rolesArray = [];
+      if (Array.isArray(rolesData)) {
+        rolesArray = rolesData;
+      }
+      
+      setRoles(rolesArray);
+    } catch (error) {
+      console.error('Error in fetchRoles:', error);
+      // Always set an empty array on error
+      setRoles([]);
       throw error;
     }
   };
@@ -163,9 +191,21 @@ export default function UserManagementPage() {
         throw new Error('Failed to fetch permissions');
       }
       const data = await response.json();
-      setPermissions(data.permissions || []);
+      
+      // Ensure we always set an array
+      let permissionsArray = [];
+      if (data && typeof data === 'object' && Array.isArray(data.permissions)) {
+        permissionsArray = data.permissions;
+      } else if (Array.isArray(data)) {
+        // Fallback: if the API returns the array directly
+        permissionsArray = data;
+      }
+      
+      setPermissions(permissionsArray);
     } catch (error) {
       console.error('Error fetching permissions:', error);
+      // Always set an empty array on error
+      setPermissions([]);
       throw error;
     } finally {
       setLoadingPermissions(false);
@@ -188,17 +228,18 @@ export default function UserManagementPage() {
     }
   };
 
-  // Fetch permissions for all roles
+    // Fetch permissions for all roles
   const fetchAllRolePermissions = async () => {
     try {
       console.log('Fetching permissions for all roles...');
       const permissionsMap: Record<number, Permission[]> = {};
 
-      for (const role of roles) {
-        try {
-          console.log(`Fetching permissions for role: ${role.name}`);
-          const response = await fetch(`/api/roles/${role.id}/permissions`);
-                      if (response.ok) {
+      if (safeRoles.length > 0) {
+        for (const role of safeRoles) {
+          try {
+            console.log(`Fetching permissions for role: ${role.name}`);
+            const response = await fetch(`/api/roles/${role.id}/permissions`);
+            if (response.ok) {
               const data = await response.json();
               console.log(`Permissions fetched for role ${role.name}:`, data.data?.length || 0);
               permissionsMap[role.id] = data.data || [];
@@ -210,6 +251,7 @@ export default function UserManagementPage() {
             console.error(`Error fetching permissions for role ${role.name}:`, error);
             permissionsMap[role.id] = [];
           }
+        }
       }
 
       setRolePermissions(permissionsMap);
@@ -257,7 +299,7 @@ export default function UserManagementPage() {
   const createUser = async () => {
     try {
       // Convert roleId to role name for API
-      const selectedRole = roles.find(r => r.id.toString() === userFormData.roleId);
+      const selectedRole = safeRoles.find(r => r.id.toString() === userFormData.roleId);
       const roleName = selectedRole?.name || 'EMPLOYEE';
 
       const response = await fetch('/api/users', {
@@ -292,7 +334,7 @@ export default function UserManagementPage() {
 
     try {
       // Convert roleId to role name for API
-      const selectedRole = roles.find(r => r.id.toString() === userFormData.roleId);
+      const selectedRole = safeRoles.find(r => r.id.toString() === userFormData.roleId);
       const roleName = selectedRole?.name || 'EMPLOYEE';
 
       const response = await fetch('/api/users', {
@@ -438,7 +480,7 @@ export default function UserManagementPage() {
     setSelectedUser(user);
 
     // Find the role ID by matching the role name
-    const matchingRole = roles.find(r => r.name === user.role);
+    const matchingRole = safeRoles.find(r => r.name === user.role);
     const roleId = matchingRole?.id?.toString() || user.role_id?.toString() || '';
 
     setUserFormData({
@@ -466,11 +508,21 @@ export default function UserManagementPage() {
       try {
         setLoading(true);
         setError(null);
+        
+        // Initialize with empty arrays to prevent undefined state
+        setUsers([]);
+        setRoles([]);
+        setPermissions([]);
 
         await Promise.all([fetchUsers(), fetchRoles(), fetchPermissions()]);
       } catch (err) {
         console.error('Error loading user management data:', err);
         setError(err instanceof Error ? err.message : t('loadDataFailed'));
+        
+        // Ensure we always have arrays even on error
+        setUsers([]);
+        setRoles([]);
+        setPermissions([]);
       } finally {
         setLoading(false);
       }
@@ -480,20 +532,20 @@ export default function UserManagementPage() {
 
   // Fetch role permissions when roles are loaded
   useEffect(() => {
-    if (roles.length > 0) {
+    if (safeRoles.length > 0) {
       fetchAllRolePermissions();
     }
-  }, [roles]);
+  }, [safeRoles]);
 
   // Set default role when roles are loaded
   useEffect(() => {
-    if (roles.length > 0 && !userFormData.roleId) {
+    if (safeRoles.length > 0 && !userFormData.roleId) {
       setUserFormData(prev => ({
         ...prev,
-        roleId: roles[0]?.id.toString() || '',
+        roleId: safeRoles[0]?.id.toString() || '',
       }));
     }
-  }, [roles, userFormData.roleId]);
+  }, [safeRoles, userFormData.roleId]);
 
   if (loading) {
     return (
@@ -517,9 +569,24 @@ export default function UserManagementPage() {
     );
   }
 
+  // Additional safety check - if anything is still undefined, show error
+  if (typeof users === 'undefined' || typeof roles === 'undefined' || typeof permissions === 'undefined') {
+    return (
+      <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'User' }}>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-red-500">
+            {t('error')}: Data not properly initialized
+          </div>
+        </div>
+      </ProtectedRoute>
+    );
+  }
+
   return (
     <ProtectedRoute requiredPermission={{ action: 'manage', subject: 'User' }}>
       <div className="container mx-auto py-6 space-y-6">
+
+        
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
@@ -543,15 +610,15 @@ export default function UserManagementPage() {
           <TabsList>
             <TabsTrigger value="users" className="flex items-center gap-2">
               <User className="h-4 w-4" />
-              {t('users')} ({users.length})
+              {t('users')} ({safeUsers.length})
             </TabsTrigger>
             <TabsTrigger value="roles" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
-              {t('roles')} ({roles.length})
+              {t('roles')} ({safeRoles.length})
             </TabsTrigger>
             <TabsTrigger value="permissions" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
-              {t('permissions')} ({permissions.length})
+              {t('permissions')} ({safePermissions.length})
             </TabsTrigger>
           </TabsList>
 
@@ -585,52 +652,60 @@ export default function UserManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.map(user => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{user.role || 'Unknown'}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                            {user.isActive ? t('active') : t('inactive')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {user.lastLoginAt
-                            ? new Date(user.lastLoginAt).toLocaleDateString()
-                            : t('never')}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {allowedActions.includes('read') && (
-                              <Button variant="outline" size="sm">
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {allowedActions.includes('update') && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openEditUserDialog(user)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            )}
-                            {allowedActions.includes('delete') && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => deleteUser(user.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
+                    {safeUsers.length > 0 ? (
+                      safeUsers.map(user => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{user.role || 'Unknown'}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={user.isActive ? 'default' : 'secondary'}>
+                              {user.isActive ? t('active') : t('inactive')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {user.lastLoginAt
+                              ? new Date(user.lastLoginAt).toLocaleDateString()
+                              : t('never')}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              {allowedActions.includes('read') && (
+                                <Button variant="outline" size="sm">
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {allowedActions.includes('update') && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEditUserDialog(user)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {allowedActions.includes('delete') && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => deleteUser(user.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          {loading ? t('loading') : t('noUsersFound')}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -727,25 +802,28 @@ export default function UserManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {roles.map(role => (
-                      <TableRow key={role.id}>
-                        <TableCell className="font-medium">{role.name}</TableCell>
-                        <TableCell>{role.guardName}</TableCell>
-                        <TableCell>
-                          <div className="max-w-xs">
-                            {rolePermissions[role.id] ? (
-                              <div className="space-y-2">
-                                <div className="flex flex-wrap gap-1">
-                                  {rolePermissions[role.id]?.slice(0, 3).map(permission => (
-                                    <Badge
-                                      key={permission.id}
-                                      variant="outline"
-                                      className="text-xs"
-                                    >
-                                      {permission.name}
-                                    </Badge>
-                                  ))}
-                                  {(rolePermissions[role.id]?.length || 0) > 3 && (
+                    {safeRoles.length > 0 ? (
+                      safeRoles.map(role => (
+                        <TableRow key={role.id}>
+                          <TableCell className="font-medium">{role.name}</TableCell>
+                          <TableCell>{role.guardName}</TableCell>
+                          <TableCell>
+                            <div className="max-w-xs">
+                              {rolePermissions[role.id] ? (
+                                <div className="space-y-2">
+                                                                                                  <div className="flex flex-wrap gap-1">
+                                  {Array.isArray(rolePermissions[role.id]) && (rolePermissions[role.id]?.length || 0) > 0 ? (
+                                    rolePermissions[role.id]?.slice(0, 3).map(permission => (
+                                      <Badge
+                                        key={permission.id}
+                                        variant="outline"
+                                        className="text-xs"
+                                      >
+                                        {permission.name}
+                                      </Badge>
+                                    ))
+                                  ) : null}
+                                  {Array.isArray(rolePermissions[role.id]) && (rolePermissions[role.id]?.length || 0) > 3 && (
                                     <Badge variant="secondary" className="text-xs">
                                       +{(rolePermissions[role.id]?.length || 0) - 3} more
                                     </Badge>
@@ -754,49 +832,56 @@ export default function UserManagementPage() {
                                 <div className="text-xs text-muted-foreground">
                                   Total: {rolePermissions[role.id]?.length || 0} permissions
                                 </div>
-                              </div>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">Loading...</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">
-                            {users.filter(u => u.role === role.name).length}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{new Date(role.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openPermissionDialog(role)}
-                            >
-                              <Shield className="h-4 w-4" />
-                            </Button>
-                            {allowedActions.includes('update') && (
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">Loading...</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">
+                              {safeUsers.filter(u => u.role === role.name).length}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{new Date(role.createdAt).toLocaleDateString()}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => openEditRoleDialog(role)}
+                                onClick={() => openPermissionDialog(role)}
                               >
-                                <Edit className="h-4 w-4" />
+                                <Shield className="h-4 w-4" />
                               </Button>
-                            )}
-                            {allowedActions.includes('delete') && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => deleteRole(role.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            )}
-                          </div>
+                              {allowedActions.includes('update') && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openEditRoleDialog(role)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {allowedActions.includes('delete') && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => deleteRole(role.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground">
+                          {loading ? t('loading') : t('noRolesFound')}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -820,17 +905,25 @@ export default function UserManagementPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {permissions.map(permission => (
-                      <TableRow key={permission.id}>
-                        <TableCell className="font-medium">{permission.name}</TableCell>
-                        <TableCell>{permission.guardName}</TableCell>
-                        <TableCell>
-                          {permission.createdAt
-                            ? new Date(permission.createdAt).toLocaleDateString()
-                            : 'N/A'}
+                    {safePermissions.length > 0 ? (
+                      safePermissions.map(permission => (
+                        <TableRow key={permission.id}>
+                          <TableCell className="font-medium">{permission.name}</TableCell>
+                          <TableCell>{permission.guardName}</TableCell>
+                          <TableCell>
+                            {permission.createdAt
+                              ? new Date(permission.createdAt).toLocaleDateString()
+                              : 'N/A'}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={3} className="text-center text-muted-foreground">
+                          {loading ? t('loading') : t('noPermissionsFound')}
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -882,11 +975,17 @@ export default function UserManagementPage() {
                     <SelectValue placeholder={t('selectRole')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {roles.map(role => (
-                      <SelectItem key={role.id} value={role.id.toString()}>
-                        {role.name}
+                    {safeRoles.length > 0 ? (
+                      safeRoles.map(role => (
+                        <SelectItem key={role.id} value={role.id.toString()}>
+                          {role.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="" disabled>
+                        {t('noRolesAvailable')}
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -955,11 +1054,17 @@ export default function UserManagementPage() {
                     <SelectValue placeholder={t('selectRole')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {roles.map(role => (
-                      <SelectItem key={role.id} value={role.id.toString()}>
-                        {role.name}
+                    {safeRoles.length > 0 ? (
+                      safeRoles.map(role => (
+                        <SelectItem key={role.id} value={role.id.toString()}>
+                          {role.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="" disabled>
+                        {t('noRolesAvailable')}
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -1060,31 +1165,37 @@ export default function UserManagementPage() {
               <DialogDescription>{t('selectPermissionsForRole')}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 max-h-96 overflow-y-auto">
-              {permissions.map(permission => (
-                <div key={permission.id} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id={`permission-${permission.id}`}
-                    checked={selectedRolePermissions.some(p => p.id === permission.id)}
-                    onChange={e => {
-                      if (e.target.checked) {
-                        setSelectedRolePermissions(prev => [...prev, permission]);
-                      } else {
-                        setSelectedRolePermissions(prev =>
-                          prev.filter(p => p.id !== permission.id)
+              {safePermissions.length > 0 ? (
+                safePermissions.map(permission => (
+                  <div key={permission.id} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`permission-${permission.id}`}
+                      checked={Array.isArray(selectedRolePermissions) ? selectedRolePermissions.some(p => p.id === permission.id) : false}
+                      onChange={e => {
+                        if (e.target.checked) {
+                          setSelectedRolePermissions(prev => [...(Array.isArray(prev) ? prev : []), permission]);
+                        } else {
+                                                  setSelectedRolePermissions(prev =>
+                          Array.isArray(prev) ? prev.filter(p => p.id !== permission.id) : []
                         );
-                      }
-                    }}
-                  />
-                  <Label htmlFor={`permission-${permission.id}`}>{permission.name}</Label>
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`permission-${permission.id}`}>{permission.name}</Label>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-muted-foreground py-4">
+                  {loading ? t('loading') : t('noPermissionsFound')}
                 </div>
-              ))}
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsPermissionDialogOpen(false)}>
                 {t('cancel')}
               </Button>
-              <Button onClick={() => updateRolePermissions(selectedRolePermissions.map(p => p.id))}>
+              <Button onClick={() => updateRolePermissions(Array.isArray(selectedRolePermissions) ? selectedRolePermissions.map(p => p.id) : [])}>
                 {t('updatePermissions')}
               </Button>
             </DialogFooter>
