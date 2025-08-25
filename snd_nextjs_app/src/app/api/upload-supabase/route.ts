@@ -71,7 +71,12 @@ export async function POST(request: NextRequest) {
      }
 
      // Upload file using Supabase storage service
-     const result = await SupabaseStorageService.uploadFile(file, targetBucket, type);
+     const descriptiveFilename = SupabaseStorageService.generateDescriptiveFilename(
+       type || 'file',
+       bucket || 'upload',
+       file.name
+     );
+     const result = await SupabaseStorageService.uploadFile(file, targetBucket, type, descriptiveFilename);
 
      if (result.success) {
       return NextResponse.json({

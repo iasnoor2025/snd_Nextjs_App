@@ -67,10 +67,16 @@ export async function POST(_request: NextRequest) {
 
     // Upload file to Supabase storage
     const path = `employee-${employee_id}`;
+    const descriptiveFilename = SupabaseStorageService.generateDescriptiveFilename(
+      document_type || 'document',
+      `employee-${employee_id}`,
+      file.name
+    );
     const uploadResult = await SupabaseStorageService.uploadFile(
       file,
       'employee-documents',
-      path
+      path,
+      descriptiveFilename
     );
 
     if (!uploadResult.success) {
@@ -86,7 +92,7 @@ export async function POST(_request: NextRequest) {
       .values({
         employeeId: parseInt(employee_id as string),
         documentType: document_type,
-        fileName: file.name,
+        fileName: descriptiveFilename, // Use the descriptive filename instead of file.name
         filePath: uploadResult.url || '',
         description: description || '',
         fileSize: file.size,

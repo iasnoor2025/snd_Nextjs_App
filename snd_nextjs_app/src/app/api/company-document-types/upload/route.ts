@@ -41,10 +41,16 @@ export async function POST(request: NextRequest) {
 
     // Upload file to Supabase storage
     const path = `company-documents/${documentType || 'general'}`;
+    const descriptiveFilename = SupabaseStorageService.generateDescriptiveFilename(
+      documentType || 'document',
+      'company-document',
+      file.name
+    );
     const uploadResult = await SupabaseStorageService.uploadFile(
       file,
       'documents',
-      path
+      path,
+      descriptiveFilename
     );
 
     if (!uploadResult.success) {

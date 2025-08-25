@@ -76,20 +76,22 @@ const uploadDocumentsHandler = async (
     const baseLabel =
       documentName.trim() || toTitleCase((rawDocumentType || 'Document').replace(/_/g, ' '));
     const equipmentName = equipmentItem.name || `Equipment-${equipmentId}`;
-    const baseName = `${equipmentName}_${baseLabel}`
-      .replace(/\s+/g, '_')
-      .replace(/[^A-Za-z0-9_\-]/g, '');
-
-    const timestamp = Date.now();
-    const ext = file.name.split('.').pop() || 'pdf';
-    const storedFileName = `${baseName}_${timestamp}.${ext}`;
+    
+    // Generate descriptive filename
+    const descriptiveFilename = SupabaseStorageService.generateDescriptiveFilename(
+      rawDocumentType || 'document',
+      equipmentName,
+      file.name
+    );
+    
     const path = `equipment-${equipmentId}`;
 
     // Upload file to Supabase storage
     const uploadResult = await SupabaseStorageService.uploadFile(
       file,
       'equipment-documents',
-      path
+      path,
+      descriptiveFilename
     );
 
     if (!uploadResult.success) {
@@ -106,7 +108,7 @@ const uploadDocumentsHandler = async (
         equipmentId: equipmentId,
         documentType: rawDocumentType,
         filePath: uploadResult.url || '',
-        fileName: storedFileName,
+        fileName: descriptiveFilename,
         fileSize: file.size,
         mimeType: file.type,
         description: description || null,

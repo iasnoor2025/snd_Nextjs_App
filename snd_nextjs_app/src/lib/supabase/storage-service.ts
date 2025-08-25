@@ -29,7 +29,8 @@ export class SupabaseStorageService {
   static async uploadFile(
     file: File,
     bucket: StorageBucket | string = STORAGE_BUCKETS.GENERAL,
-    path?: string
+    path?: string,
+    customFilename?: string
   ): Promise<UploadResult> {
     try {
       // Check if Supabase is configured
@@ -60,7 +61,9 @@ export class SupabaseStorageService {
       }
 
       // Generate unique filename
-      const uniqueFilename = this.generateUniqueFilename(file.name);
+      const uniqueFilename = customFilename 
+        ? this.generateCustomFilename(customFilename, file.name)
+        : this.generateUniqueFilename(file.name);
       const filePath = path ? `${path}/${uniqueFilename}` : uniqueFilename;
 
       // Upload file to Supabase storage
@@ -396,5 +399,55 @@ export class SupabaseStorageService {
     const randomString = Math.random().toString(36).substring(2, 15);
     const extension = originalName.split('.').pop();
     return `${timestamp}-${randomString}.${extension}`;
+  }
+
+  private static generateCustomFilename(customName: string, originalName: string): string {
+    const extension = originalName.split('.').pop();
+    
+    // Clean the custom name by removing any existing file extensions
+    const cleanCustomName = customName
+      .replace(/\.(pdf|jpg|jpeg|png|doc|docx)$/i, '') // Remove common file extensions
+      .replace(/[^a-zA-Z0-9\-_]/g, '-') // Replace special chars with hyphens (keep hyphens and underscores)
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+    
+    const result = `${cleanCustomName}.${extension}`;
+    
+    return result;
+  }
+
+  /**
+   * Generate a descriptive filename based on document type and context
+   */
+  static generateDescriptiveFilename(
+    documentType: string,
+    context: string,
+    originalName: string,
+    index?: number
+  ): string {
+    const extension = originalName.split('.').pop();
+    
+    // Clean and sanitize the document type and context
+    // Remove any file extensions and special characters
+    const cleanDocumentType = documentType
+      .replace(/\.(pdf|jpg|jpeg|png|doc|docx)$/i, '') // Remove common file extensions
+      .replace(/[^a-zA-Z0-9]/g, '-') // Replace special chars with hyphens
+      .toLowerCase()
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+    
+    const cleanContext = context
+      .replace(/\.(pdf|jpg|jpeg|png|doc|docx)$/i, '') // Remove common file extensions
+      .replace(/[^a-zA-Z0-9]/g, '-') // Replace special chars with hyphens
+      .toLowerCase()
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+    
+    // Ensure we don't have empty strings
+    const finalDocType = cleanDocumentType || 'document';
+    const finalContext = cleanContext || 'file';
+    
+    if (index !== undefined) {
+      return `${finalDocType}-${finalContext}-${index}.${extension}`;
+    }
+    
+    return `${finalDocType}-${finalContext}.${extension}`;
   }
 }
