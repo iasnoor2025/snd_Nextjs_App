@@ -22,6 +22,7 @@ import {
   RefreshCw,
   Search,
   Settings,
+  Upload,
   User,
   X,
 } from 'lucide-react';
@@ -332,6 +333,13 @@ export default function DocumentManagementPage() {
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
+          </Button>
+          <Button
+            variant="default"
+            onClick={() => window.open('/modules/document-management/supabase-demo', '_blank')}
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Test Supabase Upload
           </Button>
         </div>
       </div>
