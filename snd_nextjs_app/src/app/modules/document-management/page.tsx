@@ -252,6 +252,7 @@ export default function DocumentManagementPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           documentIds: selectedDocIds,
           type: documentType,
@@ -298,7 +299,18 @@ export default function DocumentManagementPage() {
         try {
           const errorData = await response.json();
           console.error('Combine PDF error response:', errorData);
-          toast.error(errorData.message || `Failed to combine documents (${response.status})`);
+          
+          // Handle different error response formats
+          let errorMessage = 'Failed to combine documents';
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          } else if (errorData.details) {
+            errorMessage = errorData.details;
+          }
+          
+          toast.error(errorMessage);
         } catch (parseError) {
           console.error('Failed to parse error response:', parseError);
           const errorText = await response.text();
