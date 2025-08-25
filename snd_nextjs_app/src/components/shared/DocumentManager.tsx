@@ -437,19 +437,6 @@ export default function DocumentManager(props: DocumentManagerProps) {
             )}
           </div>
 
-          {/* Debug Section - Remove in production */}
-          {process.env.NODE_ENV === 'development' && documents.length > 0 && (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
-              <p className="font-medium text-yellow-800 mb-2">🔍 Debug Info (Development Only)</p>
-              {documents.slice(0, 3).map(doc => (
-                <div key={doc.id} className="mb-2">
-                  <p><strong>{doc.name}:</strong> {doc.url}</p>
-                  <p>Type: {doc.file_type} | Size: {formatFileSize(doc.size)}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin" />
