@@ -3,6 +3,7 @@ import { companies } from '@/lib/drizzle/schema';
 import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { SupabaseStorageService } from '@/lib/supabase/storage-service';
 
 // Mock company documents table - in a real implementation, you would create this table
 // For now, we'll use a simple in-memory store to demonstrate the functionality
@@ -55,90 +56,83 @@ export const GET = withPermission(async (_request: NextRequest, { params }: { pa
   }
 }, PermissionConfigs.company.read);
 
-export const POST = withPermission(async (request: NextRequest, { params }: { params: Promise<{ id: string }> }) => {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id: companyId } = await params;
-    const id = parseInt(companyId);
-
-    if (isNaN(id)) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Invalid company ID',
-        },
-        { status: 400 }
-      );
-    }
-
-    // Check if company exists
-    const companyRows = await db.select().from(companies).where(eq(companies.id, id)).limit(1);
-    if (companyRows.length === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Company not found',
-        },
-        { status: 404 }
-      );
-    }
-
+    const { id } = params;
     const formData = await request.formData();
-    const documentType = formData.get('documentType') as string;
-    const documentNumber = formData.get('documentNumber') as string;
-    const expiryDate = formData.get('expiryDate') as string;
-    const description = formData.get('description') as string;
     const file = formData.get('file') as File;
+    const documentType = formData.get('document_type') as string;
+    const description = formData.get('description') as string;
 
-    if (!documentType || !documentNumber || !file) {
+    if (!file) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Document type, number, and file are required',
-        },
+        { error: 'No file provided' },
         { status: 400 }
       );
     }
 
-    // In a real implementation, you would:
-    // 1. Upload the file to S3/MinIO
-    // 2. Store the file URL in the database
-    // 3. Create a proper company_documents table
-    
-    // For now, we'll simulate the document creation
-    const newDocument = {
-      id: Date.now(), // Simple ID generation
-      companyId: id,
-      documentType,
-      documentNumber,
-      expiryDate: expiryDate || null,
-      filePath: `/uploads/companies/${id}/${file.name}`, // Simulated file path
-      fileName: file.name,
-      fileSize: file.size,
-      mimeType: file.type,
-      description: description || null,
-      status: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+    ];
 
-    // Store in our mock storage
-    const existingDocuments = companyDocuments.get(id) || [];
-    existingDocuments.push(newDocument);
-    companyDocuments.set(id, existingDocuments);
+    if (!allowedTypes.includes(file.type)) {
+      return NextResponse.json(
+        { error: 'Invalid file type. Only PDF, DOC, DOCX, JPG, and PNG files are allowed.' },
+        { status: 400 }
+      );
+    }
+
+    // Validate file size (10MB max)
+    if (file.size > 10 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: 'File size too large. Maximum size is 10MB.' },
+        { status: 400 }
+      );
+    }
+
+    // Upload file to Supabase storage
+    const path = `companies/${id}/${documentType || 'general'}`;
+    const uploadResult = await SupabaseStorageService.uploadFile(
+      file,
+      'documents',
+      path
+    );
+
+    if (!uploadResult.success) {
+      return NextResponse.json(
+        { error: `Upload failed: ${uploadResult.message}` },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Document uploaded successfully',
-      data: newDocument,
+      data: {
+        url: uploadResult.url,
+        filename: uploadResult.filename,
+        originalName: uploadResult.originalName,
+        size: uploadResult.size,
+        type: uploadResult.type,
+        filePath: uploadResult.url,
+        documentType: documentType,
+        description: description,
+      },
     });
   } catch (error) {
-    console.error('Error uploading company document:', error);
+    console.error('Upload error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to upload document: ' + (error as Error).message,
-      },
+      { error: 'Failed to upload document' },
       { status: 500 }
     );
   }
-}, PermissionConfigs.company.update);
+}

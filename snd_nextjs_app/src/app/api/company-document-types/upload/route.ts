@@ -1,19 +1,15 @@
-import { PermissionConfigs, withPermission } from '@/lib/rbac/api-middleware';
 import { NextRequest, NextResponse } from 'next/server';
+import { SupabaseStorageService } from '@/lib/supabase/storage-service';
 
-export const POST = withPermission(async (request: NextRequest) => {
+export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const documentTypeId = formData.get('documentTypeId') as string;
-    const expiryDate = formData.get('expiryDate') as string;
+    const documentType = formData.get('document_type') as string;
 
-    if (!file || !documentTypeId) {
+    if (!file) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'File and document type are required',
-        },
+        { error: 'No file provided' },
         { status: 400 }
       );
     }
@@ -21,64 +17,60 @@ export const POST = withPermission(async (request: NextRequest) => {
     // Validate file type
     const allowedTypes = [
       'application/pdf',
-      'image/png',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'image/jpeg',
       'image/jpg',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      'image/png',
     ];
 
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'Invalid file type. Only PDF, DOC, DOCX, PNG, JPG files are allowed.',
-        },
+        { error: 'Invalid file type. Only PDF, DOC, DOCX, JPG, and PNG files are allowed.' },
         { status: 400 }
       );
     }
 
-    // Validate file size (10MB limit)
+    // Validate file size (10MB max)
     if (file.size > 10 * 1024 * 1024) {
       return NextResponse.json(
-        {
-          success: false,
-          message: 'File size too large. Maximum size is 10MB.',
-        },
+        { error: 'File size too large. Maximum size is 10MB.' },
         { status: 400 }
       );
     }
 
-    // For now, return success with mock data
-    // In a real implementation, you'd:
-    // 1. Upload the file to S3/MinIO
-    // 2. Store file metadata in the database
-    // 3. Return the file information
+    // Upload file to Supabase storage
+    const path = `company-documents/${documentType || 'general'}`;
+    const uploadResult = await SupabaseStorageService.uploadFile(
+      file,
+      'documents',
+      path
+    );
 
-    const mockUploadedFile = {
-      id: Date.now(), // Mock ID
-      documentTypeId: parseInt(documentTypeId),
-      fileName: file.name,
-      filePath: `/uploads/documents/${Date.now()}_${file.name}`,
-      fileSize: file.size,
-      mimeType: file.type,
-      expiryDate: expiryDate || null,
-      uploadedAt: new Date().toISOString(),
-      uploadedBy: 'admin@example.com', // In real app, get from session
-    };
+    if (!uploadResult.success) {
+      return NextResponse.json(
+        { error: `Upload failed: ${uploadResult.message}` },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      data: mockUploadedFile,
-      message: 'Document uploaded successfully',
+      message: 'File uploaded successfully',
+      data: {
+        url: uploadResult.url,
+        filename: uploadResult.filename,
+        originalName: uploadResult.originalName,
+        size: uploadResult.size,
+        type: uploadResult.type,
+        filePath: uploadResult.url,
+      },
     });
   } catch (error) {
+    console.error('Upload error:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to upload document: ' + (error as Error).message,
-      },
+      { error: 'Failed to upload file' },
       { status: 500 }
     );
   }
-}, PermissionConfigs.company.manage);
+}

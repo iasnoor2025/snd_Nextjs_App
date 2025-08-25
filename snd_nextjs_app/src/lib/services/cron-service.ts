@@ -90,24 +90,7 @@ class CronService {
         }
       );
 
-      // In development, also schedule a test job every 5 minutes for testing
-      if (process.env.NODE_ENV === 'development') {
-        cron.schedule('*/5 * * * *', async () => {
-          console.log('Running development test timesheet auto-generation...');
-          try {
-            // Dynamic import to avoid client-side bundling
-            const { autoGenerateTimesheets } = await import('@/lib/timesheet-auto-generator');
-            const result = await autoGenerateTimesheets();
-            if (result.success) {
-              console.log('Development test timesheet auto-generation completed successfully');
-            } else {
-              console.error('Development test timesheet auto-generation failed:', result.errors);
-            }
-          } catch (error) {
-            console.error('Error in development test timesheet auto-generation cron job:', error);
-          }
-        });
-      }
+
 
       this.isInitialized = true;
       console.log('Cron service initialized successfully with scheduled jobs');
@@ -142,40 +125,7 @@ class CronService {
     }
   }
 
-  // Method to test if cron service is working
-  public async testCronService() {
-    try {
-      console.log('Testing cron service...');
-      
-      // Check if service is initialized
-      if (!this.isInitialized) {
-        console.log('Cron service not initialized, initializing now...');
-        await this.initialize();
-      }
-      
-      // Get status
-      const status = this.getStatus();
-      console.log('Cron service status:', status);
-      
-      // Test manual trigger
-      const result = await this.triggerTimesheetGeneration();
-      console.log('Test timesheet generation result:', result);
-      
-      return {
-        success: true,
-        status,
-        testResult: result,
-        message: 'Cron service test completed successfully'
-      };
-    } catch (error) {
-      console.error('Cron service test failed:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        message: 'Cron service test failed'
-      };
-    }
-  }
+
 
   public stop() {
     console.log('Stopping cron service...');

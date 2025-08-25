@@ -39,27 +39,37 @@ const getDocumentsHandler = async (_request: any, { params }: { params: { id: st
       .where(eq(employeeDocuments.employeeId, employeeId));
 
     // Format response to match what DocumentManager expects
-    const formattedDocuments = documentsRows.map(doc => ({
-      id: doc.id,
-      name: doc.fileName || 'Unknown Document',
-      file_name: doc.fileName || 'Unknown Document',
-      file_type: doc.mimeType || 'application/octet-stream',
-      size: doc.fileSize || 0,
-      url: doc.filePath ? `/api/employees/${employeeId}/documents/${doc.id}/download` : '',
-      mime_type: doc.mimeType || '',
-      document_type: doc.documentType || '',
-      description: doc.description || '',
-      created_at: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
-      updated_at: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString(),
-      // Also include the original field names for backward compatibility
-      fileName: doc.fileName,
-      filePath: doc.filePath,
-      fileSize: doc.fileSize,
-      mimeType: doc.mimeType,
-      documentType: doc.documentType,
-      createdAt: doc.createdAt,
-      updatedAt: doc.updatedAt,
-    }));
+    const formattedDocuments = documentsRows.map(doc => {
+      // Create a user-friendly display name from the document type
+      const displayName = doc.documentType
+        .replace(/_/g, ' ')
+        .replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+      
+      return {
+        id: doc.id,
+        name: displayName, // Use the friendly display name instead of filename
+        file_name: doc.fileName || 'Unknown Document',
+        file_type: doc.mimeType || 'application/octet-stream',
+        size: doc.fileSize || 0,
+        url: doc.filePath || '', // Use the Supabase URL directly
+        mime_type: doc.mimeType || '',
+        document_type: doc.documentType || '',
+        description: doc.description || '',
+        created_at: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
+        updated_at: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString(),
+        // Also include the original field names for backward compatibility
+        fileName: doc.fileName,
+        filePath: doc.filePath,
+        fileSize: doc.fileSize,
+        mimeType: doc.mimeType,
+        documentType: doc.documentType,
+        createdAt: doc.createdAt,
+        updatedAt: doc.updatedAt,
+        // Additional fields needed for DocumentManager
+        typeLabel: displayName,
+        employee_file_number: employeeId,
+      };
+    });
 
     return NextResponse.json(formattedDocuments);
   } catch (error) {

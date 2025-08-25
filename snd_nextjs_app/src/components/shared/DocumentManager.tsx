@@ -53,6 +53,16 @@ interface DocumentManagerProps {
 }
 
 export default function DocumentManager(props: DocumentManagerProps) {
+  // Debug logging
+  console.log('DocumentManager rendered with props:', {
+    hasLoadDocuments: !!props.loadDocuments,
+    hasUploadDocument: !!props.uploadDocument,
+    hasDeleteDocument: !!props.deleteDocument,
+    loadDocumentsType: typeof props.loadDocuments,
+    uploadDocumentType: typeof props.uploadDocument,
+    deleteDocumentType: typeof props.deleteDocument,
+  });
+
   const {
     title = 'Documents',
     description = 'Upload and manage documents',
@@ -75,6 +85,70 @@ export default function DocumentManager(props: DocumentManagerProps) {
     showDate = true,
   } = props;
 
+  // Validate required props
+  if (!loadDocuments || typeof loadDocuments !== 'function') {
+    console.error('DocumentManager: loadDocuments prop is required and must be a function');
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <FileText className="h-5 w-5" />
+            <span>{title}</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-red-500">
+            <p className="text-sm font-medium">Configuration Error</p>
+            <p className="text-xs mt-1">DocumentManager is missing required props</p>
+            <p className="text-xs mt-1">Please check the component implementation</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!uploadDocument || typeof uploadDocument !== 'function') {
+    console.error('DocumentManager: uploadDocument prop is required and must be a function');
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <FileText className="h-5 w-5" />
+            <span>{title}</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-red-500">
+            <p className="text-sm font-medium">Configuration Error</p>
+            <p className="text-xs mt-1">DocumentManager is missing uploadDocument prop</p>
+            <p className="text-xs mt-1">Please check the component implementation</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!deleteDocument || typeof deleteDocument !== 'function') {
+    console.error('DocumentManager: deleteDocument prop is required and must be a function');
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <FileText className="h-5 w-5" />
+            <span>{title}</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-red-500">
+            <p className="text-sm font-medium">Configuration Error</p>
+            <p className="text-xs mt-1">DocumentManager is missing deleteDocument prop</p>
+            <p className="text-xs mt-1">Please check the component implementation</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -87,8 +161,19 @@ export default function DocumentManager(props: DocumentManagerProps) {
     try {
       const list = await loadDocuments();
       setDocuments(Array.isArray(list) ? list : []);
-    } catch (error) {
       
+      // Debug: Log document URLs to help troubleshoot
+      if (list && list.length > 0) {
+        console.log('Documents loaded:', list.map(doc => ({
+          id: doc.id,
+          name: doc.name,
+          url: doc.url,
+          file_type: doc.file_type
+        })));
+      }
+    } catch (error) {
+      console.error('Error loading documents:', error);
+      toast.error('Failed to load documents');
     } finally {
       setLoading(false);
     }
@@ -149,42 +234,102 @@ export default function DocumentManager(props: DocumentManagerProps) {
   const handleDelete = async (id: number) => {
     setDeleting(id);
     try {
-      await deleteDocument(id);
+      console.log('Attempting to delete document:', id);
+      const result = await deleteDocument(id);
+      console.log('Delete result:', result);
       toast.success('Document deleted successfully');
       await refresh();
     } catch (error) {
-      toast.error('Failed to delete document');
+      console.error('Delete error:', error);
+      toast.error('Failed to delete document: ' + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setDeleting(null);
     }
   };
 
-  const handleDownload = (doc: DocumentItem) => {
-    const link = document.createElement('a');
-    // Append download parameter to force download instead of preview
-    const downloadUrl = doc.url.includes('?') 
-      ? `${doc.url}&download=true` 
-      : `${doc.url}?download=true`;
-    link.href = downloadUrl;
-    // Determine preferred prefix (employee file number)
-    const prefixFromProp =
-      typeof downloadPrefix === 'function' ? downloadPrefix(doc) : downloadPrefix;
-    const fileNumber =
-      prefixFromProp || (doc.employee_file_number ? String(doc.employee_file_number) : '');
-    // Human-readable type label for display
-    const printableType = (doc.typeLabel || 'Document').trim();
-    // Determine extension from file_name or URL
-    let ext = (doc.file_name || '').split('.').pop();
-    if (!ext || ext.length > 5) {
-      const urlMatch = doc.url.match(/\.([a-zA-Z0-9]{2,5})(?:\?|#|$)/);
-      if (urlMatch) ext = urlMatch[1];
+  const handleDownload = async (doc: DocumentItem) => {
+    try {
+      console.log('Attempting to download document:', doc);
+      
+      // If the URL is a Supabase URL (starts with http), handle it directly
+      if (doc.url.startsWith('http')) {
+        console.log('Downloading from Supabase URL:', doc.url);
+        
+        // For Supabase URLs, we need to fetch the file and create a blob download
+        const response = await fetch(doc.url);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+        }
+        
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = doc.file_name || doc.name;
+        
+        // Determine preferred prefix (employee file number)
+        const prefixFromProp =
+          typeof downloadPrefix === 'function' ? downloadPrefix(doc) : downloadPrefix;
+        const fileNumber =
+          prefixFromProp || (doc.employee_file_number ? String(doc.employee_file_number) : '');
+        // Human-readable type label for display
+        const printableType = (doc.typeLabel || 'Document').trim();
+        // Determine extension from file_name or URL
+        let ext = (doc.file_name || '').split('.').pop();
+        if (!ext || ext.length > 5) {
+          const urlMatch = doc.url.match(/\.([a-zA-Z0-9]{2,5})(?:\?|#|$)/);
+          if (urlMatch) ext = urlMatch[1];
+        }
+        const fallback = doc.file_name || doc.name;
+        // Desired pattern: "Type (File 123).ext"
+        link.download = fileNumber && ext ? `${printableType} (File ${fileNumber}).${ext}` : fallback;
+        
+        console.log('Downloading file with name:', link.download);
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Clean up the blob URL
+        window.URL.revokeObjectURL(url);
+        toast.success('Download started');
+        return;
+      }
+
+      console.log('Downloading from legacy URL:', doc.url);
+      
+      // For legacy local file URLs, try to use the download API
+      const link = document.createElement('a');
+      // Append download parameter to force download instead of preview
+      const downloadUrl = doc.url.includes('?') 
+        ? `${doc.url}&download=true` 
+        : `${doc.url}?download=true`;
+      link.href = downloadUrl;
+      // Determine preferred prefix (employee file number)
+      const prefixFromProp =
+        typeof downloadPrefix === 'function' ? downloadPrefix(doc) : downloadPrefix;
+      const fileNumber =
+        prefixFromProp || (doc.employee_file_number ? String(doc.employee_file_number) : '');
+      // Human-readable type label for display
+      const printableType = (doc.typeLabel || 'Document').trim();
+      // Determine extension from file_name or URL
+      let ext = (doc.file_name || '').split('.').pop();
+      if (!ext || ext.length > 5) {
+        const urlMatch = doc.url.match(/\.([a-zA-Z0-9]{2,5})(?:\?|#|$)/);
+        if (urlMatch) ext = urlMatch[1];
+      }
+      const fallback = doc.file_name || doc.name;
+      // Desired pattern: "Type (File 123).ext"
+      link.download = fileNumber && ext ? `${printableType} (File ${fileNumber}).${ext}` : fallback;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Download started');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download document: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
-    const fallback = doc.file_name || doc.name;
-    // Desired pattern: "Type (File 123).ext"
-    link.download = fileNumber && ext ? `${printableType} (File ${fileNumber}).${ext}` : fallback;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
 
   const isImageFile = (type: string) => type?.startsWith('image/');
@@ -292,6 +437,19 @@ export default function DocumentManager(props: DocumentManagerProps) {
             )}
           </div>
 
+          {/* Debug Section - Remove in production */}
+          {process.env.NODE_ENV === 'development' && documents.length > 0 && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+              <p className="font-medium text-yellow-800 mb-2">🔍 Debug Info (Development Only)</p>
+              {documents.slice(0, 3).map(doc => (
+                <div key={doc.id} className="mb-2">
+                  <p><strong>{doc.name}:</strong> {doc.url}</p>
+                  <p>Type: {doc.file_type} | Size: {formatFileSize(doc.size)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-6 w-6 animate-spin" />
@@ -325,16 +483,35 @@ export default function DocumentManager(props: DocumentManagerProps) {
                   }
                 >
                   {isImageFile(document.file_type) ? (
-                    <img
-                      src={document.url}
-                      alt={document.name}
-                      className="w-12 h-12 object-cover rounded border cursor-pointer"
-                      onClick={() => setPreviewImage(document)}
-                      onError={e => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
-                    />
+                    <div className="relative">
+                      <img
+                        src={document.url}
+                        alt={document.name}
+                        className="w-12 h-12 object-cover rounded border cursor-pointer"
+                        onClick={() => setPreviewImage(document)}
+                        onError={e => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          // Show fallback icon when image fails to load
+                          const fallbackDiv = target.nextElementSibling as HTMLElement;
+                          if (fallbackDiv) {
+                            fallbackDiv.style.display = 'flex';
+                          }
+                        }}
+                      />
+                      {/* Fallback icon when image fails to load */}
+                      <div 
+                        className="w-12 h-12 hidden items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded border border-blue-200 cursor-pointer hover:from-blue-100 hover:to-indigo-200 transition-all duration-200"
+                        onClick={() => setPreviewImage(document)}
+                      >
+                        <div className="text-center">
+                          <div className="text-lg">🖼️</div>
+                          <div className="text-xs text-blue-600 font-medium mt-1">
+                            IMG
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   ) : (
                     <div 
                       className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded border border-blue-200 cursor-pointer hover:from-blue-100 hover:to-indigo-200 transition-all duration-200"
@@ -450,11 +627,38 @@ export default function DocumentManager(props: DocumentManagerProps) {
             </div>
             <div className="flex justify-center">
               {isImageFile(previewImage.file_type) ? (
-                <img
-                  src={previewImage.url}
-                  alt={previewImage.name}
-                  className="max-w-full max-h-[70vh] object-contain rounded"
-                />
+                <div className="relative">
+                  <img
+                    src={previewImage.url}
+                    alt={previewImage.name}
+                    className="max-w-full max-h-[70vh] object-contain rounded"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      // Show error message when image fails to load
+                      const errorDiv = target.nextElementSibling as HTMLElement;
+                      if (errorDiv) {
+                        errorDiv.style.display = 'flex';
+                      }
+                    }}
+                  />
+                  {/* Error fallback when image fails to load */}
+                  <div className="hidden w-full h-[70vh] flex items-center justify-center flex-col gap-4">
+                    <div className="text-6xl">🖼️</div>
+                    <div className="text-center">
+                      <p className="text-lg font-medium text-gray-600">{previewImage.name}</p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        Failed to load image preview. The image may not be accessible.
+                      </p>
+                      <Button
+                        onClick={() => window.open(previewImage.url, '_blank')}
+                        className="mt-4"
+                      >
+                        Open in New Tab
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               ) : previewImage.file_type.includes('pdf') ? (
                 <div className="w-full h-[70vh] flex items-center justify-center">
                   <iframe

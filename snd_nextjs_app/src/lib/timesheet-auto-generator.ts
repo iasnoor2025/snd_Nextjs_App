@@ -206,7 +206,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
             const day = String(currentDate.getDate()).padStart(2, '0');
             const dateString = `${year}-${month}-${day}`;
 
-            console.log(`Processing date: ${dateString}`);
+
 
             // Check for existing timesheet using raw SQL to avoid timezone issues
             const existingTimesheets = await db.execute(sql`
@@ -219,7 +219,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
 
             if (existingTimesheets.rows.length > 0) {
               // Skip if timesheet already exists
-              //console.log(`Skipping existing timesheet for ${dateString}`);
+
               currentDate.setDate(currentDate.getDate() + 1);
               continue;
             }
@@ -258,7 +258,7 @@ export async function autoGenerateTimesheets(): Promise<AutoGenerateResult> {
                 )
               `);
 
-              console.log(`Timesheet created for ${dateString}`);
+
               created++;
               assignmentCreated++;
             } catch (insertError) {

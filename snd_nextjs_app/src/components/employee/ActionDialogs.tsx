@@ -178,6 +178,21 @@ export default function ActionDialogs({
     }
   };
 
+  // Helper function to convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        // Remove data:image/jpeg;base64, prefix
+        const base64Data = base64.split(',')[1];
+        resolve(base64Data);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
+
   const handleDocumentUpload = async () => {
     try {
       setLoading('document');
@@ -186,27 +201,42 @@ export default function ActionDialogs({
         return;
       }
 
-      const formData = new FormData();
-      formData.append('employee_id', employeeId);
-      formData.append('document_type', documentForm.document_type);
-      formData.append('description', documentForm.description);
-      formData.append('file', documentForm.file);
-
-      const response = await fetch('/api/employee/documents', {
+      // Use Supabase upload instead of old API
+      const response = await fetch('/api/upload-supabase', {
         method: 'POST',
-        body: formData,
+        body: JSON.stringify({
+          file: {
+            name: documentForm.file.name,
+            size: documentForm.file.size,
+            type: documentForm.file.type,
+            content: await fileToBase64(documentForm.file)
+          },
+          bucket: 'employee-documents',
+          path: `employee-${employeeId}`,
+          document_type: documentForm.document_type,
+          description: documentForm.description
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       if (response.ok) {
-        toast.success('Document uploaded successfully');
-        setDocumentDialogOpen?.(false);
-        setDocumentForm({ document_type: '', description: '', file: null });
-        onDocumentUploaded?.();
+        const result = await response.json();
+        if (result.success) {
+          toast.success('Document uploaded successfully');
+          setDocumentDialogOpen?.(false);
+          setDocumentForm({ document_type: '', description: '', file: null });
+          onDocumentUploaded?.();
+        } else {
+          toast.error(result.message || 'Failed to upload document');
+        }
       } else {
         const error = await response.json();
         toast.error(error.message || 'Failed to upload document');
       }
     } catch (error) {
+      console.error('Upload error:', error);
       toast.error('An error occurred while uploading document');
     } finally {
       setLoading(null);

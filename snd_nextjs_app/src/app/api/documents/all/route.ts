@@ -74,7 +74,7 @@ export async function GET(_request: NextRequest) {
         employeeId: doc.employeeId,
         employeeName: `${doc.employeeFirstName || ''} ${doc.employeeLastName || ''}`.trim(),
         employeeFileNumber: doc.employeeFileNumber,
-        url: doc.filePath.startsWith('/') ? doc.filePath : `/uploads/documents/${doc.filePath}`,
+        url: doc.filePath || '',
         searchableText:
           `${doc.employeeFirstName || ''} ${doc.employeeLastName || ''} ${doc.employeeFileNumber || ''} ${doc.fileName} ${doc.documentType}`.toLowerCase(),
       }));
@@ -133,7 +133,7 @@ export async function GET(_request: NextRequest) {
         equipmentName: doc.equipmentName,
         equipmentModel: doc.equipmentModel,
         equipmentSerial: doc.equipmentSerial,
-        url: doc.filePath.startsWith('/') ? doc.filePath : `/uploads/documents/${doc.filePath}`,
+        url: doc.filePath || '',
         searchableText:
           `${doc.equipmentName || ''} ${doc.equipmentModel || ''} ${doc.equipmentSerial || ''} ${doc.fileName}`.toLowerCase(),
       }));
@@ -233,10 +233,43 @@ export async function GET(_request: NextRequest) {
 
     const totalDocs = totalEmployeeDocs + totalEquipmentDocs;
 
+    // Format response to match what DocumentManager expects
+    const formattedDocuments = allDocuments.map(doc => {
+      // Create a user-friendly display name from the document type
+      const displayName = doc.documentType
+        .replace(/_/g, ' ')
+        .replace(/\w\S*/g, (w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+      
+      return {
+        id: doc.id,
+        name: displayName, // Use the friendly display name instead of filename
+        file_name: doc.fileName || 'Unknown Document',
+        file_type: doc.mimeType || 'application/octet-stream',
+        size: doc.fileSize || 0,
+        url: doc.filePath || '', // Use the Supabase URL directly
+        mime_type: doc.mimeType || '',
+        document_type: doc.documentType || '',
+        description: doc.description || '',
+        created_at: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
+        updated_at: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : new Date().toISOString(),
+        // Also include the original field names for backward compatibility
+        fileName: doc.fileName,
+        filePath: doc.filePath,
+        fileSize: doc.fileSize,
+        mimeType: doc.mimeType,
+        documentType: doc.documentType,
+        createdAt: doc.createdAt,
+        updatedAt: doc.updatedAt,
+        // Additional fields needed for DocumentManager
+        typeLabel: displayName,
+        employee_file_number: doc.employeeId, // Assuming employeeId is available in the doc object
+      };
+    });
+
     return NextResponse.json({
       success: true,
       data: {
-        documents: allDocuments,
+        documents: formattedDocuments,
         pagination: {
           page,
           limit,

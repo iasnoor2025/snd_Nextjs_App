@@ -30,11 +30,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 interface Document {
-  id: number;
+  id: string | number;
   type: 'employee' | 'equipment';
   documentType: string;
   filePath: string;
   fileName: string;
+  originalFileName?: string;
   fileSize: number;
   mimeType: string;
   description?: string;
@@ -72,7 +73,7 @@ export default function DocumentManagementPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [documentType, setDocumentType] = useState('all');
-  const [selectedDocuments, setSelectedDocuments] = useState<Set<number>>(new Set());
+  const [selectedDocuments, setSelectedDocuments] = useState<Set<string | number>>(new Set());
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 10, // Fixed limit of 10 documents per page
@@ -100,7 +101,7 @@ export default function DocumentManagementPage() {
           type,
         });
 
-        const response = await fetch(`/api/documents/all?${params}`);
+        const response = await fetch(`/api/documents/supabase?${params}`);
         if (response.ok) {
           const data = await response.json();
           if (data.success) {
@@ -164,7 +165,7 @@ export default function DocumentManagementPage() {
     fetchDocuments(newPage, searchTerm, documentType);
   };
 
-  const handleDocumentSelect = (documentId: number, checked: boolean) => {
+  const handleDocumentSelect = (documentId: string | number, checked: boolean) => {
     const newSelected = new Set(selectedDocuments);
     if (checked) {
       newSelected.add(documentId);
@@ -204,13 +205,14 @@ export default function DocumentManagementPage() {
 
   const downloadDocument = async (document: Document) => {
     try {
+      // For Supabase URLs, we can download directly
       const response = await fetch(document.url);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = window.document.createElement('a');
         a.href = url;
-        a.download = document.fileName;
+        a.download = document.originalFileName || document.fileName;
         window.document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -220,7 +222,7 @@ export default function DocumentManagementPage() {
         toast.error('Failed to download document');
       }
     } catch (error) {
-      
+      console.error('Download error:', error);
       toast.error('Failed to download document');
     }
   };
@@ -240,7 +242,7 @@ export default function DocumentManagementPage() {
       console.log('Selected documents for combination:', selectedDocs);
       console.log('Document IDs being sent:', selectedDocIds);
 
-      const response = await fetch('/api/documents/combine-pdf', {
+      const response = await fetch('/api/documents/combine-pdf-supabase', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -322,7 +324,7 @@ export default function DocumentManagementPage() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Document Management</h1>
           <p className="text-muted-foreground">
-            Manage and search all employee and equipment documents
+            Manage and search all employee and equipment documents from Supabase storage
           </p>
         </div>
         <div className="flex gap-2">
@@ -334,13 +336,7 @@ export default function DocumentManagementPage() {
             <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <Button
-            variant="default"
-            onClick={() => window.open('/modules/document-management/supabase-demo', '_blank')}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            Test Supabase Upload
-          </Button>
+
         </div>
       </div>
 
@@ -380,7 +376,7 @@ export default function DocumentManagementPage() {
         <CardHeader>
           <CardTitle>Search & Filters</CardTitle>
           <CardDescription>
-            Search documents by employee name, equipment, or document details
+            Search documents by employee name, equipment, or document details. Data is fetched from Supabase storage.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -448,7 +444,7 @@ export default function DocumentManagementPage() {
             <div>
               <CardTitle>Documents</CardTitle>
               <CardDescription>
-                Showing {documents.length} of {pagination.total} documents
+                Showing {documents.length} of {pagination.total} documents from Supabase storage
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -488,6 +484,11 @@ export default function DocumentManagementPage() {
                     <div className="flex items-center gap-2 mb-2">
                       {getFileIcon(document.mimeType)}
                       <span className="font-medium truncate">{document.fileName}</span>
+                      {document.originalFileName && document.originalFileName !== document.fileName && (
+                        <span className="text-sm text-muted-foreground">
+                          ({document.originalFileName})
+                        </span>
+                      )}
                       <Badge variant={document.type === 'employee' ? 'default' : 'secondary'}>
                         {document.type}
                       </Badge>
@@ -515,6 +516,12 @@ export default function DocumentManagementPage() {
                         <span className="font-medium">Date:</span>
                         <span>{format(new Date(document.createdAt), 'PPP')}</span>
                       </div>
+                      {document.originalFileName && document.originalFileName !== document.fileName && (
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">File:</span>
+                          <span className="text-xs">{document.originalFileName}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -573,17 +580,22 @@ export default function DocumentManagementPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-4 max-w-4xl max-h-[90vh] overflow-auto">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold">{previewDocument.fileName}</h3>
-                <Badge variant={previewDocument.type === 'employee' ? 'default' : 'secondary'}>
-                  {previewDocument.type}
+                          <div className="flex items-center gap-2">
+              <h3 className="text-lg font-semibold">{previewDocument.fileName}</h3>
+              {previewDocument.originalFileName && previewDocument.originalFileName !== previewDocument.fileName && (
+                <span className="text-sm text-muted-foreground">
+                  ({previewDocument.originalFileName})
+                </span>
+              )}
+              <Badge variant={previewDocument.type === 'employee' ? 'default' : 'secondary'}>
+                {previewDocument.type}
+              </Badge>
+              {previewDocument.documentType && (
+                <Badge variant="outline" className="text-xs">
+                  {previewDocument.documentType.replace(/_/g, ' ')}
                 </Badge>
-                {previewDocument.documentType && (
-                  <Badge variant="outline" className="text-xs">
-                    {previewDocument.documentType.replace(/_/g, ' ')}
-                  </Badge>
-                )}
-              </div>
+              )}
+            </div>
               <Button
                 variant="ghost"
                 size="sm"
@@ -652,6 +664,9 @@ export default function DocumentManagementPage() {
             <div className="mt-4 text-sm text-muted-foreground text-center">
               <p>Size: {formatFileSize(previewDocument.fileSize)}</p>
               <p>Uploaded: {format(new Date(previewDocument.createdAt), 'PPP')}</p>
+              {previewDocument.originalFileName && previewDocument.originalFileName !== previewDocument.fileName && (
+                <p>Original File: {previewDocument.originalFileName}</p>
+              )}
               <p>Owner: {
                 previewDocument.type === 'employee'
                   ? `${previewDocument.employeeName || 'Unknown'} (${previewDocument.employeeFileNumber || 'No File #'})`

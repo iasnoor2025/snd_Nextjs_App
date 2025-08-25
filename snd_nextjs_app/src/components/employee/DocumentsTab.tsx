@@ -449,9 +449,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                       getFileTypeFromFileName(d.fileName || d.file_name) ||
                       'UNKNOWN',
                     size: d.fileSize || d.size || 0,
-                    url: d.filePath
-                      ? `/api/employees/${employeeId}/documents/${d.id}/download`
-                      : d.url || '',
+                    url: d.filePath || d.url || '', // Use actual file path instead of download API
                     created_at: d.createdAt || d.created_at || new Date().toISOString(),
                     typeLabel: getDocumentTypeLabel(d.documentType),
                     employee_file_number: employeeId,

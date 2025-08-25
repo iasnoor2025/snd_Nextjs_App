@@ -467,13 +467,22 @@ export default function CreateEmployeePage() {
 
   const handleFileUpload = async (field: string, file: File) => {
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('type', field);
-
-      const response = await fetch('/api/upload', {
+      // Use Supabase upload instead of old API
+      const response = await fetch('/api/upload-supabase', {
         method: 'POST',
-        body: formData,
+        body: JSON.stringify({
+          file: {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            content: await fileToBase64(file)
+          },
+          bucket: 'employee-documents',
+          path: `employee-${field}`
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       if (response.ok) {
@@ -485,15 +494,30 @@ export default function CreateEmployeePage() {
           }));
           toast.success(t('employee:messages.fileUploadSuccess'));
         } else {
-          toast.error(t('employee:messages.fileUploadError'));
+          toast.error(result.message || t('employee:messages.fileUploadError'));
         }
       } else {
         toast.error(t('employee:messages.fileUploadError'));
       }
     } catch (error) {
-      
+      console.error('Upload error:', error);
       toast.error(t('employee:messages.fileUploadError'));
     }
+  };
+
+  // Helper function to convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        // Remove data:image/jpeg;base64, prefix
+        const base64Data = base64.split(',')[1];
+        resolve(base64Data);
+      };
+      reader.onerror = error => reject(error);
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1317,6 +1341,90 @@ export default function CreateEmployeePage() {
                       />
                     </div>
                   </div>
+
+                  {/* Show Uploaded Files */}
+                  {Object.keys(uploadedFiles).length > 0 && (
+                    <div className="mt-6 p-4 border rounded-lg bg-green-50">
+                      <h4 className="font-medium mb-3 text-green-800">✅ Uploaded Documents:</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {Object.entries(uploadedFiles).map(([field, url]) => {
+                          const isImage = url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                          const isPDF = url.match(/\.pdf$/i);
+                          
+                          return (
+                            <div key={field} className="border rounded-lg p-3 bg-white">
+                              <div className="flex items-center gap-3">
+                                {/* Document Preview */}
+                                <div className="w-16 h-16 flex-shrink-0 border rounded overflow-hidden bg-gray-100">
+                                  {isImage ? (
+                                    <img 
+                                      src={url} 
+                                      alt={field.replace('_', ' ')}
+                                      className="w-full h-full object-cover"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                        target.nextElementSibling?.classList.remove('hidden');
+                                      }}
+                                    />
+                                    <div className="hidden w-full h-full flex items-center justify-center bg-gray-100">
+                                      <svg className="w-8 h-8 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                                      </svg>
+                                    </div>
+                                  ) : isPDF ? (
+                                    <div className="w-full h-full flex items-center justify-center bg-red-100">
+                                      <svg className="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                                      </svg>
+                                    </div>
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-blue-100">
+                                      <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                                      </svg>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Document Info */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-gray-900 capitalize">
+                                    {field.replace('_', ' ')}
+                                  </div>
+                                  <div className="text-sm text-gray-500">
+                                    {isImage ? 'Image File' : isPDF ? 'PDF Document' : 'Document'}
+                                  </div>
+                                  <div className="flex gap-2 mt-2">
+                                    <a 
+                                      href={url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
+                                    >
+                                      View
+                                    </a>
+                                    <button
+                                      onClick={() => {
+                                        setUploadedFiles(prev => {
+                                          const newFiles = { ...prev };
+                                          delete newFiles[field];
+                                          return newFiles;
+                                        });
+                                      }}
+                                      className="text-xs bg-red-100 text-red-700 px-2 rounded hover:bg-red-200"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

@@ -1,13 +1,11 @@
 import { db } from '@/lib/drizzle';
 import { media } from '@/lib/drizzle/schema';
 import { and, eq } from 'drizzle-orm';
-import { existsSync } from 'fs';
-import { unlink } from 'fs/promises';
 import { NextResponse } from 'next/server';
 import { NextRequest } from 'next/server';
-import { join } from 'path';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
+import { SupabaseStorageService } from '@/lib/supabase/storage-service';
 
 // DELETE /api/equipment/[id]/documents/[documentId]
 export async function DELETE(
@@ -63,15 +61,36 @@ export async function DELETE(
       );
     }
 
-    // Delete file from disk if it exists
-    if (documentData.filePath) {
+    // Delete file from Supabase storage if it's a Supabase URL
+    if (documentData.filePath && documentData.filePath.startsWith('http')) {
       try {
-        const filePath = join(process.cwd(), 'public', 'uploads', 'documents', documentData.filePath);
-        if (existsSync(filePath)) {
-          await unlink(filePath);
+        // Extract the file path from the Supabase URL
+        // URL format: https://domain.com/storage/v1/object/public/bucket-name/path/to/file
+        const urlParts = documentData.filePath.split('/storage/v1/object/public/');
+        if (urlParts.length > 1) {
+          const bucketAndPath = urlParts[1];
+          if (bucketAndPath) {
+            const pathParts = bucketAndPath.split('/');
+            if (pathParts.length > 1) {
+              const bucketName = pathParts[0];
+              const filePathParts = pathParts.slice(1);
+              const filePath = filePathParts.join('/');
+              
+              if (bucketName && filePath) {
+                console.log('Deleting equipment document from Supabase:', { bucket: bucketName, path: filePath });
+                
+                // Delete from Supabase storage
+                const deleteResult = await SupabaseStorageService.deleteFile(bucketName, filePath);
+                if (!deleteResult.success) {
+                  console.warn('Failed to delete file from Supabase:', deleteResult.message);
+                  // Continue with database deletion even if file deletion fails
+                }
+              }
+            }
+          }
         }
-      } catch (fileError) {
-        console.error('Error deleting file from disk:', fileError);
+      } catch (error) {
+        console.error('Error deleting file from Supabase:', error);
         // Continue with database deletion even if file deletion fails
       }
     }

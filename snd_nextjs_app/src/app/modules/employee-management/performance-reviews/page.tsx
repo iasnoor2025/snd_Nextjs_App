@@ -81,15 +81,11 @@ export default function PerformanceReviewsPage() {
   const fetchReviews = async () => {
     try {
       setLoading(true);
-      console.log('Testing component without API call...');
-      console.log('ApiService type:', typeof ApiService);
-      
-      // Temporarily skip API call to test component rendering
-      setReviews([]);
-      toast.success('Component loaded successfully (test mode)');
+      const response = await ApiService.get('/performance-reviews');
+      setReviews(response.data || []);
     } catch (error) {
       console.error('Error in fetchReviews:', error);
-      toast.error('Failed to load component');
+      toast.error('Failed to load performance reviews');
     } finally {
       setLoading(false);
     }

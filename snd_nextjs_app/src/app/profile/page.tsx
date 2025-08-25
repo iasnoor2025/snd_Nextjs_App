@@ -472,6 +472,21 @@ export default function ProfilePage() {
     }
   };
 
+  // Helper function to convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        // Remove data:image/jpeg;base64, prefix
+        const base64Data = base64.split(',')[1];
+        resolve(base64Data);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
+
   // Handle document upload
   const handleDocumentUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -481,25 +496,40 @@ export default function ProfilePage() {
     setUploadProgress(0);
 
     try {
-      const formData = new FormData();
-      formData.append('document', file);
-      formData.append('documentType', 'general');
-
-      const response = await fetch('/api/profile/documents', {
+      // Use Supabase upload instead of old API
+      const response = await fetch('/api/upload-supabase', {
         method: 'POST',
-        body: formData,
+        body: JSON.stringify({
+          file: {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            content: await fileToBase64(file)
+          },
+          bucket: 'general',
+          path: 'profile-documents',
+          documentType: 'general'
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       if (response.ok) {
-        toast.success('Document uploaded successfully');
-        // Refresh documents list
-        window.location.reload();
+        const result = await response.json();
+        if (result.success) {
+          toast.success('Document uploaded successfully');
+          // Refresh documents list
+          window.location.reload();
+        } else {
+          toast.error(result.message || 'Failed to upload document');
+        }
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to upload document');
       }
     } catch (error) {
-      
+      console.error('Upload error:', error);
       toast.error('Failed to upload document');
     } finally {
       setIsUploading(false);

@@ -1,168 +1,47 @@
 import { db } from '@/lib/drizzle';
-import { equipment, media } from '@/lib/drizzle/schema';
-import { desc, eq, sql } from 'drizzle-orm';
-import { existsSync } from 'fs';
-import { mkdir, unlink, writeFile } from 'fs/promises';
+import { equipmentDocuments, equipment } from '@/lib/drizzle/schema';
+import { withAuth } from '@/lib/rbac/api-middleware';
+import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
-import { join } from 'path';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth-config';
+import { SupabaseStorageService } from '@/lib/supabase/storage-service';
 
-// GET /api/equipment/[id]/documents
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+const uploadDocumentsHandler = async (
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) => {
   try {
-    // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!params || !params.id) {
+      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
-    // Check if user has permission to read equipment documents
-    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'OPERATOR'].includes(session.user.role || '')) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
-    const { id } = await params;
+    const { id } = params;
     const equipmentId = parseInt(id);
 
-    if (isNaN(equipmentId)) {
-      return NextResponse.json({ success: false, error: 'Invalid equipment ID' }, { status: 400 });
+    if (!equipmentId) {
+      return NextResponse.json({ error: 'Invalid equipment ID' }, { status: 400 });
     }
 
-    // Get documents for this equipment
-    const documents = await db
-      .select()
-      .from(media)
-      .where(eq(media.modelId, equipmentId))
-      .orderBy(desc(media.createdAt));
-
-    // Transform documents to match expected format
-    const formattedDocuments = documents.map(doc => ({
-      id: doc.id,
-      name: doc.fileName,
-      file_name: doc.fileName,
-      file_type: doc.mimeType,
-      size: doc.fileSize,
-      url: `/uploads/documents/${doc.filePath}`,
-      created_at: doc.createdAt,
-    }));
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        documents: formattedDocuments,
-      },
-    });
-  } catch (error) {
-    console.error('Error fetching equipment documents:', error);
-    
-    return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to fetch equipment documents',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    );
-  }
-}
-
-// POST /api/equipment/[id]/documents
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    // Check authentication
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Check if user has permission to upload equipment documents
-    if (!['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(session.user.role || '')) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
-    }
-
-    // Test database connection
-    try {
-      await db.execute(sql`SELECT 1`);
-
-      // Test if media table exists
-      const tableExists = await db.execute(
-        sql`SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'media')`
-      );
-
-      // Test media table structure
-      const tableStructure = await db.execute(
-        sql`SELECT column_name, data_type, is_nullable FROM information_schema.columns WHERE table_name = 'media' ORDER BY ordinal_position`
-      );
-      
-    } catch (dbTestError) {
-      console.error('Database test error:', dbTestError);
-      throw new Error('Database connection failed');
-    }
-
-    const { id } = await params;
-    const equipmentId = parseInt(id);
-
-    if (isNaN(equipmentId)) {
-      return NextResponse.json({ success: false, error: 'Invalid equipment ID' }, { status: 400 });
-    }
-
-    // Verify equipment exists
-    
-    const equipmentData = await db
+    // Check if equipment exists
+    const equipmentResult = await db
       .select()
       .from(equipment)
       .where(eq(equipment.id, equipmentId))
       .limit(1);
 
-    if (!equipmentData.length) {
-      console.error('Equipment not found:', equipmentId);
-      return NextResponse.json({ success: false, error: 'Equipment not found' }, { status: 404 });
+    if (!equipmentResult[0]) {
+      return NextResponse.json({ error: 'Equipment not found' }, { status: 404 });
     }
 
-    const equipmentItem = equipmentData[0];
-    if (!equipmentItem) {
-      console.error('Equipment data not found for ID:', equipmentId);
-      return NextResponse.json(
-        { success: false, error: 'Equipment data not found' },
-        { status: 404 }
-      );
-    }
+    const equipmentItem = equipmentResult[0];
 
     const formData = await request.formData();
-
     const file = formData.get('file') as File;
-    const documentName = formData.get('document_name') as string;
+    const rawDocumentType = (formData.get('document_type') as string) || 'general';
+    const documentName = (formData.get('document_name') as string) || '';
+    const description = formData.get('description') as string;
 
     if (!file) {
-      console.error('No file provided in request');
-      return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 });
-    }
-
-    // Validate that file is actually a File object
-    if (!(file instanceof File)) {
-      console.error('Invalid file object provided:', typeof file);
-      return NextResponse.json({ success: false, error: 'Invalid file object' }, { status: 400 });
-    }
-
-    // Additional file validation
-    if (!file.name || file.name.trim() === '') {
-      console.error('File has no name');
-      return NextResponse.json({ success: false, error: 'File must have a name' }, { status: 400 });
-    }
-
-    if (file.size === 0) {
-      console.error('File is empty');
-      return NextResponse.json({ success: false, error: 'File cannot be empty' }, { status: 400 });
-    }
-
-    // Validate file size (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      console.error('File size exceeds limit:', file.size);
-      return NextResponse.json(
-        { success: false, error: 'File size exceeds 10MB limit' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
     // Validate file type
@@ -170,132 +49,105 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'image/jpeg',
+      'image/jpg',
       'image/png',
-      'image/gif',
-      'text/plain',
     ];
 
     if (!allowedTypes.includes(file.type)) {
-      console.error('File type not allowed:', file.type);
-      return NextResponse.json({ success: false, error: 'File type not allowed' }, { status: 400 });
-    }
-
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'documents');
-
-    try {
-      if (!existsSync(uploadsDir)) {
-        console.log('Creating uploads directory:', uploadsDir);
-        await mkdir(uploadsDir, { recursive: true });
-        console.log('Uploads directory created successfully');
-      }
-
-      // Verify directory is writable
-      const testFile = join(uploadsDir, '.test');
-      await writeFile(testFile, 'test');
-      await unlink(testFile);
-      console.log('Directory is writable');
-      
-    } catch (dirError) {
-      console.error('Uploads directory error:', dirError);
-      throw new Error(
-        `Uploads directory error: ${dirError instanceof Error ? dirError.message : 'Unknown error'}`
+      return NextResponse.json(
+        { error: 'Invalid file type. Only PDF, DOC, DOCX, JPG, and PNG files are allowed.' },
+        { status: 400 }
       );
     }
 
-    // Generate unique filename
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        { error: 'File size too large. Maximum size is 10MB.' },
+        { status: 400 }
+      );
+    }
+
+    // Generate path for Supabase storage
+    const toTitleCase = (s: string) =>
+      s.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+    const baseLabel =
+      documentName.trim() || toTitleCase((rawDocumentType || 'Document').replace(/_/g, ' '));
+    const equipmentName = equipmentItem.name || `Equipment-${equipmentId}`;
+    const baseName = `${equipmentName}_${baseLabel}`
+      .replace(/\s+/g, '_')
+      .replace(/[^A-Za-z0-9_\-]/g, '');
+
     const timestamp = Date.now();
-    const originalName = file.name;
-    const fileName = `${timestamp}_${originalName}`;
-    const filePath = join(uploadsDir, fileName);
+    const ext = file.name.split('.').pop() || 'pdf';
+    const storedFileName = `${baseName}_${timestamp}.${ext}`;
+    const path = `equipment-${equipmentId}`;
 
-    // Save file to disk
-    try {
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      await writeFile(filePath, buffer);
-      console.log('File saved to disk:', filePath);
-      
-    } catch (fileError) {
-      console.error('Error saving file to disk:', fileError);
-      throw new Error(
-        `Failed to save file: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`
+    // Upload file to Supabase storage
+    const uploadResult = await SupabaseStorageService.uploadFile(
+      file,
+      'equipment-documents',
+      path
+    );
+
+    if (!uploadResult.success) {
+      return NextResponse.json(
+        { error: `Upload failed: ${uploadResult.message}` },
+        { status: 500 }
       );
     }
 
-    // Save document info to database
-    let insertedDocument;
-    try {
-      console.log('Inserting document into database...');
-      const [document] = await db
-        .insert(media)
-        .values({
-          fileName: documentName || originalName,
-          filePath: fileName,
-          fileSize: file.size,
-          mimeType: file.type,
-          collection: 'documents',
-          modelType: 'Equipment',
-          modelId: equipmentId,
-          updatedAt: new Date().toISOString(),
-        })
-        .returning();
-      insertedDocument = document;
-      if (!insertedDocument) {
-        throw new Error('Failed to insert document into database');
-      }
-      console.log('Document inserted successfully:', insertedDocument.id);
-      
-    } catch (dbError) {
-      console.error('Database insert error:', dbError);
-      // Try to clean up the uploaded file if database insert fails
-      try {
-        if (existsSync(filePath)) {
-          await unlink(filePath);
-          console.log('Cleaned up uploaded file after database error');
-        }
-      } catch (cleanupError) {
-        console.error('Error cleaning up file:', cleanupError);
-      }
-      throw new Error(
-        `Failed to save document to database: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`
-      );
+    // Save document record to database
+    const documentResult = await db
+      .insert(equipmentDocuments)
+      .values({
+        equipmentId: equipmentId,
+        documentType: rawDocumentType,
+        filePath: uploadResult.url || '',
+        fileName: storedFileName,
+        fileSize: file.size,
+        mimeType: file.type,
+        description: description || null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .returning();
+
+    const document = documentResult[0];
+
+    if (!document) {
+      throw new Error('Failed to insert document into database');
     }
 
-    return NextResponse.json({
+    const responseData = {
       success: true,
+      message: 'Document uploaded successfully',
       data: {
-        message: 'Document uploaded successfully',
-        document: {
-          id: insertedDocument.id,
-          name: insertedDocument.fileName,
-          file_name: insertedDocument.fileName,
-          file_type: insertedDocument.mimeType,
-          size: insertedDocument.fileSize,
-          url: `/uploads/documents/${insertedDocument.filePath}`,
-          created_at: insertedDocument.createdAt,
-        },
+        id: document.id,
+        name: baseLabel,
+        fileName: document.fileName,
+        fileType: document.mimeType?.split('/')[1]?.toUpperCase() || 'UNKNOWN',
+        size: document.fileSize,
+        url: document.filePath,
+        mimeType: document.mimeType,
+        documentType: document.documentType,
+        description: document.description,
+        createdAt: document.createdAt,
+        updatedAt: document.updatedAt,
       },
-    });
+    };
+
+    return NextResponse.json(responseData);
   } catch (error) {
-
-    // Log more detailed error information
-    if (error instanceof Error) {
-      console.error('Error uploading equipment document:', error.message, error.stack);
-    } else {
-      console.error('Unknown error uploading equipment document:', error);
-    }
-
+    console.error('Error uploading document:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to upload equipment document',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
+      { error: 'Failed to upload document' },
       { status: 500 }
     );
   }
-}
+};
+
+export const POST = withAuth(uploadDocumentsHandler);
+export const GET = withAuth(uploadDocumentsHandler);

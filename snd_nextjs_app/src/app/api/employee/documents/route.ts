@@ -1,10 +1,9 @@
 import { authConfig } from '@/lib/auth-config';
 import { db } from '@/lib/db';
 import { employeeDocuments } from '@/lib/drizzle/schema';
-import { writeFile } from 'fs/promises';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { join } from 'path';
+import { SupabaseStorageService } from '@/lib/supabase/storage-service';
 
 export async function POST(_request: NextRequest) {
   try {
@@ -58,7 +57,7 @@ export async function POST(_request: NextRequest) {
     }
 
     // Validate file size (5MB limit)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 5 * 1024 * 1024;
     if (file.size > maxSize) {
       return NextResponse.json(
         { error: 'File size too large. Maximum size is 5MB.' },
@@ -66,19 +65,20 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    // Generate unique filename
-    const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop();
-    const fileName = `${employee_id}_${document_type}_${timestamp}.${fileExtension}`;
+    // Upload file to Supabase storage
+    const path = `employee-${employee_id}`;
+    const uploadResult = await SupabaseStorageService.uploadFile(
+      file,
+      'employee-documents',
+      path
+    );
 
-    // Save file to uploads directory
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'documents');
-    const filePath = join(uploadsDir, fileName);
-
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    await writeFile(filePath, buffer);
+    if (!uploadResult.success) {
+      return NextResponse.json(
+        { error: `Upload failed: ${uploadResult.message}` },
+        { status: 500 }
+      );
+    }
 
     // Create document record in database using Drizzle
     const documentRows = await db
@@ -87,7 +87,7 @@ export async function POST(_request: NextRequest) {
         employeeId: parseInt(employee_id as string),
         documentType: document_type,
         fileName: file.name,
-        filePath: `/uploads/documents/${fileName}`,
+        filePath: uploadResult.url || '',
         description: description || '',
         fileSize: file.size,
         mimeType: file.type,
@@ -103,7 +103,7 @@ export async function POST(_request: NextRequest) {
       document,
     });
   } catch (error) {
-    
+    console.error('Error uploading document:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

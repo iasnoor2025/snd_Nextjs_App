@@ -1,12 +1,9 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { db } from '@/lib/drizzle';
 import { employeeDocuments } from '@/lib/drizzle/schema';
-import { and, eq } from 'drizzle-orm';
-import { existsSync } from 'fs';
-import { readFile } from 'fs/promises';
-import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
-import { join } from 'path';
+import { eq } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
@@ -18,73 +15,63 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const resolvedParams = await params;
-    const employeeId = parseInt(resolvedParams.id);
-    const documentId = parseInt(resolvedParams.documentId);
-
-    if (!employeeId || !documentId) {
-      return NextResponse.json({ error: 'Invalid employee ID or document ID' }, { status: 400 });
-    }
-
-    // Get document from database
-    const document = await db
+    const { id: employeeId, documentId } = await params;
+    
+    // Get document record from database
+    const documentResult = await db
       .select()
       .from(employeeDocuments)
-      .where(
-        and(eq(employeeDocuments.id, documentId), eq(employeeDocuments.employeeId, employeeId))
-      )
+      .where(eq(employeeDocuments.id, parseInt(documentId)))
       .limit(1);
 
-    const documentRecord = document[0];
-
-    if (!documentRecord) {
+    if (!documentResult[0]) {
       return NextResponse.json({ error: 'Document not found' }, { status: 404 });
     }
 
-    // Construct file path - remove leading slash if present
-    const cleanFilePath = documentRecord.filePath.startsWith('/') 
-      ? documentRecord.filePath.slice(1) 
-      : documentRecord.filePath;
-    const filePath = join(process.cwd(), 'public', cleanFilePath);
+    const documentRecord = documentResult[0];
 
-    // Check if file exists
-    if (!existsSync(filePath)) {
-      console.error(`File not found at path: ${filePath}`);
-      console.error(`Original filePath: ${documentRecord.filePath}`);
-      console.error(`Clean filePath: ${cleanFilePath}`);
-      return NextResponse.json({ 
-        error: 'File not found on server',
-        debug: {
-          originalPath: documentRecord.filePath,
-          cleanPath: cleanFilePath,
-          fullPath: filePath
-        }
-      }, { status: 404 });
+    // Check if user has permission to access this document
+    if (session.user.role !== 'SUPER_ADMIN' && 
+        session.user.role !== 'ADMIN' && 
+        session.user.role !== 'MANAGER' &&
+        session.user.role !== 'SUPERVISOR' &&
+        session.user.role !== 'OPERATOR' &&
+        session.user.role !== 'EMPLOYEE') {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    // Read file
-    const fileBuffer = await readFile(filePath);
+    // If the document is stored in Supabase (URL starts with http/https)
+    if (documentRecord.filePath && documentRecord.filePath.startsWith('http')) {
+      // For Supabase URLs, redirect to the file or return the URL
+      const url = new URL(request.url);
+      const isPreview = !url.searchParams.has('download');
+      
+      if (isPreview) {
+        // For preview, redirect to the Supabase URL
+        return NextResponse.redirect(documentRecord.filePath);
+      } else {
+        // For download, return the URL for the client to handle
+        return NextResponse.json({
+          success: true,
+          downloadUrl: documentRecord.filePath,
+          fileName: documentRecord.fileName,
+          mimeType: documentRecord.mimeType,
+        });
+      }
+    }
 
-    // Check if this is a preview request (no download parameter)
-    const url = new URL(request.url);
-    const isPreview = !url.searchParams.has('download');
-    
-    // Return file with appropriate headers
-    return new NextResponse(fileBuffer as any, {
-      headers: {
-        'Content-Type': documentRecord.mimeType || 'application/octet-stream',
-        'Content-Disposition': isPreview 
-          ? `inline; filename="${documentRecord.fileName}"`
-          : `attachment; filename="${documentRecord.fileName}"`,
-        'Content-Length': documentRecord.fileSize?.toString() || fileBuffer.length.toString(),
-      },
-    });
+    // Fallback for any remaining local files (shouldn't happen with Supabase)
+    return NextResponse.json({ 
+      error: 'Document not accessible',
+      message: 'Document is not stored in the expected location'
+    }, { status: 404 });
+
   } catch (error) {
-    
+    console.error('Error accessing document:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Failed to download document: ' + (error as Error).message,
+        message: 'Failed to access document: ' + (error as Error).message,
       },
       { status: 500 }
     );

@@ -28,7 +28,7 @@ export class SupabaseStorageService {
    */
   static async uploadFile(
     file: File,
-    bucket: StorageBucket = STORAGE_BUCKETS.GENERAL,
+    bucket: StorageBucket | string = STORAGE_BUCKETS.GENERAL,
     path?: string
   ): Promise<UploadResult> {
     try {
@@ -108,7 +108,7 @@ export class SupabaseStorageService {
    * Delete a file from Supabase storage
    */
   static async deleteFile(
-    bucket: StorageBucket,
+    bucket: StorageBucket | string,
     path: string
   ): Promise<{ success: boolean; message: string; error?: string }> {
     try {
@@ -150,7 +150,7 @@ export class SupabaseStorageService {
    * Get file metadata
    */
   static async getFileMetadata(
-    bucket: StorageBucket,
+    bucket: StorageBucket | string,
     path: string
   ): Promise<{ success: boolean; metadata?: FileMetadata; error?: string }> {
     try {
@@ -212,7 +212,7 @@ export class SupabaseStorageService {
    * List files in a bucket/folder
    */
   static async listFiles(
-    bucket: StorageBucket,
+    bucket: StorageBucket | string,
     path?: string
   ): Promise<{ success: boolean; files?: FileMetadata[]; error?: string }> {
     try {
@@ -266,7 +266,7 @@ export class SupabaseStorageService {
   /**
    * Get public URL for a file
    */
-  static getPublicUrl(bucket: StorageBucket, path: string): string {
+  static getPublicUrl(bucket: StorageBucket | string, path: string): string {
     if (!supabase) {
       return '';
     }
@@ -279,10 +279,72 @@ export class SupabaseStorageService {
   }
 
   /**
+   * Get public URL for a file with custom bucket name
+   */
+  static getPublicUrlForBucket(bucketName: string, path: string): string {
+    if (!supabase) {
+      return '';
+    }
+    
+    const { data } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(path);
+    
+    return data.publicUrl;
+  }
+
+  /**
+   * List all available buckets
+   */
+  static async listBuckets(): Promise<{ success: boolean; buckets?: string[]; error?: string }> {
+    try {
+      // Check if Supabase is configured
+      if (!supabase) {
+        return {
+          success: false,
+          error: 'Supabase is not configured. Please set environment variables.',
+        };
+      }
+
+      // Try to list buckets using the storage API
+      // Note: listBuckets() might not be available in all Supabase versions
+      // We'll try to get bucket info by attempting to list files from known buckets
+      const knownBuckets = ['documents', 'employee-documents', 'equipment-documents', 'general'];
+      const availableBuckets: string[] = [];
+
+      for (const bucketName of knownBuckets) {
+        try {
+          const { data, error } = await supabase.storage
+            .from(bucketName)
+            .list('', { limit: 1 });
+          
+          if (!error) {
+            availableBuckets.push(bucketName);
+          }
+        } catch (bucketError) {
+          // Bucket doesn't exist or is not accessible
+          console.log(`Bucket ${bucketName} not accessible:`, bucketError);
+        }
+      }
+
+      return {
+        success: true,
+        buckets: availableBuckets,
+      };
+    } catch (error) {
+      console.error('Error listing buckets:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  /**
    * Download a file as blob
    */
   static async downloadFile(
-    bucket: StorageBucket,
+    bucket: StorageBucket | string,
     path: string
   ): Promise<{ success: boolean; blob?: Blob; error?: string }> {
     try {

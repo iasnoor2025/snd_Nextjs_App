@@ -2,10 +2,8 @@ import { db } from '@/lib/drizzle';
 import { employeeDocuments, employees } from '@/lib/drizzle/schema';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { eq } from 'drizzle-orm';
-import { existsSync } from 'fs';
-import { mkdir, unlink, writeFile } from 'fs/promises';
 import { NextRequest, NextResponse } from 'next/server';
-import { join } from 'path';
+import { SupabaseStorageService } from '@/lib/supabase/storage-service';
 
 const uploadDocumentsHandler = async (
   request: NextRequest,
@@ -13,7 +11,6 @@ const uploadDocumentsHandler = async (
 ) => {
   try {
     if (!params || !params.id) {
-      
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
@@ -47,8 +44,6 @@ const uploadDocumentsHandler = async (
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
-    // document type is optional now; default handled above
-
     // Validate file type
     const allowedTypes = [
       'application/pdf',
@@ -61,13 +56,13 @@ const uploadDocumentsHandler = async (
 
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Invalid file type. Only PDF, DOC, DOCX, JPG, JPEG, and PNG files are allowed.' },
+        { error: 'Invalid file type. Only PDF, DOC, DOCX, JPG, and PNG files are allowed.' },
         { status: 400 }
       );
     }
 
     // Validate file size (10MB limit)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
       return NextResponse.json(
         { error: 'File size too large. Maximum size is 10MB.' },
@@ -75,41 +70,7 @@ const uploadDocumentsHandler = async (
       );
     }
 
-    // Create upload directory
-    const uploadDir = join(process.cwd(), 'public', 'uploads', 'documents', employeeId.toString());
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
-
-    // If the document type is specific (not general), remove any existing document(s) of the same type
-    if (rawDocumentType && rawDocumentType !== 'general') {
-      const existingDocsResult = await db
-        .select()
-        .from(employeeDocuments)
-        .where(eq(employeeDocuments.employeeId, employeeId));
-
-      const existingDocs = existingDocsResult.filter(doc => doc.documentType === rawDocumentType);
-
-      for (const doc of existingDocs) {
-        try {
-          const absPath = join(process.cwd(), 'public', doc.filePath.replace(/^\//, ''));
-          if (existsSync(absPath)) {
-            await unlink(absPath);
-          }
-        } catch (e) {
-          // ignore file deletion errors and proceed
-        }
-      }
-      if (existingDocs.length > 0) {
-        await db.delete(employeeDocuments).where(eq(employeeDocuments.employeeId, employeeId));
-      }
-    }
-
-    // Generate consistent filename: {fileNumber}_{DocumentType}_{timestamp}.{ext}
-    const timestamp = Date.now();
-    const originalExt = file.name.split('.').pop() || 'bin';
-    const ext = originalExt.toLowerCase();
-
+    // Generate path for Supabase storage
     const toTitleCase = (s: string) =>
       s.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
     const baseLabel =
@@ -119,24 +80,32 @@ const uploadDocumentsHandler = async (
       .replace(/\s+/g, '_')
       .replace(/[^A-Za-z0-9_\-]/g, '');
 
+    const timestamp = Date.now();
+    const ext = file.name.split('.').pop() || 'pdf';
     const storedFileName = `${baseName}_${timestamp}.${ext}`;
-    const filePath = join(uploadDir, storedFileName);
-    const relativePath = `/uploads/documents/${employeeId}/${storedFileName}`;
+    const path = `employee-${employeeId}`;
 
-    // Convert file to buffer and save
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    await writeFile(filePath, buffer);
+    // Upload file to Supabase storage
+    const uploadResult = await SupabaseStorageService.uploadFile(
+      file,
+      'employee-documents',
+      path
+    );
 
-    // Save document record to database (use the new file name)
-    // (no-op placeholder removed)
+    if (!uploadResult.success) {
+      return NextResponse.json(
+        { error: `Upload failed: ${uploadResult.message}` },
+        { status: 500 }
+      );
+    }
 
+    // Save document record to database
     const documentResult = await db
       .insert(employeeDocuments)
       .values({
         employeeId: employeeId,
         documentType: rawDocumentType,
-        filePath: relativePath,
+        filePath: uploadResult.url || '',
         fileName: storedFileName,
         fileSize: file.size,
         mimeType: file.type,
@@ -172,15 +141,13 @@ const uploadDocumentsHandler = async (
 
     return NextResponse.json(responseData);
   } catch (error) {
-    
+    console.error('Error uploading document:', error);
     return NextResponse.json(
-      {
-        success: false,
-        message: 'Failed to upload document: ' + (error as Error).message,
-      },
+      { error: 'Failed to upload document' },
       { status: 500 }
     );
   }
 };
 
 export const POST = withAuth(uploadDocumentsHandler);
+export const GET = withAuth(uploadDocumentsHandler);

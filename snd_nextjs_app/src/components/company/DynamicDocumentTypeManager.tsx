@@ -142,6 +142,21 @@ export default function DynamicDocumentTypeManager() {
     }
   };
 
+  // Helper function to convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        // Remove data:image/jpeg;base64, prefix
+        const base64Data = base64.split(',')[1];
+        resolve(base64Data);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
+
   const handleUpload = async () => {
     if (!uploadForm.file || !selectedDocumentType) {
       toast.error('Please select a file and document type');
@@ -150,14 +165,25 @@ export default function DynamicDocumentTypeManager() {
 
     try {
       setUploading(true);
-      const formData = new FormData();
-      formData.append('file', uploadForm.file);
-      formData.append('documentTypeId', selectedDocumentType.id.toString());
-      formData.append('expiryDate', uploadForm.expiryDate);
-
-      const response = await fetch('/api/company-document-types/upload', {
+      
+      // Use Supabase upload instead of old API
+      const response = await fetch('/api/upload-supabase', {
         method: 'POST',
-        body: formData,
+        body: JSON.stringify({
+          file: {
+            name: uploadForm.file.name,
+            size: uploadForm.file.size,
+            type: uploadForm.file.type,
+            content: await fileToBase64(uploadForm.file)
+          },
+          bucket: 'company-documents',
+          path: `company-${selectedDocumentType.id}`,
+          documentTypeId: selectedDocumentType.id,
+          expiryDate: uploadForm.expiryDate
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
       const result = await response.json();

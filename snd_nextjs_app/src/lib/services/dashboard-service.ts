@@ -538,8 +538,7 @@ export class DashboardService {
       const thirtyDaysFromNow = new Date();
       thirtyDaysFromNow.setDate(today.getDate() + 30);
 
-      // Test basic database connection first
-      const testQuery = await db.select().from(equipment).limit(1);
+
 
       const equipmentData = await db
         .select({
