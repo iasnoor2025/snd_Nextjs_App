@@ -335,7 +335,24 @@ export default function DocumentManagementPage() {
   };
 
   const formatDate = (date: Date) => {
-    return format(date, 'PPP');
+    return format(date, 'MMM dd, yyyy');
+  };
+
+  const formatDescriptiveFilename = (filename: string) => {
+    // Format descriptive filenames like "passport-employee-123.jpg" to "Passport - Employee 123"
+    if (!filename) return filename;
+    
+    const nameWithoutExtension = filename.split('.')[0];
+    if (!nameWithoutExtension) return filename;
+    
+    const parts = nameWithoutExtension.split('-');
+    if (parts.length >= 2 && parts[0]) {
+      const documentType = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+      const context = parts.slice(1).join(' ').replace(/\b\w/g, l => l.toUpperCase());
+      return `${documentType} - ${context}`;
+    }
+    
+    return filename;
   };
 
   return (
@@ -395,9 +412,9 @@ export default function DocumentManagementPage() {
       {/* Search and Filters */}
       <Card>
         <CardHeader>
-          <CardTitle>Search & Filters</CardTitle>
+          <CardTitle>Document Management</CardTitle>
           <CardDescription>
-            Search documents by employee name, equipment, or document details. Data is fetched from Supabase storage.
+            Search and manage documents with descriptive filenames. Files are automatically named with document type and employee/equipment information for easy identification.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -406,7 +423,7 @@ export default function DocumentManagementPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
-                  placeholder="Search documents, employees, or equipment..."
+                  placeholder="Search by document type, employee name, file number, or filename..."
                   value={searchTerm}
                   onChange={e => handleSearch(e.target.value)}
                   className="pl-10"
@@ -465,7 +482,7 @@ export default function DocumentManagementPage() {
             <div>
               <CardTitle>Documents</CardTitle>
               <CardDescription>
-                Showing {documents.length} of {pagination.total} documents from Supabase storage
+                Showing {documents.length} of {pagination.total} documents with descriptive filenames
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -504,18 +521,15 @@ export default function DocumentManagementPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-2">
                       {getFileIcon(document.mimeType)}
-                      <span className="font-medium truncate">{document.fileName}</span>
-                      {document.originalFileName && document.originalFileName !== document.fileName && (
-                        <span className="text-sm text-muted-foreground">
-                          ({document.originalFileName})
-                        </span>
-                      )}
+                      <span className="font-medium truncate" title={document.fileName}>
+                        {formatDescriptiveFilename(document.fileName)}
+                      </span>
                       <Badge variant={document.type === 'employee' ? 'default' : 'secondary'}>
                         {document.type}
                       </Badge>
                       {document.documentType && (
                         <Badge variant="outline" className="text-xs">
-                          {document.documentType.replace(/_/g, ' ')}
+                          {document.documentType}
                         </Badge>
                       )}
                     </div>
@@ -537,12 +551,6 @@ export default function DocumentManagementPage() {
                         <span className="font-medium">Date:</span>
                         <span>{formatDate(new Date(document.createdAt))}</span>
                       </div>
-                      {document.originalFileName && document.originalFileName !== document.fileName && (
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">File:</span>
-                          <span className="text-xs">{document.originalFileName}</span>
-                        </div>
-                      )}
                     </div>
                   </div>
 

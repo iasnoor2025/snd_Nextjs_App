@@ -113,31 +113,35 @@ export async function GET(request: NextRequest) {
         const employeeDocuments = [];
         for (const item of actualFiles) {
           const fileName = item.name;
-          // Extract document type and employee ID more intelligently
+          
+          // Parse the new descriptive filename format: "documenttype-context.extension"
           let documentType = 'document';
           let employeeId = 'unknown';
-          
-          // Try to parse filename for better metadata
-          if (fileName.includes('-')) {
-            const parts = fileName.split('-');
-            if (parts.length >= 2) {
-              documentType = parts[0] || 'document';
-              employeeId = parts[1] || 'unknown';
-            }
-          } else if (fileName.includes('_')) {
-            const parts = fileName.split('_');
-            if (parts.length >= 2) {
-              documentType = parts[0] || 'document';
-              employeeId = parts[1] || 'unknown';
-            }
-          }
-          
-          // Try to extract employee ID from the folder name (e.g., "employee-1" -> "1")
           let extractedEmployeeId = null;
+          
+          // Extract employee ID from the folder name (e.g., "employee-1" -> "1")
           if (fileName.includes('employee-')) {
             const match = fileName.match(/employee-(\d+)/);
             if (match) {
               extractedEmployeeId = parseInt(match[1]);
+            }
+          }
+          
+          // Parse the descriptive filename to extract document type and context
+          if (fileName.includes('-')) {
+            const parts = fileName.split('-');
+            if (parts.length >= 2) {
+              // Remove file extension from the last part
+              const lastPart = parts[parts.length - 1].split('.')[0];
+              documentType = parts[0] || 'document';
+              
+              // If we have more than 2 parts, the middle parts form the context
+              if (parts.length > 2) {
+                const contextParts = parts.slice(1, -1);
+                employeeId = contextParts.join('-');
+              } else {
+                employeeId = lastPart;
+              }
             }
           }
           
@@ -176,17 +180,22 @@ export async function GET(request: NextRequest) {
             mimeType = 'application/msword';
           }
           
+          // Format document type for display (capitalize and replace underscores)
+          const displayDocumentType = documentType
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, l => l.toUpperCase());
+          
           employeeDocuments.push({
             id: item.name, // Use the actual file path as ID instead of synthetic ID
             type: 'employee',
-            documentType: documentType,
+            documentType: displayDocumentType,
             filePath: item.name,
-            fileName: documentType.charAt(0).toUpperCase() + documentType.slice(1),
-            originalFileName: fileName,
+            fileName: fileName, // Use the actual descriptive filename
+            originalFileName: fileName, // Keep original for reference
             fileSize: item.size || 0,
             fileSizeFormatted: formatFileSize(item.size || 0),
             mimeType: mimeType,
-            description: `${documentType} document for ${employeeName}`,
+            description: `${displayDocumentType} document for ${employeeName}`,
             createdAt: item.created_at || new Date().toISOString(),
             updatedAt: item.updated_at || new Date().toISOString(),
             employeeId: extractedEmployeeId || parseInt(employeeId) || 1,
@@ -194,7 +203,7 @@ export async function GET(request: NextRequest) {
             employeeFileNumber: employeeFileNumber,
             url: SupabaseStorageService.getPublicUrl('employee-documents', item.name),
             viewUrl: SupabaseStorageService.getPublicUrl('employee-documents', item.name),
-            searchableText: `${extractedEmployeeId || employeeId} ${documentType} ${fileName}`.toLowerCase(),
+            searchableText: `${extractedEmployeeId || employeeId} ${displayDocumentType} ${fileName} ${employeeName}`.toLowerCase(),
           });
         }
         
@@ -282,11 +291,12 @@ export async function GET(request: NextRequest) {
         
         const equipmentDocuments = actualFiles.map((item: any) => {
           const fileName = item.name;
-          // Extract document type and equipment ID more intelligently
+          
+          // Parse the new descriptive filename format: "documenttype-context.extension"
           let documentType = 'document';
           let equipmentId = 'unknown';
           
-          // Try to extract equipment ID from the folder name first (e.g., "equipment-1" -> "1", "equipment-119" -> "119")
+          // Extract equipment ID from the folder name first (e.g., "equipment-1" -> "1", "equipment-119" -> "119")
           let extractedEquipmentId = null;
           if (fileName.includes('equipment-')) {
             const match = fileName.match(/equipment-(\d+)/);
@@ -296,19 +306,20 @@ export async function GET(request: NextRequest) {
             }
           }
           
-          // If no equipment ID found in folder, try to parse filename
-          if (!extractedEquipmentId) {
-            if (fileName.includes('-')) {
-              const parts = fileName.split('-');
-              if (parts.length >= 2) {
-                documentType = parts[0] || 'document';
-                equipmentId = parts[1] || 'unknown';
-              }
-            } else if (fileName.includes('_')) {
-              const parts = fileName.split('_');
-              if (parts.length >= 2) {
-                documentType = parts[0] || 'document';
-                equipmentId = parts[1] || 'unknown';
+          // Parse the descriptive filename to extract document type and context
+          if (fileName.includes('-')) {
+            const parts = fileName.split('-');
+            if (parts.length >= 2) {
+              // Remove file extension from the last part
+              const lastPart = parts[parts.length - 1].split('.')[0];
+              documentType = parts[0] || 'document';
+              
+              // If we have more than 2 parts, the middle parts form the context
+              if (parts.length > 2) {
+                const contextParts = parts.slice(1, -1);
+                equipmentId = contextParts.join('-');
+              } else {
+                equipmentId = lastPart;
               }
             }
           }
@@ -325,17 +336,22 @@ export async function GET(request: NextRequest) {
             mimeType = 'application/msword';
           }
           
+          // Format document type for display (capitalize and replace underscores)
+          const displayDocumentType = documentType
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, l => l.toUpperCase());
+          
           return {
             id: item.name, // Use the actual file path as ID instead of synthetic ID
             type: 'equipment',
-            documentType: documentType,
+            documentType: displayDocumentType,
             filePath: item.name,
-            fileName: `${documentType.charAt(0).toUpperCase() + documentType.slice(1)} Document`,
-            originalFileName: fileName,
+            fileName: fileName, // Use the actual descriptive filename
+            originalFileName: fileName, // Keep original for reference
             fileSize: item.size || 0,
             fileSizeFormatted: formatFileSize(item.size || 0),
             mimeType: mimeType,
-            description: `${documentType} document for equipment ${equipmentId}`,
+            description: `${displayDocumentType} document for equipment ${equipmentId}`,
             createdAt: item.created_at || new Date().toISOString(),
             updatedAt: item.updated_at || new Date().toISOString(),
             equipmentId: extractedEquipmentId || parseInt(equipmentId) || 119,
