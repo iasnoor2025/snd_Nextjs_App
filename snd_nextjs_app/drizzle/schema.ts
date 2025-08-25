@@ -1,4 +1,4 @@
-import { pgTable, uniqueIndex, foreignKey, serial, text, numeric, boolean, integer, date, type AnyPgColumn, jsonb, timestamp, varchar, check, primaryKey } from "drizzle-orm/pg-core"
+import { pgTable, uniqueIndex, foreignKey, serial, text, numeric, boolean, integer, date, type AnyPgColumn, jsonb, timestamp, varchar, unique, primaryKey } from "drizzle-orm/pg-core"
 import { sql } from "drizzle-orm"
 
 
@@ -29,6 +29,21 @@ export const customers = pgTable("customers", {
 	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
 	updatedAt: date("updated_at").notNull(),
 	deletedAt: date("deleted_at"),
+	vatNumber: text("vat_number"),
+	creditLimitUsed: numeric("credit_limit_used", { precision: 12, scale:  2 }),
+	creditLimitRemaining: numeric("credit_limit_remaining", { precision: 12, scale:  2 }),
+	currentDue: numeric("current_due", { precision: 12, scale:  2 }),
+	totalValue: numeric("total_value", { precision: 12, scale:  2 }),
+	outstandingAmount: numeric("outstanding_amount", { precision: 12, scale:  2 }),
+	currency: text().default('SAR'),
+	customerType: text("customer_type"),
+	customerGroup: text("customer_group"),
+	territory: text(),
+	salesPerson: text("sales_person"),
+	defaultPriceList: text("default_price_list"),
+	defaultCurrency: text("default_currency").default('SAR'),
+	language: text().default('en'),
+	remarks: text(),
 }, (table) => [
 	uniqueIndex("customers_erpnext_id_key").using("btree", table.erpnextId.asc().nullsLast().op("text_ops")),
 	foreignKey({
@@ -68,19 +83,6 @@ export const cache = pgTable("cache", {
 	key: text().primaryKey().notNull(),
 	value: text().notNull(),
 	expiration: integer().notNull(),
-});
-
-export const companies = pgTable("companies", {
-	id: serial().primaryKey().notNull(),
-	name: text().notNull(),
-	address: text(),
-	email: text(),
-	phone: text(),
-	logo: text(),
-	legalDocument: text("legal_document"),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-	deletedAt: date("deleted_at"),
 });
 
 export const designations = pgTable("designations", {
@@ -613,22 +615,6 @@ export const equipmentRentalHistory = pgTable("equipment_rental_history", {
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
-export const locations = pgTable("locations", {
-	id: serial().primaryKey().notNull(),
-	name: text().notNull(),
-	description: text(),
-	address: text(),
-	city: text(),
-	state: text(),
-	zipCode: text("zip_code"),
-	country: text(),
-	latitude: numeric({ precision: 10, scale:  8 }),
-	longitude: numeric({ precision: 11, scale:  8 }),
-	isActive: boolean("is_active").default(true).notNull(),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-});
-
 export const media = pgTable("media", {
 	id: serial().primaryKey().notNull(),
 	fileName: text("file_name").notNull(),
@@ -791,27 +777,65 @@ export const permissions = pgTable("permissions", {
 	uniqueIndex("permissions_name_key").using("btree", table.name.asc().nullsLast().op("text_ops")),
 ]);
 
-export const rentalOperatorAssignments = pgTable("rental_operator_assignments", {
+export const roles = pgTable("roles", {
 	id: serial().primaryKey().notNull(),
-	rentalId: integer("rental_id").notNull(),
-	employeeId: integer("employee_id").notNull(),
-	startDate: date("start_date").notNull(),
-	endDate: date("end_date"),
-	status: text().default('active').notNull(),
-	notes: text(),
+	name: text().notNull(),
+	guardName: text("guard_name").default('web').notNull(),
 	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
 	updatedAt: date("updated_at").notNull(),
 }, (table) => [
+	uniqueIndex("roles_name_key").using("btree", table.name.asc().nullsLast().op("text_ops")),
+]);
+
+export const projects = pgTable("projects", {
+	id: serial().primaryKey().notNull(),
+	name: text().notNull(),
+	description: text(),
+	customerId: integer("customer_id"),
+	startDate: date("start_date"),
+	endDate: date("end_date"),
+	status: text().default('active').notNull(),
+	budget: numeric({ precision: 12, scale:  2 }),
+	notes: text(),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+	deletedAt: date("deleted_at"),
+	projectManagerId: integer("project_manager_id"),
+	projectEngineerId: integer("project_engineer_id"),
+	projectForemanId: integer("project_foreman_id"),
+	supervisorId: integer("supervisor_id"),
+	locationId: integer("location_id"),
+}, (table) => [
 	foreignKey({
-			columns: [table.rentalId],
-			foreignColumns: [rentals.id],
-			name: "rental_operator_assignments_rental_id_fkey"
-		}).onUpdate("cascade").onDelete("restrict"),
+			columns: [table.locationId],
+			foreignColumns: [locations.id],
+			name: "projects_location_id_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
 	foreignKey({
-			columns: [table.employeeId],
+			columns: [table.projectManagerId],
 			foreignColumns: [employees.id],
-			name: "rental_operator_assignments_employee_id_fkey"
-		}).onUpdate("cascade").onDelete("restrict"),
+			name: "projects_project_manager_id_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+	foreignKey({
+			columns: [table.projectEngineerId],
+			foreignColumns: [employees.id],
+			name: "projects_project_engineer_id_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+	foreignKey({
+			columns: [table.projectForemanId],
+			foreignColumns: [employees.id],
+			name: "projects_project_foreman_id_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+	foreignKey({
+			columns: [table.supervisorId],
+			foreignColumns: [employees.id],
+			name: "projects_supervisor_id_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
+	foreignKey({
+			columns: [table.customerId],
+			foreignColumns: [customers.id],
+			name: "projects_customer_id_fkey"
+		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
 export const rentalItems = pgTable("rental_items", {
@@ -848,61 +872,6 @@ export const sessions = pgTable("sessions", {
 	payload: text().notNull(),
 	lastActivity: integer("last_activity").notNull(),
 });
-
-export const roles = pgTable("roles", {
-	id: serial().primaryKey().notNull(),
-	name: text().notNull(),
-	guardName: text("guard_name").default('web').notNull(),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-}, (table) => [
-	uniqueIndex("roles_name_key").using("btree", table.name.asc().nullsLast().op("text_ops")),
-]);
-
-export const projects = pgTable("projects", {
-	id: serial().primaryKey().notNull(),
-	name: text().notNull(),
-	description: text(),
-	customerId: integer("customer_id"),
-	startDate: date("start_date"),
-	endDate: date("end_date"),
-	status: text().default('active').notNull(),
-	budget: numeric({ precision: 12, scale:  2 }),
-	notes: text(),
-	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
-	updatedAt: date("updated_at").notNull(),
-	deletedAt: date("deleted_at"),
-	projectManagerId: integer("project_manager_id"),
-	projectEngineerId: integer("project_engineer_id"),
-	projectForemanId: integer("project_foreman_id"),
-	supervisorId: integer("supervisor_id"),
-}, (table) => [
-	foreignKey({
-			columns: [table.customerId],
-			foreignColumns: [customers.id],
-			name: "projects_customer_id_fkey"
-		}).onUpdate("cascade").onDelete("set null"),
-	foreignKey({
-			columns: [table.projectManagerId],
-			foreignColumns: [employees.id],
-			name: "fk_projects_project_manager"
-		}).onDelete("set null"),
-	foreignKey({
-			columns: [table.projectEngineerId],
-			foreignColumns: [employees.id],
-			name: "fk_projects_project_engineer"
-		}).onDelete("set null"),
-	foreignKey({
-			columns: [table.projectForemanId],
-			foreignColumns: [employees.id],
-			name: "fk_projects_project_foreman"
-		}).onDelete("set null"),
-	foreignKey({
-			columns: [table.supervisorId],
-			foreignColumns: [employees.id],
-			name: "fk_projects_supervisor"
-		}).onDelete("set null"),
-]);
 
 export const rentals = pgTable("rentals", {
 	id: serial().primaryKey().notNull(),
@@ -1101,6 +1070,7 @@ export const timesheets = pgTable("timesheets", {
 	updatedAt: date("updated_at").notNull(),
 	deletedAt: date("deleted_at"),
 }, (table) => [
+	uniqueIndex("timesheets_employee_id_date_key").using("btree", table.employeeId.asc().nullsLast().op("int4_ops"), table.date.asc().nullsLast().op("int4_ops")),
 	foreignKey({
 			columns: [table.employeeId],
 			foreignColumns: [employees.id],
@@ -1729,12 +1699,28 @@ export const scheduledReports = pgTable("scheduled_reports", {
 		}).onUpdate("cascade").onDelete("set null"),
 ]);
 
+export const locations = pgTable("locations", {
+	id: serial().primaryKey().notNull(),
+	name: text().notNull(),
+	description: text(),
+	address: text(),
+	city: text(),
+	state: text(),
+	zipCode: text("zip_code"),
+	country: text(),
+	latitude: numeric({ precision: 10, scale:  8 }),
+	longitude: numeric({ precision: 11, scale:  8 }),
+	isActive: boolean("is_active").default(true).notNull(),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+});
+
 export const projectManpower = pgTable("project_manpower", {
 	id: serial().primaryKey().notNull(),
 	projectId: integer("project_id").notNull(),
 	employeeId: integer("employee_id"),
 	jobTitle: text("job_title").notNull(),
-	dailyRate: numeric("daily_rate", { precision: 10, scale:  2 }).notNull(),
+	dailyRate: numeric("daily_rate", { precision: 10, scale:  2 }).default('0.00').notNull(),
 	startDate: date("start_date").notNull(),
 	endDate: date("end_date"),
 	totalDays: integer("total_days"),
@@ -1761,8 +1747,156 @@ export const projectManpower = pgTable("project_manpower", {
 			foreignColumns: [employees.id],
 			name: "project_manpower_employee_id_fkey"
 		}).onUpdate("cascade").onDelete("set null"),
-	check("project_manpower_employee_or_worker_check", sql`(employee_id IS NOT NULL) OR (worker_name IS NOT NULL)`),
+	foreignKey({
+			columns: [table.projectId],
+			foreignColumns: [projects.id],
+			name: "project_manpower_project_id_projects_id_fk"
+		}),
+	foreignKey({
+			columns: [table.employeeId],
+			foreignColumns: [employees.id],
+			name: "project_manpower_employee_id_employees_id_fk"
+		}),
+	foreignKey({
+			columns: [table.assignedBy],
+			foreignColumns: [employees.id],
+			name: "project_manpower_assigned_by_employees_id_fk"
+		}),
 ]);
+
+export const companyDocumentTypes = pgTable("company_document_types", {
+	id: serial().primaryKey().notNull(),
+	key: text().notNull(),
+	label: text().notNull(),
+	description: text(),
+	required: boolean().default(false).notNull(),
+	category: text().default('general'),
+	isActive: boolean("is_active").default(true).notNull(),
+	sortOrder: integer("sort_order").default(0),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+}, (table) => [
+	unique("company_document_types_key_unique").on(table.key),
+]);
+
+export const equipmentDocuments = pgTable("equipment_documents", {
+	id: serial().primaryKey().notNull(),
+	equipmentId: integer("equipment_id").notNull(),
+	documentType: text("document_type").notNull(),
+	filePath: text("file_path").notNull(),
+	fileName: text("file_name").notNull(),
+	fileSize: integer("file_size"),
+	mimeType: text("mime_type"),
+	description: text(),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+}, (table) => [
+	foreignKey({
+			columns: [table.equipmentId],
+			foreignColumns: [equipment.id],
+			name: "equipment_documents_equipment_id_fkey"
+		}).onUpdate("cascade").onDelete("restrict"),
+]);
+
+export const companies = pgTable("companies", {
+	id: serial().primaryKey().notNull(),
+	name: text().notNull(),
+	address: text(),
+	email: text(),
+	phone: text(),
+	logo: text(),
+	legalDocument: text("legal_document"),
+	createdAt: date("created_at").default(sql`CURRENT_DATE`).notNull(),
+	updatedAt: date("updated_at").notNull(),
+	deletedAt: date("deleted_at"),
+	commercialRegistration: text("commercial_registration"),
+	commercialRegistrationExpiry: date("commercial_registration_expiry"),
+	taxRegistration: text("tax_registration"),
+	taxRegistrationExpiry: date("tax_registration_expiry"),
+	municipalityLicense: text("municipality_license"),
+	municipalityLicenseExpiry: date("municipality_license_expiry"),
+	chamberOfCommerce: text("chamber_of_commerce"),
+	chamberOfCommerceExpiry: date("chamber_of_commerce_expiry"),
+	laborOfficeLicense: text("labor_office_license"),
+	laborOfficeLicenseExpiry: date("labor_office_license_expiry"),
+	gosiRegistration: text("gosi_registration"),
+	gosiRegistrationExpiry: date("gosi_registration_expiry"),
+	saudiStandardsLicense: text("saudi_standards_license"),
+	saudiStandardsLicenseExpiry: date("saudi_standards_license_expiry"),
+	environmentalLicense: text("environmental_license"),
+	environmentalLicenseExpiry: date("environmental_license_expiry"),
+	website: text(),
+	contactPerson: text("contact_person"),
+	contactPersonPhone: text("contact_person_phone"),
+	contactPersonEmail: text("contact_person_email"),
+	companyType: text("company_type"),
+	industry: text(),
+	employeeCount: integer("employee_count"),
+	zakatRegistration: text("zakat_registration"),
+	zakatRegistrationExpiry: date("zakat_registration_expiry"),
+	saudiArabiaVisa: text("saudi_arabia_visa"),
+	saudiArabiaVisaExpiry: date("saudi_arabia_visa_expiry"),
+	investmentLicense: text("investment_license"),
+	investmentLicenseExpiry: date("investment_license_expiry"),
+	importExportLicense: text("import_export_license"),
+	importExportLicenseExpiry: date("import_export_license_expiry"),
+	pharmaceuticalLicense: text("pharmaceutical_license"),
+	pharmaceuticalLicenseExpiry: date("pharmaceutical_license_expiry"),
+	foodSafetyLicense: text("food_safety_license"),
+	foodSafetyLicenseExpiry: date("food_safety_license_expiry"),
+	constructionLicense: text("construction_license"),
+	constructionLicenseExpiry: date("construction_license_expiry"),
+	transportationLicense: text("transportation_license"),
+	transportationLicenseExpiry: date("transportation_license_expiry"),
+	bankingLicense: text("banking_license"),
+	bankingLicenseExpiry: date("banking_license_expiry"),
+	insuranceLicense: text("insurance_license"),
+	insuranceLicenseExpiry: date("insurance_license_expiry"),
+	telecomLicense: text("telecom_license"),
+	telecomLicenseExpiry: date("telecom_license_expiry"),
+	energyLicense: text("energy_license"),
+	energyLicenseExpiry: date("energy_license_expiry"),
+	miningLicense: text("mining_license"),
+	miningLicenseExpiry: date("mining_license_expiry"),
+	tourismLicense: text("tourism_license"),
+	tourismLicenseExpiry: date("tourism_license_expiry"),
+	educationLicense: text("education_license"),
+	educationLicenseExpiry: date("education_license_expiry"),
+	healthcareLicense: text("healthcare_license"),
+	healthcareLicenseExpiry: date("healthcare_license_expiry"),
+	realEstateLicense: text("real_estate_license"),
+	realEstateLicenseExpiry: date("real_estate_license_expiry"),
+	legalServicesLicense: text("legal_services_license"),
+	legalServicesLicenseExpiry: date("legal_services_license_expiry"),
+	accountingLicense: text("accounting_license"),
+	accountingLicenseExpiry: date("accounting_license_expiry"),
+	advertisingLicense: text("advertising_license"),
+	advertisingLicenseExpiry: date("advertising_license_expiry"),
+	mediaLicense: text("media_license"),
+	mediaLicenseExpiry: date("media_license_expiry"),
+	securityLicense: text("security_license"),
+	securityLicenseExpiry: date("security_license_expiry"),
+	cleaningLicense: text("cleaning_license"),
+	cleaningLicenseExpiry: date("cleaning_license_expiry"),
+	cateringLicense: text("catering_license"),
+	cateringLicenseExpiry: date("catering_license_expiry"),
+	warehouseLicense: text("warehouse_license"),
+	warehouseLicenseExpiry: date("warehouse_license_expiry"),
+	logisticsLicense: text("logistics_license"),
+	logisticsLicenseExpiry: date("logistics_license_expiry"),
+	maintenanceLicense: text("maintenance_license"),
+	maintenanceLicenseExpiry: date("maintenance_license_expiry"),
+	trainingLicense: text("training_license"),
+	trainingLicenseExpiry: date("training_license_expiry"),
+	consultingLicense: text("consulting_license"),
+	consultingLicenseExpiry: date("consulting_license_expiry"),
+	researchLicense: text("research_license"),
+	researchLicenseExpiry: date("research_license_expiry"),
+	technologyLicense: text("technology_license"),
+	technologyLicenseExpiry: date("technology_license_expiry"),
+	innovationLicense: text("innovation_license"),
+	innovationLicenseExpiry: date("innovation_license_expiry"),
+});
 
 export const modelHasPermissions = pgTable("model_has_permissions", {
 	permissionId: integer("permission_id").notNull(),

@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { users, customers, departments, designations, employees, advancePayments, employeeLeaves, employeeAssignments, projects, rentals, employeeDocuments, employeePerformanceReviews, employeeTraining, trainings, equipment, employeeSalaries, equipmentMaintenance, organizationalUnits, employeeSkill, skills, loans, equipmentMaintenanceItems, equipmentRentalHistory, documentVersions, payrolls, payrollRuns, rentalOperatorAssignments, rentalItems, salaryIncrements, timeEntries, timesheets, timesheetApprovals, timeOffRequests, taxDocuments, projectExpenses, advancePaymentHistories, employeeResignations, payrollItems, taxDocumentPayrolls, weeklyTimesheets, projectEquipment, projectManpower, projectMaterials, projectMilestones, projectRisks, projectSubcontractors, projectTasks, projectTemplates, reportTemplates, projectFuel, documentApprovals, safetyIncidents, scheduledReports, permissions, modelHasPermissions, roles, modelHasRoles, roleHasPermissions } from "./schema";
+import { users, customers, departments, designations, employees, advancePayments, employeeLeaves, employeeAssignments, projects, rentals, employeeDocuments, employeePerformanceReviews, employeeTraining, trainings, equipment, employeeSalaries, equipmentMaintenance, organizationalUnits, employeeSkill, skills, loans, equipmentMaintenanceItems, equipmentRentalHistory, documentVersions, payrolls, payrollRuns, locations, rentalItems, salaryIncrements, timeEntries, timesheets, timesheetApprovals, timeOffRequests, taxDocuments, projectExpenses, advancePaymentHistories, employeeResignations, payrollItems, taxDocumentPayrolls, weeklyTimesheets, projectEquipment, projectManpower, projectMaterials, projectMilestones, projectRisks, projectSubcontractors, projectTasks, projectTemplates, reportTemplates, projectFuel, documentApprovals, safetyIncidents, scheduledReports, equipmentDocuments, permissions, modelHasPermissions, roles, modelHasRoles, roleHasPermissions } from "./schema";
 
 export const customersRelations = relations(customers, ({one, many}) => ({
 	user: one(users, {
@@ -102,7 +102,6 @@ export const employeesRelations = relations(employees, ({one, many}) => ({
 	organizationalUnits: many(organizationalUnits, {
 		relationName: "organizationalUnits_managerId_employees_id"
 	}),
-	rentalOperatorAssignments: many(rentalOperatorAssignments),
 	projects_projectManagerId: many(projects, {
 		relationName: "projects_projectManagerId_employees_id"
 	}),
@@ -147,6 +146,12 @@ export const employeesRelations = relations(employees, ({one, many}) => ({
 	projectManpowers_employeeId: many(projectManpower, {
 		relationName: "projectManpower_employeeId_employees_id"
 	}),
+	projectManpowers_employeeId: many(projectManpower, {
+		relationName: "projectManpower_employeeId_employees_id"
+	}),
+	projectManpowers_assignedBy: many(projectManpower, {
+		relationName: "projectManpower_assignedBy_employees_id"
+	}),
 }));
 
 export const employeeLeavesRelations = relations(employeeLeaves, ({one}) => ({
@@ -175,9 +180,9 @@ export const employeeAssignmentsRelations = relations(employeeAssignments, ({one
 export const projectsRelations = relations(projects, ({one, many}) => ({
 	employeeAssignments: many(employeeAssignments),
 	equipmentRentalHistories: many(equipmentRentalHistory),
-	customer: one(customers, {
-		fields: [projects.customerId],
-		references: [customers.id]
+	location: one(locations, {
+		fields: [projects.locationId],
+		references: [locations.id]
 	}),
 	employee_projectManagerId: one(employees, {
 		fields: [projects.projectManagerId],
@@ -199,6 +204,10 @@ export const projectsRelations = relations(projects, ({one, many}) => ({
 		references: [employees.id],
 		relationName: "projects_supervisorId_employees_id"
 	}),
+	customer: one(customers, {
+		fields: [projects.customerId],
+		references: [customers.id]
+	}),
 	rentals: many(rentals),
 	timesheets: many(timesheets),
 	projectExpenses: many(projectExpenses),
@@ -209,13 +218,17 @@ export const projectsRelations = relations(projects, ({one, many}) => ({
 	projectSubcontractors: many(projectSubcontractors),
 	projectTasks: many(projectTasks),
 	projectFuels: many(projectFuel),
-	projectManpowers: many(projectManpower),
+	projectManpowers_projectId: many(projectManpower, {
+		relationName: "projectManpower_projectId_projects_id"
+	}),
+	projectManpowers_projectId: many(projectManpower, {
+		relationName: "projectManpower_projectId_projects_id"
+	}),
 }));
 
 export const rentalsRelations = relations(rentals, ({one, many}) => ({
 	employeeAssignments: many(employeeAssignments),
 	equipmentRentalHistories: many(equipmentRentalHistory),
-	rentalOperatorAssignments: many(rentalOperatorAssignments),
 	rentalItems: many(rentalItems),
 	customer: one(customers, {
 		fields: [rentals.customerId],
@@ -284,6 +297,7 @@ export const equipmentRelations = relations(equipment, ({one, many}) => ({
 	rentalItems: many(rentalItems),
 	projectEquipments: many(projectEquipment),
 	projectFuels: many(projectFuel),
+	equipmentDocuments: many(equipmentDocuments),
 }));
 
 export const employeeSalariesRelations = relations(employeeSalaries, ({one}) => ({
@@ -410,15 +424,8 @@ export const payrollRunsRelations = relations(payrollRuns, ({many}) => ({
 	payrolls: many(payrolls),
 }));
 
-export const rentalOperatorAssignmentsRelations = relations(rentalOperatorAssignments, ({one}) => ({
-	rental: one(rentals, {
-		fields: [rentalOperatorAssignments.rentalId],
-		references: [rentals.id]
-	}),
-	employee: one(employees, {
-		fields: [rentalOperatorAssignments.employeeId],
-		references: [employees.id]
-	}),
+export const locationsRelations = relations(locations, ({many}) => ({
+	projects: many(projects),
 }));
 
 export const rentalItemsRelations = relations(rentalItems, ({one}) => ({
@@ -593,9 +600,10 @@ export const projectEquipmentRelations = relations(projectEquipment, ({one}) => 
 
 export const projectManpowerRelations = relations(projectManpower, ({one, many}) => ({
 	projectEquipments: many(projectEquipment),
-	project: one(projects, {
+	project_projectId: one(projects, {
 		fields: [projectManpower.projectId],
-		references: [projects.id]
+		references: [projects.id],
+		relationName: "projectManpower_projectId_projects_id"
 	}),
 	employee_assignedBy: one(employees, {
 		fields: [projectManpower.assignedBy],
@@ -606,6 +614,21 @@ export const projectManpowerRelations = relations(projectManpower, ({one, many})
 		fields: [projectManpower.employeeId],
 		references: [employees.id],
 		relationName: "projectManpower_employeeId_employees_id"
+	}),
+	project_projectId: one(projects, {
+		fields: [projectManpower.projectId],
+		references: [projects.id],
+		relationName: "projectManpower_projectId_projects_id"
+	}),
+	employee_employeeId: one(employees, {
+		fields: [projectManpower.employeeId],
+		references: [employees.id],
+		relationName: "projectManpower_employeeId_employees_id"
+	}),
+	employee_assignedBy: one(employees, {
+		fields: [projectManpower.assignedBy],
+		references: [employees.id],
+		relationName: "projectManpower_assignedBy_employees_id"
 	}),
 }));
 
@@ -730,6 +753,13 @@ export const scheduledReportsRelations = relations(scheduledReports, ({one}) => 
 	user: one(users, {
 		fields: [scheduledReports.createdBy],
 		references: [users.id]
+	}),
+}));
+
+export const equipmentDocumentsRelations = relations(equipmentDocuments, ({one}) => ({
+	equipment: one(equipment, {
+		fields: [equipmentDocuments.equipmentId],
+		references: [equipment.id]
 	}),
 }));
 

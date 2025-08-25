@@ -51,6 +51,7 @@ interface Document {
   url: string;
   viewUrl?: string;
   searchableText: string;
+  fileSizeFormatted?: string; // Added for formatted size
 }
 
 interface PaginationInfo {
@@ -107,23 +108,14 @@ export default function DocumentManagementPage() {
           if (data.success) {
             // Transform documents to include proper viewing URLs
             const transformedDocuments = data.data.documents.map((doc: Document) => {
-              const viewUrl = doc.type === 'employee' 
-                ? `/api/employees/${doc.employeeId}/documents/${doc.id}/download`
-                : `/api/equipment/${doc.equipmentId}/documents/${doc.id}/download`;
-              
-              console.log('Document transformation:', {
-                id: doc.id,
-                type: doc.type,
-                employeeId: doc.employeeId,
-                equipmentId: doc.equipmentId,
-                originalUrl: doc.url,
-                viewUrl: viewUrl
-              });
+              // Use the actual Supabase URL directly instead of creating download API endpoints
+              const directUrl = doc.url || doc.filePath;
               
               return {
                 ...doc,
-                // Use proper API endpoints for viewing instead of direct file paths
-                viewUrl: viewUrl
+                // Use direct Supabase URL for both viewing and downloading
+                url: directUrl,
+                viewUrl: directUrl
               };
             });
             setDocuments(transformedDocuments);
@@ -142,12 +134,12 @@ export default function DocumentManagementPage() {
         setLoading(false);
       }
     },
-    [] // Remove dependency on pagination.limit
+    [searchTerm, documentType] // Add proper dependencies
   );
 
   useEffect(() => {
     fetchDocuments(1, searchTerm, documentType);
-  }, [fetchDocuments, searchTerm, documentType]);
+  }, [searchTerm, documentType]); // Remove fetchDocuments from dependencies
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
@@ -206,24 +198,37 @@ export default function DocumentManagementPage() {
   const downloadDocument = async (document: Document) => {
     try {
       // For Supabase URLs, we can download directly
-      const response = await fetch(document.url);
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = window.document.createElement('a');
-        a.href = url;
-        a.download = document.originalFileName || document.fileName;
-        window.document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        window.document.body.removeChild(a);
-        toast.success('Document downloaded successfully');
+      if (document.url && document.url.startsWith('http')) {
+        const response = await fetch(document.url);
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const a = window.document.createElement('a');
+          a.href = url;
+          
+          // Create a meaningful filename
+          const fileExtension = document.fileName.split('.').pop() || '';
+          const ownerInfo = document.type === 'employee' 
+            ? `Employee_${document.employeeFileNumber || document.employeeId || 'Unknown'}`
+            : `Equipment_${document.equipmentId || 'Unknown'}`;
+          const documentType = document.documentType ? `_${document.documentType.replace(/_/g, '')}` : '';
+          
+          a.download = `${ownerInfo}${documentType}_${document.fileName}`;
+          
+          window.document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+          window.document.body.removeChild(a);
+          toast.success('Document downloaded successfully');
+        } else {
+          toast.error(`Failed to download document: ${response.status} ${response.statusText}`);
+        }
       } else {
-        toast.error('Failed to download document');
+        toast.error('Document URL is not accessible');
       }
     } catch (error) {
       console.error('Download error:', error);
-      toast.error('Failed to download document');
+      toast.error('Failed to download document: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
@@ -315,6 +320,10 @@ export default function DocumentManagementPage() {
 
   const handlePreviewDocument = (document: Document) => {
     setPreviewDocument(document);
+  };
+
+  const formatDate = (date: Date) => {
+    return format(date, 'PPP');
   };
 
   return (
@@ -510,11 +519,11 @@ export default function DocumentManagementPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">Size:</span>
-                        <span>{formatFileSize(document.fileSize)}</span>
+                        <span>{document.fileSizeFormatted || formatFileSize(document.fileSize || 0)}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">Date:</span>
-                        <span>{format(new Date(document.createdAt), 'PPP')}</span>
+                        <span>{formatDate(new Date(document.createdAt))}</span>
                       </div>
                       {document.originalFileName && document.originalFileName !== document.fileName && (
                         <div className="flex items-center gap-2">
@@ -607,11 +616,39 @@ export default function DocumentManagementPage() {
             </div>
             <div className="flex justify-center">
               {isImageFile(previewDocument.mimeType) ? (
-                <img
-                  src={previewDocument.viewUrl || previewDocument.url}
-                  alt={previewDocument.fileName}
-                  className="max-w-full max-h-[70vh] object-contain rounded"
-                />
+                <div className="relative">
+                  <img
+                    src={previewDocument.url}
+                    alt={previewDocument.fileName}
+                    className="max-w-full max-h-[70vh] object-contain rounded"
+                    onError={(e) => {
+                      console.error('Image preview failed:', e);
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      // Show fallback message
+                      const fallbackDiv = target.nextElementSibling as HTMLElement;
+                      if (fallbackDiv) {
+                        fallbackDiv.style.display = 'flex';
+                      }
+                    }}
+                  />
+                  {/* Fallback when image fails to load */}
+                  <div className="hidden w-full h-[70vh] flex items-center justify-center flex-col gap-4">
+                    <div className="text-6xl">🖼️</div>
+                    <div className="text-center">
+                      <p className="text-lg font-medium text-gray-600">{previewDocument.fileName}</p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        Failed to load image preview. The image may not be accessible.
+                      </p>
+                      <Button
+                        onClick={() => window.open(previewDocument.url, '_blank')}
+                        className="mt-4"
+                      >
+                        Open in New Tab
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               ) : previewDocument.mimeType.includes('pdf') ? (
                 <div className="w-full h-[70vh] flex items-center justify-center">
                   <div className="flex flex-col items-center justify-center h-full gap-4 max-w-md text-center">
@@ -625,7 +662,7 @@ export default function DocumentManagementPage() {
                     </p>
                     <div className="flex flex-col sm:flex-row gap-3 mt-4">
                       <Button
-                        onClick={() => window.open(previewDocument.viewUrl || previewDocument.url, '_blank')}
+                        onClick={() => window.open(previewDocument.url, '_blank')}
                         variant="outline"
                         className="flex items-center gap-2"
                       >
@@ -652,7 +689,7 @@ export default function DocumentManagementPage() {
                       This file type cannot be previewed directly.
                     </p>
                     <Button
-                      onClick={() => window.open(previewDocument.viewUrl || previewDocument.url, '_blank')}
+                      onClick={() => window.open(previewDocument.url, '_blank')}
                       className="mt-4"
                     >
                       Open in New Tab
@@ -662,8 +699,8 @@ export default function DocumentManagementPage() {
               )}
             </div>
             <div className="mt-4 text-sm text-muted-foreground text-center">
-              <p>Size: {formatFileSize(previewDocument.fileSize)}</p>
-              <p>Uploaded: {format(new Date(previewDocument.createdAt), 'PPP')}</p>
+              <p>Size: {previewDocument.fileSizeFormatted || formatFileSize(previewDocument.fileSize || 0)}</p>
+              <p>Uploaded: {formatDate(new Date(previewDocument.createdAt))}</p>
               {previewDocument.originalFileName && previewDocument.originalFileName !== previewDocument.fileName && (
                 <p>Original File: {previewDocument.originalFileName}</p>
               )}

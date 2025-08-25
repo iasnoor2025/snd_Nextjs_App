@@ -1357,22 +1357,24 @@ export default function CreateEmployeePage() {
                                 {/* Document Preview */}
                                 <div className="w-16 h-16 flex-shrink-0 border rounded overflow-hidden bg-gray-100">
                                   {isImage ? (
-                                    <img 
-                                      src={url} 
-                                      alt={field.replace('_', ' ')}
-                                      className="w-full h-full object-cover"
-                                      onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        target.style.display = 'none';
-                                        target.nextElementSibling?.classList.remove('hidden');
-                                      }}
-                                    />
-                                    <div className="hidden w-full h-full flex items-center justify-center bg-gray-100">
-                                      <svg className="w-8 h-8 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                                      </svg>
-                                    </div>
-                                  ) : isPDF ? (
+                                    <>
+                                      <img 
+                                        src={url} 
+                                        alt={field.replace('_', ' ')}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                          const target = e.target as HTMLImageElement;
+                                          target.style.display = 'none';
+                                          target.nextElementSibling?.classList.remove('hidden');
+                                        }}
+                                      />
+                                      <div className="hidden w-full h-full flex items-center justify-center bg-gray-100">
+                                        <svg className="w-8 h-8 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                          <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                                        </svg>
+                                      </div>
+                                    </>
+                                    ) : isPDF ? (
                                     <div className="w-full h-full flex items-center justify-center bg-red-100">
                                       <svg className="w-8 h-8 text-red-600" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />

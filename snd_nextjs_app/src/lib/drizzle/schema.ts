@@ -1747,6 +1747,33 @@ export const equipment = pgTable(
   ]
 );
 
+export const equipmentDocuments = pgTable(
+  'equipment_documents',
+  {
+    id: serial().primaryKey().notNull(),
+    equipmentId: integer('equipment_id').notNull(),
+    documentType: text('document_type').notNull(),
+    filePath: text('file_path').notNull(),
+    fileName: text('file_name').notNull(),
+    fileSize: integer('file_size'),
+    mimeType: text('mime_type'),
+    description: text(),
+    createdAt: date('created_at')
+      .default(sql`CURRENT_DATE`)
+      .notNull(),
+    updatedAt: date('updated_at').notNull(),
+  },
+  table => [
+    foreignKey({
+      columns: [table.equipmentId],
+      foreignColumns: [equipment.id],
+      name: 'equipment_documents_equipment_id_fkey',
+    })
+      .onUpdate('cascade')
+      .onDelete('restrict'),
+  ]
+);
+
 export const permissions = pgTable(
   'permissions',
   {

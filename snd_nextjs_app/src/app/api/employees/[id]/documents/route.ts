@@ -4,17 +4,16 @@ import { withAuth } from '@/lib/rbac/api-middleware';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 
-const getDocumentsHandler = async (_request: any, { params }: { params: { id: string } }) => {
+const getDocumentsHandler = async (_request: any, { params }: { params: Promise<{ id: string }> }) => {
   try {
+    const resolvedParams = await params;
 
-
-
-    if (!params || !params.id) {
+    if (!resolvedParams || !resolvedParams.id) {
       
       return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
     }
 
-    const { id } = params;
+    const { id } = resolvedParams;
     const employeeId = parseInt(id);
 
     if (isNaN(employeeId)) {

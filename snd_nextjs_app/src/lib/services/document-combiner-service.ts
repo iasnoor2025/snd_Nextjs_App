@@ -1,13 +1,12 @@
-import { readFile } from 'fs/promises';
-import { join } from 'path';
 import { PDFDocument } from 'pdf-lib';
 import sharp from 'sharp';
 
 export interface DocumentToCombine {
-  id: number;
+  id: string | number;
   type: 'employee' | 'equipment';
   fileName: string;
   filePath: string;
+  url: string; // Add URL field for Supabase
   mimeType: string;
   employeeName?: string;
   employeeFileNumber?: string;
@@ -28,6 +27,7 @@ export class DocumentCombinerService {
       try {
         await this.addDocumentToPDF(pdfDoc, document);
       } catch (error) {
+        console.error(`Error processing document ${document.fileName}:`, error);
         
         // Add error page for failed documents
         const errorPage = pdfDoc.addPage([595, 842]);
@@ -44,6 +44,12 @@ export class DocumentCombinerService {
           size: 12,
           font: normalFont,
         });
+        errorPage.drawText(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`, {
+          x: 50,
+          y: 360,
+          size: 10,
+          font: normalFont,
+        });
       }
     }
 
@@ -57,49 +63,72 @@ export class DocumentCombinerService {
     pdfDoc: PDFDocument,
     document: DocumentToCombine
   ): Promise<void> {
-    // Construct the correct file path based on document type
-    let filePath: string;
-
-    if (document.type === 'equipment') {
-      // Equipment documents - handle the path correctly
-      let finalFilePath = document.filePath;
-      
-      // Remove leading slash if present
-      if (finalFilePath.startsWith('/')) {
-        finalFilePath = finalFilePath.slice(1);
-      }
-      
-      // Remove uploads/documents/ prefix if it exists
-      if (finalFilePath.startsWith('uploads/documents/')) {
-        finalFilePath = finalFilePath.slice('uploads/documents/'.length);
-      }
-      
-      filePath = join(process.cwd(), 'public', 'uploads', 'documents', finalFilePath);
-    } else {
-      // Employee documents use the filePath directly
-      filePath = join(process.cwd(), 'public', document.filePath);
-    }
-
-    console.log('Document combiner file path:', {
+    console.log('Processing document for PDF:', {
+      name: document.fileName,
       type: document.type,
-      originalPath: document.filePath,
-      finalPath: filePath
+      mimeType: document.mimeType,
+      url: document.url
     });
 
     try {
-      const fileBuffer = await readFile(filePath);
+      // Fetch file from Supabase URL
+      const response = await fetch(document.url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+      }
+
+      const fileBuffer = await response.arrayBuffer();
 
       if (document.mimeType.includes('pdf')) {
-        await this.addPDFToDocument(pdfDoc, fileBuffer);
+        await this.addPDFToDocument(pdfDoc, Buffer.from(fileBuffer));
       } else if (document.mimeType.includes('image')) {
-        await this.addImageToDocument(pdfDoc, fileBuffer, document);
+        await this.addImageToDocument(pdfDoc, Buffer.from(fileBuffer), document);
       } else {
         // For other file types, create an info page
         await this.addInfoPage(pdfDoc, document);
       }
     } catch (error) {
       console.error(`Error processing document ${document.fileName}:`, error);
-      await this.addInfoPage(pdfDoc, document);
+      
+      // Create an error page with detailed information
+      const errorPage = pdfDoc.addPage([595, 842]);
+      const normalFont = await pdfDoc.embedFont('Helvetica');
+      const titleFont = await pdfDoc.embedFont('Helvetica-Bold');
+
+      // Title
+      errorPage.drawText(`Error Processing: ${document.fileName}`, {
+        x: 50,
+        y: 750,
+        size: 16,
+        font: titleFont,
+      });
+
+      // Error details
+      let yPosition = 700;
+      const errorDetails = [
+        `Document Type: ${document.type.toUpperCase()}`,
+        `MIME Type: ${document.mimeType}`,
+        `Owner: ${
+          document.type === 'employee'
+            ? `${document.employeeName || 'Unknown'} (${document.employeeFileNumber || 'No File #'})`
+            : `${document.equipmentName || 'Unknown'} ${document.equipmentModel ? `(${document.equipmentModel})` : ''}`
+        }`,
+        `File Path: ${document.filePath}`,
+        `URL: ${document.url}`,
+        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Note: This document could not be processed.`,
+        `Please check the URL accessibility and file format.`,
+      ];
+
+      errorDetails.forEach(detail => {
+        errorPage.drawText(detail, {
+          x: 50,
+          y: yPosition,
+          size: 10,
+          font: normalFont,
+        });
+        yPosition -= 20;
+      });
     }
   }
 
@@ -186,54 +215,26 @@ export class DocumentCombinerService {
       });
 
     } catch (error) {
+      console.error(`Error processing image ${document.fileName}:`, error);
       
-      throw error;
-    }
-  }
+      // Create an error page for the image
+      const errorPage = pdfDoc.addPage([595, 842]);
+      const normalFont = await pdfDoc.embedFont('Helvetica');
+      const titleFont = await pdfDoc.embedFont('Helvetica-Bold');
 
-  /**
-   * Adds an info page for documents that can't be embedded
-   */
-  private static async addInfoPage(
-    pdfDoc: PDFDocument,
-    document: DocumentToCombine
-  ): Promise<void> {
-    const infoPage = pdfDoc.addPage([595, 842]);
-    const normalFont = await pdfDoc.embedFont('Helvetica');
-    const titleFont = await pdfDoc.embedFont('Helvetica-Bold');
-
-    // Title
-    infoPage.drawText('Document Information', {
-      x: 50,
-      y: 750,
-      size: 18,
-      font: titleFont,
-    });
-
-    // Document details
-    let yPosition = 700;
-    const details = [
-      `File Name: ${document.fileName}`,
-      `Type: ${document.type.toUpperCase()}`,
-      `MIME Type: ${document.mimeType}`,
-      `Owner: ${
-        document.type === 'employee'
-          ? `${document.employeeName || 'Unknown'} (${document.employeeFileNumber || 'No File #'})`
-          : `${document.equipmentName || 'Unknown'} ${document.equipmentModel ? `(${document.equipmentModel})` : ''}`
-      }`,
-      `File Path: ${document.filePath}`,
-      `Note: This document could not be embedded in the PDF.`,
-      `Please refer to the original file for the actual content.`,
-    ];
-
-    details.forEach(detail => {
-      infoPage.drawText(detail, {
+      errorPage.drawText(`Error Processing Image: ${document.fileName}`, {
         x: 50,
-        y: yPosition,
+        y: 750,
+        size: 16,
+        font: titleFont,
+      });
+
+      errorPage.drawText(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`, {
+        x: 50,
+        y: 700,
         size: 12,
         font: normalFont,
       });
-      yPosition -= 25;
-    });
+    }
   }
 }
