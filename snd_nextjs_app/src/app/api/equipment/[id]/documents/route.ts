@@ -1,7 +1,7 @@
 import { db } from '@/lib/drizzle';
 import { equipmentDocuments, equipment } from '@/lib/drizzle/schema';
 import { withAuth } from '@/lib/rbac/api-middleware';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { SupabaseStorageService } from '@/lib/supabase/storage-service';
 
@@ -70,6 +70,63 @@ const uploadDocumentsHandler = async (
       );
     }
 
+    // Helper function to check if a document type should overwrite existing ones
+    // These document types are unique per equipment and should replace old versions
+    const shouldOverwriteDocument = (documentType: string): boolean => {
+      const specificDocumentTypes = [
+        'manual', 'warranty', 'certification', 'inspection_report',
+        'maintenance_record', 'safety_certificate', 'training_certificate',
+        'insurance_document', 'purchase_invoice', 'service_history'
+      ];
+      return specificDocumentTypes.includes(documentType);
+    };
+    
+    const shouldOverwrite = shouldOverwriteDocument(rawDocumentType);
+    
+    // If this is a specific document type, check for existing documents and delete them
+    if (shouldOverwrite) {
+      try {
+        // Find existing documents of the same type for this equipment
+        const existingDocuments = await db
+          .select()
+          .from(equipmentDocuments)
+          .where(
+            and(
+              eq(equipmentDocuments.equipmentId, equipmentId),
+              eq(equipmentDocuments.documentType, rawDocumentType)
+            )
+          );
+
+        // Delete existing documents from database
+        if (existingDocuments.length > 0) {
+          await db
+            .delete(equipmentDocuments)
+            .where(
+              and(
+                eq(equipmentDocuments.equipmentId, equipmentId),
+                eq(equipmentDocuments.documentType, rawDocumentType)
+              )
+            );
+
+          // Delete old files from Supabase storage
+          for (const existingDoc of existingDocuments) {
+            if (existingDoc.filePath) {
+              // Extract the filename from the filePath
+              const fileName = existingDoc.filePath.split('/').pop();
+              if (fileName) {
+                await SupabaseStorageService.deleteFile('equipment-documents', `equipment-${equipmentId}/${fileName}`);
+              }
+            }
+          }
+
+          console.log(`Deleted ${existingDocuments.length} existing ${rawDocumentType} document(s) for equipment ${equipmentId}`);
+        }
+      } catch (error) {
+        console.error('Error deleting existing documents:', error);
+        // Continue with upload even if deletion fails
+      }
+    }
+
     // Generate path for Supabase storage
     const toTitleCase = (s: string) =>
       s.replace(/\w\S*/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
@@ -125,7 +182,9 @@ const uploadDocumentsHandler = async (
 
     const responseData = {
       success: true,
-      message: 'Document uploaded successfully',
+      message: shouldOverwrite 
+        ? `Document uploaded successfully. Previous ${rawDocumentType} document(s) have been replaced.`
+        : 'Document uploaded successfully',
       data: {
         id: document.id,
         name: baseLabel,
@@ -138,6 +197,7 @@ const uploadDocumentsHandler = async (
         description: document.description,
         createdAt: document.createdAt,
         updatedAt: document.updatedAt,
+        overwritten: shouldOverwrite,
       },
     };
 
