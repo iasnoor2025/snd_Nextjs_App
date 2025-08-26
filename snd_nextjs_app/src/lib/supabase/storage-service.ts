@@ -90,7 +90,7 @@ export class SupabaseStorageService {
 
       return {
         success: true,
-        url: urlData.publicUrl.replace(/^http:/, 'https:'),
+        url: this.ensureHttps(urlData.publicUrl),
         filename: uniqueFilename,
         originalName: file.name,
         size: file.size,
@@ -272,7 +272,7 @@ export class SupabaseStorageService {
 
       return {
         success: true,
-        url: urlData.publicUrl.replace(/^http:/, 'https:'),
+        url: this.ensureHttps(urlData.publicUrl),
         filename: uniqueFilename,
         originalName: file.name,
         size: uploadFile.size,
@@ -349,7 +349,7 @@ export class SupabaseStorageService {
 
       return {
         success: true,
-        url: urlData.publicUrl.replace(/^http:/, 'https:'),
+        url: this.ensureHttps(urlData.publicUrl),
         filename: filePath.split('/').pop() || file.name,
         originalName: file.name,
         size: file.size,
@@ -526,6 +526,14 @@ export class SupabaseStorageService {
   }
 
   /**
+   * Ensure a URL is HTTPS to prevent Mixed Content errors
+   */
+  static ensureHttps(url: string): string {
+    if (!url) return url;
+    return url.replace(/^http:/, 'https:');
+  }
+
+  /**
    * Get public URL for a file
    */
   static getPublicUrl(bucket: StorageBucket | string, path: string): string {
@@ -538,7 +546,7 @@ export class SupabaseStorageService {
       .getPublicUrl(path);
     
     // Force HTTPS to prevent Mixed Content errors
-    return data.publicUrl.replace(/^http:/, 'https:');
+    return this.ensureHttps(data.publicUrl);
   }
 
   /**
@@ -554,7 +562,7 @@ export class SupabaseStorageService {
       .getPublicUrl(path);
     
     // Force HTTPS to prevent Mixed Content errors
-    return data.publicUrl.replace(/^http:/, 'https:');
+    return this.ensureHttps(data.publicUrl);
   }
 
   /**

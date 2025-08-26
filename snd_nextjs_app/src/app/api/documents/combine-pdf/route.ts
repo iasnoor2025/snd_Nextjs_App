@@ -62,7 +62,7 @@ export async function POST(_request: NextRequest) {
           ...doc,
           type: 'employee',
           name: doc.fileName,
-          url: doc.filePath, // This should be the file path, not the full URL
+          url: (doc.filePath || '').replace(/^http:/, 'https:'), // Force HTTPS to prevent Mixed Content errors
           fileName: doc.fileName,
           filePath: doc.filePath,
           mimeType: doc.mimeType,

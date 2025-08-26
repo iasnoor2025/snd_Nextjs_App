@@ -4,6 +4,7 @@ import { withAuth } from '@/lib/rbac/api-middleware';
 import { eq } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { cacheService } from '@/lib/redis/cache-service';
+import { ensureHttps } from '@/lib/utils/url-utils';
 
 const getDocumentsHandler = async (_request: any, { params }: { params: Promise<{ id: string }> }) => {
   try {
@@ -61,7 +62,7 @@ const getDocumentsHandler = async (_request: any, { params }: { params: Promise<
         file_name: doc.fileName || 'Unknown Document',
         file_type: doc.mimeType || 'application/octet-stream',
         size: doc.fileSize || 0,
-        url: doc.filePath || '', // Use the Supabase URL directly
+        url: ensureHttps(doc.filePath), // Force HTTPS to prevent Mixed Content errors
         mime_type: doc.mimeType || '',
         document_type: doc.documentType || '',
         description: doc.description || '',

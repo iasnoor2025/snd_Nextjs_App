@@ -5,6 +5,10 @@ import { eq, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { SupabaseStorageService } from '@/lib/supabase/storage-service';
 import { cacheService } from '@/lib/redis/cache-service';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth-config';
+import { eq } from 'drizzle-orm';
+import { ensureHttps } from '@/lib/utils/url-utils';
 
 const handler = async (
   request: NextRequest,
@@ -63,7 +67,7 @@ const getDocumentsHandler = async (
       fileType: doc.mimeType?.split('/')[1]?.toUpperCase() || 'UNKNOWN',
       fileSize: doc.fileSize,
       mimeType: doc.mimeType,
-      url: doc.filePath,
+              url: ensureHttps(doc.filePath), // Force HTTPS to prevent Mixed Content errors
       filePath: doc.filePath,
       documentType: doc.documentType,
       description: doc.description,

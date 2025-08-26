@@ -74,7 +74,7 @@ export async function GET(_request: NextRequest) {
         employeeId: doc.employeeId,
         employeeName: `${doc.employeeFirstName || ''} ${doc.employeeLastName || ''}`.trim(),
         employeeFileNumber: doc.employeeFileNumber,
-        url: doc.filePath || '',
+        url: (doc.filePath || '').replace(/^http:/, 'https:'), // Force HTTPS to prevent Mixed Content errors
         searchableText:
           `${doc.employeeFirstName || ''} ${doc.employeeLastName || ''} ${doc.employeeFileNumber || ''} ${doc.fileName} ${doc.documentType}`.toLowerCase(),
       }));
@@ -133,7 +133,7 @@ export async function GET(_request: NextRequest) {
         equipmentName: doc.equipmentName,
         equipmentModel: doc.equipmentModel,
         equipmentSerial: doc.equipmentSerial,
-        url: doc.filePath || '',
+        url: (doc.filePath || '').replace(/^http:/, 'https:'), // Force HTTPS to prevent Mixed Content errors
         searchableText:
           `${doc.equipmentName || ''} ${doc.equipmentModel || ''} ${doc.equipmentSerial || ''} ${doc.fileName}`.toLowerCase(),
       }));

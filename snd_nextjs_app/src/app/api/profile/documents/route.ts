@@ -4,6 +4,7 @@ import { employeeDocuments, employees } from '@/lib/drizzle/schema';
 import { eq } from 'drizzle-orm';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
+import { ensureHttps } from '@/lib/utils/url-utils';
 
 // GET /api/profile/documents - Get current user's documents
 export async function GET(_request: NextRequest) {
@@ -89,7 +90,7 @@ export async function GET(_request: NextRequest) {
       file_size: doc.fileSize,
       mime_type: doc.mimeType,
       document_type: doc.documentType,
-      url: doc.filePath,
+      url: ensureHttps(doc.filePath), // Force HTTPS to prevent Mixed Content errors
       description: doc.description,
       created_at: doc.createdAt,
       updated_at: doc.updatedAt,
