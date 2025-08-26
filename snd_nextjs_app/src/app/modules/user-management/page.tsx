@@ -982,7 +982,7 @@ export default function UserManagementPage() {
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="" disabled>
+                      <SelectItem value="no-roles" disabled>
                         {t('noRolesAvailable')}
                       </SelectItem>
                     )}
@@ -1061,7 +1061,7 @@ export default function UserManagementPage() {
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="" disabled>
+                      <SelectItem value="no-roles" disabled>
                         {t('noRolesAvailable')}
                       </SelectItem>
                     )}
