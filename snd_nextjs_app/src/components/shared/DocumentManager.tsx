@@ -333,6 +333,14 @@ export default function DocumentManager(props: DocumentManagerProps) {
   };
 
   const isImageFile = (type: string) => type?.startsWith('image/');
+  
+  // Check if document is specifically a photo (employee photo, profile picture, etc.)
+  const isPhotoDocument = (doc: DocumentItem) => {
+    return doc.document_type === 'photo' || 
+           doc.name.toLowerCase().includes('photo') || 
+           doc.name.toLowerCase().includes('picture') ||
+           doc.name.toLowerCase().includes('image');
+  };
 
   const getFileIcon = (fileType: string) => {
     if (fileType.includes('pdf')) return '📄';
@@ -474,7 +482,11 @@ export default function DocumentManager(props: DocumentManagerProps) {
                       <img
                         src={document.url}
                         alt={document.name}
-                        className="w-12 h-12 object-cover rounded border cursor-pointer"
+                        className={`w-20 h-20 object-cover rounded border cursor-pointer hover:shadow-md transition-all duration-200 ${
+                          isPhotoDocument(document) 
+                            ? 'ring-2 ring-blue-300 hover:ring-blue-400 shadow-lg' 
+                            : ''
+                        }`}
                         onClick={() => setPreviewImage(document)}
                         onError={e => {
                           const target = e.target as HTMLImageElement;
@@ -486,9 +498,15 @@ export default function DocumentManager(props: DocumentManagerProps) {
                           }
                         }}
                       />
+                      {/* Photo indicator badge */}
+                      {isPhotoDocument(document) && (
+                        <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium shadow-md">
+                          📸
+                        </div>
+                      )}
                       {/* Fallback icon when image fails to load */}
                       <div 
-                        className="w-12 h-12 hidden items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded border border-blue-200 cursor-pointer hover:from-blue-100 hover:to-indigo-200 transition-all duration-200"
+                        className="w-20 h-20 hidden items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded border border-blue-200 cursor-pointer hover:from-blue-100 hover:to-indigo-200 transition-all duration-200"
                         onClick={() => setPreviewImage(document)}
                       >
                         <div className="text-center">
@@ -501,14 +519,30 @@ export default function DocumentManager(props: DocumentManagerProps) {
                     </div>
                   ) : (
                     <div 
-                      className="w-12 h-12 flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded border border-blue-200 cursor-pointer hover:from-blue-100 hover:to-indigo-200 transition-all duration-200"
+                      className={`w-20 h-20 flex items-center justify-center rounded border cursor-pointer transition-all duration-200 ${
+                        isPhotoDocument(document)
+                          ? 'bg-gradient-to-br from-blue-100 to-indigo-200 border-blue-300 hover:from-blue-200 hover:to-indigo-300 shadow-lg'
+                          : 'bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-200 hover:from-blue-100 hover:to-indigo-200'
+                      }`}
                       onClick={() => setPreviewImage(document)}
                     >
-                      <div className="text-center">
-                        <div className="text-lg">{getFileIcon(document.file_type)}</div>
-                        <div className="text-xs text-blue-600 font-medium mt-1">
-                          {document.file_name?.split('.').pop()?.toUpperCase() || 'DOC'}
+                      <div className="text-center relative">
+                        <div className="text-2xl">{getFileIcon(document.file_type)}</div>
+                        <div className="text-sm font-medium mt-2">
+                          {isPhotoDocument(document) ? (
+                            <span className="text-blue-700">PHOTO</span>
+                          ) : (
+                            <span className="text-blue-600">
+                              {document.file_name?.split('.').pop()?.toUpperCase() || 'DOC'}
+                            </span>
+                          )}
                         </div>
+                        {/* Photo indicator for non-image photo documents */}
+                        {isPhotoDocument(document) && (
+                          <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium">
+                            📸
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

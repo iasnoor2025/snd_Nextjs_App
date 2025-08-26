@@ -161,20 +161,54 @@ const uploadDocumentsHandler = async (
       documentName.trim() || toTitleCase((rawDocumentType || 'Document').replace(/_/g, ' '));
     const fileNumber = employee.fileNumber || String(employeeId);
     
-    // Generate descriptive filename
-    const descriptiveFilename = SupabaseStorageService.generateDescriptiveFilename(
-      rawDocumentType || 'document',
-      fileNumber,
-      file.name
-    );
+    // Generate descriptive filename using the user-provided document name
+    // This ensures the file is saved in Supabase with the user's chosen name
+    let descriptiveFilename: string;
+    if (documentName.trim()) {
+      // Use the user-provided document name as the filename
+      const extension = file.name.split('.').pop();
+      const cleanDocumentName = documentName.trim()
+        .replace(/\.(pdf|jpg|jpeg|png|doc|docx)$/i, '') // Remove common file extensions
+        .replace(/[^a-zA-Z0-9\-_]/g, '-') // Replace special chars with hyphens (keep hyphens and underscores)
+        .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+      descriptiveFilename = `${cleanDocumentName}.${extension}`;
+      
+      // Check if a document with the same name already exists
+      const existingDocWithSameName = await db
+        .select()
+        .from(employeeDocuments)
+        .where(
+          and(
+            eq(employeeDocuments.employeeId, employeeId),
+            eq(employeeDocuments.fileName, descriptiveFilename)
+          )
+        )
+        .limit(1);
+      
+      if (existingDocWithSameName.length > 0) {
+        return NextResponse.json(
+          { 
+            error: `A document with the name "${documentName.trim()}" already exists. Please choose a different name or delete the existing document first.` 
+          },
+          { status: 409 }
+        );
+      }
+    } else {
+      // Fallback to descriptive filename based on document type
+      descriptiveFilename = SupabaseStorageService.generateDescriptiveFilename(
+        rawDocumentType || 'document',
+        fileNumber,
+        file.name
+      );
+    }
     
     const path = `employee-${employeeId}`;
 
     console.log(`Uploading file: ${file.name} as ${descriptiveFilename} to path: ${path}`);
     console.log(`File details: name=${file.name}, type=${file.type}, size=${file.size}`);
 
-    // Upload file to Supabase storage
-    const uploadResult = await SupabaseStorageService.uploadFile(
+    // Upload file to Supabase storage with optimizations
+    const uploadResult = await SupabaseStorageService.uploadFileWithProgress(
       file,
       'employee-documents',
       path,

@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 import { useCallback, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 
@@ -54,6 +55,16 @@ export default function EquipmentDocumentUpload({
     document_type: '',
     description: '',
   });
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+
+  // Helper function to format file sizes
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   const documentTypeOptions = [
     { label: 'User Manual', value: 'user_manual' },
@@ -204,22 +215,44 @@ export default function EquipmentDocumentUpload({
     }
 
     setUploading(true);
+    setUploadProgress({});
+    
     try {
       let hasErrors = false;
       
       for (const file of pendingFiles) {
+        // Initialize progress for this file
+        setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
+        
         const extra = {
           document_name: uploadForm.document_name.trim(),
           document_type: uploadForm.document_type,
           description: uploadForm.description
         };
         
+        // Simulate progress updates for better UX
+        const progressInterval = setInterval(() => {
+          setUploadProgress(prev => {
+            const current = prev[file.name] || 0;
+            if (current < 90) {
+              return { ...prev, [file.name]: current + Math.random() * 10 };
+            }
+            return prev;
+          });
+        }, 200);
+        
         const result = await uploadDocument(file, extra);
+        
+        clearInterval(progressInterval);
         
         if (!result.success) {
           hasErrors = true;
           // Show error toast for this specific file
           toast.error(result.error || 'Failed to upload file');
+          setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
+        } else {
+          // Set progress to 100% for successful upload
+          setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
         }
       }
       
@@ -228,6 +261,7 @@ export default function EquipmentDocumentUpload({
         setShowUploadDialog(false);
         setPendingFiles([]);
         setUploadForm({ document_name: '', document_type: '', description: '' });
+        setUploadProgress({});
       }
     } catch (error) {
       console.error('Upload error:', error);
@@ -246,6 +280,16 @@ export default function EquipmentDocumentUpload({
             <DialogTitle>Document Details</DialogTitle>
             <DialogDescription>
               Provide a name and select document type before uploading {pendingFiles.length > 1 ? `${pendingFiles.length} files` : 'this file'}.
+              {pendingFiles.length > 0 && (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Total size: {formatFileSize(pendingFiles.reduce((total, file) => total + file.size, 0))}
+                  {pendingFiles.some(f => f.type.startsWith('image/')) && (
+                    <span className="block text-green-600">
+                      📸 Images will be automatically compressed for faster upload
+                    </span>
+                  )}
+                </div>
+              )}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -289,6 +333,22 @@ export default function EquipmentDocumentUpload({
                 placeholder="Describe the document (optional)"
               />
             </div>
+
+            {/* Upload Progress Display */}
+            {uploading && Object.keys(uploadProgress).length > 0 && (
+              <div className="space-y-3">
+                <Label>Upload Progress</Label>
+                {pendingFiles.map((file) => (
+                  <div key={file.name} className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="truncate">{file.name}</span>
+                      <span>{Math.round(uploadProgress[file.name] || 0)}%</span>
+                    </div>
+                    <Progress value={uploadProgress[file.name] || 0} className="h-2" />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => {

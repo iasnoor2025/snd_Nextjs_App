@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 import { useRBAC } from '@/lib/rbac/rbac-context';
 import { Download, Eye, FileText, Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { useSession } from 'next-auth/react';
@@ -68,17 +69,19 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
     file: null as File | null,
     description: '',
   });
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
 
   const documentNameOptions = [
-    { label: 'Iqama', value: 'iqama' },
-    { label: 'Passport', value: 'passport' },
-    { label: 'Driving License', value: 'driving_license' },
-    { label: 'Operator License', value: 'operator_license' },
-    { label: 'SPSP License', value: 'spsp_license' },
-    { label: 'TUV Certification', value: 'tuv_certification' },
-    { label: 'Employment Contract', value: 'contract' },
-    { label: 'Medical Certificate', value: 'medical' },
-    { label: 'General Document', value: 'general' },
+    { label: '📸 Photo', value: 'photo', priority: 'high' },
+    { label: '🆔 Iqama', value: 'iqama', priority: 'high' },
+    { label: '📋 Passport', value: 'passport', priority: 'high' },
+    { label: '🚗 Driving License', value: 'driving_license', priority: 'medium' },
+    { label: '⚙️ Operator License', value: 'operator_license', priority: 'medium' },
+    { label: '🔧 SPSP License', value: 'spsp_license', priority: 'medium' },
+    { label: '🏆 TUV Certification', value: 'tuv_certification', priority: 'medium' },
+    { label: '📄 Employment Contract', value: 'contract', priority: 'high' },
+    { label: '🏥 Medical Certificate', value: 'medical', priority: 'high' },
+    { label: '📁 General Document', value: 'general', priority: 'low' },
   ];
 
   // Debug session status
@@ -472,6 +475,9 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
           }}
           uploadDocument={async (file, extra) => {
             try {
+              // Initialize progress for this file
+              setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
+              
               const formData = new FormData();
               formData.append('file', file);
               formData.append('document_name', uploadForm.document_name.trim());
@@ -479,22 +485,45 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                 formData.append('document_type', uploadForm.document_type);
               formData.append('description', uploadForm.description);
 
+              // Simulate progress updates for better UX
+              const progressInterval = setInterval(() => {
+                setUploadProgress(prev => {
+                  const current = prev[file.name] || 0;
+                  if (current < 90) {
+                    return { ...prev, [file.name]: current + Math.random() * 10 };
+                  }
+                  return prev;
+                });
+              }, 200);
+
               const response = await fetch(`/api/employees/${employeeId}/documents/upload`, {
                 method: 'POST',
                 body: formData,
                 credentials: 'include',
               });
 
+              clearInterval(progressInterval);
+
               if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Upload failed');
+                // Show specific error messages
+                if (errorData.error && errorData.error.includes('already exists')) {
+                  toast.error(errorData.error);
+                } else {
+                  throw new Error(errorData.message || 'Upload failed');
+                }
+                setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
+                return false;
               }
+
+              // Set progress to 100% for successful upload
+              setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
 
               // Refresh documents after successful upload
               fetchDocuments();
               return true;
             } catch (error) {
-              
+              setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
               toast.error(error instanceof Error ? error.message : 'Failed to upload document');
               return false;
             }
@@ -587,6 +616,46 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* File Information and Progress */}
+            {pendingFiles && (
+              <div className="space-y-3">
+                <div className="text-sm text-muted-foreground">
+                  <div className="mb-2">
+                    <strong>Files to upload:</strong> {pendingFiles.length} file(s)
+                  </div>
+                  <div className="mb-2">
+                    <strong>Total size:</strong> {formatFileSize(pendingFiles.reduce((total, file) => total + file.size, 0))}
+                  </div>
+                  {pendingFiles.some(f => f.type.startsWith('image/')) && (
+                    <div className="text-green-600 text-xs">
+                      📸 Images will be automatically compressed for faster upload
+                    </div>
+                  )}
+                  {uploadForm.document_type === 'photo' && (
+                    <div className="text-blue-600 text-xs bg-blue-50 p-2 rounded border border-blue-200">
+                      📸 <strong>Photo Document:</strong> This will be optimized for employee identification and profile display
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload Progress Display */}
+                {uploading && Object.keys(uploadProgress).length > 0 && (
+                  <div className="space-y-2">
+                    <Label>Upload Progress</Label>
+                    {pendingFiles.map((file) => (
+                      <div key={file.name} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="truncate">{file.name}</span>
+                          <span>{Math.round(uploadProgress[file.name] || 0)}%</span>
+                        </div>
+                        <Progress value={uploadProgress[file.name] || 0} className="h-2" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button
@@ -594,6 +663,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
               onClick={() => {
                 setShowDetailsDialog(false);
                 setPendingFiles(null);
+                setUploadProgress({});
               }}
             >
               Cancel
@@ -608,17 +678,32 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                   return;
                 }
                 setUploading(true);
+                setUploadProgress({});
                 try {
                   let successCount = 0;
                   let errorCount = 0;
 
                   for (const file of pendingFiles) {
                     try {
+                      // Initialize progress for this file
+                      setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
+                      
                       const formData = new FormData();
                       formData.append('file', file);
                       formData.append('document_name', uploadForm.document_name.trim());
                       formData.append('document_type', uploadForm.document_type.trim());
                       formData.append('description', uploadForm.description);
+
+                      // Simulate progress updates for better UX
+                      const progressInterval = setInterval(() => {
+                        setUploadProgress(prev => {
+                          const current = prev[file.name] || 0;
+                          if (current < 90) {
+                            return { ...prev, [file.name]: current + Math.random() * 10 };
+                          }
+                          return prev;
+                        });
+                      }, 200);
 
                       const resp = await fetch(`/api/employees/${employeeId}/documents/upload`, {
                         method: 'POST',
@@ -626,14 +711,26 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                         credentials: 'include',
                       });
 
+                      clearInterval(progressInterval);
+
                       if (!resp.ok) {
                         const errorData = await resp.json();
-                        throw new Error(errorData.message || 'Upload failed');
+                        // Show specific error messages
+                        if (errorData.error && errorData.error.includes('already exists')) {
+                          toast.error(errorData.error);
+                        } else {
+                          throw new Error(errorData.message || 'Upload failed');
+                        }
+                        setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
+                        errorCount++;
+                        continue;
                       }
 
+                      // Set progress to 100% for successful upload
+                      setUploadProgress(prev => ({ ...prev, [file.name]: 100 }));
                       successCount++;
                     } catch (fileError) {
-                      
+                      setUploadProgress(prev => ({ ...prev, [file.name]: 0 }));
                       errorCount++;
                     }
                   }
@@ -648,6 +745,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                       file: null,
                       description: '',
                     });
+                    setUploadProgress({});
                     fetchDocuments();
                   } else if (successCount > 0) {
                     toast.success(
@@ -661,6 +759,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                       file: null,
                       description: '',
                     });
+                    setUploadProgress({});
                     fetchDocuments();
                   } else {
                     toast.error('All document uploads failed');
