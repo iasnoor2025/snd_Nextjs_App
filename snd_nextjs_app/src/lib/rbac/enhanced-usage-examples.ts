@@ -13,19 +13,21 @@ export class PermissionExamples {
    * Similar to AccessControl's can() method
    */
   static async checkBasicPermission(userId: string) {
+    const userIdInt = parseInt(userId);
+    
     // Check if user can read timesheets
-    const canReadTimesheets = await enhancedPermissionService.can(userId, 'read', 'timesheet');
+    const canReadTimesheets = await enhancedPermissionService.can(userIdInt, 'read', 'timesheet');
 
     // Check if user can approve timesheets
     const canApproveTimesheets = await enhancedPermissionService.can(
-      userId,
+      userIdInt,
       'approve',
       'timesheet'
     );
 
     // Check if user can approve at foreman stage
     const canApproveForeman = await enhancedPermissionService.can(
-      userId,
+      userIdInt,
       'approve',
       'timesheet.foreman'
     );
@@ -42,6 +44,8 @@ export class PermissionExamples {
    * Similar to AccessControl's canAny() method
    */
   static async checkAnyPermission(userId: string) {
+    const userIdInt = parseInt(userId);
+    
     const grants = [
       { action: 'approve', resource: 'timesheet.foreman' },
       { action: 'approve', resource: 'timesheet.incharge' },
@@ -49,7 +53,7 @@ export class PermissionExamples {
       { action: 'approve', resource: 'timesheet.manager' },
     ];
 
-    const canApproveAnyStage = await enhancedPermissionService.canAny(userId, grants);
+    const canApproveAnyStage = await enhancedPermissionService.canAny(userIdInt, grants);
 
     return { canApproveAnyStage };
   }
@@ -59,13 +63,15 @@ export class PermissionExamples {
    * Similar to AccessControl's canAll() method
    */
   static async checkAllPermissions(userId: string) {
+    const userIdInt = parseInt(userId);
+    
     const grants = [
       { action: 'read', resource: 'timesheet' },
       { action: 'create', resource: 'timesheet' },
       { action: 'update', resource: 'timesheet' },
     ];
 
-    const canManageTimesheets = await enhancedPermissionService.canAll(userId, grants);
+    const canManageTimesheets = await enhancedPermissionService.canAll(userIdInt, grants);
 
     return { canManageTimesheets };
   }
@@ -75,18 +81,20 @@ export class PermissionExamples {
    * Similar to AccessControl's hasRole() method
    */
   static async checkRoles(userId: string) {
+    const userIdInt = parseInt(userId);
+    
     // Check if user has specific role
-    const isManager = await enhancedPermissionService.hasRole(userId, 'MANAGER');
+    const isManager = await enhancedPermissionService.hasRole(userIdInt, 'MANAGER');
 
     // Check if user has any of these roles
-    const isApprover = await enhancedPermissionService.hasAnyRole(userId, [
+    const isApprover = await enhancedPermissionService.hasAnyRole(userIdInt, [
       'MANAGER',
       'ADMIN',
       'SUPER_ADMIN',
     ]);
 
     // Check if user has all of these roles (rare use case)
-    const isSuperUser = await enhancedPermissionService.hasAllRoles(userId, ['ADMIN', 'MANAGER']);
+    const isSuperUser = await enhancedPermissionService.hasAllRoles(userIdInt, ['ADMIN', 'MANAGER']);
 
     return {
       isManager,
@@ -100,11 +108,10 @@ export class PermissionExamples {
    * Similar to AccessControl's permissions() method
    */
   static async getUserInfo(userId: string) {
-    const permissions = await enhancedPermissionService.getUserPermissions(userId);
-    const roles = await enhancedPermissionService.getUserRoles(userId);
+    const userIdInt = parseInt(userId);
+    const roles = await enhancedPermissionService.getUserRoles(userIdInt);
 
     return {
-      permissions,
       roles,
     };
   }
@@ -140,8 +147,9 @@ export class PermissionExamples {
       return { canApprove: false, error: 'Invalid approval stage' };
     }
 
+    const userIdInt = parseInt(userId);
     const canApprove = await enhancedPermissionService.can(
-      userId,
+      userIdInt,
       'approve',
       `timesheet.${approvalStage}`
     );
@@ -153,6 +161,8 @@ export class PermissionExamples {
    * Example 8: Bulk operations permission check
    */
   static async checkBulkOperations(userId: string) {
+    const userIdInt = parseInt(userId);
+    
     const bulkPermissions = [
       { action: 'bulk.approve', resource: 'timesheet' },
       { action: 'bulk.reject', resource: 'timesheet' },
@@ -161,7 +171,7 @@ export class PermissionExamples {
     ];
 
     const canPerformBulkOperations = await enhancedPermissionService.canAny(
-      userId,
+      userIdInt,
       bulkPermissions
     );
 

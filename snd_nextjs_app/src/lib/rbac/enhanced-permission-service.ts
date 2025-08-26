@@ -106,12 +106,12 @@ export class EnhancedPermissionService {
   }
 
   /**
-   * Check if user has any of the specified permissions
+   * Check if user can perform ANY of the specified actions
    * Similar to AccessControl's canAny() method
    */
-  async canAny(userId: string, grants: PermissionGrant[]): Promise<boolean> {
+  async canAny(userId: number, grants: PermissionGrant[]): Promise<boolean> {
     for (const grant of grants) {
-      if (await this.can(parseInt(userId), grant.action, grant.resource)) {
+      if (await this.can(userId, grant.action, grant.resource)) {
         return true;
       }
     }
@@ -119,12 +119,12 @@ export class EnhancedPermissionService {
   }
 
   /**
-   * Check if user has all of the specified permissions
+   * Check if user can perform ALL of the specified actions
    * Similar to AccessControl's canAll() method
    */
-  async canAll(userId: string, grants: PermissionGrant[]): Promise<boolean> {
+  async canAll(userId: number, grants: PermissionGrant[]): Promise<boolean> {
     for (const grant of grants) {
-      if (!(await this.can(parseInt(userId), grant.action, grant.resource))) {
+      if (!(await this.can(userId, grant.action, grant.resource))) {
         return false;
       }
     }
@@ -173,16 +173,18 @@ export class EnhancedPermissionService {
     const role = roleResult[0];
 
     // Grant permission to role (avoid recursive call)
-    await db
-      .insert(roleHasPermissions)
-      .values({
-        roleId: role.id,
-        permissionId: permission.id,
-      })
-      .onConflictDoUpdate({
-        target: [roleHasPermissions.permissionId, roleHasPermissions.roleId],
-        set: {},
-      });
+    if (role && permission) {
+      await db
+        .insert(roleHasPermissions)
+        .values({
+          roleId: role.id,
+          permissionId: permission.id,
+        })
+        .onConflictDoUpdate({
+          target: [roleHasPermissions.permissionId, roleHasPermissions.roleId],
+          set: {},
+        });
+    }
 
     // Clear cache
     this.clearCache();
@@ -224,14 +226,16 @@ export class EnhancedPermissionService {
     const role = roleResult[0];
 
     // Revoke permission from role
-    await db
-      .delete(roleHasPermissions)
-      .where(
-        and(
-          eq(roleHasPermissions.roleId, role.id),
-          eq(roleHasPermissions.permissionId, permission.id)
-        )
-      );
+    if (role && permission) {
+      await db
+        .delete(roleHasPermissions)
+        .where(
+          and(
+            eq(roleHasPermissions.roleId, role.id),
+            eq(roleHasPermissions.permissionId, permission.id)
+          )
+        );
+    }
 
     // Clear cache
     this.clearCache();
@@ -273,8 +277,6 @@ export class EnhancedPermissionService {
             .select({
               permissionId: roleHasPermissions.permissionId,
               permissionName: permissions.name,
-              permissionAction: permissions.action,
-              permissionResource: permissions.resource,
             })
             .from(roleHasPermissions)
             .innerJoin(permissions, eq(roleHasPermissions.permissionId, permissions.id))
@@ -291,8 +293,9 @@ export class EnhancedPermissionService {
           const permissionsList = rolePermissions.map(rp => ({
             id: rp.permissionId,
             name: rp.permissionName,
-            action: rp.permissionAction,
-            resource: rp.permissionResource,
+            // Parse action and resource from permission name (assuming format: "action:resource")
+            action: rp.permissionName.split(':')[0] || rp.permissionName,
+            resource: rp.permissionName.split(':')[1] || rp.permissionName,
           }));
 
           const roleNames = userRoleNames.map(ur => ur.roleName);
@@ -334,16 +337,14 @@ export class EnhancedPermissionService {
   /**
    * Get all roles for a user
    */
-  async getUserRoles(userId: string): Promise<string[]> {
-    const userIdInt = parseInt(userId);
-
+  async getUserRoles(userId: number): Promise<string[]> {
     const userResult = await db
       .select({
         id: users.id,
         roleId: users.roleId,
       })
       .from(users)
-      .where(eq(users.id, userIdInt))
+      .where(eq(users.id, userId))
       .limit(1);
 
     if (userResult.length === 0) {
@@ -379,7 +380,7 @@ export class EnhancedPermissionService {
    * Check if user has role
    * Similar to AccessControl's hasRole() method
    */
-  async hasRole(userId: string, roleName: string): Promise<boolean> {
+  async hasRole(userId: number, roleName: string): Promise<boolean> {
     const roles = await this.getUserRoles(userId);
     return roles.includes(roleName);
   }
@@ -388,7 +389,7 @@ export class EnhancedPermissionService {
    * Check if user has any of the specified roles
    * Similar to AccessControl's hasAnyRole() method
    */
-  async hasAnyRole(userId: string, roleNames: string[]): Promise<boolean> {
+  async hasAnyRole(userId: number, roleNames: string[]): Promise<boolean> {
     const roles = await this.getUserRoles(userId);
     return roleNames.some(roleName => roles.includes(roleName));
   }
@@ -397,7 +398,7 @@ export class EnhancedPermissionService {
    * Check if user has all of the specified roles
    * Similar to AccessControl's hasAllRoles() method
    */
-  async hasAllRoles(userId: string, roleNames: string[]): Promise<boolean> {
+  async hasAllRoles(userId: number, roleNames: string[]): Promise<boolean> {
     const roles = await this.getUserRoles(userId);
     return roleNames.every(roleName => roles.includes(roleName));
   }
@@ -408,97 +409,6 @@ export class EnhancedPermissionService {
   clearCache(): void {
     this.permissionCache.clear();
   }
-
-  /**
-   * Private method to check specific permission
-   */
-  private async checkPermission(
-    userId: string,
-    action: string,
-    resource: string
-  ): Promise<boolean> {
-    try {
-      const userIdInt = parseInt(userId);
-
-      // Get user with role
-      const user = await db
-        .select({
-          id: users.id,
-          roleId: users.roleId,
-        })
-        .from(users)
-        .where(eq(users.id, userIdInt))
-        .limit(1);
-
-      if (user.length === 0) {
-        return false;
-      }
-
-      const userRole = user[0];
-
-      // Check direct user permissions first (override role permissions)
-      const userPermissions = await db
-        .select({
-          permissionName: permissions.name as any,
-        })
-        .from(modelHasPermissions)
-        .innerJoin(permissions, eq(modelHasPermissions.permissionId, permissions.id))
-        .where(eq(modelHasPermissions.userId, userIdInt));
-
-      for (const userPermission of userPermissions) {
-        if (this.matchesPermission(userPermission.permissionName, action, resource)) {
-          return true;
-        }
-      }
-
-      // Check role permissions
-      const rolePermissions = await db
-        .select({
-          permissionName: permissions.name as any,
-        })
-        .from(roleHasPermissions)
-        .innerJoin(permissions, eq(roleHasPermissions.permissionId, permissions.id))
-        .where(eq(roleHasPermissions.roleId, userRole.roleId));
-
-      for (const rolePermission of rolePermissions) {
-        if (this.matchesPermission(rolePermission.permissionName, action, resource)) {
-          return true;
-        }
-      }
-
-      return false;
-    } catch (error) {
-      
-      return false;
-    }
-  }
-
-  /**
-   * Check if permission name matches action and resource
-   */
-  private matchesPermission(permissionName: string, action: string, resource: string): boolean {
-    // Exact match
-    if (permissionName === `${action}.${resource}`) {
-      return true;
-    }
-
-    // Wildcard permissions
-    if (permissionName === '*' || permissionName === 'manage.all') {
-      return true;
-    }
-
-    // General resource permission (e.g., "manage.timesheet" matches "approve.timesheet")
-    if (permissionName === `manage.${resource}`) {
-      return true;
-    }
-
-    // General action permission (e.g., "approve.timesheet" matches "approve.timesheet.foreman")
-    if (permissionName === `${action}.${resource}`) {
-      return true;
-    }
-
-    return false;
-  }
 }
 
 // Export singleton instance
@@ -508,8 +418,7 @@ export const enhancedPermissionService = EnhancedPermissionService.getInstance()
 export async function checkPermission(
   userId: string,
   resource: string,
-  action: string,
-  attributes?: string[]
+  action: string
 ): Promise<boolean> {
   return enhancedPermissionService.can(parseInt(userId), action, resource);
 }
