@@ -94,7 +94,36 @@
     "iqamaNumber": "Iqama Number",
     "iqamaExpiry": "Iqama Expiry",
     "iqamaCost": "Iqama Cost",
-    "iqamaFile": "Iqama File"
+    "iqamaFile": "Iqama File",
+    "passportNumber": "Passport Number",
+    "passportExpiry": "Passport Expiry",
+    "passportFile": "Passport File",
+    "drivingLicenseNumber": "Driving License Number",
+    "drivingLicenseExpiry": "Driving License Expiry",
+    "drivingLicenseCost": "Driving License Cost",
+    "drivingLicenseFile": "Driving License File",
+    "operatorLicenseNumber": "Operator License Number",
+    "operatorLicenseExpiry": "Operator License Expiry",
+    "operatorLicenseCost": "Operator License Cost",
+    "operatorLicenseFile": "Operator License File",
+    "tuvCertificationNumber": "TUV Certification Number",
+    "tuvCertificationExpiry": "TUV Certification Expiry",
+    "tuvCertificationCost": "TUV Certification Cost",
+    "spspLicenseNumber": "SPSP License Number",
+    "spspLicenseExpiry": "SPSP License Expiry",
+    "spspLicenseCost": "SPSP License Cost",
+    "advanceSalaryEligible": "Advance Salary Eligible",
+    "isOperator": "Is Operator",
+    "accessStartDate": "Access Start Date",
+    "accessEndDate": "Access End Date",
+    "accessRestrictionReason": "Access Restriction Reason",
+    "emergencyContactName": "Emergency Contact Name",
+    "emergencyContactPhone": "Emergency Contact Phone",
+    "emergencyContactRelationship": "Emergency Contact Relationship",
+    "city": "City",
+    "state": "State/Province",
+    "postalCode": "Postal Code",
+    "country": "Country"
   },
 
   "status": {
@@ -135,7 +164,11 @@
     "confirmDelete": "Are you sure you want to delete this employee?",
     "noCreatePermission": "You don't have permission to create employees",
     "fileUploadSuccess": "File uploaded successfully",
-    "fileUploadError": "Failed to upload file"
+    "fileUploadError": "Failed to upload file",
+    "selectDepartmentToEdit": "Please select a department to edit",
+    "selectDepartmentToDelete": "Please select a department to delete",
+    "selectDesignationToEdit": "Please select a designation to edit",
+    "selectDesignationToDelete": "Please select a designation to delete"
   },
 
   "confirmDelete": {
@@ -191,7 +224,60 @@
   },
 
   "documents": {
-    "iqama": "Iqama Documents"
+    "iqama": "Iqama Documents",
+    "passport": "Passport Documents",
+    "drivingLicense": "Driving License Documents",
+    "operatorLicense": "Operator License Documents",
+    "tuvCertification": "TUV Certification Documents",
+    "spspLicense": "SPSP License Documents"
+  },
+
+  "modals": {
+    "addDepartment": {
+      "title": "Add New Department",
+      "name": "Department Name",
+      "code": "Department Code",
+      "namePlaceholder": "Enter department name",
+      "codePlaceholder": "Enter department code",
+      "add": "Add Department",
+      "adding": "Adding..."
+    },
+    "addDesignation": {
+      "title": "Add New Designation",
+      "name": "Designation Name",
+      "description": "Description",
+      "namePlaceholder": "Enter designation name",
+      "descriptionPlaceholder": "Enter description",
+      "add": "Add Designation",
+      "adding": "Adding..."
+    },
+    "editDepartment": {
+      "title": "Edit Department",
+      "name": "Department Name",
+      "code": "Department Code",
+      "namePlaceholder": "Enter department name",
+      "codePlaceholder": "Enter department code",
+      "update": "Update Department",
+      "updating": "Updating..."
+    },
+    "editDesignation": {
+      "title": "Edit Designation",
+      "name": "Designation Name",
+      "description": "Description",
+      "namePlaceholder": "Enter designation name",
+      "descriptionPlaceholder": "Enter description",
+      "update": "Update Designation",
+      "updating": "Updating..."
+    }
+  },
+
+  "fileUpload": {
+    "uploadedDocuments": "✅ Uploaded Documents:",
+    "imageFile": "Image File",
+    "pdfDocument": "PDF Document",
+    "document": "Document",
+    "view": "View",
+    "remove": "Remove"
   },
 
   "iqama": {

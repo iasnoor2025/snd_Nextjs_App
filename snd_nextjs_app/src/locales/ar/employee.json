@@ -2,6 +2,45 @@
   "title": "إدارة الموظفين",
   "subtitle": "إدارة معلومات الموظفين والبيانات الشخصية",
   "description": "إدارة قاعدة بيانات الموظفين والمعلومات الشخصية والوظيفية",
+
+  "create": {
+    "title": "إنشاء موظف جديد",
+    "description": "إضافة موظف جديد للنظام",
+    "tabs": {
+      "basic": "المعلومات الأساسية",
+      "employment": "التوظيف",
+      "salary": "الراتب",
+      "documents": "المستندات",
+      "address": "العنوان",
+      "settings": "الإعدادات"
+    },
+    "basic": {
+      "title": "المعلومات الأساسية",
+      "description": "أدخل المعلومات الشخصية الأساسية للموظف"
+    },
+    "employment": {
+      "title": "تفاصيل التوظيف",
+      "description": "تعيين حالة التوظيف وتفاصيل العقد"
+    },
+    "salary": {
+      "title": "معلومات الراتب",
+      "description": "تكوين الراتب وتفاصيل التعويض"
+    },
+    "documents": {
+      "title": "المستندات",
+      "description": "رفع وإدارة مستندات الموظف"
+    },
+    "address": {
+      "title": "معلومات العنوان",
+      "description": "أدخل تفاصيل العنوان وجهة اتصال الطوارئ"
+    },
+    "settings": {
+      "title": "إعدادات الحساب",
+      "description": "تكوين الوصول للحساب والتفضيلات"
+    },
+    "emergencyContact": "جهة اتصال الطوارئ"
+  },
+
   "actions": {
     "addEmployee": "إضافة موظف",
     "editEmployee": "تعديل الموظف",
@@ -23,6 +62,7 @@
     "editDepartment": "تعديل القسم",
     "editDesignation": "تعديل المسمى الوظيفي"
   },
+
   "fields": {
     "basicInfo": "المعلومات الأساسية",
     "personalInfo": "المعلومات الشخصية",
@@ -46,22 +86,53 @@
     "bloodType": "فصيلة الدم",
     "religion": "الدين",
     "employeeId": "رقم الموظف",
+    "fileNumber": "رقم الملف",
+    "firstName": "الاسم الأول",
+    "middleName": "الاسم الأوسط",
+    "lastName": "اسم العائلة",
     "department": "القسم",
     "designation": "المسمى الوظيفي",
     "hireDate": "تاريخ التوظيف",
     "contractType": "نوع العقد",
     "employmentStatus": "حالة التوظيف",
     "salary": "الراتب",
+    "basicSalary": "الراتب الأساسي",
+    "hourlyRate": "المعدل بالساعة",
     "currency": "العملة",
     "workSchedule": "جدول العمل",
     "supervisor": "المشرف",
+    "contractHoursPerDay": "ساعات العقد في اليوم",
+    "contractDaysPerMonth": "أيام العقد في الشهر",
+    "foodAllowance": "بدل الطعام",
+    "housingAllowance": "بدل السكن",
+    "transportAllowance": "بدل النقل",
+    "absentDeductionRate": "معدل خصم الغياب",
+    "overtimeRateMultiplier": "مضاعف معدل العمل الإضافي",
+    "overtimeFixedRate": "المعدل الثابت للعمل الإضافي",
     "emergencyContactName": "اسم جهة اتصال الطوارئ",
     "emergencyContactPhone": "هاتف جهة اتصال الطوارئ",
     "emergencyContactRelationship": "علاقة جهة اتصال الطوارئ",
     "passportNumber": "رقم جواز السفر",
     "passportExpiry": "تاريخ انتهاء جواز السفر",
+    "passportFile": "ملف جواز السفر",
     "iqamaNumber": "رقم الإقامة",
     "iqamaExpiry": "تاريخ انتهاء الإقامة",
+    "iqamaCost": "تكلفة الإقامة",
+    "iqamaFile": "ملف الإقامة",
+    "drivingLicenseNumber": "رقم رخصة القيادة",
+    "drivingLicenseExpiry": "تاريخ انتهاء رخصة القيادة",
+    "drivingLicenseCost": "تكلفة رخصة القيادة",
+    "drivingLicenseFile": "ملف رخصة القيادة",
+    "operatorLicenseNumber": "رقم رخصة المشغل",
+    "operatorLicenseExpiry": "تاريخ انتهاء رخصة المشغل",
+    "operatorLicenseCost": "تكلفة رخصة المشغل",
+    "operatorLicenseFile": "ملف رخصة المشغل",
+    "tuvCertificationNumber": "رقم شهادة TUV",
+    "tuvCertificationExpiry": "تاريخ انتهاء شهادة TUV",
+    "tuvCertificationCost": "تكلفة شهادة TUV",
+    "spspLicenseNumber": "رقم رخصة SPSP",
+    "spspLicenseExpiry": "تاريخ انتهاء رخصة SPSP",
+    "spspLicenseCost": "تكلفة رخصة SPSP",
     "visaNumber": "رقم التأشيرة",
     "visaExpiry": "تاريخ انتهاء التأشيرة",
     "workPermit": "تصريح العمل",
@@ -73,13 +144,19 @@
     "bankBranch": "فرع البنك",
     "swiftCode": "رمز SWIFT",
     "iban": "IBAN",
+    "bankIban": "IBAN البنك",
     "notes": "ملاحظات",
     "isActive": "نشط",
     "hasAccess": "لديه صلاحية وصول",
+    "advanceSalaryEligible": "مؤهل لسلفة الراتب",
+    "isOperator": "مشغل",
     "accessStartDate": "تاريخ بداية الصلاحية",
     "accessEndDate": "تاريخ انتهاء الصلاحية",
-    "accessRestrictionReason": "سبب تقييد الصلاحية"
+    "accessRestrictionReason": "سبب تقييد الصلاحية",
+    "selectDepartment": "اختر القسم",
+    "selectDesignation": "اختر المسمى الوظيفي"
   },
+
   "status": {
     "active": "نشط",
     "inactive": "غير نشط",
@@ -89,6 +166,7 @@
     "onLeave": "في إجازة",
     "probation": "فترة تجريبية"
   },
+
   "employmentStatus": {
     "fullTime": "دوام كامل",
     "partTime": "دوام جزئي",
@@ -96,23 +174,84 @@
     "temporary": "مؤقت",
     "intern": "متدرب"
   },
+
   "contractType": {
     "permanent": "دائم",
     "fixedTerm": "مدة محددة",
     "projectBased": "قائم على المشروع",
     "seasonal": "موسمي"
   },
+
   "gender": {
     "male": "ذكر",
     "female": "أنثى",
     "other": "آخر"
   },
+
   "maritalStatus": {
     "single": "أعزب",
     "married": "متزوج",
     "divorced": "مطلق",
     "widowed": "أرمل"
   },
+
+  "documents": {
+    "iqama": "مستندات الإقامة",
+    "passport": "مستندات جواز السفر",
+    "drivingLicense": "مستندات رخصة القيادة",
+    "operatorLicense": "مستندات رخصة المشغل",
+    "tuvCertification": "مستندات شهادة TUV",
+    "spspLicense": "مستندات رخصة SPSP"
+  },
+
+  "modals": {
+    "addDepartment": {
+      "title": "إضافة قسم جديد",
+      "name": "اسم القسم",
+      "code": "رمز القسم",
+      "namePlaceholder": "أدخل اسم القسم",
+      "codePlaceholder": "أدخل رمز القسم",
+      "add": "إضافة القسم",
+      "adding": "جاري الإضافة..."
+    },
+    "addDesignation": {
+      "title": "إضافة مسمى وظيفي جديد",
+      "name": "اسم المسمى الوظيفي",
+      "description": "الوصف",
+      "namePlaceholder": "أدخل اسم المسمى الوظيفي",
+      "descriptionPlaceholder": "أدخل الوصف",
+      "add": "إضافة المسمى الوظيفي",
+      "adding": "جاري الإضافة..."
+    },
+    "editDepartment": {
+      "title": "تعديل القسم",
+      "name": "اسم القسم",
+      "code": "رمز القسم",
+      "namePlaceholder": "أدخل اسم القسم",
+      "codePlaceholder": "أدخل رمز القسم",
+      "update": "تحديث القسم",
+      "updating": "جاري التحديث..."
+    },
+    "editDesignation": {
+      "title": "تعديل المسمى الوظيفي",
+      "name": "اسم المسمى الوظيفي",
+      "description": "الوصف",
+      "namePlaceholder": "أدخل اسم المسمى الوظيفي",
+      "descriptionPlaceholder": "أدخل الوصف",
+      "update": "تحديث المسمى الوظيفي",
+      "updating": "جاري التحديث..."
+    }
+  },
+
+  "fileUpload": {
+    "uploadedDocuments": "✅ المستندات المرفوعة:",
+    "imageFile": "ملف صورة",
+    "pdfDocument": "مستند PDF",
+    "document": "مستند",
+    "view": "عرض",
+    "remove": "إزالة"
+  },
+
   "messages": {
     "loading": "جاري تحميل بيانات الموظف...",
     "saving": "جاري حفظ الموظف...",
@@ -129,8 +268,13 @@
     "departmentAdded": "تم إضافة القسم بنجاح",
     "departmentUpdated": "تم تحديث القسم بنجاح",
     "designationAdded": "تم إضافة المسمى الوظيفي بنجاح",
-    "designationUpdated": "تم تحديث المسمى الوظيفي بنجاح"
+    "designationUpdated": "تم تحديث المسمى الوظيفي بنجاح",
+    "selectDepartmentToEdit": "يرجى اختيار قسم للتعديل",
+    "selectDepartmentToDelete": "يرجى اختيار قسم للحذف",
+    "selectDesignationToEdit": "يرجى اختيار مسمى وظيفي للتعديل",
+    "selectDesignationToDelete": "يرجى اختيار مسمى وظيفي للحذف"
   },
+
   "validation": {
     "required": "هذا الحقل مطلوب",
     "invalidEmail": "البريد الإلكتروني غير صحيح",
@@ -144,12 +288,14 @@
     "designationRequired": "المسمى الوظيفي مطلوب",
     "hireDateRequired": "تاريخ التوظيف مطلوب"
   },
+
   "search": {
     "placeholder": "البحث باسم الموظف أو رقم الموظف...",
     "title": "البحث والتصفية",
     "noResults": "لم يتم العثور على موظفين",
     "resultCount": "الموظفون ({{count}})"
   },
+
   "table": {
     "headers": {
       "name": "الاسم",
@@ -163,6 +309,7 @@
       "actions": "الإجراءات"
     }
   },
+
   "pagination": {
     "showing": "عرض {{start}} إلى {{end}} من {{total}} موظف",
     "page": "الصفحة {{current}} من {{total}}",
@@ -170,6 +317,7 @@
     "next": "التالي",
     "itemsPerPage": "عنصر في الصفحة"
   },
+
   "iqama": {
     "title": "إدارة الإقامة",
     "description": "إدارة وثائق الإقامة والهوية",

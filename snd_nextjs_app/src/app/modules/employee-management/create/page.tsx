@@ -754,7 +754,7 @@ export default function CreateEmployeePage() {
                               setEditingDepartment(selectedDept);
                               setShowEditDepartment(true);
                             } else {
-                              toast.error('Please select a department to edit');
+                              toast.error(t('employee:messages.selectDepartmentToEdit'));
                             }
                           }}
                           className="px-3"
@@ -807,7 +807,7 @@ export default function CreateEmployeePage() {
                                 }
                               }
                             } else {
-                              toast.error('Please select a department to delete');
+                              toast.error(t('employee:messages.selectDepartmentToDelete'));
                             }
                           }}
                           className="px-3"
@@ -858,7 +858,7 @@ export default function CreateEmployeePage() {
                               setEditingDesignation(selectedDesig);
                               setShowEditDesignation(true);
                             } else {
-                              toast.error('Please select a designation to edit');
+                              toast.error(t('employee:messages.selectDesignationToEdit'));
                             }
                           }}
                           className="px-3"
@@ -911,7 +911,7 @@ export default function CreateEmployeePage() {
                                 }
                               }
                             } else {
-                              toast.error('Please select a designation to delete');
+                              toast.error(t('employee:messages.selectDesignationToDelete'));
                             }
                           }}
                           className="px-3"
@@ -1356,10 +1356,106 @@ export default function CreateEmployeePage() {
                     </div>
                   </div>
 
+                  {/* TUV Certification Information */}
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-semibold mb-4">
+                      {t('employee:documents.tuvCertification')}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="tuv_certification_number">
+                          {t('employee:fields.tuvCertificationNumber')}
+                        </Label>
+                        <Input
+                          id="tuv_certification_number"
+                          value={formData.tuv_certification_number}
+                          onChange={e =>
+                            handleInputChange('tuv_certification_number', e.target.value)
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="tuv_certification_expiry">
+                          {t('employee:fields.tuvCertificationExpiry')}
+                        </Label>
+                        <Input
+                          id="tuv_certification_expiry"
+                          type="date"
+                          value={formData.tuv_certification_expiry}
+                          onChange={e =>
+                            handleInputChange('tuv_certification_expiry', e.target.value)
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="tuv_certification_cost">
+                          {t('employee:fields.tuvCertificationCost')}
+                        </Label>
+                        <Input
+                          id="tuv_certification_cost"
+                          type="number"
+                          step="0.01"
+                          value={formData.tuv_certification_cost}
+                          onChange={e =>
+                            handleInputChange('tuv_certification_cost', parseFloat(e.target.value))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SPSP License Information */}
+                  <div className="border rounded-lg p-4">
+                    <h3 className="font-semibold mb-4">
+                      {t('employee:documents.spspLicense')}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="spsp_license_number">
+                          {t('employee:fields.spspLicenseNumber')}
+                        </Label>
+                        <Input
+                          id="spsp_license_number"
+                          value={formData.spsp_license_number}
+                          onChange={e =>
+                            handleInputChange('spsp_license_number', e.target.value)
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="spsp_license_expiry">
+                          {t('employee:fields.spspLicenseExpiry')}
+                        </Label>
+                        <Input
+                          id="spsp_license_expiry"
+                          type="date"
+                          value={formData.spsp_license_expiry}
+                          onChange={e =>
+                            handleInputChange('spsp_license_expiry', e.target.value)
+                          }
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="spsp_license_cost">
+                          {t('employee:fields.spspLicenseCost')}
+                        </Label>
+                        <Input
+                          id="spsp_license_cost"
+                          type="number"
+                          step="0.01"
+                          value={formData.spsp_license_cost}
+                          onChange={e =>
+                            handleInputChange('spsp_license_cost', parseFloat(e.target.value))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Show Uploaded Files */}
                   {Object.keys(uploadedFiles).length > 0 && (
                     <div className="mt-6 p-4 border rounded-lg bg-green-50">
-                      <h4 className="font-medium mb-3 text-green-800">✅ Uploaded Documents:</h4>
+                      <h4 className="font-medium mb-3 text-green-800">{t('employee:fileUpload.uploadedDocuments')}</h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {Object.entries(uploadedFiles).map(([field, url]) => {
                           const isImage = url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
@@ -1409,7 +1505,7 @@ export default function CreateEmployeePage() {
                                     {field.replace('_', ' ')}
                                   </div>
                                   <div className="text-sm text-gray-500">
-                                    {isImage ? 'Image File' : isPDF ? 'PDF Document' : 'Document'}
+                                    {isImage ? t('employee:fileUpload.imageFile') : isPDF ? t('employee:fileUpload.pdfDocument') : t('employee:fileUpload.document')}
                                   </div>
                                   <div className="flex gap-2 mt-2">
                                     <a 
@@ -1418,7 +1514,7 @@ export default function CreateEmployeePage() {
                                       rel="noopener noreferrer"
                                       className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
                                     >
-                                      View
+                                      {t('employee:fileUpload.view')}
                                     </a>
                                     <button
                                       onClick={() => {
@@ -1430,7 +1526,7 @@ export default function CreateEmployeePage() {
                                       }}
                                       className="text-xs bg-red-100 text-red-700 px-2 rounded hover:bg-red-200"
                                     >
-                                      Remove
+                                      {t('employee:fileUpload.remove')}
                                     </button>
                                   </div>
                                 </div>
@@ -1653,24 +1749,24 @@ export default function CreateEmployeePage() {
         {showAddDepartment && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Add New Department</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('employee:modals.addDepartment.title')}</h3>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="dept_name">Department Name *</Label>
+                  <Label htmlFor="dept_name">{t('employee:modals.addDepartment.name')} *</Label>
                   <Input
                     id="dept_name"
                     value={newDepartment.name}
                     onChange={e => setNewDepartment(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter department name"
+                    placeholder={t('employee:modals.addDepartment.namePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="dept_code">Department Code</Label>
+                  <Label htmlFor="dept_code">{t('employee:modals.addDepartment.code')}</Label>
                   <Input
                     id="dept_code"
                     value={newDepartment.code}
                     onChange={e => setNewDepartment(prev => ({ ...prev, code: e.target.value }))}
-                    placeholder="Enter department code"
+                    placeholder={t('employee:modals.addDepartment.codePlaceholder')}
                   />
                 </div>
                 <div className="flex gap-2 justify-end">
@@ -1682,10 +1778,10 @@ export default function CreateEmployeePage() {
                       setNewDepartment({ name: '', code: '' });
                     }}
                   >
-                    Cancel
+                    {t('common:cancel')}
                   </Button>
                   <Button type="button" onClick={handleAddDepartment} disabled={addingDepartment}>
-                    {addingDepartment ? 'Adding...' : 'Add Department'}
+                    {addingDepartment ? t('employee:modals.addDepartment.adding') : t('employee:modals.addDepartment.add')}
                   </Button>
                 </div>
               </div>
@@ -1697,26 +1793,26 @@ export default function CreateEmployeePage() {
         {showAddDesignation && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Add New Designation</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('employee:modals.addDesignation.title')}</h3>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="desig_name">Designation Name *</Label>
+                  <Label htmlFor="desig_name">{t('employee:modals.addDesignation.name')} *</Label>
                   <Input
                     id="desig_name"
                     value={newDesignation.name}
                     onChange={e => setNewDesignation(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter designation name"
+                    placeholder={t('employee:modals.addDesignation.namePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="desig_description">Description</Label>
+                  <Label htmlFor="desig_description">{t('employee:modals.addDesignation.description')}</Label>
                   <Textarea
                     id="desig_description"
                     value={newDesignation.description}
                     onChange={e =>
                       setNewDesignation(prev => ({ ...prev, description: e.target.value }))
                     }
-                    placeholder="Enter description"
+                    placeholder={t('employee:modals.addDesignation.descriptionPlaceholder')}
                     rows={3}
                   />
                 </div>
@@ -1729,10 +1825,10 @@ export default function CreateEmployeePage() {
                       setNewDesignation({ name: '', description: '' });
                     }}
                   >
-                    Cancel
+                    {t('common:cancel')}
                   </Button>
                   <Button type="button" onClick={handleAddDesignation} disabled={addingDesignation}>
-                    {addingDesignation ? 'Adding...' : 'Add Designation'}
+                    {addingDesignation ? t('employee:modals.addDesignation.adding') : t('employee:modals.addDesignation.add')}
                   </Button>
                 </div>
               </div>
@@ -1744,10 +1840,10 @@ export default function CreateEmployeePage() {
         {showEditDepartment && editingDepartment && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Edit Department</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('employee:modals.editDepartment.title')}</h3>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="edit_dept_name">Department Name *</Label>
+                  <Label htmlFor="edit_dept_name">{t('employee:modals.editDepartment.name')} *</Label>
                   <Input
                     id="edit_dept_name"
                     value={editingDepartment.name}
@@ -1756,11 +1852,11 @@ export default function CreateEmployeePage() {
                         prev ? { ...prev, name: e.target.value } : null
                       )
                     }
-                    placeholder="Enter department name"
+                    placeholder={t('employee:modals.editDepartment.namePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_dept_code">Department Code</Label>
+                  <Label htmlFor="edit_dept_code">{t('employee:modals.editDepartment.code')}</Label>
                   <Input
                     id="edit_dept_code"
                     value={editingDepartment.code || ''}
@@ -1769,7 +1865,7 @@ export default function CreateEmployeePage() {
                         prev ? { ...prev, code: e.target.value } : null
                       )
                     }
-                    placeholder="Enter department code"
+                    placeholder={t('employee:modals.editDepartment.codePlaceholder')}
                   />
                 </div>
                 <div className="flex gap-2 justify-end">
@@ -1781,14 +1877,14 @@ export default function CreateEmployeePage() {
                       setEditingDepartment(null);
                     }}
                   >
-                    Cancel
+                    {t('common:cancel')}
                   </Button>
                   <Button
                     type="button"
                     onClick={handleEditDepartment}
                     disabled={updatingDepartment}
                   >
-                    {updatingDepartment ? 'Updating...' : 'Update Department'}
+                    {updatingDepartment ? t('employee:modals.editDepartment.updating') : t('employee:modals.editDepartment.update')}
                   </Button>
                 </div>
               </div>
@@ -1800,10 +1896,10 @@ export default function CreateEmployeePage() {
         {showEditDesignation && editingDesignation && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h3 className="text-lg font-semibold mb-4">Edit Designation</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('employee:modals.editDesignation.title')}</h3>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="edit_desig_name">Designation Name *</Label>
+                  <Label htmlFor="edit_desig_name">{t('employee:modals.editDesignation.name')} *</Label>
                   <Input
                     id="edit_desig_name"
                     value={editingDesignation.name}
@@ -1812,20 +1908,20 @@ export default function CreateEmployeePage() {
                         prev ? { ...prev, name: e.target.value } : null
                       )
                     }
-                    placeholder="Enter designation name"
+                    placeholder={t('employee:modals.editDesignation.namePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="edit_desig_description">Description</Label>
+                  <Label htmlFor="edit_designation_description">{t('employee:modals.editDesignation.description')}</Label>
                   <Textarea
-                    id="edit_desig_description"
+                    id="edit_designation_description"
                     value={editingDesignation.description || ''}
                     onChange={e =>
                       setEditingDesignation(prev =>
                         prev ? { ...prev, description: e.target.value } : null
                       )
                     }
-                    placeholder="Enter description"
+                    placeholder={t('employee:modals.editDesignation.descriptionPlaceholder')}
                     rows={3}
                   />
                 </div>
@@ -1838,14 +1934,14 @@ export default function CreateEmployeePage() {
                       setEditingDesignation(null);
                     }}
                   >
-                    Cancel
+                    {t('common:cancel')}
                   </Button>
                   <Button
                     type="button"
                     onClick={handleEditDesignation}
                     disabled={updatingDesignation}
                   >
-                    {updatingDesignation ? 'Updating...' : 'Update Designation'}
+                    {updatingDesignation ? t('employee:modals.editDesignation.updating') : t('employee:modals.editDesignation.update')}
                   </Button>
                 </div>
               </div>

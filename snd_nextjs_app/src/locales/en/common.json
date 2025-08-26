@@ -24,6 +24,7 @@
     "cancel": "Cancel",
     "close": "Close",
     "back": "Back",
+    "backToList": "Back to List",
     "next": "Next",
     "previous": "Previous",
     "search": "Search",
@@ -32,6 +33,7 @@
     "import": "Import",
     "refresh": "Refresh",
     "loading": "Loading...",
+    "saving": "Saving...",
     "noData": "No data available"
   },
   "status": {
