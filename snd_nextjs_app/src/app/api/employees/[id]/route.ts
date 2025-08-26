@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { departments, designations, employees as employeesTable } from '@/lib/drizzle/schema';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
+import { ERPNextSyncService } from '@/lib/services/erpnext-sync-service';
 import { eq } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -263,8 +264,8 @@ const getEmployeeHandler = async (
       passport_file: updatedEmployee.passport_file,
       driving_license_file: updatedEmployee.driving_license_file,
       operator_license_file: updatedEmployee.operator_license_file,
-      tuv_certification_file: updatedEmployee.tuv_certification_file,
-      spsp_license_file: updatedEmployee.spsp_license_file,
+              tuv_certification_file: updatedEmployee.tuv_certification_file,
+        spsp_license_file: updatedEmployee.spsp_license_file,
     };
 
     return NextResponse.json({
@@ -410,38 +411,38 @@ const updateEmployeeHandler = async (
     ];
     for (const key of passthroughFields) {
       if (Object.prototype.hasOwnProperty.call(updateDataRaw, key)) {
-        const                 drizzleKey =
+        const drizzleKey =
           key === 'first_name'
             ? 'firstName'
             : key === 'middle_name'
               ? 'middleName'
-              : key === 'last_name'
-                ? 'lastName'
-                : key === 'file_number'
-                  ? 'fileNumber'
-                  : key === 'postal_code'
-                    ? 'postalCode'
-                    : key === 'department_id'
-                      ? 'departmentId'
-                      : key === 'designation_id'
-                        ? 'designationId'
-                        : key === 'iqama_number'
-                          ? 'iqamaNumber'
-                          : key === 'passport_number'
-                            ? 'passportNumber'
-                            : key === 'driving_license_number'
-                              ? 'drivingLicenseNumber'
-                              : key === 'operator_license_number'
-                                ? 'operatorLicenseNumber'
-                                : key === 'tuv_certification_number'
-                                  ? 'tuvCertificationNumber'
-                                  : key === 'spsp_license_number'
-                                    ? 'spspLicenseNumber'
-                                    : key === 'advance_salary_eligible'
-                                      ? 'advanceSalaryEligible'
-                                      : key === 'advance_salary_approved_this_month'
-                                        ? 'advanceSalaryApprovedThisMonth'
-                                        : key;
+            : key === 'last_name'
+              ? 'lastName'
+            : key === 'file_number'
+              ? 'fileNumber'
+            : key === 'postal_code'
+              ? 'postalCode'
+            : key === 'department_id'
+              ? 'departmentId'
+            : key === 'designation_id'
+              ? 'designationId'
+            : key === 'iqama_number'
+              ? 'iqamaNumber'
+            : key === 'passport_number'
+              ? 'passportNumber'
+            : key === 'driving_license_number'
+              ? 'drivingLicenseNumber'
+            : key === 'operator_license_number'
+              ? 'operatorLicenseNumber'
+            : key === 'tuv_certification_number'
+              ? 'tuvCertificationNumber'
+            : key === 'spsp_license_number'
+              ? 'spspLicenseNumber'
+            : key === 'advance_salary_eligible'
+              ? 'advanceSalaryEligible'
+            : key === 'advance_salary_approved_this_month'
+              ? 'advanceSalaryApprovedThisMonth'
+            : key;
         drizzleData[drizzleKey] = updateDataRaw[key];
       }
     }
@@ -500,6 +501,18 @@ const updateEmployeeHandler = async (
 
     const employeeWithDept = employeeWithRelations[0];
 
+    // Attempt ERPNext sync using the service
+    const erpnextSyncService = ERPNextSyncService.getInstance();
+    let erpnextSyncResult = null;
+    
+    if (erpnextSyncService.isAvailable()) {
+      erpnextSyncResult = await erpnextSyncService.syncUpdatedEmployee(
+        updatedEmployee,
+        employeeWithDept?.dept_name || undefined,
+        employeeWithDept?.desig_name || undefined
+      );
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Employee updated successfully',
@@ -512,9 +525,10 @@ const updateEmployeeHandler = async (
           ? { id: updatedEmployee.designationId, name: employeeWithDept.desig_name }
           : null,
       },
+      erpnextSync: erpnextSyncResult,
     });
   } catch (error) {
-    
+    console.error('Error updating employee:', error);
     return NextResponse.json(
       {
         success: false,
@@ -548,18 +562,38 @@ const deleteEmployeeHandler = async (
       }
     }
 
+    // Get employee data before deletion for ERPNext sync
+    const employeeToDelete = await db
+      .select()
+      .from(employeesTable)
+      .where(eq(employeesTable.id, employeeId))
+      .limit(1);
+
+    if (employeeToDelete.length === 0) {
+      return NextResponse.json({ error: 'Employee not found' }, { status: 404 });
+    }
+
     // Soft delete employee using Drizzle
     await db
       .update(employeesTable)
       .set({ deletedAt: new Date().toISOString() })
       .where(eq(employeesTable.id, employeeId));
 
+    // Attempt ERPNext sync to mark employee as inactive
+    const erpnextSyncService = ERPNextSyncService.getInstance();
+    let erpnextSyncResult = null;
+    
+    if (erpnextSyncService.isAvailable()) {
+      erpnextSyncResult = await erpnextSyncService.syncDeletedEmployee(employeeToDelete[0]);
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Employee deleted successfully',
+      erpnextSync: erpnextSyncResult,
     });
   } catch (error) {
-    
+    console.error('Error deleting employee:', error);
     return NextResponse.json(
       {
         success: false,

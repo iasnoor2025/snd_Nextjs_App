@@ -51,6 +51,7 @@ interface Designation {
 
 interface EmployeeFormData {
   // Basic Information
+  fileNumber: string;
   first_name: string;
   middle_name?: string;
   last_name: string;
@@ -158,6 +159,7 @@ export default function CreateEmployeePage() {
   const [updatingDesignation, setUpdatingDesignation] = useState(false);
 
   const [formData, setFormData] = useState<EmployeeFormData>({
+    fileNumber: '',
     first_name: '',
     middle_name: '',
     last_name: '',
@@ -609,6 +611,26 @@ export default function CreateEmployeePage() {
                   <CardDescription>{t('employee:create.basic.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="fileNumber">{t('employee:fields.fileNumber')} *</Label>
+                      <Input
+                        id="fileNumber"
+                        value={formData.fileNumber}
+                        onChange={e => handleInputChange('fileNumber', e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="nationality">{t('employee:fields.nationality')}</Label>
+                      <NationalityDropdown
+                        value={formData.nationality || ''}
+                        onValueChange={(value) => handleInputChange('nationality', value)}
+                        placeholder={t('employee:fields.nationality')}
+                      />
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="first_name">{t('employee:fields.firstName')} *</Label>
@@ -675,14 +697,6 @@ export default function CreateEmployeePage() {
                         type="date"
                         value={formData.hire_date}
                         onChange={e => handleInputChange('hire_date', e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="nationality">{t('employee:fields.nationality')}</Label>
-                      <NationalityDropdown
-                        value={formData.nationality || ''}
-                        onValueChange={(value) => handleInputChange('nationality', value)}
-                        placeholder={t('employee:fields.nationality')}
                       />
                     </div>
                   </div>

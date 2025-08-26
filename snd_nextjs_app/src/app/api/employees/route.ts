@@ -10,6 +10,7 @@ import {
 } from '@/lib/drizzle/schema';
 import { withAuth } from '@/lib/rbac/api-middleware';
 import { updateEmployeeStatusBasedOnLeave } from '@/lib/utils/employee-status';
+import { ERPNextSyncService } from '@/lib/services/erpnext-sync-service';
 import { and, asc, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -288,15 +289,32 @@ const createEmployeeHandler = async (request: NextRequest) => {
       .returning();
     const employee = (inserted as any[])[0];
 
+    // Attempt ERPNext sync using the service
+    const erpnextSyncService = ERPNextSyncService.getInstance();
+    let erpnextSyncResult = null;
+    
+    if (erpnextSyncService.isAvailable()) {
+      erpnextSyncResult = await erpnextSyncService.syncNewEmployee(employee);
+      
+      // If sync was successful, update the local employee record with the ERPNext ID
+      if (erpnextSyncResult.success && erpnextSyncResult.erpnextId) {
+        await db
+          .update(employeesTable)
+          .set({ erpnextId: erpnextSyncResult.erpnextId })
+          .where(eq(employeesTable.id, employee.id));
+      }
+    }
+
     return NextResponse.json(
       {
         message: 'Employee created successfully',
         employee,
+        erpnextSync: erpnextSyncResult,
       },
       { status: 201 }
     );
   } catch (error) {
-    
+    console.error('Error creating employee:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 };

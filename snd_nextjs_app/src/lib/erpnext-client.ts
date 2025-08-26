@@ -58,6 +58,88 @@ export class ERPNextClient {
     return data.data?.[0] || null;
   }
 
+  /**
+   * Get ERPNext employee field definitions to understand field mapping
+   */
+  async getEmployeeFields(): Promise<any> {
+    try {
+      const result = await this.makeRequest('/api/method/frappe.client.get_meta?doctype=Employee');
+      return result;
+    } catch (error) {
+      console.error('💥 Error fetching ERPNext employee fields:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get current employee data from ERPNext to check field values
+   */
+  async getCurrentEmployee(erpnextId: string): Promise<any> {
+    try {
+      const result = await this.makeRequest(`/api/resource/Employee/${erpnextId}`);
+      return result;
+    } catch (error) {
+      console.error('💥 Error fetching current employee data:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Rename an employee using ERPNext's built-in rename functionality
+   * This should work since it's the same method used by the UI
+   */
+  async renameEmployee(erpnextId: string, newEmployeeNumber: string): Promise<boolean> {
+    try {
+      console.log('🔍 ERPNext Client - Renaming employee:', {
+        erpnextId,
+        newEmployeeNumber
+      });
+
+      // Use ERPNext's rename method
+      const result = await this.makeRequest('/api/method/frappe.client.rename_doc', {
+        method: 'POST',
+        body: JSON.stringify({
+          doctype: 'Employee',
+          name: erpnextId,
+          new: newEmployeeNumber
+        })
+      });
+
+      console.log('✅ Rename result:', result);
+      return !!result;
+    } catch (error) {
+      console.error('💥 ERPNext Client Rename Error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Update employee with special handling for employee number
+   */
+  async updateEmployeeWithRename(employee: any): Promise<boolean> {
+    try {
+      // If we need to update the employee number, use rename method
+      if (employee.fileNumber && employee.erpnextId) {
+        // First try to rename the employee
+        const renameSuccess = await this.renameEmployee(employee.erpnextId, employee.fileNumber);
+        
+        if (renameSuccess) {
+          console.log('✅ Employee renamed successfully to:', employee.fileNumber);
+          // Update the erpnextId to the new name
+          employee.erpnextId = employee.fileNumber;
+        } else {
+          console.log('⚠️ Employee rename failed, falling back to regular update');
+        }
+      }
+
+      // Continue with regular update for other fields
+      return await this.updateEmployee(employee);
+    } catch (error) {
+      console.error('💥 ERPNext Client Update with Rename Error:', error);
+      return false;
+    }
+  }
+
   mapToLocal(erpEmployee: any): any {
     const erpnextId = erpEmployee.name || null;
     const employeeId = erpEmployee.employee_number || erpnextId;
@@ -75,7 +157,10 @@ export class ERPNextClient {
     const companyEmail = erpEmployee.company_email || null;
     const personalEmail = erpEmployee.personal_email || null;
     const email = companyEmail || personalEmail;
-    const fileNumber = erpEmployee.employee_number || employeeId || erpnextId;
+    
+    // Use file_number field from ERPNext if it exists, fallback to employee_number, then erpnextId
+    // TODO: Once file_number field is created in ERPNext UI, this will work properly
+    const fileNumber = erpEmployee.file_number || erpEmployee.employee_number || employeeId || erpnextId;
 
     // Department and designation
     const departmentName = erpEmployee.department || null;
@@ -93,7 +178,6 @@ export class ERPNextClient {
     const company = erpEmployee.company || null;
     const branch = erpEmployee.branch || null;
     const userId = isNaN(erpEmployee.user_id) ? null : erpEmployee.user_id;
-    const bio = erpEmployee.bio || null;
 
     return {
       erpnextId,
@@ -121,7 +205,6 @@ export class ERPNextClient {
       branch,
       userId,
       employeeArabicName,
-      bio,
       // Additional fields from ERPNext
       address: erpEmployee.address || null,
       city: erpEmployee.city || null,
@@ -148,7 +231,7 @@ export class ERPNextClient {
       emergencyContactPhone: erpEmployee.emergency_contact_phone || null,
       emergencyContactRelationship: erpEmployee.emergency_contact_relationship || null,
       // Notes
-      notes: erpEmployee.notes || bio || null,
+      notes: erpEmployee.notes || null,
       // Legal documents
       passportNumber: erpEmployee.passport_number || null,
       passportExpiry: erpEmployee.passport_expiry || null,
@@ -199,7 +282,8 @@ export class ERPNextClient {
           last_name: employee.lastName,
           employee_name:
             `${employee.firstName} ${employee.middleName || ''} ${employee.lastName}`.trim(),
-          employee_number: employee.fileNumber,
+          // TODO: Add file_number field after user creates it in ERPNext UI
+          // file_number: employee.fileNumber,
           ctc: employee.basicSalary,
           cell_number: employee.phone,
           company_email: employee.companyEmail,
@@ -217,8 +301,14 @@ export class ERPNextClient {
           company: employee.company,
           branch: employee.branch,
           custom_الاسم_الكامل: employee.employeeArabicName,
-          bio: employee.bio,
         };
+
+        // Debug logging for file number
+        console.log('🔍 ERPNext Client Debug - Creating Employee:', {
+          fileNumber: employee.fileNumber,
+          firstName: employee.firstName,
+          lastName: employee.lastName
+        });
 
         const result = await this.makeRequest('/api/resource/Employee', {
           method: 'POST',
@@ -244,13 +334,14 @@ export class ERPNextClient {
       const localStatus = employee.status?.toLowerCase() || 'active';
       const erpStatus = statusMap[localStatus] || 'Active';
 
-      const data = {
+      const data: any = {
         first_name: employee.firstName,
         middle_name: employee.middleName,
         last_name: employee.lastName,
         employee_name:
           `${employee.firstName} ${employee.middleName || ''} ${employee.lastName}`.trim(),
-        employee_number: employee.fileNumber,
+        // TODO: Add file_number field after user creates it in ERPNext UI
+        // file_number: employee.fileNumber,
         ctc: employee.basicSalary,
         cell_number: employee.phone,
         company_email: employee.companyEmail,
@@ -268,51 +359,63 @@ export class ERPNextClient {
         company: employee.company,
         branch: employee.branch,
         custom_الاسم_الكامل: employee.employeeArabicName,
-        bio: employee.bio,
-        // Additional fields
-        address: employee.address,
-        city: employee.city,
-        food_allowance: employee.foodAllowance,
-        housing_allowance: employee.housingAllowance,
-        transport_allowance: employee.transportAllowance,
-        absent_deduction_rate: employee.absentDeductionRate,
-        overtime_rate_multiplier: employee.overtimeRateMultiplier,
-        overtime_fixed_rate: employee.overtimeFixedRate,
-        bank_name: employee.bankName,
-        bank_account_number: employee.bankAccountNumber,
-        bank_iban: employee.bankIban,
-        contract_hours_per_day: employee.contractHoursPerDay,
-        contract_days_per_month: employee.contractDaysPerMonth,
-        emergency_contact_name: employee.emergencyContactName,
-        emergency_contact_phone: employee.emergencyContactPhone,
-        notes: employee.notes,
-        // Legal Documents
-        passport_number: employee.passportNumber,
-        passport_expiry: employee.passportExpiry,
-        iqama_number: employee.iqamaNumber,
-        // Licenses and certifications
-        driving_license_number: employee.drivingLicenseNumber,
-        driving_license_expiry: employee.drivingLicenseExpiry,
-        driving_license_cost: employee.drivingLicenseCost,
-        operator_license_number: employee.operatorLicenseNumber,
-        operator_license_expiry: employee.operatorLicenseExpiry,
-        operator_license_cost: employee.operatorLicenseCost,
-        tuv_certification_number: employee.tuvCertificationNumber,
-        tuv_certification_expiry: employee.tuvCertificationExpiry,
-        tuv_certification_cost: employee.tuvCertificationCost,
-        spsp_license_number: employee.spspLicenseNumber,
-        spsp_license_expiry: employee.spspLicenseExpiry,
-        spsp_license_cost: employee.spspLicenseCost,
       };
 
-      await this.makeRequest(`/api/resource/Employee/${employee.erpnextId}`, {
+      // Only add additional fields if they exist and have values
+      if (employee.address) data.address = employee.address;
+      if (employee.city) data.city = employee.city;
+      if (employee.foodAllowance) data.food_allowance = employee.foodAllowance;
+      if (employee.housingAllowance) data.housing_allowance = employee.housingAllowance;
+      if (employee.transportAllowance) data.transport_allowance = employee.transportAllowance;
+      if (employee.absentDeductionRate) data.absent_deduction_rate = employee.absentDeductionRate;
+      if (employee.overtimeRateMultiplier) data.overtime_rate_multiplier = employee.overtimeRateMultiplier;
+      if (employee.overtimeFixedRate) data.overtime_fixed_rate = employee.overtimeFixedRate;
+      if (employee.bankName) data.bank_name = employee.bankName;
+      if (employee.bankAccountNumber) data.bank_account_number = employee.bankAccountNumber;
+      if (employee.bankIban) data.bank_iban = employee.bankIban;
+      if (employee.contractHoursPerDay) data.contract_hours_per_day = employee.contractHoursPerDay;
+      if (employee.contractDaysPerMonth) data.contract_days_per_month = employee.contractDaysPerMonth;
+      if (employee.emergencyContactName) data.emergency_contact_name = employee.emergencyContactName;
+      if (employee.emergencyContactPhone) data.emergency_contact_phone = employee.emergencyContactPhone;
+      if (employee.notes) data.notes = employee.notes;
+      if (employee.passportNumber) data.passport_number = employee.passportNumber;
+      if (employee.passportExpiry) data.passport_expiry = employee.passportExpiry;
+      if (employee.iqamaNumber) data.iqama_number = employee.iqamaNumber;
+      if (employee.drivingLicenseNumber) data.driving_license_number = employee.drivingLicenseNumber;
+      if (employee.drivingLicenseExpiry) data.driving_license_expiry = employee.drivingLicenseExpiry;
+      if (employee.drivingLicenseCost) data.driving_license_cost = employee.drivingLicenseCost;
+      if (employee.operatorLicenseNumber) data.operator_license_number = employee.operatorLicenseNumber;
+      if (employee.operatorLicenseExpiry) data.operator_license_expiry = employee.operatorLicenseExpiry;
+      if (employee.operatorLicenseCost) data.operator_license_cost = employee.operatorLicenseCost;
+      if (employee.tuvCertificationNumber) data.tuv_certification_number = employee.tuvCertificationNumber;
+      if (employee.tuvCertificationExpiry) data.tuv_certification_expiry = employee.tuvCertificationExpiry;
+      if (employee.tuvCertificationCost) data.tuv_certification_cost = employee.tuvCertificationCost;
+      if (employee.spspLicenseNumber) data.spsp_license_number = employee.spspLicenseNumber;
+      if (employee.spspLicenseExpiry) data.spsp_license_expiry = employee.spspLicenseExpiry;
+      if (employee.spspLicenseCost) data.spsp_license_cost = employee.spspLicenseCost;
+
+      // Debug logging for file number update
+      console.log('🔍 ERPNext Client Debug - Updating Employee:', {
+        erpnextId: employee.erpnextId,
+        fileNumber: employee.fileNumber,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        allFields: Object.keys(data)
+      });
+
+      console.log('🔍 ERPNext Client Debug - About to make request to:', `/api/resource/Employee/${employee.erpnextId}`);
+      console.log('🔍 ERPNext Client Debug - Request data:', data);
+
+      const updateResponse = await this.makeRequest(`/api/resource/Employee/${employee.erpnextId}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
 
+      console.log('🔍 ERPNext Client Debug - Update response received:', updateResponse);
+
       return true;
     } catch (error) {
-      
+      console.error('💥 ERPNext Client Error:', error);
       return false;
     }
   }
@@ -325,7 +428,8 @@ export class ERPNextClient {
         last_name: employee.lastName,
         employee_name:
           `${employee.firstName} ${employee.middleName || ''} ${employee.lastName}`.trim(),
-        employee_number: employee.fileNumber,
+        // TODO: Add file_number field after user creates it in ERPNext UI
+        // file_number: employee.fileNumber,
         ctc: employee.basicSalary,
         cell_number: employee.phone,
         company_email: employee.companyEmail,
@@ -343,8 +447,15 @@ export class ERPNextClient {
         company: employee.company,
         branch: employee.branch,
         custom_الاسم_الكامل: employee.employeeArabicName,
-        bio: employee.bio,
       };
+
+      // Debug logging for file number creation
+      console.log('🔍 ERPNext Client Debug - Creating New Employee:', {
+        fileNumber: employee.fileNumber,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        fullData: data
+      });
 
       const result = await this.makeRequest('/api/resource/Employee', {
         method: 'POST',
@@ -353,7 +464,7 @@ export class ERPNextClient {
 
       return result.data?.name || null;
     } catch (error) {
-      
+      console.error('💥 ERPNext Client Create Error:', error);
       return null;
     }
   }
