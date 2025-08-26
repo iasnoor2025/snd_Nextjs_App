@@ -90,7 +90,7 @@ export class SupabaseStorageService {
 
       return {
         success: true,
-        url: urlData.publicUrl,
+        url: urlData.publicUrl.replace(/^http:/, 'https:'),
         filename: uniqueFilename,
         originalName: file.name,
         size: file.size,
@@ -272,7 +272,7 @@ export class SupabaseStorageService {
 
       return {
         success: true,
-        url: urlData.publicUrl,
+        url: urlData.publicUrl.replace(/^http:/, 'https:'),
         filename: uniqueFilename,
         originalName: file.name,
         size: uploadFile.size,
@@ -349,7 +349,7 @@ export class SupabaseStorageService {
 
       return {
         success: true,
-        url: urlData.publicUrl,
+        url: urlData.publicUrl.replace(/^http:/, 'https:'),
         filename: filePath.split('/').pop() || file.name,
         originalName: file.name,
         size: file.size,
@@ -537,7 +537,8 @@ export class SupabaseStorageService {
       .from(bucket)
       .getPublicUrl(path);
     
-    return data.publicUrl;
+    // Force HTTPS to prevent Mixed Content errors
+    return data.publicUrl.replace(/^http:/, 'https:');
   }
 
   /**
@@ -552,7 +553,8 @@ export class SupabaseStorageService {
       .from(bucketName)
       .getPublicUrl(path);
     
-    return data.publicUrl;
+    // Force HTTPS to prevent Mixed Content errors
+    return data.publicUrl.replace(/^http:/, 'https:');
   }
 
   /**
