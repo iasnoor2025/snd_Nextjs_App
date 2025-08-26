@@ -160,11 +160,34 @@ export default function DocumentManager(props: DocumentManagerProps) {
     setLoading(true);
     try {
       const list = await loadDocuments();
-      setDocuments(Array.isArray(list) ? list : []);
+      const sortedList = Array.isArray(list) ? list : [];
+      
+      // Sort documents by priority: 1. Photo, 2. Iqama, 3. Passport, 4. Others
+      sortedList.sort((a, b) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        
+        // Priority 1: Photos (highest priority)
+        if (aName.includes('photo') || aName.includes('picture') || aName.includes('image')) return -1;
+        if (bName.includes('photo') || bName.includes('picture') || bName.includes('image')) return 1;
+        
+        // Priority 2: Iqama
+        if (aName.includes('iqama')) return -1;
+        if (bName.includes('iqama')) return 1;
+        
+        // Priority 3: Passport
+        if (aName.includes('passport')) return -1;
+        if (bName.includes('passport')) return 1;
+        
+        // Priority 4: Others (lowest priority)
+        return 0;
+      });
+      
+      setDocuments(sortedList);
       
       // Debug: Log document URLs to help troubleshoot
-      if (list && list.length > 0) {
-        console.log('Documents loaded:', list.map(doc => ({
+      if (sortedList && sortedList.length > 0) {
+        console.log('Documents loaded and sorted:', sortedList.map(doc => ({
           id: doc.id,
           name: doc.name,
           url: doc.url,
@@ -339,7 +362,29 @@ export default function DocumentManager(props: DocumentManagerProps) {
     return doc.document_type === 'photo' || 
            doc.name.toLowerCase().includes('photo') || 
            doc.name.toLowerCase().includes('picture') ||
-           doc.name.toLowerCase().includes('image');
+           doc.name.toLowerCase().includes('image') ||
+           doc.name.toLowerCase().includes('passport') ||
+           doc.name.toLowerCase().includes('iqama');
+  };
+
+  // Check if document is likely landscape-oriented (ID cards, licenses, etc.)
+  const isLandscapeDocument = (doc: DocumentItem) => {
+    const name = doc.name.toLowerCase();
+    return name.includes('id') || 
+           name.includes('license') || 
+           name.includes('card') ||
+           name.includes('certificate');
+  };
+
+  // Get appropriate container dimensions based on document type
+  const getContainerDimensions = (doc: DocumentItem) => {
+    if (isPhotoDocument(doc)) {
+      return 'min-h-72'; // Minimum height for photos, but can grow
+    }
+    if (isLandscapeDocument(doc)) {
+      return 'min-h-40'; // Minimum height for landscape documents, but can grow
+    }
+    return 'min-h-56'; // Minimum height for other documents, but can grow
   };
 
   const getFileIcon = (fileType: string) => {
@@ -457,171 +502,170 @@ export default function DocumentManager(props: DocumentManagerProps) {
               <p className="text-xs">Upload documents to get started</p>
             </div>
           ) : (
-            <div
-              className={
-                singleLine
-                  ? 'flex gap-2 overflow-x-auto'
-                  : wrapItems
-                    ? 'grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
-                    : 'space-y-2'
-              }
-            >
-              {documents.map(document => (
-                <div
-                  key={document.id}
-                  className={
-                    singleLine
-                      ? 'inline-flex shrink-0 items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors min-w-[520px]'
-                      : wrapItems
-                        ? 'flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors'
-                        : 'flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors'
-                  }
-                >
-                  {isImageFile(document.file_type) ? (
-                    <div className="relative">
-                      <img
-                        src={document.url}
-                        alt={document.name}
-                        className={`w-20 h-20 object-cover rounded border cursor-pointer hover:shadow-md transition-all duration-200 ${
-                          isPhotoDocument(document) 
-                            ? 'ring-2 ring-blue-300 hover:ring-blue-400 shadow-lg' 
-                            : ''
-                        }`}
-                        onClick={() => setPreviewImage(document)}
-                        onError={e => {
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          // Show fallback icon when image fails to load
-                          const fallbackDiv = target.nextElementSibling as HTMLElement;
-                          if (fallbackDiv) {
-                            fallbackDiv.style.display = 'flex';
-                          }
-                        }}
-                      />
-                      {/* Photo indicator badge */}
-                      {isPhotoDocument(document) && (
-                        <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded-full font-medium shadow-md">
-                          📸
-                        </div>
-                      )}
-                      {/* Fallback icon when image fails to load */}
-                      <div 
-                        className="w-20 h-20 hidden items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 rounded border border-blue-200 cursor-pointer hover:from-blue-100 hover:to-indigo-200 transition-all duration-200"
-                        onClick={() => setPreviewImage(document)}
-                      >
-                        <div className="text-center">
-                          <div className="text-lg">🖼️</div>
-                          <div className="text-xs text-blue-600 font-medium mt-1">
-                            IMG
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div 
-                      className={`w-20 h-20 flex items-center justify-center rounded border cursor-pointer transition-all duration-200 ${
-                        isPhotoDocument(document)
-                          ? 'bg-gradient-to-br from-blue-100 to-indigo-200 border-blue-300 hover:from-blue-200 hover:to-indigo-300 shadow-lg'
-                          : 'bg-gradient-to-br from-blue-50 to-indigo-100 border-blue-200 hover:from-blue-100 hover:to-indigo-200'
-                      }`}
-                      onClick={() => setPreviewImage(document)}
-                    >
-                      <div className="text-center relative">
-                        <div className="text-2xl">{getFileIcon(document.file_type)}</div>
-                        <div className="text-sm font-medium mt-2">
-                          {isPhotoDocument(document) ? (
-                            <span className="text-blue-700">PHOTO</span>
-                          ) : (
-                            <span className="text-blue-600">
-                              {document.file_name?.split('.').pop()?.toUpperCase() || 'DOC'}
-                            </span>
-                          )}
-                        </div>
-                        {/* Photo indicator for non-image photo documents */}
-                        {isPhotoDocument(document) && (
-                          <div className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full font-medium">
-                            📸
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                                                   <div
+                className={
+                  singleLine
+                    ? 'flex gap-2 overflow-x-auto'
+                    : wrapItems
+                      ? 'grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                      : 'grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                }
+              >
+               {documents.map(document => (
+                 <div
+                   key={document.id}
+                                       className={
+                      singleLine
+                        ? 'inline-flex shrink-0 items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors min-w-[520px]'
+                        : 'group relative bg-white border border-gray-200 rounded-lg p-3 hover:shadow-lg hover:border-gray-300 transition-all duration-200 cursor-pointer'
+                    }
+                   onClick={() => {
+                     if (isImageFile(document.file_type)) {
+                       setPreviewImage(document);
+                     } else if (document.file_type.includes('pdf') || document.file_type.includes('text')) {
+                       window.open(document.url, '_blank');
+                     }
+                   }}
+                 >
+                                       {/* Card Layout - Image and Details in One Row */}
+                                         <div className="flex flex-col h-full">
+                                                 {/* Image/Icon Section - Simple and clean like preview */}
+                         <div className="flex-1 flex items-center justify-center mb-3">
+                           {isImageFile(document.file_type) ? (
+                                                           <div className="relative w-full">
+                                <img
+                                  src={document.url}
+                                  alt={document.name}
+                                  className="w-full object-contain rounded border border-gray-200"
+                                  style={{ transformOrigin: 'center center' }}
+                                  onLoad={(e) => {
+                                    const img = e.target as HTMLImageElement;
+                                    
+                                    // Auto-size to fit image naturally - no rotation
+                                    img.style.transform = 'rotate(0deg)';
+                                    img.style.objectFit = 'contain';
+                                    
+                                    // Ensure smooth transitions
+                                    img.style.transition = 'all 0.3s ease-in-out';
+                                  }}
+                                 onError={e => {
+                                   const target = e.target as HTMLImageElement;
+                                   target.style.display = 'none';
+                                   const fallbackDiv = target.nextElementSibling as HTMLElement;
+                                   if (fallbackDiv) {
+                                     fallbackDiv.style.display = 'flex';
+                                   }
+                                 }}
+                               />
+                               {/* Simple fallback icon */}
+                               <div 
+                                 className="w-full h-full hidden items-center justify-center bg-gray-100 rounded border border-gray-200"
+                               >
+                                 <div className="text-center">
+                                   <div className="text-3xl">🖼️</div>
+                                   <div className="text-sm text-gray-600">IMG</div>
+                                 </div>
+                               </div>
+                             </div>
+                           ) : (
+                                                           <div 
+                                className="w-full min-h-20 flex items-center justify-center rounded border border-gray-200 bg-gray-50"
+                              >
+                               <div className="text-center">
+                                 <div className="text-4xl">{getFileIcon(document.file_type)}</div>
+                                 <div className="text-sm text-gray-600 mt-2">
+                                   {document.file_name?.split('.').pop()?.toUpperCase() || 'DOC'}
+                                 </div>
+                               </div>
+                             </div>
+                           )}
+                         </div>
 
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{document.name}</p>
-                  </div>
+                                                                       {/* Document Details - With badges */}
+                         <div className="w-full space-y-2">
+                           <h3 className="text-sm font-medium text-gray-900 truncate text-center px-2">
+                             {document.name}
+                           </h3>
+                           
+                           {/* Badges for photo documents */}
+                           {isPhotoDocument(document) && (
+                             <div className="flex items-center justify-center gap-2 text-xs">
+                               <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1.5 rounded-full font-semibold shadow-md">
+                                 {document.name.toLowerCase().includes('passport') ? '📸 Employee Passport' : 
+                                  document.name.toLowerCase().includes('iqama') ? '📸 Employee Iqama' : '📸 Employee Photo'}
+                               </span>
+                               {document.name.toLowerCase().includes('passport') && (
+                                 <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                                   Travel Document
+                                 </span>
+                               )}
+                               {document.name.toLowerCase().includes('iqama') && (
+                                 <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">
+                                   ID Card
+                                 </span>
+                               )}
+                             </div>
+                           )}
+                         </div>
+                     </div>
 
-                  {showSize && (
-                    <div
-                      className={
-                        singleLine || wrapItems
-                          ? 'hidden md:block w-28 text-xs text-muted-foreground'
-                          : 'hidden sm:block w-28 text-xs text-muted-foreground'
-                      }
-                    >
-                      {formatFileSize(document.size)}
-                    </div>
-                  )}
-
-                  {showDate && (
-                    <div
-                      className={
-                        singleLine || wrapItems
-                          ? 'hidden lg:block w-36 text-xs text-muted-foreground'
-                          : 'hidden md:block w-36 text-xs text-muted-foreground'
-                      }
-                    >
-                      {new Date(document.created_at).toLocaleDateString()}
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-1">
-                    {(isImageFile(document.file_type) || document.file_type.includes('pdf') || document.file_type.includes('text')) && canPreview && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          if (isImageFile(document.file_type)) {
-                            setPreviewImage(document);
-                          } else if (document.file_type.includes('pdf') || document.file_type.includes('text')) {
-                            window.open(document.url, '_blank');
-                          }
-                        }}
-                        className="h-8 w-8 p-0"
-                        title={isImageFile(document.file_type) ? "Preview image" : "Open document"}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {canDownload && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDownload(document)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {canDelete && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(document.id)}
-                        disabled={deleting === document.id}
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                      >
-                        {deleting === document.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                   {/* Action Buttons - Overlay on Hover */}
+                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                     <div className="flex items-center gap-2">
+                       {(isImageFile(document.file_type) || document.file_type.includes('pdf') || document.file_type.includes('text')) && canPreview && (
+                         <Button
+                           variant="secondary"
+                           size="sm"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             if (isImageFile(document.file_type)) {
+                               setPreviewImage(document);
+                             } else if (document.file_type.includes('pdf') || document.file_type.includes('text')) {
+                               window.open(document.url, '_blank');
+                             }
+                           }}
+                           className="h-8 w-8 p-0 shadow-lg"
+                           title={isImageFile(document.file_type) ? "Preview image" : "Open document"}
+                         >
+                           <Eye className="h-4 w-4" />
+                         </Button>
+                       )}
+                       {canDownload && (
+                         <Button
+                           variant="secondary"
+                           size="sm"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             handleDownload(document);
+                           }}
+                           className="h-8 w-8 p-0 shadow-lg"
+                         >
+                           <Download className="h-4 w-4" />
+                         </Button>
+                       )}
+                       {canDelete && (
+                         <Button
+                           variant="destructive"
+                           size="sm"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             handleDelete(document.id);
+                           }}
+                           disabled={deleting === document.id}
+                           className="h-8 w-8 p-0 shadow-lg"
+                         >
+                           {deleting === document.id ? (
+                             <Loader2 className="h-4 w-4 animate-spin" />
+                           ) : (
+                             <Trash2 className="h-4 w-4" />
+                           )}
+                         </Button>
+                       )}
+                     </div>
+                   </div>
+                 </div>
+               ))}
+             </div>
           )}
         </div>
       </CardContent>
