@@ -3,7 +3,6 @@
 import DocumentManager, { type DocumentItem } from '@/components/shared/DocumentManager';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -11,7 +10,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,10 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { useRBAC } from '@/lib/rbac/rbac-context';
-import { Download, Eye, FileText, Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
+import { Plus, RefreshCw, Trash2, Upload } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
@@ -72,9 +69,9 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
 
   const documentNameOptions = [
-    { label: '📸 Photo', value: 'photo', priority: 'high' },
-    { label: '🆔 Iqama', value: 'iqama', priority: 'high' },
-    { label: '📋 Passport', value: 'passport', priority: 'high' },
+    { label: '📸 Employee Photo', value: 'employee_photo', priority: 'high' },
+    { label: '🆔 Employee Iqama', value: 'employee_iqama', priority: 'high' },
+    { label: '🛂 Employee Passport', value: 'employee_passport', priority: 'high' },
     { label: '🚗 Driving License', value: 'driving_license', priority: 'medium' },
     { label: '⚙️ Operator License', value: 'operator_license', priority: 'medium' },
     { label: '🔧 SPSP License', value: 'spsp_license', priority: 'medium' },
@@ -147,7 +144,28 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
       if (response.ok) {
         const data = await response.json();
         
-        setDocuments(Array.isArray(data) ? data : []);
+        // Filter out personal documents (photos, iqama, passport) since they're shown in Personal tab
+        const filteredData = Array.isArray(data) ? data.filter((doc: Document) => {
+          const docName = doc.name.toLowerCase();
+          const docType = doc.document_type.toLowerCase();
+          
+          // Exclude personal documents
+          return !(
+            docName.includes('photo') || 
+            docName.includes('picture') || 
+            docName.includes('image') ||
+            docName.includes('passport') ||
+            docName.includes('iqama') ||
+            docType.includes('photo') ||
+            docType.includes('passport') ||
+            docType.includes('iqama') ||
+            docType === 'employee_photo' ||
+            docType === 'employee_iqama' ||
+            docType === 'employee_passport'
+          );
+        }) : [];
+        
+        setDocuments(filteredData);
       } else {
         const errorText = await response.text();
 
@@ -413,7 +431,7 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
       <div className="w-full">
         <DocumentManager
           title="Employee Documents"
-          description="Upload and manage employee documents"
+          description="Upload and manage employment-related documents (contracts, licenses, certificates, etc.)"
           beforeUpload={files => {
             if (!uploadForm.document_name.trim() || !uploadForm.document_type.trim()) {
               setPendingFiles(files);
@@ -438,7 +456,25 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
 
                 const list = Array.isArray(data) ? data : [];
 
-                return list.map((d: any) => {
+                // Filter out personal documents (photos, iqama, passport) since they're shown in Personal tab
+                const filteredList = list.filter((d: any) => {
+                  const docName = (d.fileName || d.name || '').toLowerCase();
+                  const docType = (d.documentType || '').toLowerCase();
+                  
+                  // Exclude personal documents
+                  return !(
+                    docName.includes('photo') || 
+                    docName.includes('picture') || 
+                    docName.includes('image') ||
+                    docName.includes('passport') ||
+                    docName.includes('iqama') ||
+                    docType.includes('photo') ||
+                    docType.includes('passport') ||
+                    docType.includes('iqama')
+                  );
+                });
+
+                return filteredList.map((d: any) => {
 
                   // Map the API response fields to what DocumentManager expects
                   const result = {
@@ -627,16 +663,12 @@ export default function DocumentsTab({ employeeId }: DocumentsTabProps) {
                   <div className="mb-2">
                     <strong>Total size:</strong> {formatFileSize(pendingFiles.reduce((total, file) => total + file.size, 0))}
                   </div>
-                  {pendingFiles.some(f => f.type.startsWith('image/')) && (
-                    <div className="text-green-600 text-xs">
-                      📸 Images will be automatically compressed for faster upload
-                    </div>
-                  )}
-                  {uploadForm.document_type === 'photo' && (
-                    <div className="text-blue-600 text-xs bg-blue-50 p-2 rounded border border-blue-200">
-                      📸 <strong>Photo Document:</strong> This will be optimized for employee identification and profile display
-                    </div>
-                  )}
+                              {pendingFiles.some(f => f.type.startsWith('image/')) && (
+              <div className="text-green-600 text-xs">
+                📸 Images will be automatically compressed for faster upload
+              </div>
+            )}
+            
                 </div>
 
                 {/* Upload Progress Display */}

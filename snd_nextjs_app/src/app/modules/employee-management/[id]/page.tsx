@@ -52,6 +52,8 @@ import { useRBAC } from '@/lib/rbac/rbac-context';
 
 import AssignmentsTab from '@/components/employee/AssignmentsTab';
 import DocumentsTab from '@/components/employee/DocumentsTab';
+import PersonalPhotosSection from '@/components/employee/PersonalPhotosSection';
+
 import {
   salaryIncrementService,
   type SalaryIncrement,
@@ -810,6 +812,21 @@ export default function EmployeeShowPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Personal Photos Section */}
+          {hasPermission('read', 'employee-document') && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Personal Photos & Documents</CardTitle>
+                <CardDescription>Employee photos, Iqama, Passport, and identification documents</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {employeeId && !isNaN(parseInt(employeeId)) && (
+                  <PersonalPhotosSection employeeId={parseInt(employeeId)} />
+                )}
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Employment Tab */}
@@ -1065,6 +1082,8 @@ export default function EmployeeShowPage() {
             </CardContent>
           </Card>
         </TabsContent>
+
+
 
         {/* Documents Tab */}
         <TabsContent value="documents" className="mt-6 space-y-6">
