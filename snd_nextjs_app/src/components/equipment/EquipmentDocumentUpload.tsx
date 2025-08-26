@@ -1,9 +1,26 @@
 'use client';
 
 import DocumentManager, { type DocumentItem } from '@/components/shared/DocumentManager';
-import ApiService from '@/lib/api-service';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useCallback, useState, useEffect } from 'react';
-import { SupabaseStorageService } from '@/lib/supabase/storage-service';
 import { toast } from 'sonner';
 
 interface EquipmentDocument {
@@ -27,17 +44,36 @@ export default function EquipmentDocumentUpload({
 }: EquipmentDocumentUploadProps) {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  
+  // Upload form state
+  const [uploadForm, setUploadForm] = useState({
+    document_name: '',
+    document_type: '',
+    description: '',
+  });
+
+  const documentTypeOptions = [
+    { label: 'User Manual', value: 'user_manual' },
+    { label: 'Service Manual', value: 'service_manual' },
+    { label: 'Maintenance Manual', value: 'maintenance_manual' },
+    { label: 'Safety Certificate', value: 'safety_certificate' },
+    { label: 'Inspection Report', value: 'inspection_report' },
+    { label: 'Warranty Document', value: 'warranty' },
+    { label: 'Purchase Invoice', value: 'purchase_invoice' },
+    { label: 'Equipment Registration', value: 'registration' },
+    { label: 'Insurance Document', value: 'insurance' },
+    { label: 'Other', value: 'other' },
+  ];
 
   const loadDocuments = useCallback(async () => {
     try {
       setIsLoading(true);
-      // Fetch documents from Supabase storage
-      const response = await fetch('/api/supabase/list-files', {
-        method: 'POST',
-        body: JSON.stringify({
-          bucket: 'equipment-documents',
-          path: `equipment-${equipmentId}`
-        }),
+      // Fetch documents from the equipment documents API
+      const response = await fetch(`/api/equipment/${equipmentId}/documents`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -45,31 +81,17 @@ export default function EquipmentDocumentUpload({
 
       if (response.ok) {
         const result = await response.json();
-        if (result.success && result.files) {
-          // Convert Supabase files to DocumentItem format
-          const docs = result.files.map((file: any) => {
-            // The file path in Supabase is just the path, not bucket/path
-            // So if we uploaded to 'equipment-123/file.png', the path is 'equipment-123/file.png'
-            const filePath = `equipment-${equipmentId}/${file.name}`;
-            
-            // IMPORTANT: Use the URL returned from the upload, not manually constructed
-            // The upload API returns the correct public URL
-            // For now, let's use the SupabaseStorageService to get the correct URL
-            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://supabasekong.snd-ksa.online';
-            const publicUrl = `${supabaseUrl}/storage/v1/object/public/equipment-documents/${filePath}`;
-            
-            console.log('Generated URL for file:', file.name, 'Path:', filePath, 'URL:', publicUrl);
-            
-            return {
-              id: file.id || file.name, // Use name as ID if no ID
-              name: file.name,
-              file_name: file.name,
-              file_type: file.mime_type || 'application/octet-stream',
-              size: file.size || 0,
-              url: publicUrl,
-              created_at: file.created_at || new Date().toISOString()
-            };
-          }) as DocumentItem[];
+        if (result.success && result.documents) {
+          // Convert API response to DocumentItem format
+          const docs = result.documents.map((doc: any) => ({
+            id: doc.id,
+            name: doc.name || doc.fileName,
+            file_name: doc.fileName,
+            file_type: doc.mimeType || 'application/octet-stream',
+            size: doc.fileSize || 0,
+            url: doc.url || doc.filePath,
+            created_at: doc.createdAt || doc.created_at
+          })) as DocumentItem[];
           
           setDocuments(docs);
           return docs;
@@ -94,22 +116,18 @@ export default function EquipmentDocumentUpload({
   const uploadDocument = useCallback(
     async (file: File, extra?: Record<string, any>) => {
       try {
-        // Use Supabase upload instead of old API
-        const response = await fetch('/api/upload-supabase', {
+        // Use the equipment-specific document upload API
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('document_name', (extra?.document_name as string) || file.name);
+        formData.append('document_type', (extra?.document_type as string) || 'general');
+        formData.append('description', (extra?.description as string) || '');
+
+        const response = await fetch(`/api/equipment/${equipmentId}/documents`, {
           method: 'POST',
-          body: JSON.stringify({
-            file: {
-              name: file.name,
-              size: file.size,
-              type: file.type,
-              content: await fileToBase64(file)
-            },
-            bucket: 'equipment-documents',
-            path: `equipment-${equipmentId}`,
-            document_name: (extra?.document_name as string) || file.name
-          }),
+          body: formData,
           headers: {
-            'Content-Type': 'application/json',
+            // Don't set Content-Type for FormData, let the browser set it
           },
         });
 
@@ -118,86 +136,32 @@ export default function EquipmentDocumentUpload({
           if (result.success) {
             // Refresh the documents list
             await loadDocuments();
-            // Store the document info in your database if needed
-            // For now, just call the callback
             onDocumentsUpdated?.();
+            return { success: true, data: result };
           } else {
-            throw new Error(result.message || 'Upload failed');
+            // Return error instead of throwing
+            return { success: false, error: result.message || 'Upload failed' };
           }
         } else {
-          throw new Error('Upload failed');
+          const errorData = await response.json();
+          // Return error instead of throwing
+          return { success: false, error: errorData.error || 'Upload failed' };
         }
       } catch (error) {
         console.error('Upload error:', error);
-        throw error;
+        // Return error instead of throwing
+        return { success: false, error: error instanceof Error ? error.message : 'Upload failed' };
       }
     },
-    [equipmentId, onDocumentsUpdated]
+    [equipmentId, onDocumentsUpdated, loadDocuments]
   );
-
-  // Helper function to convert file to base64
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => {
-        const base64 = reader.result as string;
-        // Remove data:image/jpeg;base64, prefix
-        const base64Data = base64.split(',')[1];
-        resolve(base64Data);
-      };
-      reader.onerror = error => reject(error);
-    });
-  };
 
   const deleteDocument = useCallback(
     async (id: number) => {
       try {
-        // Find the document to get its filename
-        const documents = await loadDocuments();
-        const document = documents.find(doc => doc.id === id);
-        
-        if (!document) {
-          throw new Error('Document not found');
-        }
-
-        // Extract the file path from the Supabase URL
-        // URL format: https://domain.com/storage/v1/object/public/bucket-name/path/to/file
-        let filePath = '';
-        
-        if (document.url.startsWith('http')) {
-          // Parse the URL to extract the file path
-          const urlParts = document.url.split('/storage/v1/object/public/');
-          if (urlParts.length > 1) {
-            const bucketAndPath = urlParts[1];
-            const pathParts = bucketAndPath.split('/');
-            if (pathParts.length > 1) {
-              // Remove the bucket name from the path
-              const bucketName = pathParts[0];
-              const filePathParts = pathParts.slice(1);
-              filePath = filePathParts.join('/');
-            }
-          }
-        }
-        
-        // Fallback: construct path from equipment ID and filename
-        if (!filePath) {
-          filePath = `equipment-${equipmentId}/${document.file_name}`;
-        }
-
-        console.log('Deleting file from Supabase:', {
-          bucket: 'equipment-documents',
-          path: filePath,
-          document: document
-        });
-
-        // Delete document from Supabase storage
-        const response = await fetch('/api/supabase/delete-file', {
-          method: 'POST',
-          body: JSON.stringify({
-            bucket: 'equipment-documents',
-            path: filePath
-          }),
+        // Use the proper equipment document delete API endpoint
+        const response = await fetch(`/api/equipment/${equipmentId}/documents/${id}`, {
+          method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -215,7 +179,7 @@ export default function EquipmentDocumentUpload({
           }
         } else {
           const errorData = await response.json();
-          throw new Error(errorData.message || 'Delete failed');
+          throw new Error(errorData.error || 'Delete failed');
         }
       } catch (error) {
         console.error('Delete error:', error);
@@ -226,8 +190,122 @@ export default function EquipmentDocumentUpload({
     [equipmentId, onDocumentsUpdated, loadDocuments]
   );
 
+  // Handle file drop - show popup for document details
+  const handleBeforeUpload = useCallback(async (files: File[]) => {
+    setPendingFiles(files);
+    setShowUploadDialog(true);
+    return false; // Prevent automatic upload
+  }, []);
+
+  const handleUpload = async () => {
+    if (!uploadForm.document_name.trim()) {
+      toast.error('Please enter a document name');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      let hasErrors = false;
+      
+      for (const file of pendingFiles) {
+        const extra = {
+          document_name: uploadForm.document_name.trim(),
+          document_type: uploadForm.document_type,
+          description: uploadForm.description
+        };
+        
+        const result = await uploadDocument(file, extra);
+        
+        if (!result.success) {
+          hasErrors = true;
+          // Show error toast for this specific file
+          toast.error(result.error || 'Failed to upload file');
+        }
+      }
+      
+      if (!hasErrors) {
+        toast.success('Documents uploaded successfully');
+        setShowUploadDialog(false);
+        setPendingFiles([]);
+        setUploadForm({ document_name: '', document_type: '', description: '' });
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload documents');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <>
+      {/* Document Name Input Dialog */}
+      <Dialog open={showUploadDialog} onOpenChange={setShowUploadDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Document Details</DialogTitle>
+            <DialogDescription>
+              Provide a name and select document type before uploading {pendingFiles.length > 1 ? `${pendingFiles.length} files` : 'this file'}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="document_name">Document Name *</Label>
+              <Input
+                id="document_name"
+                value={uploadForm.document_name}
+                onChange={e => setUploadForm({ ...uploadForm, document_name: e.target.value })}
+                placeholder="Enter document name"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Each document name must be unique. If a document with this name already exists, please choose a different name or delete the existing document first.
+              </p>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="document_type">Document Type</Label>
+              <Select
+                value={uploadForm.document_type}
+                onValueChange={value => setUploadForm({ ...uploadForm, document_type: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select document type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {documentTypeOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="document_description">Description</Label>
+              <Textarea
+                id="document_description"
+                value={uploadForm.description}
+                onChange={e => setUploadForm({ ...uploadForm, description: e.target.value })}
+                placeholder="Describe the document (optional)"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowUploadDialog(false);
+              setPendingFiles([]);
+              setUploadForm({ document_name: '', document_type: '', description: '' });
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpload} disabled={uploading}>
+              {uploading ? 'Uploading...' : `Upload ${pendingFiles.length > 1 ? `${pendingFiles.length} Files` : 'File'}`}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Manager */}
       {!loadDocuments || !uploadDocument || !deleteDocument ? (
         <div className="text-center py-8 text-gray-500">
           <p>Loading document manager...</p>
@@ -239,8 +317,8 @@ export default function EquipmentDocumentUpload({
           loadDocuments={loadDocuments}
           uploadDocument={uploadDocument}
           deleteDocument={deleteDocument}
-          showNameInput
-          nameInputLabel="Document Name (Optional)"
+          showNameInput={false}
+          beforeUpload={handleBeforeUpload}
         />
       )}
     </>

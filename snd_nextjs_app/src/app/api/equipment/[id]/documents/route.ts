@@ -6,6 +6,84 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SupabaseStorageService } from '@/lib/supabase/storage-service';
 import { cacheService } from '@/lib/redis/cache-service';
 
+const handler = async (
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) => {
+  if (request.method === 'GET') {
+    return await getDocumentsHandler(request, { params });
+  }
+  
+  if (request.method === 'POST') {
+    return await uploadDocumentsHandler(request, { params });
+  }
+  
+  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+};
+
+const getDocumentsHandler = async (
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) => {
+  try {
+    if (!params || !params.id) {
+      return NextResponse.json({ error: 'Invalid route parameters' }, { status: 400 });
+    }
+
+    const { id } = params;
+    const equipmentId = parseInt(id);
+
+    if (!equipmentId) {
+      return NextResponse.json({ error: 'Invalid equipment ID' }, { status: 400 });
+    }
+
+    // Check if equipment exists
+    const equipmentResult = await db
+      .select()
+      .from(equipment)
+      .where(eq(equipment.id, equipmentId))
+      .limit(1);
+
+    if (!equipmentResult[0]) {
+      return NextResponse.json({ error: 'Equipment not found' }, { status: 404 });
+    }
+
+    // Get documents from database
+    const documents = await db
+      .select()
+      .from(equipmentDocuments)
+      .where(eq(equipmentDocuments.equipmentId, equipmentId))
+      .orderBy(equipmentDocuments.createdAt);
+
+    // Transform documents for response
+    const transformedDocuments = documents.map(doc => ({
+      id: doc.id,
+      name: doc.fileName,
+      fileName: doc.fileName,
+      fileType: doc.mimeType?.split('/')[1]?.toUpperCase() || 'UNKNOWN',
+      fileSize: doc.fileSize,
+      mimeType: doc.mimeType,
+      url: doc.filePath,
+      filePath: doc.filePath,
+      documentType: doc.documentType,
+      description: doc.description,
+      createdAt: doc.createdAt,
+      updatedAt: doc.updatedAt,
+    }));
+
+    return NextResponse.json({
+      success: true,
+      documents: transformedDocuments,
+    });
+  } catch (error) {
+    console.error('Error fetching documents:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch documents' },
+      { status: 500 }
+    );
+  }
+};
+
 const uploadDocumentsHandler = async (
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -112,10 +190,20 @@ const uploadDocumentsHandler = async (
           // Delete old files from Supabase storage
           for (const existingDoc of existingDocuments) {
             if (existingDoc.filePath) {
-              // Extract the filename from the filePath
-              const fileName = existingDoc.filePath.split('/').pop();
-              if (fileName) {
-                await SupabaseStorageService.deleteFile('equipment-documents', `equipment-${equipmentId}/${fileName}`);
+              try {
+                // Extract the filename from the filePath
+                const fileName = existingDoc.filePath.split('/').pop();
+                if (fileName) {
+                  console.log(`Deleting file from Supabase: equipment-${equipmentId}/${fileName}`);
+                  const deleteResult = await SupabaseStorageService.deleteFile('equipment-documents', `equipment-${equipmentId}/${fileName}`);
+                  if (deleteResult.success) {
+                    console.log(`Successfully deleted file: ${fileName}`);
+                  } else {
+                    console.error(`Failed to delete file ${fileName}:`, deleteResult.error);
+                  }
+                }
+              } catch (deleteError) {
+                console.error(`Error deleting file ${existingDoc.filePath}:`, deleteError);
               }
             }
           }
@@ -135,12 +223,46 @@ const uploadDocumentsHandler = async (
       documentName.trim() || toTitleCase((rawDocumentType || 'Document').replace(/_/g, ' '));
     const equipmentName = equipmentItem.name || `Equipment-${equipmentId}`;
     
-    // Generate descriptive filename
-    const descriptiveFilename = SupabaseStorageService.generateDescriptiveFilename(
-      rawDocumentType || 'document',
-      equipmentName,
-      file.name
-    );
+    // Generate descriptive filename using the user-provided document name
+    // This ensures the file is saved in Supabase with the user's chosen name
+    let descriptiveFilename: string;
+    if (documentName.trim()) {
+      // Use the user-provided document name as the filename
+      const extension = file.name.split('.').pop();
+      const cleanDocumentName = documentName.trim()
+        .replace(/\.(pdf|jpg|jpeg|png|doc|docx)$/i, '') // Remove common file extensions
+        .replace(/[^a-zA-Z0-9\-_]/g, '-') // Replace special chars with hyphens (keep hyphens and underscores)
+        .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+      descriptiveFilename = `${cleanDocumentName}.${extension}`;
+      
+      // Check if a document with the same name already exists
+      const existingDocWithSameName = await db
+        .select()
+        .from(equipmentDocuments)
+        .where(
+          and(
+            eq(equipmentDocuments.equipmentId, equipmentId),
+            eq(equipmentDocuments.fileName, descriptiveFilename)
+          )
+        )
+        .limit(1);
+      
+      if (existingDocWithSameName.length > 0) {
+        return NextResponse.json(
+          { 
+            error: `A document with the name "${documentName.trim()}" already exists. Please choose a different name or delete the existing document first.` 
+          },
+          { status: 409 }
+        );
+      }
+    } else {
+      // Fallback to descriptive filename based on document type
+      descriptiveFilename = SupabaseStorageService.generateDescriptiveFilename(
+        rawDocumentType || 'document',
+        equipmentName,
+        file.name
+      );
+    }
     
     const path = `equipment-${equipmentId}`;
 
@@ -217,5 +339,5 @@ const uploadDocumentsHandler = async (
   }
 };
 
-export const POST = withAuth(uploadDocumentsHandler);
-export const GET = withAuth(uploadDocumentsHandler);
+export const POST = withAuth(handler);
+export const GET = withAuth(handler);
