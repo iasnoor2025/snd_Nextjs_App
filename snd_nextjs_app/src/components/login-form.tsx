@@ -37,6 +37,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
         router.push('/');
       }
     } catch (error) {
+      console.error('Login error:', error);
       toast.error('An error occurred during login');
     } finally {
       setIsLoading(false);
@@ -58,6 +59,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
         router.push('/');
       }
     } catch (error) {
+      console.error('Google login error:', error);
       toast.error('An error occurred during Google login');
     } finally {
       setIsGoogleLoading(false);
@@ -131,7 +133,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                   <Input
                     id="email"
                     type="email"
-                    placeholder="me@example.com"
+                    placeholder="me@snd-ksa.com"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     required
@@ -141,7 +143,10 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                 <div className="grid gap-2">
                   <div className="flex items-center">
                     <Label htmlFor="password">Password</Label>
-                    <a href="#" className="ml-auto text-sm underline-offset-4 hover:underline">
+                    <a
+                      href="/forgot-password"
+                      className="ml-auto text-sm underline-offset-4 hover:underline text-left"
+                    >
                       Forgot your password?
                     </a>
                   </div>

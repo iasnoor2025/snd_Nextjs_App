@@ -20,7 +20,9 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
   const { data: session, status } = useSession();
   const isLoginPage = pathname === '/login';
   const isSignupPage = pathname === '/signup';
-  const isPublicPage = isLoginPage || isSignupPage;
+  const isForgotPasswordPage = pathname === '/forgot-password';
+  const isResetPasswordPage = pathname === '/reset-password';
+  const isPublicPage = isLoginPage || isSignupPage || isForgotPasswordPage || isResetPasswordPage;
   const { isModalOpen, closeModal, nationIdData, isChecking, refreshCheck } = useNationIdCheck();
 
   // Check if user is an employee

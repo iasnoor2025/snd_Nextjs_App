@@ -250,7 +250,7 @@ export default function SignUpPage() {
             </form>
 
             {/* Back to Login */}
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-muted-foreground">
                 Already have an account?{' '}
                 <button
@@ -258,6 +258,15 @@ export default function SignUpPage() {
                   className="text-primary hover:underline font-medium"
                 >
                   Sign in
+                </button>
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Forgot your password?{' '}
+                <button
+                  onClick={() => router.push('/forgot-password')}
+                  className="text-primary hover:underline font-medium"
+                >
+                  Reset it here
                 </button>
               </p>
             </div>

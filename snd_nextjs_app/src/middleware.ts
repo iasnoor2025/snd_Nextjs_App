@@ -11,6 +11,8 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = [
     '/login',
     '/signup', 
+    '/forgot-password',
+    '/reset-password',
   
     '/auth',
     '/api/auth',
@@ -45,6 +47,8 @@ export async function middleware(request: NextRequest) {
     // For exact matches like /login, /signup
     return pathname === route;
   });
+
+
 
   // Check if current path is a static asset
   const isStaticAsset = staticAssets.some(route => pathname.startsWith(route));
